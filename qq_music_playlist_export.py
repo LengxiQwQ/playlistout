@@ -7,7 +7,7 @@
     pip install openpyxl
 """
 
-__author__ = "lengxiQwQ"
+__author__ = "lengxiQwQ, Dragon水魅"
 
 import os
 import re
