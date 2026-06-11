@@ -50,6 +50,69 @@ def extract_playlist_id(text):
 
 # --- 与 QQ音乐接口交互（返回 (playlist_title, [(name,singers,album), ...], author) 或 None） ---
 
+# 获取指定 QQ号 的所有歌单列表，返回 (nickname, [{"id":..., "name":...}, ...]) 或 None
+def get_user_playlists(uin):
+    """
+    调用 QQ音乐接口获取指定用户（QQ号）的所有歌单。
+    返回 (nickname字符串, [{"id":歌单ID, "name":歌单名称}, ...]) 或 None（失败时）。
+    """
+    # 修复 QQ音乐 API 返回的双重编码字符串（UTF-8 → Latin-1 解码的乱码）
+    def fix_encoding(s):
+        if not isinstance(s, str):
+            return str(s or "")
+        try:
+            # 尝试用 latin-1 编码回字节，再以 utf-8 解码修复乱码
+            fixed = s.encode('latin-1').decode('utf-8')
+            # 如果修复后有无效字符，回退原字符串
+            return fixed
+        except (UnicodeEncodeError, UnicodeDecodeError, LookupError):
+            return s
+
+    url = "https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss"
+    params = {
+        "hostUin": 0,
+        "hostuin": str(uin),
+        "sin": 0,
+        "size": 200,
+        "g_tk": 5381,
+        "loginUin": 0,
+        "format": "json",
+        "inCharset": "utf8",
+        "outCharset": "utf-8",
+        "notice": 0,
+        "platform": "yqq.json",
+        "needNewCode": 0,
+    }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://y.qq.com/portal/profile.html",
+    }
+    try:
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
+        j = resp.json()
+        if isinstance(j, dict) and j.get("code") == 0:
+            data = j.get("data") or {}
+            # 提取昵称（hostname），修复编码
+            nickname_raw = data.get("hostname") or ""
+            nickname = fix_encoding(nickname_raw).strip() or str(uin)
+            # 提取歌单列表（tid 是歌单ID，diss_name 是歌单名称）
+            items = data.get("disslist") or []
+            playlists = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                pid = str(item.get("tid") or "")
+                pname = fix_encoding(item.get("diss_name") or "")
+                # 过滤掉 dir_show=0 的（如 QZone背景音乐）和 tid=0 的
+                if pid and pid != "0" and item.get("dir_show", 1) != 0:
+                    playlists.append({"id": pid, "name": pname})
+            if playlists:
+                return (nickname, playlists)
+    except Exception:
+        pass
+    
+    return None
+
 # 老接口: c.y.qq.com 获取歌单信息 返回 (title, song_list, author) 或 None
 def try_c_y_qq(disstid):
     url = "https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg"
@@ -333,102 +396,175 @@ def open_file_location(path):
     except Exception:
         pass
 
-# --- 主程序入口（循环式：导出完一个文件后继续输入，输入 0 / q / quit / exit 退出） ---
+# --- 批量导出共享函数 ---
+def batch_export_songs(playlists, folder_name, nickname=""):
+    """批量导出歌单列表"""
+    print("\n请选择导出格式（将应用于所有歌单）：")
+    print("  1) .xlsx  - Excel 文件")
+    print("  2) .csv   - 标准 CSV utf-8-sig")
+    print("  3) .json  - JSON 文件")
+    print("  4) .txt   - 纯文本格式")
+    fmt_choice = input("选择 (1-4)：").strip() or "1"
+    if fmt_choice not in ("1","2","3","4"):
+        print("选择无效，默认使用 xlsx")
+        fmt_choice = "1"
+    # 创建文件夹
+    os.makedirs(folder_name, exist_ok=True)
+    print(f"\n开始批量导出，保存到文件夹：{folder_name}")
+    exported = 0
+    failed = 0
+    for idx, pl in enumerate(playlists):
+        pid = pl["id"]
+        pname = pl["name"]
+        print(f"  [{idx+1}/{len(playlists)}] 正在获取歌单 [{pid}] {pname}...")
+        res = get_playlist_songs(pid)
+        if not res or not res[1]:
+            print(f"    ✗ 跳过（无法读取或歌单为空）")
+            failed += 1
+            continue
+        title, songs, author = res
+        safe_title = sanitize_filename(title or pname)
+        safe_author = sanitize_filename(author or nickname or "未知")
+        out_path = None
+        try:
+            if fmt_choice == "1":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.xlsx")
+                export_to_xlsx(songs, out_path)
+            elif fmt_choice == "2":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.csv")
+                export_to_csv(songs, out_path)
+            elif fmt_choice == "3":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.json")
+                export_to_json(songs, out_path)
+            elif fmt_choice == "4":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.txt")
+                export_to_txt(songs, out_path)
+            print(f"    ✓ 已导出（{len(songs)} 首）：{os.path.basename(out_path)}")
+            exported += 1
+        except ImportError:
+            print(f"    ✗ 导出失败：缺少 openpyxl 库，请运行：pip install openpyxl")
+            failed += 1
+        except Exception as e:
+            print(f"    ✗ 导出失败：{e}")
+            failed += 1
+    print(f"\n{'='*40}")
+    print(f"批量导出完成！成功：{exported}，失败：{failed}")
+    abs_folder = os.path.abspath(folder_name)
+    print(f"文件保存在：{abs_folder}")
+    try:
+        if platform.system() == "Windows":
+            os.startfile(abs_folder)
+        elif platform.system() == "Darwin":
+            subprocess.run(["open", abs_folder])
+        else:
+            subprocess.run(["xdg-open", abs_folder])
+    except Exception:
+        pass
+    return (exported, failed)
+
+# --- 主程序入口 ---
 def main():
     print("============ QQ音乐歌单导出工具 ============")
     try:
         while True:
-            user_input = input("请输入歌单链接 或 歌单ID（输入 0 退出）：").strip()
-            if user_input.lower() in ("0", "q", "quit", "exit"):
+            user_input = input("\n请输入歌单链接 或 歌单ID 或 QQ号（输入 0 退出）：").strip()
+            if user_input in ("0", "q", "quit", "exit"):
                 print("\n========== 程序已退出，感谢使用！===========")
                 break
 
+            is_just_digits = user_input.isdigit() and len(user_input) >= 4
             pid = extract_playlist_id(user_input)
-            if not pid:
-                print("无法从输入中提取歌单ID，请确认链接或直接输入数字ID\n")
-                print(f"==========================================")
+
+            # 同时尝试歌单ID和QQ号
+            playlist_info = None
+            qq_info = None
+
+            if pid:
+                playlist_info = get_playlist_songs(pid)
+            
+            if is_just_digits:
+                qq_info = get_user_playlists(user_input)
+
+            # ── 既是歌单又是QQ号，让用户选择 ──
+            if playlist_info and playlist_info[1] and qq_info:
+                title, songs, author = playlist_info
+                qq_nickname, qq_playlists = qq_info
+                print(f"\n'{user_input}' 既是歌单ID也是QQ号，请选择：")
+                print(f"  1) 导出该歌单 — [{pid}] {title}（{len(songs)} 首）")
+                print(f"  2) 导出该QQ号所有歌单 — {qq_nickname} 共 {len(qq_playlists)} 个歌单")
+                choice = input("请选择 (1/2，默认1)：").strip()
+                if choice == "2":
+                    print(f"\n用户：{qq_nickname}，共 {len(qq_playlists)} 个歌单：")
+                    for i, pl in enumerate(qq_playlists):
+                        print(f"  {i+1:3d}. [{pl['id']}] {pl['name']}")
+                    batch_export_songs(qq_playlists, user_input, qq_nickname)
+                    continue
+                # 否则走单歌单导出
+
+            # ── 只是QQ号 ──
+            elif qq_info:
+                qq_nickname, qq_playlists = qq_info
+                print(f"\n检测到QQ号，用户：{qq_nickname}，共 {len(qq_playlists)} 个歌单：")
+                for i, pl in enumerate(qq_playlists):
+                    print(f"  {i+1:3d}. [{pl['id']}] {pl['name']}")
+                batch_export_songs(qq_playlists, user_input, qq_nickname)
                 continue
 
-            res = get_playlist_songs(pid)
-            if not res:
-                print("\n歌单不存在或无法读取")
-                print(f"==========================================")
+            # ── 都不匹配 ──
+            elif not playlist_info and not qq_info:
+                print("\n无法识别输入，请确认歌单链接/ID 或 QQ号是否正确")
                 continue
 
-            title, songs, author = res  # 解包 author
-            if not songs:
-                print("\n歌单不存在或无法读取")
-                print(f"==========================================")
-                continue
+            # ── 单歌单导出流程 ──
+            title, songs, author = playlist_info
+            pid = pid or extract_playlist_id(user_input)
 
             playlist_title = title.strip() if title else f"playlist_{pid}"
             safe_title = sanitize_filename(playlist_title)
-
-            # 处理 author 显示与用于文件名的安全化
             display_author = author or "未知"
             safe_author = sanitize_filename(display_author) or "未知作者"
 
             print(f"\n已获取到 {display_author} 的歌单：\n名称：{playlist_title}，共 {len(songs)} 首歌曲")
-            print(f"==========================================")
-
-            # 显示数字菜单供用户选择
+            print("=" * 42)
             print("请选择导出格式：")
             print(" 1) .xlsx  - (默认) Excel 文件")
             print(" 2) .csv   - 标准 CSV utf-8-sig")
             print(" 3) .json  - JSON 文件，数组")
             print(" 4) .txt   - 纯文本格式")
-            print(f"==========================================")
-            choice = input("选择 (1 - 4，输入 0 退出程序)：").strip()
-
-            if choice == "":
-                choice = "1"
-            if choice not in ("0","1","2","3","4"):
+            print("=" * 42)
+            choice = input("选择 (1-4，输入 0 退出程序)：").strip() or "1"
+            if choice == "0":
+                print("\n========== 程序已退出，感谢使用！===========")
+                break
+            if choice not in ("1","2","3","4"):
                 print("选择无效，默认使用 xlsx")
                 choice = "1"
 
             try:
                 out_name = None
-
-                if choice == "0":
-                    print("\n========== 程序已退出，感谢使用！===========")
-                    return
-
-                elif choice == "1":
-                    out_name = f"{safe_title} - {safe_author}.xlsx"  # [修改：文件名加入作者]
+                if choice == "1":
+                    out_name = f"{safe_title} - {safe_author}.xlsx"
                     try:
                         export_to_xlsx(songs, out_name)
-                        print(f"\n已保存为: {out_name}")
-                        print(f"==========================================")
-
                     except ImportError:
                         print("导出 xlsx 失败：缺少 openpyxl 库，请运行：pip install openpyxl")
                         out_name = None
-
                 elif choice == "2":
-                    out_name = f"{safe_title} - {safe_author}.csv"  # [修改]
+                    out_name = f"{safe_title} - {safe_author}.csv"
                     export_to_csv(songs, out_name)
-                    print(f"\n已保存为: {out_name}")
-                    print(f"==========================================")
-
                 elif choice == "3":
-                    out_name = f"{safe_title} - {safe_author}.json"  # [修改]
+                    out_name = f"{safe_title} - {safe_author}.json"
                     export_to_json(songs, out_name)
-                    print(f"\n已保存为: {out_name}")
-                    print(f"==========================================")
-
                 elif choice == "4":
-                    out_name = f"{safe_title} - {safe_author}.txt"  # [修改]
+                    out_name = f"{safe_title} - {safe_author}.txt"
                     export_to_txt(songs, out_name)
-                    print(f"\n已保存为: {out_name}")
-                    print(f"==========================================")
-
-                # 导出成功且有 out_name 时，尝试在系统中打开文件所在目录（Windows 会选中文件）
+                
                 if out_name:
+                    print(f"\n已保存为: {out_name}")
+                    print("=" * 42)
                     open_file_location(out_name)
-
             except Exception as e:
                 print("保存文件时出错：", e)
-
     except KeyboardInterrupt:
         print("\n\n========= 程序被用户终止，感谢使用！=========")
 
