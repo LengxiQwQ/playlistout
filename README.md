@@ -143,4 +143,3 @@ python qq_music_playlist_export.py
 
 欢迎提交 issue 或 pull request。
 本仓库采用 MIT 许可证，详见 `LICENSE` 文件。作者：`lengxiQwQ`。
-*（内容由AI生成，仅供参考）*
