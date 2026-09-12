@@ -68,25 +68,25 @@ playlistout/
 npm install
 ```
 
-### 3.3 启动 Web 前端开发服务器
+### 3.3 一键启动全栈开发与自动打开浏览器（推荐）
+
+- **Windows 双击使用**：直接双击根目录下的 **`start-dev.bat`**！
+  - 自动启动后端 Worker（端口 8787）；
+  - 自动启动前端 Web（端口 5173）；
+  - 自动在默认浏览器中打开 `http://localhost:5173`；
+  - 自动配置了前后端代理，本地前端直接调用本地后端。
+- **一键关闭服务**：直接双击根目录下的 **`stop-dev.bat`**（或在运行终端中按 `Ctrl+C`）。
+- **命令行运行**：在根目录下执行 `npm run dev`（启动）或 `npm run stop`（关闭）。
+
+### 3.4 单独启动各模块（可选）
 
 ```bash
-cd web
-npm run dev
-# 或在根目录: npm --prefix web run dev
+# 单独启动前端 Web
+cd web && npm run dev
+
+# 单独启动后端 Worker
+cd worker && npm run dev
 ```
-
-前端将在 `http://localhost:5173` 启动。
-
-### 3.4 启动 Cloudflare Worker 本地模拟
-
-```bash
-cd worker
-npm run dev
-# 或在根目录: npm --prefix worker run dev
-```
-
-Worker 本地接口在 `http://localhost:8787` 运行，支持 `/health` 与预留的 `/api/playlist` 骨架路由。
 
 ### 3.5 运行全面检查
 

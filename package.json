@@ -2,12 +2,16 @@
   "name": "playlistout",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Monorepo for PlaylistOut - Web and Cloudflare Worker",
   "workspaces": [
     "web",
     "worker"
   ],
   "scripts": {
+    "dev": "node scripts/start-dev.js",
+    "start": "start-dev.bat",
+    "stop": "node scripts/stop-dev.js",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"

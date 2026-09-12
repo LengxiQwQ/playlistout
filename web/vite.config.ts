@@ -8,5 +8,16 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
+    // Automatically proxy API requests to local Worker in development mode
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+      },
+    },
   },
 });
