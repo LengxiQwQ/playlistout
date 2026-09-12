@@ -1,160 +1,184 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/favicon.svg" width="76" alt="PlaylistOut" />
+
 # PlaylistOut
 
-> **Paste. Parse. Export.**  
-> 轻量、尊重隐私的在线歌单导出工具，纯客户端驱动导出为 TXT / CSV / Excel (XLSX) / JSON。
+*你的歌单，不应该只困在一个音乐平台里。*
 
+[![Website](https://img.shields.io/badge/Website-playlistout.com-2563eb?style=flat-square)](https://playlistout.com)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
 [![CI](https://github.com/LengxiQwQ/playlistout/actions/workflows/ci.yml/badge.svg)](https://github.com/LengxiQwQ/playlistout/actions/workflows/ci.yml)
-[![Deploy Web to GitHub Pages](https://github.com/LengxiQwQ/playlistout/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/LengxiQwQ/playlistout/actions/workflows/deploy-pages.yml)
+
+**[🌐 playlistout.com](https://playlistout.com)**
+
+</div>
+
+<p align="center">
+  📖 README Language：<strong>简体中文</strong> · <a href="README.en.md">English</a>
+</p>
 
 ---
 
-## 当前状态
+## 💡 为什么做 PlaylistOut？
 
-**v2.0.0 — QQ Music Web MVP 已完成并发布。**
+我们在各大音乐平台上花了很多时间和心血整理歌单，但往往遇到这样的尴尬：
+想换平台听歌时，旧平台的歌单无法直接迁移；想备份自己的心血时，没有一个地方能把歌曲列表以干净的格式导出来；或者只是想把歌曲整理成表格打印、做统计分析，却只能手动一首首复制粘贴。
 
-当前正式支持 QQ 音乐公开歌单。后续 QQ 音乐兼容性问题按正常维护处理，不再重新开启 P0–P9；新增音乐平台则作为新的 Provider milestone 单独推进。
+主流音乐平台的封闭生态把用户的歌单牢牢锁在单一 App 里。
 
-- 在线网站：[`https://playlistout.com`](https://playlistout.com)
-- 最新路线图：[`docs/ROADMAP.md`](./docs/ROADMAP.md)
-- v2.0.0：[`GitHub Release`](https://github.com/LengxiQwQ/playlistout/releases/tag/v2.0.0)
+**PlaylistOut 的目标很简单：把公开歌单解析成结构化数据，交还到你的手中。**
 
----
-
-## 1. 项目简介
-
-PlaylistOut 是一个专注于**公开音乐歌单结构化解析与多格式导出**的现代化开源工具。
-
-- **核心流程**：打开网站 → 粘贴公开歌单链接 → 一键解析 → 实时预览并导出为 TXT / CSV / Excel (.xlsx) / JSON。
-- **隐私至上**：无账号系统、无登录需求。服务端绝不持久化存储歌单历史、歌曲列表、个人身份或导出文件，导出文件 100% 在用户浏览器本地生成。
-- **定位原则**：非播放器、非音乐下载器、无侵入性云端同步，专一且可靠地解决“歌单数据导出备份与格式迁移”的需求。
-
-### 生产环境与在线服务
-
-- **前端应用**：[`https://playlistout.com`](https://playlistout.com)（GitHub Pages）
-- **根域名重定向**：`https://www.playlistout.com` 自动重定向至主域名
-- **无状态 API**：[`https://api.playlistout.com`](https://api.playlistout.com)（Cloudflare Workers）
+- **纯客户端导出**：所有导出文件 100% 在用户浏览器本地内存中生成并触发下载，不回传服务器。
+- **无需登录与授权**：不需要 QQ 音乐账号、不需要 Cookie、无需安装任何浏览器扩展或客户端软件。
+- **专注且纯粹**：它不是播放器，不下载音频文件，也不做冗余的云端同步；只专一、稳定、完整地解决“歌单数据导出备份与迁移”这一件事。
 
 ---
 
-## 2. 功能特性
+## 🚀 在线使用
 
-| 功能模块 | 说明 |
-|---|---|
-| **当前支持平台** | **QQ 音乐**公开歌单 |
-| **输入兼容** | 支持 PC 网页链接、手机分享链接、纯数字歌单 ID 及混合文本快速提取 |
-| **超大歌单解析** | 内置自动分页与死循环防护，支持解析 1000+ 首大型歌单，确保条目不遗漏 |
-| **本地多格式导出** | 浏览器端本地生成 **TXT**、**CSV**（UTF-8 带 BOM）、**Excel (.xlsx)**、**JSON** |
-| **一键剪贴板** | 支持按三种模式快速复制（仅歌名 / 歌名 - 歌手 / 完整歌曲信息） |
-| **防公式注入保护** | CSV 与 Excel 导出对特殊字符（`=`、`+`、`-`、`@`）自动转义，防止表格软件公式执行风险 |
-| **安全与滥用防护** | 出站严格域名白名单、禁止任意代理、Worker 实例级滑动窗口限流、OWASP 安全标头防护 |
-| **无障碍与多端体验** | 支持移动端自适应、键盘导航与明确焦点指示、隐私数据说明 |
+无需安装任何软件，直接打开 **[playlistout.com](https://playlistout.com)** 即可开始：
+
+1. **粘贴歌单** — 支持 PC 网页链接（`y.qq.com`）、手机分享链接（`c6.y.qq.com`）、纯歌单 ID，或直接粘贴带有文字的 App 分享内容（系统自动提取有效链接）。
+2. **实时解析** — 边缘 Worker 自动解析歌单元数据、歌曲名、歌手、专辑及封面等完整字段。
+3. **完整预览** — 在导出前直接在网页中核对完整歌曲列表与总曲目数。
+4. **一键导出 / 复制** — 本地保存为 TXT / CSV / Excel (.xlsx) / JSON，或直接一键复制到剪贴板。
 
 ---
 
-## 3. 仓库架构 (Monorepo)
+## ✨ 主要功能
 
-本项目采用轻量级 npm monorepo 组织前端、后端与经典工具：
+### 🔗 纯网页免登录直解
+无需登录任何音乐平台账号，不需要输入 Cookie 或授权 Token，不安装任何第三方插件。只需一个公开歌单链接，即可在浏览器中一键解析。
 
-```text
-playlistout/
-├── web/                 # 前端应用 (React + TypeScript + Vite)
-├── worker/              # 后端 API (Cloudflare Worker + TypeScript + D1)
-├── cli/
-│   └── qqmusic/         # 经典 QQ 音乐 Python CLI
-├── docs/
-│   ├── PROJECT-CONSTITUTION.md
-│   ├── ROADMAP.md       # 当前路线图
-│   ├── API.md
-│   ├── MANUAL-SETUP.md  # 部署与运维指南
-│   └── archive/         # 已完成里程碑的历史入口
-├── .github/             # CI、Pages 与 Worker 自动部署
-├── CHANGELOG.md
-├── package.json
-└── README.md
-```
+### 🎵 大歌单深度翻页支持
+彻底打破许多第三方工具“只能抓前 100 首”的限制。PlaylistOut 内置智能分页引擎，无缝支持 **1000+ 首**的超大歌单，严格保留原始添加顺序与合法的重复歌曲，绝不静默丢歌或截断。
 
----
+### 📦 4 种文件格式本地导出
+解析出的歌单可直接导出为多种主流格式，满足不同场景需求：
+- **TXT** — 简洁易读的纯文本清单，适合快速查看、记事本备份或导入部分小众播放器。
+- **CSV** — 国际标准的逗号分隔文本（默认带 UTF-8 BOM，解决 Windows Excel 打开乱码问题）。
+- **Excel (.xlsx)** — 原生带样式的电子表格，适合用 Microsoft Excel、WPS 等软件进行归档、排序与批量整理。
+- **JSON** — 结构化完整数据，包含歌曲 ID、歌手、专辑等丰富元数据，专为开发者与自动化脚本设计。
 
-## 4. 本地开发指南
+> 所有文件均由前端直接在浏览器内存中组装并生成下载链接，数据不经过任何第三方服务器中转。
 
-### 4.1 准备环境
+### 📋 3 种剪贴板快速复制
+如果不需要下载文件，可直接复制格式化内容：
+- **仅歌名**：每行一首歌曲名，干净整洁。
+- **歌名 - 歌手**：最通用的文本格式，便于直接粘贴到其他音乐软件的搜索框或导入框。
+- **歌名 - 歌手 - 专辑**：完整的制表符分隔格式，可直接 Ctrl+V 粘贴进任意电子表格。
 
-- Node.js ≥ 20.x（推荐 LTS 22.x）
-- npm ≥ 10.x
-- Python ≥ 3.10（仅调试 Python CLI 需要）
-
-### 4.2 安装所有依赖
-
-```bash
-npm install
-```
-
-### 4.3 一键启动全栈开发
-
-- **Windows**：双击根目录 `start-dev.bat`
-  - Worker：`http://localhost:8787`
-  - Web：`http://localhost:5173`
-  - 自动打开浏览器并连接本地 API
-- **停止服务**：双击 `stop-dev.bat`，或在终端中按 `Ctrl+C`
-- **跨平台**：`npm run dev` 启动，`npm run stop` 停止
-
-### 4.4 检查与构建
-
-```bash
-# TypeScript 类型检查
-npm run typecheck
-
-# Web + Worker 自动化测试
-npm run test
-
-# 真实 QQ 音乐公开歌单验证（含 >1000 首分页样本）
-npm --prefix worker run test:live
-
-# 生产构建验证
-npm run build
-```
-
-测试用例数量会随项目维护持续变化，因此 README 不固定声明具体测试总数；以当前 CI 输出为准。
+### 🛡️ 严格安全与防公式注入
+导出 CSV / Excel 时，对首字符为 `=`、`+`、`-`、`@` 等特殊符号的内容自动添加安全转义，防止导出的表格在 Microsoft Excel / WPS 打开时触发恶意的公式注入执行（CSV Injection / DDE）。同时，全链路 API 配备速率限制与安全防护标头。
 
 ---
 
-## 5. 经典 Python CLI (QQ 音乐)
+## 🎧 支持平台
 
-原有的独立 Python 命令行工具保留在 [`cli/qqmusic/`](./cli/qqmusic/)，支持单歌单导出和 QQ 号批量导出。
+| 平台 | 网页版支持 | 备注 |
+|---|---|---|
+| **QQ 音乐** | ✅ 已支持 | 歌单分享链接 / ID / App 分享文本解析与导出 |
+| 网易云音乐 | 计划中 | 路线图规划中 |
+| 酷狗音乐 | 计划中 | 路线图规划中 |
+| 酷我音乐 | 计划中 | 路线图规划中 |
+| 咪咕音乐 | 计划中 | 路线图规划中 |
+| 汽水音乐 | 计划中 | 路线图规划中 |
+
+每个音乐平台都作为独立的 Provider 模块接入，前端始终保持统一的数据结构与导出体验。
+
+---
+
+## 🔒 隐私与数据
+
+PlaylistOut 坚持极简与透明的隐私承诺：
+
+- **无账号体系**：完全不设注册、登录或身份验证流程，不收集任何个人身份信息。
+- **无状态边缘代理**：歌曲列表仅在请求时由边缘 Cloudflare Worker 代理抓取并实时返回前端，服务器不设歌单数据库，不留存歌曲条目。
+- **全本地导出**：TXT、CSV、XLSX 和 JSON 文件全部在用户本地浏览器生成，文件内容绝不上传到服务器。
+- **匿名聚合指标**：仅在 Cloudflare D1 中记录匿名聚合计数（如请求成功/失败数、导出格式分布），用于服务健康监控与容量评估，绝不记录用户 IP、歌单 URL 或具体曲目。
+- **完整性熔断原则**：向上游抓取歌单时，若遇到数据残缺或网络异常，系统会直接报错提示，绝不为了“伪装成功”而生成缺斤少两的残缺导出。
+
+---
+
+## ⌨️ QQ 音乐 CLI
+
+仓库中依然保留了最初的 Python 命令行工具，适合批量抓取、定时自动化备份或作为技术参考：
+- 支持单个歌单快速导出
+- 支持输入 QQ 号批量抓取其公开创建的所有歌单
 
 ```bash
 cd cli/qqmusic
 pip install -r requirements.txt
 python qq_music_playlist_export.py
-pytest -v
 ```
 
-详细用法请查阅 [`cli/qqmusic/README.md`](./cli/qqmusic/README.md)。
+更详细的参数与使用说明请查看 [`cli/qqmusic/README.md`](./cli/qqmusic/README.md)。
 
 ---
 
-## 6. 隐私与安全
+## 💻 开发者
 
-1. **零歌单数据留存**：服务端不保存解析出的歌单、歌曲条目、提交的歌单 URL / ID 或导出文件。
-2. **浏览器本地导出**：所有导出文件在用户本地浏览器内生成。
-3. **匿名聚合统计**：D1 仅记录成功/失败等聚合计数，不保存个人标识或歌单内容。
-4. **网络边界**：禁止任意外部代理，Provider 仅允许访问明确批准的上游域名。
-5. **完整性优先**：上游数据不可信或不完整时优先报错，而不是生成残缺导出。
+PlaylistOut 是一个轻量级 Monorepo 仓库：
+
+| 模块 | 说明 |
+|---|---|
+| `web/` | 前端应用，基于 React 18 + TypeScript + Vite |
+| `worker/` | 边缘 API 服务，基于 Cloudflare Workers + TypeScript + D1 |
+| `cli/qqmusic/` | 原始 Python QQ 音乐 CLI 工具 |
+| `docs/` | 项目路线图、架构规范、API 文档与运维手册 |
+
+### 本地运行
+
+```bash
+git clone https://github.com/LengxiQwQ/playlistout.git
+cd playlistout
+npm install
+npm run dev
+```
+
+### 质量检查与构建
+
+```bash
+# TypeScript 类型检查
+npm run typecheck
+
+# 单元测试与组件测试
+npm run test
+
+# 验证真实 QQ 音乐长歌单解析（含 >1000 首样本）
+npm --prefix worker run test:live
+
+# 全栈生产构建
+npm run build
+```
 
 ---
 
-## 7. 文档
+## 📚 文档
 
-- [`PROJECT-CONSTITUTION.md`](./docs/PROJECT-CONSTITUTION.md)：长期产品、架构、隐私与安全边界
-- [`ROADMAP.md`](./docs/ROADMAP.md)：当前维护与后续发展方向
-- [`API.md`](./docs/API.md)：公开 API 约定
-- [`MANUAL-SETUP.md`](./docs/MANUAL-SETUP.md)：部署、恢复与运维
-- [`docs/archive/`](./docs/archive/)：已完成里程碑的历史入口
-- [`CHANGELOG.md`](./CHANGELOG.md)：版本变更历史
+- [`ROADMAP.md`](./docs/ROADMAP.md) — 路线图与后续支持计划
+- [`PROJECT-CONSTITUTION.md`](./docs/PROJECT-CONSTITUTION.md) — 产品定位、架构约束与安全边界
+- [`API.md`](./docs/API.md) — 边缘 API 接口规范与错误码约定
+- [`MANUAL-SETUP.md`](./docs/MANUAL-SETUP.md) — 生产环境配置与运维手册
+- [`CHANGELOG.md`](./CHANGELOG.md) — 版本变更历史
 
 ---
 
-## 8. 许可证
+## 🤝 Contributing
 
-本项目基于 [GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE) 开源。
+欢迎提交 Issue 与 Pull Request！
+
+在添加新的音乐平台 Provider 时，请确保将平台专有解析逻辑封装在独立 Provider 模块内，并转换为通用的标准化歌单数据模型，以确保全平台导出与复制功能的一致性。
+
+---
+
+## 📄 License
+
+PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源。详情参见 [LICENSE](./LICENSE)。
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a>
+</p>
