@@ -6,12 +6,6 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "routes": [
-    {
-      "pattern": "api.playlistout.com",
-      "custom_domain": true
-    }
-  ],
   "observability": {
     "enabled": true
   },
@@ -19,7 +13,7 @@
     {
       "binding": "DB",
       "database_name": "playlistout-stats",
-      "database_id": "playlistout-stats-db-id"
+      "database_id": "0d6cbfb5-70bb-4a61-b2f0-f9cac30cf76e"
     }
   ]
 }
