@@ -487,4 +487,51 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
       expect((err as ProviderError).code).toBe('INCOMPLETE_PLAYLIST');
     }
   });
+
+  it('fails closed when playlist size exceeds MAX_PAGES bounds (bounded pagination)', async () => {
+    // MAX_PAGES = 50, each page 1000 songs -> 50,000 songs.
+    // If upstream promises 60,000 songs, after 50 pages it must terminate the loop and fail closed.
+    let pageCount = 0;
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      const parsedUrl = new URL(url);
+      const songBegin = Number(parsedUrl.searchParams.get('song_begin') || 0);
+      pageCount++;
+      return new Response(
+        JSON.stringify({
+          code: 0,
+          cdlist: [
+            {
+              disstid: '1234567890',
+              dissname: 'Oversized Playlist',
+              total_song_num: 60000,
+              cur_song_num: 1000,
+              song_begin: songBegin,
+              songlist: Array.from({ length: 1000 }, (_, i) => makeMockSong(songBegin + i + 1)),
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    globalThis.fetch = fetchMock;
+
+    let thrownError: unknown;
+    try {
+      await fetchQQPlaylist('1234567890');
+    } catch (err) {
+      thrownError = err;
+    }
+
+    expect(thrownError).toBeInstanceOf(ProviderError);
+    const pErr = thrownError as ProviderError;
+    expect(pErr.code).toBe('INCOMPLETE_PLAYLIST');
+    expect(pErr.statusCode).toBe(502);
+    expect(pErr.details).toEqual({ expectedCount: 60000, actualCount: 50000 });
+
+    // Primary fetched exactly 50 pages (MAX_PAGES), plus 1 fallback attempt
+    expect(pageCount).toBe(51);
+  });
 });
+
+
