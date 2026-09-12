@@ -59,27 +59,42 @@ export function getSongKey(song: RawQQSong): string {
 }
 
 /**
- * Validates a newly retrieved page of songs against the songs accumulated so far.
- * Detects:
- * 1. Stalled pagination where upstream ignored offset and returned songs from index 0.
- * 2. Page overlap (trims overlapping songs while preserving global source order).
- * Returns the non-overlapping slice of songs to append.
+ * Checks whether a retrieved pagination page indicates a stalled or replayed response
+ * (e.g. upstream ignored the offset and re-returned the beginning of the playlist).
+ *
+ * NOTE: QQ Music APIs use absolute 0-indexed offsets (song_begin). They do not return
+ * sliding protocol overlaps. Legitimate consecutive or repeated songs added by users
+ * must NEVER be stripped or deduplicated by content/ID.
  */
-export function processPageSongs(
+export function validatePageNotStalled(
   existingSongs: RawQQSong[],
   pageSongs: RawQQSong[],
   expectedTotal: number,
   offset: number,
-): RawQQSong[] {
+  reportedSongBegin?: number,
+): void {
   if (!Array.isArray(pageSongs) || pageSongs.length === 0) {
-    return [];
+    return;
   }
 
-  // Check if upstream ignored offset and returned songs matching the start of the playlist (page 1)
-  if (existingSongs.length > 0) {
-    const sampleLen = Math.min(pageSongs.length, existingSongs.length, 3);
-    const isPrefixMatch = pageSongs.slice(0, sampleLen).every((s, i) => getSongKey(s) === getSongKey(existingSongs[i]));
-    if (isPrefixMatch) {
+  // 1. Upstream explicitly reported a song_begin that did not advance
+  if (typeof reportedSongBegin === 'number' && offset > 0 && reportedSongBegin !== offset) {
+    throw new ProviderError(
+      'INCOMPLETE_PLAYLIST',
+      `Stalled pagination: Upstream reported song_begin ${reportedSongBegin} instead of requested offset ${offset}.`,
+      502,
+      { expectedCount: expectedTotal, actualCount: existingSongs.length, offset },
+    );
+  }
+
+  // 2. Upstream ignored offset and re-sent a page replaying the start of the playlist (page 1 from index 0)
+  if (existingSongs.length >= 3 && pageSongs.length >= 3) {
+    const compareCount = Math.min(pageSongs.length, existingSongs.length, 10);
+    const isReplayFromZero = pageSongs
+      .slice(0, compareCount)
+      .every((song, i) => getSongKey(song) === getSongKey(existingSongs[i]));
+
+    if (isReplayFromZero) {
       throw new ProviderError(
         'INCOMPLETE_PLAYLIST',
         `Stalled pagination: Upstream ignored offset and returned repeated songs from index 0 at offset ${offset}.`,
@@ -88,35 +103,6 @@ export function processPageSongs(
       );
     }
   }
-
-  // Check for partial page overlap between the end of existingSongs and the beginning of pageSongs
-  let nonOverlappingSongs = pageSongs;
-  if (existingSongs.length > 0) {
-    const maxOverlap = Math.min(pageSongs.length, existingSongs.length, 100);
-    let overlapCount = 0;
-    for (let k = maxOverlap; k > 0; k--) {
-      const existingSuffix = existingSongs.slice(existingSongs.length - k);
-      const pagePrefix = pageSongs.slice(0, k);
-      if (existingSuffix.every((s, idx) => getSongKey(s) === getSongKey(pagePrefix[idx]))) {
-        overlapCount = k;
-        break;
-      }
-    }
-    if (overlapCount > 0) {
-      nonOverlappingSongs = pageSongs.slice(overlapCount);
-    }
-  }
-
-  if (nonOverlappingSongs.length === 0) {
-    throw new ProviderError(
-      'INCOMPLETE_PLAYLIST',
-      `Stalled pagination: No new tracks returned at offset ${offset}.`,
-      502,
-      { expectedCount: expectedTotal, actualCount: existingSongs.length, offset },
-    );
-  }
-
-  return nonOverlappingSongs;
 }
 
 /**
@@ -230,8 +216,8 @@ async function fetchFromCYQQ(playlistId: string): Promise<Playlist> {
         break;
       }
 
-      const newSongs = processPageSongs(allSongs, pageSongs, totalExpected, songBegin);
-      allSongs.push(...newSongs);
+      validatePageNotStalled(allSongs, pageSongs, totalExpected, songBegin, pageCd?.song_begin);
+      allSongs.push(...pageSongs);
     }
 
     // Strict completeness verification (docs/PROJECT-CONSTITUTION.md & P1 Prompt Section 7)
@@ -358,8 +344,8 @@ async function fetchFromMusicU(playlistId: string): Promise<Playlist> {
         break;
       }
 
-      const newSongs = processPageSongs(allSongs, pageSongs, totalExpected, songBegin);
-      allSongs.push(...newSongs);
+      validatePageNotStalled(allSongs, pageSongs, totalExpected, songBegin);
+      allSongs.push(...pageSongs);
     }
 
     // Strict completeness verification (docs/PROJECT-CONSTITUTION.md & P1 Prompt Section 7)
