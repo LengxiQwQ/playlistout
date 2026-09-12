@@ -41,8 +41,11 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
     const response = await fetch(url, {
       ...init,
       signal: controller.signal,
-      redirect: 'error', // Never follow arbitrary redirects
+      redirect: 'manual', // Never automatically follow redirects
     });
+    if (response.status >= 300 && response.status < 400) {
+      throw new ProviderError('FORBIDDEN', 'Upstream redirects are not permitted.', 403);
+    }
     return response;
   } catch (err: unknown) {
     if (err instanceof ProviderError) {
