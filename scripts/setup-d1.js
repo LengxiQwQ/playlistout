@@ -84,7 +84,11 @@ async function main() {
       `"database_id": "${oldIdMatch[1]}"`,
       `"database_id": "${dbUuid}"`
     );
-    fs.writeFileSync(wranglerPath, wranglerContent, 'utf8');
+    // Ensure zone routes block is not present
+    if (wranglerContent.includes('"routes"')) {
+      wranglerContent = wranglerContent.replace(/\s*"routes":\s*\[\s*\{[\s\S]*?\}\s*\],?/g, '');
+      fs.writeFileSync(wranglerPath, wranglerContent, 'utf8');
+    }
   } else {
     console.log(`worker/wrangler.jsonc already contains database_id: ${dbUuid}`);
   }
@@ -92,7 +96,7 @@ async function main() {
   // 4. Run remote migrations
   console.log('Applying remote migrations to D1...');
   try {
-    const migrationCmd = `npx wrangler d1 execute ${DB_NAME} --remote --file=./migrations/0001_initial_stats.sql`;
+    const migrationCmd = `npx wrangler d1 execute ${DB_NAME} --remote --file=./migrations/0001_initial_stats.sql --yes`;
     console.log(`Running: ${migrationCmd}`);
     execSync(migrationCmd, {
       cwd: workerDir,
