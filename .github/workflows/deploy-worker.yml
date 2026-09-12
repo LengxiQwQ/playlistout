@@ -1,0 +1,57 @@
+name: Deploy Worker to Cloudflare
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'worker/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Worker Typecheck & Tests
+        run: |
+          npm --prefix worker run typecheck
+          npm --prefix worker test
+
+      - name: Check Cloudflare Credentials
+        id: check-creds
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "Cloudflare credentials not found in GitHub Secrets."
+            echo "To enable automated worker deployment, add CLOUDFLARE_API_TOKEN to repository Secrets."
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          else
+            echo "Cloudflare credentials found."
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Cloudflare Workers
+        if: steps.check-creds.outputs.has_creds == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'worker'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

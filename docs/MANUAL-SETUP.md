@@ -68,24 +68,39 @@ npx wrangler deploy
 
 ---
 
-## 4. 后续阶段预留 (Phase 5+)
+## 4. 生产环境部署与持续交付 (Phase 8 运维指南)
 
-以下内容在当前 Phase 0 严禁配置生产硬依赖，待对应阶段开启后再行创建：
+### 4.1 生产环境 D1 数据库开通与迁移执行
 
-### 4.1 Cloudflare D1 统计数据库 (Phase 5)
-
-当进入 Phase 5（匿名统计）时：
+在 Cloudflare 控制台或通过本地 Wrangler 执行以下命令创建 D1 实例并应用迁移：
 
 ```bash
-cd worker
+# 1. 登录 Cloudflare（若 Token 过期或未登录）
+npx wrangler login
+
+# 2. 创建生产 D1 数据库实例
 npx wrangler d1 create playlistout-stats
+
+# 3. 将命令输出的真实 database_id 更新到 worker/wrangler.jsonc 中的 database_id 字段
+
+# 4. 执行 D1 数据库初始迁移
+npx wrangler d1 execute playlistout-stats --remote --file=./migrations/0001_initial_stats.sql
 ```
 
-执行后将输出的 `database_id` 填入 `worker/wrangler.jsonc` 中的 `d1_databases` 预留配置。
+### 4.2 GitHub Actions 自动化部署 Worker (CI/CD)
 
-### 4.2 GitHub Actions 自动化部署 Worker (Phase 8)
+项目已配置 `.github/workflows/deploy-worker.yml`。只需在 GitHub 仓库添加以下两项 Secrets，即可在每次合并代码后全自动构建测试并发布 Worker：
 
-若需要在 GitHub Actions CI/CD 中自动执行 `wrangler deploy`，需在 GitHub 仓库添加以下 Secrets：
+1. 进入 GitHub 仓库 **Settings** &rarr; **Secrets and variables** &rarr; **Actions**。
+2. 点击 **New repository secret** 分别添加：
+   - `CLOUDFLARE_API_TOKEN`: 具备 `Cloudflare Workers: Edit` 和 `Account: Read` 权限的 API Token。
+   - `CLOUDFLARE_ACCOUNT_ID`: 您的 Cloudflare 账户 ID（可在 Cloudflare Dashboard 右下角或 Workers 概览页直接复制）。
+3. 添加完成后，任何推送至 `main` 分支的 `worker/**` 代码均会自动部署至生产环境。
 
-- `CLOUDFLARE_API_TOKEN`: 具备 Worker 部署权限的 Cloudflare API Token。
-- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID。
+### 4.3 生产环境现状核对表 (Production Verification Matrix)
+
+- [x] **前端页面访问**：`https://playlistout.com` (已验证，HTTP 200 OK，由 GitHub Pages 托管)
+- [x] **根域名重定向**：`https://www.playlistout.com` (已验证，HTTP 301 重定向至 `https://playlistout.com/`)
+- [x] **搜索引擎爬虫引导**：`https://playlistout.com/robots.txt` 与 `https://playlistout.com/sitemap.xml` (已验证)
+- [x] **API 域名接入点**：`https://api.playlistout.com/health` (已验证，HTTP 200 OK)
+- [ ] **最新 API 与 D1 生产发布**：需配置 `CLOUDFLARE_API_TOKEN` 或执行 `wrangler login` 后触发全量部署。
