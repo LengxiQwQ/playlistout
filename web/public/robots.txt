@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://playlistout.com/sitemap.xml

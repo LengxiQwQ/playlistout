@@ -7,6 +7,7 @@ import { PlaylistSummary } from './components/PlaylistSummary';
 import { TrackTable } from './components/TrackTable';
 import { StatusAlert } from './components/StatusAlert';
 import { ExportToolbar } from './components/ExportToolbar';
+import { PrivacyModal } from './components/PrivacyModal';
 
 
 type AppState = 'idle' | 'loading' | 'success' | 'error';
@@ -16,6 +17,7 @@ export const App: React.FC = () => {
   const [state, setState] = useState<AppState>('idle');
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   // Reference to abort in-flight requests and avoid stale responses
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -104,7 +106,7 @@ export const App: React.FC = () => {
   return (
     <div className="container">
       <header>
-        <div className="brand-badge">QQ 音乐公开歌单解析</div>
+        <div className="brand-badge">QQ 音乐公开歌单解析 · MVP</div>
         <h1>PlaylistOut</h1>
         <p className="tagline">Paste. Parse. Export.</p>
       </header>
@@ -199,7 +201,16 @@ export const App: React.FC = () => {
             <div className="features-grid">
               <div className="feature-item">
                 <h3>🔒 隐私安全</h3>
-                <p>不保存您的歌单历史，不持久化歌曲数据，仅做即时格式解析与导出。</p>
+                <p>
+                  不保存您的歌单历史与内容，仅做即时解析与本地导出。
+                  <button
+                    type="button"
+                    className="feature-link-btn"
+                    onClick={() => setIsPrivacyOpen(true)}
+                  >
+                    查看数据说明
+                  </button>
+                </p>
               </div>
               <div className="feature-item">
                 <h3>⚡ 完整性保障</h3>
@@ -223,10 +234,17 @@ export const App: React.FC = () => {
         )}
       </main>
 
-
       <footer>
         <p>
           PlaylistOut &copy; {new Date().getFullYear()} &middot;{' '}
+          <button
+            type="button"
+            className="footer-link-btn"
+            onClick={() => setIsPrivacyOpen(true)}
+          >
+            隐私声明
+          </button>{' '}
+          &middot;{' '}
           <a href="https://github.com/LengxiQwQ/playlistout" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>{' '}
@@ -236,6 +254,12 @@ export const App: React.FC = () => {
           </a>
         </p>
       </footer>
+
+      {/* Privacy Policy and Data Practices Modal */}
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+      />
     </div>
   );
 };
