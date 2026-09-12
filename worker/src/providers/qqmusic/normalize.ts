@@ -93,10 +93,6 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
       .filter((name) => name.length > 0);
   }
 
-  if (artists.length === 0) {
-    artists = ['未知歌手'];
-  }
-
   // Extract album name
   let album: string | undefined;
   if (typeof rawSong.albumname === 'string' && rawSong.albumname.trim().length > 0) {
@@ -129,6 +125,19 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     durationMs,
     sourceUrl,
   };
+}
+
+/**
+ * Helper to extract expected total song count from upstream metadata container.
+ */
+export function extractTotalExpected(container: { total_song_num?: number; songnum?: number }): number | undefined {
+  if (typeof container.total_song_num === 'number' && container.total_song_num >= 0) {
+    return container.total_song_num;
+  }
+  if (typeof container.songnum === 'number' && container.songnum >= 0) {
+    return container.songnum;
+  }
+  return undefined;
 }
 
 /**
@@ -167,6 +176,16 @@ export function normalizeCYQQResponse(payload: RawCYQQResponse, expectedId: stri
 
   const rawSonglist = Array.isArray(cd.songlist) ? cd.songlist : [];
   const tracks: Track[] = rawSonglist.map((song, idx) => normalizeQQTrack(song, idx + 1));
+
+  const totalExpected = extractTotalExpected(cd);
+  if (totalExpected !== undefined && tracks.length !== totalExpected) {
+    throw new ProviderError(
+      'INCOMPLETE_PLAYLIST',
+      `Incomplete playlist: QQ Music reported ${totalExpected} songs, but only ${tracks.length} are present.`,
+      502,
+      { expectedCount: totalExpected, actualCount: tracks.length },
+    );
+  }
 
   return {
     platform: 'qqmusic',
@@ -210,6 +229,16 @@ export function normalizeMusicUResponse(payload: RawMusicUResponse, expectedId: 
 
   const rawSonglist = Array.isArray(data.songlist) ? data.songlist : [];
   const tracks: Track[] = rawSonglist.map((song, idx) => normalizeQQTrack(song, idx + 1));
+
+  const totalExpected = extractTotalExpected(dirinfo);
+  if (totalExpected !== undefined && tracks.length !== totalExpected) {
+    throw new ProviderError(
+      'INCOMPLETE_PLAYLIST',
+      `Incomplete playlist: QQ Music reported ${totalExpected} songs, but only ${tracks.length} are present.`,
+      502,
+      { expectedCount: totalExpected, actualCount: tracks.length },
+    );
+  }
 
   return {
     platform: 'qqmusic',

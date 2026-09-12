@@ -93,6 +93,34 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     expect(playlist.tracks[999].index).toBe(1000);
   });
 
+  it('validates >1000 multi-page live public playlist (ID: 7729596131, 1245 songs)', async () => {
+    const playlist = await qqMusicProvider.parse('https://y.qq.com/n/ryqq/playlist/7729596131');
+
+    expect(playlist.platform).toBe('qqmusic');
+    expect(playlist.id).toBe('7729596131');
+    expect(playlist.name).toBe('耳机里的秘密 | 宝藏女声集合站');
+    expect(playlist.creator).toBe('腾讯音乐人');
+    expect(playlist.trackCount).toBe(1245);
+    expect(playlist.tracks).toHaveLength(1245);
+
+    // Verify continuous 1-based ordering across page boundary (page 1: 1..1000, page 2: 1001..1245)
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[0].title).toBeTruthy();
+    expect(playlist.tracks[999].index).toBe(1000);
+    expect(playlist.tracks[999].title).toBeTruthy();
+    expect(playlist.tracks[1000].index).toBe(1001);
+    expect(playlist.tracks[1000].title).toBeTruthy();
+    expect(playlist.tracks[1244].index).toBe(1245);
+    expect(playlist.tracks[1244].title).toBeTruthy();
+
+    // Verify all tracks have valid non-empty titles and sequential indices
+    playlist.tracks.forEach((track, i) => {
+      expect(track.index).toBe(i + 1);
+      expect(track.title.length).toBeGreaterThan(0);
+      expect(Array.isArray(track.artists)).toBe(true);
+    });
+  });
+
   it('fails with PLAYLIST_NOT_FOUND on non-existent playlist ID', async () => {
     await expect(qqMusicProvider.parse('999999999999999')).rejects.toThrowError();
   });
