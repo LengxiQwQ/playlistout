@@ -2,22 +2,25 @@ import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
 import { qqMusicProvider } from './providers/qqmusic';
 import { recordParse, getAggregateStats, type AggregateStatsData } from './stats';
+import { applySecurityHeaders } from './security/headers';
+import { checkRateLimit } from './security/rate-limit';
 
 export interface Env {
   ENVIRONMENT?: string;
   DB?: D1Database;
 }
 
-
 export default {
   async fetch(request: Request, _env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const corsHeaders = getCorsHeaders(request);
+    const responseHeaders = applySecurityHeaders(corsHeaders);
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return handleOptions(request);
     }
+
 
     // Health check endpoint
     if (url.pathname === '/health' || url.pathname === '/api/health') {
@@ -35,7 +38,7 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               Allow: 'GET, OPTIONS',
-              ...corsHeaders,
+              ...responseHeaders,
             },
           },
         );
@@ -51,7 +54,7 @@ export default {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         },
       );
@@ -71,11 +74,16 @@ export default {
           status: 403,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         },
       );
     }
+
+    const clientIp =
+      request.headers.get('cf-connecting-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      '127.0.0.1';
 
     // Playlist parse endpoint
     if (url.pathname === '/api/playlist') {
@@ -93,7 +101,29 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               Allow: 'GET, OPTIONS',
-              ...corsHeaders,
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Rate limit check: max 30 requests / minute per client IP
+      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      if (!rateCheck.allowed) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests. Please wait a moment before trying again.',
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateCheck.resetSeconds),
+              ...responseHeaders,
             },
           },
         );
@@ -113,7 +143,7 @@ export default {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         });
       }
@@ -130,7 +160,7 @@ export default {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         });
       }
@@ -148,7 +178,7 @@ export default {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         });
       }
@@ -166,7 +196,7 @@ export default {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         });
       } catch (err: unknown) {
@@ -186,7 +216,7 @@ export default {
             status: err.statusCode,
             headers: {
               'Content-Type': 'application/json',
-              ...corsHeaders,
+              ...responseHeaders,
             },
           });
         }
@@ -202,7 +232,7 @@ export default {
           status: 500,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...responseHeaders,
           },
         });
       }
@@ -224,7 +254,29 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               Allow: 'GET, OPTIONS',
-              ...corsHeaders,
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Rate limit check: max 60 requests / minute per client IP
+      const rateCheck = checkRateLimit(clientIp, 60, 60);
+      if (!rateCheck.allowed) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests. Please wait a moment before trying again.',
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateCheck.resetSeconds),
+              ...responseHeaders,
             },
           },
         );
@@ -239,11 +291,10 @@ export default {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          ...corsHeaders,
+          ...responseHeaders,
         },
       });
     }
-
 
     // Default 404
     return new Response(
@@ -258,9 +309,10 @@ export default {
         status: 404,
         headers: {
           'Content-Type': 'application/json',
-          ...corsHeaders,
+          ...responseHeaders,
         },
       },
     );
+
   },
 };

@@ -26,7 +26,10 @@ export function getFriendlyErrorMessage(code?: ApiErrorCode | string, fallbackMe
     case 'METHOD_NOT_ALLOWED':
     case 'FORBIDDEN':
       return '请求被拒绝，请刷新页面后重试。';
+    case 'RATE_LIMITED':
+      return '请求过于频繁，请稍候再试。';
     case 'INTERNAL_ERROR':
+
       return '服务器处理歌单时出现异常，请稍后重试。';
     default:
       return fallbackMessage || '解析歌单失败，请稍后重试。';

@@ -33,7 +33,9 @@ export type ApiErrorCode =
   | 'PARSE_ERROR'
   | 'METHOD_NOT_ALLOWED'
   | 'FORBIDDEN'
+  | 'RATE_LIMITED'
   | 'INTERNAL_ERROR';
+
 
 export interface ApiError {
   code: ApiErrorCode | string;

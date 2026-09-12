@@ -16,10 +16,24 @@ export const MAX_PAGES = 50; // Safety guard: max 50 pages * 1000 = 50,000 songs
 export const PAGE_SIZE = 1000;
 const FETCH_TIMEOUT_MS = 15000;
 
+export const ALLOWED_UPSTREAM_HOSTS: ReadonlySet<string> = new Set(['c.y.qq.com', 'u.y.qq.com']);
+
 /**
- * Fetch with timeout helper.
+ * Fetch with timeout and strict host allowlist helper.
+ * Enforces redirect: 'error' to prevent arbitrary redirects from becoming arbitrary fetches.
  */
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number = FETCH_TIMEOUT_MS): Promise<Response> {
+  // 1. Strict outbound host verification
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_UPSTREAM_HOSTS.has(parsed.hostname)) {
+      throw new ProviderError('FORBIDDEN', `Outbound request to unauthorized host ${parsed.hostname} is strictly prohibited.`, 403);
+    }
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
+    throw new ProviderError('INVALID_INPUT', 'Malformed upstream request URL.', 400);
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -27,9 +41,13 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
     const response = await fetch(url, {
       ...init,
       signal: controller.signal,
+      redirect: 'error', // Never follow arbitrary redirects
     });
     return response;
   } catch (err: unknown) {
+    if (err instanceof ProviderError) {
+      throw err;
+    }
     if (err instanceof Error && err.name === 'AbortError') {
       throw new ProviderError('UPSTREAM_TIMEOUT', `Request to QQ Music timed out after ${timeoutMs}ms.`, 504);
     }
@@ -38,6 +56,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
     clearTimeout(timeoutId);
   }
 }
+
 
 /**
  * Constructs a distinctive key for a song to detect stalled or repeated pages.
