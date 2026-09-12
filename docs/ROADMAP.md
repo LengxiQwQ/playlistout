@@ -570,11 +570,11 @@ P8 is accepted only if the real production domain completes the core user flow e
 
 ---
 
-# Phase 9 — Final Independent Acceptance & v1.0 Release
+# Phase 9 — Final Independent Acceptance & v2.0 Release
 
 ## Objective
 
-Perform a final whole-product audit of the production system, close release-blocking defects, and publish the QQ Music MVP as `v1.0.0`.
+Perform a final whole-product audit of the production system, close release-blocking defects, and publish the QQ Music Web MVP as `v2.0.0`.
 
 ## 9.1 Real-world playlist matrix
 
@@ -698,8 +698,8 @@ Before release:
 
 After all release blockers are closed:
 
-- create Git tag `v1.0.0`
-- create GitHub Release `v1.0.0`
+- create Git tag `v2.0.0`
+- create GitHub Release `v2.0.0`
 - release notes should summarize actual shipped functionality and known limitations
 - do not claim unsupported platforms/features
 
@@ -732,7 +732,7 @@ PlaylistOut QQ Music MVP is complete only when:
 - required privacy/security boundaries hold
 - release commit passes CI
 - production deployment is verified
-- `v1.0.0` is published or the only remaining block is an explicitly documented external permission/manual action
+- `v2.0.0` is published or the only remaining block is an explicitly documented external permission/manual action
 
 ---
 
