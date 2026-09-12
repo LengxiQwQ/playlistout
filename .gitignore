@@ -1,6 +1,44 @@
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node / Web / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+.npm
+.eslintcache
+
+# Cloudflare Workers / Wrangler
+.wrangler/
+.dev.vars
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Output files from exports / CLI runs
 1160951354/
 *.txt
 *.csv
-*.json
 *.xlsx
+# Specific JSON outputs from exports while preserving config JSONs
+*.export.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!wrangler*.json*
+

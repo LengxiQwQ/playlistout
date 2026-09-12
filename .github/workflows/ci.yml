@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -7,24 +7,74 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  python-cli:
+    name: Python CLI Validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r cli/qqmusic/requirements.txt
           pip install pytest
 
       - name: Syntax check
-        run: python -m compileall .
+        run: python -m compileall cli/qqmusic/
 
-      - name: Run tests
-        run: pytest -q
+      - name: Run pytest
+        run: pytest -v cli/qqmusic/
+
+  web:
+    name: Web Frontend Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm --prefix web run typecheck
+
+      - name: Run unit tests
+        run: npm --prefix web test
+
+      - name: Production build
+        run: npm --prefix web run build
+
+  worker:
+    name: Cloudflare Worker Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm --prefix worker run typecheck
+
+      - name: Run unit tests
+        run: npm --prefix worker test
+
+      - name: Build / dry-run
+        run: npm --prefix worker run build
