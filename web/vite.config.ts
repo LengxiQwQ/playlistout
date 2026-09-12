@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -6,6 +7,10 @@ export default defineConfig({
   plugins: [react()],
   // Hosted on GitHub Pages with custom domain playlistout.com (served from root /)
   base: '/',
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
   server: {
     port: 5173,
     // Automatically proxy API requests to local Worker in development mode
@@ -21,3 +26,4 @@ export default defineConfig({
     },
   },
 });
+

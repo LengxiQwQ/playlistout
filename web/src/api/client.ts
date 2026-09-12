@@ -22,7 +22,28 @@ export async function fetchHealth(): Promise<HealthResponse> {
  * In dev mode, proxies through local Vite dev server to local Cloudflare Worker on port 8787.
  * In production mode, requests https://api.playlistout.com.
  */
-export async function parsePlaylist(urlOrId: string): Promise<ApiResponse<Playlist>> {
-  const response = await fetch(`${API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`);
-  return response.json();
+export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Promise<ApiResponse<Playlist>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+      signal,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    const data: ApiResponse<Playlist> = await response.json();
+    return data;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw err;
+    }
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '网络连接失败，请检查网络后重试。',
+      },
+    };
+  }
 }
+
