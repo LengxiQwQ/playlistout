@@ -31,7 +31,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
     return response;
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new ProviderError('UPSTREAM_ERROR', `Request to QQ Music timed out after ${timeoutMs}ms.`, 504);
+      throw new ProviderError('UPSTREAM_TIMEOUT', `Request to QQ Music timed out after ${timeoutMs}ms.`, 504);
     }
     throw new ProviderError('UPSTREAM_ERROR', `Failed to connect to QQ Music: ${err instanceof Error ? err.message : String(err)}`, 502);
   } finally {
