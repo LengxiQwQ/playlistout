@@ -5,10 +5,10 @@
 作者：`lengxiQwQ`
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-NonCommercial%20MIT-green)](./LICENSE)
-[![Build](https://github.com/lengxiQwQ/qqmusic-playlist-exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/lengxiQwQ/qqmusic-playlist-exporter/actions)
-[![Issues](https://img.shields.io/github/issues/lengxiQwQ/qqmusic-playlist-exporter)](https://github.com/lengxiQwQ/qqmusic-playlist-exporter/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/lengxiQwQ/qqmusic-playlist-exporter)](https://github.com/lengxiQwQ/qqmusic-playlist-exporter/commits/main)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](../../LICENSE)
+[![Build](https://github.com/LengxiQwQ/playlistout/actions/workflows/ci.yml/badge.svg)](https://github.com/LengxiQwQ/playlistout/actions/workflows/ci.yml)
+[![Issues](https://img.shields.io/github/issues/LengxiQwQ/playlistout)](https://github.com/LengxiQwQ/playlistout/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/LengxiQwQ/playlistout)](https://github.com/LengxiQwQ/playlistout/commits/main)
 
 ---
 
@@ -142,4 +142,4 @@ python qq_music_playlist_export.py
 ### 贡献 & 许可
 
 欢迎提交 issue 或 pull request。
-本仓库采用 MIT 许可证，详见 `LICENSE` 文件。作者：`lengxiQwQ`。
+本仓库采用 GNU Affero General Public License v3.0（AGPL-3.0），详见根目录 `LICENSE` 文件。作者：`lengxiQwQ`。
