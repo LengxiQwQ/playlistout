@@ -1,55 +1,74 @@
-# PlaylistOut 外部基础设施与手动配置清单 (Manual Setup Checklist)
+# PlaylistOut Deployment & Operations Guide
 
-本文档列出无法（或不应）通过代码仓库自动完成、需要维护者在 **GitHub 控制台** 与 **Cloudflare 控制台** 手动操作的清单。
-
----
-
-## 1. GitHub 仓库与 GitHub Pages 配置
-
-### 1.1 启用 GitHub Actions 部署 Pages
-
-1. 打开 GitHub 仓库：`https://github.com/LengxiQwQ/playlistout`
-2. 进入 **Settings** &rarr; 左侧导航栏 **Pages**。
-3. 在 **Build and deployment** 下的 **Source** 下拉菜单中，选择：
-   - **GitHub Actions**（不要选择 Deploy from a branch）。
-4. 保存后，每次 push 到 `main` 分支时，`.github/workflows/deploy-pages.yml` 将自动构建并发布静态前端。
-
-### 1.2 绑定自定义域名 `playlistout.com`
-
-1. 在 GitHub Pages 页面下的 **Custom domain** 输入框中填写：`playlistout.com`。
-2. 点击 **Save**。
-3. 等待 DNS 解析生效并由 GitHub 自动签发 Let's Encrypt 证书。
-4. 勾选 **Enforce HTTPS** 强制启用全站 HTTPS。
+本文档记录 PlaylistOut 当前生产环境的部署结构、恢复方式和需要维护者掌握的外部配置。它不再是 MVP 待办清单；QQ Music Web MVP 已在 `v2.0.0` 完成并上线。
 
 ---
 
-## 2. Cloudflare DNS 解析配置
+## 1. 当前生产结构
 
-在 Cloudflare Dashboard 管理 `playlistout.com` 区域的 DNS 记录：
+| 部分 | 生产配置 |
+|---|---|
+| Web | GitHub Pages |
+| 主域名 | `https://playlistout.com` |
+| API | Cloudflare Worker `playlistout-api` |
+| API 域名 | `https://api.playlistout.com` |
+| 匿名统计 | Cloudflare D1 `playlistout-stats` |
+| Web 自动部署 | `.github/workflows/deploy-pages.yml` |
+| Worker 自动部署 | `.github/workflows/deploy-worker.yml` |
+| CI | `.github/workflows/ci.yml` |
 
-### 2.1 前端静态站 (`playlistout.com` & `www.playlistout.com`)
-
-将主域名指向 GitHub Pages：
-
-| 类型 (Type) | 名称 (Name) | 内容 (Content) | 代理状态 (Proxy status) | 备注 |
-|---|---|---|---|---|
-| `A` | `@` | `185.199.108.153` | 仅 DNS (灰云)* | GitHub Pages IP 1 |
-| `A` | `@` | `185.199.109.153` | 仅 DNS (灰云)* | GitHub Pages IP 2 |
-| `A` | `@` | `185.199.110.153` | 仅 DNS (灰云)* | GitHub Pages IP 3 |
-| `A` | `@` | `185.199.111.153` | 仅 DNS (灰云)* | GitHub Pages IP 4 |
-| `CNAME` | `www` | `playlistout.com` | 开启代理 (橙云) | 可选：重定向至主域名 |
-
-*\*建议初次验证 GitHub Pages 自定义域名和证书生成阶段使用「仅 DNS (DNS only / 灰云)」，证书签发成功后可根据需要开启代理。*
+生产部署已经完成。正常开发不需要重新执行首次初始化步骤。
 
 ---
 
-## 3. Cloudflare Worker 自定义域名配置
+## 2. GitHub Pages
 
-目标：将 `api.playlistout.com` 路由至 `playlistout-api` Worker。
+GitHub Pages 应使用 **GitHub Actions** 作为部署源。
 
-### 3.1 本地部署或 Wrangler 登录
+仓库：`https://github.com/LengxiQwQ/playlistout`
 
-首次发布 Worker 时需要登录 Cloudflare 授权：
+如需从零恢复：
+
+1. Settings → Pages。
+2. Build and deployment → Source 选择 **GitHub Actions**。
+3. Custom domain 设置为 `playlistout.com`。
+4. 启用 **Enforce HTTPS**。
+5. push 到 `main` 后由 `.github/workflows/deploy-pages.yml` 自动构建和部署 `web/`。
+
+---
+
+## 3. DNS 与域名
+
+### 前端
+
+`playlistout.com` 指向 GitHub Pages。标准 GitHub Pages IPv4 地址为：
+
+```text
+185.199.108.153
+185.199.109.153
+185.199.110.153
+185.199.111.153
+```
+
+`www.playlistout.com` 应重定向到主域名。
+
+### API
+
+`api.playlistout.com` 绑定 Cloudflare Worker `playlistout-api`。
+
+Cloudflare Dashboard → Workers & Pages → `playlistout-api` → Settings → Domains & Routes 可检查或恢复绑定。
+
+---
+
+## 4. Cloudflare Worker
+
+Worker 配置位于：
+
+```text
+worker/wrangler.jsonc
+```
+
+本地手动部署仅用于调试或自动部署不可用时：
 
 ```bash
 cd worker
@@ -57,50 +76,94 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-### 3.2 控制台绑定自定义域名
-
-1. 进入 Cloudflare Dashboard &rarr; **Workers & Pages**。
-2. 找到并点击进入 **playlistout-api** Worker。
-3. 切换至 **Settings** &rarr; **Domains & Routes**。
-4. 点击 **Add** &rarr; **Custom Domain**。
-5. 输入 `api.playlistout.com`，点击 **Add Custom Domain**。
-6. Cloudflare 将自动在 DNS 区域中生成 Worker 绑定的相应 DNS 记录并签发 SSL 证书。
+正常生产发布应由 GitHub Actions 自动完成。
 
 ---
 
-## 4. 生产环境部署与持续交付 (Phase 8 运维指南)
+## 5. D1 数据库
 
-### 4.1 生产环境 D1 数据库开通与迁移执行
+生产数据库：
 
-在 Cloudflare 控制台或通过本地 Wrangler 执行以下命令创建 D1 实例并应用迁移：
+```text
+playlistout-stats
+```
+
+D1 仅用于匿名聚合统计，不保存歌单 URL、歌单 ID、歌曲列表、用户身份或导出文件。
+
+迁移文件位于：
+
+```text
+worker/migrations/
+```
+
+如需恢复新环境，可创建数据库并执行迁移：
 
 ```bash
-# 1. 登录 Cloudflare（若 Token 过期或未登录）
-npx wrangler login
-
-# 2. 创建生产 D1 数据库实例
 npx wrangler d1 create playlistout-stats
-
-# 3. 将命令输出的真实 database_id 更新到 worker/wrangler.jsonc 中的 database_id 字段
-
-# 4. 执行 D1 数据库初始迁移
 npx wrangler d1 execute playlistout-stats --remote --file=./migrations/0001_initial_stats.sql
 ```
 
-### 4.2 GitHub Actions 自动化部署 Worker (CI/CD)
+随后将 Cloudflare 返回的真实 `database_id` 写入 `worker/wrangler.jsonc`。
 
-项目已配置 `.github/workflows/deploy-worker.yml`。只需在 GitHub 仓库添加以下两项 Secrets，即可在每次合并代码后全自动构建测试并发布 Worker：
+当前生产环境已完成 D1 创建、绑定和 migration，不要重复创建同名生产数据库。
 
-1. 进入 GitHub 仓库 **Settings** &rarr; **Secrets and variables** &rarr; **Actions**。
-2. 点击 **New repository secret** 分别添加：
-   - `CLOUDFLARE_API_TOKEN`: 具备 `Cloudflare Workers: Edit` 和 `Account: Read` 权限的 API Token。
-   - `CLOUDFLARE_ACCOUNT_ID`: 您的 Cloudflare 账户 ID（可在 Cloudflare Dashboard 右下角或 Workers 概览页直接复制）。
-3. 添加完成后，任何推送至 `main` 分支的 `worker/**` 代码均会自动部署至生产环境。
+---
 
-### 4.3 生产环境现状核对表 (Production Verification Matrix)
+## 6. GitHub Actions Secrets
 
-- [x] **前端页面访问**：`https://playlistout.com` (已验证，HTTP 200 OK，由 GitHub Pages 托管)
-- [x] **根域名重定向**：`https://www.playlistout.com` (已验证，HTTP 301 重定向至 `https://playlistout.com/`)
-- [x] **搜索引擎爬虫引导**：`https://playlistout.com/robots.txt` 与 `https://playlistout.com/sitemap.xml` (已验证)
-- [x] **API 域名接入点**：`https://api.playlistout.com/health` (已验证，HTTP 200 OK)
-- [ ] **最新 API 与 D1 生产发布**：需配置 `CLOUDFLARE_API_TOKEN` 或执行 `wrangler login` 后触发全量部署。
+Worker 自动部署依赖以下 Repository Secrets：
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+不要把它们写进仓库、日志、README、测试 fixture 或任何客户端代码。
+
+如果 Worker workflow 出现 credentials missing / deploy skipped，优先检查这两项 secret 是否仍然有效。
+
+---
+
+## 7. 正常发布流程
+
+普通代码更新：
+
+1. 修改代码并运行相关本地测试。
+2. push 到 `main`。
+3. 确认 `CI` workflow 成功。
+4. Web 相关修改确认 `Deploy Web to GitHub Pages` 成功。
+5. Worker 相关修改确认 `Deploy Worker to Cloudflare` 成功。
+6. 对生产环境执行必要 smoke test。
+
+不要因为 GitHub Actions 总体显示绿色，就默认 Worker 一定部署过；需要确认真正的 `Deploy to Cloudflare Workers` step 没有被 skip。
+
+---
+
+## 8. 生产验证清单
+
+当前 v2.0.0 基线：
+
+- [x] `https://playlistout.com` 可由 GitHub Pages 部署
+- [x] `https://www.playlistout.com` 重定向至主域名
+- [x] `robots.txt` / `sitemap.xml` 已部署
+- [x] `https://api.playlistout.com/health` 为生产 API 健康检查入口
+- [x] GitHub Actions 可检测 Cloudflare credentials
+- [x] D1 `playlistout-stats` 已创建并绑定
+- [x] D1 migration 已在生产环境执行
+- [x] Worker 自动部署 step 已真实执行成功
+- [x] QQ Music MVP 已发布为 `v2.0.0`
+
+如果未来生产环境变化，以最新 workflow 日志、Cloudflare Dashboard 和实际 HTTP 行为为准，而不是长期依赖此处的历史勾选状态。
+
+---
+
+## 9. 故障排查优先级
+
+生产问题建议按以下顺序排查：
+
+1. GitHub Actions 最近一次 CI / deployment 是否成功。
+2. Pages 与 Worker 是否部署的是预期 commit。
+3. Cloudflare Worker 自定义域名是否仍绑定。
+4. D1 binding / migration 是否正常。
+5. QQ Music 上游接口是否发生兼容性变化。
+6. 最后再检查前端展示或浏览器兼容问题。
+
+不要通过放宽 SSRF/CORS/完整性校验来临时“修好”上游兼容问题。
