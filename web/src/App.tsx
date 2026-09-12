@@ -6,6 +6,8 @@ import { getFriendlyErrorMessage } from './utils/errors';
 import { PlaylistSummary } from './components/PlaylistSummary';
 import { TrackTable } from './components/TrackTable';
 import { StatusAlert } from './components/StatusAlert';
+import { ExportToolbar } from './components/ExportToolbar';
+
 
 type AppState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -211,14 +213,16 @@ export const App: React.FC = () => {
           )}
         </div>
 
-        {/* Success State: Playlist Preview & Tracks Table */}
+        {/* Success State: Playlist Preview, Export Toolbar & Tracks Table */}
         {state === 'success' && playlist && (
           <div className="results-container">
             <PlaylistSummary playlist={playlist} onReset={handleReset} />
+            <ExportToolbar playlist={playlist} />
             <TrackTable tracks={playlist.tracks} />
           </div>
         )}
       </main>
+
 
       <footer>
         <p>
