@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   deploy:
@@ -45,6 +45,13 @@ jobs:
             echo "has_creds=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Provision D1 Database and Run Migrations
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/setup-d1.js
+
       - name: Deploy to Cloudflare Workers
         if: steps.check-creds.outputs.has_creds == 'true'
         uses: cloudflare/wrangler-action@v3
@@ -55,3 +62,17 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Commit Updated wrangler.jsonc if Changed
+        if: steps.check-creds.outputs.has_creds == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ -n $(git status --porcelain worker/wrangler.jsonc) ]]; then
+            echo "wrangler.jsonc updated with real D1 UUID. Committing back to main..."
+            git add worker/wrangler.jsonc
+            git commit -m "chore(worker): update wrangler.jsonc with production D1 database_id [skip ci]"
+            git push origin main
+          else
+            echo "wrangler.jsonc already up to date."
+          fi
