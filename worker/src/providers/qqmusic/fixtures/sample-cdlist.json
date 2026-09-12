@@ -1,0 +1,74 @@
+{
+  "code": 0,
+  "subcode": 0,
+  "cdnum": 1,
+  "cdlist": [
+    {
+      "disstid": "9044196528",
+      "dissname": "测试歌单 (Test Playlist)",
+      "nickname": "音乐达人",
+      "logo": "http://qpic.y.qq.com/music_cover/test/300?n=1",
+      "total_song_num": 5,
+      "songnum": 5,
+      "cur_song_num": 5,
+      "songlist": [
+        {
+          "songid": 1001,
+          "songmid": "001abc",
+          "songname": "晴天",
+          "singer": [
+            { "id": 4558, "mid": "002JAY", "name": "周杰伦" }
+          ],
+          "albumname": "叶惠美",
+          "albummid": "003ALB",
+          "interval": 269
+        },
+        {
+          "songid": 1002,
+          "songmid": "002def",
+          "songname": "Not Available",
+          "singer": [
+            { "id": 5001, "mid": "004YJ", "name": "YOUNGJOO" },
+            { "id": 5002, "mid": "005HAON", "name": "HAON (김하온)" }
+          ],
+          "albumname": "하우스 오브 걸스",
+          "albummid": "006KOR",
+          "interval": 185
+        },
+        {
+          "songid": 1003,
+          "songmid": "003ghi",
+          "songname": "Shape of You",
+          "singer": [
+            { "id": 6001, "mid": "007ED", "name": "Ed Sheeran" }
+          ],
+          "albumname": "÷ (Deluxe)",
+          "albummid": "008DIV",
+          "interval": 233
+        },
+        {
+          "songid": 1004,
+          "songmid": "004jkl",
+          "songname": "Lemon",
+          "singer": [
+            { "id": 7001, "mid": "009YONE", "name": "米津玄師" }
+          ],
+          "albumname": "Lemon",
+          "albummid": "010LEM",
+          "interval": 255
+        },
+        {
+          "songid": 1005,
+          "songmid": "005mno",
+          "songname": "No Album Track 🎶",
+          "singer": [
+            { "id": 8001, "mid": "011VAR", "name": "Various Artists" }
+          ],
+          "albumname": "",
+          "albummid": "",
+          "interval": 120
+        }
+      ]
+    }
+  ]
+}

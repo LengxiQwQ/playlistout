@@ -1,22 +1,32 @@
 import type { Provider } from '../types';
 import type { Playlist } from '../../models/playlist';
+import { extractQQPlaylistId, matchesQQMusicInput } from './input';
+import { fetchQQPlaylist } from './client';
 
 /**
- * QQ Music Provider Stub (P0 Infrastructure Skeleton)
- * Full implementation will be ported in Phase 1 following docs/ROADMAP.md.
+ * QQ Music Provider Implementation (Phase 1)
  */
 export const qqMusicProvider: Provider = {
   name: 'qqmusic',
+
   matches(input: string): boolean {
-    return input.includes('y.qq.com') || /^\d+$/.test(input.trim());
+    return matchesQQMusicInput(input);
   },
+
   extractId(input: string): string | null {
-    const trimmed = input.trim();
-    if (/^\d+$/.test(trimmed)) return trimmed;
-    const match = trimmed.match(/(\d{5,})/);
-    return match ? match[1] : null;
+    try {
+      return extractQQPlaylistId(input);
+    } catch {
+      return null;
+    }
   },
-  async parse(_id: string): Promise<Playlist> {
-    throw new Error('QQ Music provider parsing is not implemented in P0. Scheduled for Phase 1.');
+
+  async parse(inputOrId: string): Promise<Playlist> {
+    const playlistId = extractQQPlaylistId(inputOrId);
+    return fetchQQPlaylist(playlistId);
   },
 };
+
+export * from './input';
+export * from './client';
+export * from './normalize';

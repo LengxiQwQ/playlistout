@@ -1,0 +1,50 @@
+{
+  "code": 0,
+  "playlist": {
+    "code": 0,
+    "data": {
+      "code": 0,
+      "dirinfo": {
+        "id": 9044196528,
+        "title": "备用测试歌单",
+        "creator": {
+          "nick": "备用作者",
+          "name": "备用作者"
+        },
+        "picurl": "http://qpic.y.qq.com/music_cover/alt/300?n=1",
+        "total_song_num": 2,
+        "songnum": 2
+      },
+      "songlist": [
+        {
+          "id": 2001,
+          "mid": "009xyz",
+          "name": "稻香",
+          "singer": [
+            { "id": 4558, "mid": "002JAY", "name": "周杰伦" }
+          ],
+          "album": {
+            "id": 3001,
+            "mid": "003ALB2",
+            "name": "魔杰座"
+          },
+          "interval": 223
+        },
+        {
+          "id": 2002,
+          "mid": "010uvw",
+          "name": "夜曲",
+          "singer": [
+            { "id": 4558, "mid": "002JAY", "name": "周杰伦" }
+          ],
+          "album": {
+            "id": 3002,
+            "mid": "003ALB3",
+            "name": "十一月的萧邦"
+          },
+          "interval": 226
+        }
+      ]
+    }
+  }
+}
