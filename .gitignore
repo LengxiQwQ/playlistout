@@ -33,6 +33,7 @@ Desktop.ini
 # Output files from exports / CLI runs
 1160951354/
 *.txt
+!web/public/robots.txt
 *.csv
 *.xlsx
 # Specific JSON outputs from exports while preserving config JSONs
