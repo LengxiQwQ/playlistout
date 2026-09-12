@@ -24,7 +24,7 @@ describe('Worker Endpoints', () => {
     const body = (await response.json()) as HealthResponseBody;
     expect(body.status).toBe('ok');
     expect(body.service).toBe('playlistout-api');
-    expect(body.phase).toBe('P0-Infrastructure');
+    expect(body.phase).toBe('P1-QQMusic-Provider-Core');
   });
 
   it('responds with ok to /api/health with CORS header', async () => {
@@ -45,13 +45,13 @@ describe('Worker Endpoints', () => {
     expect(body.error.code).toBe('INVALID_INPUT');
   });
 
-  it('returns 501 skeleton response when /api/playlist is queried', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
+  it('returns 400 when /api/playlist is queried with unsupported music platform', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://music.163.com/playlist?id=123');
     const response = await worker.fetch(request, {}, {} as ExecutionContext);
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
     expect(body.success).toBe(false);
-    expect(body.error.code).toBe('NOT_IMPLEMENTED_P0');
+    expect(body.error.code).toBe('UNSUPPORTED_URL');
   });
 
   it('strictly blocks /proxy attempts with 403 Forbidden', async () => {

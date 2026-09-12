@@ -1,5 +1,6 @@
 import { getCorsHeaders, handleOptions } from './cors';
-import type { ApiResponse } from './models/playlist';
+import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
+import { qqMusicProvider } from './providers/qqmusic';
 
 export interface Env {
   // Bindings like D1 database will be added in Phase 5
@@ -23,7 +24,7 @@ export default {
           status: 'ok',
           service: 'playlistout-api',
           version: '0.1.0',
-          phase: 'P0-Infrastructure',
+          phase: 'P1-QQMusic-Provider-Core',
         }),
         {
           status: 200,
@@ -35,11 +36,11 @@ export default {
       );
     }
 
-    // Playlist parse endpoint (P0 skeleton)
+    // Playlist parse endpoint
     if (url.pathname === '/api/playlist') {
-      const playlistUrl = url.searchParams.get('url');
+      const playlistInput = url.searchParams.get('url');
 
-      if (!playlistUrl) {
+      if (!playlistInput) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
@@ -56,23 +57,71 @@ export default {
         });
       }
 
-      // Explicitly reject arbitrary URLs - only approved platforms in later phases
-      const skeletonResponse: ApiResponse<never> = {
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED_P0',
-          message:
-            'PlaylistOut is currently in Phase 0 (Infrastructure Foundation). QQ Music provider parsing will be implemented in Phase 1.',
-        },
-      };
+      // Check if input is recognized by QQ Music provider
+      if (!qqMusicProvider.matches(playlistInput)) {
+        const errorResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_URL',
+            message: 'The provided URL is not a supported QQ Music playlist URL. Expected: https://y.qq.com/n/ryqq/playlist/<id>',
+          },
+        };
+        return new Response(JSON.stringify(errorResponse), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        });
+      }
 
-      return new Response(JSON.stringify(skeletonResponse), {
-        status: 501,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
-      });
+      try {
+        const playlist: Playlist = await qqMusicProvider.parse(playlistInput);
+        const successResponse: ApiResponse<Playlist> = {
+          success: true,
+          data: playlist,
+        };
+        return new Response(JSON.stringify(successResponse), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        });
+      } catch (err: unknown) {
+        if (err instanceof ProviderError) {
+          const errorResponse: ApiResponse<never> = {
+            success: false,
+            error: {
+              code: err.code,
+              message: err.message,
+              details: err.details,
+            },
+          };
+          return new Response(JSON.stringify(errorResponse), {
+            status: err.statusCode,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders,
+            },
+          });
+        }
+
+        const fallbackResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: err instanceof Error ? err.message : 'Unknown upstream error occurred.',
+          },
+        };
+        return new Response(JSON.stringify(fallbackResponse), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        });
+      }
     }
 
     // Explicitly reject any arbitrary proxy requests (strict constitutional rule)

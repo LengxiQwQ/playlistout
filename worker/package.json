@@ -8,7 +8,9 @@
     "build": "wrangler deploy --dry-run --outdir dist",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run src/",
+    "test:live": "vitest run test/real-validation.test.ts",
+    "test:all": "vitest run"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250224.0",

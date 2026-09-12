@@ -17,13 +17,15 @@ PlaylistOut 是一个专注于**公开音乐歌单结构化导出**的轻量级�
 - **隐私至上**：绝不在服务端或数据库存储歌单历史、歌曲列表、用户账号或导出文件。
 - **定位原则**：非播放器、非音乐下载器、无账号系统、无跨平台同步服务，保持极简实用。
 
-### 当前状态：Phase 0 完成（MVP 开发中）
+### 当前状态：Phase 1 完成（QQ 音乐 Provider 核心打通）
 
-- **MVP 目标平台**：首发仅支持 **QQ 音乐** 公开歌单。
-- **当前进度**：已完成 Phase 0（Monorepo 与基础设施初始化）。QQ 音乐解析 Provider 与网页完整导出交互将在 Phase 1 ~ Phase 4 陆续实现。
-- **域名规划**：
-  - 前端静态站点：`playlistout.com`（GitHub Pages 托管，配置待接入）
-  - API 服务端：`api.playlistout.com`（Cloudflare Worker 托管，路由待绑定）
+- **MVP 目标平台**：首发支持 **QQ 音乐** 公开歌单。
+- **当前进度**：
+  - **Phase 0 完成**：Monorepo 骨架与基础设施、CI、GitHub Pages 部署跑通；
+  - **Phase 1 完成**：Cloudflare Worker 中实现真实的 QQ 音乐 Provider（输入校验、上游请求、分页拉取、完整性核验与标准化数据契约），并通过多组真实公开歌单验证。
+- **已上线服务**：
+  - 前端静态站点：`https://playlistout.com`（GitHub Pages 全球加速）
+  - API 服务端：`https://api.playlistout.com`（Cloudflare Worker 生产环境）
 
 规范与规划详见：
 - 架构宪法：[`docs/PROJECT-CONSTITUTION.md`](./docs/PROJECT-CONSTITUTION.md)
