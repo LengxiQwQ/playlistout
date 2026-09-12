@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/favicon.svg" width="76" alt="PlaylistOut" />
 
-# PlaylistOut
+# Playlist Out
 
 *你的歌单，不应该只困在一个音乐平台里。*
 
