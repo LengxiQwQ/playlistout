@@ -1,11 +1,13 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
 import { qqMusicProvider } from './providers/qqmusic';
+import { recordParse, getAggregateStats, type AggregateStatsData } from './stats';
 
 export interface Env {
-  // Bindings like D1 database will be added in Phase 5
   ENVIRONMENT?: string;
+  DB?: D1Database;
 }
+
 
 export default {
   async fetch(request: Request, _env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -153,6 +155,9 @@ export default {
 
       try {
         const playlist: Playlist = await qqMusicProvider.parse(playlistInput);
+        // Best-effort anonymous statistics recording (success)
+        await recordParse(_env.DB, 'qqmusic', true);
+
         const successResponse: ApiResponse<Playlist> = {
           success: true,
           data: playlist,
@@ -165,6 +170,9 @@ export default {
           },
         });
       } catch (err: unknown) {
+        // Best-effort anonymous statistics recording (failure, no payload recorded)
+        await recordParse(_env.DB, 'qqmusic', false);
+
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
             success: false,
@@ -199,6 +207,43 @@ export default {
         });
       }
     }
+
+    // Anonymous aggregate statistics endpoint
+    if (url.pathname === '/api/stats') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET, OPTIONS',
+              ...corsHeaders,
+            },
+          },
+        );
+      }
+
+      const stats: AggregateStatsData = await getAggregateStats(_env.DB);
+      const response: ApiResponse<AggregateStatsData> = {
+        success: true,
+        data: stats,
+      };
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      });
+    }
+
 
     // Default 404
     return new Response(
