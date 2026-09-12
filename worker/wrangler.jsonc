@@ -14,13 +14,13 @@
   ],
   "observability": {
     "enabled": true
-  }
-  // Reserved for Phase 5 (Anonymous Product Statistics)
-  // "d1_databases": [
-  //   {
-  //     "binding": "DB",
-  //     "database_name": "playlistout-stats",
-  //     "database_id": "<D1_DATABASE_ID>"
-  //   }
-  // ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "playlistout-stats",
+      "database_id": "playlistout-stats-db-id"
+    }
+  ]
 }
+

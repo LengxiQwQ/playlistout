@@ -47,3 +47,29 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
   }
 }
 
+export interface StatsResponse {
+
+  totalSuccessfulParses: number;
+  todaySuccessfulParses: number;
+  totalFailedParses: number;
+  byPlatform: Record<string, { total: number; today: number }>;
+}
+
+export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/stats`, {
+      headers: { Accept: 'application/json' },
+    });
+    return await res.json();
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '获取统计数据失败',
+      },
+    };
+  }
+}
+
+
