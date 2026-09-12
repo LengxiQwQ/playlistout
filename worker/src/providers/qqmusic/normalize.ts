@@ -40,6 +40,7 @@ export interface RawQQCdItem {
   total_song_num?: number;
   songnum?: number;
   cur_song_num?: number;
+  song_begin?: number;
   songlist?: RawQQSong[];
 }
 

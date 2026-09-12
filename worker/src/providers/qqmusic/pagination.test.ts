@@ -174,11 +174,35 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
     }
   });
 
-  it('handles partial page overlap safely without introducing duplicate tracks', async () => {
-    // Page 1 has songs 1..1000
-    const page1Songs = Array.from({ length: 1000 }, (_, i) => makeMockSong(i + 1));
-    // Page 2 overlaps by 5 songs (starts at 996 instead of 1001, goes to 1050)
-    const page2Songs = Array.from({ length: 55 }, (_, i) => makeMockSong(996 + i));
+  it('preserves legitimate duplicate tracks across page boundaries (e.g. #1000 and #1001 are identical Song A)', async () => {
+    // Total expected: 1002 tracks
+    // Page 1: 999 different tracks + #1000 is Song A
+    const songA = {
+      songid: 88888,
+      songmid: 'mid_song_a',
+      songname: '晴天',
+      singer: [{ id: 4558, mid: '002JAY', name: '周杰伦' }],
+      albumname: '叶惠美',
+      interval: 269,
+    };
+    const songB = {
+      songid: 99999,
+      songmid: 'mid_song_b',
+      songname: '夜曲',
+      singer: [{ id: 4558, mid: '002JAY', name: '周杰伦' }],
+      albumname: '十一月的萧邦',
+      interval: 226,
+    };
+
+    const page1Songs = [
+      ...Array.from({ length: 999 }, (_, i) => makeMockSong(i + 1)),
+      songA, // #1000 is Song A
+    ];
+    // Page 2: #1001 is ALSO Song A (user legitimately added it twice), #1002 is Song B
+    const page2Songs = [
+      songA, // #1001 is Song A
+      songB, // #1002 is Song B
+    ];
 
     const fetchMock = vi.fn().mockImplementation(async (url: string) => {
       const parsedUrl = new URL(url);
@@ -191,25 +215,27 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
             cdlist: [
               {
                 disstid: '1234567890',
-                dissname: 'Overlap Playlist',
-                total_song_num: 1050,
+                dissname: 'Duplicate Tracks Boundary Playlist',
+                total_song_num: 1002,
                 cur_song_num: 1000,
+                song_begin: 0,
                 songlist: page1Songs,
               },
             ],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
-      } else {
+      } else if (songBegin === '1000') {
         return new Response(
           JSON.stringify({
             code: 0,
             cdlist: [
               {
                 disstid: '1234567890',
-                dissname: 'Overlap Playlist',
-                total_song_num: 1050,
-                cur_song_num: 55,
+                dissname: 'Duplicate Tracks Boundary Playlist',
+                total_song_num: 1002,
+                cur_song_num: 2,
+                song_begin: 1000,
                 songlist: page2Songs,
               },
             ],
@@ -217,18 +243,34 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
       }
+      throw new Error(`Unexpected call with song_begin=${songBegin}`);
     });
 
     globalThis.fetch = fetchMock;
 
     const result = await fetchQQPlaylist('1234567890');
-    expect(result.trackCount).toBe(1050);
-    expect(result.tracks).toHaveLength(1050);
-    // Spot check continuous indices and unique IDs
-    result.tracks.forEach((t, i) => {
-      expect(t.index).toBe(i + 1);
-      expect(t.id).toBe(`mid_${i + 1}`);
-    });
+    expect(result.trackCount).toBe(1002);
+    expect(result.tracks).toHaveLength(1002);
+
+    // #1000 (0-indexed 999) must be Song A
+    const track1000 = result.tracks[999];
+    expect(track1000.index).toBe(1000);
+    expect(track1000.title).toBe('晴天');
+    expect(track1000.id).toBe('mid_song_a');
+    expect(track1000.artists).toEqual(['周杰伦']);
+
+    // #1001 (0-indexed 1000) must ALSO be Song A (never stripped by false overlap detection)
+    const track1001 = result.tracks[1000];
+    expect(track1001.index).toBe(1001);
+    expect(track1001.title).toBe('晴天');
+    expect(track1001.id).toBe('mid_song_a');
+    expect(track1001.artists).toEqual(['周杰伦']);
+
+    // #1002 (0-indexed 1001) must be Song B
+    const track1002 = result.tracks[1001];
+    expect(track1002.index).toBe(1002);
+    expect(track1002.title).toBe('夜曲');
+    expect(track1002.id).toBe('mid_song_b');
   });
 
   it('fails closed when initial songlist is empty but total_song_num > 0', async () => {
