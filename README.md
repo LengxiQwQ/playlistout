@@ -8,7 +8,15 @@
 
 [![Website](https://img.shields.io/badge/Website-playlistout.com-2563eb?style=flat-square)](https://playlistout.com)
 [![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github)](https://github.com/LengxiQwQ/playlistout/stargazers)
+<<<<<<< HEAD
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
+=======
+<<<<<<< HEAD
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
+=======
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=000)](https://react.dev/)
+>>>>>>> 0a53a1ae462d53e056878f5bd04959f50fc66f00
+>>>>>>> 24d6226bcadef26c80322ca3d674d51722b88cc9
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
 
