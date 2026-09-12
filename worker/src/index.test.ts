@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import worker from './index';
+import { qqMusicProvider } from './providers/qqmusic';
+import { ProviderError } from './models/playlist';
 
 interface HealthResponseBody {
   status: string;
   service: string;
   version: string;
-  phase: string;
 }
 
 interface ErrorResponseBody {
@@ -13,27 +14,77 @@ interface ErrorResponseBody {
   error: {
     code: string;
     message: string;
+    details?: unknown;
   };
 }
 
-describe('Worker Endpoints', () => {
-  it('responds with ok to /health', async () => {
+describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
+  it('responds with ok to /health and returns minimal payload', async () => {
     const request = new Request('https://api.playlistout.com/health');
     const response = await worker.fetch(request, {}, {} as ExecutionContext);
     expect(response.status).toBe(200);
     const body = (await response.json()) as HealthResponseBody;
     expect(body.status).toBe('ok');
     expect(body.service).toBe('playlistout-api');
-    expect(body.phase).toBe('P1-QQMusic-Provider-Core');
+    expect(body.version).toBe('0.1.0');
   });
 
-  it('responds with ok to /api/health with CORS header', async () => {
+  it('rejects non-GET methods on /health with 405 Method Not Allowed', async () => {
+    const request = new Request('https://api.playlistout.com/health', { method: 'POST' });
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(405);
+    const body = (await response.json()) as ErrorResponseBody;
+    expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
+  });
+
+  it('responds with CORS header to /api/health for allowed origin', async () => {
     const request = new Request('https://api.playlistout.com/api/health', {
       headers: { Origin: 'https://playlistout.com' },
     });
     const response = await worker.fetch(request, {}, {} as ExecutionContext);
     expect(response.status).toBe(200);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.com');
+    expect(response.headers.get('Vary')).toBe('Origin');
+  });
+
+  it('does NOT return Access-Control-Allow-Origin for unauthorized origin', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      headers: { Origin: 'https://evil-site.com' },
+    });
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('handles CORS OPTIONS preflight for allowed origin', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist', {
+      method: 'OPTIONS',
+      headers: { Origin: 'http://localhost:5173' },
+    });
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(204);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+    expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
+  });
+
+  it('rejects CORS OPTIONS preflight for unauthorized origin with 403', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist', {
+      method: 'OPTIONS',
+      headers: { Origin: 'https://malicious-domain.com' },
+    });
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('rejects non-GET methods on /api/playlist with 405 Method Not Allowed', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      method: 'POST',
+    });
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(405);
+    const body = (await response.json()) as ErrorResponseBody;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
   });
 
   it('returns 400 when /api/playlist is missing url parameter', async () => {
@@ -45,6 +96,26 @@ describe('Worker Endpoints', () => {
     expect(body.error.code).toBe('INVALID_INPUT');
   });
 
+  it('returns 400 when /api/playlist has empty or whitespace url parameter', async () => {
+    const request = new Request('https://api.playlistout.com/api/playlist?url=%20%20%20');
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as ErrorResponseBody;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INVALID_INPUT');
+  });
+
+  it('returns 400 when /api/playlist url parameter exceeds 2048 characters', async () => {
+    const oversizedUrl = 'https://y.qq.com/n/ryqq/playlist/' + 'a'.repeat(2100);
+    const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(oversizedUrl)}`);
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as ErrorResponseBody;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INVALID_INPUT');
+    expect(body.error.message).toContain('2048 characters');
+  });
+
   it('returns 400 when /api/playlist is queried with unsupported music platform', async () => {
     const request = new Request('https://api.playlistout.com/api/playlist?url=https://music.163.com/playlist?id=123');
     const response = await worker.fetch(request, {}, {} as ExecutionContext);
@@ -54,13 +125,54 @@ describe('Worker Endpoints', () => {
     expect(body.error.code).toBe('UNSUPPORTED_URL');
   });
 
-  it('strictly blocks /proxy attempts with 403 Forbidden', async () => {
-    const request = new Request('https://api.playlistout.com/proxy?url=https://example.com');
+  it('strictly blocks generic /proxy, /proxy/..., and /api/proxy attempts with 403 Forbidden', async () => {
+    const proxyPaths = [
+      'https://api.playlistout.com/proxy?url=https://example.com',
+      'https://api.playlistout.com/proxy/subpath?target=10.0.0.1',
+      'https://api.playlistout.com/api/proxy?url=https://qq.com',
+    ];
+
+    for (const p of proxyPaths) {
+      const request = new Request(p);
+      const response = await worker.fetch(request, {}, {} as ExecutionContext);
+      expect(response.status).toBe(403);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('FORBIDDEN');
+    }
+  });
+
+  it('maps ProviderError correctly to HTTP status and clean error body', async () => {
+    const parseSpy = vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+      new ProviderError('UPSTREAM_TIMEOUT', 'Request to QQ Music timed out after 15000ms.', 504),
+    );
+
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
     const response = await worker.fetch(request, {}, {} as ExecutionContext);
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(504);
     const body = (await response.json()) as ErrorResponseBody;
     expect(body.success).toBe(false);
-    expect(body.error.code).toBe('FORBIDDEN');
+    expect(body.error.code).toBe('UPSTREAM_TIMEOUT');
+    expect(body.error.message).toBe('Request to QQ Music timed out after 15000ms.');
+
+    parseSpy.mockRestore();
+  });
+
+  it('safely handles unexpected internal errors without leaking stack traces or sensitive info', async () => {
+    const parseSpy = vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+      new Error('SecretDatabaseConnectionFailed: pass=hunter2 at Object.<anonymous> (/internal/app.ts:42)'),
+    );
+
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    expect(response.status).toBe(500);
+    const body = (await response.json()) as ErrorResponseBody;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(body.error.message).not.toContain('hunter2');
+    expect(body.error.message).not.toContain('SecretDatabaseConnectionFailed');
+
+    parseSpy.mockRestore();
   });
 
   it('returns 404 for unknown routes', async () => {
@@ -69,3 +181,4 @@ describe('Worker Endpoints', () => {
     expect(response.status).toBe(404);
   });
 });
+

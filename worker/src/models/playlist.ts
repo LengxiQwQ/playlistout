@@ -39,20 +39,26 @@ export interface ApiErrorResponse {
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-export type ProviderErrorCode =
+export type ApiErrorCode =
   | 'INVALID_INPUT'
   | 'UNSUPPORTED_URL'
   | 'PLAYLIST_NOT_FOUND'
   | 'UPSTREAM_ERROR'
+  | 'UPSTREAM_TIMEOUT'
   | 'INCOMPLETE_PLAYLIST'
-  | 'PARSE_ERROR';
+  | 'PARSE_ERROR'
+  | 'METHOD_NOT_ALLOWED'
+  | 'FORBIDDEN'
+  | 'INTERNAL_ERROR';
+
+export type ProviderErrorCode = ApiErrorCode;
 
 export class ProviderError extends Error {
-  readonly code: ProviderErrorCode;
+  readonly code: ApiErrorCode;
   readonly statusCode: number;
   readonly details?: unknown;
 
-  constructor(code: ProviderErrorCode, message: string, statusCode: number = 400, details?: unknown) {
+  constructor(code: ApiErrorCode, message: string, statusCode: number = 400, details?: unknown) {
     super(message);
     this.name = 'ProviderError';
     this.code = code;
@@ -60,3 +66,4 @@ export class ProviderError extends Error {
     this.details = details;
   }
 }
+

@@ -19,12 +19,31 @@ export default {
 
     // Health check endpoint
     if (url.pathname === '/health' || url.pathname === '/api/health') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET, OPTIONS',
+              ...corsHeaders,
+            },
+          },
+        );
+      }
+
       return new Response(
         JSON.stringify({
           status: 'ok',
           service: 'playlistout-api',
           version: '0.1.0',
-          phase: 'P1-QQMusic-Provider-Core',
         }),
         {
           status: 200,
@@ -36,16 +55,73 @@ export default {
       );
     }
 
+    // Explicitly reject any arbitrary proxy requests (strict constitutional rule)
+    if (url.pathname === '/proxy' || url.pathname.startsWith('/proxy/') || url.pathname.startsWith('/api/proxy')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Arbitrary proxying is strictly prohibited by PlaylistOut Constitution.',
+          },
+        }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        },
+      );
+    }
+
     // Playlist parse endpoint
     if (url.pathname === '/api/playlist') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET, OPTIONS',
+              ...corsHeaders,
+            },
+          },
+        );
+      }
+
       const playlistInput = url.searchParams.get('url');
 
-      if (!playlistInput) {
+      if (!playlistInput || playlistInput.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
             code: 'INVALID_INPUT',
-            message: 'Missing required query parameter: url',
+            message: 'Missing or empty required query parameter: url',
+          },
+        };
+        return new Response(JSON.stringify(errorResponse), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        });
+      }
+
+      if (playlistInput.length > 2048) {
+        const errorResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Input parameter url exceeds maximum allowed length of 2048 characters.',
           },
         };
         return new Response(JSON.stringify(errorResponse), {
@@ -110,8 +186,8 @@ export default {
         const fallbackResponse: ApiResponse<never> = {
           success: false,
           error: {
-            code: 'UPSTREAM_ERROR',
-            message: err instanceof Error ? err.message : 'Unknown upstream error occurred.',
+            code: 'INTERNAL_ERROR',
+            message: 'An unexpected internal error occurred while processing the playlist.',
           },
         };
         return new Response(JSON.stringify(fallbackResponse), {
@@ -122,26 +198,6 @@ export default {
           },
         });
       }
-    }
-
-    // Explicitly reject any arbitrary proxy requests (strict constitutional rule)
-    if (url.pathname === '/proxy') {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Arbitrary proxying is strictly prohibited by PlaylistOut Constitution.',
-          },
-        }),
-        {
-          status: 403,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders,
-          },
-        },
-      );
     }
 
     // Default 404

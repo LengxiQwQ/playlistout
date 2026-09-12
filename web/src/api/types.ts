@@ -23,14 +23,33 @@ export interface Playlist {
   tracks: Track[];
 }
 
+export type ApiErrorCode =
+  | 'INVALID_INPUT'
+  | 'UNSUPPORTED_URL'
+  | 'PLAYLIST_NOT_FOUND'
+  | 'UPSTREAM_ERROR'
+  | 'UPSTREAM_TIMEOUT'
+  | 'INCOMPLETE_PLAYLIST'
+  | 'PARSE_ERROR'
+  | 'METHOD_NOT_ALLOWED'
+  | 'FORBIDDEN'
+  | 'INTERNAL_ERROR';
+
 export interface ApiError {
-  code: string;
+  code: ApiErrorCode | string;
   message: string;
   details?: unknown;
 }
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: ApiError;
+export interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
 }
+
+export interface ApiErrorResponse {
+  success: false;
+  error: ApiError;
+}
+
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
+
