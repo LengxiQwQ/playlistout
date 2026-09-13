@@ -11,13 +11,20 @@ export interface Translations {
     languageSwitch: string;
   };
   fonts: {
+    zhnote: string;
+    zh_kuaile: string;
+    zh_zhimang: string;
+    zh_longcang: string;
+    zh_huangyou: string;
+    zh_orig: string;
+
     original: string;
     patrick: string;
     kalam: string;
     schoolbell: string;
     covered: string;
     comic: string;
-    zhnote: string;
+
     sampleText: string;
   };
   hero: {

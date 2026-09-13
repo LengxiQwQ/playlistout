@@ -8,7 +8,39 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
 }
 
-/* Font Presets (Curated 7 Styles - Full Bilingual Support) */
+/* Chinese Handwriting Presets (Dedicated Chinese Font List) */
+body[data-font-preset="zhnote"] {
+  --font-marker: 'Ma Shan Zheng', 'Permanent Marker', 'STKaiti', cursive;
+  --font-handwriting: 'Ma Shan Zheng', 'Caveat', 'STKaiti', cursive;
+  --font-note: 'Ma Shan Zheng', 'Nanum Pen Script', 'STKaiti', cursive;
+  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
+}
+body[data-font-preset="zh_kuaile"] {
+  --font-marker: 'ZCOOL KuaiLe', 'Permanent Marker', 'STKaiti', cursive;
+  --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'STKaiti', cursive;
+  --font-note: 'ZCOOL KuaiLe', 'Nanum Pen Script', 'STKaiti', cursive;
+  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
+}
+body[data-font-preset="zh_zhimang"] {
+  --font-marker: 'Zhi Mang Xing', 'Permanent Marker', 'STKaiti', cursive;
+  --font-handwriting: 'Zhi Mang Xing', 'Caveat', 'STKaiti', cursive;
+  --font-note: 'Zhi Mang Xing', 'Nanum Pen Script', 'STKaiti', cursive;
+  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
+}
+body[data-font-preset="zh_longcang"] {
+  --font-marker: 'Long Cang', 'Permanent Marker', 'STKaiti', cursive;
+  --font-handwriting: 'Long Cang', 'Caveat', 'STKaiti', cursive;
+  --font-note: 'Long Cang', 'Nanum Pen Script', 'STKaiti', cursive;
+  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
+}
+body[data-font-preset="zh_huangyou"] {
+  --font-marker: 'ZCOOL QingKe HuangYou', 'Permanent Marker', 'STKaiti', cursive;
+  --font-handwriting: 'ZCOOL QingKe HuangYou', 'Caveat', 'STKaiti', cursive;
+  --font-note: 'ZCOOL QingKe HuangYou', 'Nanum Pen Script', 'STKaiti', cursive;
+  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
+}
+
+/* English / Western Handwriting Presets (Dedicated English Font List) */
 body[data-font-preset="original"], body:not([data-font-preset]) {
   --font-marker: 'Permanent Marker', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
   --font-handwriting: 'Caveat', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
@@ -43,12 +75,6 @@ body[data-font-preset="comic"] {
   --font-marker: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
   --font-handwriting: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
   --font-note: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="zhnote"] {
-  --font-marker: 'Permanent Marker', 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
-  --font-handwriting: 'Caveat', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 

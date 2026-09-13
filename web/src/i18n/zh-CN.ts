@@ -11,13 +11,20 @@ export const zhCN: Translations = {
     languageSwitch: '中 / EN',
   },
   fonts: {
-    original: '原稿字体',
+    zhnote: '毛笔手账 (楷书)',
+    zh_kuaile: '快乐手绘 (萌趣)',
+    zh_zhimang: '洒脱行书 (行草)',
+    zh_longcang: '随性写意 (行书)',
+    zh_huangyou: '萌趣黄油 (手绘)',
+    zh_orig: '原稿经典 (混排)',
+
+    original: '原稿经典',
     patrick: '经典硬笔',
     kalam: '钢笔笔记',
     schoolbell: '校园随笔',
     covered: '随性细草',
     comic: '漫感手绘',
-    zhnote: '毛笔手账',
+
     sampleText: '音乐手账',
   },
   hero: {
