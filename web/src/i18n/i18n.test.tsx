@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { LanguageProvider, useTranslation } from './LanguageContext';
 import { LanguageSwitcher } from '../components/settings/LanguageSwitcher';
-import { FontSwitcher, FONT_PRESETS } from '../components/settings/FontSwitcher';
+import { FontSwitcher } from '../components/settings/FontSwitcher';
 
 const TestConsumer: React.FC = () => {
   const { t, language, format } = useTranslation();

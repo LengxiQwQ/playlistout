@@ -43,6 +43,10 @@
   .sticky-note-card {
     padding: 1.25rem !important;
   }
+
+  .hide-mobile {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {

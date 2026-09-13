@@ -2,24 +2,25 @@ import React, { useState, useRef, useCallback } from 'react';
 import type { Playlist, ApiError } from './api/types';
 import { parsePlaylist } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
-import { getFriendlyErrorMessage } from './utils/errors';
-import { PlaylistSummary } from './components/PlaylistSummary';
-import { TrackTable } from './components/TrackTable';
-import { StatusAlert } from './components/StatusAlert';
-import { ExportToolbar } from './components/ExportToolbar';
+import { LanguageProvider } from './i18n';
+import { Header } from './components/layout/Header';
+import { Hero } from './components/layout/Hero';
+import { SearchNote } from './components/playlist/SearchNote';
+import { ResultPaper } from './components/playlist/ResultPaper';
+import { InfoNotes } from './components/layout/InfoNotes';
+import { StatsJournal } from './components/stats/StatsJournal';
+import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
-
 
 type AppState = 'idle' | 'loading' | 'success' | 'error';
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
   const [inputUrl, setInputUrl] = useState('');
   const [state, setState] = useState<AppState>('idle');
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
-  // Reference to abort in-flight requests and avoid stale responses
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);
 
@@ -65,9 +66,7 @@ export const App: React.FC = () => {
           setError(response.error);
           setState('error');
         }
-
       } catch (err: unknown) {
-        // If aborted intentionally by newer request, do nothing
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
@@ -104,163 +103,59 @@ export const App: React.FC = () => {
   );
 
   return (
-    <div className="container">
-      <header>
-        <div className="brand-badge">QQ 音乐公开歌单解析 · MVP</div>
-        <h1>PlaylistOut</h1>
-        <p className="tagline">Paste. Parse. Export.</p>
-      </header>
+    <>
+      {/* Loose-leaf Binder Holes on Left Margin (Desktop only) */}
+      <div className="binder-holes" aria-hidden="true">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="binder-hole" />
+        ))}
+      </div>
 
-      <main>
-        <div className="card main-card">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleParse();
-            }}
-            className="input-form"
-          >
-            <div className="input-group">
-              <input
-                type="text"
-                className="input-field"
-                placeholder="粘贴 QQ 音乐公开歌单链接（例如：https://y.qq.com/n/ryqq/playlist/...）或 ID"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                aria-label="QQ 音乐公开歌单链接或 ID"
-              />
-              {inputUrl && (
-                <button
-                  type="button"
-                  className="btn-clear"
-                  onClick={() => setInputUrl('')}
-                  aria-label="清空输入框"
-                >
-                  ✕
-                </button>
-              )}
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={!inputUrl.trim()}
-              >
-                {state === 'loading' ? '解析中...' : '解析'}
-              </button>
-            </div>
+      <div className="journal-container">
+        <Header onBrandClick={handleReset} />
+        <main>
+          <Hero />
 
-          </form>
+          {/* Search Note (PERSISTENT across idle, loading, error, and success) */}
+          <SearchNote
+            inputUrl={inputUrl}
+            onInputChange={setInputUrl}
+            onClear={() => setInputUrl('')}
+            onParse={() => handleParse()}
+            isLoading={state === 'loading'}
+            error={state === 'error' ? error : null}
+            onRetry={() => handleParse()}
+            onSelectSample={handleQuickSample}
+          />
 
-          {/* Quick sample buttons for non-technical exploration */}
-          {state === 'idle' && (
-            <div className="sample-links">
-              <span className="sample-label">快速体验示例：</span>
-              <button
-                type="button"
-                className="btn-sample"
-                onClick={() => handleQuickSample('9044196528')}
-              >
-                民谣流行 (636首)
-              </button>
-              <button
-                type="button"
-                className="btn-sample"
-                onClick={() => handleQuickSample('8079931214')}
-              >
-                周杰伦 (172首)
-              </button>
-              <button
-                type="button"
-                className="btn-sample"
-                onClick={() => handleQuickSample('7684752768')}
-              >
-                日韩歌曲 (215首)
-              </button>
-            </div>
+          {/* Result Paper (Appears immediately below Search when successful) */}
+          {state === 'success' && playlist && (
+            <ResultPaper playlist={playlist} onReset={handleReset} />
           )}
 
-          {/* Loading State */}
-          {state === 'loading' && (
-            <div className="loading-container" data-testid="loading-indicator">
-              <div className="spinner" aria-hidden="true" />
-              <p className="loading-text">正在获取并完整解析歌单数据，请稍候...</p>
-            </div>
-          )}
+          {/* Educational Stationery Notes */}
+          <InfoNotes onOpenPrivacy={() => setIsPrivacyOpen(true)} />
 
-          {/* Error State */}
-          {state === 'error' && error && (
-            <StatusAlert
-              type="error"
-              message={getFriendlyErrorMessage(error.code, error.message)}
-              code={error.code}
-              onRetry={() => handleParse()}
-            />
-          )}
+          {/* Aggregate Public Stats Journal */}
+          <StatsJournal />
+        </main>
 
-          {/* Idle / Educational Feature Highlights */}
-          {state === 'idle' && (
-            <div className="features-grid">
-              <div className="feature-item">
-                <h3>🔒 隐私安全</h3>
-                <p>
-                  不保存您的歌单历史与内容，仅做即时解析与本地导出。
-                  <button
-                    type="button"
-                    className="feature-link-btn"
-                    onClick={() => setIsPrivacyOpen(true)}
-                  >
-                    查看数据说明
-                  </button>
-                </p>
-              </div>
-              <div className="feature-item">
-                <h3>⚡ 完整性保障</h3>
-                <p>支持多页（上千首）歌单自动翻页，数据缺失自动防错，确保条目不遗漏。</p>
-              </div>
-              <div className="feature-item">
-                <h3>🎵 本地安全导出</h3>
-                <p>支持导出 TXT、CSV、Excel (.xlsx) 与 JSON 格式，完全在浏览器本地生成。</p>
-              </div>
-            </div>
-          )}
-        </div>
+        <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />
 
-        {/* Success State: Playlist Preview, Export Toolbar & Tracks Table */}
-        {state === 'success' && playlist && (
-          <div className="results-container">
-            <PlaylistSummary playlist={playlist} onReset={handleReset} />
-            <ExportToolbar playlist={playlist} />
-            <TrackTable tracks={playlist.tracks} />
-          </div>
-        )}
-      </main>
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={() => setIsPrivacyOpen(false)}
+        />
+      </div>
+    </>
+  );
+};
 
-      <footer>
-        <p>
-          PlaylistOut &copy; {new Date().getFullYear()} &middot;{' '}
-          <button
-            type="button"
-            className="footer-link-btn"
-            onClick={() => setIsPrivacyOpen(true)}
-          >
-            隐私声明
-          </button>{' '}
-          &middot;{' '}
-          <a href="https://github.com/LengxiQwQ/playlistout" target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>{' '}
-          &middot;{' '}
-          <a href="https://playlistout.com" target="_blank" rel="noopener noreferrer">
-            playlistout.com
-          </a>
-        </p>
-      </footer>
-
-      {/* Privacy Policy and Data Practices Modal */}
-      <PrivacyModal
-        isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
-      />
-    </div>
+export const App: React.FC = () => {
+  return (
+    <LanguageProvider defaultLanguage="zh-CN">
+      <AppContent />
+    </LanguageProvider>
   );
 };
 

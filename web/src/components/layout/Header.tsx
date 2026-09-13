@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           ♫
         </div>
         <div>
-          <div
+          <h1
             className="font-marker"
             style={{
               fontSize: '2rem',
@@ -61,10 +61,11 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
               textDecorationColor: 'var(--margin-red, #ff8a80)',
               textUnderlineOffset: '4px',
               color: 'var(--ink, #2d3436)',
+              margin: 0,
             }}
           >
             PlaylistOut
-          </div>
+          </h1>
           <div
             className="font-handwriting"
             style={{

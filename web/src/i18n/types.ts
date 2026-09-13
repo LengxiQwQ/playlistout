@@ -67,6 +67,8 @@ export interface Translations {
     colArtist: string;
     colAlbum: string;
     colDuration: string;
+    noArtist: string;
+    noAlbum: string;
   };
   export: {
     fileExportTitle: string;
@@ -109,6 +111,7 @@ export interface Translations {
   };
   privacy: {
     modalTitle: string;
+    viewDataNotice: string;
     closeLabel: string;
     section1Title: string;
     section1Content: string;
