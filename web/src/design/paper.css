@@ -316,3 +316,22 @@ body {
   font: 600 13px/1.25 'Caveat', cursive;
 }
 
+.font-picker-notice {
+  margin: 4px 6px 8px;
+  padding: 6px 8px;
+  background: rgba(255, 234, 167, 0.85);
+  border: 1px dashed var(--ink, #2d3436);
+  border-radius: 4px;
+  font: 700 12px/1.2 'Caveat', 'Noto Sans SC', cursive;
+  color: var(--ink, #2d3436);
+  text-align: center;
+}
+
+.font-option-loading {
+  font: 700 13px/1 'Caveat', 'Noto Sans SC', cursive;
+  color: var(--accent, #ff7675);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

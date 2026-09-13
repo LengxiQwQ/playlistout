@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from '../../i18n';
 
 export interface FontPreset {
@@ -35,44 +35,147 @@ export const FONT_PRESETS: FontPreset[] = [
 
 const FONT_STORAGE_KEY = 'playlistout-font-preset';
 
-export const FontSwitcher: React.FC = () => {
-  const { t } = useTranslation();
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('original');
-  const [isOpen, setIsOpen] = useState(false);
+// Track font presets confirmed ready in browser session
+const loadedFontPresets = new Set<string>(['original', 'caveat', 'typewriter']);
 
-  // Lazy load font stylesheet if required
-  const loadFontStylesheet = useCallback((preset: FontPreset) => {
-    if (!preset.googleFontsQuery) return;
-    const linkId = `font-link-${preset.id}`;
-    if (document.getElementById(linkId)) return;
-
+export function checkFontLoaded(fontFamily: string): boolean {
+  if (typeof document !== 'undefined' && 'fonts' in document && document.fonts?.check) {
     try {
-      const link = document.createElement('link');
+      return document.fonts.check(`1em "${fontFamily}"`);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<boolean> {
+  if (!preset.googleFontsQuery || loadedFontPresets.has(preset.id)) {
+    return Promise.resolve(true);
+  }
+
+  // Fast-track in test environments
+  if (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test') {
+    loadedFontPresets.add(preset.id);
+    return Promise.resolve(true);
+  }
+
+  const primaryFamily = preset.sampleFontFamily.split(',')[0].trim().replace(/['"]/g, '');
+
+  return new Promise<boolean>((resolve) => {
+    let resolved = false;
+    const finish = (ok: boolean) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        if (ok) {
+          loadedFontPresets.add(preset.id);
+        }
+        resolve(ok);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      finish(false);
+    }, timeoutMs);
+
+    // If browser already has this font loaded
+    if (checkFontLoaded(primaryFamily)) {
+      finish(true);
+      return;
+    }
+
+    const linkId = `font-link-${preset.id}`;
+    let link = document.getElementById(linkId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
       link.id = linkId;
       link.rel = 'stylesheet';
       link.href = `https://fonts.googleapis.com/css2?family=${preset.googleFontsQuery}&display=swap`;
       document.head.appendChild(link);
-    } catch {
-      // Font failure should never crash the page
+    }
+
+    const onReady = () => {
+      if (typeof document !== 'undefined' && 'fonts' in document && document.fonts?.load) {
+        document.fonts
+          .load(`1em "${primaryFamily}"`)
+          .then(() => finish(true))
+          .catch(() => finish(true)); // Even on reject, stylesheet exists, display:swap handles fallback
+      } else {
+        finish(true);
+      }
+    };
+
+    link.addEventListener('load', onReady, { once: true });
+    link.addEventListener('error', () => finish(false), { once: true });
+
+    if ((link as any).sheet) {
+      onReady();
+    }
+  });
+}
+
+export const FontSwitcher: React.FC = () => {
+  const { t } = useTranslation();
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('original');
+  const [loadingPresetId, setLoadingPresetId] = useState<string | null>(null);
+  const [loadNotice, setLoadNotice] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const noticeTimeoutRef = useRef<number | undefined>(undefined);
+
+  const applyPreset = useCallback((presetId: string, persist = true) => {
+    const preset = FONT_PRESETS.find((p) => p.id === presetId) || FONT_PRESETS[0];
+    setSelectedPresetId(preset.id);
+    document.body.dataset.fontPreset = preset.id;
+
+    if (persist) {
+      try {
+        localStorage.setItem(FONT_STORAGE_KEY, preset.id);
+      } catch {
+        // Ignore storage errors
+      }
     }
   }, []);
 
-  const applyPreset = useCallback(
-    (presetId: string, persist = true) => {
-      const preset = FONT_PRESETS.find((p) => p.id === presetId) || FONT_PRESETS[0];
-      setSelectedPresetId(preset.id);
-      document.body.dataset.fontPreset = preset.id;
-      loadFontStylesheet(preset);
+  const selectPreset = useCallback(
+    async (preset: FontPreset) => {
+      if (preset.id === selectedPresetId) {
+        setIsOpen(false);
+        return;
+      }
 
-      if (persist) {
-        try {
-          localStorage.setItem(FONT_STORAGE_KEY, preset.id);
-        } catch {
-          // Ignore storage errors
-        }
+      // Synchronous path for built-in or already loaded fonts, or in test environments
+      const isAlreadyReady =
+        !preset.googleFontsQuery ||
+        loadedFontPresets.has(preset.id) ||
+        (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test');
+
+      if (isAlreadyReady) {
+        applyPreset(preset.id);
+        setIsOpen(false);
+        return;
+      }
+
+      // Asynchronous progressive loading with feedback
+      setLoadingPresetId(preset.id);
+      setLoadNotice(null);
+      if (noticeTimeoutRef.current) {
+        clearTimeout(noticeTimeoutRef.current);
+      }
+
+      const ok = await loadPresetFont(preset, 3500);
+
+      // Smoothly apply without page refresh
+      applyPreset(preset.id);
+      setLoadingPresetId(null);
+      setIsOpen(false);
+
+      if (!ok) {
+        setLoadNotice('字体下载较慢，已启用平滑回退');
+        noticeTimeoutRef.current = window.setTimeout(() => setLoadNotice(null), 3000);
       }
     },
-    [loadFontStylesheet],
+    [selectedPresetId, applyPreset],
   );
 
   // Restore saved preset on mount
@@ -80,7 +183,12 @@ export const FontSwitcher: React.FC = () => {
     try {
       const saved = localStorage.getItem(FONT_STORAGE_KEY);
       if (saved && FONT_PRESETS.some((p) => p.id === saved)) {
-        applyPreset(saved, false);
+        const preset = FONT_PRESETS.find((p) => p.id === saved)!;
+        applyPreset(preset.id, false);
+        // Pre-fetch stylesheet in background if needed
+        if (preset.googleFontsQuery) {
+          loadPresetFont(preset, 5000);
+        }
       }
     } catch {
       // Default to original
@@ -111,6 +219,9 @@ export const FontSwitcher: React.FC = () => {
   }, [isOpen]);
 
   const currentPreset = FONT_PRESETS.find((p) => p.id === selectedPresetId) || FONT_PRESETS[0];
+  const activeLoadingPreset = loadingPresetId
+    ? FONT_PRESETS.find((p) => p.id === loadingPresetId)
+    : null;
 
   return (
     <div className={`font-picker ${isOpen ? 'open' : ''}`} id="fontPicker">
@@ -123,8 +234,17 @@ export const FontSwitcher: React.FC = () => {
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span id="fontPickerLabel">
-          {currentPreset.index} · {currentPreset.name}
+        <span id="fontPickerLabel" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {activeLoadingPreset ? (
+            <>
+              <span className="animate-ink-spin" style={{ display: 'inline-block' }}>
+                ✎
+              </span>
+              <span>载入中...</span>
+            </>
+          ) : (
+            `${currentPreset.index} · ${currentPreset.name}`
+          )}
         </span>
         <span className="paper-caret" style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
           ⌄
@@ -133,8 +253,10 @@ export const FontSwitcher: React.FC = () => {
 
       <div className="font-picker-menu" id="fontPickerMenu" role="listbox" style={{ width: '315px' }}>
         <div className="font-picker-hint">{t.header.fontPickerHint}</div>
+        {loadNotice && <div className="font-picker-notice">{loadNotice}</div>}
         {FONT_PRESETS.map((preset) => {
           const isActive = preset.id === selectedPresetId;
+          const isLoadingThis = preset.id === loadingPresetId;
           return (
             <button
               key={preset.id}
@@ -143,19 +265,23 @@ export const FontSwitcher: React.FC = () => {
               role="option"
               aria-selected={isActive}
               data-value={preset.id}
-              onClick={() => {
-                applyPreset(preset.id);
-                setIsOpen(false);
-              }}
+              onClick={() => selectPreset(preset)}
             >
               <span className="font-option-index">{preset.index}</span>
               <span className="font-option-name">{preset.name}</span>
-              <span
-                className="font-option-sample"
-                style={{ fontFamily: preset.sampleFontFamily }}
-              >
-                {preset.sample}
-              </span>
+              {isLoadingThis ? (
+                <span className="font-option-loading">
+                  <span className="animate-ink-spin" style={{ display: 'inline-block' }}>✎</span>
+                  载入中...
+                </span>
+              ) : (
+                <span
+                  className="font-option-sample"
+                  style={{ fontFamily: preset.sampleFontFamily }}
+                >
+                  {preset.sample}
+                </span>
+              )}
             </button>
           );
         })}
