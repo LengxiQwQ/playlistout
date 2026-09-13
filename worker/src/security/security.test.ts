@@ -3,6 +3,13 @@ import worker from '../index';
 import { resetRateLimitStore } from './rate-limit';
 import { qqMusicProvider } from '../providers/qqmusic';
 
+function createMockCtx(): ExecutionContext {
+  return {
+    waitUntil(_p: Promise<any>) {},
+    passThroughOnException() {},
+  } as ExecutionContext;
+}
+
 describe('Abuse Protection & Security Hardening (Phase 6)', () => {
   beforeEach(() => {
     resetRateLimitStore();
@@ -25,7 +32,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
         headers: { 'cf-connecting-ip': clientIp },
       });
-      const response = await worker.fetch(request, {}, {} as ExecutionContext);
+      const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(200);
     }
 
@@ -33,7 +40,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     const limitedRequest = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       headers: { 'cf-connecting-ip': clientIp },
     });
-    const limitedResponse = await worker.fetch(limitedRequest, {}, {} as ExecutionContext);
+    const limitedResponse = await worker.fetch(limitedRequest, {}, createMockCtx());
 
     expect(limitedResponse.status).toBe(429);
     expect(limitedResponse.headers.get('Retry-After')).toBeTruthy();
@@ -44,7 +51,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
   it('attaches standard OWASP security headers to all responses', async () => {
     const request = new Request('https://api.playlistout.com/health');
-    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(response.headers.get('X-Frame-Options')).toBe('DENY');
@@ -65,7 +72,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
     for (const target of ssrfTargets) {
       const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(target)}`);
-      const response = await worker.fetch(request, {}, {} as ExecutionContext);
+      const response = await worker.fetch(request, {}, createMockCtx());
 
       expect(response.status).toBe(400);
       const body: any = await response.json();
@@ -83,7 +90,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
     for (const url of proxyRequests) {
       const request = new Request(url);
-      const response = await worker.fetch(request, {}, {} as ExecutionContext);
+      const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(403);
       const body: any = await response.json();
       expect(body.error.code).toBe('FORBIDDEN');
@@ -93,7 +100,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
   it('rejects oversized inputs (> 2048 chars) with INVALID_INPUT', async () => {
     const hugeUrl = 'https://y.qq.com/n/ryqq/playlist/' + '9'.repeat(2500);
     const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(hugeUrl)}`);
-    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.status).toBe(400);
     const body: any = await response.json();
@@ -106,7 +113,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     );
 
     const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
-    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.status).toBe(500);
     const body: any = await response.json();
@@ -119,3 +126,4 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     expect(rawResponse).not.toContain('internal/db.ts');
   });
 });
+

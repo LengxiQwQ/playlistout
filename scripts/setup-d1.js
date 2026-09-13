@@ -95,22 +95,29 @@ async function main() {
 
   // 4. Run remote migrations
   console.log('Applying remote migrations to D1...');
-  try {
-    const migrationCmd = `npx wrangler d1 execute ${DB_NAME} --remote --file=./migrations/0001_initial_stats.sql --yes`;
-    console.log(`Running: ${migrationCmd}`);
-    execSync(migrationCmd, {
-      cwd: workerDir,
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        CLOUDFLARE_API_TOKEN: token,
-        CLOUDFLARE_ACCOUNT_ID: accountId,
-      },
-    });
-    console.log('Migration successfully applied to remote D1!');
-  } catch (err) {
-    console.error('Migration execution failed:', err);
-    process.exit(1);
+  const migrations = [
+    './migrations/0001_initial_stats.sql',
+    './migrations/0002_analytics_foundation.sql',
+  ];
+
+  for (const migrationFile of migrations) {
+    try {
+      const migrationCmd = `npx wrangler d1 execute ${DB_NAME} --remote --file=${migrationFile} --yes`;
+      console.log(`Running: ${migrationCmd}`);
+      execSync(migrationCmd, {
+        cwd: workerDir,
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          CLOUDFLARE_API_TOKEN: token,
+          CLOUDFLARE_ACCOUNT_ID: accountId,
+        },
+      });
+      console.log(`Migration ${migrationFile} successfully applied to remote D1!`);
+    } catch (err) {
+      console.error(`Migration ${migrationFile} execution failed:`, err);
+      process.exit(1);
+    }
   }
 
   console.log('D1 setup and migration complete!');

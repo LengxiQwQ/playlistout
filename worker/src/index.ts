@@ -1,7 +1,11 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
 import { qqMusicProvider } from './providers/qqmusic';
-import { recordParse, getAggregateStats, type AggregateStatsData } from './stats';
+import { recordParse, getPublicStats, type AggregateStatsData } from './stats';
+import { recordParseEvent } from './analytics/recorder';
+import { classifyInputType, classifyErrorCategory } from './analytics/dimensions';
+import type { PublicStatsResponse } from './analytics/types';
+import { handleEvent } from './routes/event';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit } from './security/rate-limit';
 
@@ -183,10 +187,26 @@ export default {
         });
       }
 
+      const startTime = Date.now();
+      const inputType = classifyInputType(playlistInput);
+
       try {
         const playlist: Playlist = await qqMusicProvider.parse(playlistInput);
+        const latencyMs = Date.now() - startTime;
+
         // Best-effort anonymous statistics recording (success)
-        await recordParse(_env.DB, 'qqmusic', true);
+        // Use waitUntil so analytics don't delay the response
+        _ctx.waitUntil(
+          recordParseEvent(_env.DB, {
+            request,
+            platform: 'qqmusic',
+            inputType,
+            success: true,
+            trackCount: playlist.tracks.length,
+            latencyMs,
+            providerPath: 'primary',
+          }),
+        );
 
         const successResponse: ApiResponse<Playlist> = {
           success: true,
@@ -200,8 +220,21 @@ export default {
           },
         });
       } catch (err: unknown) {
+        const latencyMs = Date.now() - startTime;
+        const errorCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
+        const errorCategory = classifyErrorCategory(errorCode);
+
         // Best-effort anonymous statistics recording (failure, no payload recorded)
-        await recordParse(_env.DB, 'qqmusic', false);
+        _ctx.waitUntil(
+          recordParseEvent(_env.DB, {
+            request,
+            platform: 'qqmusic',
+            inputType,
+            success: false,
+            errorCategory,
+            latencyMs,
+          }),
+        );
 
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
@@ -282,8 +315,8 @@ export default {
         );
       }
 
-      const stats: AggregateStatsData = await getAggregateStats(_env.DB);
-      const response: ApiResponse<AggregateStatsData> = {
+      const stats: PublicStatsResponse = await getPublicStats(_env.DB);
+      const response: ApiResponse<PublicStatsResponse> = {
         success: true,
         data: stats,
       };
@@ -294,6 +327,33 @@ export default {
           ...responseHeaders,
         },
       });
+    }
+
+    // Frontend event ingestion endpoint (export/clipboard analytics)
+    if (url.pathname === '/api/event') {
+      // Rate limit check: max 60 requests / minute per client IP
+      const rateCheck = checkRateLimit(clientIp, 60, 60);
+      if (!rateCheck.allowed) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests. Please wait a moment before trying again.',
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateCheck.resetSeconds),
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      return handleEvent(request, _env, _ctx, responseHeaders);
     }
 
     // Default 404
