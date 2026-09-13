@@ -28,6 +28,7 @@ export interface Translations {
     sampleText: string;
   };
   hero: {
+    tagline: string;
     pasteDoodle: string;
     noLoginDoodle: string;
     subtitle: string;

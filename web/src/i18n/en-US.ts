@@ -28,8 +28,9 @@ export const enUS: Translations = {
     sampleText: 'Music Journal',
   },
   hero: {
-    pasteDoodle: '♪ paste it here',
-    noLoginDoodle: 'no login, no mess :)',
+    tagline: 'Paste. Parse. Export.',
+    pasteDoodle: '♪ Paste. Parse. Export.',
+    noLoginDoodle: 'No login, no mess :)',
     subtitle: 'A tiny notebook for taking your playlists with you.',
     titlePrefix: 'Let your ',
     titleHighlight: 'playlist out.',

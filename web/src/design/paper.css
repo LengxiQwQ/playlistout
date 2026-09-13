@@ -335,3 +335,47 @@ body {
   gap: 4px;
 }
 
+/* Journal Hero Typography & Layout */
+.journal-hero {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  text-align: center;
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.hero-doodle-left {
+  position: absolute;
+  left: 1.5rem;
+  top: 1.25rem;
+  font-size: 1.65rem;
+  color: #718096;
+  transform: rotate(-6deg);
+  user-select: none;
+  letter-spacing: 0.02em;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.hero-doodle-left:hover {
+  transform: rotate(-3deg) scale(1.04);
+  color: var(--ink, #2d3436);
+}
+
+.hero-doodle-right {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.25rem;
+  user-select: none;
+}
+
+.hero-title {
+  font-size: clamp(2.35rem, 5.5vw, 4.25rem);
+  line-height: 1.15;
+  color: var(--ink, #2d3436);
+  margin: 0;
+  display: inline-block;
+  position: relative;
+}
+
+
