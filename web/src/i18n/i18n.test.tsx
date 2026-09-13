@@ -97,4 +97,23 @@ describe('FontSwitcher Component (Phase 3)', () => {
     expect(document.body.dataset.fontPreset).toBe('patrick');
     expect(localStorage.getItem('playlistout-font-preset')).toBe('patrick');
   });
+
+  it('switches instantly to built-in presets without network injection', () => {
+    render(
+      <LanguageProvider>
+        <FontSwitcher />
+      </LanguageProvider>,
+    );
+
+    const button = screen.getByRole('button', { name: /原稿字体/ });
+    fireEvent.click(button);
+
+    const typewriterOpt = screen.getByRole('option', { name: /打字机/ });
+    fireEvent.click(typewriterOpt);
+
+    expect(document.body.dataset.fontPreset).toBe('typewriter');
+    expect(localStorage.getItem('playlistout-font-preset')).toBe('typewriter');
+    // Verify no external link injected for built-in Space Mono
+    expect(document.getElementById('font-link-typewriter')).toBeNull();
+  });
 });
