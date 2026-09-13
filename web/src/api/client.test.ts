@@ -33,4 +33,39 @@ describe('Web API Client & Types', () => {
     expect(playlist.tracks[0].artists).toEqual(['Artist A', 'Artist B']);
     expect(playlist.tracks[0].index).toBe(1);
   });
+
+  it('validates public StatsResponse contract shape', () => {
+    const stats: import('./client').StatsResponse = {
+      launchedAt: '2026-09-12',
+      totalPlaylistsParsed: 100,
+      playlistsParsedToday: 10,
+      totalTracksProcessed: 5000,
+      tracksProcessedToday: 300,
+      totalExports: 40,
+      exportsToday: 4,
+      byPlatform: {
+        qqmusic: {
+          totalSuccess: 100,
+          todaySuccess: 10,
+        },
+      },
+      recentDays: [
+        {
+          date: '2026-09-13',
+          parses: 10,
+          tracks: 300,
+          exports: 4,
+        },
+      ],
+      generatedAt: '2026-09-13T08:00:00.000Z',
+    };
+
+    expect(stats.launchedAt).toBe('2026-09-12');
+    expect(stats.totalPlaylistsParsed).toBe(100);
+    expect(stats.totalTracksProcessed).toBe(5000);
+    expect(stats.totalExports).toBe(40);
+    expect(stats.byPlatform.qqmusic.totalSuccess).toBe(100);
+    expect(stats.recentDays).toHaveLength(1);
+    expect(stats.recentDays[0].parses).toBe(10);
+  });
 });

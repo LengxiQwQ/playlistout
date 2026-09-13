@@ -47,12 +47,31 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
   }
 }
 
-export interface StatsResponse {
+// ── Public Statistics Contract (aligns with Worker PublicStatsResponse) ──
 
-  totalSuccessfulParses: number;
-  todaySuccessfulParses: number;
-  totalFailedParses: number;
-  byPlatform: Record<string, { total: number; today: number }>;
+export interface PlatformBreakdown {
+  totalSuccess: number;
+  todaySuccess?: number;
+}
+
+export interface DailyTrendEntry {
+  date: string;
+  parses: number;
+  tracks: number;
+  exports: number;
+}
+
+export interface StatsResponse {
+  launchedAt: string;
+  totalPlaylistsParsed: number;
+  playlistsParsedToday: number;
+  totalTracksProcessed: number;
+  tracksProcessedToday: number;
+  totalExports: number;
+  exportsToday: number;
+  byPlatform: Record<string, PlatformBreakdown>;
+  recentDays: DailyTrendEntry[];
+  generatedAt: string;
 }
 
 export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
@@ -71,5 +90,3 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
     };
   }
 }
-
-
