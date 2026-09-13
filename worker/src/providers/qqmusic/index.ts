@@ -1,7 +1,7 @@
 import type { Provider } from '../types';
 import type { Playlist } from '../../models/playlist';
 import { extractQQPlaylistId, matchesQQMusicInput } from './input';
-import { fetchQQPlaylist } from './client';
+import { fetchQQPlaylist, fetchQQPlaylistWithMeta } from './client';
 
 /**
  * QQ Music Provider Implementation (Phase 1)

@@ -48,7 +48,7 @@ function createMockD1() {
           } else {
             // Standard aggregate_stats query (date IN (?1, ?2))
             for (const [key, count] of store.entries()) {
-              if (key.startsWith('export::')) continue;
+              if (key.startsWith('export::') || key.startsWith('clipboard::')) continue;
               const [date, platform, metric] = key.split('::');
               results.push({ date, platform, metric, count });
             }
@@ -216,9 +216,9 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
   // --- Analytics Foundation tests ---
 
   describe('getPublicStats (Analytics Foundation)', () => {
-    it('returns launchedAt date', async () => {
+    it('returns official launchedAt date (2026-09-12)', async () => {
       const stats = await getPublicStats(undefined);
-      expect(stats.launchedAt).toBe('2025-01-15');
+      expect(stats.launchedAt).toBe('2026-09-12');
     });
 
     it('returns zeroed stats when DB is unavailable', async () => {
@@ -257,6 +257,25 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(200);
     });
 
+    it('strictly isolates exports from clipboard copies (totalExports and exportsToday DO NOT count clipboard)', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      // Set file exports: 100 total, 5 today
+      mockDb._store.set(`TOTAL::all::exports_total`, 100);
+      mockDb._store.set(`${today}::all::exports_total`, 5);
+
+      // Set clipboard copies: 500 total, 50 today
+      mockDb._store.set(`TOTAL::all::clipboards_total`, 500);
+      mockDb._store.set(`${today}::all::clipboards_total`, 50);
+
+      const stats = await getPublicStats(mockDb);
+
+      // totalExports and exportsToday must ONLY reflect exports_total
+      expect(stats.totalExports).toBe(100);
+      expect(stats.exportsToday).toBe(5);
+    });
+
     it('does NOT expose private dimensional data in public stats', async () => {
       const mockDb = createMockD1();
       mockDb._store.set(`TOTAL::all::parse_success`, 100);
@@ -274,6 +293,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(statsStr).not.toContain('errorCategory');
       expect(statsStr).not.toContain('latencyBucket');
       expect(statsStr).not.toContain('inputType');
+      expect(statsStr).not.toContain('providerPath');
     });
 
     it('handles D1 failure gracefully for public stats', async () => {
@@ -284,7 +304,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
 
       const stats = await getPublicStats(failingDb);
       expect(stats.totalPlaylistsParsed).toBe(0);
-      expect(stats.launchedAt).toBe('2025-01-15');
+      expect(stats.launchedAt).toBe('2026-09-12');
     });
   });
 });

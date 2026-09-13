@@ -1,8 +1,8 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
 import { qqMusicProvider } from './providers/qqmusic';
-import { recordParse, getPublicStats, type AggregateStatsData } from './stats';
-import { recordParseEvent } from './analytics/recorder';
+import { getPublicStats } from './stats';
+import { recordParseEvent, recordRateLimitEvent } from './analytics/recorder';
 import { classifyInputType, classifyErrorCategory } from './analytics/dimensions';
 import type { PublicStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
@@ -24,7 +24,6 @@ export default {
     if (request.method === 'OPTIONS') {
       return handleOptions(request);
     }
-
 
     // Health check endpoint
     if (url.pathname === '/health' || url.pathname === '/api/health') {
@@ -114,6 +113,11 @@ export default {
       // Rate limit check: max 30 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 30, 60);
       if (!rateCheck.allowed) {
+        // Record rate limit occurrence anonymously (best effort)
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', 'qqmusic'));
+        }
+
         return new Response(
           JSON.stringify({
             success: false,
@@ -192,21 +196,23 @@ export default {
 
       try {
         const playlist: Playlist = await qqMusicProvider.parse(playlistInput);
+        const providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
         const latencyMs = Date.now() - startTime;
 
-        // Best-effort anonymous statistics recording (success)
-        // Use waitUntil so analytics don't delay the response
-        _ctx.waitUntil(
-          recordParseEvent(_env.DB, {
-            request,
-            platform: 'qqmusic',
-            inputType,
-            success: true,
-            trackCount: playlist.tracks.length,
-            latencyMs,
-            providerPath: 'primary',
-          }),
-        );
+        // Best-effort anonymous statistics recording (success) with real providerPath
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(
+            recordParseEvent(_env.DB, {
+              request,
+              platform: 'qqmusic',
+              inputType,
+              success: true,
+              trackCount: playlist.tracks.length,
+              latencyMs,
+              providerPath,
+            }),
+          );
+        }
 
         const successResponse: ApiResponse<Playlist> = {
           success: true,
@@ -224,17 +230,19 @@ export default {
         const errorCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
         const errorCategory = classifyErrorCategory(errorCode);
 
-        // Best-effort anonymous statistics recording (failure, no payload recorded)
-        _ctx.waitUntil(
-          recordParseEvent(_env.DB, {
-            request,
-            platform: 'qqmusic',
-            inputType,
-            success: false,
-            errorCategory,
-            latencyMs,
-          }),
-        );
+        // Best-effort anonymous statistics recording (failure, no payload or fake providerPath recorded)
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(
+            recordParseEvent(_env.DB, {
+              request,
+              platform: 'qqmusic',
+              inputType,
+              success: false,
+              errorCategory,
+              latencyMs,
+            }),
+          );
+        }
 
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
@@ -296,6 +304,10 @@ export default {
       // Rate limit check: max 60 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 60, 60);
       if (!rateCheck.allowed) {
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all'));
+        }
+
         return new Response(
           JSON.stringify({
             success: false,
@@ -334,6 +346,10 @@ export default {
       // Rate limit check: max 60 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 60, 60);
       if (!rateCheck.allowed) {
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'event', 'all'));
+        }
+
         return new Response(
           JSON.stringify({
             success: false,
@@ -373,6 +389,5 @@ export default {
         },
       },
     );
-
   },
 };

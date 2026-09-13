@@ -28,8 +28,8 @@ export interface AggregateStatsData {
   byPlatform: Record<string, PlatformStat>;
 }
 
-/** Project launch date — the date PlaylistOut went live, not process uptime. */
-const LAUNCHED_AT = '2025-01-15';
+/** Project launch date — the official launch date of Playlist Out Web (2026-09-12). */
+const LAUNCHED_AT = '2026-09-12';
 
 /** Number of recent days to include in the daily trend response */
 const RECENT_DAYS_COUNT = 30;

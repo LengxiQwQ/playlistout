@@ -386,12 +386,23 @@ async function fetchFromMusicU(playlistId: string): Promise<Playlist> {
   return normalizeMusicUResponse(rawJson, playlistId);
 }
 
+export interface QQPlaylistResult {
+  playlist: Playlist;
+  providerPath: 'primary' | 'fallback';
+}
+
 /**
- * Fetches and normalizes a QQ Music public playlist with failover support.
+ * Fetches and normalizes a QQ Music public playlist with failover support and verified provider path metadata.
  */
-export async function fetchQQPlaylist(playlistId: string): Promise<Playlist> {
+export async function fetchQQPlaylistWithMeta(playlistId: string): Promise<QQPlaylistResult> {
   try {
-    return await fetchFromCYQQ(playlistId);
+    const playlist = await fetchFromCYQQ(playlistId);
+    Object.defineProperty(playlist, '__providerPath', {
+      value: 'primary',
+      enumerable: false,
+      writable: true,
+    });
+    return { playlist, providerPath: 'primary' };
   } catch (primaryErr: unknown) {
     // If it's a 404 (not found / private), do not retry with fallback
     if (primaryErr instanceof ProviderError && primaryErr.statusCode === 404) {
@@ -400,7 +411,13 @@ export async function fetchQQPlaylist(playlistId: string): Promise<Playlist> {
 
     // Try fallback endpoint
     try {
-      return await fetchFromMusicU(playlistId);
+      const playlist = await fetchFromMusicU(playlistId);
+      Object.defineProperty(playlist, '__providerPath', {
+        value: 'fallback',
+        enumerable: false,
+        writable: true,
+      });
+      return { playlist, providerPath: 'fallback' };
     } catch (fallbackErr: unknown) {
       // If fallback detected a specific semantic error (like INCOMPLETE_PLAYLIST or 404), prioritize it
       if (
@@ -413,4 +430,12 @@ export async function fetchQQPlaylist(playlistId: string): Promise<Playlist> {
       throw primaryErr;
     }
   }
+}
+
+/**
+ * Fetches and normalizes a QQ Music public playlist with failover support.
+ */
+export async function fetchQQPlaylist(playlistId: string): Promise<Playlist> {
+  const result = await fetchQQPlaylistWithMeta(playlistId);
+  return result.playlist;
 }
