@@ -57,9 +57,109 @@ Compatibility fixes are normal maintenance. They do **not** mean the v2.0.0 MVP 
 
 ---
 
-# 2. Provider expansion lane
+# 2. Analytics Foundation — next backend milestone
 
-The next major product step is adding more music-platform providers behind the existing normalized contract.
+## Objective
+
+Build a small, privacy-conscious analytics backend that can support future public statistics and private product insights without redesigning the frontend later.
+
+This milestone is backend/data only. Do **not** redesign the website UI, build maps, create an admin dashboard, or add a user-account system here.
+
+## 2.1 Public statistics model
+
+Prepare aggregate data that may later be shown on the public website:
+
+- project launch date (`launchedAt`; this is the product launch date, not Worker process uptime)
+- total successful playlists parsed
+- playlists parsed today
+- total tracks processed
+- tracks processed today
+- total exports
+- exports today
+- successful parses by platform
+- optional recent daily trend data (for example last 7/30 days)
+
+`/api/stats` should remain public-safe and expose aggregate values only.
+
+## 2.2 Private product-insight model
+
+Prepare aggregate/private data for the maintainer to inspect later. This data is **not** shown on the public website by default.
+
+Useful dimensions include:
+
+- date and coarse hour bucket
+- country
+- first-level region/state/province when available
+- platform (`qqmusic`, later other providers)
+- input type (web URL / mobile share link / raw ID / other supported form)
+- parse result and stable error category
+- playlist-size bucket (for example `1-50`, `51-200`, `201-500`, `501-1000`, `1000+`)
+- track count totals
+- export format (TXT / CSV / XLSX / JSON)
+- clipboard mode usage
+- coarse device class (desktop / mobile / tablet)
+- coarse browser family and OS family when practical
+- latency bucket
+- provider path information useful for reliability analysis (for example primary / fallback)
+- rate-limit / upstream / timeout / internal-error counters
+
+Where Cloudflare Web Analytics already provides suitable page-view/referrer/visitor information, prefer using it instead of duplicating detailed web-traffic tracking in D1.
+
+## 2.3 Privacy boundary
+
+Do not store raw per-user event histories merely for convenience.
+
+Never persist:
+
+- raw IP addresses
+- precise latitude/longitude
+- postal code
+- street/address information
+- playlist URLs
+- playlist IDs as user history
+- song/artist/album content
+- cookies or authentication data
+- full User-Agent strings when a coarse parsed category is enough
+- complete referrer URLs with path/query data
+
+If request geography is used, derive the coarse country/region at request time and store only the intended aggregate dimension. The raw IP must not be written to D1.
+
+Prefer daily/hourly aggregate counters over long-lived event-level tracking whenever the same insight can be obtained from aggregates.
+
+## 2.4 Backend structure
+
+The implementation should stay small:
+
+- extend D1 through normal migrations
+- keep current aggregate statistics working during migration
+- separate public statistics from private analytics logically in code/schema
+- provide one stable public stats read contract
+- do not expose private geography/device/error breakdowns through an unauthenticated public endpoint
+- if private viewing is needed later, use direct D1/Cloudflare access first; build an authenticated admin surface only when there is a real need
+- analytics writes remain best-effort and must never break playlist parsing or exporting
+- keep provider-facing production code independent from analytics storage details where practical
+
+Frontend events such as export-format or clipboard usage may be wired later during the UI redesign. This milestone should define the backend contract/schema so those events can be added without another data-model rewrite.
+
+## 2.5 Acceptance gate
+
+This milestone is complete when:
+
+- D1 migrations cleanly support the new public/private aggregate model
+- existing parse statistics continue to work
+- `/api/stats` returns a stable public-safe response
+- successful parses and processed-track totals are counted correctly
+- export/interaction event ingestion has a defined safe contract, even if the redesigned frontend has not wired every event yet
+- no prohibited identifying/raw playlist data is stored
+- analytics failure cannot change parse/export success
+- tests cover aggregation, privacy boundaries, malformed events, and D1 failure behavior
+- production migration/deployment succeeds
+
+---
+
+# 3. Provider expansion lane
+
+The next major product step after the analytics foundation is adding more music-platform providers behind the existing normalized contract.
 
 Recommended order unless later research changes the priority:
 
@@ -87,7 +187,7 @@ A provider is not considered supported merely because one sample playlist works.
 
 ---
 
-# 3. Product improvements — later / optional
+# 4. Product improvements — later / optional
 
 These are possible future improvements, not current commitments:
 
@@ -102,7 +202,7 @@ Do not add these opportunistically during unrelated maintenance work. Promote an
 
 ---
 
-# 4. Release and validation rules
+# 5. Release and validation rules
 
 For ordinary fixes:
 
@@ -124,7 +224,7 @@ Git tags and GitHub Releases are useful milestone snapshots, but continuous webs
 
 ---
 
-# 5. Historical roadmap policy
+# 6. Historical roadmap policy
 
 Completed delivery plans should be treated as release history, not kept indefinitely as active task lists.
 
