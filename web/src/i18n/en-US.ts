@@ -18,6 +18,7 @@ export const enUS: Translations = {
     covered: 'Covered By Your Grace',
     comic: 'Comic Neue',
     zhnote: 'Chinese Journal',
+    sampleText: 'Music Journal',
   },
   hero: {
     pasteDoodle: '♪ paste it here',
@@ -27,6 +28,7 @@ export const enUS: Translations = {
     titleHighlight: 'playlist out.',
   },
   search: {
+    badge: 'QQ Music Public Playlists · MVP',
     inputLabel: 'Paste your playlist link here ↓',
     placeholder: 'Paste a public QQ Music playlist link (e.g. https://y.qq.com/n/ryqq/playlist/...) or ID',
     parseButton: 'Parse it →',
@@ -39,6 +41,7 @@ export const enUS: Translations = {
     worksWith: 'Works with your everyday music platforms',
     platformQQ: 'QQ Music',
     platformQQDesc: 'Public playlists supported',
+    moreSoon: 'more soon...',
   },
   loading: {
     step1: 'Reading the playlist...',
@@ -67,6 +70,7 @@ export const enUS: Translations = {
     viewOnQQ: 'View on QQ Music ↗',
     parseAnother: 'Parse another playlist',
     justNow: 'just now',
+    noCoverAria: 'No cover',
   },
   table: {
     listTitle: 'Song List ({count})',
@@ -117,6 +121,7 @@ export const enUS: Translations = {
     allTimeTracks: 'tracks',
     allTimeSubtext: 'not bad for a little notebook, huh?',
     fromWhereTitle: 'FROM WHERE?',
+    otherPlatformsComing: 'NetEase, Kugou & Kuwo coming soon...',
   },
   privacy: {
     modalTitle: 'Privacy Policy & Data Practices',

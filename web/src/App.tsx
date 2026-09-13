@@ -33,7 +33,7 @@ export const AppContent: React.FC = () => {
       if (!validation.valid) {
         setState('error');
         setError({
-          code: 'INVALID_INPUT',
+          code: validation.code || 'INVALID_INPUT',
           message: validation.error || '请输入有效的歌单链接。',
         });
         return;

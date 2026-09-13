@@ -40,10 +40,6 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
   };
 
   const getErrorMessage = (err: ApiError): string => {
-    if (language === 'zh-CN') {
-      return getFriendlyErrorMessage(err.code, err.message);
-    }
-    // English mapping
     switch (err.code) {
       case 'INVALID_INPUT':
         return t.errors.invalidInput;
@@ -64,7 +60,9 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
       case 'INTERNAL_ERROR':
         return t.errors.internalError;
       default:
-        return err.message || t.errors.genericError;
+        return language === 'zh-CN'
+          ? getFriendlyErrorMessage(err.code, err.message)
+          : err.message || t.errors.genericError;
     }
   };
 
@@ -125,7 +123,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
                 color: '#1d4ed8',
               }}
             >
-              QQ 音乐公开歌单解析 · MVP
+              {t.search.badge}
             </span>
           </div>
 
@@ -267,7 +265,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
                 transform: 'rotate(1deg)',
               }}
             >
-              more soon...
+              {t.search.moreSoon}
             </span>
           </div>
         </div>

@@ -56,7 +56,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           ) : (
             <div
               className="cover-placeholder hand-drawn-border-subtle shadow-cutout-sm"
-              aria-label="无封面"
+              aria-label={t.result.noCoverAria}
               style={{
                 width: '88px',
                 height: '88px',
