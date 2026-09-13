@@ -104,12 +104,13 @@ export const AppContent: React.FC = () => {
 
   return (
     <>
-      {/* Loose-leaf Binder Holes on Left Margin (Desktop only) */}
+      {/* Loose-leaf Binder Spine on Left Margin (Desktop only, scrolls with paper) */}
       <div className="binder-holes" aria-hidden="true">
-        {Array.from({ length: 10 }).map((_, i) => (
+        {Array.from({ length: 35 }).map((_, i) => (
           <div key={i} className="binder-hole" />
         ))}
       </div>
+      <div className="journal-margin-line" aria-hidden="true" />
 
       <div className="journal-container">
         <Header onBrandClick={handleReset} />

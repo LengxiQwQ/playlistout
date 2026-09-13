@@ -1,7 +1,8 @@
 /* PlaylistOut Music Journal - Design Tokens */
 :root {
   /* Paper & Ink */
-  --paper: #fdfbf7;
+  --paper: #f6f1e5;
+  --paper-cream: #faf5ea;
   --paper-white: #ffffff;
   --ink: #2d3436;
   --ink-light: #636e72;
@@ -9,7 +10,7 @@
   --ink-faint: rgba(45, 52, 54, 0.18);
 
   /* Notebook ruling */
-  --line: #dfe6e9;
+  --line: #e2dacd;
   --margin-red: #ff8a80;
 
   /* Stationery Palette */
@@ -37,9 +38,10 @@
   --sticker-shadow-hover: 5px 5px 0 #2d3436;
 
   /* Layout widths */
-  --max-content-width: 1150px;
-  --search-note-width: 820px;
-  --result-paper-width: 1050px;
+  --max-content-width: 1280px;
+  --search-note-width: 980px;
+  --result-paper-width: 1180px;
+
 
   /* Transitions */
   --ease-journal: cubic-bezier(0.16, 1, 0.3, 1);

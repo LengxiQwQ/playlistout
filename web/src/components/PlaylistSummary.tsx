@@ -92,11 +92,13 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             </span>
 
             <h2
-              className="playlist-title font-marker"
+              className="playlist-title"
               title={playlist.name}
               style={{
-                fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
-                lineHeight: 1.2,
+                fontFamily: 'var(--font-sans, sans-serif)',
+                fontWeight: 800,
+                fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
+                lineHeight: 1.25,
                 color: 'var(--ink, #2d3436)',
                 margin: '0.25rem 0',
               }}
@@ -105,14 +107,15 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             </h2>
 
             <div
-              className="font-note"
               style={{
-                fontSize: '1.4rem',
+                fontFamily: 'var(--font-sans, sans-serif)',
+                fontSize: '0.95rem',
                 color: '#636e72',
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '0.5rem',
                 alignItems: 'center',
+                marginTop: '0.35rem',
               }}
             >
               <span>{tracksText}</span>
@@ -137,12 +140,13 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             href={`https://y.qq.com/n/ryqq/playlist/${playlist.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="sticker font-handwriting"
+            className="sticker"
             style={{
               backgroundColor: '#ffffff',
               padding: '0.4rem 0.85rem',
-              fontSize: '1.15rem',
-              fontWeight: 700,
+              fontSize: '0.925rem',
+              fontFamily: 'var(--font-sans, sans-serif)',
+              fontWeight: 600,
               textDecoration: 'none',
               color: 'var(--ink, #2d3436)',
               transform: 'rotate(-1deg)',
@@ -158,9 +162,9 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             onClick={onReset}
             style={{
               padding: '0.4rem 0.85rem',
-              fontSize: '1.15rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
+              fontSize: '0.925rem',
+              fontFamily: 'var(--font-sans, sans-serif)',
+              fontWeight: 600,
             }}
           >
             {t.result.parseAnother}

@@ -5,26 +5,44 @@ export const Hero: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <section className="journal-hero">
-      {/* Decorative notebook software slogan: Paste. Parse. Export. */}
-      <div className="font-handwriting hero-doodle-left" aria-hidden="true">
-        <span>♪ {t.hero.tagline}</span>
-      </div>
-
-      {/* Main Headline Title */}
-      <h2 className="font-marker hero-title">
-        {t.hero.titlePrefix}
-        <span className="scribble-line">{t.hero.titleHighlight}</span>
-      </h2>
-
-      {/* Right Decorative Doodle: Minecraft-style Title Screen Splash */}
+    <section
+      className="journal-hero"
+      style={{
+        maxWidth: '1060px',
+        margin: '0 auto',
+        paddingTop: '2.5rem',
+        paddingBottom: '2rem',
+        textAlign: 'center',
+        position: 'relative',
+      }}
+    >
       <div
-        className="mc-splash hero-doodle-right"
-        title="Minecraft Splash!"
+        className="font-note hero-doodle-right mc-splash"
+        style={{
+          position: 'absolute',
+          right: '2.5rem',
+          top: '0.75rem',
+          fontSize: '1.55rem',
+          color: '#d97706',
+          userSelect: 'none',
+        }}
         aria-hidden="true"
       >
         {t.hero.noLoginDoodle}
       </div>
+
+      <h2
+        className="font-marker"
+        style={{
+          fontSize: 'clamp(2.5rem, 6vw, 4.25rem)',
+          lineHeight: 1.15,
+          color: 'var(--ink, #2d3436)',
+          margin: 0,
+        }}
+      >
+        {t.hero.titlePrefix}
+        <span className="scribble-line">{t.hero.titleHighlight}</span>
+      </h2>
     </section>
   );
 };

@@ -2,11 +2,13 @@
 
 /* Notebook Background Base */
 body {
-  background-color: var(--paper, #fdfbf7);
+  background-color: var(--paper, #f6f1e5);
   background-image:
-    linear-gradient(90deg, transparent 79px, var(--margin-red, #ff8a80) 79px, var(--margin-red, #ff8a80) 81px, transparent 81px),
-    linear-gradient(var(--line, #dfe6e9) 0.1em, transparent 0.1em);
-  background-size: 100% 2em;
+    url('/paper-grain.png'),
+    linear-gradient(var(--line, #e2dacd) 0.1em, transparent 0.1em);
+  background-size:
+    256px 256px,
+    100% 2em;
   color: var(--ink, #2d3436);
   font-family: var(--font-sans, sans-serif);
   line-height: 1.6;
@@ -26,7 +28,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--paper, #fdfbf7);
+  background: var(--paper, #f6f1e5);
   border-left: 2px solid var(--ink, #2d3436);
 }
 
@@ -34,30 +36,49 @@ body {
   background: var(--ink, #2d3436);
 }
 
-/* Loose-leaf Binder Holes */
+/* Loose-leaf Binder Spine (Desktop) - Scrolls naturally with paper */
 .binder-holes {
-  position: fixed;
-  left: 1rem;
+  position: absolute;
+  left: max(1rem, calc(12.5vw - 160px - 0.25rem));
   top: 0;
   bottom: 0;
-  width: 2rem;
+  width: 2.25rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  gap: 3.25rem;
   padding: 2.5rem 0;
-  opacity: 0.35;
-  z-index: 0;
+  overflow: hidden;
+  opacity: 0.4;
+  z-index: 2;
   pointer-events: none;
+  transition: left 0.15s ease;
 }
 
 .binder-hole {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.95rem;
+  height: 1.95rem;
+  flex-shrink: 0;
   border-radius: 50%;
-  border: 3.5px solid #a0a5a8;
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: inset 2px 2px 4px rgba(45, 52, 54, 0.25);
-  margin-left: -0.5rem;
+  border: 3px solid #8a8f92;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    inset 2px 2px 3px rgba(45, 52, 54, 0.28),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.5),
+    1px 1px 2px rgba(45, 52, 54, 0.12);
+}
+
+/* Notebook Vertical Margin Line - Scrolls naturally with paper */
+.journal-margin-line {
+  position: absolute;
+  left: max(4.25rem, calc(12.5vw - 160px + 3.75rem));
+  top: 0;
+  bottom: 0;
+  width: 2.5px;
+  background-color: var(--margin-red, #ff8a80);
+  opacity: 0.8;
+  z-index: 2;
+  pointer-events: none;
+  transition: left 0.15s ease;
 }
 
 /* Hand-drawn Borders */
@@ -93,6 +114,16 @@ body {
   box-shadow: var(--cutout-shadow-sm, 3px 3px 0 0 #2d3436);
 }
 
+/* Paper Texture for Cards & Sticky Notes */
+.journal-paper,
+.sticky-note-card,
+.paper-modal {
+  background-image: url('/paper-grain.png');
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  position: relative;
+}
+
 /* Washi Tape Strip */
 .tape {
   clip-path: polygon(
@@ -112,6 +143,9 @@ body {
 .sticker {
   border: 2px solid var(--ink, #2d3436);
   box-shadow: var(--sticker-shadow, 3px 3px 0 #2d3436);
+  background-image: url('/paper-grain.png');
+  background-repeat: repeat;
+  background-size: 256px 256px;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   user-select: none;
 }
@@ -169,12 +203,16 @@ body {
   border-bottom-right-radius: 5px;
 }
 
-/* Tiny Grid (Journal Paper Texture) */
+/* Tiny Grid (Journal Paper Texture + Grid) */
 .tiny-grid {
   background-image:
+    url('/paper-grain.png'),
     linear-gradient(rgba(45, 52, 54, 0.07) 1px, transparent 1px),
     linear-gradient(90deg, rgba(45, 52, 54, 0.07) 1px, transparent 1px);
-  background-size: 16px 16px;
+  background-size:
+    256px 256px,
+    16px 16px,
+    16px 16px;
 }
 
 /* Themed Paper Dropdown / Font Picker */
@@ -189,7 +227,7 @@ body {
   left: 14px;
   z-index: 3;
   padding: 0 7px;
-  background: var(--paper, #fdfbf7);
+  background: var(--paper, #f6f1e5);
   color: var(--ink-muted, #7b8185);
   font: 600 12px/1.2 'Caveat', cursive;
   letter-spacing: 0.04em;
@@ -227,6 +265,42 @@ body {
 
 .font-picker.open .font-picker-button .paper-caret {
   transform: rotate(180deg);
+}
+
+/* Header GitHub Star Sticker Button */
+.header-github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: var(--ink, #2d3436);
+  background: var(--paper-white, #ffffff);
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 225px 15px 255px 15px / 15px 255px 15px 225px;
+  padding: 7px 13px 6px 11px;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  transform: rotate(-0.5deg);
+  font: 700 14px/1.15 'Caveat', 'Noto Sans SC', cursive;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.header-github-btn:hover {
+  transform: translateY(-1px) rotate(0.3deg);
+  box-shadow: 4px 5px 0 var(--ink, #2d3436);
+  background: var(--note-yellow, #fff8bd);
+  color: var(--ink, #2d3436);
+}
+
+.header-github-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+.header-github-btn svg {
+  flex-shrink: 0;
 }
 
 .font-picker-menu {
@@ -335,47 +409,5 @@ body {
   gap: 4px;
 }
 
-/* Journal Hero Typography & Layout */
-.journal-hero {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-  text-align: center;
-  position: relative;
-  max-width: 980px;
-  margin: 0 auto;
-}
-
-.hero-doodle-left {
-  position: absolute;
-  left: 1.5rem;
-  top: 1.25rem;
-  font-size: 1.65rem;
-  color: #718096;
-  transform: rotate(-6deg);
-  user-select: none;
-  letter-spacing: 0.02em;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.hero-doodle-left:hover {
-  transform: rotate(-3deg) scale(1.04);
-  color: var(--ink, #2d3436);
-}
-
-.hero-doodle-right {
-  position: absolute;
-  right: 1.5rem;
-  top: 1.25rem;
-  user-select: none;
-}
-
-.hero-title {
-  font-size: clamp(2.35rem, 5.5vw, 4.25rem);
-  line-height: 1.15;
-  color: var(--ink, #2d3436);
-  margin: 0;
-  display: inline-block;
-  position: relative;
-}
 
 
