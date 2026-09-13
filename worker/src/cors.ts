@@ -20,7 +20,7 @@ export function getCorsHeaders(request: Request): Record<string, string> {
 
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept';
     headers['Access-Control-Max-Age'] = '86400';
   }

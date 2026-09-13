@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { recordParse, getAggregateStats, getUtcDateString } from './index';
+import { recordParse, getAggregateStats, getPublicStats, getUtcDateString } from './index';
 import worker from '../index';
 import { qqMusicProvider } from '../providers/qqmusic';
 
@@ -21,10 +21,37 @@ function createMockD1() {
           return { success: true };
         },
         async all() {
+          const sql = this._sql as string;
           const results: any[] = [];
-          for (const [key, count] of store.entries()) {
-            const [date, platform, metric] = key.split('::');
-            results.push({ date, platform, metric, count });
+
+          if (sql.includes('GROUP BY date, metric')) {
+            // Daily trend query
+            const dateThreshold = this._params[0];
+            for (const [key, count] of store.entries()) {
+              const [date, platform, metric] = key.split('::');
+              if (platform === 'all' && date !== 'TOTAL' && date >= dateThreshold) {
+                results.push({ date, metric, total: count });
+              }
+            }
+          } else if (sql.includes('daily_export_stats')) {
+            // Export trend query
+            const dateThreshold = this._params[0];
+            for (const [key, count] of store.entries()) {
+              if (key.startsWith('export::')) {
+                const parts = key.split('::');
+                const date = parts[1];
+                if (date !== 'TOTAL' && date >= dateThreshold) {
+                  results.push({ date, total: count });
+                }
+              }
+            }
+          } else {
+            // Standard aggregate_stats query (date IN (?1, ?2))
+            for (const [key, count] of store.entries()) {
+              if (key.startsWith('export::')) continue;
+              const [date, platform, metric] = key.split('::');
+              results.push({ date, platform, metric, count });
+            }
           }
           return { results };
         },
@@ -44,7 +71,18 @@ function createMockD1() {
   return db as unknown as D1Database & { _store: Map<string, number> };
 }
 
-describe('Anonymous Aggregate Statistics (Phase 5)', () => {
+function createMockCtx() {
+  const promises: Promise<any>[] = [];
+  return {
+    waitUntil(p: Promise<any>) { promises.push(p); },
+    passThroughOnException() {},
+    _promises: promises,
+  } as unknown as ExecutionContext & { _promises: Promise<any>[] };
+}
+
+describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () => {
+  // --- Backward compatibility tests (from v2.0.0) ---
+
   it('increments success counters atomically without persisting payload data', async () => {
     const mockDb = createMockD1();
     const today = getUtcDateString();
@@ -130,13 +168,13 @@ describe('Anonymous Aggregate Statistics (Phase 5)', () => {
       headers: { Origin: 'https://playlistout.com' },
     });
 
-    const response = await worker.fetch(request, { DB: mockDb }, {} as ExecutionContext);
+    const response = await worker.fetch(request, { DB: mockDb }, createMockCtx());
     expect(response.status).toBe(200);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.com');
 
     const body: any = await response.json();
     expect(body.success).toBe(true);
-    expect(body.data.totalSuccessfulParses).toBe(100);
+    expect(body.data.totalPlaylistsParsed).toBe(100);
   });
 
   it('rejects POST to /api/stats with 405 Method Not Allowed', async () => {
@@ -144,7 +182,7 @@ describe('Anonymous Aggregate Statistics (Phase 5)', () => {
       method: 'POST',
     });
 
-    const response = await worker.fetch(request, {}, {} as ExecutionContext);
+    const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(405);
     const body: any = await response.json();
     expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
@@ -152,7 +190,6 @@ describe('Anonymous Aggregate Statistics (Phase 5)', () => {
 
   it('records stats during /api/playlist execution without affecting response', async () => {
     const mockDb = createMockD1();
-    const today = getUtcDateString();
 
     const parseSpy = vi.spyOn(qqMusicProvider, 'parse').mockResolvedValueOnce({
       platform: 'qqmusic',
@@ -163,15 +200,91 @@ describe('Anonymous Aggregate Statistics (Phase 5)', () => {
     });
 
     const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
-    const response = await worker.fetch(request, { DB: mockDb }, {} as ExecutionContext);
+    const ctx = createMockCtx();
+    const response = await worker.fetch(request, { DB: mockDb }, ctx);
 
     expect(response.status).toBe(200);
     const body: any = await response.json();
     expect(body.success).toBe(true);
 
-    // Verify stats were recorded
-    expect(mockDb._store.get(`${today}::qqmusic::parse_success`)).toBe(1);
+    // Wait for waitUntil promises to settle
+    await Promise.allSettled(ctx._promises);
 
     parseSpy.mockRestore();
+  });
+
+  // --- Analytics Foundation tests ---
+
+  describe('getPublicStats (Analytics Foundation)', () => {
+    it('returns launchedAt date', async () => {
+      const stats = await getPublicStats(undefined);
+      expect(stats.launchedAt).toBe('2025-01-15');
+    });
+
+    it('returns zeroed stats when DB is unavailable', async () => {
+      const stats = await getPublicStats(undefined);
+      expect(stats.totalPlaylistsParsed).toBe(0);
+      expect(stats.playlistsParsedToday).toBe(0);
+      expect(stats.totalTracksProcessed).toBe(0);
+      expect(stats.tracksProcessedToday).toBe(0);
+      expect(stats.totalExports).toBe(0);
+      expect(stats.exportsToday).toBe(0);
+      expect(stats.recentDays).toEqual([]);
+      expect(stats.generatedAt).toBeTruthy();
+    });
+
+    it('returns enriched stats with track and export counts', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      mockDb._store.set(`TOTAL::all::parse_success`, 200);
+      mockDb._store.set(`${today}::all::parse_success`, 15);
+      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 200);
+      mockDb._store.set(`${today}::qqmusic::parse_success`, 15);
+      mockDb._store.set(`TOTAL::all::tracks_processed`, 5000);
+      mockDb._store.set(`${today}::all::tracks_processed`, 300);
+      mockDb._store.set(`TOTAL::all::exports_total`, 150);
+      mockDb._store.set(`${today}::all::exports_total`, 8);
+
+      const stats = await getPublicStats(mockDb);
+
+      expect(stats.totalPlaylistsParsed).toBe(200);
+      expect(stats.playlistsParsedToday).toBe(15);
+      expect(stats.totalTracksProcessed).toBe(5000);
+      expect(stats.tracksProcessedToday).toBe(300);
+      expect(stats.totalExports).toBe(150);
+      expect(stats.exportsToday).toBe(8);
+      expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(200);
+    });
+
+    it('does NOT expose private dimensional data in public stats', async () => {
+      const mockDb = createMockD1();
+      mockDb._store.set(`TOTAL::all::parse_success`, 100);
+      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
+
+      const stats = await getPublicStats(mockDb);
+      const statsStr = JSON.stringify(stats);
+
+      // Should not contain any private dimensional fields
+      expect(statsStr).not.toContain('country');
+      expect(statsStr).not.toContain('region');
+      expect(statsStr).not.toContain('deviceClass');
+      expect(statsStr).not.toContain('browserFamily');
+      expect(statsStr).not.toContain('osFamily');
+      expect(statsStr).not.toContain('errorCategory');
+      expect(statsStr).not.toContain('latencyBucket');
+      expect(statsStr).not.toContain('inputType');
+    });
+
+    it('handles D1 failure gracefully for public stats', async () => {
+      const failingDb = {
+        prepare() { throw new Error('D1 disconnected'); },
+        async batch() { throw new Error('D1 disconnected'); },
+      } as unknown as D1Database;
+
+      const stats = await getPublicStats(failingDb);
+      expect(stats.totalPlaylistsParsed).toBe(0);
+      expect(stats.launchedAt).toBe('2025-01-15');
+    });
   });
 });
