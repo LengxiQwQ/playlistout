@@ -25,6 +25,7 @@ export interface RawQQSong {
   title?: string;
   singer?: RawQQSinger[];
   albumname?: string;
+  albummid?: string;
   album?: RawQQAlbum | string;
   interval?: number;
 }
@@ -117,6 +118,15 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   // Source URL
   const sourceUrl = trackMid ? `https://y.qq.com/n/ryqq/songDetail/${trackMid}` : undefined;
 
+  // Track / Album Cover URL (zero additional requests: derived directly from raw upstream album mid)
+  let albumMid: string | undefined;
+  if (typeof rawSong.albummid === 'string' && rawSong.albummid.trim().length > 0) {
+    albumMid = rawSong.albummid.trim();
+  } else if (rawSong.album && typeof rawSong.album === 'object' && typeof rawSong.album.mid === 'string' && rawSong.album.mid.trim().length > 0) {
+    albumMid = rawSong.album.mid.trim();
+  }
+  const coverUrl = albumMid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${albumMid}.jpg` : undefined;
+
   return {
     index,
     id,
@@ -125,6 +135,7 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     album,
     durationMs,
     sourceUrl,
+    coverUrl,
   };
 }
 
