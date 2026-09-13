@@ -75,7 +75,7 @@ describe('FontSwitcher Component (Phase 3)', () => {
     localStorage.clear();
   });
 
-  it('renders with all 20 presets and allows selecting a font preset', () => {
+  it('renders with curated presets and allows selecting a font preset', () => {
     render(
       <LanguageProvider>
         <FontSwitcher />
@@ -108,12 +108,12 @@ describe('FontSwitcher Component (Phase 3)', () => {
     const button = screen.getByRole('button', { name: /原稿字体/ });
     fireEvent.click(button);
 
-    const typewriterOpt = screen.getByRole('option', { name: /打字机/ });
-    fireEvent.click(typewriterOpt);
+    const originalOpt = screen.getByRole('option', { name: /原稿字体/ });
+    fireEvent.click(originalOpt);
 
-    expect(document.body.dataset.fontPreset).toBe('typewriter');
-    expect(localStorage.getItem('playlistout-font-preset')).toBe('typewriter');
-    // Verify no external link injected for built-in Space Mono
-    expect(document.getElementById('font-link-typewriter')).toBeNull();
+    expect(document.body.dataset.fontPreset).toBe('original');
+    expect(localStorage.getItem('playlistout-font-preset')).toBe('original');
+    // Verify no external link injected for built-in original
+    expect(document.getElementById('font-link-original')).toBeNull();
   });
 });
