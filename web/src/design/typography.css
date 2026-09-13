@@ -8,17 +8,11 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
 }
 
-/* Font Presets */
+/* Font Presets (Curated 7 Styles) */
 body[data-font-preset="original"], body:not([data-font-preset]) {
   --font-marker: 'Permanent Marker', 'Noto Sans SC', cursive;
   --font-handwriting: 'Caveat', 'Noto Sans SC', cursive;
   --font-note: 'Nanum Pen Script', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="caveat"] {
-  --font-marker: 'Permanent Marker', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Caveat', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="patrick"] {
@@ -33,58 +27,10 @@ body[data-font-preset="kalam"] {
   --font-note: 'Caveat', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
-body[data-font-preset="architect"] {
-  --font-marker: 'Architects Daughter', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Architects Daughter', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="indie"] {
-  --font-marker: 'Permanent Marker', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Indie Flower', 'Noto Sans SC', cursive;
-  --font-note: 'Indie Flower', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="handlee"] {
-  --font-marker: 'Handlee', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Handlee', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
 body[data-font-preset="schoolbell"] {
   --font-marker: 'Schoolbell', 'Noto Sans SC', cursive;
   --font-handwriting: 'Schoolbell', 'Noto Sans SC', cursive;
   --font-note: 'Nanum Pen Script', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="shortstack"] {
-  --font-marker: 'Short Stack', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Short Stack', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="comingsoon"] {
-  --font-marker: 'Coming Soon', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Coming Soon', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="gloria"] {
-  --font-marker: 'Gloria Hallelujah', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Gloria Hallelujah', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="gochi"] {
-  --font-marker: 'Gochi Hand', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Gochi Hand', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="nothing"] {
-  --font-marker: 'Permanent Marker', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Nothing You Could Do', 'Noto Sans SC', cursive;
-  --font-note: 'Nothing You Could Do', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="covered"] {
@@ -99,34 +45,10 @@ body[data-font-preset="comic"] {
   --font-note: 'Comic Neue', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
-body[data-font-preset="softprint"] {
-  --font-marker: 'Quicksand', 'Noto Sans SC', sans-serif;
-  --font-handwriting: 'Quicksand', 'Noto Sans SC', sans-serif;
-  --font-note: 'Caveat', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="rocksalt"] {
-  --font-marker: 'Rock Salt', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Caveat', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
 body[data-font-preset="zhnote"] {
   --font-marker: 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
   --font-handwriting: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
   --font-note: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
-}
-body[data-font-preset="serifnote"] {
-  --font-marker: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
-  --font-handwriting: 'Noto Serif SC', serif;
-  --font-note: 'Caveat', 'Noto Serif SC', cursive;
-  --font-mono: 'Space Mono', 'Noto Serif SC', monospace;
-}
-body[data-font-preset="typewriter"] {
-  --font-marker: 'Space Mono', 'Noto Sans SC', monospace;
-  --font-handwriting: 'Space Mono', 'Noto Sans SC', monospace;
-  --font-note: 'Space Mono', 'Noto Sans SC', monospace;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 
