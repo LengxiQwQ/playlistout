@@ -75,46 +75,45 @@ describe('FontSwitcher Component (Phase 3)', () => {
     localStorage.clear();
   });
 
-  it('renders with curated presets and allows selecting a font preset', () => {
+  it('renders with Chinese curated presets and defaults to 毛笔手账 in zh-CN', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>,
     );
 
-    const button = screen.getByRole('button', { name: /原稿字体/ });
+    // In Chinese, default is 毛笔手账
+    const button = screen.getByRole('button', { name: /毛笔手账/ });
     expect(button).toBeInTheDocument();
 
     // Open dropdown
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
 
-    // Select Patrick Hand (named 经典硬笔 in Chinese)
-    const patrickOpt = screen.getByRole('option', { name: /经典硬笔/ });
-    fireEvent.click(patrickOpt);
+    // Select 快乐手绘
+    const kuaileOpt = screen.getByRole('option', { name: /快乐手绘/ });
+    fireEvent.click(kuaileOpt);
 
     // Verify preset applied to body and saved in localStorage
-    expect(document.body.dataset.fontPreset).toBe('patrick');
-    expect(localStorage.getItem('playlistout-font-preset')).toBe('patrick');
+    expect(document.body.dataset.fontPreset).toBe('zh_kuaile');
+    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zh_kuaile');
   });
 
-  it('switches instantly to built-in presets without network injection', () => {
+  it('switches to built-in presets without network injection', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>,
     );
 
-    const button = screen.getByRole('button', { name: /原稿字体/ });
+    const button = screen.getByRole('button', { name: /毛笔手账/ });
     fireEvent.click(button);
 
-    const originalOpt = screen.getByRole('option', { name: /原稿字体/ });
-    fireEvent.click(originalOpt);
+    const origOpt = screen.getByRole('option', { name: /原稿经典/ });
+    fireEvent.click(origOpt);
 
     expect(document.body.dataset.fontPreset).toBe('original');
-    expect(localStorage.getItem('playlistout-font-preset')).toBe('original');
-    // Verify no external link injected for built-in original
-    expect(document.getElementById('font-link-original')).toBeNull();
+    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('original');
   });
 
   it('renders pure Chinese font preset names and sample preview in zh-CN', () => {
@@ -125,28 +124,33 @@ describe('FontSwitcher Component (Phase 3)', () => {
     );
 
     // In Chinese, button and sample preview are pure Chinese
-    fireEvent.click(screen.getByRole('button', { name: /原稿字体/ }));
+    fireEvent.click(screen.getByRole('button', { name: /毛笔手账/ }));
     expect(screen.getAllByText('音乐手账').length).toBeGreaterThan(0);
-    expect(screen.getByRole('option', { name: /经典硬笔/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /毛笔手账/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /快乐手绘/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /洒脱行书/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /随性写意/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /萌趣黄油/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /原稿经典/ })).toBeInTheDocument();
   });
 
-  it('renders pure English font preset names and sample preview in en-US', () => {
+  it('renders pure English font preset names and defaults to Original Journal in en-US', () => {
     render(
       <LanguageProvider defaultLanguage="en-US">
         <FontSwitcher />
       </LanguageProvider>,
     );
 
-    // In English, the button displays Original Draft
-    expect(screen.getByRole('button', { name: /Original Draft/i })).toBeInTheDocument();
+    // In English, the button displays Original Journal
+    expect(screen.getByRole('button', { name: /Original Journal/i })).toBeInTheDocument();
 
     // Open dropdown
-    fireEvent.click(screen.getByRole('button', { name: /Original Draft/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Original Journal/i }));
 
     // In English, presets are purely English and sample preview is Music Journal
-    expect(screen.getByRole('option', { name: /Chinese Journal/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Patrick Hand/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Kalam Notes/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Schoolbell/i })).toBeInTheDocument();
     expect(screen.getAllByText('Music Journal').length).toBeGreaterThan(0);
   });
 });

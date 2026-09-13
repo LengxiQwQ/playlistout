@@ -11,13 +11,20 @@ export const enUS: Translations = {
     languageSwitch: 'EN / 中',
   },
   fonts: {
-    original: 'Original Draft',
+    zhnote: 'Chinese Brush (Kaishu)',
+    zh_kuaile: 'Happy Doodles',
+    zh_zhimang: 'Free Running Script',
+    zh_longcang: 'Expressive Cursive',
+    zh_huangyou: 'Butter Display',
+    zh_orig: 'Classic Hybrid',
+
+    original: 'Original Journal (Caveat)',
     patrick: 'Patrick Hand',
     kalam: 'Kalam Notes',
     schoolbell: 'Schoolbell',
     covered: 'Covered By Your Grace',
     comic: 'Comic Neue',
-    zhnote: 'Chinese Journal',
+
     sampleText: 'Music Journal',
   },
   hero: {
