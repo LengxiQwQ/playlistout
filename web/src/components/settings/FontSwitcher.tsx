@@ -143,7 +143,7 @@ export const FONT_PRESETS = ALL_FONT_PRESETS;
 const FONT_STORAGE_PREFIX = 'playlistout-font-preset';
 
 // Track font presets confirmed ready in browser session
-const loadedFontPresets = new Set<string>(['original']);
+const loadedFontPresets = new Set<string>(['original', 'zhnote']);
 
 export function checkFontLoaded(fontFamily: string): boolean {
   if (typeof document !== 'undefined' && 'fonts' in document && document.fonts?.check) {
@@ -245,8 +245,25 @@ export const FontSwitcher: React.FC = () => {
   const storageKey = isZh ? `${FONT_STORAGE_PREFIX}-zh` : `${FONT_STORAGE_PREFIX}-en`;
   const defaultPresetId = isZh ? 'zhnote' : 'original';
 
-  const [selectedPresetId, setSelectedPresetId] = useState<string>(defaultPresetId);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved && currentPresets.some((p) => p.id === saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return defaultPresetId;
+  });
   const [isOpen, setIsOpen] = useState(false);
+
+  // Preload stylesheets for all presets in the active drawer when opened
+  useEffect(() => {
+    if (isOpen) {
+      currentPresets.forEach(ensureFontStylesheet);
+    }
+  }, [isOpen, currentPresets]);
 
   const applyPreset = useCallback(
     (presetId: string, persist = true) => {
@@ -337,7 +354,12 @@ export const FontSwitcher: React.FC = () => {
         </span>
       </button>
 
-      <div className="font-picker-menu" id="fontPickerMenu" role="listbox" style={{ width: '335px' }}>
+      <div
+        className="font-picker-menu"
+        id="fontPickerMenu"
+        role="listbox"
+        style={{ width: 'min(335px, calc(100vw - 2rem))' }}
+      >
         <div className="font-picker-hint">{t.header.fontPickerHint}</div>
         {currentPresets.map((preset) => {
           const isActive = preset.id === currentPreset.id;
