@@ -163,7 +163,7 @@ export const StatsJournal: React.FC = () => {
           <div className="font-handwriting" style={{ fontSize: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 700 }}>QQ Music</span>
+                <span style={{ fontWeight: 700 }}>{t.search.platformQQ}</span>
                 <span>100%</span>
               </div>
               <div
@@ -186,7 +186,7 @@ export const StatsJournal: React.FC = () => {
 
             <div style={{ color: '#8a8f92', fontSize: '1.1rem', marginTop: '0.5rem' }}>
               <span className="font-note" style={{ fontSize: '1.3rem' }}>
-                NetEase, Kugou & Kuwo coming soon...
+                {t.stats.otherPlatformsComing}
               </span>
             </div>
           </div>

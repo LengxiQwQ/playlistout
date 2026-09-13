@@ -13,13 +13,13 @@ export interface FontPreset {
 }
 
 export const FONT_PRESETS: FontPreset[] = [
-  { id: 'original', index: '01', name: '原稿字体', sample: 'Playlist 歌单', sampleFontFamily: 'Caveat, "Ma Shan Zheng", cursive' },
-  { id: 'patrick', index: '02', name: 'Patrick Hand', sample: 'Playlist 歌单', sampleFontFamily: '"Patrick Hand", "ZCOOL KuaiLe", cursive', googleFontsQuery: 'Patrick+Hand' },
-  { id: 'kalam', index: '03', name: 'Kalam 笔记', sample: 'Playlist 歌单', sampleFontFamily: 'Kalam, "Ma Shan Zheng", cursive', googleFontsQuery: 'Kalam:wght@400;700' },
-  { id: 'schoolbell', index: '04', name: 'Schoolbell', sample: 'Playlist 歌单', sampleFontFamily: 'Schoolbell, "STKaiti", cursive', googleFontsQuery: 'Schoolbell' },
-  { id: 'covered', index: '05', name: 'Covered By Your Grace', sample: 'Playlist 歌单', sampleFontFamily: '"Covered By Your Grace", "Ma Shan Zheng", cursive', googleFontsQuery: 'Covered+By+Your+Grace' },
-  { id: 'comic', index: '06', name: 'Comic Neue', sample: 'Playlist 歌单', sampleFontFamily: '"Comic Neue", "ZCOOL KuaiLe", cursive', googleFontsQuery: 'Comic+Neue:wght@400;700' },
-  { id: 'zhnote', index: '07', name: '中文手账', sample: 'Playlist 歌单', sampleFontFamily: 'Caveat, "Ma Shan Zheng", cursive', googleFontsQuery: 'Ma+Shan+Zheng&family=ZCOOL+KuaiLe' },
+  { id: 'original', index: '01', name: '原稿字体', sample: '音乐手账', sampleFontFamily: 'Caveat, "Ma Shan Zheng", cursive' },
+  { id: 'patrick', index: '02', name: '经典硬笔', sample: '音乐手账', sampleFontFamily: '"Patrick Hand", "ZCOOL KuaiLe", cursive', googleFontsQuery: 'Patrick+Hand' },
+  { id: 'kalam', index: '03', name: '钢笔笔记', sample: '音乐手账', sampleFontFamily: 'Kalam, "Ma Shan Zheng", cursive', googleFontsQuery: 'Kalam:wght@400;700' },
+  { id: 'schoolbell', index: '04', name: '校园随笔', sample: '音乐手账', sampleFontFamily: 'Schoolbell, "STKaiti", cursive', googleFontsQuery: 'Schoolbell' },
+  { id: 'covered', index: '05', name: '随性细草', sample: '音乐手账', sampleFontFamily: '"Covered By Your Grace", "Ma Shan Zheng", cursive', googleFontsQuery: 'Covered+By+Your+Grace' },
+  { id: 'comic', index: '06', name: '漫感手绘', sample: '音乐手账', sampleFontFamily: '"Comic Neue", "ZCOOL KuaiLe", cursive', googleFontsQuery: 'Comic+Neue:wght@400;700' },
+  { id: 'zhnote', index: '07', name: '毛笔手账', sample: '音乐手账', sampleFontFamily: 'Caveat, "Ma Shan Zheng", cursive', googleFontsQuery: 'Ma+Shan+Zheng&family=ZCOOL+KuaiLe' },
 ];
 
 const FONT_STORAGE_KEY = 'playlistout-font-preset';
@@ -229,7 +229,7 @@ export const FontSwitcher: React.FC = () => {
                 className="font-option-sample"
                 style={{ fontFamily: preset.sampleFontFamily }}
               >
-                {preset.sample}
+                {t.fonts.sampleText}
               </span>
             </button>
           );

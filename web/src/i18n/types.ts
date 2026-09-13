@@ -18,6 +18,7 @@ export interface Translations {
     covered: string;
     comic: string;
     zhnote: string;
+    sampleText: string;
   };
   hero: {
     pasteDoodle: string;
@@ -27,6 +28,7 @@ export interface Translations {
     titleHighlight: string;
   };
   search: {
+    badge: string;
     inputLabel: string;
     placeholder: string;
     parseButton: string;
@@ -39,6 +41,7 @@ export interface Translations {
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;
+    moreSoon: string;
   };
   loading: {
     step1: string;
@@ -67,6 +70,7 @@ export interface Translations {
     viewOnQQ: string;
     parseAnother: string;
     justNow: string;
+    noCoverAria: string;
   };
   table: {
     listTitle: string;
@@ -117,6 +121,7 @@ export interface Translations {
     allTimeTracks: string;
     allTimeSubtext: string;
     fromWhereTitle: string;
+    otherPlatformsComing: string;
   };
   privacy: {
     modalTitle: string;

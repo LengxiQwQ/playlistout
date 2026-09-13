@@ -89,8 +89,8 @@ describe('FontSwitcher Component (Phase 3)', () => {
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
 
-    // Select Patrick Hand
-    const patrickOpt = screen.getByRole('option', { name: /Patrick Hand/ });
+    // Select Patrick Hand (named 经典硬笔 in Chinese)
+    const patrickOpt = screen.getByRole('option', { name: /经典硬笔/ });
     fireEvent.click(patrickOpt);
 
     // Verify preset applied to body and saved in localStorage
@@ -117,7 +117,21 @@ describe('FontSwitcher Component (Phase 3)', () => {
     expect(document.getElementById('font-link-original')).toBeNull();
   });
 
-  it('localizes font preset names based on the active language', () => {
+  it('renders pure Chinese font preset names and sample preview in zh-CN', () => {
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <FontSwitcher />
+      </LanguageProvider>,
+    );
+
+    // In Chinese, button and sample preview are pure Chinese
+    fireEvent.click(screen.getByRole('button', { name: /原稿字体/ }));
+    expect(screen.getAllByText('音乐手账').length).toBeGreaterThan(0);
+    expect(screen.getByRole('option', { name: /经典硬笔/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /毛笔手账/ })).toBeInTheDocument();
+  });
+
+  it('renders pure English font preset names and sample preview in en-US', () => {
     render(
       <LanguageProvider defaultLanguage="en-US">
         <FontSwitcher />
@@ -130,7 +144,9 @@ describe('FontSwitcher Component (Phase 3)', () => {
     // Open dropdown
     fireEvent.click(screen.getByRole('button', { name: /Original Draft/i }));
 
-    // In English, zhnote is named Chinese Journal
+    // In English, presets are purely English and sample preview is Music Journal
     expect(screen.getByRole('option', { name: /Chinese Journal/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Patrick Hand/i })).toBeInTheDocument();
+    expect(screen.getAllByText('Music Journal').length).toBeGreaterThan(0);
   });
 });

@@ -12,12 +12,13 @@ export const zhCN: Translations = {
   },
   fonts: {
     original: '原稿字体',
-    patrick: 'Patrick Hand (硬笔)',
-    kalam: 'Kalam 笔记',
-    schoolbell: 'Schoolbell (课堂)',
-    covered: 'Covered (连笔)',
-    comic: 'Comic Neue (漫画)',
-    zhnote: '中文手账 (毛笔)',
+    patrick: '经典硬笔',
+    kalam: '钢笔笔记',
+    schoolbell: '校园随笔',
+    covered: '随性细草',
+    comic: '漫感手绘',
+    zhnote: '毛笔手账',
+    sampleText: '音乐手账',
   },
   hero: {
     pasteDoodle: '♪ 贴在这里',
@@ -27,6 +28,7 @@ export const zhCN: Translations = {
     titleHighlight: '歌单带走。',
   },
   search: {
+    badge: 'QQ 音乐公开歌单解析 · MVP',
     inputLabel: '在这里粘贴歌单链接 ↓',
     placeholder: '粘贴 QQ 音乐公开歌单链接（例如：https://y.qq.com/n/ryqq/playlist/...）或 ID',
     parseButton: '解析',
@@ -39,6 +41,7 @@ export const zhCN: Translations = {
     worksWith: '支持你的日常音乐平台',
     platformQQ: 'QQ 音乐',
     platformQQDesc: '公开歌单现已支持',
+    moreSoon: '敬请期待更多...',
   },
   loading: {
     step1: '正在翻开歌单...',
@@ -61,12 +64,13 @@ export const zhCN: Translations = {
   },
   result: {
     doneParsingHint: '解析完毕？↓ 你的结果就在这里',
-    parsedPlaylistSticker: 'PARSED PLAYLIST',
+    parsedPlaylistSticker: '已解析歌单',
     tracksCount: '共 {count} 首歌曲',
     creatorPrefix: '创建者：',
     viewOnQQ: '在 QQ 音乐中查看 ↗',
     parseAnother: '解析其他歌单',
     justNow: '刚刚',
+    noCoverAria: '无封面',
   },
   table: {
     listTitle: '歌曲列表 ({count})',
@@ -117,6 +121,7 @@ export const zhCN: Translations = {
     allTimeTracks: '首歌曲',
     allTimeSubtext: '对于一本小手账来说，还不错吧？',
     fromWhereTitle: '来自哪里？',
+    otherPlatformsComing: '网易云、酷狗与酷我音乐敬请期待...',
   },
   privacy: {
     modalTitle: '隐私政策与数据说明',
@@ -135,9 +140,9 @@ export const zhCN: Translations = {
     confirmButton: '我知道了',
   },
   footer: {
-    drawnBy: 'Drawn & coded with ♥ by LengxiQwQ',
+    drawnBy: '由 LengxiQwQ 用心手绘与编码 ♥',
     copyright: 'PlaylistOut © 2026',
-    githubLink: 'GitHub',
+    githubLink: '代码仓库',
     privacyLink: '隐私声明',
   },
 };
