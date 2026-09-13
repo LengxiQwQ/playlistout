@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n';
 
 export interface FontPreset {
@@ -118,10 +118,7 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
 export const FontSwitcher: React.FC = () => {
   const { t } = useTranslation();
   const [selectedPresetId, setSelectedPresetId] = useState<string>('original');
-  const [loadingPresetId, setLoadingPresetId] = useState<string | null>(null);
-  const [loadNotice, setLoadNotice] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const noticeTimeoutRef = useRef<number | undefined>(undefined);
 
   const applyPreset = useCallback((presetId: string, persist = true) => {
     const preset = FONT_PRESETS.find((p) => p.id === presetId) || FONT_PRESETS[0];
@@ -138,44 +135,11 @@ export const FontSwitcher: React.FC = () => {
   }, []);
 
   const selectPreset = useCallback(
-    async (preset: FontPreset) => {
-      if (preset.id === selectedPresetId) {
-        setIsOpen(false);
-        return;
-      }
-
-      // Synchronous path for built-in or already loaded fonts, or in test environments
-      const isAlreadyReady =
-        !preset.googleFontsQuery ||
-        loadedFontPresets.has(preset.id) ||
-        (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test');
-
-      if (isAlreadyReady) {
-        applyPreset(preset.id);
-        setIsOpen(false);
-        return;
-      }
-
-      // Asynchronous progressive loading with feedback
-      setLoadingPresetId(preset.id);
-      setLoadNotice(null);
-      if (noticeTimeoutRef.current) {
-        clearTimeout(noticeTimeoutRef.current);
-      }
-
-      const ok = await loadPresetFont(preset, 3500);
-
-      // Smoothly apply without page refresh
+    (preset: FontPreset) => {
       applyPreset(preset.id);
-      setLoadingPresetId(null);
       setIsOpen(false);
-
-      if (!ok) {
-        setLoadNotice('字体下载较慢，已启用平滑回退');
-        noticeTimeoutRef.current = window.setTimeout(() => setLoadNotice(null), 3000);
-      }
     },
-    [selectedPresetId, applyPreset],
+    [applyPreset],
   );
 
   // Restore saved preset on mount
@@ -183,12 +147,7 @@ export const FontSwitcher: React.FC = () => {
     try {
       const saved = localStorage.getItem(FONT_STORAGE_KEY);
       if (saved && FONT_PRESETS.some((p) => p.id === saved)) {
-        const preset = FONT_PRESETS.find((p) => p.id === saved)!;
-        applyPreset(preset.id, false);
-        // Pre-fetch stylesheet in background if needed
-        if (preset.googleFontsQuery) {
-          loadPresetFont(preset, 5000);
-        }
+        applyPreset(saved, false);
       }
     } catch {
       // Default to original
@@ -219,9 +178,6 @@ export const FontSwitcher: React.FC = () => {
   }, [isOpen]);
 
   const currentPreset = FONT_PRESETS.find((p) => p.id === selectedPresetId) || FONT_PRESETS[0];
-  const activeLoadingPreset = loadingPresetId
-    ? FONT_PRESETS.find((p) => p.id === loadingPresetId)
-    : null;
 
   return (
     <div className={`font-picker ${isOpen ? 'open' : ''}`} id="fontPicker">
@@ -234,17 +190,8 @@ export const FontSwitcher: React.FC = () => {
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span id="fontPickerLabel" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-          {activeLoadingPreset ? (
-            <>
-              <span className="animate-ink-spin" style={{ display: 'inline-block' }}>
-                ✎
-              </span>
-              <span>载入中...</span>
-            </>
-          ) : (
-            `${currentPreset.index} · ${currentPreset.name}`
-          )}
+        <span id="fontPickerLabel">
+          {currentPreset.index} · {currentPreset.name}
         </span>
         <span className="paper-caret" style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
           ⌄
@@ -253,10 +200,8 @@ export const FontSwitcher: React.FC = () => {
 
       <div className="font-picker-menu" id="fontPickerMenu" role="listbox" style={{ width: '315px' }}>
         <div className="font-picker-hint">{t.header.fontPickerHint}</div>
-        {loadNotice && <div className="font-picker-notice">{loadNotice}</div>}
         {FONT_PRESETS.map((preset) => {
           const isActive = preset.id === selectedPresetId;
-          const isLoadingThis = preset.id === loadingPresetId;
           return (
             <button
               key={preset.id}
@@ -269,19 +214,12 @@ export const FontSwitcher: React.FC = () => {
             >
               <span className="font-option-index">{preset.index}</span>
               <span className="font-option-name">{preset.name}</span>
-              {isLoadingThis ? (
-                <span className="font-option-loading">
-                  <span className="animate-ink-spin" style={{ display: 'inline-block' }}>✎</span>
-                  载入中...
-                </span>
-              ) : (
-                <span
-                  className="font-option-sample"
-                  style={{ fontFamily: preset.sampleFontFamily }}
-                >
-                  {preset.sample}
-                </span>
-              )}
+              <span
+                className="font-option-sample"
+                style={{ fontFamily: preset.sampleFontFamily }}
+              >
+                {preset.sample}
+              </span>
             </button>
           );
         })}

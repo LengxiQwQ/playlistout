@@ -36,7 +36,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
 
       <div className="table-responsive" style={{ maxHeight: '620px', overflowY: 'auto', overflowX: 'auto' }}>
         <table
-          className="track-table font-mono"
+          className="track-table"
           aria-label={format(t.table.listTitle, { count: tracks.length })}
           style={{
             width: '100%',
@@ -55,7 +55,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                 zIndex: 10,
               }}
             >
-              <th scope="col" className="col-index" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-index font-mono" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92' }}>
                 {t.table.colIndex}
               </th>
               <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92' }}>
@@ -72,7 +72,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
               </th>
               <th
                 scope="col"
-                className="col-duration hide-mobile"
+                className="col-duration hide-mobile font-mono"
                 style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92' }}
               >
                 {t.table.colDuration}
@@ -94,33 +94,42 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     borderBottom: '1px solid rgba(45, 52, 54, 0.08)',
                   }}
                 >
-                  <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem' }}>
+                  <td className="col-index font-mono" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem' }}>
                     {String(track.index).padStart(2, '0')}
                   </td>
                   <td className="col-cover" style={{ padding: '0.65rem 0.5rem' }}>
                     <TrackArtwork coverUrl={track.coverUrl} title={track.title} size={38} />
                   </td>
-                  <td className="col-title" style={{ fontWeight: 700, padding: '0.65rem 0.75rem', color: 'var(--ink, #2d3436)' }}>
-                    <span className="track-title-text" title={track.title}>
+                  <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: 'var(--ink, #2d3436)' }}>
+                    <span
+                      className="track-title-text font-handwriting"
+                      title={track.title}
+                      style={{ fontWeight: 700, fontSize: '1.125rem', display: 'inline-block' }}
+                    >
                       {track.title}
                     </span>
                   </td>
-                  <td className="col-artist" style={{ color: '#4b5563', padding: '0.65rem 0.75rem' }} title={artistsText}>
+                  <td
+                    className="col-artist font-handwriting"
+                    style={{ color: '#4b5563', padding: '0.65rem 0.75rem', fontSize: '1.025rem' }}
+                    title={artistsText}
+                  >
                     {artistsText}
                   </td>
                   <td
-                    className="col-album hide-mobile"
+                    className="col-album hide-mobile font-handwriting"
                     style={{
                       color: '#6b7280',
                       fontStyle: 'italic',
                       padding: '0.65rem 0.75rem',
+                      fontSize: '0.975rem',
                     }}
                     title={albumText}
                   >
                     {albumText}
                   </td>
                   <td
-                    className="col-duration hide-mobile"
+                    className="col-duration hide-mobile font-mono"
                     style={{
                       textAlign: 'right',
                       color: '#8a8f92',
