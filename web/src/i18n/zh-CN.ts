@@ -28,8 +28,9 @@ export const zhCN: Translations = {
     sampleText: '音乐手账',
   },
   hero: {
-    pasteDoodle: '♪ 贴在这里',
-    noLoginDoodle: '无需登录，轻松带走 :)',
+    tagline: '粘贴 · 解析 · 导出',
+    pasteDoodle: '♪ 粘贴 · 解析 · 导出',
+    noLoginDoodle: '免登录 · 干净清爽 :)',
     subtitle: '一本把你喜爱的歌单轻松带走的数字音乐手账。',
     titlePrefix: '把你的 ',
     titleHighlight: '歌单带走。',

@@ -15,6 +15,30 @@
 }
 
 /* Tablet & Mobile Overrides */
+@media (max-width: 860px) {
+  .journal-hero {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .hero-doodle-left {
+    position: static;
+    font-size: 1.35rem;
+    transform: rotate(-3deg);
+    margin: 0;
+  }
+
+  .hero-doodle-right {
+    position: static;
+    font-size: 1.35rem;
+    margin-top: 0.35rem;
+  }
+}
+
 @media (max-width: 768px) {
   /* Simplify notebook paper background on small screens */
   body {

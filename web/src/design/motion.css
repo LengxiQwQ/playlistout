@@ -60,6 +60,39 @@
   animation: pencilScribble 2.5s ease-in-out infinite;
 }
 
+/* Minecraft Title Splash Wobble & Breathing Animation */
+@keyframes mcSplash {
+  0%, 100% {
+    transform: rotate(-14deg) scale(1, 1);
+  }
+  50% {
+    transform: rotate(-12deg) scale(1.18, 1.12);
+  }
+}
+
+.mc-splash {
+  display: inline-block;
+  color: #d97706;
+  text-shadow:
+    1px 1px 0px #fef08a,
+    2px 2px 2px rgba(180, 83, 9, 0.22);
+  font-family: var(--font-marker, cursive);
+  font-size: 1.6rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transform-origin: center center;
+  animation: mcSplash 1.35s ease-in-out infinite;
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+  transition: filter 0.2s ease;
+}
+
+.mc-splash:hover {
+  filter: brightness(1.18) drop-shadow(0 0 6px rgba(245, 158, 11, 0.45));
+  animation-duration: 0.65s;
+}
+
 /* Respect user's reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,
