@@ -60,13 +60,13 @@
   animation: pencilScribble 2.5s ease-in-out infinite;
 }
 
-/* Minecraft Title Splash Wobble & Breathing Animation */
+/* Minecraft Title Splash Wobble & Breathing Animation (Rightward tilt matching notebook layout) */
 @keyframes mcSplash {
   0%, 100% {
-    transform: rotate(-14deg) scale(1, 1);
+    transform: rotate(8deg) scale(1, 1);
   }
   50% {
-    transform: rotate(-12deg) scale(1.18, 1.12);
+    transform: rotate(12deg) scale(1.18, 1.12);
   }
 }
 
