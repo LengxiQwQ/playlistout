@@ -85,10 +85,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; defaultLang
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
+const defaultFormat = (template: string, vars: Record<string, string | number>): string => {
+  return Object.entries(vars).reduce(
+    (acc, [key, val]) => acc.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val)),
+    template,
+  );
+};
+
+const defaultContextValue: LanguageContextValue = {
+  language: 'zh-CN',
+  setLanguage: () => {},
+  toggleLanguage: () => {},
+  t: zhCN,
+  format: defaultFormat,
+};
+
 export function useTranslation(): LanguageContextValue {
   const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useTranslation must be used within a LanguageProvider');
-  }
-  return context;
+  return context || defaultContextValue;
 }

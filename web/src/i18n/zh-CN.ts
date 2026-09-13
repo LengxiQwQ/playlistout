@@ -20,8 +20,8 @@ export const zhCN: Translations = {
   search: {
     inputLabel: '在这里粘贴歌单链接 ↓',
     placeholder: '粘贴 QQ 音乐公开歌单链接（例如：https://y.qq.com/n/ryqq/playlist/...）或 ID',
-    parseButton: '解析 →',
-    parsingButton: '正在记下...',
+    parseButton: '解析',
+    parsingButton: '解析中...',
     clearInput: '清空输入框',
     quickSamplesLabel: '快速体验示例：',
     sampleFolk: '民谣流行 (636首)',
@@ -67,6 +67,8 @@ export const zhCN: Translations = {
     colArtist: '歌手',
     colAlbum: '专辑',
     colDuration: '时长',
+    noArtist: '—',
+    noAlbum: '—',
   },
   export: {
     fileExportTitle: '本地文件导出',
@@ -109,6 +111,7 @@ export const zhCN: Translations = {
   },
   privacy: {
     modalTitle: '隐私政策与数据说明',
+    viewDataNotice: '查看数据说明',
     closeLabel: '关闭隐私说明',
     section1Title: '1. 仅限公开歌单',
     section1Content: 'PlaylistOut 仅支持解析无需登录即可在公开网页访问的 QQ 音乐公开歌单。我们无法、也不会尝试获取或解析任何私密歌单、仅自己可见或需要授权访问的受限内容。',
@@ -126,6 +129,6 @@ export const zhCN: Translations = {
     drawnBy: 'Drawn & coded with ♥ by LengxiQwQ',
     copyright: 'PlaylistOut © 2026',
     githubLink: 'GitHub',
-    privacyLink: '隐私说明',
+    privacyLink: '隐私声明',
   },
 };

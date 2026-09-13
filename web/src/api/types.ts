@@ -11,6 +11,7 @@ export interface Track {
   album?: string;
   durationMs?: number;
   sourceUrl?: string;
+  coverUrl?: string;
 }
 
 export interface Playlist {

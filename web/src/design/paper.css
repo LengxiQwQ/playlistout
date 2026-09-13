@@ -148,32 +148,25 @@ body {
 /* Song Row Marker Stroke Sweep */
 .song-row {
   position: relative;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.18s ease;
 }
 
-.song-row:hover .marker-stroke {
-  opacity: 1;
-  transform: scaleX(1) rotate(-0.6deg);
+.song-row td {
+  transition: background-color 0.18s ease;
 }
 
-.marker-stroke {
-  position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
-  bottom: 0.65rem;
-  height: 0.55rem;
-  background: rgba(255, 234, 167, 0.85);
-  z-index: 0;
-  opacity: 0;
-  transform: scaleX(0.3);
-  transform-origin: left;
-  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
+.song-row:hover td {
+  background-color: rgba(255, 234, 167, 0.38);
 }
 
-.song-row > * {
-  position: relative;
-  z-index: 1;
+.song-row:hover td:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.song-row:hover td:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
 }
 
 /* Tiny Grid (Journal Paper Texture) */

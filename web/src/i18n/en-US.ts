@@ -67,6 +67,8 @@ export const enUS: Translations = {
     colArtist: 'Artist',
     colAlbum: 'Album',
     colDuration: 'Duration',
+    noArtist: '—',
+    noAlbum: '—',
   },
   export: {
     fileExportTitle: 'Local File Export',
@@ -109,6 +111,7 @@ export const enUS: Translations = {
   },
   privacy: {
     modalTitle: 'Privacy Policy & Data Practices',
+    viewDataNotice: 'View data practices',
     closeLabel: 'Close privacy dialog',
     section1Title: '1. Public Playlists Only',
     section1Content: 'PlaylistOut only parses publicly accessible QQ Music playlists. We do not access or attempt to access private or restricted playlists.',
