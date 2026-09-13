@@ -1,5 +1,11 @@
+@import './design/tokens.css';
+@import './design/typography.css';
+@import './design/paper.css';
+@import './design/motion.css';
+@import './design/responsive.css';
+
 :root {
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   --bg-color: #f8fafc;
   --card-bg: #ffffff;
   --text-main: #0f172a;

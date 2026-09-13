@@ -1,0 +1,56 @@
+/* PlaylistOut Music Journal - Responsive Layout */
+
+.journal-container {
+  max-width: var(--max-content-width, 1150px);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 5rem;
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 768px) {
+  .journal-container {
+    padding: 2rem 2.5rem 6rem;
+  }
+}
+
+/* Tablet & Mobile Overrides */
+@media (max-width: 768px) {
+  /* Simplify notebook paper background on small screens */
+  body {
+    background-image: linear-gradient(var(--line, #dfe6e9) 0.1em, transparent 0.1em);
+  }
+
+  /* Hide binder holes */
+  .binder-holes {
+    display: none !important;
+  }
+
+  /* Reduce rotations to prevent horizontal scrollbars or clipping */
+  .hand-drawn-border,
+  .hand-drawn-border-alt,
+  .paper-shadow,
+  .sticker,
+  .sticky-note-card {
+    transform: none !important;
+  }
+
+  /* Compact padding for paper surfaces */
+  .journal-paper {
+    padding: 1.25rem !important;
+  }
+
+  .sticky-note-card {
+    padding: 1.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .journal-container {
+    padding: 1rem 0.75rem 4rem;
+  }
+
+  .tape {
+    display: none; /* Hide tapes on very narrow devices to save space */
+  }
+}

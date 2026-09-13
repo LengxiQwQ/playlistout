@@ -1,0 +1,48 @@
+/* PlaylistOut Music Journal - Design Tokens */
+:root {
+  /* Paper & Ink */
+  --paper: #fdfbf7;
+  --paper-white: #ffffff;
+  --ink: #2d3436;
+  --ink-light: #636e72;
+  --ink-muted: #8a8f92;
+  --ink-faint: rgba(45, 52, 54, 0.18);
+
+  /* Notebook ruling */
+  --line: #dfe6e9;
+  --margin-red: #ff8a80;
+
+  /* Stationery Palette */
+  --note-yellow: #fff8bd;
+  --note-yellow-dark: #fff3a8;
+  --highlight-yellow: #ffeaa7;
+  --note-mint: #dff7ef;
+  --note-blue: #e8f8ff;
+  --note-error: #ffebee;
+  --note-error-border: #ffcdd2;
+  --error-ink: #c0392b;
+
+  /* Tape Palette */
+  --tape-pink: rgba(244, 114, 182, 0.55);
+  --tape-cyan: rgba(129, 236, 236, 0.55);
+  --tape-green: rgba(134, 239, 172, 0.45);
+  --tape-yellow: rgba(254, 240, 138, 0.65);
+
+  /* Shadows */
+  --paper-shadow: 8px 10px 0 rgba(45, 52, 54, 0.15);
+  --paper-shadow-hover: 10px 12px 0 rgba(45, 52, 54, 0.18);
+  --cutout-shadow: 6px 6px 0 0 #2d3436;
+  --cutout-shadow-sm: 3px 3px 0 0 #2d3436;
+  --sticker-shadow: 3px 3px 0 #2d3436;
+  --sticker-shadow-hover: 5px 5px 0 #2d3436;
+
+  /* Layout widths */
+  --max-content-width: 1150px;
+  --search-note-width: 820px;
+  --result-paper-width: 1050px;
+
+  /* Transitions */
+  --ease-journal: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms ease;
+  --transition-normal: 220ms ease;
+}
