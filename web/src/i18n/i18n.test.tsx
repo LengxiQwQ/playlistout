@@ -77,7 +77,7 @@ describe('FontSwitcher Component (Phase 3)', () => {
 
   it('renders with curated presets and allows selecting a font preset', () => {
     render(
-      <LanguageProvider>
+      <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>,
     );
@@ -100,7 +100,7 @@ describe('FontSwitcher Component (Phase 3)', () => {
 
   it('switches instantly to built-in presets without network injection', () => {
     render(
-      <LanguageProvider>
+      <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>,
     );
@@ -115,5 +115,22 @@ describe('FontSwitcher Component (Phase 3)', () => {
     expect(localStorage.getItem('playlistout-font-preset')).toBe('original');
     // Verify no external link injected for built-in original
     expect(document.getElementById('font-link-original')).toBeNull();
+  });
+
+  it('localizes font preset names based on the active language', () => {
+    render(
+      <LanguageProvider defaultLanguage="en-US">
+        <FontSwitcher />
+      </LanguageProvider>,
+    );
+
+    // In English, the button displays Original Draft
+    expect(screen.getByRole('button', { name: /Original Draft/i })).toBeInTheDocument();
+
+    // Open dropdown
+    fireEvent.click(screen.getByRole('button', { name: /Original Draft/i }));
+
+    // In English, zhnote is named Chinese Journal
+    expect(screen.getByRole('option', { name: /Chinese Journal/i })).toBeInTheDocument();
   });
 });

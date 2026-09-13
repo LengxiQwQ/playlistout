@@ -10,6 +10,15 @@ export const enUS: Translations = {
     fontPickerHint: 'Pick one and watch the whole notebook change ↓',
     languageSwitch: 'EN / 中',
   },
+  fonts: {
+    original: 'Original Draft',
+    patrick: 'Patrick Hand',
+    kalam: 'Kalam Notes',
+    schoolbell: 'Schoolbell',
+    covered: 'Covered By Your Grace',
+    comic: 'Comic Neue',
+    zhnote: 'Chinese Journal',
+  },
   hero: {
     pasteDoodle: '♪ paste it here',
     noLoginDoodle: 'no login, no mess :)',
