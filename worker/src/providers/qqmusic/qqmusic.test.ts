@@ -101,6 +101,7 @@ describe('QQ Music Normalization (Fixtures)', () => {
     expect(t1.album).toBe('叶惠美');
     expect(t1.durationMs).toBe(269000);
     expect(t1.sourceUrl).toBe('https://y.qq.com/n/ryqq/songDetail/001abc');
+    expect(t1.coverUrl).toBe('https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg');
 
     // Track 2: Multi-artist (Korean Unicode)
     const t2 = playlist.tracks[1];
@@ -129,6 +130,7 @@ describe('QQ Music Normalization (Fixtures)', () => {
     expect(t5.title).toBe('No Album Track 🎶');
     expect(t5.artists).toEqual(['Various Artists']);
     expect(t5.album).toBeUndefined();
+    expect(t5.coverUrl).toBeUndefined();
   });
 
   it('normalizes fallback musicu response correctly', () => {
