@@ -1,0 +1,77 @@
+/* PlaylistOut Music Journal - Motion & Animations */
+
+/* Rotating carets */
+.paper-caret {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+/* Modal and Dropdown animations */
+@keyframes paperUnfold {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) rotate(-1deg) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-0.25deg) scale(1);
+  }
+}
+
+@keyframes paperModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96) rotate(-0.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0.2deg);
+  }
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes pencilScribble {
+  0% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg) translateX(1px); }
+  100% { transform: rotate(-2deg); }
+}
+
+@keyframes inkSpin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-ink-spin {
+  animation: inkSpin 0.9s linear infinite;
+}
+
+.animate-scribble {
+  animation: pencilScribble 2.5s ease-in-out infinite;
+}
+
+/* Respect user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .binder-holes,
+  .song-row:hover .marker-stroke {
+    transition: none !important;
+  }
+}

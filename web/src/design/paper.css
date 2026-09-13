@@ -1,0 +1,325 @@
+/* PlaylistOut Music Journal - Paper & Stationery Metaphor */
+
+/* Notebook Background Base */
+body {
+  background-color: var(--paper, #fdfbf7);
+  background-image:
+    linear-gradient(90deg, transparent 79px, var(--margin-red, #ff8a80) 79px, var(--margin-red, #ff8a80) 81px, transparent 81px),
+    linear-gradient(var(--line, #dfe6e9) 0.1em, transparent 0.1em);
+  background-size: 100% 2em;
+  color: var(--ink, #2d3436);
+  font-family: var(--font-sans, sans-serif);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Notebook Selection & Scrollbar */
+::selection {
+  background: var(--highlight-yellow, #ffeaa7);
+  color: var(--ink, #2d3436);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper, #fdfbf7);
+  border-left: 2px solid var(--ink, #2d3436);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ink, #2d3436);
+}
+
+/* Loose-leaf Binder Holes */
+.binder-holes {
+  position: fixed;
+  left: 1rem;
+  top: 0;
+  bottom: 0;
+  width: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 2.5rem 0;
+  opacity: 0.35;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.binder-hole {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 3.5px solid #a0a5a8;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 2px 2px 4px rgba(45, 52, 54, 0.25);
+  margin-left: -0.5rem;
+}
+
+/* Hand-drawn Borders */
+.hand-drawn-border {
+  border: 3px solid var(--ink, #2d3436);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+
+.hand-drawn-border-alt {
+  border: 3px solid var(--ink, #2d3436);
+  border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+}
+
+.hand-drawn-border-subtle {
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 18px 230px 16px 240px / 240px 16px 230px 18px;
+}
+
+/* Paper Shadows */
+.paper-shadow {
+  box-shadow: var(--paper-shadow, 8px 10px 0 rgba(45, 52, 54, 0.15));
+}
+
+.paper-shadow-sm {
+  box-shadow: 4px 5px 0 rgba(45, 52, 54, 0.12);
+}
+
+.shadow-cutout {
+  box-shadow: var(--cutout-shadow, 6px 6px 0 0 #2d3436);
+}
+
+.shadow-cutout-sm {
+  box-shadow: var(--cutout-shadow-sm, 3px 3px 0 0 #2d3436);
+}
+
+/* Washi Tape Strip */
+.tape {
+  clip-path: polygon(
+    0 8%, 8% 0, 16% 7%, 24% 1%, 32% 8%, 40% 1%, 48% 7%, 56% 0, 64% 8%, 72% 1%, 80% 8%, 88% 0, 100% 7%,
+    100% 93%, 91% 100%, 83% 93%, 75% 100%, 67% 92%, 59% 100%, 51% 94%, 43% 100%, 35% 93%, 27% 100%, 19% 94%, 11% 100%, 0 93%
+  );
+  user-select: none;
+  pointer-events: none;
+}
+
+.tape-pink { background-color: var(--tape-pink); }
+.tape-cyan { background-color: var(--tape-cyan); }
+.tape-green { background-color: var(--tape-green); }
+.tape-yellow { background-color: var(--tape-yellow); }
+
+/* Stickers */
+.sticker {
+  border: 2px solid var(--ink, #2d3436);
+  box-shadow: var(--sticker-shadow, 3px 3px 0 #2d3436);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  user-select: none;
+}
+
+.sticker:hover {
+  transform: translate(-1px, -2px) rotate(-1deg);
+  box-shadow: var(--sticker-shadow-hover, 5px 5px 0 #2d3436);
+}
+
+.sticker:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 #2d3436;
+}
+
+/* Scribble Line & Marker Highlight */
+.scribble-line {
+  position: relative;
+  display: inline-block;
+}
+
+.scribble-line::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: -5px;
+  height: 7px;
+  background: var(--highlight-yellow, #ffeaa7);
+  transform: rotate(-1deg);
+  z-index: -1;
+  border-radius: 40%;
+}
+
+/* Song Row Marker Stroke Sweep */
+.song-row {
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.song-row:hover .marker-stroke {
+  opacity: 1;
+  transform: scaleX(1) rotate(-0.6deg);
+}
+
+.marker-stroke {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.65rem;
+  height: 0.55rem;
+  background: rgba(255, 234, 167, 0.85);
+  z-index: 0;
+  opacity: 0;
+  transform: scaleX(0.3);
+  transform-origin: left;
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.song-row > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tiny Grid (Journal Paper Texture) */
+.tiny-grid {
+  background-image:
+    linear-gradient(rgba(45, 52, 54, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 52, 54, 0.07) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Themed Paper Dropdown / Font Picker */
+.font-picker {
+  position: relative;
+  z-index: 70;
+}
+
+.font-picker-caption {
+  position: absolute;
+  top: -12px;
+  left: 14px;
+  z-index: 3;
+  padding: 0 7px;
+  background: var(--paper, #fdfbf7);
+  color: var(--ink-muted, #7b8185);
+  font: 600 12px/1.2 'Caveat', cursive;
+  letter-spacing: 0.04em;
+  transform: rotate(-2deg);
+}
+
+.font-picker-button {
+  min-width: 175px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 2px solid var(--ink, #2d3436);
+  background: var(--note-yellow, #fff8bd);
+  color: var(--ink, #2d3436);
+  padding: 8px 12px 7px 14px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  transform: rotate(0.4deg);
+  font: 700 14px/1.15 'Caveat', 'Noto Sans SC', cursive;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.font-picker-button:hover {
+  transform: translateY(-1px) rotate(-0.3deg);
+  box-shadow: 4px 5px 0 var(--ink, #2d3436);
+}
+
+.font-picker-button .paper-caret {
+  font-size: 16px;
+  transition: transform 0.18s ease;
+}
+
+.font-picker.open .font-picker-button .paper-caret {
+  transform: rotate(180deg);
+}
+
+.font-picker-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 11px);
+  max-height: 430px;
+  overflow: auto;
+  background: #fffdf7;
+  border: 2px solid var(--ink, #2d3436);
+  padding: 10px;
+  border-radius: 9px 20px 8px 17px / 17px 8px 20px 9px;
+  box-shadow: 7px 8px 0 rgba(45, 52, 54, 0.22);
+  transform: rotate(-0.25deg);
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 -5px;
+  transition: opacity 0.16s ease, translate 0.16s ease, visibility 0.16s ease;
+  z-index: 100;
+}
+
+.font-picker.open .font-picker-menu {
+  opacity: 1;
+  visibility: visible;
+  translate: 0 0;
+}
+
+.font-picker-menu::before {
+  content: '';
+  position: sticky;
+  display: block;
+  top: 0;
+  height: 18px;
+  width: 90px;
+  margin: -19px auto 5px;
+  background: rgba(129, 236, 236, 0.45);
+  transform: rotate(2deg);
+  clip-path: polygon(0 10%,8% 0,15% 12%,23% 2%,31% 11%,40% 0,49% 9%,58% 1%,67% 10%,76% 0,86% 9%,100% 2%,100% 92%,90% 100%,80% 91%,69% 100%,58% 91%,47% 100%,35% 92%,23% 100%,11% 91%,0 98%);
+}
+
+.font-option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1px dashed rgba(45, 52, 54, 0.18);
+  background: transparent;
+  color: var(--ink, #2d3436);
+  padding: 8px 7px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.font-option:last-child {
+  border-bottom: 0;
+}
+
+.font-option:hover {
+  background: rgba(255, 234, 167, 0.42);
+}
+
+.font-option.active {
+  background: rgba(255, 234, 167, 0.72);
+}
+
+.font-option-index {
+  font: 700 12px/1 'Space Mono', monospace;
+  color: #a0a5a8;
+}
+
+.font-option-name {
+  font: 700 15px/1.1 'Caveat', 'Noto Sans SC', cursive;
+}
+
+.font-option-sample {
+  font-size: 18px;
+  line-height: 1;
+  color: #676d70;
+}
+
+.font-picker-hint {
+  padding: 8px 8px 4px;
+  color: #8a8f92;
+  font: 600 13px/1.25 'Caveat', cursive;
+}
+
