@@ -16,7 +16,7 @@ body[data-font-preset="original"], body:not([data-font-preset]) {
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="patrick"] {
-  --font-marker: 'Permanent Marker', 'Noto Sans SC', cursive;
+  --font-marker: 'Patrick Hand', 'Noto Sans SC', cursive;
   --font-handwriting: 'Patrick Hand', 'Noto Sans SC', cursive;
   --font-note: 'Patrick Hand', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
