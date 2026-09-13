@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n';
 
+export type FontPresetId = 'original' | 'patrick' | 'kalam' | 'schoolbell' | 'covered' | 'comic' | 'zhnote';
+
 export interface FontPreset {
-  id: string;
+  id: FontPresetId;
   index: string;
   name: string;
   sample: string;
@@ -183,6 +185,10 @@ export const FontSwitcher: React.FC = () => {
 
   const currentPreset = FONT_PRESETS.find((p) => p.id === selectedPresetId) || FONT_PRESETS[0];
 
+  const getFontName = (preset: FontPreset): string => {
+    return t.fonts?.[preset.id] || preset.name;
+  };
+
   return (
     <div className={`font-picker ${isOpen ? 'open' : ''}`} id="fontPicker">
       <span className="font-picker-caption">{t.header.fontDrawerCaption}</span>
@@ -195,7 +201,7 @@ export const FontSwitcher: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <span id="fontPickerLabel">
-          {currentPreset.index} · {currentPreset.name}
+          {currentPreset.index} · {getFontName(currentPreset)}
         </span>
         <span className="paper-caret" style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
           ⌄
@@ -218,7 +224,7 @@ export const FontSwitcher: React.FC = () => {
               onClick={() => selectPreset(preset)}
             >
               <span className="font-option-index">{preset.index}</span>
-              <span className="font-option-name">{preset.name}</span>
+              <span className="font-option-name">{getFontName(preset)}</span>
               <span
                 className="font-option-sample"
                 style={{ fontFamily: preset.sampleFontFamily }}

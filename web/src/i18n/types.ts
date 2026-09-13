@@ -10,6 +10,15 @@ export interface Translations {
     fontPickerHint: string;
     languageSwitch: string;
   };
+  fonts: {
+    original: string;
+    patrick: string;
+    kalam: string;
+    schoolbell: string;
+    covered: string;
+    comic: string;
+    zhnote: string;
+  };
   hero: {
     pasteDoodle: string;
     noLoginDoodle: string;

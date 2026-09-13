@@ -10,6 +10,15 @@ export const zhCN: Translations = {
     fontPickerHint: '挑选一款，手账字体即刻切换 ↓',
     languageSwitch: '中 / EN',
   },
+  fonts: {
+    original: '原稿字体',
+    patrick: 'Patrick Hand (硬笔)',
+    kalam: 'Kalam 笔记',
+    schoolbell: 'Schoolbell (课堂)',
+    covered: 'Covered (连笔)',
+    comic: 'Comic Neue (漫画)',
+    zhnote: '中文手账 (毛笔)',
+  },
   hero: {
     pasteDoodle: '♪ 贴在这里',
     noLoginDoodle: '无需登录，轻松带走 :)',
