@@ -115,6 +115,22 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
   });
 }
 
+export function ensureFontStylesheet(preset: FontPreset): void {
+  if (!preset.googleFontsQuery) return;
+  const linkId = `font-link-${preset.id}`;
+  if (typeof document !== 'undefined' && !document.getElementById(linkId)) {
+    try {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${preset.googleFontsQuery}&display=swap`;
+      document.head.appendChild(link);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 export const FontSwitcher: React.FC = () => {
   const { t } = useTranslation();
   const [selectedPresetId, setSelectedPresetId] = useState<string>('original');
@@ -124,6 +140,7 @@ export const FontSwitcher: React.FC = () => {
     const preset = FONT_PRESETS.find((p) => p.id === presetId) || FONT_PRESETS[0];
     setSelectedPresetId(preset.id);
     document.body.dataset.fontPreset = preset.id;
+    ensureFontStylesheet(preset);
 
     if (persist) {
       try {
@@ -210,6 +227,7 @@ export const FontSwitcher: React.FC = () => {
               role="option"
               aria-selected={isActive}
               data-value={preset.id}
+              onMouseEnter={() => ensureFontStylesheet(preset)}
               onClick={() => selectPreset(preset)}
             >
               <span className="font-option-index">{preset.index}</span>
