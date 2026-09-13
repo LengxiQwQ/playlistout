@@ -1,16 +1,20 @@
-import { describe, it, expect, vi } from 'vitest';
-import { recordParseEvent, recordExportEvent } from './recorder';
-import type { ParseAnalyticsContext, ExportFormat } from './types';
+import { describe, it, expect } from 'vitest';
+import {
+  recordParseEvent,
+  recordExportEvent,
+  recordClipboardEvent,
+  recordRateLimitEvent,
+  normalizeClipboardMode,
+} from './recorder';
+import type { ExportFormat, ClipboardMode } from './types';
 import { getUtcDateString } from '../stats';
 
-// Mock in-memory D1 Database for deterministic testing
+// Mock in-memory D1 Database for aggregate testing
 function createMockD1() {
   const store = new Map<string, number>();
-  const eventRows: any[] = [];
 
   const db = {
     _store: store,
-    _eventRows: eventRows,
     prepare(sql: string) {
       return {
         _sql: sql,
@@ -20,48 +24,48 @@ function createMockD1() {
           return this;
         },
         async run() {
-          // If this is an analytics_events or daily_export_stats INSERT
-          if (this._sql.includes('analytics_events')) {
-            eventRows.push({ params: [...this._params], sql: this._sql });
-          }
-          if (this._sql.includes('daily_export_stats')) {
-            const [date, platform, format] = this._params;
-            const key = `export::${date}::${platform}::${format}`;
-            store.set(key, (store.get(key) || 0) + 1);
-          }
           return { success: true };
         },
         async all() {
-          const results: any[] = [];
-          for (const [key, count] of store.entries()) {
-            if (key.startsWith('export::')) continue;
-            const [date, platform, metric] = key.split('::');
-            results.push({ date, platform, metric, count });
-          }
-          return { results };
+          return { results: [] };
         },
       };
     },
     async batch(statements: any[]) {
       for (const stmt of statements) {
         const sql = stmt._sql as string;
-        if (sql.includes('tracks_processed') || sql.includes('exports_total')) {
-          // track_count upsert — the count is passed as a bind param
-          const params = stmt._params;
+        const params = stmt._params;
+
+        if (sql.includes('aggregate_stats')) {
           const date = params[0];
           const platform = params[1];
-          const metric = sql.includes('tracks_processed') ? 'tracks_processed' : 'exports_total';
-          const increment = params[2] ?? 1;
-          const key = `${date}::${platform}::${metric}`;
+          const metric = sql.includes('tracks_processed') ? 'tracks_processed' : params[2];
+          const increment = sql.includes('tracks_processed') ? (params[2] ?? 1) : 1;
+          const key = `agg::${date}::${platform}::${metric}`;
           store.set(key, (store.get(key) || 0) + increment);
+        } else if (sql.includes('hourly_stats')) {
+          const [date, hour, platform, metric] = params;
+          const key = `hourly::${date}::${hour}::${platform}::${metric}`;
+          store.set(key, (store.get(key) || 0) + 1);
+        } else if (sql.includes('daily_geo_stats')) {
+          const [date, platform, country, region] = params;
+          const key = `geo::${date}::${platform}::${country}::${region}`;
+          store.set(key, (store.get(key) || 0) + 1);
+        } else if (sql.includes('daily_client_stats')) {
+          const [date, platform, dev, browser, os] = params;
+          const key = `client::${date}::${platform}::${dev}::${browser}::${os}`;
+          store.set(key, (store.get(key) || 0) + 1);
+        } else if (sql.includes('daily_performance_stats')) {
+          const [date, platform, dim, val] = params;
+          const key = `perf::${date}::${platform}::${dim}::${val}`;
+          store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_export_stats')) {
-          const [date, platform, format] = stmt._params;
+          const [date, platform, format] = params;
           const key = `export::${date}::${platform}::${format}`;
           store.set(key, (store.get(key) || 0) + 1);
-        } else {
-          // Standard aggregate_stats upsert
-          const [date, platform, metric] = stmt._params;
-          const key = `${date}::${platform}::${metric}`;
+        } else if (sql.includes('daily_clipboard_stats')) {
+          const [date, platform, mode] = params;
+          const key = `clipboard::${date}::${platform}::${mode}`;
           store.set(key, (store.get(key) || 0) + 1);
         }
       }
@@ -69,26 +73,41 @@ function createMockD1() {
     },
   };
 
-  return db as unknown as D1Database & { _store: Map<string, number>; _eventRows: any[] };
+  return db as unknown as D1Database & { _store: Map<string, number> };
 }
 
-function createMockRequest(headers: Record<string, string> = {}): Request {
-  return new Request('https://api.playlistout.com/api/playlist?url=test', {
+function createMockRequest(headers: Record<string, string> = {}, cf?: any): Request {
+  const req = new Request('https://api.playlistout.com/api/playlist?url=test', {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
       ...headers,
     },
   });
+  if (cf) {
+    (req as any).cf = cf;
+  }
+  return req;
 }
 
-describe('Analytics Recorder', () => {
+describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
+  describe('normalizeClipboardMode', () => {
+    it('normalizes hyphenated modes to canonical underscore format', () => {
+      expect(normalizeClipboardMode('title')).toBe('title');
+      expect(normalizeClipboardMode('title-artist')).toBe('title_artist');
+      expect(normalizeClipboardMode('title_artist')).toBe('title_artist');
+      expect(normalizeClipboardMode('title-artist-album')).toBe('title_artist_album');
+      expect(normalizeClipboardMode('title_artist_album')).toBe('title_artist_album');
+    });
+  });
+
   describe('recordParseEvent', () => {
-    it('records aggregate counters and analytics event for successful parse', async () => {
+    it('records pure atomic aggregate counters across tables without per-request log rows', async () => {
       const mockDb = createMockD1();
       const today = getUtcDateString();
+      const hour = new Date().getUTCHours();
 
       await recordParseEvent(mockDb, {
-        request: createMockRequest(),
+        request: createMockRequest({}, { country: 'CN', region: 'Beijing' }),
         platform: 'qqmusic',
         inputType: 'web_url',
         success: true,
@@ -97,25 +116,36 @@ describe('Analytics Recorder', () => {
         providerPath: 'primary',
       });
 
-      // Verify aggregate counters
-      expect(mockDb._store.get(`${today}::qqmusic::parse_success`)).toBe(1);
-      expect(mockDb._store.get(`TOTAL::qqmusic::parse_success`)).toBe(1);
-      expect(mockDb._store.get(`${today}::all::parse_success`)).toBe(1);
-      expect(mockDb._store.get(`TOTAL::all::parse_success`)).toBe(1);
+      // 1. aggregate_stats
+      expect(mockDb._store.get(`agg::${today}::qqmusic::parse_success`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::parse_success`)).toBe(1);
+      expect(mockDb._store.get(`agg::${today}::all::parse_success`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::all::parse_success`)).toBe(1);
 
-      // Verify track count aggregation
-      expect(mockDb._store.get(`${today}::qqmusic::tracks_processed`)).toBe(42);
-      expect(mockDb._store.get(`TOTAL::qqmusic::tracks_processed`)).toBe(42);
-      expect(mockDb._store.get(`TOTAL::all::tracks_processed`)).toBe(42);
+      // Track totals
+      expect(mockDb._store.get(`agg::${today}::qqmusic::tracks_processed`)).toBe(42);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::tracks_processed`)).toBe(42);
 
-      // Verify analytics event was recorded
-      expect(mockDb._eventRows.length).toBe(1);
-      const event = mockDb._eventRows[0];
-      expect(event.params).toContain('qqmusic');
-      expect(event.params).toContain('success');
+      // 2. hourly_stats
+      expect(mockDb._store.get(`hourly::${today}::${hour}::qqmusic::parse_success`)).toBe(1);
+      expect(mockDb._store.get(`hourly::${today}::${hour}::all::parse_success`)).toBe(1);
+
+      // 3. daily_geo_stats
+      expect(mockDb._store.get(`geo::${today}::qqmusic::CN::Beijing`)).toBe(1);
+      expect(mockDb._store.get(`geo::TOTAL::qqmusic::CN::Beijing`)).toBe(1);
+
+      // 4. daily_client_stats
+      expect(mockDb._store.get(`client::${today}::qqmusic::desktop::chrome::windows`)).toBe(1);
+      expect(mockDb._store.get(`client::TOTAL::qqmusic::desktop::chrome::windows`)).toBe(1);
+
+      // 5. daily_performance_stats
+      expect(mockDb._store.get(`perf::${today}::qqmusic::input_type::web_url`)).toBe(1);
+      expect(mockDb._store.get(`perf::${today}::qqmusic::playlist_size::1-50`)).toBe(1);
+      expect(mockDb._store.get(`perf::${today}::qqmusic::provider_path::primary`)).toBe(1);
+      expect(mockDb._store.get(`perf::${today}::qqmusic::latency_bucket::1-3s`)).toBe(1);
     });
 
-    it('records failure without track counts and with error category', async () => {
+    it('records parse failures with error category and no track counts', async () => {
       const mockDb = createMockD1();
       const today = getUtcDateString();
 
@@ -128,13 +158,16 @@ describe('Analytics Recorder', () => {
         latencyMs: 5500,
       });
 
-      expect(mockDb._store.get(`${today}::qqmusic::parse_failure`)).toBe(1);
-      expect(mockDb._store.get(`TOTAL::qqmusic::parse_failure`)).toBe(1);
-      // No track counts for failure
-      expect(mockDb._store.get(`${today}::qqmusic::tracks_processed`)).toBeUndefined();
+      expect(mockDb._store.get(`agg::${today}::qqmusic::parse_failure`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::parse_failure`)).toBe(1);
+      expect(mockDb._store.get(`agg::${today}::qqmusic::tracks_processed`)).toBeUndefined();
+      expect(mockDb._store.get(`perf::${today}::qqmusic::error_category::error_upstream`)).toBe(1);
+      expect(mockDb._store.get(`perf::${today}::qqmusic::latency_bucket::5s+`)).toBe(1);
+      // Ensure no fake provider path is recorded on failure
+      expect(mockDb._store.get(`perf::${today}::qqmusic::provider_path::primary`)).toBeUndefined();
     });
 
-    it('handles D1 failure gracefully (never throws)', async () => {
+    it('handles D1 failure gracefully (best-effort guarantee)', async () => {
       const failingDb = {
         prepare() { throw new Error('D1 disconnected'); },
         async batch() { throw new Error('D1 disconnected'); },
@@ -151,23 +184,10 @@ describe('Analytics Recorder', () => {
         }),
       ).resolves.not.toThrow();
     });
-
-    it('handles undefined DB gracefully', async () => {
-      await expect(
-        recordParseEvent(undefined, {
-          request: createMockRequest(),
-          platform: 'qqmusic',
-          inputType: 'web_url',
-          success: true,
-          trackCount: 10,
-          latencyMs: 100,
-        }),
-      ).resolves.not.toThrow();
-    });
   });
 
-  describe('recordExportEvent', () => {
-    it('records export aggregate counters and analytics event', async () => {
+  describe('recordExportEvent vs recordClipboardEvent separation', () => {
+    it('recordExportEvent increments exports_total and daily_export_stats ONLY', async () => {
       const mockDb = createMockD1();
       const today = getUtcDateString();
 
@@ -176,97 +196,94 @@ describe('Analytics Recorder', () => {
         createMockRequest(),
         'qqmusic',
         'xlsx' as ExportFormat,
-        'export',
         42,
       );
 
-      // Verify export aggregate counters
-      expect(mockDb._store.get(`${today}::qqmusic::exports_total`)).toBe(1);
-      expect(mockDb._store.get(`TOTAL::qqmusic::exports_total`)).toBe(1);
-      expect(mockDb._store.get(`${today}::all::exports_total`)).toBe(1);
-      expect(mockDb._store.get(`TOTAL::all::exports_total`)).toBe(1);
+      // aggregate_stats
+      expect(mockDb._store.get(`agg::${today}::qqmusic::exports_total`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::exports_total`)).toBe(1);
 
-      // Verify export format breakdown
+      // daily_export_stats
       expect(mockDb._store.get(`export::${today}::qqmusic::xlsx`)).toBe(1);
       expect(mockDb._store.get(`export::TOTAL::qqmusic::xlsx`)).toBe(1);
 
-      // Verify analytics event was recorded
-      expect(mockDb._eventRows.length).toBe(1);
+      // Must NOT increment clipboards_total or daily_clipboard_stats!
+      expect(mockDb._store.get(`agg::${today}::qqmusic::clipboards_total`)).toBeUndefined();
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::clipboards_total`)).toBeUndefined();
+      for (const key of mockDb._store.keys()) {
+        expect(key).not.toContain('clipboard::');
+      }
     });
 
-    it('records clipboard event correctly', async () => {
+    it('recordClipboardEvent increments clipboards_total and daily_clipboard_stats ONLY', async () => {
       const mockDb = createMockD1();
+      const today = getUtcDateString();
 
-      await recordExportEvent(
+      await recordClipboardEvent(
         mockDb,
         createMockRequest(),
         'qqmusic',
-        'clipboard_title_artist' as ExportFormat,
-        'clipboard',
-        10,
+        'title-artist' as ClipboardMode,
+        15,
       );
 
-      expect(mockDb._eventRows.length).toBe(1);
-    });
+      // aggregate_stats
+      expect(mockDb._store.get(`agg::${today}::qqmusic::clipboards_total`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::clipboards_total`)).toBe(1);
 
-    it('handles D1 failure gracefully (never throws)', async () => {
-      const failingDb = {
-        prepare() { throw new Error('D1 disconnected'); },
-        async batch() { throw new Error('D1 disconnected'); },
-      } as unknown as D1Database;
+      // daily_clipboard_stats
+      expect(mockDb._store.get(`clipboard::${today}::qqmusic::title_artist`)).toBe(1);
+      expect(mockDb._store.get(`clipboard::TOTAL::qqmusic::title_artist`)).toBe(1);
 
-      await expect(
-        recordExportEvent(failingDb, createMockRequest(), 'qqmusic', 'txt' as ExportFormat, 'export', 5),
-      ).resolves.not.toThrow();
+      // Must NOT increment exports_total or daily_export_stats!
+      expect(mockDb._store.get(`agg::${today}::qqmusic::exports_total`)).toBeUndefined();
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::exports_total`)).toBeUndefined();
+      for (const key of mockDb._store.keys()) {
+        expect(key).not.toContain('export::');
+      }
     });
   });
 
-  describe('Privacy boundary', () => {
-    it('never stores raw IP, playlist URL, or song content in aggregate keys', async () => {
+  describe('recordRateLimitEvent', () => {
+    it('records anonymous rate limit metrics', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+      const hour = new Date().getUTCHours();
+
+      await recordRateLimitEvent(mockDb, 'playlist', 'qqmusic');
+
+      expect(mockDb._store.get(`agg::${today}::qqmusic::rate_limited`)).toBe(1);
+      expect(mockDb._store.get(`agg::TOTAL::qqmusic::rate_limited`)).toBe(1);
+      expect(mockDb._store.get(`hourly::${today}::${hour}::qqmusic::rate_limited`)).toBe(1);
+      expect(mockDb._store.get(`perf::${today}::qqmusic::rate_limit_endpoint::playlist`)).toBe(1);
+
+      // Verify no IP is in store keys
+      for (const key of mockDb._store.keys()) {
+        expect(key).not.toContain('127.0.0.1');
+        expect(key).not.toContain('ip');
+      }
+    });
+  });
+
+  describe('Privacy boundary verification', () => {
+    it('strictly does not store raw IP, URL, or song content in any aggregate key', async () => {
       const mockDb = createMockD1();
 
       await recordParseEvent(mockDb, {
-        request: createMockRequest(),
+        request: createMockRequest({ 'cf-connecting-ip': '1.2.3.4' }),
         platform: 'qqmusic',
         inputType: 'web_url',
         success: true,
         trackCount: 42,
-        latencyMs: 1500,
+        latencyMs: 500,
       });
 
       for (const key of mockDb._store.keys()) {
+        expect(key).not.toContain('1.2.3.4');
         expect(key).not.toContain('http');
         expect(key).not.toContain('y.qq.com');
-        expect(key).not.toContain('127.0.0.1');
-        expect(key).not.toContain('playlist');
         expect(key).not.toContain('song');
-      }
-    });
-
-    it('does not store full User-Agent string in analytics events', async () => {
-      const mockDb = createMockD1();
-      const fullUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36';
-
-      await recordParseEvent(mockDb, {
-        request: createMockRequest({ 'User-Agent': fullUA }),
-        platform: 'qqmusic',
-        inputType: 'web_url',
-        success: true,
-        trackCount: 10,
-        latencyMs: 100,
-      });
-
-      // The event params should contain coarse categories, not the full UA
-      if (mockDb._eventRows.length > 0) {
-        const params = mockDb._eventRows[0].params;
-        const paramsStr = JSON.stringify(params);
-        expect(paramsStr).not.toContain('Mozilla');
-        expect(paramsStr).not.toContain('AppleWebKit');
-        expect(paramsStr).not.toContain('537.36');
-        // But should contain coarse classifications
-        expect(paramsStr).toContain('desktop');
-        expect(paramsStr).toContain('chrome');
-        expect(paramsStr).toContain('windows');
+        expect(key).not.toContain('test');
       }
     });
   });

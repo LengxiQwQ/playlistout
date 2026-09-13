@@ -2,66 +2,174 @@
  * POST /api/event — Frontend Event Ingestion Endpoint
  *
  * Accepts export/clipboard events from the frontend for analytics tracking.
- * Validates payload strictly, records to D1, returns 204 No Content.
+ * Validates payload strictly, records to aggregate tables in D1, returns 204 No Content.
  *
- * PRIVACY: No user-identifying data accepted or stored.
- * This endpoint does NOT expose any read data — it is write-only.
+ * PRIVACY & SECURITY:
+ * - No user-identifying data accepted or stored.
+ * - Platform allowlist strictly enforced (qqmusic only).
+ * - Export formats strictly separated from clipboard copy modes.
+ * - Track counts bounded to realistic maximums (<= 50,000).
+ * - Write-only endpoint — does NOT expose any statistics or data.
  */
 
 import type { Env } from '../index';
 import type { ApiResponse } from '../models/playlist';
-import type { EventPayload, ExportFormat } from '../analytics/types';
-import { VALID_EXPORT_FORMATS } from '../analytics/types';
-import { recordExportEvent } from '../analytics/recorder';
+import type {
+  EventPayload,
+  ExportFormat,
+  ClipboardMode,
+  SupportedPlatform,
+} from '../analytics/types';
+import {
+  SUPPORTED_PLATFORMS,
+  VALID_EXPORT_FORMATS,
+  VALID_CLIPBOARD_MODES,
+  MAX_TRACK_COUNT,
+} from '../analytics/types';
+import { recordExportEvent, recordClipboardEvent } from '../analytics/recorder';
 
 const MAX_EVENT_BODY_SIZE = 1024; // 1KB max for event payload
 
+interface ValidationResult {
+  valid: boolean;
+  error?: { code: string; message: string };
+  payload?: EventPayload;
+}
+
 /**
- * Validates and normalizes the event payload.
- * Returns null if invalid, with an error message.
+ * Validates and normalizes the event payload strictly against schema rules.
  */
-function validateEventPayload(body: unknown): { valid: true; payload: EventPayload } | { valid: false; error: string } {
-  if (!body || typeof body !== 'object') {
-    return { valid: false, error: 'Request body must be a JSON object.' };
+export function validateEventPayload(body: unknown): ValidationResult {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Request body must be a valid JSON object.' },
+    };
   }
 
   const obj = body as Record<string, unknown>;
 
-  // type: required, must be 'export' or 'clipboard'
-  if (!obj.type || (obj.type !== 'export' && obj.type !== 'clipboard')) {
-    return { valid: false, error: 'Field "type" must be "export" or "clipboard".' };
+  // 1. type: required, must be 'export' or 'clipboard'
+  if (!obj.type || typeof obj.type !== 'string') {
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Field "type" is required and must be a string.' },
+    };
   }
 
-  // format: required, must be a valid export format
+  const type = obj.type.toLowerCase().trim();
+  if (type !== 'export' && type !== 'clipboard') {
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export" or "clipboard".' },
+    };
+  }
+
+  // 2. platform: required, must be in SUPPORTED_PLATFORMS allowlist
+  if (!obj.platform || typeof obj.platform !== 'string') {
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Field "platform" is required and must be a string.' },
+    };
+  }
+
+  const platform = obj.platform.toLowerCase().trim();
+  if (!(SUPPORTED_PLATFORMS as readonly string[]).includes(platform)) {
+    return {
+      valid: false,
+      error: {
+        code: 'UNSUPPORTED_PLATFORM',
+        message: `Platform "${obj.platform}" is not supported. Supported platforms: ${SUPPORTED_PLATFORMS.join(', ')}.`,
+      },
+    };
+  }
+
+  // 3. format: required, must match type-specific allowlist
   if (!obj.format || typeof obj.format !== 'string') {
-    return { valid: false, error: 'Field "format" must be a non-empty string.' };
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Field "format" is required and must be a string.' },
+    };
   }
 
-  const format = obj.format.toLowerCase();
-  if (!(VALID_EXPORT_FORMATS as readonly string[]).includes(format)) {
-    return { valid: false, error: `Field "format" must be one of: ${VALID_EXPORT_FORMATS.join(', ')}.` };
-  }
+  const format = obj.format.toLowerCase().trim();
 
-  // platform: required, must be a non-empty string, max 50 chars
-  if (!obj.platform || typeof obj.platform !== 'string' || obj.platform.length > 50) {
-    return { valid: false, error: 'Field "platform" must be a non-empty string (max 50 chars).' };
-  }
-
-  // trackCount: optional, must be non-negative integer if present
-  let trackCount: number | undefined;
-  if (obj.trackCount !== undefined) {
-    if (typeof obj.trackCount !== 'number' || !Number.isInteger(obj.trackCount) || obj.trackCount < 0) {
-      return { valid: false, error: 'Field "trackCount" must be a non-negative integer if provided.' };
+  if (type === 'export') {
+    if (!(VALID_EXPORT_FORMATS as readonly string[]).includes(format)) {
+      return {
+        valid: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: `Field "format" for export must be one of: ${VALID_EXPORT_FORMATS.join(', ')}. Received: "${obj.format}".`,
+        },
+      };
     }
+  } else {
+    // type === 'clipboard'
+    if (!(VALID_CLIPBOARD_MODES as readonly string[]).includes(format)) {
+      return {
+        valid: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: `Field "format" for clipboard must be one of: title, title-artist, title-artist-album. Received: "${obj.format}".`,
+        },
+      };
+    }
+  }
+
+  // 4. trackCount: optional, but if present must be integer in [0, MAX_TRACK_COUNT]
+  let trackCount: number | undefined;
+  if ('trackCount' in obj && obj.trackCount !== undefined) {
+    if (
+      obj.trackCount === null ||
+      typeof obj.trackCount !== 'number' ||
+      !Number.isInteger(obj.trackCount) ||
+      isNaN(obj.trackCount)
+    ) {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "trackCount" must be an integer if provided.' },
+      };
+    }
+
+    if (obj.trackCount < 0) {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "trackCount" cannot be negative.' },
+      };
+    }
+
+    if (obj.trackCount > MAX_TRACK_COUNT) {
+      return {
+        valid: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: `Field "trackCount" exceeds maximum allowed limit of ${MAX_TRACK_COUNT}.`,
+        },
+      };
+    }
+
     trackCount = obj.trackCount;
+  }
+
+  if (type === 'export') {
+    return {
+      valid: true,
+      payload: {
+        type: 'export',
+        format: format as ExportFormat,
+        platform: platform as SupportedPlatform,
+        trackCount,
+      },
+    };
   }
 
   return {
     valid: true,
     payload: {
-      type: obj.type as 'export' | 'clipboard',
-      format: format,
-      platform: obj.platform,
+      type: 'clipboard',
+      format: format as ClipboardMode,
+      platform: platform as SupportedPlatform,
       trackCount,
     },
   };
@@ -101,7 +209,7 @@ export async function handleEvent(
         success: false,
         error: {
           code: 'INVALID_INPUT',
-          message: 'Event payload too large.',
+          message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
         },
       } satisfies ApiResponse<never>),
       {
@@ -133,14 +241,11 @@ export async function handleEvent(
 
   // Validate payload
   const validation = validateEventPayload(body);
-  if (!validation.valid) {
+  if (!validation.valid || !validation.payload) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: validation.error,
-        },
+        error: validation.error || { code: 'INVALID_INPUT', message: 'Invalid payload.' },
       } satisfies ApiResponse<never>),
       {
         status: 400,
@@ -152,16 +257,29 @@ export async function handleEvent(
   const { payload } = validation;
 
   // Record event asynchronously (best-effort via waitUntil)
-  ctx.waitUntil(
-    recordExportEvent(
-      env.DB,
-      request,
-      payload.platform,
-      payload.format as ExportFormat,
-      payload.type,
-      payload.trackCount,
-    ),
-  );
+  if (ctx && typeof ctx.waitUntil === 'function') {
+    if (payload.type === 'export') {
+      ctx.waitUntil(
+        recordExportEvent(
+          env.DB,
+          request,
+          payload.platform,
+          payload.format,
+          payload.trackCount,
+        ),
+      );
+    } else {
+      ctx.waitUntil(
+        recordClipboardEvent(
+          env.DB,
+          request,
+          payload.platform,
+          payload.format,
+          payload.trackCount,
+        ),
+      );
+    }
+  }
 
   // 204 No Content — fire-and-forget from frontend perspective
   return new Response(null, {

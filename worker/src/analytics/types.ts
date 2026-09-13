@@ -31,23 +31,47 @@ export interface PublicStatsResponse {
   generatedAt: string;
 }
 
-// ── Event Ingestion Payload (POST /api/event) ──
+// ── Event Ingestion Types (POST /api/event) ──
 
-export type EventType = 'export' | 'clipboard';
+export const SUPPORTED_PLATFORMS = ['qqmusic'] as const;
+export type SupportedPlatform = typeof SUPPORTED_PLATFORMS[number];
 
-export const VALID_EXPORT_FORMATS = [
-  'txt', 'csv', 'xlsx', 'json',
-  'clipboard_title', 'clipboard_title_artist', 'clipboard_title_artist_album',
-] as const;
-
+export const VALID_EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json'] as const;
 export type ExportFormat = typeof VALID_EXPORT_FORMATS[number];
 
-export interface EventPayload {
-  type: EventType;
-  format: string;       // validated against VALID_EXPORT_FORMATS
-  platform: string;
+export const VALID_CLIPBOARD_MODES = [
+  'title',
+  'title-artist',
+  'title-artist-album',
+  'title_artist',
+  'title_artist_album',
+] as const;
+export type ClipboardMode = typeof VALID_CLIPBOARD_MODES[number];
+
+export const CANONICAL_CLIPBOARD_MODES = [
+  'title',
+  'title_artist',
+  'title_artist_album',
+] as const;
+export type CanonicalClipboardMode = typeof CANONICAL_CLIPBOARD_MODES[number];
+
+export const MAX_TRACK_COUNT = 50000;
+
+export interface ExportEventPayload {
+  type: 'export';
+  format: ExportFormat;
+  platform: SupportedPlatform;
   trackCount?: number;
 }
+
+export interface ClipboardEventPayload {
+  type: 'clipboard';
+  format: ClipboardMode;
+  platform: SupportedPlatform;
+  trackCount?: number;
+}
+
+export type EventPayload = ExportEventPayload | ClipboardEventPayload;
 
 // ── Parse Analytics Context (internal, passed to recorder) ──
 
@@ -59,29 +83,7 @@ export interface ParseAnalyticsContext {
   trackCount?: number;
   errorCategory?: string;
   latencyMs?: number;
-  providerPath?: string;
-}
-
-// ── Private Analytics Event Row ──
-
-export interface AnalyticsEventRow {
-  date: string;
-  hour_bucket: number;
-  country: string | null;
-  region: string | null;
-  platform: string;
-  event_type: string;
-  input_type: string | null;
-  result: string;
-  error_category: string | null;
-  playlist_size_bucket: string | null;
-  track_count: number | null;
-  export_format: string | null;
-  device_class: string | null;
-  browser_family: string | null;
-  os_family: string | null;
-  latency_bucket: string | null;
-  provider_path: string | null;
+  providerPath?: 'primary' | 'fallback';
 }
 
 // ── Dimension Constants ──
@@ -89,20 +91,17 @@ export interface AnalyticsEventRow {
 export const PLAYLIST_SIZE_BUCKETS = [
   '1-50', '51-200', '201-500', '501-1000', '1000+',
 ] as const;
-
 export type PlaylistSizeBucket = typeof PLAYLIST_SIZE_BUCKETS[number];
 
 export const LATENCY_BUCKETS = [
   '<500ms', '500-1000ms', '1-3s', '3-5s', '5s+',
 ] as const;
-
 export type LatencyBucket = typeof LATENCY_BUCKETS[number];
 
 export const ERROR_CATEGORIES = [
   'error_upstream', 'error_validation', 'error_timeout',
   'error_rate_limit', 'error_internal',
 ] as const;
-
 export type ErrorCategory = typeof ERROR_CATEGORIES[number];
 
 export const DEVICE_CLASSES = ['desktop', 'mobile', 'tablet'] as const;

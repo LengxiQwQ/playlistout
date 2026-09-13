@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import worker from '../index';
 
-describe('POST /api/event — Frontend Event Ingestion', () => {
+describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance)', () => {
   const baseUrl = 'https://api.playlistout.com/api/event';
 
-  // Mock env with a mock D1 that doesn't error
   function createMockEnv() {
     return {
       DB: {
@@ -20,7 +19,6 @@ describe('POST /api/event — Frontend Event Ingestion', () => {
     };
   }
 
-  // Mock ExecutionContext with waitUntil
   function createMockCtx() {
     const promises: Promise<any>[] = [];
     return {
@@ -30,177 +28,289 @@ describe('POST /api/event — Frontend Event Ingestion', () => {
     } as unknown as ExecutionContext & { _promises: Promise<any>[] };
   }
 
-  it('accepts valid export event and returns 204', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'export',
-        format: 'xlsx',
-        platform: 'qqmusic',
-        trackCount: 42,
-      }),
+  describe('Happy Path', () => {
+    it.each(['txt', 'csv', 'xlsx', 'json'])('accepts valid export format: %s', async (format) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.com',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format,
+          platform: 'qqmusic',
+          trackCount: 42,
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
     });
 
-    const ctx = createMockCtx();
-    const response = await worker.fetch(request, createMockEnv(), ctx);
-    expect(response.status).toBe(204);
+    it.each([
+      'title',
+      'title-artist',
+      'title-artist-album',
+      'title_artist',
+      'title_artist_album',
+    ])('accepts valid clipboard mode: %s', async (format) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.com',
+        },
+        body: JSON.stringify({
+          type: 'clipboard',
+          format,
+          platform: 'qqmusic',
+          trackCount: 10,
+        }),
+      });
 
-    // Wait for all waitUntil promises to settle
-    await Promise.allSettled(ctx._promises);
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
+    it('accepts boundary trackCount values: 0 and 50000', async () => {
+      for (const trackCount of [0, 50000]) {
+        const request = new Request(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+          body: JSON.stringify({
+            type: 'export',
+            format: 'json',
+            platform: 'qqmusic',
+            trackCount,
+          }),
+        });
+
+        const ctx = createMockCtx();
+        const response = await worker.fetch(request, createMockEnv(), ctx);
+        expect(response.status).toBe(204);
+        await Promise.allSettled(ctx._promises);
+      }
+    });
+
+    it('succeeds with 204 even when DB is disconnected (best-effort guarantee)', async () => {
+      const failingDb = {
+        prepare() { throw new Error('D1 connection failed'); },
+        async batch() { throw new Error('D1 connection failed'); },
+      } as unknown as D1Database;
+
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'txt',
+          platform: 'qqmusic',
+          trackCount: 5,
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, { DB: failingDb }, ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
   });
 
-  it('accepts valid clipboard event and returns 204', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'clipboard',
-        format: 'clipboard_title_artist',
-        platform: 'qqmusic',
-      }),
+  describe('Adversarial & Strict Validation', () => {
+    it.each(['GET', 'PUT', 'DELETE', 'PATCH'])('rejects method %s with 405 Method Not Allowed', async (method) => {
+      const request = new Request(baseUrl, {
+        method,
+        headers: { Origin: 'https://playlistout.com' },
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(405);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
     });
 
-    const ctx = createMockCtx();
-    const response = await worker.fetch(request, createMockEnv(), ctx);
-    expect(response.status).toBe(204);
+    it('rejects malformed non-JSON payload with 400 INVALID_INPUT', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: '{ malformed json: true, ',
+      });
 
-    await Promise.allSettled(ctx._promises);
-  });
-
-  it('rejects GET method with 405', async () => {
-    const request = new Request(baseUrl, {
-      method: 'GET',
-      headers: { Origin: 'https://playlistout.com' },
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(405);
-    const body = await response.json() as any;
-    expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
-  });
+    it('rejects JSON array payload with 400 INVALID_INPUT', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify([{ type: 'export', format: 'txt', platform: 'qqmusic' }]),
+      });
 
-  it('rejects invalid JSON body with 400', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: 'not json',
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(400);
-    const body = await response.json() as any;
-    expect(body.error.code).toBe('INVALID_INPUT');
-  });
+    it('rejects oversized body (> 1024 bytes) with 400 INVALID_INPUT', async () => {
+      const hugePadding = 'x'.repeat(1500);
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': '1600',
+          Origin: 'https://playlistout.com',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'txt',
+          platform: 'qqmusic',
+          padding: hugePadding,
+        }),
+      });
 
-  it('rejects missing type field', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        format: 'xlsx',
-        platform: 'qqmusic',
-      }),
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('too large');
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(400);
-    const body = await response.json() as any;
-    expect(body.error.message).toContain('type');
-  });
+    it.each(['download', 'parse', 'stream', 'admin', ''])('rejects invalid event type: "%s"', async (invalidType) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: invalidType,
+          format: 'txt',
+          platform: 'qqmusic',
+        }),
+      });
 
-  it('rejects invalid export format', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'export',
-        format: 'pdf',
-        platform: 'qqmusic',
-      }),
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('type');
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(400);
-    const body = await response.json() as any;
-    expect(body.error.message).toContain('format');
-  });
+    it.each([
+      'netease',
+      'spotify',
+      'apple',
+      'kugou',
+      'kuwo',
+      'arbitrary_platform',
+      '<script>alert(1)</script>',
+    ])('rejects unsupported platform "%s" with UNSUPPORTED_PLATFORM', async (unsupportedPlatform) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'xlsx',
+          platform: unsupportedPlatform,
+        }),
+      });
 
-  it('rejects missing platform', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'export',
-        format: 'txt',
-      }),
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('UNSUPPORTED_PLATFORM');
+      expect(body.error.message).toContain(unsupportedPlatform);
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(400);
-    const body = await response.json() as any;
-    expect(body.error.message).toContain('platform');
-  });
+    it('rejects export event with clipboard format', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'title_artist',
+          platform: 'qqmusic',
+        }),
+      });
 
-  it('rejects negative trackCount', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'export',
-        format: 'csv',
-        platform: 'qqmusic',
-        trackCount: -1,
-      }),
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('Field "format" for export');
     });
 
-    const response = await worker.fetch(request, createMockEnv(), createMockCtx());
-    expect(response.status).toBe(400);
-    const body = await response.json() as any;
-    expect(body.error.message).toContain('trackCount');
-  });
+    it('rejects export event with disallowed format (e.g. pdf, mp3)', async () => {
+      for (const badFormat of ['pdf', 'mp3', 'docx', 'zip']) {
+        const request = new Request(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+          body: JSON.stringify({
+            type: 'export',
+            format: badFormat,
+            platform: 'qqmusic',
+          }),
+        });
 
-  it('returns 204 even when D1 is unavailable (best-effort)', async () => {
-    const request = new Request(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: 'https://playlistout.com',
-      },
-      body: JSON.stringify({
-        type: 'export',
-        format: 'json',
-        platform: 'qqmusic',
-        trackCount: 5,
-      }),
+        const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+        expect(response.status).toBe(400);
+        const body = await response.json() as any;
+        expect(body.error.code).toBe('INVALID_INPUT');
+      }
     });
 
-    // Env with no DB
-    const ctx = createMockCtx();
-    const response = await worker.fetch(request, {}, ctx);
-    expect(response.status).toBe(204);
+    it('rejects clipboard event with export format', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: 'clipboard',
+          format: 'xlsx',
+          platform: 'qqmusic',
+        }),
+      });
 
-    await Promise.allSettled(ctx._promises);
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('Field "format" for clipboard');
+    });
+
+    it.each([
+      -1,
+      -100,
+      3.14,
+      NaN,
+      50001,
+      1000000,
+      9999999999,
+      'forty-two',
+      [10],
+      { count: 10 },
+    ])('rejects invalid trackCount: %s', async (badTrackCount) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'csv',
+          platform: 'qqmusic',
+          trackCount: badTrackCount,
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = await response.json() as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('trackCount');
+    });
   });
 });

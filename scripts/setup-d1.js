@@ -98,6 +98,7 @@ async function main() {
   const migrations = [
     './migrations/0001_initial_stats.sql',
     './migrations/0002_analytics_foundation.sql',
+    './migrations/0003_replace_events_with_aggregates.sql',
   ];
 
   for (const migrationFile of migrations) {
