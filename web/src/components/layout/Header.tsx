@@ -7,6 +7,21 @@ export interface HeaderProps {
   onBrandClick?: () => void;
 }
 
+const GitHubIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg
+    height={size}
+    width={size}
+    viewBox="2 2 44 44"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="4"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <path d="M29.344 30.477c2.404-.5 4.585-1.366 6.28-2.638C38.52 25.668 40 22.314 40 19c0-2.324-.881-4.494-2.407-6.332c-.85-1.024 1.636-8.667-.573-7.638c-2.21 1.03-5.45 3.308-7.147 2.805A20.7 20.7 0 0 0 24 7c-1.8 0-3.532.223-5.147.634C16.505 8.232 14.259 6 12 5.03c-2.26-.97-1.026 6.934-1.697 7.765C8.84 14.605 8 16.73 8 19c0 3.314 1.79 6.668 4.686 8.84c1.93 1.446 4.348 2.368 7.054 2.822m0 0q-1.738 1.913-1.738 3.632v8.717m11.343-12.534q1.646 2.16 1.646 3.88v8.654M6 31.216q1.349.165 2 1.24c.652 1.074 3.074 5.062 5.825 5.062h4.177" />
+  </svg>
+);
+
 export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
   const { t } = useTranslation();
 
@@ -17,8 +32,8 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: '1.5rem',
-        paddingBottom: '1.5rem',
+        paddingTop: '0.65rem',
+        paddingBottom: '0.65rem',
         position: 'relative',
         zIndex: 60,
       }}
@@ -56,10 +71,6 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             style={{
               fontSize: '2rem',
               lineHeight: 1.1,
-              textDecoration: 'underline',
-              textDecorationStyle: 'wavy',
-              textDecorationColor: 'var(--margin-red, #ff8a80)',
-              textUnderlineOffset: '4px',
               color: 'var(--ink, #2d3436)',
               margin: 0,
             }}
@@ -67,11 +78,13 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             PlaylistOut
           </h1>
           <div
-            className="font-handwriting"
+            className="font-note"
             style={{
-              fontSize: '1.1rem',
+              fontSize: '1.35rem',
               color: '#636e72',
-              marginTop: '-0.2rem',
+              marginTop: '0.1rem',
+              letterSpacing: '0.02em',
+              lineHeight: 1.1,
             }}
           >
             {t.header.brandTagline}
@@ -84,34 +97,23 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '1rem',
-          fontFamily: 'var(--font-handwriting, cursive)',
-          fontSize: '1.25rem',
+          gap: '0.85rem',
         }}
       >
-        <FontSwitcher />
-        <LanguageSwitcher />
-
         <a
           href="https://github.com/LengxiQwQ/playlistout"
           target="_blank"
           rel="noopener noreferrer"
-          className="header-github-link font-handwriting"
-          aria-label="GitHub Repository"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            textDecoration: 'none',
-            color: 'var(--ink, #2d3436)',
-            fontWeight: 700,
-            fontSize: '1.25rem',
-            padding: '0.35rem 0.6rem',
-            transition: 'transform 0.15s ease',
-          }}
+          className="header-github-btn"
+          aria-label="Star on GitHub"
+          title="Star on GitHub"
         >
-          {t.header.github}
+          <GitHubIcon size={20} />
+          <span>{t.header.github}</span>
         </a>
+
+        <FontSwitcher />
+        <LanguageSwitcher />
       </div>
     </header>
   );

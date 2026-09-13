@@ -2,10 +2,10 @@ import type { Translations } from './types';
 
 export const enUS: Translations = {
   header: {
-    brandTagline: 'my little music notebook',
+    brandTagline: 'Paste. Parse. Export.',
     previewLink: 'Preview',
     numbersLink: 'Numbers',
-    github: '★ GitHub',
+    github: 'Star on GitHub',
     fontDrawerCaption: 'font drawer ✎',
     fontPickerHint: 'Pick one and watch the whole notebook change ↓',
     languageSwitch: 'EN / 中',

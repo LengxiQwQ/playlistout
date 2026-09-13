@@ -2,10 +2,10 @@ import type { Translations } from './types';
 
 export const zhCN: Translations = {
   header: {
-    brandTagline: '我的数字音乐手账',
+    brandTagline: '粘贴 · 解析 · 导出',
     previewLink: '效果预览',
     numbersLink: '手账数据',
-    github: '★ GitHub',
+    github: 'Star 支持一下',
     fontDrawerCaption: '字体抽屉 ✎',
     fontPickerHint: '挑选一款，手账字体即刻切换 ↓',
     languageSwitch: '中 / EN',

@@ -29,7 +29,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           borderBottom: '2px dashed var(--line, #dfe6e9)',
         }}
       >
-        <h3 className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--ink, #2d3436)', margin: 0 }}>
+        <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--ink, #2d3436)', margin: 0, fontFamily: 'var(--font-sans, sans-serif)' }}>
           {format(t.table.listTitle, { count: tracks.length })}
         </h3>
       </div>
@@ -43,6 +43,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
             borderCollapse: 'collapse',
             textAlign: 'left',
             fontSize: '0.925rem',
+            fontFamily: 'var(--font-sans, sans-serif)',
           }}
         >
           <thead>
@@ -55,25 +56,25 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                 zIndex: 10,
               }}
             >
-              <th scope="col" className="col-index font-mono" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-index" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600 }}>
                 {t.table.colIndex}
               </th>
-              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600 }}>
                 {t.table.colCover}
               </th>
-              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
                 {t.table.colTitle}
               </th>
-              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
                 {t.table.colArtist}
               </th>
-              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92' }}>
+              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
                 {t.table.colAlbum}
               </th>
               <th
                 scope="col"
-                className="col-duration hide-mobile font-mono"
-                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92' }}
+                className="col-duration hide-mobile"
+                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}
               >
                 {t.table.colDuration}
               </th>
@@ -94,7 +95,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     borderBottom: '1px solid rgba(45, 52, 54, 0.08)',
                   }}
                 >
-                  <td className="col-index font-mono" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem' }}>
+                  <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem' }}>
                     {String(track.index).padStart(2, '0')}
                   </td>
                   <td className="col-cover" style={{ padding: '0.65rem 0.5rem' }}>
@@ -102,38 +103,40 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   </td>
                   <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: 'var(--ink, #2d3436)' }}>
                     <span
-                      className="track-title-text font-handwriting"
+                      className="track-title-text"
                       title={track.title}
-                      style={{ fontWeight: 700, fontSize: '1.125rem', display: 'inline-block' }}
+                      style={{ fontWeight: 600, fontSize: '0.95rem', display: 'inline-block', fontFamily: 'var(--font-sans, sans-serif)' }}
                     >
                       {track.title}
                     </span>
                   </td>
                   <td
-                    className="col-artist font-handwriting"
-                    style={{ color: '#4b5563', padding: '0.65rem 0.75rem', fontSize: '1.025rem' }}
+                    className="col-artist"
+                    style={{ color: '#4b5563', padding: '0.65rem 0.75rem', fontSize: '0.925rem', fontFamily: 'var(--font-sans, sans-serif)' }}
                     title={artistsText}
                   >
                     {artistsText}
                   </td>
                   <td
-                    className="col-album hide-mobile font-handwriting"
+                    className="col-album hide-mobile"
                     style={{
                       color: '#6b7280',
-                      fontStyle: 'italic',
                       padding: '0.65rem 0.75rem',
-                      fontSize: '0.975rem',
+                      fontSize: '0.9rem',
+                      fontFamily: 'var(--font-sans, sans-serif)',
                     }}
                     title={albumText}
                   >
                     {albumText}
                   </td>
                   <td
-                    className="col-duration hide-mobile font-mono"
+                    className="col-duration hide-mobile"
                     style={{
                       textAlign: 'right',
                       color: '#8a8f92',
                       fontVariantNumeric: 'tabular-nums',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '0.85rem',
                       padding: '0.65rem 0.75rem',
                     }}
                   >

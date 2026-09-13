@@ -14,11 +14,11 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
     <section
       className="info-notes-section"
       style={{
-        maxWidth: 'var(--result-paper-width, 1050px)',
+        maxWidth: 'var(--result-paper-width, 1180px)',
         margin: '3.5rem auto 0',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '1.5rem',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '2rem',
         alignItems: 'start',
       }}
     >

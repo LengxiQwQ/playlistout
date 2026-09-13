@@ -71,7 +71,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
       className="search-note-section"
       style={{
         maxWidth: 'var(--search-note-width, 820px)',
-        margin: '1.5rem auto 0',
+        margin: '2.5rem auto 4rem',
         position: 'relative',
       }}
     >
@@ -173,19 +173,19 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
-            gap: '0.5rem',
-            marginTop: '1rem',
-            fontSize: '1.15rem',
+            gap: '1rem',
+            marginTop: '1.25rem',
+            fontSize: '1.2rem',
             color: '#636e72',
           }}
         >
-          <span style={{ fontWeight: 600 }}>{t.search.quickSamplesLabel}</span>
+          <span style={{ fontWeight: 600, marginRight: '0.35rem' }}>{t.search.quickSamplesLabel}</span>
           <Sticker
             type="button"
             color="white"
             rotateDeg={-1}
             onClick={() => onSelectSample('9044196528')}
-            style={{ padding: '0.2rem 0.6rem', fontSize: '1rem' }}
+            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
           >
             {t.search.sampleFolk}
           </Sticker>
@@ -194,7 +194,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             color="white"
             rotateDeg={1}
             onClick={() => onSelectSample('8079931214')}
-            style={{ padding: '0.2rem 0.6rem', fontSize: '1rem' }}
+            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
           >
             {t.search.sampleJay}
           </Sticker>
@@ -203,7 +203,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             color="white"
             rotateDeg={-0.5}
             onClick={() => onSelectSample('7684752768')}
-            style={{ padding: '0.2rem 0.6rem', fontSize: '1rem' }}
+            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
           >
             {t.search.sampleJpKr}
           </Sticker>
