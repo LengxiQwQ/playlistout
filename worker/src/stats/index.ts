@@ -258,7 +258,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         .prepare(`
           SELECT export_format, SUM(count) as total
           FROM daily_export_stats
-          WHERE export_format IN ('txt', 'csv', 'xlsx', 'json')
+          WHERE date != 'TOTAL' AND export_format IN ('txt', 'csv', 'xlsx', 'json')
           GROUP BY export_format
         `)
         .all<{ export_format: string; total: number }>();

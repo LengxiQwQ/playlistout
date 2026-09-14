@@ -213,7 +213,36 @@ export const StatsJournal: React.FC = () => {
               <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #2d3436)' }}>
                 {t.stats.todayTitle}
               </div>
-              <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>☀️ ♫</span>
+              <button
+                type="button"
+                onClick={refreshStats}
+                aria-label="Refresh stats"
+                title={language === 'zh-CN' ? '点击刷新实时手账统计' : 'Click to refresh live statistics'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1.15rem',
+                  padding: '0.2rem 0.4rem',
+                  color: '#636e72',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  borderRadius: '4px',
+                  transition: 'transform 0.2s ease, color 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--ink, #2d3436)';
+                  e.currentTarget.style.transform = 'rotate(30deg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#636e72';
+                  e.currentTarget.style.transform = 'none';
+                }}
+              >
+                <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>↻</span>
+                <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>☀️ ♫</span>
+              </button>
             </div>
             <div className="font-note" style={{ fontSize: '1.45rem', color: '#636e72', marginBottom: '1.25rem' }}>
               {todayDateFormatted}
