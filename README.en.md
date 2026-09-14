@@ -6,8 +6,8 @@
 
 *Your playlists shouldn't be trapped inside one music platform.*
 
-[![Website](https://img.shields.io/badge/Website-playlistout.com-2563eb?style=flat-square)](https://playlistout.com)
-[![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github)](https://github.com/LengxiQwQ/playlistout/stargazers)
+[![Website](https://img.shields.io/badge/Website-playlistout.com-fbe082?style=flat-square)](https://playlistout.com)
+[![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github&color=D97706)](https://github.com/LengxiQwQ/playlistout/stargazers)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
