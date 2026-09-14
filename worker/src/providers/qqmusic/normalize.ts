@@ -42,6 +42,12 @@ export interface RawQQCdItem {
   songnum?: number;
   cur_song_num?: number;
   song_begin?: number;
+  ctime?: number;
+  mtime?: number;
+  desc?: string;
+  tags?: Array<{ id?: number; name?: string; pid?: number }>;
+  visitnum?: number;
+  listennum?: number;
   songlist?: RawQQSong[];
 }
 
@@ -67,6 +73,13 @@ export interface RawMusicUResponse {
         picurl?: string;
         total_song_num?: number;
         songnum?: number;
+        ctime?: number;
+        mtime?: number;
+        desc?: string;
+        tag?: Array<{ id?: number; name?: string; pid?: number }>;
+        vec_tagname?: string[];
+        listennum?: number;
+        visitnum?: number;
       };
       songlist?: RawQQSong[];
     };
@@ -199,6 +212,20 @@ export function normalizeCYQQResponse(payload: RawCYQQResponse, expectedId: stri
     );
   }
 
+  const createTime = typeof cd.ctime === 'number' && cd.ctime > 0 ? cd.ctime : undefined;
+  const updateTime = typeof cd.mtime === 'number' && cd.mtime > 0 ? cd.mtime : undefined;
+  const descRaw = (cd.desc || '').trim();
+  const description = descRaw.length > 0 ? descRaw : undefined;
+  const tags: string[] = Array.isArray(cd.tags)
+    ? cd.tags.map((t) => (t?.name || '').trim()).filter((n) => n.length > 0)
+    : [];
+  const playCount = typeof cd.visitnum === 'number' && cd.visitnum > 0
+    ? cd.visitnum
+    : typeof cd.listennum === 'number' && cd.listennum > 0
+      ? cd.listennum
+      : undefined;
+  const sourceUrl = `https://y.qq.com/n/ryqq/playlist/${expectedId}`;
+
   return {
     platform: 'qqmusic',
     id: expectedId,
@@ -207,6 +234,12 @@ export function normalizeCYQQResponse(payload: RawCYQQResponse, expectedId: stri
     coverUrl: normalizedCoverUrl,
     trackCount: tracks.length,
     tracks,
+    createTime,
+    updateTime,
+    description,
+    tags: tags.length > 0 ? tags : undefined,
+    playCount,
+    sourceUrl,
   };
 }
 
@@ -252,6 +285,22 @@ export function normalizeMusicUResponse(payload: RawMusicUResponse, expectedId: 
     );
   }
 
+  const createTime = typeof dirinfo.ctime === 'number' && dirinfo.ctime > 0 ? dirinfo.ctime : undefined;
+  const updateTime = typeof dirinfo.mtime === 'number' && dirinfo.mtime > 0 ? dirinfo.mtime : undefined;
+  const descRaw = (dirinfo.desc || '').trim();
+  const description = descRaw.length > 0 ? descRaw : undefined;
+  const tags: string[] = Array.isArray(dirinfo.vec_tagname) && dirinfo.vec_tagname.length > 0
+    ? dirinfo.vec_tagname.map((t) => String(t).trim()).filter((n) => n.length > 0)
+    : Array.isArray(dirinfo.tag)
+      ? dirinfo.tag.map((t) => (t?.name || '').trim()).filter((n) => n.length > 0)
+      : [];
+  const playCount = typeof dirinfo.listennum === 'number' && dirinfo.listennum > 0
+    ? dirinfo.listennum
+    : typeof dirinfo.visitnum === 'number' && dirinfo.visitnum > 0
+      ? dirinfo.visitnum
+      : undefined;
+  const sourceUrl = `https://y.qq.com/n/ryqq/playlist/${expectedId}`;
+
   return {
     platform: 'qqmusic',
     id: expectedId,
@@ -260,5 +309,11 @@ export function normalizeMusicUResponse(payload: RawMusicUResponse, expectedId: 
     coverUrl: normalizedCoverUrl,
     trackCount: tracks.length,
     tracks,
+    createTime,
+    updateTime,
+    description,
+    tags: tags.length > 0 ? tags : undefined,
+    playCount,
+    sourceUrl,
   };
 }

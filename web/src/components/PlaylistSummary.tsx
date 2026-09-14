@@ -9,10 +9,23 @@ export interface PlaylistSummaryProps {
 }
 
 export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset }) => {
-  const { t, format } = useTranslation();
+  const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
 
   const tracksText = format(t.result.tracksCount, { count: playlist.trackCount });
+  const createdDateStr = playlist.createTime
+    ? new Date(playlist.createTime * 1000).toLocaleDateString(language === 'zh-CN' ? 'zh-CN' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null;
+
+  const playCountStr = playlist.playCount
+    ? playlist.playCount >= 10000
+      ? `${(playlist.playCount / 10000).toFixed(1)}万`
+      : playlist.playCount.toLocaleString()
+    : null;
 
   return (
     <div
@@ -182,7 +195,99 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                   </span>
                 </>
               )}
+              {createdDateStr && (
+                <>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      opacity: 0.55,
+                      userSelect: 'none',
+                      flexShrink: 0,
+                      fontSize: '0.85rem',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ·
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                    {t.result.createdPrefix}
+                    {createdDateStr}
+                  </span>
+                </>
+              )}
+              {playCountStr && (
+                <>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      opacity: 0.55,
+                      userSelect: 'none',
+                      flexShrink: 0,
+                      fontSize: '0.85rem',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ·
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                    {playCountStr} {t.result.playCountSuffix}
+                  </span>
+                </>
+              )}
             </div>
+
+            {playlist.tags && playlist.tags.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.4rem',
+                  marginTop: '0.5rem',
+                  alignItems: 'center',
+                }}
+              >
+                {playlist.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="font-mono"
+                    style={{
+                      fontSize: '0.78rem',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(45, 52, 54, 0.06)',
+                      border: '1px solid rgba(45, 52, 54, 0.15)',
+                      color: '#4b5563',
+                    }}
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {playlist.description && (
+              <div
+                className="font-note"
+                style={{
+                  marginTop: '0.5rem',
+                  fontSize: '1rem',
+                  color: '#4b5563',
+                  lineHeight: 1.4,
+                  padding: '0.35rem 0.65rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                  borderLeft: '2.5px solid var(--ink, #2d3436)',
+                  borderRadius: '0 4px 4px 0',
+                  maxWidth: '650px',
+                  wordBreak: 'break-word',
+                }}
+              >
+                “{playlist.description}”
+              </div>
+            )}
           </div>
         </div>
 

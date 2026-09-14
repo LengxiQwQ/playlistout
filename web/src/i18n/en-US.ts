@@ -79,6 +79,12 @@ export const enUS: Translations = {
     parseAnother: 'Parse another playlist',
     justNow: 'just now',
     noCoverAria: 'No cover',
+    createdPrefix: 'Created: ',
+    lastUpdatedPrefix: 'Updated: ',
+    playCountSuffix: ' plays',
+    totalDurationLabel: 'Duration',
+    tagsLabel: 'Tags',
+    descriptionLabel: 'Description',
   },
   table: {
     listTitle: 'Song List ({count})',

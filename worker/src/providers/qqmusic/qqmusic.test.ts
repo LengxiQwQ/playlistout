@@ -92,6 +92,12 @@ describe('QQ Music Normalization (Fixtures)', () => {
     expect(playlist.coverUrl).toBe('https://qpic.y.qq.com/music_cover/test/300?n=1');
     expect(playlist.trackCount).toBe(5);
     expect(playlist.tracks).toHaveLength(5);
+    expect(playlist.createTime).toBe(1696904605);
+    expect(playlist.updateTime).toBe(1771679922);
+    expect(playlist.description).toBe('这是一个测试歌单');
+    expect(playlist.tags).toEqual(['民谣', '流行']);
+    expect(playlist.playCount).toBe(10516);
+    expect(playlist.sourceUrl).toBe('https://y.qq.com/n/ryqq/playlist/9044196528');
 
     // Track 1: Single artist
     const t1 = playlist.tracks[0];

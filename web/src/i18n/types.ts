@@ -79,6 +79,12 @@ export interface Translations {
     parseAnother: string;
     justNow: string;
     noCoverAria: string;
+    createdPrefix: string;
+    lastUpdatedPrefix: string;
+    playCountSuffix: string;
+    totalDurationLabel: string;
+    tagsLabel: string;
+    descriptionLabel: string;
   };
   table: {
     listTitle: string;

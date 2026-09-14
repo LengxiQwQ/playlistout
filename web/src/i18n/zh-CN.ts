@@ -79,6 +79,12 @@ export const zhCN: Translations = {
     parseAnother: '解析其他歌单',
     justNow: '刚刚',
     noCoverAria: '无封面',
+    createdPrefix: '创建于：',
+    lastUpdatedPrefix: '更新于：',
+    playCountSuffix: '次播放',
+    totalDurationLabel: '总时长',
+    tagsLabel: '风格标签',
+    descriptionLabel: '歌单简介',
   },
   table: {
     listTitle: '歌曲列表 ({count})',
