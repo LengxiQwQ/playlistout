@@ -1,0 +1,343 @@
+{
+  "views": {
+    "2026-08-31": {
+      "count": 19,
+      "uniques": 7
+    },
+    "2026-09-01": {
+      "count": 18,
+      "uniques": 8
+    },
+    "2026-09-02": {
+      "count": 14,
+      "uniques": 5
+    },
+    "2026-09-03": {
+      "count": 11,
+      "uniques": 9
+    },
+    "2026-09-04": {
+      "count": 9,
+      "uniques": 7
+    },
+    "2026-09-05": {
+      "count": 10,
+      "uniques": 7
+    },
+    "2026-09-06": {
+      "count": 7,
+      "uniques": 6
+    },
+    "2026-09-07": {
+      "count": 11,
+      "uniques": 9
+    },
+    "2026-09-08": {
+      "count": 12,
+      "uniques": 9
+    },
+    "2026-09-09": {
+      "count": 10,
+      "uniques": 10
+    },
+    "2026-09-10": {
+      "count": 15,
+      "uniques": 10
+    },
+    "2026-09-11": {
+      "count": 13,
+      "uniques": 7
+    },
+    "2026-09-12": {
+      "count": 155,
+      "uniques": 7
+    },
+    "2026-09-13": {
+      "count": 46,
+      "uniques": 11
+    }
+  },
+  "clones": {
+    "2026-08-31": {
+      "count": 1,
+      "uniques": 1
+    },
+    "2026-09-01": {
+      "count": 5,
+      "uniques": 4
+    },
+    "2026-09-02": {
+      "count": 3,
+      "uniques": 3
+    },
+    "2026-09-03": {
+      "count": 1,
+      "uniques": 1
+    },
+    "2026-09-04": {
+      "count": 2,
+      "uniques": 2
+    },
+    "2026-09-05": {
+      "count": 0,
+      "uniques": 0
+    },
+    "2026-09-06": {
+      "count": 2,
+      "uniques": 2
+    },
+    "2026-09-07": {
+      "count": 3,
+      "uniques": 3
+    },
+    "2026-09-08": {
+      "count": 2,
+      "uniques": 2
+    },
+    "2026-09-09": {
+      "count": 4,
+      "uniques": 3
+    },
+    "2026-09-10": {
+      "count": 4,
+      "uniques": 4
+    },
+    "2026-09-11": {
+      "count": 1,
+      "uniques": 1
+    },
+    "2026-09-12": {
+      "count": 487,
+      "uniques": 119
+    },
+    "2026-09-13": {
+      "count": 78,
+      "uniques": 23
+    }
+  },
+  "referrer_snapshots": [
+    {
+      "fetched_at": "2026-09-14T18:26:25Z",
+      "referrers": [
+        {
+          "referrer": "github.com",
+          "count": 84,
+          "uniques": 11
+        },
+        {
+          "referrer": "Google",
+          "count": 70,
+          "uniques": 39
+        },
+        {
+          "referrer": "Bing",
+          "count": 34,
+          "uniques": 28
+        },
+        {
+          "referrer": "Baidu",
+          "count": 14,
+          "uniques": 8
+        },
+        {
+          "referrer": "doubao.com",
+          "count": 3,
+          "uniques": 2
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 3,
+          "uniques": 1
+        }
+      ]
+    },
+    {
+      "fetched_at": "2026-09-14T18:34:43Z",
+      "referrers": [
+        {
+          "referrer": "github.com",
+          "count": 84,
+          "uniques": 11
+        },
+        {
+          "referrer": "Google",
+          "count": 70,
+          "uniques": 39
+        },
+        {
+          "referrer": "Bing",
+          "count": 34,
+          "uniques": 28
+        },
+        {
+          "referrer": "Baidu",
+          "count": 14,
+          "uniques": 8
+        },
+        {
+          "referrer": "doubao.com",
+          "count": 3,
+          "uniques": 2
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 3,
+          "uniques": 1
+        }
+      ]
+    }
+  ],
+  "path_snapshots": [
+    {
+      "fetched_at": "2026-09-14T18:26:25Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 110,
+          "uniques": 15
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 89,
+          "uniques": 65
+        },
+        {
+          "path": "/lengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 33,
+          "uniques": 28
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 13,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/music-playlist-exporter",
+          "title": "Overview",
+          "count": 9,
+          "uniques": 3
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/deployments/github-pages",
+          "title": "/deployments/github-pages",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter/issues",
+          "title": "/issues",
+          "count": 5,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.0.0",
+          "title": "/releases/tag/v2.0.0",
+          "count": 5,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter/blob/main/qq_music_playlist_export.py",
+          "title": "/blob/main/qq_music_playlist_export.py",
+          "count": 5,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/commits/main",
+          "title": "/commits/main",
+          "count": 5,
+          "uniques": 1
+        }
+      ]
+    },
+    {
+      "fetched_at": "2026-09-14T18:34:43Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 110,
+          "uniques": 15
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 89,
+          "uniques": 65
+        },
+        {
+          "path": "/lengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 33,
+          "uniques": 28
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 13,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/music-playlist-exporter",
+          "title": "Overview",
+          "count": 9,
+          "uniques": 3
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/deployments/github-pages",
+          "title": "/deployments/github-pages",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter/issues",
+          "title": "/issues",
+          "count": 5,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.0.0",
+          "title": "/releases/tag/v2.0.0",
+          "count": 5,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter/blob/main/qq_music_playlist_export.py",
+          "title": "/blob/main/qq_music_playlist_export.py",
+          "count": 5,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/commits/main",
+          "title": "/commits/main",
+          "count": 5,
+          "uniques": 1
+        }
+      ]
+    }
+  ],
+  "repo_meta_snapshots": [
+    {
+      "fetched_at": "2026-09-14T18:26:25Z",
+      "stars": 29,
+      "forks": 1,
+      "watchers": 1,
+      "open_issues": 0,
+      "network": 1,
+      "pushed_at": "2026-09-14T16:52:15Z"
+    },
+    {
+      "fetched_at": "2026-09-14T18:34:43Z",
+      "stars": 29,
+      "forks": 1,
+      "watchers": 1,
+      "open_issues": 0,
+      "network": 1,
+      "pushed_at": "2026-09-14T16:52:15Z"
+    }
+  ],
+  "updated_at": "2026-09-14T18:34:43Z"
+}

@@ -168,7 +168,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
         <div
           className="footer-nav"
           style={{
-            height: 'calc(var(--ruled-line-height, 38px) * 2)',
+            minHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

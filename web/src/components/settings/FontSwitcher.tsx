@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n';
+import { useFontPreset } from './useFontPreset';
 
 export type FontPresetId =
   | 'zhnote'
@@ -140,7 +141,7 @@ export const ALL_FONT_PRESETS: FontPreset[] = [
 
 export const FONT_PRESETS = ALL_FONT_PRESETS;
 
-const FONT_STORAGE_PREFIX = 'playlistout-font-preset';
+export const FONT_STORAGE_PREFIX = 'playlistout-font-preset';
 
 // Track font presets confirmed ready in browser session
 const loadedFontPresets = new Set<string>(['original', 'zhnote']);
@@ -260,23 +261,14 @@ export function ensureFontStylesheet(preset: FontPreset): void {
 }
 
 export const FontSwitcher: React.FC = () => {
-  const { t, language } = useTranslation();
-  const isZh = language === 'zh-CN';
-  const currentPresets = isZh ? CHINESE_FONT_PRESETS : ENGLISH_FONT_PRESETS;
-  const storageKey = isZh ? `${FONT_STORAGE_PREFIX}-zh` : `${FONT_STORAGE_PREFIX}-en`;
-  const defaultPresetId = isZh ? 'zhnote' : 'original';
+  const { t } = useTranslation();
+  const {
+    currentPresets,
+    currentPreset,
+    selectPreset: applySelected,
+    getFontName,
+  } = useFontPreset();
 
-  const [selectedPresetId, setSelectedPresetId] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved && currentPresets.some((p) => p.id === saved)) {
-        return saved;
-      }
-    } catch {
-      // ignore
-    }
-    return defaultPresetId;
-  });
   const [isOpen, setIsOpen] = useState(false);
 
   // Preload stylesheets for all presets in the active drawer when opened
@@ -286,45 +278,13 @@ export const FontSwitcher: React.FC = () => {
     }
   }, [isOpen, currentPresets]);
 
-  const applyPreset = useCallback(
-    (presetId: string, persist = true) => {
-      const preset = ALL_FONT_PRESETS.find((p) => p.id === presetId) || currentPresets[0];
-      setSelectedPresetId(preset.id);
-      document.body.dataset.fontPreset = preset.id;
-      ensureFontStylesheet(preset);
-
-      if (persist) {
-        try {
-          localStorage.setItem(storageKey, preset.id);
-        } catch {
-          // Ignore storage errors
-        }
-      }
-    },
-    [currentPresets, storageKey],
-  );
-
   const selectPreset = useCallback(
     (preset: FontPreset) => {
-      applyPreset(preset.id, true);
+      applySelected(preset);
       setIsOpen(false);
     },
-    [applyPreset],
+    [applySelected],
   );
-
-  // Restore saved preset or apply default whenever language changes
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved && currentPresets.some((p) => p.id === saved)) {
-        applyPreset(saved, false);
-        return;
-      }
-    } catch {
-      // Default
-    }
-    applyPreset(defaultPresetId, false);
-  }, [language, storageKey, currentPresets, defaultPresetId, applyPreset]);
 
   // Click outside and Escape handling
   useEffect(() => {
@@ -348,13 +308,6 @@ export const FontSwitcher: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
-
-  const currentPreset =
-    currentPresets.find((p) => p.id === selectedPresetId) || currentPresets[0];
-
-  const getFontName = (preset: FontPreset): string => {
-    return (t.fonts as Record<string, string>)?.[preset.id] || preset.name;
-  };
 
   return (
     <div className={`font-picker ${isOpen ? 'open' : ''}`} id="fontPicker">

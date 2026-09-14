@@ -9,6 +9,12 @@ export const enUS: Translations = {
     fontDrawerCaption: 'font drawer ✎',
     fontPickerHint: 'Pick one and watch the whole notebook change ↓',
     languageSwitch: 'EN / 中',
+    mobileMenu: 'Drawer',
+    mobileDrawerTitle: 'Journal Drawer ✎',
+    mobileDrawerFontTitle: 'Handwriting Fonts',
+    mobileDrawerFontDesc: 'Pick a font to style your music notebook',
+    mobileDrawerLinksTitle: 'Support & Links',
+    mobileClose: 'Close',
   },
   fonts: {
     zhnote: 'Chinese Brush (Kaishu)',

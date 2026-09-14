@@ -235,6 +235,17 @@ body {
   text-shadow: 3px 3.5px 0 rgba(65, 48, 12, 0.26);
 }
 
+.hero-doodle-right {
+  position: absolute;
+  right: 1rem;
+  top: 0;
+  height: var(--ruled-line-height, 38px);
+  line-height: var(--ruled-line-height, 38px);
+  font-size: 1.35rem;
+  color: #d97706;
+  user-select: none;
+}
+
 .status-alert {
   --rot: -0.5deg;
   transform: rotate(var(--rot, -0.5deg));
@@ -823,8 +834,137 @@ button.sticker:disabled,
   color: #1e293b;
 }
 
+.header-brand-text:hover .header-brand-tagline {
+  color: var(--ink, #2d3436);
+}
+
 .header-brand-text:active {
   transform: translateY(1px) scale(0.99);
+}
+
+.header-brand-tagline {
+  font-family: var(--font-handwriting, cursive);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink-light, #636e72);
+  margin-top: 0.15rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-align: left;
+  transition: color 0.18s ease;
+}
+
+/* Mobile Header Drawer Trigger Button */
+.header-drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--note-yellow, #fff8bd);
+  color: var(--ink, #2d3436);
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 12px 255px 14px 225px / 225px 12px 255px 14px;
+  padding: 0.42rem 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 2.5px 2.5px 0 var(--ink, #2d3436);
+  line-height: 1.2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.header-drawer-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+.header-drawer-btn .drawer-btn-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* Mobile Settings Drawer Content */
+.mobile-font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 0.75rem;
+}
+
+.mobile-font-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--paper-white, #ffffff);
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.2);
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.mobile-font-card:hover {
+  background: #fefce8;
+  transform: translateY(-1px);
+}
+
+.mobile-font-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+.mobile-font-card.active {
+  background: var(--note-yellow, #fff8bd);
+  border-color: var(--ink, #2d3436);
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  font-weight: 700;
+}
+
+.mobile-font-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+
+.mobile-font-index {
+  font-size: 0.75rem;
+  color: #8a8f92;
+  font-weight: 700;
+}
+
+.mobile-font-card.active .mobile-font-index {
+  color: var(--ink, #2d3436);
+}
+
+.mobile-font-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink, #2d3436);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin-left: 0.35rem;
+}
+
+.mobile-font-check {
+  font-size: 0.95rem;
+  color: #15803d;
+  font-weight: 900;
+}
+
+.mobile-font-sample {
+  font-size: 1.25rem;
+  color: var(--ink, #2d3436);
+  line-height: 1.2;
+  margin-top: 0.2rem;
+  width: 100%;
+  text-align: left;
 }
 
 /* Paper Input Clear Button */
