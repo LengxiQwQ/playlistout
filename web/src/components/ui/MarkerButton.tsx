@@ -14,17 +14,25 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
   children,
   ...props
 }) => {
+  const { transform: inlineTransform, ...restStyle } = (style || {}) as Record<string, any>;
+  let rot = `${rotateDeg}deg`;
+  if (inlineTransform && typeof inlineTransform === 'string') {
+    const match = inlineTransform.match(/rotate\(([^)]+)\)/);
+    if (match) {
+      rot = match[1];
+    }
+  }
+
   let baseClass = 'font-marker';
   let variantStyle: React.CSSProperties = {
+    ['--rot' as any]: rot,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.6 : 1,
-    transform: rotateDeg && !disabled ? `rotate(${rotateDeg}deg)` : undefined,
+    opacity: disabled ? 0.45 : 1,
     userSelect: 'none',
-    transition: 'transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease',
   };
 
   if (variant === 'ink') {
-    baseClass += ' hand-drawn-border-alt shadow-cutout-sm';
+    baseClass += ' hand-drawn-border-alt shadow-cutout-sm marker-btn-ink';
     variantStyle = {
       ...variantStyle,
       backgroundColor: 'var(--ink, #2d3436)',
@@ -33,7 +41,7 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
       fontSize: '1.15rem',
     };
   } else if (variant === 'sticker') {
-    baseClass += ' sticker font-handwriting';
+    baseClass += ' sticker font-handwriting marker-btn-sticker';
     variantStyle = {
       ...variantStyle,
       backgroundColor: '#ffffff',
@@ -42,7 +50,7 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
       fontSize: '1.05rem',
     };
   } else {
-    baseClass += ' hand-drawn-border-subtle';
+    baseClass += ' hand-drawn-border-subtle marker-btn-paper';
     variantStyle = {
       ...variantStyle,
       backgroundColor: 'var(--paper, #fdfbf7)',
@@ -54,7 +62,7 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
   return (
     <button
       className={`marker-button ${baseClass} ${className}`.trim()}
-      style={{ ...variantStyle, ...style }}
+      style={{ ...variantStyle, ...restStyle }}
       disabled={disabled}
       {...props}
     >

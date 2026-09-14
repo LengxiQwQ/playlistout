@@ -138,27 +138,28 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
 
         {/* Action Stickers */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
-          <a
+          <Sticker
+            as="a"
             href={`https://y.qq.com/n/ryqq/playlist/${playlist.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="sticker font-handwriting"
+            color="white"
+            rotateDeg={-1}
+            className="font-handwriting"
             style={{
-              backgroundColor: '#ffffff',
               padding: '0.42rem 0.95rem',
               fontSize: '1.05rem',
               fontFamily: 'var(--font-handwriting, cursive)',
               fontWeight: 700,
               textDecoration: 'none',
               color: 'var(--ink, #2d3436)',
-              transform: 'rotate(-1deg)',
               display: 'inline-flex',
               alignItems: 'center',
               lineHeight: 1.2,
             }}
           >
             {t.result.viewOnQQ}
-          </a>
+          </Sticker>
 
           <Sticker
             type="button"

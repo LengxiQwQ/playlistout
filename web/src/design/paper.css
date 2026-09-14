@@ -149,25 +149,97 @@ body {
 .tape-green { background-color: var(--tape-green); }
 .tape-yellow { background-color: var(--tape-yellow); }
 
-/* Stickers */
+/* ==========================================================================
+   Interactive Sketchbook Buttons & Stickers (Unified Animation Standard)
+   ========================================================================== */
+
+/* Base Sticker */
 .sticker {
+  --rot: 0deg;
   border: 2px solid var(--ink, #2d3436);
-  box-shadow: var(--sticker-shadow, 3px 3px 0 #2d3436);
+  box-shadow: var(--sticker-shadow, 3px 3px 0 var(--ink, #2d3436));
   background-image: url('/paper-grain.png');
   background-repeat: repeat;
   background-size: 256px 256px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transform: rotate(var(--rot));
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
   user-select: none;
 }
 
-.sticker:hover {
-  transform: translate(-1px, -2px) rotate(-1deg);
-  box-shadow: var(--sticker-shadow-hover, 5px 5px 0 #2d3436);
+/* Interactive Stickers: Buttons, Links, Clickables ("能点击的就动") */
+button.sticker:not(:disabled):hover,
+a.sticker:hover,
+.sticker[role="button"]:not([aria-disabled="true"]):hover,
+.sticker.clickable:hover {
+  transform: translateY(-2px) rotate(calc(var(--rot) - 0.8deg));
+  box-shadow: 4px 5px 0 var(--ink, #2d3436);
+  cursor: pointer;
 }
 
-.sticker:active {
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 #2d3436;
+button.sticker:not(:disabled):active,
+a.sticker:active,
+.sticker[role="button"]:not([aria-disabled="true"]):active,
+.sticker.clickable:active {
+  transform: translate(1px, 1px) rotate(var(--rot));
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+/* Active State for Format Selection Chips */
+button.sticker.active {
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  font-weight: 800;
+  filter: brightness(0.96);
+}
+
+/* Disabled Stickers: Zero movement, muted, not-allowed ("不能点击的就别动") */
+button.sticker:disabled,
+.sticker[aria-disabled="true"],
+.sticker.disabled {
+  cursor: not-allowed !important;
+  opacity: 0.45 !important;
+  transform: rotate(var(--rot)) !important;
+  box-shadow: 2px 2px 0 var(--ink, #2d3436) !important;
+  pointer-events: none;
+}
+
+/* Base Marker Button (Big Ink / Paper Action Buttons) */
+.marker-button {
+  --rot: -0.5deg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ink, #2d3436);
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  transform: rotate(var(--rot));
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.marker-button:not(:disabled):hover {
+  transform: translateY(-2px) rotate(calc(var(--rot) - 0.8deg));
+  box-shadow: 4px 5px 0 var(--ink, #2d3436);
+}
+
+.marker-button.marker-btn-ink:not(:disabled):hover {
+  background-color: #3d4649 !important;
+}
+
+.marker-button.marker-btn-paper:not(:disabled):hover {
+  background-color: var(--note-yellow, #fff8bd) !important;
+}
+
+.marker-button:not(:disabled):active {
+  transform: translate(1px, 1px) rotate(var(--rot));
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+.marker-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.45 !important;
+  transform: rotate(var(--rot)) !important;
+  box-shadow: 2px 2px 0 var(--ink, #2d3436) !important;
+  pointer-events: none;
 }
 
 /* Scribble Line & Marker Highlight */
@@ -287,8 +359,13 @@ body {
 }
 
 .font-picker-button:hover {
-  transform: translateY(-1px) rotate(-0.3deg);
+  transform: translateY(-2px) rotate(-0.3deg);
   box-shadow: 4px 5px 0 var(--ink, #2d3436);
+}
+
+.font-picker-button:active {
+  transform: translate(1px, 1px) rotate(0.4deg);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
 }
 
 .font-picker-button .paper-caret {
@@ -319,19 +396,19 @@ body {
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.2;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
 }
 
 .header-github-btn:hover {
-  transform: translateY(-1px) rotate(0.3deg);
+  transform: translateY(-2px) rotate(0.3deg);
   box-shadow: 4px 5px 0 var(--ink, #2d3436);
   background: var(--note-yellow, #fff8bd);
   color: var(--ink, #2d3436);
 }
 
 .header-github-btn:active {
-  transform: translate(1px, 1px);
+  transform: translate(1px, 1px) rotate(-0.5deg);
   box-shadow: 1px 1px 0 var(--ink, #2d3436);
 }
 
@@ -496,19 +573,20 @@ body {
 }
 
 .footer-pill-link {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  border-radius: 9999px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 .footer-pill-link:hover {
   background-color: var(--note-yellow, #fff8bd) !important;
   color: var(--ink, #2d3436) !important;
-  transform: translateY(-1px) rotate(-0.5deg);
-  box-shadow: 4px 4px 0 #2d3436;
+  transform: translateY(-2px) rotate(-0.5deg);
+  box-shadow: 4px 5px 0 var(--ink, #2d3436);
 }
 
 .footer-pill-link:active {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #2d3436;
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
 }
 
 .footer-author-link:hover {
@@ -526,6 +604,64 @@ body {
   text-decoration: underline;
   text-underline-offset: 3px;
   color: var(--ink, #2d3436);
+}
+
+/* Header Brand Clickable Area */
+.header-brand {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.header-brand:hover {
+  transform: scale(1.02);
+}
+
+.header-brand:active {
+  transform: scale(0.98);
+}
+
+/* Paper Input Clear Button */
+.btn-paper-clear {
+  border: none;
+  background: none;
+  color: #8a8f92;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin-left: 0.25rem;
+  user-select: none;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.btn-paper-clear:hover {
+  color: var(--ink, #2d3436) !important;
+  transform: scale(1.2) rotate(90deg);
+}
+
+.btn-paper-clear:active {
+  transform: scale(0.95);
+}
+
+/* Modal Close Button */
+.btn-modal-close {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-modal-close:hover {
+  transform: translateY(-2px) rotate(90deg) !important;
+  box-shadow: 3px 4px 0 var(--ink, #2d3436) !important;
+  background-color: var(--note-yellow, #fff8bd) !important;
+  color: var(--ink, #2d3436) !important;
+}
+
+.btn-modal-close:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0 var(--ink, #2d3436) !important;
+}
+
+/* Retry Button */
+.btn-retry:hover {
+  background-color: var(--note-yellow, #fff8bd) !important;
 }
 
 /* Sponsor Upward Flyout / Dropup Menu */
@@ -563,8 +699,8 @@ body {
 }
 
 .sponsor-action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 3px 4px 0 var(--ink, #2d3436) !important;
+  transform: translateY(-2px);
+  box-shadow: 3px 5px 0 var(--ink, #2d3436) !important;
 }
 
 .sponsor-action-btn:active {
