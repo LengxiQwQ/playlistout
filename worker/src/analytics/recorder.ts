@@ -360,12 +360,18 @@ export async function recordRateLimitEvent(
 }
 
 /**
- * Generates a one-way, truncated SHA-256 hash from date + clientIp + salt.
- * Ensures zero raw IP addresses or identifiable strings are ever stored.
+ * Generates a one-way, truncated SHA-256 hash from date + clientIp + deviceIdentifier + salt.
+ * Ensures zero raw IP addresses or identifiable strings are ever stored,
+ * while distinguishing multiple devices behind the same Wi-Fi/NAT router.
  */
-export async function computeVisitorHash(date: string, ip: string): Promise<string> {
+export async function computeVisitorHash(
+  date: string,
+  ip: string,
+  deviceIdentifier: string = '',
+): Promise<string> {
   const salt = 'playlistout_v_salt_2026';
-  const data = new TextEncoder().encode(`${date}:${ip}:${salt}`);
+  const cleanDevice = deviceIdentifier.trim().slice(0, 128);
+  const data = new TextEncoder().encode(`${date}:${ip}:${cleanDevice}:${salt}`);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -375,11 +381,13 @@ export async function computeVisitorHash(date: string, ip: string): Promise<stri
 /**
  * Records an anonymous page visit event.
  * Computes a salted one-way hash to identify daily unique visitors without recording IP.
+ * Uses device identifier (or User-Agent) to distinguish different devices on the same NAT.
  * Best-effort: errors never interrupt user operations.
  */
 export async function recordVisitEvent(
   db: D1Database | undefined,
   request: Request,
+  deviceId?: string,
 ): Promise<void> {
   if (!db) return;
 
@@ -389,8 +397,10 @@ export async function recordVisitEvent(
       request.headers.get('cf-connecting-ip') ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       '127.0.0.1';
+    const userAgent = request.headers.get('user-agent') || '';
+    const deviceIdentifier = deviceId || userAgent;
 
-    const hash = await computeVisitorHash(date, clientIp);
+    const hash = await computeVisitorHash(date, clientIp, deviceIdentifier);
 
     const insertHashSql = `
       INSERT OR IGNORE INTO daily_visitor_hashes (date, hash)

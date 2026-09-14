@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { fetchStats, type StatsResponse } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
@@ -36,21 +36,50 @@ export const StatsJournal: React.FC = () => {
   const { t, format: formatString, language } = useTranslation();
   const [stats, setStats] = useState<StatsResponse | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const refreshStats = useCallback(() => {
     fetchStats()
       .then((res) => {
-        if (isMounted && res.success) {
+        if (res.success) {
           setStats(res.data);
         }
       })
       .catch(() => {
         // Non-blocking best-effort: silently handle network/API failures
       });
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    // Initial fetch
+    refreshStats();
+
+    // Listen to global stats refresh events (fired when visit/parse/export occurs)
+    const handleRefreshEvent = () => {
+      refreshStats();
+    };
+
+    window.addEventListener('playlistout:stats-refresh', handleRefreshEvent);
+
+    // Refresh when user returns to this tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshStats();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Gentle polling every 60s
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshStats();
+      }
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('playlistout:stats-refresh', handleRefreshEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [refreshStats]);
 
   const todayDateFormatted = new Date().toLocaleDateString(language === 'zh-CN' ? 'zh-CN' : 'en-US', {
     month: 'short',

@@ -4,6 +4,8 @@ import {
   recordExportEvent,
   recordClipboardEvent,
   recordRateLimitEvent,
+  recordVisitEvent,
+  computeVisitorHash,
   normalizeClipboardMode,
 } from './recorder';
 import type { ExportFormat, ClipboardMode } from './types';
@@ -12,6 +14,7 @@ import { getUtcDateString } from '../stats';
 // Mock in-memory D1 Database for aggregate testing
 function createMockD1() {
   const store = new Map<string, number>();
+  const insertedHashes = new Set<string>();
 
   const db = {
     _store: store,
@@ -24,7 +27,15 @@ function createMockD1() {
           return this;
         },
         async run() {
-          return { success: true };
+          if (sql.includes('daily_visitor_hashes')) {
+            const key = `${this._params[0]}::${this._params[1]}`;
+            if (insertedHashes.has(key)) {
+              return { success: true, meta: { changes: 0 } };
+            }
+            insertedHashes.add(key);
+            return { success: true, meta: { changes: 1 } };
+          }
+          return { success: true, meta: { changes: 1 } };
         },
         async all() {
           return { results: [] };
@@ -37,10 +48,21 @@ function createMockD1() {
         const params = stmt._params;
 
         if (sql.includes('aggregate_stats')) {
-          const date = params[0];
-          const platform = params[1];
-          const metric = sql.includes('tracks_processed') ? 'tracks_processed' : params[2];
-          const increment = sql.includes('tracks_processed') ? (params[2] ?? 1) : 1;
+          let date: string;
+          let platform: string;
+          let metric: string;
+          let increment = 1;
+
+          if (sql.includes("'all'")) {
+            date = params[0];
+            platform = 'all';
+            metric = params[1];
+          } else {
+            date = params[0];
+            platform = params[1];
+            metric = sql.includes('tracks_processed') ? 'tracks_processed' : params[2];
+            increment = sql.includes('tracks_processed') ? (params[2] ?? 1) : 1;
+          }
           const key = `agg::${date}::${platform}::${metric}`;
           store.set(key, (store.get(key) || 0) + increment);
         } else if (sql.includes('hourly_stats')) {
@@ -262,6 +284,55 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
         expect(key).not.toContain('127.0.0.1');
         expect(key).not.toContain('ip');
       }
+    });
+  });
+
+  describe('recordVisitEvent & computeVisitorHash (Multi-Device & UV Deduplication)', () => {
+    it('generates distinct 16-char hashes for different devices on the same IP', async () => {
+      const date = '2026-09-15';
+      const ip = '198.51.100.1';
+      const hashDeviceA = await computeVisitorHash(date, ip, 'd_device_iphone');
+      const hashDeviceB = await computeVisitorHash(date, ip, 'd_device_laptop');
+      expect(hashDeviceA).not.toBe(hashDeviceB);
+      expect(hashDeviceA).toHaveLength(16);
+      expect(hashDeviceB).toHaveLength(16);
+    });
+
+    it('records unique visitors for multiple devices on the same IP (same Wi-Fi)', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+      const ip = '198.51.100.1';
+
+      // Device 1 (e.g. Phone)
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone)' }),
+        'd_device_1',
+      );
+
+      // Device 2 (e.g. Laptop on same Wi-Fi)
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (Windows)' }),
+        'd_device_2',
+      );
+
+      // Both devices counted as unique visitors
+      expect(mockDb._store.get(`agg::${today}::all::visitor_unique`)).toBe(2);
+      expect(mockDb._store.get(`agg::TOTAL::all::visitor_unique`)).toBe(2);
+      expect(mockDb._store.get(`agg::${today}::all::page_view`)).toBe(2);
+
+      // Device 1 refreshes the page
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone)' }),
+        'd_device_1',
+      );
+
+      // visitor_unique does NOT increase, page_view DOES increase
+      expect(mockDb._store.get(`agg::${today}::all::visitor_unique`)).toBe(2);
+      expect(mockDb._store.get(`agg::TOTAL::all::visitor_unique`)).toBe(2);
+      expect(mockDb._store.get(`agg::${today}::all::page_view`)).toBe(3);
     });
   });
 

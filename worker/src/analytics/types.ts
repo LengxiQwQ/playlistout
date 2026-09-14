@@ -78,6 +78,7 @@ export interface ClipboardEventPayload {
 
 export interface VisitEventPayload {
   type: 'visit';
+  deviceId?: string;
 }
 
 export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;

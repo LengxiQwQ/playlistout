@@ -73,4 +73,29 @@ describe('Web API Client & Types', () => {
     expect(stats.recentDays).toHaveLength(1);
     expect(stats.recentDays[0].parses).toBe(10);
   });
+
+  it('generates and persists an anonymous device identifier', async () => {
+    const { getAnonymousDeviceId } = await import('./client');
+    const deviceId1 = getAnonymousDeviceId();
+    expect(deviceId1).toMatch(/^d_[a-z0-9]+$/);
+
+    // Subsequent calls return the same cached deviceId from localStorage
+    const deviceId2 = getAnonymousDeviceId();
+    expect(deviceId2).toBe(deviceId1);
+  });
+
+  it('notifies window of stats refresh event', async () => {
+    const { notifyStatsRefresh } = await import('./client');
+    let eventDispatched = false;
+    const handler = () => {
+      eventDispatched = true;
+    };
+    window.addEventListener('playlistout:stats-refresh', handler);
+
+    notifyStatsRefresh(10);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(eventDispatched).toBe(true);
+    window.removeEventListener('playlistout:stats-refresh', handler);
+  });
 });
