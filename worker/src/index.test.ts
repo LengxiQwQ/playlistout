@@ -62,14 +62,19 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
   });
 
-  it('handles CORS OPTIONS preflight for allowed origin', async () => {
+  it.each([
+    'https://playlistout.com',
+    'https://playlistout.lengxiqwq.com',
+    'https://lengxiqwq.github.io',
+    'http://localhost:5173',
+  ])('handles CORS OPTIONS preflight for allowed origin: %s', async (origin) => {
     const request = new Request('https://api.playlistout.com/api/playlist', {
       method: 'OPTIONS',
-      headers: { Origin: 'http://localhost:5173' },
+      headers: { Origin: origin },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(204);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
   });
 
@@ -81,6 +86,13 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(403);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('returns Cache-Control no-cache, no-store on /api/stats', async () => {
+    const request = new Request('https://api.playlistout.com/api/stats');
+    const response = await worker.fetch(request, {}, createMockCtx());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate');
   });
 
   it('rejects non-GET methods on /api/playlist with 405 Method Not Allowed', async () => {

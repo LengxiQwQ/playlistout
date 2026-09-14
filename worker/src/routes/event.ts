@@ -66,9 +66,11 @@ export function validateEventPayload(body: unknown): ValidationResult {
   }
 
   if (type === 'visit') {
+    const rawDeviceId = obj.deviceId;
+    const deviceId = typeof rawDeviceId === 'string' ? rawDeviceId.trim().slice(0, 64) : undefined;
     return {
       valid: true,
-      payload: { type: 'visit' },
+      payload: { type: 'visit', deviceId },
     };
   }
 
@@ -290,6 +292,7 @@ export async function handleEvent(
         recordVisitEvent(
           env.DB,
           request,
+          payload.deviceId,
         ),
       );
     }
@@ -298,6 +301,9 @@ export async function handleEvent(
   // 204 No Content — fire-and-forget from frontend perspective
   return new Response(null, {
     status: 204,
-    headers: responseHeaders,
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      ...responseHeaders,
+    },
   });
 }

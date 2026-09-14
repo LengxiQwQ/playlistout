@@ -47,6 +47,9 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
       const data: ApiResponse<Playlist> = await response.json();
+      if (data.success) {
+        notifyStatsRefresh(500);
+      }
       return data;
     }
 
@@ -58,7 +61,11 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
         headers: { Accept: 'application/json' },
       });
       if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
-        return await fallbackRes.json();
+        const fallbackData: ApiResponse<Playlist> = await fallbackRes.json();
+        if (fallbackData.success) {
+          notifyStatsRefresh(500);
+        }
+        return fallbackData;
       }
     }
 
@@ -132,18 +139,53 @@ export interface StatsResponse {
   generatedAt: string;
 }
 
-export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
+/**
+ * Emits a custom event on the window to prompt StatsJournal to refetch latest metrics.
+ */
+export function notifyStatsRefresh(delayMs: number = 800): void {
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('playlistout:stats-refresh'));
+    }, delayMs);
+  }
+}
+
+/**
+ * Generates or retrieves an anonymous, random device token persisted in localStorage.
+ * Used solely for deduplicating daily unique visits across multiple devices on the same Wi-Fi.
+ * Contains zero personal or hardware information.
+ */
+export function getAnonymousDeviceId(): string {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/stats`, {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      let id = window.localStorage.getItem('playlistout_did');
+      if (!id) {
+        id = 'd_' + Math.random().toString(36).substring(2, 12);
+        window.localStorage.setItem('playlistout_did', id);
+      }
+      return id;
+    }
+  } catch {
+    // localStorage security restrictions
+  }
+  return '';
+}
+
+export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
+  const timestamp = Date.now();
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/stats?_t=${timestamp}`, {
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
     });
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
       return await res.json();
     }
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
-      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats`, {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats?_t=${timestamp}`, {
         headers: { Accept: 'application/json' },
+        cache: 'no-store',
       });
       if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
         return await fallbackRes.json();
@@ -159,8 +201,9 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
   } catch (err: unknown) {
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       try {
-        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats`, {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats?_t=${timestamp}`, {
           headers: { Accept: 'application/json' },
+          cache: 'no-store',
         });
         if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
           return await fallbackRes.json();
@@ -181,37 +224,36 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
 
 /**
  * Fires an anonymous page visit event.
- * Session-level cached to prevent spam from manual tab reloads.
+ * Uses anonymous client-side deviceId to distinguish devices on the same Wi-Fi.
+ * Emits live stats refresh when successfully processed.
  */
 export async function recordVisit(): Promise<void> {
-  try {
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      if (window.sessionStorage.getItem('playlistout_visit_logged')) {
-        return;
-      }
-      window.sessionStorage.setItem('playlistout_visit_logged', '1');
-    }
-  } catch {
-    // Ignore sessionStorage security exceptions
-  }
-
-  const payload = JSON.stringify({ type: 'visit' });
+  const deviceId = getAnonymousDeviceId();
+  const payload = JSON.stringify({ type: 'visit', deviceId });
   const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
 
   try {
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-      return;
-    }
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
       keepalive: true,
     });
+    if (res.ok) {
+      notifyStatsRefresh(800);
+      return;
+    }
   } catch {
-    // Fire-and-forget best-effort
+    // Fallback to sendBeacon if fetch fails
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        notifyStatsRefresh(1000);
+      }
+    } catch {
+      // Fire-and-forget best-effort
+    }
   }
 }
 
@@ -232,19 +274,26 @@ export async function recordExportEvent(
   const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
 
   try {
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-      return;
-    }
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
       keepalive: true,
     });
+    if (res.ok) {
+      notifyStatsRefresh(500);
+      return;
+    }
   } catch {
-    // Fire-and-forget
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        notifyStatsRefresh(800);
+      }
+    } catch {
+      // Fire-and-forget
+    }
   }
 }
 
@@ -265,11 +314,6 @@ export async function recordClipboardEvent(
   const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
 
   try {
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-      return;
-    }
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -277,7 +321,14 @@ export async function recordClipboardEvent(
       keepalive: true,
     });
   } catch {
-    // Fire-and-forget
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+      }
+    } catch {
+      // Fire-and-forget
+    }
   }
 }
 

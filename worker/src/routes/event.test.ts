@@ -97,22 +97,25 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       }
     });
 
-    it('accepts anonymous visit event', async () => {
+    it('accepts anonymous visit event with deviceId and returns Cache-Control', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Origin: 'https://playlistout.com',
+          Origin: 'https://playlistout.lengxiqwq.com',
           'cf-connecting-ip': '203.0.113.195',
         },
         body: JSON.stringify({
           type: 'visit',
+          deviceId: 'd_device_abc123',
         }),
       });
 
       const ctx = createMockCtx();
       const response = await worker.fetch(request, createMockEnv(), ctx);
       expect(response.status).toBe(204);
+      expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate');
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
       await Promise.allSettled(ctx._promises);
     });
 
