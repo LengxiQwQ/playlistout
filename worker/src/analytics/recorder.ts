@@ -358,3 +358,77 @@ export async function recordRateLimitEvent(
     console.error('Failed to record rate limit aggregate stats:', err);
   }
 }
+
+/**
+ * Generates a one-way, truncated SHA-256 hash from date + clientIp + salt.
+ * Ensures zero raw IP addresses or identifiable strings are ever stored.
+ */
+export async function computeVisitorHash(date: string, ip: string): Promise<string> {
+  const salt = 'playlistout_v_salt_2026';
+  const data = new TextEncoder().encode(`${date}:${ip}:${salt}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hex.slice(0, 16);
+}
+
+/**
+ * Records an anonymous page visit event.
+ * Computes a salted one-way hash to identify daily unique visitors without recording IP.
+ * Best-effort: errors never interrupt user operations.
+ */
+export async function recordVisitEvent(
+  db: D1Database | undefined,
+  request: Request,
+): Promise<void> {
+  if (!db) return;
+
+  try {
+    const date = getUtcDateString();
+    const clientIp =
+      request.headers.get('cf-connecting-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      '127.0.0.1';
+
+    const hash = await computeVisitorHash(date, clientIp);
+
+    const insertHashSql = `
+      INSERT OR IGNORE INTO daily_visitor_hashes (date, hash)
+      VALUES (?1, ?2);
+    `;
+
+    const upsertAggregateSql = `
+      INSERT INTO aggregate_stats (date, platform, metric, count)
+      VALUES (?1, 'all', ?2, 1)
+      ON CONFLICT (date, platform, metric)
+      DO UPDATE SET count = count + 1;
+    `;
+
+    // Attempt to insert daily hash
+    let isNewVisitor = true;
+    try {
+      const res = await db.prepare(insertHashSql).bind(date, hash).run();
+      if (res && res.meta && typeof res.meta.changes === 'number') {
+        isNewVisitor = res.meta.changes > 0;
+      }
+    } catch {
+      // If table doesn't exist yet in mock tests or first run, fallback gracefully
+      isNewVisitor = true;
+    }
+
+    const statements: D1PreparedStatement[] = [
+      db.prepare(upsertAggregateSql).bind(date, 'page_view'),
+      db.prepare(upsertAggregateSql).bind('TOTAL', 'page_view'),
+    ];
+
+    if (isNewVisitor) {
+      statements.push(db.prepare(upsertAggregateSql).bind(date, 'visitor_unique'));
+      statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'visitor_unique'));
+    }
+
+    await db.batch(statements);
+  } catch (err: unknown) {
+    console.error('Failed to record visit aggregate stats:', err);
+  }
+}
+

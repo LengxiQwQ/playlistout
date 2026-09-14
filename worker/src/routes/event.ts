@@ -26,7 +26,7 @@ import {
   VALID_CLIPBOARD_MODES,
   MAX_TRACK_COUNT,
 } from '../analytics/types';
-import { recordExportEvent, recordClipboardEvent } from '../analytics/recorder';
+import { recordExportEvent, recordClipboardEvent, recordVisitEvent } from '../analytics/recorder';
 
 const MAX_EVENT_BODY_SIZE = 1024; // 1KB max for event payload
 
@@ -49,7 +49,7 @@ export function validateEventPayload(body: unknown): ValidationResult {
 
   const obj = body as Record<string, unknown>;
 
-  // 1. type: required, must be 'export' or 'clipboard'
+  // 1. type: required, must be 'export', 'clipboard', or 'visit'
   if (!obj.type || typeof obj.type !== 'string') {
     return {
       valid: false,
@@ -58,10 +58,17 @@ export function validateEventPayload(body: unknown): ValidationResult {
   }
 
   const type = obj.type.toLowerCase().trim();
-  if (type !== 'export' && type !== 'clipboard') {
+  if (type !== 'export' && type !== 'clipboard' && type !== 'visit') {
     return {
       valid: false,
-      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export" or "clipboard".' },
+      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export", "clipboard", or "visit".' },
+    };
+  }
+
+  if (type === 'visit') {
+    return {
+      valid: true,
+      payload: { type: 'visit' },
     };
   }
 
@@ -268,7 +275,7 @@ export async function handleEvent(
           payload.trackCount,
         ),
       );
-    } else {
+    } else if (payload.type === 'clipboard') {
       ctx.waitUntil(
         recordClipboardEvent(
           env.DB,
@@ -276,6 +283,13 @@ export async function handleEvent(
           payload.platform,
           payload.format,
           payload.trackCount,
+        ),
+      );
+    } else if (payload.type === 'visit') {
+      ctx.waitUntil(
+        recordVisitEvent(
+          env.DB,
+          request,
         ),
       );
     }

@@ -164,12 +164,17 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
 export async function getPublicStats(db: D1Database | undefined): Promise<PublicStatsResponse> {
   const defaultResponse: PublicStatsResponse = {
     launchedAt: LAUNCHED_AT,
+    totalVisitors: 0,
+    visitorsToday: 0,
+    totalPageViews: 0,
+    pageViewsToday: 0,
     totalPlaylistsParsed: 0,
     playlistsParsedToday: 0,
     totalTracksProcessed: 0,
     tracksProcessedToday: 0,
     totalExports: 0,
     exportsToday: 0,
+    exportFormatsBreakdown: { txt: 0, csv: 0, xlsx: 0, json: 0 },
     byPlatform: {},
     recentDays: [],
     generatedAt: new Date().toISOString(),
@@ -194,6 +199,10 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     let todayTracks = 0;
     let totalExports = 0;
     let todayExports = 0;
+    let totalVisitors = 0;
+    let visitorsToday = 0;
+    let totalPageViews = 0;
+    let pageViewsToday = 0;
     const byPlatform: Record<string, PlatformBreakdown> = {};
 
     if (statsRows.results) {
@@ -223,6 +232,12 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
             if (date === 'TOTAL') totalExports = count;
             if (date === today) todayExports = count;
           }
+        } else if (metric === 'visitor_unique') {
+          if (date === 'TOTAL') totalVisitors = count;
+          if (date === today) visitorsToday = count;
+        } else if (metric === 'page_view') {
+          if (date === 'TOTAL') totalPageViews = count;
+          if (date === today) pageViewsToday = count;
         }
       }
     }
@@ -236,7 +251,28 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       }
     }
 
-    // 2. Fetch recent daily trends
+    // 2. Fetch export format breakdown
+    const exportFormatsBreakdown: Record<string, number> = { txt: 0, csv: 0, xlsx: 0, json: 0 };
+    try {
+      const formatRows = await db
+        .prepare(`
+          SELECT export_format, SUM(count) as total
+          FROM daily_export_stats
+          WHERE export_format IN ('txt', 'csv', 'xlsx', 'json')
+          GROUP BY export_format
+        `)
+        .all<{ export_format: string; total: number }>();
+
+      if (formatRows.results) {
+        for (const r of formatRows.results) {
+          exportFormatsBreakdown[r.export_format] = r.total;
+        }
+      }
+    } catch (err: unknown) {
+      console.error('Failed to fetch export format breakdown:', err);
+    }
+
+    // 3. Fetch recent daily trends
     const recentDays: DailyTrendEntry[] = [];
     try {
       const trendRows = await db
@@ -297,12 +333,17 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
 
     return {
       launchedAt: LAUNCHED_AT,
+      totalVisitors,
+      visitorsToday,
+      totalPageViews,
+      pageViewsToday,
       totalPlaylistsParsed: totalParses,
       playlistsParsedToday: todayParses,
       totalTracksProcessed: totalTracks,
       tracksProcessedToday: todayTracks,
       totalExports: totalExports,
       exportsToday: todayExports,
+      exportFormatsBreakdown,
       byPlatform,
       recentDays,
       generatedAt: new Date().toISOString(),

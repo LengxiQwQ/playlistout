@@ -116,12 +116,17 @@ export interface DailyTrendEntry {
 
 export interface StatsResponse {
   launchedAt: string;
+  totalVisitors: number;
+  visitorsToday: number;
+  totalPageViews: number;
+  pageViewsToday: number;
   totalPlaylistsParsed: number;
   playlistsParsedToday: number;
   totalTracksProcessed: number;
   tracksProcessedToday: number;
   totalExports: number;
   exportsToday: number;
+  exportFormatsBreakdown: Record<string, number>;
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: DailyTrendEntry[];
   generatedAt: string;
@@ -173,3 +178,106 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
     };
   }
 }
+
+/**
+ * Fires an anonymous page visit event.
+ * Session-level cached to prevent spam from manual tab reloads.
+ */
+export async function recordVisit(): Promise<void> {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      if (window.sessionStorage.getItem('playlistout_visit_logged')) {
+        return;
+      }
+      window.sessionStorage.setItem('playlistout_visit_logged', '1');
+    }
+  } catch {
+    // Ignore sessionStorage security exceptions
+  }
+
+  const payload = JSON.stringify({ type: 'visit' });
+  const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+      return;
+    }
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+  } catch {
+    // Fire-and-forget best-effort
+  }
+}
+
+/**
+ * Fires an anonymous file export event (TXT, CSV, XLSX, JSON).
+ */
+export async function recordExportEvent(
+  format: 'txt' | 'csv' | 'xlsx' | 'json',
+  trackCount?: number,
+  platform: string = 'qqmusic',
+): Promise<void> {
+  const payload = JSON.stringify({
+    type: 'export',
+    format,
+    platform,
+    trackCount,
+  });
+  const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+      return;
+    }
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+  } catch {
+    // Fire-and-forget
+  }
+}
+
+/**
+ * Fires an anonymous clipboard copy event.
+ */
+export async function recordClipboardEvent(
+  format: 'title' | 'title-artist' | 'title-artist-album',
+  trackCount?: number,
+  platform: string = 'qqmusic',
+): Promise<void> {
+  const payload = JSON.stringify({
+    type: 'clipboard',
+    format,
+    platform,
+    trackCount,
+  });
+  const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+      return;
+    }
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+  } catch {
+    // Fire-and-forget
+  }
+}
+

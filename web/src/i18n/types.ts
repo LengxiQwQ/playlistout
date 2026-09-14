@@ -101,7 +101,9 @@ export interface Translations {
     copyTitleArtist: string;
     copyTitleArtistAlbum: string;
     toastExportSuccess: string;
+    toastExportMultipleSuccess: string;
     toastExportFailed: string;
+    selectFormatHint: string;
     toastCopySuccess: string;
     toastCopyFailed: string;
   };
@@ -121,15 +123,25 @@ export interface Translations {
   stats: {
     subtitle: string;
     title: string;
+    runningDaysStamp: string;
+    runningDaysSubtext: string;
     todayTitle: string;
+    todayVisitors: string;
     todayParsed: string;
     todayTracks: string;
+    todayExports: string;
+    todayWarmNote: string;
     allTimeTitle: string;
+    allTimeVisitors: string;
     allTimePlaylists: string;
     allTimeTracks: string;
+    allTimeExports: string;
     allTimeSubtext: string;
     fromWhereTitle: string;
+    formatPreferencesTitle: string;
     otherPlatformsComing: string;
+    recentDaysTitle: string;
+    recentDaysFootnote: string;
   };
   privacy: {
     modalTitle: string;
@@ -149,6 +161,7 @@ export interface Translations {
   };
   footer: {
     drawnBy: string;
+    runningBadge: string;
     copyrightPrefix: string;
     licenseText: string;
     licenseUrl: string;

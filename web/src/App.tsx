@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Playlist, ApiError } from './api/types';
-import { parsePlaylist } from './api/client';
+import { parsePlaylist, recordVisit } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
 import { LanguageProvider } from './i18n';
 import { Header } from './components/layout/Header';
@@ -22,6 +22,10 @@ export const AppContent: React.FC = () => {
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+
+  useEffect(() => {
+    recordVisit();
+  }, []);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);

@@ -245,6 +245,8 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       mockDb._store.set(`${today}::all::tracks_processed`, 300);
       mockDb._store.set(`TOTAL::all::exports_total`, 150);
       mockDb._store.set(`${today}::all::exports_total`, 8);
+      mockDb._store.set(`TOTAL::all::visitor_unique`, 88);
+      mockDb._store.set(`${today}::all::visitor_unique`, 12);
 
       const stats = await getPublicStats(mockDb);
 
@@ -254,6 +256,8 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(stats.tracksProcessedToday).toBe(300);
       expect(stats.totalExports).toBe(150);
       expect(stats.exportsToday).toBe(8);
+      expect(stats.totalVisitors).toBe(88);
+      expect(stats.visitorsToday).toBe(12);
       expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(200);
     });
 

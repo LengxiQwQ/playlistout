@@ -97,6 +97,25 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       }
     });
 
+    it('accepts anonymous visit event', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.com',
+          'cf-connecting-ip': '203.0.113.195',
+        },
+        body: JSON.stringify({
+          type: 'visit',
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
     it('succeeds with 204 even when DB is disconnected (best-effort guarantee)', async () => {
       const failingDb = {
         prepare() { throw new Error('D1 connection failed'); },
