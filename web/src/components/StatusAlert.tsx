@@ -29,7 +29,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
         backgroundColor: isError ? 'var(--note-error, #ffebee)' : 'var(--note-blue, #e8f8ff)',
         padding: '1rem 1.25rem',
         marginTop: '1.25rem',
-        transform: 'rotate(-0.5deg)',
+        ['--rot' as any]: '-0.5deg',
         position: 'relative',
       }}
     >

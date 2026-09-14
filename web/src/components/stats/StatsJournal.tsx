@@ -3,6 +3,35 @@ import { fetchStats, type StatsResponse } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 
+const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || (import.meta as any).env?.MODE === 'test') {
+      setDisplayValue(value);
+      return;
+    }
+    let startTimestamp: number | null = null;
+    const startVal = displayValue;
+    const duration = 750;
+
+    let frameId: number;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(startVal + (value - startVal) * ease));
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(step);
+      }
+    };
+    frameId = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [value]);
+
+  return <>{displayValue.toLocaleString()}</>;
+};
+
 export const StatsJournal: React.FC = () => {
   const { t, language } = useTranslation();
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -28,11 +57,6 @@ export const StatsJournal: React.FC = () => {
     day: 'numeric',
     weekday: 'long',
   });
-
-  const formatNumber = (num?: number) => {
-    if (num === undefined || num === null) return '0';
-    return num.toLocaleString();
-  };
 
   const parsedToday = stats?.playlistsParsedToday ?? 0;
   const tracksToday = stats?.tracksProcessedToday ?? 0;
@@ -103,7 +127,7 @@ export const StatsJournal: React.FC = () => {
             className="font-marker"
             style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #2d3436)' }}
           >
-            {formatNumber(parsedToday)}
+            <AnimatedCounter value={parsedToday} />
           </div>
           <div className="font-handwriting" style={{ fontSize: '1.35rem', color: '#4b5563', marginBottom: '1.25rem' }}>
             {t.stats.todayParsed}
@@ -113,7 +137,7 @@ export const StatsJournal: React.FC = () => {
             className="font-marker"
             style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', lineHeight: 1, color: 'var(--ink, #2d3436)' }}
           >
-            {formatNumber(tracksToday)}
+            <AnimatedCounter value={tracksToday} />
           </div>
           <div className="font-handwriting" style={{ fontSize: '1.35rem', color: '#4b5563' }}>
             {t.stats.todayTracks}
@@ -136,7 +160,7 @@ export const StatsJournal: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div>
               <div className="font-marker" style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', color: 'var(--ink, #2d3436)' }}>
-                {formatNumber(parsedTotal)}
+                <AnimatedCounter value={parsedTotal} />
               </div>
               <div className="font-handwriting" style={{ fontSize: '1.25rem', color: '#636e72' }}>
                 {t.stats.allTimePlaylists}
@@ -145,7 +169,7 @@ export const StatsJournal: React.FC = () => {
 
             <div>
               <div className="font-marker" style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', color: 'var(--ink, #2d3436)' }}>
-                {formatNumber(tracksTotal)}
+                <AnimatedCounter value={tracksTotal} />
               </div>
               <div className="font-handwriting" style={{ fontSize: '1.25rem', color: '#636e72' }}>
                 {t.stats.allTimeTracks}
@@ -185,6 +209,7 @@ export const StatsJournal: React.FC = () => {
                 }}
               >
                 <div
+                  className="platform-progress-fill"
                   style={{
                     height: '100%',
                     backgroundColor: 'var(--ink, #2d3436)',

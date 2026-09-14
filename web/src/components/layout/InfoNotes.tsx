@@ -52,7 +52,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
         <Tape
           color="pink"
           rotateDeg={5}
-          style={{ position: 'absolute', top: '-0.75rem', right: '2rem', width: '6rem', height: '1.5rem' }}
+          style={{ position: 'absolute', top: '-0.75rem', right: '2rem', width: '6rem', height: '1.5rem', zIndex: 20 }}
         />
         <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
           {t.infoNotes.whatTitle}

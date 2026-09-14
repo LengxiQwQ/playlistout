@@ -77,6 +77,85 @@
   white-space: nowrap;
 }
 
+/* Note Sparkle: gentle twinkle and hover bounce */
+@keyframes sparkleTwinkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.22) rotate(12deg);
+    opacity: 1;
+  }
+}
+
+.note-sparkle {
+  display: inline-block;
+  transform-origin: center center;
+  animation: sparkleTwinkle 3s ease-in-out infinite;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.note-sparkle:hover {
+  animation-play-state: paused;
+  transform: scale(1.4) rotate(20deg);
+}
+
+/* Doodle Float: playful idle float and hover tilt */
+@keyframes doodleFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(3deg);
+  }
+}
+
+.result-doodle {
+  animation: doodleFloat 3.5s ease-in-out infinite;
+  transform-origin: center center;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.result-doodle:hover {
+  animation-play-state: paused;
+  transform: scale(1.25) rotate(-15deg);
+  color: var(--ink, #2d3436) !important;
+}
+
+/* Result Paper Unfold Entrance */
+@keyframes pageUnfoldEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) rotate(calc(var(--rot, 0deg) - 1.2deg)) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot, 0deg)) scale(1);
+  }
+}
+
+.result-paper-card {
+  animation: pageUnfoldEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Platform Progress Bar Fill Animation */
+@keyframes pencilProgressFill {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.platform-progress-fill {
+  transform-origin: left center;
+  animation: pencilProgressFill 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+}
+
 /* Respect user's reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,

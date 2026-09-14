@@ -77,13 +77,13 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
     >
       {/* Yellow Sparkle on top right */}
       <div
+        className="note-sparkle"
         style={{
           position: 'absolute',
           right: '-1.5rem',
           top: '-2rem',
           color: '#eab308',
           fontSize: '2.5rem',
-          transform: 'rotate(12deg)',
           userSelect: 'none',
           zIndex: 25,
         }}
