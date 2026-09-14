@@ -354,6 +354,29 @@ PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源�
 
 ---
 
+## ⭐ Star 历史
+
+<a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&theme=dark&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+ </picture>
+</a>
+
+<!-- INSIGHTS:START -->
+**📊 仓库流量**
+
+访问次数：**350** ｜ 不重复访客：**107**（近 14 天） ｜ 仓库克隆：**593** ｜ 不重复克隆：**159**（近 14 天）
+
+**热门来源（近 14 天）：** github.com · Google · Bing · Baidu · doubao.com · chatgpt.com  
+**热门内容（近 14 天）：** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
+
+> 数据开始：2026-08-31 · 最后更新：2026-09-15
+<!-- INSIGHTS:END -->
+
+---
+
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a>
+  <sub>Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a></sub>
 </p>

@@ -354,6 +354,29 @@ PlaylistOut is open-source software licensed under the **GNU Affero General Publ
 
 ---
 
+## ⭐ Star History
+
+<a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&theme=dark&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+ </picture>
+</a>
+
+<!-- INSIGHTS:START -->
+**📊 Repository Traffic**
+
+Views: **350** ｜ Uniques: **107** (14-day) ｜ Clones: **593** ｜ Cloners: **159** (14-day)
+
+**Top referrers (14-day):** github.com · Google · Bing · Baidu · doubao.com · chatgpt.com  
+**Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
+
+> Data since 2026-08-31 · Last updated: 2026-09-15
+<!-- INSIGHTS:END -->
+
+---
+
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a>
+  <sub>Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a></sub>
 </p>

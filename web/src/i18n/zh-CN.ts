@@ -9,6 +9,12 @@ export const zhCN: Translations = {
     fontDrawerCaption: '字体抽屉 ✎',
     fontPickerHint: '挑选一款，手账字体即刻切换 ↓',
     languageSwitch: '中 / EN',
+    mobileMenu: '抽屉',
+    mobileDrawerTitle: '手账百宝箱 ✎',
+    mobileDrawerFontTitle: '手账字体风格',
+    mobileDrawerFontDesc: '挑选一款，全站手写字体即刻切换',
+    mobileDrawerLinksTitle: '支持与关于',
+    mobileClose: '关闭',
   },
   fonts: {
     zhnote: '毛笔手账 (楷书)',

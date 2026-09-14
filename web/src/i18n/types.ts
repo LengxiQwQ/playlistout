@@ -9,6 +9,12 @@ export interface Translations {
     fontDrawerCaption: string;
     fontPickerHint: string;
     languageSwitch: string;
+    mobileMenu: string;
+    mobileDrawerTitle: string;
+    mobileDrawerFontTitle: string;
+    mobileDrawerFontDesc: string;
+    mobileDrawerLinksTitle: string;
+    mobileClose: string;
   };
   fonts: {
     zhnote: string;

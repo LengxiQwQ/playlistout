@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { FontSwitcher } from '../settings/FontSwitcher';
 import { LanguageSwitcher } from '../settings/LanguageSwitcher';
+import { MobileSettingsDrawer } from '../settings/MobileSettingsDrawer';
 
 export interface HeaderProps {
   onBrandClick?: () => void;
@@ -24,6 +25,7 @@ const GitHubIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
 
 export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
   const { t } = useTranslation();
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   return (
     <header
@@ -41,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
     >
       {/* Brand area: separate icon link and brand text */}
       <div
+        className="header-brand-container"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -57,16 +60,9 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             src="/logo-128.png"
             srcSet="/logo-128.png 1x, /logo-256.png 2x"
             alt="PlaylistOut Logo"
+            className="header-logo-img"
             width={52}
             height={52}
-            style={{
-              width: '3.25rem',
-              height: '3.25rem',
-              objectFit: 'contain',
-              userSelect: 'none',
-              flexShrink: 0,
-              display: 'block',
-            }}
           />
         </a>
 
@@ -82,32 +78,10 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             userSelect: 'none',
           }}
         >
-          <h1
-            className="font-marker"
-            style={{
-              fontSize: '2rem',
-              lineHeight: 1.1,
-              color: 'var(--ink, #2d3436)',
-              margin: 0,
-              textAlign: 'left',
-              transition: 'color 0.18s ease',
-            }}
-          >
+          <h1 className="font-marker header-brand-title">
             PlaylistOut
           </h1>
-          <div
-            className="header-brand-tagline"
-            style={{
-              fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
-              fontSize: '0.85rem',
-              fontWeight: 400,
-              color: '#71777d',
-              marginTop: '0.2rem',
-              letterSpacing: '0.05em',
-              lineHeight: 1.2,
-              textAlign: 'left',
-            }}
-          >
+          <div className="header-brand-tagline font-handwriting">
             {t.header.brandTagline}
           </div>
         </div>
@@ -115,17 +89,19 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
 
       {/* Settings & Links */}
       <div
+        className="header-actions"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.85rem',
         }}
       >
+        {/* Desktop-only: Star on GitHub */}
         <a
           href="https://github.com/LengxiQwQ/playlistout"
           target="_blank"
           rel="noopener noreferrer"
-          className="header-github-btn"
+          className="header-github-btn desktop-only"
           aria-label="Star on GitHub"
           title="Star on GitHub"
         >
@@ -133,8 +109,31 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           <span>{t.header.github}</span>
         </a>
 
-        <FontSwitcher />
+        {/* Desktop-only: Font Switcher Dropdown */}
+        <div className="desktop-only">
+          <FontSwitcher />
+        </div>
+
+        {/* Always visible: Language Switcher */}
         <LanguageSwitcher />
+
+        {/* Mobile-only: Hand-drawn Settings Drawer Button */}
+        <button
+          type="button"
+          className="sticker font-handwriting header-drawer-btn mobile-only"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          aria-label={t.header.mobileDrawerTitle}
+          title={t.header.mobileDrawerTitle}
+        >
+          <span className="drawer-btn-icon" aria-hidden="true">✎</span>
+          <span>{t.header.mobileMenu}</span>
+        </button>
+
+        {/* Mobile Drawer Modal */}
+        <MobileSettingsDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+        />
       </div>
     </header>
   );

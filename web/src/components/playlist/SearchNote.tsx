@@ -135,6 +135,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             }}
           >
             <div
+              className="search-input-row"
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',

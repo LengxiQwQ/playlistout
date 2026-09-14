@@ -18,16 +18,6 @@ export const Hero: React.FC = () => {
     >
       <div
         className="font-note hero-doodle-right mc-splash"
-        style={{
-          position: 'absolute',
-          right: '1rem',
-          top: 0,
-          height: 'var(--ruled-line-height, 38px)',
-          lineHeight: 'var(--ruled-line-height, 38px)',
-          fontSize: '1.35rem',
-          color: '#d97706',
-          userSelect: 'none',
-        }}
         aria-hidden="true"
       >
         {t.hero.noLoginDoodle}

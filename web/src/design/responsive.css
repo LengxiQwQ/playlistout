@@ -14,6 +14,38 @@
   }
 }
 
+/* Responsive visibility utilities */
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Header Base Styling */
+.header-logo-img {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: contain;
+  user-select: none;
+  flex-shrink: 0;
+  display: block;
+}
+
+.header-brand-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--ink, #2d3436);
+  margin: 0;
+  text-align: left;
+  transition: color 0.18s ease;
+}
+
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
   /* Keep notebook paper baseline grid consistent on small screens */
@@ -36,6 +68,59 @@
     display: none !important;
   }
 
+  /* Compact header on mobile: single-row, no overflow */
+  .journal-header {
+    min-height: calc(var(--ruled-line-height, 38px) * 1.5) !important;
+    gap: 0.5rem;
+  }
+
+  .header-brand-container {
+    gap: 0.55rem !important;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .header-logo-img {
+    width: 2.35rem !important;
+    height: 2.35rem !important;
+  }
+
+  .header-brand-title {
+    font-size: 1.45rem !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+  }
+
+  .header-brand-tagline {
+    font-size: 0.85rem !important;
+    margin-top: 0.1rem !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    gap: 0.5rem !important;
+    flex-shrink: 0;
+  }
+
+  /* Hero doodle reposition on mobile (prevents overlapping hero title) */
+  .hero-doodle-right {
+    position: static !important;
+    display: inline-block !important;
+    margin-bottom: 0.35rem !important;
+    font-size: 1.15rem !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Footer navigation links wrap gracefully without height clipping */
+  .footer-nav {
+    height: auto !important;
+    min-height: calc(var(--ruled-line-height, 38px) * 2) !important;
+    padding: 0.75rem 0 !important;
+    gap: 0.65rem !important;
+  }
+
   /* Reduce rotations to prevent horizontal scrollbars or clipping */
   .hand-drawn-border,
   .hand-drawn-border-alt,
@@ -54,6 +139,18 @@
     padding: 1.25rem !important;
   }
 
+  /* Search input row mobile layout */
+  .search-input-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .search-input-row .marker-button,
+  .search-input-row button[type="submit"] {
+    width: 100% !important;
+    justify-content: center;
+  }
+
   .hide-mobile {
     display: none !important;
   }
@@ -61,7 +158,19 @@
 
 @media (max-width: 480px) {
   .journal-container {
-    padding: 1rem 0.75rem 1.75rem;
+    padding: 0.75rem 0.75rem 1.75rem;
+  }
+
+  .header-brand-title {
+    font-size: 1.3rem !important;
+  }
+
+  .header-brand-tagline {
+    font-size: 0.78rem !important;
+  }
+
+  .header-actions {
+    gap: 0.35rem !important;
   }
 
   .tape {

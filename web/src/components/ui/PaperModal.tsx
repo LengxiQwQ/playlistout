@@ -67,6 +67,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="paper-modal-title"
+        data-testid={testId}
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
