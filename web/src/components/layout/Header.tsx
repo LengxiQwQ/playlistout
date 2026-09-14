@@ -39,33 +39,49 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         zIndex: 60,
       }}
     >
-      {/* Brand area */}
+      {/* Brand area: separate icon link and brand text */}
       <div
-        onClick={onBrandClick}
-        className={onBrandClick ? 'header-brand' : ''}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.85rem',
-          cursor: onBrandClick ? 'pointer' : 'default',
-          userSelect: 'none',
         }}
       >
-        <img
-          src="/logo-128.png"
-          srcSet="/logo-128.png 1x, /logo-256.png 2x"
-          alt="PlaylistOut Logo"
-          width={52}
-          height={52}
+        <a
+          href="https://playlistout.lengxiqwq.com"
+          className="header-logo-link"
+          aria-label="PlaylistOut (playlistout.lengxiqwq.com)"
+          title="playlistout.lengxiqwq.com"
+        >
+          <img
+            src="/logo-128.png"
+            srcSet="/logo-128.png 1x, /logo-256.png 2x"
+            alt="PlaylistOut Logo"
+            width={52}
+            height={52}
+            style={{
+              width: '3.25rem',
+              height: '3.25rem',
+              objectFit: 'contain',
+              userSelect: 'none',
+              flexShrink: 0,
+              display: 'block',
+            }}
+          />
+        </a>
+
+        <div
+          onClick={onBrandClick}
+          className={onBrandClick ? 'header-brand-text' : ''}
           style={{
-            width: '3.25rem',
-            height: '3.25rem',
-            objectFit: 'contain',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            textAlign: 'left',
+            cursor: onBrandClick ? 'pointer' : 'default',
             userSelect: 'none',
-            flexShrink: 0,
           }}
-        />
-        <div>
+        >
           <h1
             className="font-marker"
             style={{
@@ -73,18 +89,23 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
               lineHeight: 1.1,
               color: 'var(--ink, #2d3436)',
               margin: 0,
+              textAlign: 'left',
+              transition: 'color 0.18s ease',
             }}
           >
             PlaylistOut
           </h1>
           <div
-            className="font-note"
+            className="header-brand-tagline"
             style={{
-              fontSize: '1.35rem',
-              color: '#636e72',
-              marginTop: '0.1rem',
-              letterSpacing: '0.02em',
-              lineHeight: 1.1,
+              fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
+              fontSize: '0.85rem',
+              fontWeight: 400,
+              color: '#71777d',
+              marginTop: '0.2rem',
+              letterSpacing: '0.05em',
+              lineHeight: 1.2,
+              textAlign: 'left',
             }}
           >
             {t.header.brandTagline}

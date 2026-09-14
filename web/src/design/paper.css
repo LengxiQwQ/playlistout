@@ -783,18 +783,48 @@ button.sticker:disabled,
   color: var(--ink, #2d3436);
 }
 
-/* Header Brand Clickable Area */
-.header-brand {
+/* Header Logo & Brand Elements (Independent Interactions) */
+.header-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 12px;
 }
 
-.header-brand:hover {
-  transform: scale(1.02);
+.header-logo-link:hover {
+  transform: scale(1.08) rotate(-4deg);
 }
 
-.header-brand:active {
-  transform: scale(0.98);
+.header-logo-link:active {
+  transform: scale(0.94) rotate(0deg);
+}
+
+.header-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+  user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.header-brand-text:hover {
+  transform: translateY(-1.5px);
+}
+
+.header-brand-text:hover .font-marker {
+  color: #1e293b;
+}
+
+.header-brand-text:active {
+  transform: translateY(1px) scale(0.99);
 }
 
 /* Paper Input Clear Button */

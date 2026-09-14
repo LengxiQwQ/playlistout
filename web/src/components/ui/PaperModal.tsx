@@ -58,6 +58,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         justifyContent: 'center',
         padding: '1.25rem',
         zIndex: 1000,
+        animation: 'modalBackdropFadeIn 0.18s ease-out forwards',
       }}
     >
       <div
@@ -75,8 +76,10 @@ export const PaperModal: React.FC<PaperModalProps> = ({
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          animation: 'paperModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+          animation: 'paperModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards',
           transform: 'rotate(0.2deg)',
+          transformOrigin: 'center center',
+          willChange: 'transform, opacity',
         }}
       >
         <Tape

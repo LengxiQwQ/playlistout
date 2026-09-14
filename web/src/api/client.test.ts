@@ -37,12 +37,17 @@ describe('Web API Client & Types', () => {
   it('validates public StatsResponse contract shape', () => {
     const stats: import('./client').StatsResponse = {
       launchedAt: '2026-09-12',
+      totalVisitors: 50,
+      visitorsToday: 8,
+      totalPageViews: 200,
+      pageViewsToday: 25,
       totalPlaylistsParsed: 100,
       playlistsParsedToday: 10,
       totalTracksProcessed: 5000,
       tracksProcessedToday: 300,
       totalExports: 40,
       exportsToday: 4,
+      exportFormatsBreakdown: { xlsx: 20, csv: 12, txt: 6, json: 2 },
       byPlatform: {
         qqmusic: {
           totalSuccess: 100,

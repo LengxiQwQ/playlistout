@@ -15,12 +15,17 @@ describe('StatsJournal Component (Phase 7)', () => {
       success: true,
       data: {
         launchedAt: '2026-09-12',
+        totalVisitors: 888,
+        visitorsToday: 66,
+        totalPageViews: 2500,
+        pageViewsToday: 180,
         totalPlaylistsParsed: 12842,
         playlistsParsedToday: 326,
         totalTracksProcessed: 382000,
         tracksProcessedToday: 8921,
         totalExports: 4200,
         exportsToday: 95,
+        exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20 },
         byPlatform: {
           qqmusic: { totalSuccess: 12842, todaySuccess: 326 },
         },
@@ -40,10 +45,14 @@ describe('StatsJournal Component (Phase 7)', () => {
     expect(screen.getByText('来自哪里？')).toBeInTheDocument();
 
     await waitFor(() => {
+      expect(screen.getByText('66')).toBeInTheDocument();
+      expect(screen.getByText('888')).toBeInTheDocument();
       expect(screen.getByText('326')).toBeInTheDocument();
       expect(screen.getByText('8,921')).toBeInTheDocument();
       expect(screen.getByText('12,842')).toBeInTheDocument();
       expect(screen.getByText('382,000')).toBeInTheDocument();
+      expect(screen.getByText('95')).toBeInTheDocument();
+      expect(screen.getByText('4,200')).toBeInTheDocument();
     });
   });
 

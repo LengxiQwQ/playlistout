@@ -35,7 +35,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           gap: '1.25rem',
         }}
       >
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flex: '1 1 auto', minWidth: 0 }}>
           {/* Playlist Cover Art */}
           {playlist.coverUrl && !coverFailed ? (
             <img
@@ -51,6 +51,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 objectFit: 'cover',
                 borderRadius: '6px',
                 transform: 'rotate(-1.5deg)',
+                flexShrink: 0,
               }}
             />
           ) : (
@@ -68,13 +69,14 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 borderRadius: '6px',
                 transform: 'rotate(-1.5deg)',
                 userSelect: 'none',
+                flexShrink: 0,
               }}
             >
               ♫
             </div>
           )}
 
-          <div>
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
             <span
               className="sticker font-handwriting"
               style={{
@@ -103,32 +105,80 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 lineHeight: 1.25,
                 color: 'var(--ink, #2d3436)',
                 margin: '0.25rem 0',
+                wordBreak: 'break-word',
               }}
             >
               {playlist.name}
             </h2>
 
             <div
+              className="playlist-meta-row"
               style={{
                 fontFamily: 'var(--font-sans, sans-serif)',
                 fontSize: '0.95rem',
+                lineHeight: 1.5,
                 color: '#636e72',
                 display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
                 alignItems: 'center',
+                flexWrap: 'nowrap',
+                gap: '0.5rem',
                 marginTop: '0.35rem',
+                whiteSpace: 'nowrap',
+                overflowX: 'auto',
+                maxWidth: '100%',
               }}
             >
-              <span>{tracksText}</span>
-              <span>·</span>
-              <span>{t.search.platformQQ}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                {tracksText}
+              </span>
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  opacity: 0.55,
+                  userSelect: 'none',
+                  flexShrink: 0,
+                  fontSize: '0.85rem',
+                  lineHeight: 1,
+                }}
+              >
+                ·
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                {t.search.platformQQ}
+              </span>
               {playlist.creator && (
                 <>
-                  <span>·</span>
-                  <span className="playlist-creator">
-                    {t.result.creatorPrefix}
-                    <strong style={{ color: 'var(--ink, #2d3436)' }}>{playlist.creator}</strong>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      opacity: 0.55,
+                      userSelect: 'none',
+                      flexShrink: 0,
+                      fontSize: '0.85rem',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ·
+                  </span>
+                  <span
+                    className="playlist-creator"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      margin: 0,
+                      minWidth: 0,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span>{t.result.creatorPrefix}</span>
+                    <strong style={{ color: 'var(--ink, #2d3436)', fontWeight: 600 }}>
+                      {playlist.creator}
+                    </strong>
                   </span>
                 </>
               )}

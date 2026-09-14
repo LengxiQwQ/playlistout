@@ -20,12 +20,17 @@ export interface DailyTrendEntry {
 
 export interface PublicStatsResponse {
   launchedAt: string;
+  totalVisitors: number;
+  visitorsToday: number;
+  totalPageViews: number;
+  pageViewsToday: number;
   totalPlaylistsParsed: number;
   playlistsParsedToday: number;
   totalTracksProcessed: number;
   tracksProcessedToday: number;
   totalExports: number;
   exportsToday: number;
+  exportFormatsBreakdown: Record<string, number>;
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: DailyTrendEntry[];
   generatedAt: string;
@@ -71,7 +76,11 @@ export interface ClipboardEventPayload {
   trackCount?: number;
 }
 
-export type EventPayload = ExportEventPayload | ClipboardEventPayload;
+export interface VisitEventPayload {
+  type: 'visit';
+}
+
+export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;
 
 // ── Parse Analytics Context (internal, passed to recorder) ──
 

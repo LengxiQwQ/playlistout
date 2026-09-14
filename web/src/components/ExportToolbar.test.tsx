@@ -39,20 +39,41 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(copyTitleBtn).toBeDisabled();
   });
 
-  it('triggers export and displays toast feedback when clicking export buttons', () => {
+  it('toggles format selection and triggers export via export action button', () => {
     const exportSpy = vi.spyOn(exportUtils, 'exportPlaylist').mockReturnValue({
       filename: '测试歌单.xlsx',
     });
 
     render(<ExportToolbar playlist={mockPlaylist} />);
 
-    const xlsxBtn = screen.getByRole('button', { name: /Excel/ });
-    expect(xlsxBtn).not.toBeDisabled();
+    const exportBtn = screen.getByRole('button', { name: /导出/ });
+    expect(exportBtn).not.toBeDisabled();
 
-    fireEvent.click(xlsxBtn);
+    fireEvent.click(exportBtn);
 
     expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'xlsx');
     expect(screen.getByTestId('export-toast')).toHaveTextContent('已成功导出 测试歌单.xlsx');
+  });
+
+  it('supports multi-format selection and batch export', () => {
+    const exportSpy = vi.spyOn(exportUtils, 'exportPlaylist').mockImplementation((_, format) => ({
+      filename: `测试歌单.${format}`,
+    }));
+
+    render(<ExportToolbar playlist={mockPlaylist} />);
+
+    // By default xlsx is selected, click TXT to select it as well
+    const txtBtn = screen.getByRole('button', { name: 'TXT' });
+    fireEvent.click(txtBtn);
+
+    const exportBtn = screen.getByRole('button', { name: /导出 \(2\)/ });
+    expect(exportBtn).not.toBeDisabled();
+
+    fireEvent.click(exportBtn);
+
+    expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'xlsx');
+    expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'txt');
+    expect(screen.getByTestId('export-toast')).toHaveTextContent('已成功导出 2 份文件');
   });
 
   it('triggers clipboard copy and displays toast feedback when clicking copy buttons', async () => {
