@@ -16,18 +16,20 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
   const { t } = useTranslation();
 
   return (
-    <div style={{ marginTop: '2.5rem' }}>
+    <div>
       {/* Transitional journal hint */}
       <div
         className="font-note"
         style={{
           maxWidth: 'var(--search-note-width, 820px)',
-          margin: '0 auto 0.75rem',
+          margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
           fontSize: '1.65rem',
           color: '#8a8f92',
+          height: 'var(--ruled-line-height, 38px)',
+          lineHeight: 'var(--ruled-line-height, 38px)',
         }}
       >
         <span>{t.result.doneParsingHint}</span>
@@ -78,7 +80,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           borderVariant="default"
           shadow="paper"
           className="result-paper-card"
-          style={{ padding: '2rem' }}
+          style={{ padding: '2.5rem' }}
         >
           <PlaylistSummary playlist={playlist} onReset={onReset} />
           <TrackTable tracks={playlist.tracks} />

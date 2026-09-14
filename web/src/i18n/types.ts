@@ -149,12 +149,13 @@ export interface Translations {
   };
   footer: {
     drawnBy: string;
-    copyright: string;
+    copyrightPrefix: string;
+    licenseText: string;
+    licenseUrl: string;
     disclaimer: string;
     githubLink: string;
-    licenseLink: string;
+    authorLink: string;
     privacyLink: string;
-    releasesLink: string;
     issuesLink: string;
   };
 }

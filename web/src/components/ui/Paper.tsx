@@ -5,6 +5,7 @@ export interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
   borderVariant?: 'default' | 'alt' | 'subtle' | 'none';
   shadow?: 'paper' | 'paper-sm' | 'cutout' | 'cutout-sm' | 'none';
   rotateDeg?: number;
+  ruled?: boolean;
   as?: 'div' | 'section' | 'article';
 }
 
@@ -36,6 +37,7 @@ export const Paper: React.FC<PaperProps> = ({
   borderVariant = 'default',
   shadow = 'paper',
   rotateDeg = 0,
+  ruled = false,
   as: Component = 'div',
   className = '',
   style,
@@ -44,6 +46,7 @@ export const Paper: React.FC<PaperProps> = ({
 }) => {
   const borderClass = borderClassMap[borderVariant];
   const shadowClass = shadowClassMap[shadow];
+  const ruledClass = ruled ? 'ruled' : '';
 
   const combinedStyle: React.CSSProperties = {
     backgroundColor: colorMap[color],
@@ -53,7 +56,7 @@ export const Paper: React.FC<PaperProps> = ({
 
   return (
     <Component
-      className={`journal-paper ${borderClass} ${shadowClass} ${className}`.trim()}
+      className={`journal-paper ${borderClass} ${shadowClass} ${ruledClass} ${className}`.trim()}
       style={combinedStyle}
       {...props}
     >

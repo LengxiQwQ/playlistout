@@ -1,14 +1,24 @@
 /* PlaylistOut Music Journal - Paper & Stationery Metaphor */
 
 /* Notebook Background Base */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
 body {
   background-color: var(--paper, #f6f1e5);
   background-image:
     url('/paper-grain.png'),
-    linear-gradient(var(--line, #e2dacd) 0.1em, transparent 0.1em);
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--ruled-line-height, 38px) - 1.5px),
+      var(--line, #e2dacd) calc(var(--ruled-line-height, 38px) - 1.5px)
+    );
   background-size:
     256px 256px,
-    100% 2em;
+    100% var(--ruled-line-height, 38px);
   color: var(--ink, #2d3436);
   font-family: var(--font-sans, sans-serif);
   line-height: 1.6;
@@ -40,27 +50,27 @@ body {
 .binder-holes {
   position: absolute;
   left: max(1rem, calc(12.5vw - 160px - 0.25rem));
-  top: 0;
+  top: 4px;
   bottom: 0;
-  width: 2.25rem;
+  width: 30px;
   display: flex;
   flex-direction: column;
-  gap: 3.25rem;
-  padding: 2.5rem 0;
+  gap: calc(var(--ruled-line-height, 38px) * 2 - 30px);
+  padding: 0;
   overflow: hidden;
-  opacity: 0.4;
+  opacity: 0.45;
   z-index: 2;
   pointer-events: none;
   transition: left 0.15s ease;
 }
 
 .binder-hole {
-  width: 1.95rem;
-  height: 1.95rem;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 3px solid #8a8f92;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow:
     inset 2px 2px 3px rgba(45, 52, 54, 0.28),
     inset -1px -1px 2px rgba(255, 255, 255, 0.5),
@@ -460,27 +470,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
+  height: calc(var(--ruled-line-height, 38px) * 2);
 }
 
 .footer-red-line {
-  position: absolute;
-  left: 0;
-  right: 0;
+  flex: 1;
   height: 2px;
   background-color: var(--margin-red, #ff8a80);
-  opacity: 0.85;
+  opacity: 0.9;
   border-radius: 2px;
 }
 
 .footer-end-badge {
   position: relative;
-  background-color: var(--paper, #f6f1e5);
-  padding: 0 1.15rem;
+  background-color: transparent;
+  padding: 0 0.5rem;
   color: var(--margin-red, #ff8a80);
   font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   user-select: none;
+  white-space: nowrap;
   line-height: 1;
 }
 
@@ -498,4 +509,140 @@ body {
 .footer-pill-link:active {
   transform: translate(1px, 1px);
   box-shadow: 1px 1px 0 #2d3436;
+}
+
+.footer-author-link:hover {
+  color: var(--ink, #2d3436) !important;
+}
+
+.footer-license-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.footer-license-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--ink, #2d3436);
+}
+
+/* Sponsor Upward Flyout / Dropup Menu */
+.sponsor-dropup-menu {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 270px;
+  max-width: min(290px, calc(100vw - 2rem));
+  background-color: var(--paper-white, #ffffff);
+  background-image: url('/paper-grain.png');
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 10px;
+  padding: 1.15rem 1.15rem 1rem;
+  box-shadow: 4px 6px 0 var(--ink, #2d3436);
+  z-index: 100;
+  text-align: center;
+  animation: sponsorSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sponsor-dropup-menu::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-right: 2px solid var(--ink, #2d3436);
+  border-bottom: 2px solid var(--ink, #2d3436);
+}
+
+.sponsor-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 3px 4px 0 var(--ink, #2d3436) !important;
+}
+
+.sponsor-action-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436) !important;
+}
+
+@keyframes sponsorSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ==========================================================================
+   Ruled Notebook Paper & Baseline Alignment (方案 A: 信纸横线手写效果)
+   ========================================================================== */
+:root {
+  --ruled-line-height: 38px;
+  --ruled-line-color: rgba(45, 52, 54, 0.13);
+  --ruled-line-offset: 0px;
+}
+
+/* Handwritten paragraph sitting directly on ruled lines */
+.ruled-paper-text,
+.ruled-paper-lines {
+  font-family: var(--font-handwriting, cursive);
+  line-height: var(--ruled-line-height) !important;
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(var(--ruled-line-height) - 1px),
+    var(--ruled-line-color) calc(var(--ruled-line-height) - 1px)
+  );
+  background-size: 100% var(--ruled-line-height);
+  background-position: 0 var(--ruled-line-offset);
+  margin: 0;
+  color: var(--ink, #2d3436);
+}
+
+/* Handwritten list sitting directly on ruled lines */
+.ruled-paper-list {
+  font-family: var(--font-handwriting, cursive);
+  line-height: var(--ruled-line-height) !important;
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(var(--ruled-line-height) - 1px),
+    var(--ruled-line-color) calc(var(--ruled-line-height) - 1px)
+  );
+  background-size: 100% var(--ruled-line-height);
+  background-position: 0 var(--ruled-line-offset);
+  margin: 0;
+  color: var(--ink, #2d3436);
+  display: flex;
+  flex-direction: column;
+}
+
+.ruled-paper-list > * {
+  line-height: var(--ruled-line-height) !important;
+  margin: 0;
+}
+
+/* Optional full ruled paper card texture */
+.journal-paper.ruled {
+  background-image:
+    url('/paper-grain.png'),
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--ruled-line-height) - 1px),
+      var(--ruled-line-color) calc(var(--ruled-line-height) - 1px)
+    );
+  background-size:
+    256px 256px,
+    100% var(--ruled-line-height);
+  background-position:
+    0 0,
+    0 var(--ruled-line-offset);
 }

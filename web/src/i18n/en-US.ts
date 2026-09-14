@@ -36,7 +36,7 @@ export const enUS: Translations = {
     titleHighlight: 'playlist out.',
   },
   search: {
-    badge: 'QQ Music Public Playlists · MVP',
+    badge: 'QQ Music Public Playlists',
     inputLabel: 'Paste your playlist link here ↓',
     placeholder: 'Paste a public QQ Music playlist link (e.g. https://y.qq.com/n/ryqq/playlist/...) or ID',
     parseButton: 'Parse it →',
@@ -149,12 +149,13 @@ export const enUS: Translations = {
   },
   footer: {
     drawnBy: 'Handcrafted music journal for playlist backup & export',
-    copyright: '© 2026 PlaylistOut · Licensed under GNU AGPLv3',
+    copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · Licensed under ',
+    licenseText: 'GNU AGPL-3.0',
+    licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
-    licenseLink: 'AGPLv3 License',
+    authorLink: 'Author',
     privacyLink: 'Privacy Policy',
-    releasesLink: 'Releases',
     issuesLink: 'Issues',
   },
 };

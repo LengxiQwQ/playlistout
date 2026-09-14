@@ -10,8 +10,8 @@ export const Hero: React.FC = () => {
       style={{
         maxWidth: '1060px',
         margin: '0 auto',
-        paddingTop: '2.5rem',
-        paddingBottom: '2rem',
+        paddingTop: 0,
+        paddingBottom: 'calc(var(--ruled-line-height, 38px) * 1.25)',
         textAlign: 'center',
         position: 'relative',
       }}
@@ -20,9 +20,11 @@ export const Hero: React.FC = () => {
         className="font-note hero-doodle-right mc-splash"
         style={{
           position: 'absolute',
-          right: '2.5rem',
-          top: '0.75rem',
-          fontSize: '1.55rem',
+          right: '1rem',
+          top: 0,
+          height: 'var(--ruled-line-height, 38px)',
+          lineHeight: 'var(--ruled-line-height, 38px)',
+          fontSize: '1.35rem',
           color: '#d97706',
           userSelect: 'none',
         }}
@@ -35,7 +37,7 @@ export const Hero: React.FC = () => {
         className="font-marker"
         style={{
           fontSize: 'clamp(2.5rem, 6vw, 4.25rem)',
-          lineHeight: 1.15,
+          lineHeight: 'calc(var(--ruled-line-height, 38px) * 3)',
           color: 'var(--ink, #2d3436)',
           margin: 0,
         }}

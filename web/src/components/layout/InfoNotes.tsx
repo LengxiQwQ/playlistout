@@ -15,10 +15,10 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
       className="info-notes-section"
       style={{
         maxWidth: 'var(--result-paper-width, 1180px)',
-        margin: '3.5rem auto 0',
+        margin: '0 auto',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '2rem',
+        gap: '2.5rem',
         alignItems: 'start',
       }}
     >
@@ -28,15 +28,15 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
         borderVariant="default"
         rotateDeg={-1}
         shadow="paper"
-        style={{ padding: '1.5rem' }}
+        style={{ padding: '2rem 1.75rem' }}
       >
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '0.5rem', color: 'var(--ink, #2d3436)' }}>
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
           {t.infoNotes.whyTitle}
         </div>
-        <p className="font-handwriting" style={{ fontSize: '1.35rem', lineHeight: 1.3, margin: 0, color: 'var(--ink, #2d3436)' }}>
+        <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
           {t.infoNotes.whyContent}
         </p>
-        <div className="font-note" style={{ marginTop: '0.75rem', fontSize: '1.25rem', color: '#636e72' }}>
+        <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: '#636e72' }}>
           {t.infoNotes.whySubtext}
         </div>
       </Paper>
@@ -47,17 +47,17 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
         borderVariant="default"
         rotateDeg={1}
         shadow="paper"
-        style={{ padding: '1.5rem', position: 'relative' }}
+        style={{ padding: '2rem 1.75rem', position: 'relative' }}
       >
         <Tape
           color="pink"
           rotateDeg={5}
           style={{ position: 'absolute', top: '-0.75rem', right: '2rem', width: '6rem', height: '1.5rem' }}
         />
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '0.65rem', color: 'var(--ink, #2d3436)' }}>
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
           {t.infoNotes.whatTitle}
         </div>
-        <div className="font-handwriting" style={{ fontSize: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', color: 'var(--ink, #2d3436)' }}>
+        <div className="ruled-paper-list font-handwriting" style={{ fontSize: '1.25rem' }}>
           <div>{t.infoNotes.whatItem1}</div>
           <div>{t.infoNotes.whatItem2}</div>
           <div>{t.infoNotes.whatItem3}</div>
@@ -69,7 +69,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
             onClick={onOpenPrivacy}
             className="font-note feature-link-btn"
             style={{
-              marginTop: '0.75rem',
+              marginTop: '1.25rem',
               fontSize: '1.25rem',
               color: '#2563eb',
               background: 'none',
@@ -91,15 +91,15 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
         borderVariant="default"
         rotateDeg={-0.5}
         shadow="paper"
-        style={{ padding: '1.5rem' }}
+        style={{ padding: '2rem 1.75rem' }}
       >
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '0.5rem', color: 'var(--ink, #2d3436)' }}>
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
           {t.infoNotes.noteTitle}
         </div>
-        <p className="font-handwriting" style={{ fontSize: '1.35rem', lineHeight: 1.3, margin: 0, color: 'var(--ink, #2d3436)' }}>
+        <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
           {t.infoNotes.noteContent}
         </p>
-        <div className="font-note" style={{ marginTop: '0.75rem', textAlign: 'right', fontSize: '1.35rem', color: '#636e72' }}>
+        <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#636e72' }}>
           {t.infoNotes.noteSubtext}
         </div>
       </Paper>

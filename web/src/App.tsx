@@ -11,6 +11,8 @@ import { InfoNotes } from './components/layout/InfoNotes';
 import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
+import { BinderSpine } from './components/layout/BinderSpine';
+import { useBaselineGrid } from './hooks/useBaselineGrid';
 
 type AppState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -102,14 +104,12 @@ export const AppContent: React.FC = () => {
     [handleParse],
   );
 
+  useBaselineGrid([state, playlist]);
+
   return (
     <>
-      {/* Loose-leaf Binder Spine on Left Margin (Desktop only, scrolls with paper) */}
-      <div className="binder-holes" aria-hidden="true">
-        {Array.from({ length: 35 }).map((_, i) => (
-          <div key={i} className="binder-hole" />
-        ))}
-      </div>
+      {/* Loose-leaf Binder Spine on Left Margin (Desktop only, dynamically adapts to page length) */}
+      <BinderSpine dependencies={[state, playlist]} />
       <div className="journal-margin-line" aria-hidden="true" />
 
       <div className="journal-container">
@@ -118,30 +118,40 @@ export const AppContent: React.FC = () => {
           <Hero />
 
           {/* Search Note (PERSISTENT across idle, loading, error, and success) */}
-          <SearchNote
-            inputUrl={inputUrl}
-            onInputChange={setInputUrl}
-            onClear={() => setInputUrl('')}
-            onParse={() => handleParse()}
-            isLoading={state === 'loading'}
-            error={state === 'error' ? error : null}
-            onRetry={() => handleParse()}
-            onSelectSample={handleQuickSample}
-          />
+          <div className="baseline-grid-snap">
+            <SearchNote
+              inputUrl={inputUrl}
+              onInputChange={setInputUrl}
+              onClear={() => setInputUrl('')}
+              onParse={() => handleParse()}
+              isLoading={state === 'loading'}
+              error={state === 'error' ? error : null}
+              onRetry={() => handleParse()}
+              onSelectSample={handleQuickSample}
+            />
+          </div>
 
           {/* Result Paper (Appears immediately below Search when successful) */}
           {state === 'success' && playlist && (
-            <ResultPaper playlist={playlist} onReset={handleReset} />
+            <div className="baseline-grid-snap">
+              <ResultPaper playlist={playlist} onReset={handleReset} />
+            </div>
           )}
 
           {/* Educational Stationery Notes */}
-          <InfoNotes onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+          <div className="baseline-grid-snap">
+            <InfoNotes onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+          </div>
 
           {/* Aggregate Public Stats Journal */}
-          <StatsJournal />
+          <div className="baseline-grid-snap">
+            <StatsJournal />
+          </div>
         </main>
 
-        <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+        <div className="baseline-grid-snap">
+          <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+        </div>
 
         <PrivacyModal
           isOpen={isPrivacyOpen}
