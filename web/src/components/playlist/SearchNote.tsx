@@ -177,15 +177,25 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             marginTop: '1.25rem',
             fontSize: '1.2rem',
             color: '#636e72',
+            fontFamily: 'var(--font-handwriting, cursive)',
           }}
         >
-          <span style={{ fontWeight: 600, marginRight: '0.35rem' }}>{t.search.quickSamplesLabel}</span>
+          <span style={{ fontWeight: 600, marginRight: '0.35rem', fontFamily: 'inherit' }}>
+            {t.search.quickSamplesLabel}
+          </span>
           <Sticker
             type="button"
             color="white"
             rotateDeg={-1}
             onClick={() => onSelectSample('9044196528')}
-            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
           >
             {t.search.sampleFolk}
           </Sticker>
@@ -194,7 +204,14 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             color="white"
             rotateDeg={1}
             onClick={() => onSelectSample('8079931214')}
-            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
           >
             {t.search.sampleJay}
           </Sticker>
@@ -203,7 +220,14 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             color="white"
             rotateDeg={-0.5}
             onClick={() => onSelectSample('7684752768')}
-            style={{ padding: '0.35rem 0.9rem', fontSize: '1.05rem' }}
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
           >
             {t.search.sampleJpKr}
           </Sticker>

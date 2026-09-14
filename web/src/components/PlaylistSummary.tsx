@@ -76,16 +76,18 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
 
           <div>
             <span
-              className="sticker font-mono"
+              className="sticker font-handwriting"
               style={{
                 display: 'inline-block',
                 backgroundColor: '#fbcfe8',
-                padding: '0.2rem 0.65rem',
-                fontSize: '0.75rem',
-                letterSpacing: '0.08em',
+                padding: '0.25rem 0.75rem',
+                fontSize: '1rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
                 fontWeight: 700,
                 transform: 'rotate(-2deg)',
                 marginBottom: '0.5rem',
+                userSelect: 'none',
+                lineHeight: 1.2,
               }}
             >
               {t.result.parsedPlaylistSticker}
@@ -140,16 +142,19 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             href={`https://y.qq.com/n/ryqq/playlist/${playlist.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="sticker"
+            className="sticker font-handwriting"
             style={{
               backgroundColor: '#ffffff',
-              padding: '0.4rem 0.85rem',
-              fontSize: '0.925rem',
-              fontFamily: 'var(--font-sans, sans-serif)',
-              fontWeight: 600,
+              padding: '0.42rem 0.95rem',
+              fontSize: '1.05rem',
+              fontFamily: 'var(--font-handwriting, cursive)',
+              fontWeight: 700,
               textDecoration: 'none',
               color: 'var(--ink, #2d3436)',
               transform: 'rotate(-1deg)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              lineHeight: 1.2,
             }}
           >
             {t.result.viewOnQQ}
@@ -160,11 +165,14 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             color="yellow"
             rotateDeg={1}
             onClick={onReset}
+            className="font-handwriting"
             style={{
-              padding: '0.4rem 0.85rem',
-              fontSize: '0.925rem',
-              fontFamily: 'var(--font-sans, sans-serif)',
-              fontWeight: 600,
+              padding: '0.42rem 0.95rem',
+              fontSize: '1.05rem',
+              fontFamily: 'var(--font-handwriting, cursive)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              lineHeight: 1.2,
             }}
           >
             {t.result.parseAnother}

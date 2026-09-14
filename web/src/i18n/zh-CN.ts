@@ -148,9 +148,13 @@ export const zhCN: Translations = {
     confirmButton: '我知道了',
   },
   footer: {
-    drawnBy: '由 LengxiQwQ 用心手绘与编码 ♥',
-    copyright: 'PlaylistOut © 2026',
-    githubLink: '代码仓库',
-    privacyLink: '隐私声明',
+    drawnBy: 'Handcrafted music journal for playlist backup & export',
+    copyright: '© 2026 PlaylistOut · Licensed under GNU AGPLv3',
+    disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
+    githubLink: 'GitHub',
+    licenseLink: 'AGPLv3 License',
+    privacyLink: 'Privacy Policy',
+    releasesLink: 'Releases',
+    issuesLink: 'Issues',
   },
 };

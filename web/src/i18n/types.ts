@@ -150,7 +150,11 @@ export interface Translations {
   footer: {
     drawnBy: string;
     copyright: string;
+    disclaimer: string;
     githubLink: string;
+    licenseLink: string;
     privacyLink: string;
+    releasesLink: string;
+    issuesLink: string;
   };
 }

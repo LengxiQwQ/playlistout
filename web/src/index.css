@@ -617,12 +617,9 @@ footer {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.875rem;
-  margin-top: 3rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.25rem;
+  width: 100%;
 }
+
 
 footer a,
 .footer-link-btn {

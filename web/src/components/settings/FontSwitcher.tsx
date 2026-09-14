@@ -33,15 +33,15 @@ export const CHINESE_FONT_PRESETS: FontPreset[] = [
     index: '01',
     name: '毛笔手账 (楷书)',
     sample: '音乐手账',
-    sampleFontFamily: '"Ma Shan Zheng", cursive',
-    googleFontsQuery: 'Ma+Shan+Zheng&family=ZCOOL+KuaiLe',
+    sampleFontFamily: '"Ma Shan Zheng", "Kaiti SC", "STKaiti", "KaiTi", "楷体", cursive, serif',
+    googleFontsQuery: 'Ma+Shan+Zheng',
   },
   {
     id: 'zh_kuaile',
     index: '02',
     name: '快乐手绘 (萌趣)',
     sample: '音乐手账',
-    sampleFontFamily: '"ZCOOL KuaiLe", cursive',
+    sampleFontFamily: '"ZCOOL KuaiLe", "Wawati SC", "Yuanti SC", "YouYuan", "幼圆", "STHupo", cursive, sans-serif',
     googleFontsQuery: 'ZCOOL+KuaiLe',
   },
   {
@@ -49,7 +49,7 @@ export const CHINESE_FONT_PRESETS: FontPreset[] = [
     index: '03',
     name: '洒脱行书 (行草)',
     sample: '音乐手账',
-    sampleFontFamily: '"Zhi Mang Xing", cursive',
+    sampleFontFamily: '"Zhi Mang Xing", "Xingkai SC", "STXingkai", "华文行楷", "STKaiti", "KaiTi", cursive, serif',
     googleFontsQuery: 'Zhi+Mang+Xing',
   },
   {
@@ -57,7 +57,7 @@ export const CHINESE_FONT_PRESETS: FontPreset[] = [
     index: '04',
     name: '随性写意 (行书)',
     sample: '音乐手账',
-    sampleFontFamily: '"Long Cang", cursive',
+    sampleFontFamily: '"Long Cang", "Xingkai SC", "STXingkai", "华文行楷", "STKaiti", "KaiTi", cursive, serif',
     googleFontsQuery: 'Long+Cang',
   },
   {
@@ -65,7 +65,7 @@ export const CHINESE_FONT_PRESETS: FontPreset[] = [
     index: '05',
     name: '萌趣黄油 (手绘)',
     sample: '音乐手账',
-    sampleFontFamily: '"ZCOOL QingKe HuangYou", cursive',
+    sampleFontFamily: '"ZCOOL QingKe HuangYou", "Yuanti SC", "YouYuan", "幼圆", "STXinwei", "华文新魏", cursive, sans-serif',
     googleFontsQuery: 'ZCOOL+QingKe+HuangYou',
   },
   {
@@ -73,7 +73,7 @@ export const CHINESE_FONT_PRESETS: FontPreset[] = [
     index: '06',
     name: '原稿经典',
     sample: '音乐手账',
-    sampleFontFamily: 'Caveat, "Ma Shan Zheng", cursive',
+    sampleFontFamily: 'Caveat, "Ma Shan Zheng", "Kaiti SC", "STKaiti", "KaiTi", cursive',
     googleFontsQuery: 'Caveat:wght@400;600;700&family=Permanent+Marker',
   },
 ];
@@ -199,6 +199,14 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
       link.id = linkId;
       link.rel = 'stylesheet';
       link.href = `https://fonts.googleapis.com/css2?family=${preset.googleFontsQuery}&display=swap`;
+      link.onerror = () => {
+        if (link && !link.dataset.mirrored) {
+          link.dataset.mirrored = 'true';
+          link.href = `https://fonts.font.im/css2?family=${preset.googleFontsQuery}&display=swap`;
+        } else {
+          finish(false);
+        }
+      };
       document.head.appendChild(link);
     }
 
@@ -214,7 +222,14 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
     };
 
     link.addEventListener('load', onReady, { once: true });
-    link.addEventListener('error', () => finish(false), { once: true });
+    link.addEventListener('error', () => {
+      if (link && !link.dataset.mirrored) {
+        link.dataset.mirrored = 'true';
+        link.href = `https://fonts.font.im/css2?family=${preset.googleFontsQuery}&display=swap`;
+      } else {
+        finish(false);
+      }
+    }, { once: true });
 
     if ((link as any).sheet) {
       onReady();
@@ -231,6 +246,12 @@ export function ensureFontStylesheet(preset: FontPreset): void {
       link.id = linkId;
       link.rel = 'stylesheet';
       link.href = `https://fonts.googleapis.com/css2?family=${preset.googleFontsQuery}&display=swap`;
+      link.onerror = () => {
+        if (link && !link.dataset.mirrored) {
+          link.dataset.mirrored = 'true';
+          link.href = `https://fonts.font.im/css2?family=${preset.googleFontsQuery}&display=swap`;
+        }
+      };
       document.head.appendChild(link);
     } catch {
       // ignore

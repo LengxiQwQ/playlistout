@@ -148,9 +148,13 @@ export const enUS: Translations = {
     confirmButton: 'Got it',
   },
   footer: {
-    drawnBy: 'Drawn & coded with ♥ by LengxiQwQ',
-    copyright: 'PlaylistOut © 2026',
+    drawnBy: 'Handcrafted music journal for playlist backup & export',
+    copyright: '© 2026 PlaylistOut · Licensed under GNU AGPLv3',
+    disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
-    privacyLink: 'Privacy',
+    licenseLink: 'AGPLv3 License',
+    privacyLink: 'Privacy Policy',
+    releasesLink: 'Releases',
+    issuesLink: 'Issues',
   },
 };
