@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ExportToolbar } from './ExportToolbar';
 
 import * as exportUtils from '../utils/export';
@@ -28,7 +28,7 @@ describe('ExportToolbar Component (Phase 4)', () => {
 
     const txtBtn = screen.getByRole('button', { name: 'TXT' });
     const csvBtn = screen.getByRole('button', { name: 'CSV' });
-    const xlsxBtn = screen.getByRole('button', { name: /Excel/ });
+    const xlsxBtn = screen.getByRole('button', { name: 'Excel (.xlsx)' });
     const jsonBtn = screen.getByRole('button', { name: 'JSON' });
     const copyTitleBtn = screen.getByRole('button', { name: '仅歌名' });
 
@@ -55,7 +55,7 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(screen.getByTestId('export-toast')).toHaveTextContent('已成功导出 测试歌单.xlsx');
   });
 
-  it('supports multi-format selection and batch export', () => {
+  it('supports multi-format selection and batch export', async () => {
     const exportSpy = vi.spyOn(exportUtils, 'exportPlaylist').mockImplementation((_, format) => ({
       filename: `测试歌单.${format}`,
     }));
@@ -72,8 +72,10 @@ describe('ExportToolbar Component (Phase 4)', () => {
     fireEvent.click(exportBtn);
 
     expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'xlsx');
-    expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'txt');
-    expect(screen.getByTestId('export-toast')).toHaveTextContent('已成功导出 2 份文件');
+    await waitFor(() => {
+      expect(exportSpy).toHaveBeenCalledWith(mockPlaylist, 'txt');
+    });
+    expect(await screen.findByTestId('export-toast')).toHaveTextContent('已成功导出 2 份文件');
   });
 
   it('triggers clipboard copy and displays toast feedback when clicking copy buttons', async () => {
