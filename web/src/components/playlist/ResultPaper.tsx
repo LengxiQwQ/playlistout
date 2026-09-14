@@ -46,13 +46,13 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
       >
         {/* Decorative doodle on top right */}
         <div
+          className="result-doodle"
           style={{
             position: 'absolute',
             right: '2rem',
             top: '-1.85rem',
             color: '#a0a5a8',
             fontSize: '3rem',
-            transform: 'rotate(12deg)',
             userSelect: 'none',
             zIndex: 15,
           }}
@@ -80,6 +80,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           borderVariant="default"
           shadow="paper"
           className="result-paper-card"
+          interactive={false}
           style={{ padding: '2.5rem' }}
         >
           <PlaylistSummary playlist={playlist} onReset={onReset} />

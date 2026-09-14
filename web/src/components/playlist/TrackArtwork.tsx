@@ -18,7 +18,7 @@ export const TrackArtwork: React.FC<TrackArtworkProps> = ({
   if (showPlaceholder) {
     return (
       <div
-        className="track-artwork-placeholder"
+        className="track-artwork-placeholder track-artwork-thumb"
         aria-label={title ? `${title} cover placeholder` : 'Album artwork placeholder'}
         style={{
           width: `${size}px`,
@@ -42,6 +42,7 @@ export const TrackArtwork: React.FC<TrackArtworkProps> = ({
 
   return (
     <img
+      className="track-artwork-thumb"
       src={coverUrl}
       alt={title ? `${title} cover` : 'Album artwork'}
       loading="lazy"

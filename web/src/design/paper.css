@@ -75,6 +75,15 @@ body {
     inset 2px 2px 3px rgba(45, 52, 54, 0.28),
     inset -1px -1px 2px rgba(255, 255, 255, 0.5),
     1px 1px 2px rgba(45, 52, 54, 0.12);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.binder-hole:hover {
+  transform: scale(1.22) rotate(15deg);
+  border-color: #636e72;
+  opacity: 1;
 }
 
 /* Notebook Vertical Margin Line - Scrolls naturally with paper */
@@ -124,9 +133,17 @@ body {
   box-shadow: var(--cutout-shadow-sm, 3px 3px 0 0 #2d3436);
 }
 
-/* Paper Texture for Cards & Sticky Notes */
+/* Paper Texture for Cards & Sticky Notes: Subtle Base Paper Creases & Fine Grain */
 .journal-paper,
-.sticky-note-card,
+.sticky-note-card {
+  background-image:
+    url('/paper-creases.png'),
+    url('/paper-grain.png');
+  background-repeat: repeat, repeat;
+  background-size: 1024px 1024px, 256px 256px;
+  position: relative;
+}
+
 .paper-modal {
   background-image: url('/paper-grain.png');
   background-repeat: repeat;
@@ -134,7 +151,102 @@ body {
   position: relative;
 }
 
-/* Washi Tape Strip */
+/* Realistic Paper Base */
+.journal-paper {
+  --rot: 0deg;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --tilt-z: 0deg;
+  --mouse-pct-x: 50;
+  --mouse-pct-y: 50;
+  --tape-glare-pos: 50;
+  --tape-glare-opacity: 0.35;
+
+  --paper-shadow-x: 4.5px;
+  --paper-shadow-y: 5.5px;
+  --paper-shadow-blur: 2px;
+}
+
+/* Static Non-Interactive Paper */
+.journal-paper:not(.is-interactive) {
+  transform: rotate(var(--rot, 0deg));
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Sticky Notes & Interactive Journal Paper: Realistic 3D Interactive Orientation & Hard Warm-Yellow Shadow */
+.sticky-note-card,
+.journal-paper.is-interactive {
+  transform:
+    perspective(1200px)
+    rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg))
+    rotate(calc(var(--rot, 0deg) + var(--tilt-z, 0deg)));
+
+  /* Hard, wider dark warm-yellowish shadow: close to paper, wide band */
+  box-shadow:
+    0 1.5px 2px rgba(50, 36, 6, 0.88),
+    var(--paper-shadow-x, 4.5px) var(--paper-shadow-y, 5.5px) var(--paper-shadow-blur, 2px) 0.5px rgba(65, 48, 12, 0.82);
+
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+/* Subtle paper fiber curvature & ambient lighting sheen */
+.sticky-note-card::before,
+.journal-paper.is-interactive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      calc(130deg + var(--tilt-y, 0deg) * 3),
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(255, 255, 255, 0.1) 32%,
+      transparent 58%,
+      rgba(45, 52, 54, 0.03) 80%,
+      rgba(45, 52, 54, 0.07) 100%
+    ),
+    radial-gradient(
+      700px circle at calc(var(--mouse-pct-x, 50) * 1%) calc(var(--mouse-pct-y, 50) * 1%),
+      rgba(255, 255, 255, 0.28) 0%,
+      transparent 65%
+    );
+  opacity: 0.75;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Active tracking: instantaneous & silky smooth */
+.sticky-note-card.is-tracking,
+.journal-paper.is-interactive.is-tracking {
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+
+.sticky-note-card.is-tracking::before,
+.journal-paper.is-interactive.is-tracking::before {
+  opacity: 1;
+}
+
+/* Hero Title Warm Ink Text Shadow */
+.journal-hero-title {
+  text-shadow: 3px 3.5px 0 rgba(65, 48, 12, 0.26);
+}
+
+.status-alert {
+  --rot: -0.5deg;
+  transform: rotate(var(--rot, -0.5deg));
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.status-alert:hover {
+  transform: translateY(-2px) rotate(calc(var(--rot, -0.5deg) - 0.25deg));
+  box-shadow: 5px 6px 0 var(--ink, #2d3436);
+}
+
+/* Washi Tape Strip with Torn-edge Drop Shadow & Plastic Specular Glare */
 .tape {
   clip-path: polygon(
     0 8%, 8% 0, 16% 7%, 24% 1%, 32% 8%, 40% 1%, 48% 7%, 56% 0, 64% 8%, 72% 1%, 80% 8%, 88% 0, 100% 7%,
@@ -142,6 +254,42 @@ body {
   );
   user-select: none;
   pointer-events: none;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(0.6px);
+  filter: drop-shadow(0 2px 2.5px rgba(45, 52, 54, 0.28));
+}
+
+.tape::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  background: linear-gradient(
+    115deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.12) 32%,
+    rgba(255, 255, 255, 0.78) 47%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 255, 255, 0.78) 53%,
+    rgba(255, 255, 255, 0.12) 68%,
+    transparent 85%
+  );
+  transform: translateX(calc((var(--tape-glare-pos, 50) - 50) * 1.8%)) rotate(6deg);
+  opacity: var(--tape-glare-opacity, 0.35);
+  pointer-events: none;
+  transition: transform 0.08s ease-out, opacity 0.25s ease;
+  mix-blend-mode: screen;
+}
+
+.tape-top-left::after {
+  transform: translateX(calc((var(--tape-glare-pos, 50) - 35) * 1.9%)) rotate(6deg);
+}
+
+.tape-bottom-right::after {
+  transform: translateX(calc((var(--tape-glare-pos, 50) - 65) * 1.9%)) rotate(6deg);
 }
 
 .tape-pink { background-color: var(--tape-pink); }
@@ -259,6 +407,16 @@ button.sticker:disabled,
   transform: rotate(-1deg);
   z-index: -1;
   border-radius: 40%;
+  animation: markerDraw 0.75s cubic-bezier(0.25, 1, 0.5, 1) 0.15s both;
+}
+
+@keyframes markerDraw {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0% 0 0);
+  }
 }
 
 /* Song Row Marker Stroke Sweep */
@@ -272,17 +430,36 @@ button.sticker:disabled,
 }
 
 .song-row:hover td {
-  background-color: rgba(255, 234, 167, 0.38);
+  background-color: rgba(254, 240, 138, 0.42) !important;
 }
 
 .song-row:hover td:first-child {
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
 }
 
 .song-row:hover td:last-child {
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.song-row .col-index {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+}
+
+.song-row:hover .col-index {
+  transform: scale(1.15) rotate(-4deg);
+  color: var(--ink, #2d3436) !important;
+  font-weight: 700;
+}
+
+.song-row .track-artwork-thumb {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.song-row:hover .track-artwork-thumb {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 2.5px 3.5px 0 var(--ink, #2d3436) !important;
 }
 
 /* Tiny Grid (Journal Paper Texture + Grid) */
