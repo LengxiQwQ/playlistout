@@ -53,15 +53,6 @@ export const PaperInput: React.FC<PaperInputProps> = ({
           onClick={onClear}
           className="btn-paper-clear font-mono"
           aria-label="Clear input"
-          style={{
-            border: 'none',
-            background: 'none',
-            color: '#8a8f92',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            padding: '0.25rem 0.5rem',
-            marginLeft: '0.25rem',
-          }}
         >
           ✕
         </button>

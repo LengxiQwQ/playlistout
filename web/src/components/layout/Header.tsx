@@ -42,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
       {/* Brand area */}
       <div
         onClick={onBrandClick}
+        className={onBrandClick ? 'header-brand' : ''}
         style={{
           display: 'flex',
           alignItems: 'center',
