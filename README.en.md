@@ -76,6 +76,172 @@ During CSV and Excel exports, cells starting with special trigger characters (`=
 
 ---
 
+## 📋 Data Export Format Specifications & Open Integration
+
+To facilitate seamless integration, ingestion, and automated parsing by third-party music platforms, developer tools, and data migration utilities, we formally define and standardize our 4 exported file formats.
+
+> 💡 **Third-Party Platform Recommendation**: We strongly recommend reading and parsing the **JSON format**. It contains the most comprehensive metadata schema, strict type definitions, and raw unescaped track details.
+
+---
+
+### 1. JSON Format (`.json`) —— Recommended for Integration
+
+- **Encoding**: `UTF-8` (without BOM)
+- **MIME Type**: `application/json`
+- **Use Case**: Cross-platform migration, third-party music player imports, automated data pipelines.
+
+#### Root Object Schema
+
+| Field | Type | Nullable | Description & Format |
+|---|---|---|---|
+| `createTime` | `string \| null` | Yes | **Playlist creation time** (1st position). Formatted as `YYYY-MM-DD HH:mm:ss` (e.g. `"2021-06-18 14:30:00"`), or `null` if unavailable upstream. |
+| `exportedAt` | `string` | No | **Data export time** (2nd position, immediately adjacent to creation time). Local generation timestamp `YYYY-MM-DD HH:mm:ss`. |
+| `name` | `string` | No | Full title of the playlist. |
+| `creator` | `string` | No (may be empty) | Nickname of the playlist creator / curator. |
+| `updateTime` | `string \| null` | Yes | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. |
+| `platform` | `string` | No | Source music platform identifier (e.g., `"qqmusic"`). |
+| `id` | `string` | No | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
+| `sourceUrl` | `string` | No | Direct canonical web URL of the playlist on the source platform. |
+| `trackCount` | `number` | No | Total number of tracks contained in the playlist (integer). |
+| `totalDuration` | `string \| null` | Yes | Formatted total playlist duration string (e.g., `"3 小时 45 分钟"` or `"48 分钟"`). |
+| `playCount` | `number \| null` | Yes | Cumulative listen / play count as an integer. |
+| `tags` | `string[]` | No | Array of genre and category tags (e.g., `["Pop", "Acoustic"]`). |
+| `description` | `string` | No (may be empty) | Playlist introduction / background description. |
+| `tracks` | `Track[]` | No | Array of track items, preserving the original curator order. |
+
+#### Track Item Schema
+
+| Field | Type | Nullable | Description & Format |
+|---|---|---|---|
+| `index` | `number` | No | 1-based sequential display index in the playlist. |
+| `id` | `string` | No | Unique track identifier / MID from the source platform (e.g., `"0039MnYb0qxYAc"`). |
+| `title` | `string` | No | Song title (preserving version notes and subtitles). |
+| `artists` | `string[]` | No | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
+| `album` | `string` | No (may be empty) | Album name. |
+| `durationMs` | `number` | No | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). |
+| `sourceUrl` | `string` | No | Direct canonical web URL of the track detail page. |
+
+#### Standard JSON Example
+
+```json
+{
+  "createTime": "2021-06-18 14:30:00",
+  "exportedAt": "2026-09-14 23:30:00",
+  "name": "Chinese Classic Pop Hits",
+  "creator": "Music Cafe",
+  "updateTime": "2024-03-01 09:15:20",
+  "platform": "qqmusic",
+  "id": "773829104",
+  "sourceUrl": "https://y.qq.com/n/ryqq/playlist/773829104",
+  "trackCount": 2,
+  "totalDuration": "8 分钟",
+  "playCount": 128500,
+  "tags": ["Pop", "Classic", "Mandopop"],
+  "description": "Timeless melodies that touch your soul.",
+  "tracks": [
+    {
+      "index": 1,
+      "id": "0039MnYb0qxYAc",
+      "title": "Sunny Day",
+      "artists": ["Jay Chou"],
+      "album": "Yeh Hui-Mei",
+      "durationMs": 269000,
+      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc"
+    },
+    {
+      "index": 2,
+      "id": "0027fM2M3wD4gS",
+      "title": "Won't Cry",
+      "artists": ["Jay Chou", "Ashin"],
+      "album": "Won't Cry",
+      "durationMs": 222000,
+      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS"
+    }
+  ]
+}
+```
+
+---
+
+### 2. CSV Format (`.csv`)
+
+- **Encoding**: `UTF-8 with BOM` (starts with `\uFEFF` byte order mark to avoid mojibake in Microsoft Excel on Windows).
+- **Line Ending**: `\r\n` (CRLF).
+- **Metadata Comment Block**: Prefaced by `# ` comment lines. Standard tabular parsers can simply skip lines starting with `#` to extract song rows.
+- **Formula Injection Defense**: Cells starting with `=`, `+`, `-`, `@`, `\t`, or `\r` are safely prepended with a single quote `'` to prevent DDE/macro code execution in spreadsheet applications.
+- **RFC 4180 Escaping**: Fields containing commas or quotes are wrapped in double quotes, with internal quotes escaped as `""`.
+
+#### CSV File Example
+
+```csv
+# 创建时间: 2021-06-18 14:30:00
+# 导出时间: 2026-09-14 23:30:00
+# 歌单名称: Chinese Classic Pop Hits
+# 歌单作者: Music Cafe
+# 歌曲总数: 2 首 (8 分钟)
+# 风格标签: Pop, Classic, Mandopop
+# 总播放量: 128,500 次
+# 歌单链接: https://y.qq.com/n/ryqq/playlist/773829104
+序号,歌曲标题,歌手,专辑,时长
+1,Sunny Day,Jay Chou,Yeh Hui-Mei,04:29
+2,Won't Cry,"Jay Chou, Ashin",Won't Cry,03:42
+```
+
+---
+
+### 3. Excel Format (`.xlsx`)
+
+- **File Specification**: Native Microsoft Excel OpenXML Workbook (`.xlsx`).
+- **Worksheet Name**: `歌单歌曲`.
+- **Layout Architecture**:
+  1. **Metadata Header Block (Rows 1–5/6, two-column key-value layout)**:
+     - Row 1: `['歌单名称', playlist.name, '', '']`
+     - Row 2: `['创建时间', createTime, '导出时间', exportedAt]` (*Creation time 1st, Export time 2nd, placed side-by-side*)
+     - Row 3: `['歌单作者', creator, '歌曲总数', trackCountStr]`
+     - Row 4: `['最后更新', updateTime, '总播放量', playCountStr]`
+     - Row 5: `['风格标签', tagsStr, '歌单链接', sourceUrl]`
+     - Row 6 (optional): `['歌单简介', description, '', '']` (present when description exists)
+  2. **Blank Separator Row (Row 7)**: Natural separation between metadata and the song table.
+  3. **Table Column Headers (Row 8)**: `序号`, `歌曲标题`, `歌手`, `专辑`, `时长`.
+  4. **Track Data Rows (Row 9+)**: Sequential track list with formula injection defense and responsive column widths (10 / 32 / 22 / 25 / 10).
+
+---
+
+### 4. Plain Text Format (`.txt`)
+
+- **Encoding**: `UTF-8`.
+- **Format Style**: Stationery book layout, balancing clean human readability and line-by-line script ingestion.
+- **Structure**:
+  - Top stationery header bounded by `==================================================`;
+  - First metadata line is `创建时间:`, followed immediately by `导出时间:`;
+  - Displays playlist title, curator, last updated date, track count with duration, tags, play count, link, and description;
+  - Plain track entries below the divider: `${title} - ${artists} - ${album}` (or `${title} - ${artists}` if no album);
+  - Preserves raw text without spreadsheet formula escape prefixes.
+
+#### TXT File Example
+
+```text
+==================================================
+  创建时间: 2021-06-18 14:30:00
+  导出时间: 2026-09-14 23:30:00
+  歌单名称: Chinese Classic Pop Hits
+  歌单作者: Music Cafe
+  最后更新: 2024-03-01 09:15:20
+  歌曲总数: 2 首 (总时长 8 分钟)
+  风格标签: Pop · Classic · Mandopop
+  总播放量: 128,500 次
+  歌单链接: https://y.qq.com/n/ryqq/playlist/773829104
+--------------------------------------------------
+  歌单简介:
+  Timeless melodies that touch your soul.
+==================================================
+
+Sunny Day - Jay Chou - Yeh Hui-Mei
+Won't Cry - Jay Chou, Ashin - Won't Cry
+```
+
+---
+
 ## 🎧 Supported Platforms
 
 | Platform | Web Support | Notes |
