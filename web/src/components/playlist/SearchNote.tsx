@@ -71,7 +71,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
       className="search-note-section"
       style={{
         maxWidth: 'var(--search-note-width, 820px)',
-        margin: '2.5rem auto 4rem',
+        margin: '0 auto',
         position: 'relative',
       }}
     >
@@ -92,7 +92,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
         ✦
       </div>
 
-      <StickyNote color="yellow" rotateDeg={0.35} showTapes={true} style={{ padding: '1.75rem 2rem' }}>
+      <StickyNote color="yellow" rotateDeg={0.35} showTapes={true} style={{ padding: '2.25rem 2.5rem' }}>
         <form onSubmit={handleSubmit}>
           <div
             style={{
@@ -100,7 +100,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              marginBottom: '0.6rem',
+              marginBottom: '1rem',
             }}
           >
             <div
@@ -131,14 +131,14 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.85rem',
+              gap: '1rem',
             }}
           >
             <div
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '0.85rem',
+                gap: '1rem',
                 alignItems: 'center',
               }}
             >
@@ -173,8 +173,8 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
-            gap: '1rem',
-            marginTop: '1.25rem',
+            gap: '1.25rem',
+            marginTop: '1.5rem',
             fontSize: '1.2rem',
             color: '#636e72',
             fontFamily: 'var(--font-handwriting, cursive)',

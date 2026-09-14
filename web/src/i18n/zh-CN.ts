@@ -36,7 +36,7 @@ export const zhCN: Translations = {
     titleHighlight: '歌单带走。',
   },
   search: {
-    badge: 'QQ 音乐公开歌单解析 · MVP',
+    badge: 'QQ 音乐公开歌单解析',
     inputLabel: '在这里粘贴歌单链接 ↓',
     placeholder: '粘贴 QQ 音乐公开歌单链接（例如：https://y.qq.com/n/ryqq/playlist/...）或 ID',
     parseButton: '解析',
@@ -149,12 +149,13 @@ export const zhCN: Translations = {
   },
   footer: {
     drawnBy: 'Handcrafted music journal for playlist backup & export',
-    copyright: '© 2026 PlaylistOut · Licensed under GNU AGPLv3',
+    copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · Licensed under ',
+    licenseText: 'GNU AGPL-3.0',
+    licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
-    licenseLink: 'AGPLv3 License',
+    authorLink: 'Author',
     privacyLink: 'Privacy Policy',
-    releasesLink: 'Releases',
     issuesLink: 'Issues',
   },
 };

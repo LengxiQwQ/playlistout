@@ -3,27 +3,31 @@
 .journal-container {
   max-width: var(--max-content-width, 1150px);
   margin: 0 auto;
-  padding: 0.85rem 1.25rem 2rem;
+  padding: 0 1.25rem 2.5rem;
   position: relative;
   z-index: 10;
 }
 
 @media (min-width: 768px) {
   .journal-container {
-    padding: 1.15rem 2.5rem 2.5rem;
+    padding: 0 2.5rem 2.5rem;
   }
 }
 
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
-  /* Simplify notebook paper background on small screens */
+  /* Keep notebook paper baseline grid consistent on small screens */
   body {
     background-image:
       url('/paper-grain.png'),
-      linear-gradient(var(--line, #e2dacd) 0.1em, transparent 0.1em);
+      linear-gradient(
+        to bottom,
+        transparent calc(var(--ruled-line-height, 38px) - 1.5px),
+        var(--line, #e2dacd) calc(var(--ruled-line-height, 38px) - 1.5px)
+      );
     background-size:
       256px 256px,
-      100% 2em;
+      100% var(--ruled-line-height, 38px);
   }
 
   /* Hide binder holes and vertical line on mobile */

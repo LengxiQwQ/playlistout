@@ -36,7 +36,7 @@ describe('Client-Side Input Validation', () => {
     expect(res.error).toContain('输入内容过长');
   });
 
-  it('rejects other platforms with friendly MVP notification', () => {
+  it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://music.163.com/playlist?id=12345');
     expect(res1.valid).toBe(false);
     expect(res1.error).toContain('仅支持 QQ 音乐');

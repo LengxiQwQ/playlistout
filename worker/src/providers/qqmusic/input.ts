@@ -43,7 +43,7 @@ export function extractQQPlaylistId(rawInput: string): string {
   const hostname = parsedUrl.hostname.toLowerCase();
   const allowedHosts = ['y.qq.com', 'i.y.qq.com'];
   if (!allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))) {
-    throw new ProviderError('UNSUPPORTED_URL', `Unsupported music platform host: "${hostname}". Only QQ Music is supported in MVP.`, 400);
+    throw new ProviderError('UNSUPPORTED_URL', `Unsupported music platform host: "${hostname}". Currently only QQ Music is supported.`, 400);
   }
 
   const pathname = parsedUrl.pathname;

@@ -32,8 +32,9 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: '0.65rem',
-        paddingBottom: '0.65rem',
+        minHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
+        paddingTop: 0,
+        paddingBottom: 0,
         position: 'relative',
         zIndex: 60,
       }}
@@ -49,22 +50,20 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           userSelect: 'none',
         }}
       >
-        <div
-          className="hand-drawn-border"
+        <img
+          src="/logo-128.png"
+          srcSet="/logo-128.png 1x, /logo-256.png 2x"
+          alt="PlaylistOut Logo"
+          width={52}
+          height={52}
           style={{
-            width: '3rem',
-            height: '3rem',
-            backgroundColor: 'var(--highlight-yellow, #ffeaa7)',
-            transform: 'rotate(-6deg)',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: '1.65rem',
-            boxShadow: 'var(--sticker-shadow, 3px 3px 0 #2d3436)',
+            width: '3.25rem',
+            height: '3.25rem',
+            objectFit: 'contain',
+            userSelect: 'none',
+            flexShrink: 0,
           }}
-          aria-hidden="true"
-        >
-          ♫
-        </div>
+        />
         <div>
           <h1
             className="font-marker"

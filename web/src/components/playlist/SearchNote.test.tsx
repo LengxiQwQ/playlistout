@@ -28,7 +28,7 @@ describe('SearchNote Component (Phase 4)', () => {
 
     expect(screen.getByText('在这里粘贴歌单链接 ↓')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '解析' })).toBeEnabled();
-    expect(screen.getByText('QQ 音乐公开歌单解析 · MVP')).toBeInTheDocument();
+    expect(screen.getByText('QQ 音乐公开歌单解析')).toBeInTheDocument();
     expect(screen.getByText('✓ QQ 音乐')).toBeInTheDocument();
 
     // Click sample

@@ -45,13 +45,21 @@ export const StatsJournal: React.FC = () => {
       className="stats-journal-section"
       style={{
         maxWidth: 'var(--result-paper-width, 1050px)',
-        margin: '5rem auto 0',
+        margin: '0 auto',
         position: 'relative',
         paddingBottom: 0,
       }}
     >
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div className="font-note" style={{ fontSize: '1.75rem', color: '#636e72' }}>
+      <div style={{ textAlign: 'center', marginBottom: 'calc(var(--ruled-line-height, 38px) * 1.5)' }}>
+        <div
+          className="font-note"
+          style={{
+            fontSize: '1.65rem',
+            color: '#636e72',
+            height: 'var(--ruled-line-height, 38px)',
+            lineHeight: 'var(--ruled-line-height, 38px)',
+          }}
+        >
           {t.stats.subtitle}
         </div>
         <div
@@ -59,7 +67,9 @@ export const StatsJournal: React.FC = () => {
           style={{
             fontSize: 'clamp(2rem, 4vw, 2.75rem)',
             color: 'var(--ink, #2d3436)',
-            marginTop: '0.25rem',
+            height: 'calc(var(--ruled-line-height, 38px) * 2)',
+            lineHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
+            margin: 0,
           }}
         >
           {t.stats.title}
@@ -70,7 +80,7 @@ export const StatsJournal: React.FC = () => {
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.5rem',
+          gap: '2.5rem',
           alignItems: 'start',
         }}
       >
@@ -80,7 +90,7 @@ export const StatsJournal: React.FC = () => {
           borderVariant="default"
           rotateDeg={-1.5}
           shadow="paper"
-          style={{ padding: '1.75rem' }}
+          style={{ padding: '2.25rem' }}
         >
           <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #2d3436)' }}>
             {t.stats.todayTitle}
@@ -117,7 +127,7 @@ export const StatsJournal: React.FC = () => {
           rotateDeg={1}
           shadow="paper"
           className="tiny-grid"
-          style={{ padding: '1.75rem' }}
+          style={{ padding: '2.25rem' }}
         >
           <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #2d3436)', marginBottom: '1.25rem' }}>
             {t.stats.allTimeTitle}

@@ -31,7 +31,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前 MVP 版本仅支持 QQ 音乐公开歌单。',
+      error: '当前版本仅支持 QQ 音乐公开歌单。',
     };
   }
 

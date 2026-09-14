@@ -216,7 +216,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   it('allows opening and closing the Privacy Policy modal via footer and feature cards', async () => {
     render(<App />);
 
-    expect(screen.getByText(/QQ 音乐公开歌单解析 · MVP/)).toBeInTheDocument();
+    expect(screen.getByText(/QQ 音乐公开歌单解析/)).toBeInTheDocument();
 
     // 1. Open via feature card link
     const featureLink = screen.getByText('查看数据说明');

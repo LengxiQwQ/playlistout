@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from '../../i18n';
+import { SponsorButton } from './SponsorButton';
 
 export interface FooterProps {
   onOpenPrivacy: () => void;
@@ -12,14 +13,14 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
     <footer
       className="journal-footer"
       style={{
-        marginTop: '3rem',
-        paddingBottom: '0.5rem',
+        width: '100%',
         position: 'relative',
         zIndex: 20,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
+        marginTop: 0,
       }}
     >
       {/* Red margin divider line indicating end of page */}
@@ -30,21 +31,22 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
         style={{
           position: 'relative',
           width: '100%',
+          height: 'calc(var(--ruled-line-height, 38px) * 2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: '1.75rem',
+          gap: '1.25rem',
+          margin: 0,
+          marginBottom: 'calc(var(--ruled-line-height, 38px) * 1)',
         }}
       >
         <div
           className="footer-red-line"
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
+            flex: 1,
             height: '2px',
             backgroundColor: 'var(--margin-red, #ff8a80)',
-            opacity: 0.85,
+            opacity: 0.9,
             borderRadius: '2px',
           }}
         />
@@ -52,18 +54,33 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           className="footer-end-badge font-note"
           style={{
             position: 'relative',
-            backgroundColor: 'var(--paper, #f6f1e5)',
-            padding: '0 1.15rem',
+            backgroundColor: 'transparent',
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none',
+            padding: '0 0.5rem',
             color: 'var(--margin-red, #ff8a80)',
             fontSize: '1.25rem',
             fontWeight: 700,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.12em',
             userSelect: 'none',
+            whiteSpace: 'nowrap',
             lineHeight: 1,
+            textAlign: 'center',
           }}
         >
           ✦ END OF PAGE ✦
         </span>
+        <div
+          className="footer-red-line"
+          style={{
+            flex: 1,
+            height: '2px',
+            backgroundColor: 'var(--margin-red, #ff8a80)',
+            opacity: 0.9,
+            borderRadius: '2px',
+          }}
+        />
       </div>
 
       <div
@@ -72,19 +89,21 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '1rem',
           width: '100%',
           maxWidth: 'var(--search-note-width, 980px)',
           margin: '0 auto',
+          padding: 0,
         }}
       >
-        {/* Brand & Tagline */}
+        {/* Brand PlaylistOut (Row height: 38px) */}
         <div
           style={{
+            height: 'var(--ruled-line-height, 38px)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.35rem',
+            justifyContent: 'center',
+            margin: 0,
+            padding: 0,
           }}
         >
           <div
@@ -94,58 +113,69 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               gap: '0.65rem',
             }}
           >
-            <div
-              className="hand-drawn-border-subtle"
+            <img
+              src="/logo-64.png"
+              srcSet="/logo-64.png 1x, /logo-128.png 2x"
+              alt="PlaylistOut Logo"
+              width={30}
+              height={30}
               style={{
-                width: '2.1rem',
-                height: '2.1rem',
-                backgroundColor: 'var(--highlight-yellow, #ffeaa7)',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: '1.2rem',
-                borderRadius: '5px',
-                transform: 'rotate(-4deg)',
+                width: '1.85rem',
+                height: '1.85rem',
+                objectFit: 'contain',
                 userSelect: 'none',
-                boxShadow: '2px 2px 0 #2d3436',
+                flexShrink: 0,
               }}
-              aria-hidden="true"
-            >
-              ♫
-            </div>
+            />
             <span
               className="font-marker"
               style={{
-                fontSize: '1.6rem',
-                lineHeight: 1,
+                fontSize: '1.65rem',
+                lineHeight: 'var(--ruled-line-height, 38px)',
                 color: 'var(--ink, #2d3436)',
               }}
             >
               PlaylistOut
             </span>
           </div>
+        </div>
 
+        {/* Tagline (Row height: 38px) */}
+        <div
+          style={{
+            height: 'var(--ruled-line-height, 38px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: 0,
+            padding: 0,
+          }}
+        >
           <p
             className="font-handwriting"
             style={{
-              fontSize: '1.25rem',
+              fontSize: '1.3rem',
               color: 'var(--ink-light, #636e72)',
-              margin: '0.15rem 0 0',
-              lineHeight: 1.3,
+              lineHeight: 'var(--ruled-line-height, 38px)',
+              margin: 0,
             }}
           >
             {t.footer.drawnBy}
           </p>
         </div>
 
-        {/* Action Link Pills */}
+        {/* Action Link Pills (height: 76px = 2 rows) */}
         <div
           className="footer-nav"
           style={{
+            height: 'calc(var(--ruled-line-height, 38px) * 2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.65rem',
+            gap: '0.9rem',
             flexWrap: 'wrap',
+            margin: 0,
+            padding: 0,
           }}
         >
           <a
@@ -172,9 +202,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           </a>
 
           <a
-            href="https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE"
+            href="https://github.com/LengxiQwQ"
             target="_blank"
             rel="noopener noreferrer"
+            title="LengxiQwQ"
             className="sticker font-handwriting footer-pill-link"
             style={{
               display: 'inline-flex',
@@ -190,9 +221,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               lineHeight: 1.2,
             }}
           >
-            <span>{t.footer.licenseLink}</span>
+            <span>{t.footer.authorLink}</span>
             <span style={{ fontSize: '0.85rem' }}>↗</span>
           </a>
+
+          <SponsorButton />
 
           <button
             type="button"
@@ -214,29 +247,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           >
             {t.footer.privacyLink}
           </button>
-
-          <a
-            href="https://github.com/LengxiQwQ/playlistout/releases"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sticker font-handwriting footer-pill-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              backgroundColor: '#ffffff',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-              color: 'var(--ink, #2d3436)',
-              borderRadius: '6px',
-              lineHeight: 1.2,
-            }}
-          >
-            <span>{t.footer.releasesLink}</span>
-            <span style={{ fontSize: '0.85rem' }}>↗</span>
-          </a>
 
           <a
             href="https://github.com/LengxiQwQ/playlistout/issues"
@@ -267,17 +277,39 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           className="footer-legal"
           style={{
             fontFamily: 'var(--font-sans, sans-serif)',
-            fontSize: '0.85rem',
-            color: '#8a8f92',
-            lineHeight: 1.6,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.2rem',
+            margin: 0,
+            padding: 0,
           }}
         >
-          <div>{t.footer.copyright}</div>
-          <div style={{ fontSize: '0.8rem', color: '#a0a5a8' }}>
+          <div
+            style={{
+              height: 'var(--ruled-line-height, 38px)',
+              lineHeight: 'var(--ruled-line-height, 38px)',
+              fontSize: '0.85rem',
+              color: '#8a8f92',
+            }}
+          >
+            <span>{t.footer.copyrightPrefix}</span>
+            <a
+              href={t.footer.licenseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-license-link"
+            >
+              {t.footer.licenseText}
+            </a>
+          </div>
+          <div
+            style={{
+              height: 'var(--ruled-line-height, 38px)',
+              lineHeight: 'var(--ruled-line-height, 38px)',
+              fontSize: '0.8rem',
+              color: '#a0a5a8',
+            }}
+          >
             {t.footer.disclaimer}
           </div>
         </div>
