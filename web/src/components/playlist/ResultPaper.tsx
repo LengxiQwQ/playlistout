@@ -77,6 +77,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           color="white"
           borderVariant="default"
           shadow="paper"
+          className="result-paper-card"
           style={{ padding: '2rem' }}
         >
           <PlaylistSummary playlist={playlist} onReset={onReset} />

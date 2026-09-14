@@ -10,71 +10,71 @@
 
 /* Chinese Handwriting Presets (Dedicated Chinese Font List) */
 body[data-font-preset="zhnote"], body:not([data-font-preset]) {
-  --font-marker: 'Ma Shan Zheng', 'Permanent Marker', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Ma Shan Zheng', 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Ma Shan Zheng', 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Ma Shan Zheng', 'Permanent Marker', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-handwriting: 'Ma Shan Zheng', 'Caveat', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-note: 'Ma Shan Zheng', 'Nanum Pen Script', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="zh_kuaile"] {
-  --font-marker: 'ZCOOL KuaiLe', 'Permanent Marker', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'ZCOOL KuaiLe', 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'ZCOOL KuaiLe', 'Permanent Marker', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;
+  --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;
+  --font-note: 'ZCOOL KuaiLe', 'Nanum Pen Script', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="zh_zhimang"] {
-  --font-marker: 'Zhi Mang Xing', 'Permanent Marker', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Zhi Mang Xing', 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Zhi Mang Xing', 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Zhi Mang Xing', 'Permanent Marker', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-handwriting: 'Zhi Mang Xing', 'Caveat', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-note: 'Zhi Mang Xing', 'Nanum Pen Script', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="zh_longcang"] {
-  --font-marker: 'Long Cang', 'Permanent Marker', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Long Cang', 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Long Cang', 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Long Cang', 'Permanent Marker', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-handwriting: 'Long Cang', 'Caveat', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
+  --font-note: 'Long Cang', 'Nanum Pen Script', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="zh_huangyou"] {
-  --font-marker: 'ZCOOL QingKe HuangYou', 'Permanent Marker', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'ZCOOL QingKe HuangYou', 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'ZCOOL QingKe HuangYou', 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'ZCOOL QingKe HuangYou', 'Permanent Marker', 'Yuanti SC', 'YouYuan', '幼圆', 'STXinwei', '华文新魏', 'SimHei', '黑体', cursive, sans-serif;
+  --font-handwriting: 'ZCOOL QingKe HuangYou', 'Caveat', 'Yuanti SC', 'YouYuan', '幼圆', 'STXinwei', '华文新魏', 'SimHei', '黑体', cursive, sans-serif;
+  --font-note: 'ZCOOL QingKe HuangYou', 'Nanum Pen Script', 'Yuanti SC', 'YouYuan', '幼圆', 'STXinwei', '华文新魏', 'SimHei', '黑体', cursive, sans-serif;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 
 /* English / Western Handwriting Presets (Dedicated English Font List) */
 body[data-font-preset="original"] {
-  --font-marker: 'Permanent Marker', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Caveat', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Permanent Marker', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STKaiti', 'KaiTi', cursive;
+  --font-handwriting: 'Caveat', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
+  --font-note: 'Nanum Pen Script', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="patrick"] {
-  --font-marker: 'Patrick Hand', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Patrick Hand', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Patrick Hand', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Patrick Hand', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-handwriting: 'Patrick Hand', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-note: 'Patrick Hand', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="kalam"] {
-  --font-marker: 'Kalam', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Kalam', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Caveat', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Kalam', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', cursive;
+  --font-handwriting: 'Kalam', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
+  --font-note: 'Caveat', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="schoolbell"] {
-  --font-marker: 'Schoolbell', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Schoolbell', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Schoolbell', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-handwriting: 'Schoolbell', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-note: 'Nanum Pen Script', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="covered"] {
-  --font-marker: 'Covered By Your Grace', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Covered By Your Grace', 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
-  --font-note: 'Nanum Pen Script', 'STKaiti', 'KaiTi', 'Noto Sans SC', cursive;
+  --font-marker: 'Covered By Your Grace', 'ZCOOL KuaiLe', 'STKaiti', 'KaiTi', cursive;
+  --font-handwriting: 'Covered By Your Grace', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
+  --font-note: 'Nanum Pen Script', 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 body[data-font-preset="comic"] {
-  --font-marker: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
-  --font-handwriting: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
-  --font-note: 'Comic Neue', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
+  --font-marker: 'Comic Neue', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-handwriting: 'Comic Neue', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
+  --font-note: 'Comic Neue', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
 }
 

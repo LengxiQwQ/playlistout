@@ -3,14 +3,14 @@
 .journal-container {
   max-width: var(--max-content-width, 1150px);
   margin: 0 auto;
-  padding: 0.85rem 1.25rem 5rem;
+  padding: 0.85rem 1.25rem 2rem;
   position: relative;
   z-index: 10;
 }
 
 @media (min-width: 768px) {
   .journal-container {
-    padding: 1.15rem 2.5rem 6rem;
+    padding: 1.15rem 2.5rem 2.5rem;
   }
 }
 
@@ -57,7 +57,7 @@
 
 @media (max-width: 480px) {
   .journal-container {
-    padding: 1rem 0.75rem 4rem;
+    padding: 1rem 0.75rem 1.75rem;
   }
 
   .tape {

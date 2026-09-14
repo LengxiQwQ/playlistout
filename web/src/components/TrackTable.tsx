@@ -29,7 +29,15 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           borderBottom: '2px dashed var(--line, #dfe6e9)',
         }}
       >
-        <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--ink, #2d3436)', margin: 0, fontFamily: 'var(--font-sans, sans-serif)' }}>
+        <h3
+          style={{
+            fontSize: '1.15rem',
+            fontWeight: 700,
+            color: 'var(--ink, #2d3436)',
+            margin: 0,
+            fontFamily: 'var(--font-sans, sans-serif)',
+          }}
+        >
           {format(t.table.listTitle, { count: tracks.length })}
         </h3>
       </div>
@@ -56,25 +64,25 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                 zIndex: 10,
               }}
             >
-              <th scope="col" className="col-index" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600 }}>
+              <th scope="col" className="col-index" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colIndex}
               </th>
-              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600 }}>
+              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colCover}
               </th>
-              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
+              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colTitle}
               </th>
-              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
+              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colArtist}
               </th>
-              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}>
+              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colAlbum}
               </th>
               <th
                 scope="col"
                 className="col-duration hide-mobile"
-                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600 }}
+                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
               >
                 {t.table.colDuration}
               </th>

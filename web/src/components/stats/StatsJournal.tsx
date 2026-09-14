@@ -47,7 +47,7 @@ export const StatsJournal: React.FC = () => {
         maxWidth: 'var(--result-paper-width, 1050px)',
         margin: '5rem auto 0',
         position: 'relative',
-        paddingBottom: '1.5rem',
+        paddingBottom: 0,
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>

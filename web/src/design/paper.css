@@ -215,6 +215,21 @@ body {
     16px 16px;
 }
 
+/* Search Sample Row & Stickers */
+.search-sample-row {
+  font-family: var(--font-handwriting, cursive);
+}
+
+.search-sample-row .sticker {
+  font-family: var(--font-handwriting, cursive);
+}
+
+/* Result Paper Section - Ensure clean default sans-serif for content readability */
+.result-paper-section,
+.result-paper-card {
+  font-family: var(--font-sans, sans-serif);
+}
+
 /* Themed Paper Dropdown / Font Picker */
 .font-picker {
   position: relative;
@@ -229,9 +244,14 @@ body {
   padding: 0 7px;
   background: var(--paper, #f6f1e5);
   color: var(--ink-muted, #7b8185);
-  font: 600 12px/1.2 'Caveat', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1.2;
   letter-spacing: 0.04em;
   transform: rotate(-2deg);
+  user-select: none;
+  white-space: nowrap;
 }
 
 .font-picker-button {
@@ -243,13 +263,16 @@ body {
   border: 2px solid var(--ink, #2d3436);
   background: var(--note-yellow, #fff8bd);
   color: var(--ink, #2d3436);
-  padding: 8px 12px 7px 14px;
+  padding: 0.42rem 0.95rem;
   cursor: pointer;
   user-select: none;
   border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
   box-shadow: 3px 3px 0 var(--ink, #2d3436);
   transform: rotate(0.4deg);
-  font: 700 14px/1.15 'Caveat', 'Noto Sans SC', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.2;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -277,12 +300,15 @@ body {
   background: var(--paper-white, #ffffff);
   border: 2px solid var(--ink, #2d3436);
   border-radius: 225px 15px 255px 15px / 15px 255px 15px 225px;
-  padding: 7px 13px 6px 11px;
+  padding: 0.42rem 0.95rem;
   cursor: pointer;
   user-select: none;
   box-shadow: 3px 3px 0 var(--ink, #2d3436);
   transform: rotate(-0.5deg);
-  font: 700 14px/1.15 'Caveat', 'Noto Sans SC', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.2;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   white-space: nowrap;
 }
@@ -375,7 +401,10 @@ body {
 }
 
 .font-option-name {
-  font: 700 15px/1.1 'Caveat', 'Noto Sans SC', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 .font-option-sample {
@@ -387,7 +416,10 @@ body {
 .font-picker-hint {
   padding: 8px 8px 4px;
   color: #8a8f92;
-  font: 600 13px/1.25 'Caveat', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.25;
 }
 
 .font-picker-notice {
@@ -396,18 +428,74 @@ body {
   background: rgba(255, 234, 167, 0.85);
   border: 1px dashed var(--ink, #2d3436);
   border-radius: 4px;
-  font: 700 12px/1.2 'Caveat', 'Noto Sans SC', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
   color: var(--ink, #2d3436);
   text-align: center;
 }
 
 .font-option-loading {
-  font: 700 13px/1 'Caveat', 'Noto Sans SC', cursive;
+  font-family: var(--font-handwriting, cursive);
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1;
   color: var(--accent, #ff7675);
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
+/* Journal Footer & Bottom Page Margin */
+.journal-footer {
+  width: 100%;
+  position: relative;
+  z-index: 20;
+}
 
+.footer-page-boundary {
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.footer-red-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--margin-red, #ff8a80);
+  opacity: 0.85;
+  border-radius: 2px;
+}
+
+.footer-end-badge {
+  position: relative;
+  background-color: var(--paper, #f6f1e5);
+  padding: 0 1.15rem;
+  color: var(--margin-red, #ff8a80);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  user-select: none;
+  line-height: 1;
+}
+
+.footer-pill-link {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.footer-pill-link:hover {
+  background-color: var(--note-yellow, #fff8bd) !important;
+  color: var(--ink, #2d3436) !important;
+  transform: translateY(-1px) rotate(-0.5deg);
+  box-shadow: 4px 4px 0 #2d3436;
+}
+
+.footer-pill-link:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #2d3436;
+}
