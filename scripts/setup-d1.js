@@ -95,11 +95,13 @@ async function main() {
 
   // 4. Run remote migrations
   console.log('Applying remote migrations to D1...');
-  const migrations = [
-    './migrations/0001_initial_stats.sql',
-    './migrations/0002_analytics_foundation.sql',
-    './migrations/0003_replace_events_with_aggregates.sql',
-  ];
+  const migrationsDir = path.resolve(workerDir, 'migrations');
+  const migrations = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => file.endsWith('.sql'))
+    .sort()
+    .map((file) => `./migrations/${file}`);
+
 
   for (const migrationFile of migrations) {
     try {
