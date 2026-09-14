@@ -191,12 +191,22 @@ export function triggerDownload(content: BlobPart, filename: string, mimeType: s
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  a.style.display = 'none';
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+  // Delay revoking the object URL so the browser download manager
+  // has ample time to resolve the blob stream before it is freed.
+  setTimeout(() => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // Best-effort cleanup
+    }
+  }, 5000);
 }
 
 /**

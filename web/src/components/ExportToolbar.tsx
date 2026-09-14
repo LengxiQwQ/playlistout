@@ -73,7 +73,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
     });
   };
 
-  const handleBatchExport = () => {
+  const handleBatchExport = async () => {
     if (!playlist || selectedFormats.length === 0) {
       if (selectedFormats.length === 0) {
         showToast(t.export.selectFormatHint);
@@ -84,7 +84,12 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
     const exportedFiles: string[] = [];
     const exportedFormatsLabels: string[] = [];
 
-    for (const fmt of selectedFormats) {
+    for (let i = 0; i < selectedFormats.length; i++) {
+      const fmt = selectedFormats[i];
+      if (i > 0) {
+        // Stagger multi-file downloads by 350ms so browser download pipeline doesn't suppress them
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
       try {
         const { filename } = exportPlaylist(playlist, fmt);
         exportedFiles.push(filename);
@@ -237,18 +242,22 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               type="button"
               variant="ink"
               rotateDeg={-1}
-              disabled={isDisabled || selectedFormats.length === 0}
+              disabled={isDisabled}
               onClick={handleBatchExport}
               style={{
                 fontSize: '1.25rem',
                 padding: '0.75rem 1.85rem',
-                opacity: isDisabled || selectedFormats.length === 0 ? 0.6 : 1,
-                cursor: isDisabled || selectedFormats.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: isDisabled || selectedFormats.length === 0 ? 0.65 : 1,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
               }}
             >
-              {selectedFormats.length > 1
-                ? `${t.export.exportAction.replace('↓', '').trim()} (${selectedFormats.length}) ↓`
-                : t.export.exportAction}
+              {selectedFormats.length === 1
+                ? `${t.export.exportAction.replace('↓', '').trim()} (${
+                    selectedFormats[0] === 'xlsx' ? 'Excel' : selectedFormats[0].toUpperCase()
+                  }) ↓`
+                : selectedFormats.length > 1
+                  ? `${t.export.exportAction.replace('↓', '').trim()} (${selectedFormats.length}) ↓`
+                  : t.export.exportAction}
             </MarkerButton>
           </div>
         </div>
