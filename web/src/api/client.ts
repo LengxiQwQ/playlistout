@@ -10,17 +10,30 @@ export interface HealthResponse {
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE_URL}/health`);
-  if (!response.ok) {
-    throw new Error(`Health check failed with status: ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
+      return response.json();
+    }
+  } catch {
+    // If local dev check fails, try remote API
   }
-  return response.json();
+  if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+    const remoteResponse = await fetch(`${REMOTE_API_BASE_URL}/health`);
+    if (remoteResponse.ok) {
+      return remoteResponse.json();
+    }
+  }
+  throw new Error('Health check failed');
 }
+
+export const REMOTE_API_BASE_URL = 'https://api.playlistout.com';
 
 /**
  * API client method to parse a playlist.
  * In dev mode, proxies through local Vite dev server to local Cloudflare Worker on port 8787.
- * In production mode, requests https://api.playlistout.com.
+ * If the local Worker is not running or proxy times out in dev mode, automatically falls back to production API.
+ * In production mode, requests https://api.playlistout.com directly.
  */
 export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Promise<ApiResponse<Playlist>> {
   try {
@@ -31,12 +44,52 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
       },
     });
 
-    const data: ApiResponse<Playlist> = await response.json();
-    return data;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data: ApiResponse<Playlist> = await response.json();
+      return data;
+    }
+
+    // If local dev proxy returned HTML (e.g. 504 Gateway Timeout when local worker is down), fallback to remote API
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      console.warn('[PlaylistOut Dev] Local worker proxy returned non-JSON. Falling back to remote API...');
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+        signal,
+        headers: { Accept: 'application/json' },
+      });
+      if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+        return await fallbackRes.json();
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: `本地服务异常 (${response.status} ${response.statusText})，请确保 Worker (端口 8787) 已启动。`,
+      },
+    };
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
       throw err;
     }
+
+    // In dev mode, if fetch failed completely (e.g. connection refused), attempt remote API fallback
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        console.warn('[PlaylistOut Dev] Local fetch failed. Falling back to remote API...');
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+          signal,
+          headers: { Accept: 'application/json' },
+        });
+        if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+          return await fallbackRes.json();
+        }
+      } catch {
+        // Fallback also failed, proceed to error response below
+      }
+    }
+
     return {
       success: false,
       error: {
@@ -79,8 +132,38 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
     const res = await fetch(`${API_BASE_URL}/api/stats`, {
       headers: { Accept: 'application/json' },
     });
-    return await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await res.json();
+    }
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+        return await fallbackRes.json();
+      }
+    }
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: '获取统计数据失败',
+      },
+    };
   } catch (err: unknown) {
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+          return await fallbackRes.json();
+        }
+      } catch {
+        // Fallback failed
+      }
+    }
     return {
       success: false,
       error: {
