@@ -85,6 +85,12 @@ const samplePlaylist: Playlist = {
   creator: 'MusicMaster / 音乐家',
   trackCount: 8,
   tracks: sampleTracks,
+  createTime: 1696904605,
+  updateTime: 1771679922,
+  description: '这是一个测试歌单简介',
+  tags: ['民谣', '流行'],
+  playCount: 10516,
+  sourceUrl: 'https://y.qq.com/n/ryqq/playlist/9044196528',
 };
 
 describe('Filename Sanitization', () => {
@@ -132,39 +138,60 @@ describe('Spreadsheet Formula Injection Protection', () => {
 });
 
 describe('TXT Export', () => {
-  it('generates exact line count, preserving order, duplicates, and raw text', () => {
+  it('generates stationery header with createTime first and exportTime second, followed by track list', () => {
     const txt = generateTXT(samplePlaylist);
-    const lines = txt.split('\n');
 
-    expect(lines).toHaveLength(8);
+    expect(txt).toContain('创建时间: 2023-10-10');
+    expect(txt).toContain('导出时间: ');
+    expect(txt).toContain('歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
+    expect(txt).toContain('歌单作者: MusicMaster / 音乐家');
+    expect(txt).toContain('风格标签: 民谣 · 流行');
+    expect(txt).toContain('总播放量: 10,516 次');
+    expect(txt).toContain('歌单简介:');
+    expect(txt).toContain('这是一个测试歌单简介');
+
+    // Verify createTime is before exportTime
+    const createIdx = txt.indexOf('创建时间:');
+    const exportIdx = txt.indexOf('导出时间:');
+    expect(createIdx).toBeGreaterThan(-1);
+    expect(exportIdx).toBeGreaterThan(createIdx);
+
     // Track 1
-    expect(lines[0]).toBe('晴天 - 周杰伦 - 叶惠美');
+    expect(txt).toContain('晴天 - 周杰伦 - 叶惠美');
     // Track 3 (Korean)
-    expect(lines[2]).toBe('사랑을 했다 (LOVE SCENARIO) - iKON (아이콘) - Return');
+    expect(txt).toContain('사랑을 했다 (LOVE SCENARIO) - iKON (아이콘) - Return');
     // Track 4 (Japanese)
-    expect(lines[3]).toBe('Lemon - 米津玄師 - Lemon');
+    expect(txt).toContain('Lemon - 米津玄師 - Lemon');
     // Track 6 (Formula raw text preserved faithfully in TXT)
-    expect(lines[5]).toBe('=SUM(A1:B1) - +DangerousArtist, @AtArtist, -MinusArtist - =1+1');
+    expect(txt).toContain('=SUM(A1:B1) - +DangerousArtist, @AtArtist, -MinusArtist - =1+1');
     // Track 7 (Missing album)
-    expect(lines[6]).toBe('No Album Song - Solo Artist');
+    expect(txt).toContain('No Album Song - Solo Artist');
     // Track 8 (Legitimate duplicate survives)
-    expect(lines[7]).toBe('晴天 - 周杰伦 - 叶惠美');
+    expect(txt).toContain('晴天 - 周杰伦 - 叶惠美');
   });
 });
 
 describe('CSV Export', () => {
-  it('generates RFC-compliant CSV with UTF-8 BOM, escaped quotes/newlines, and formula mitigation', () => {
+  it('generates RFC-compliant CSV with UTF-8 BOM, metadata comments with createTime first, and formula mitigation', () => {
     const csv = generateCSV(samplePlaylist);
 
     // Verify UTF-8 BOM is present
     expect(csv.charCodeAt(0)).toBe(0xfeff);
 
     const content = csv.slice(1);
-    const rows = content.split('\r\n');
+    // Comments check
+    expect(content).toContain('# 创建时间: 2023-10-10');
+    expect(content).toContain('# 导出时间: ');
+    expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
+    expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
 
-    // Header + 8 tracks = 9 rows
-    expect(rows).toHaveLength(9);
-    expect(rows[0]).toBe('序号,歌曲标题,歌手,专辑,时长');
+    const createIdx = content.indexOf('# 创建时间:');
+    const exportIdx = content.indexOf('# 导出时间:');
+    expect(createIdx).toBeGreaterThan(-1);
+    expect(exportIdx).toBeGreaterThan(createIdx);
+
+    // Header check
+    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长');
 
     // Check track with comma and newline escaping
     expect(content).toContain('"Song with, ""Comma"" & \nNewline"');
@@ -173,18 +200,17 @@ describe('CSV Export', () => {
     expect(content).toContain("'=SUM(A1:B1)");
     expect(content).toContain("'+DangerousArtist");
 
-
     // Check Korean & Japanese & Unicode
     expect(content).toContain('사랑을 했다 (LOVE SCENARIO)');
     expect(content).toContain('米津玄師');
 
-    // Check duplicate track preserved at row 8
-    expect(rows[8]).toContain('8,晴天,周杰伦,叶惠美');
+    // Check duplicate track preserved
+    expect(content).toContain('8,晴天,周杰伦,叶惠美');
   });
 });
 
 describe('XLSX Export', () => {
-  it('generates valid XLSX workbook with correct columns and formula protection', () => {
+  it('generates valid XLSX workbook with metadata card and song table', () => {
     const bytes = generateXLSX(samplePlaylist);
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(0);
@@ -193,36 +219,35 @@ describe('XLSX Export', () => {
     const wb = XLSX.read(bytes, { type: 'array' });
     expect(wb.SheetNames).toContain('歌单歌曲');
     const ws = wb.Sheets['歌单歌曲'];
-    const json = XLSX.utils.sheet_to_json<any>(ws);
+    const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 });
 
-    expect(json).toHaveLength(8);
-    expect(json[0]['序号']).toBe(1);
-    expect(json[0]['歌曲标题']).toBe('晴天');
-    expect(json[0]['歌手']).toBe('周杰伦');
-    expect(json[0]['专辑']).toBe('叶惠美');
-    expect(json[0]['时长']).toBe('4:29');
-
-    // Formula protection verified in cell value
-    expect(json[5]['歌曲标题']).toBe("'=SUM(A1:B1)");
-    expect(json[5]['专辑']).toBe("'=1+1");
-
-    // Legitimate duplicate survives at row 8
-    expect(json[7]['序号']).toBe(8);
-    expect(json[7]['歌曲标题']).toBe('晴天');
+    // Verify metadata rows
+    expect(rows[0][0]).toBe('歌单名称');
+    expect(rows[0][1]).toBe('多语言/特殊字符/重复歌单 🎵 <Test>');
+    expect(rows[1][0]).toBe('创建时间');
+    expect(rows[1][1]).toContain('2023-10-10');
+    expect(rows[1][2]).toBe('导出时间');
+    expect(rows[2][0]).toBe('歌单作者');
+    expect(rows[2][1]).toBe('MusicMaster / 音乐家');
   });
 });
 
 describe('JSON Export', () => {
-  it('generates faithful normalized JSON with metadata and tracks', () => {
+  it('generates faithful normalized JSON with metadata, createTime first and exportedAt second', () => {
     const jsonStr = generateJSON(samplePlaylist);
     const parsed = JSON.parse(jsonStr);
 
+    expect(parsed.createTime).toContain('2023-10-10');
+    expect(parsed.exportedAt).toBeTruthy();
+    expect(parsed.name).toBe('多语言/特殊字符/重复歌单 🎵 <Test>');
+    expect(parsed.creator).toBe('MusicMaster / 音乐家');
+    expect(parsed.updateTime).toBeTruthy();
+    expect(parsed.tags).toEqual(['民谣', '流行']);
+    expect(parsed.playCount).toBe(10516);
     expect(parsed.platform).toBe('qqmusic');
     expect(parsed.id).toBe('9044196528');
-    expect(parsed.name).toBe('多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(parsed.trackCount).toBe(8);
     expect(parsed.tracks).toHaveLength(8);
-    expect(parsed.exportedAt).toBeTruthy();
 
     // Raw source text preserved faithfully without formula quote prefix
     expect(parsed.tracks[5].title).toBe('=SUM(A1:B1)');

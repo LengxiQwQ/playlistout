@@ -22,6 +22,13 @@ export interface Playlist {
   coverUrl?: string;
   trackCount: number;
   tracks: Track[];
+  // Enriched metadata fields
+  createTime?: number;
+  updateTime?: number;
+  description?: string;
+  tags?: string[];
+  playCount?: number;
+  sourceUrl?: string;
 }
 
 export type ApiErrorCode =

@@ -11,6 +11,11 @@
       "total_song_num": 5,
       "songnum": 5,
       "cur_song_num": 5,
+      "ctime": 1696904605,
+      "mtime": 1771679922,
+      "desc": "这是一个测试歌单",
+      "tags": [{ "name": "民谣" }, { "name": "流行" }],
+      "visitnum": 10516,
       "songlist": [
         {
           "songid": 1001,
