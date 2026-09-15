@@ -367,9 +367,9 @@ PlaylistOut is open-source software licensed under the **GNU Affero General Publ
 <!-- INSIGHTS:START -->
 **📊 Repository Traffic**
 
-Views: **350** ｜ Uniques: **107** (14-day) ｜ Clones: **593** ｜ Cloners: **159** (14-day)
+Views: **402** ｜ Uniques: **111** (14-day) ｜ Clones: **763** ｜ Cloners: **178** (14-day)
 
-**Top referrers (14-day):** github.com · Google · Bing · Baidu · doubao.com · chatgpt.com  
+**Top referrers (14-day):** github.com · Google · Bing · Baidu · chatgpt.com · doubao.com  
 **Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
 
 > Data since 2026-08-31 · Last updated: 2026-09-15

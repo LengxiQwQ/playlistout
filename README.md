@@ -367,9 +367,9 @@ PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源�
 <!-- INSIGHTS:START -->
 **📊 仓库流量**
 
-访问次数：**350** ｜ 不重复访客：**107**（近 14 天） ｜ 仓库克隆：**593** ｜ 不重复克隆：**159**（近 14 天）
+访问次数：**402** ｜ 不重复访客：**111**（近 14 天） ｜ 仓库克隆：**763** ｜ 不重复克隆：**178**（近 14 天）
 
-**热门来源（近 14 天）：** github.com · Google · Bing · Baidu · doubao.com · chatgpt.com  
+**热门来源（近 14 天）：** github.com · Google · Bing · Baidu · chatgpt.com · doubao.com  
 **热门内容（近 14 天）：** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
 
 > 数据开始：2026-08-31 · 最后更新：2026-09-15
