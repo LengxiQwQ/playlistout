@@ -6,6 +6,57 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ---
 
+## [v2.1.0] - 2026-09-15
+
+### 🎵 批量歌单导出 & 手账背景装饰 / Batch Playlist Export & Scrapbook Background
+
+继 v2.0.0 全面升级为 Web 版本后，v2.1.0 聚焦于**批量导出体验**的完整落地，并对整体 UI 的手账沉浸感进行了深度打磨。
+
+Following the v2.0.0 Web relaunch, v2.1.0 delivers a complete **batch playlist export** workflow and significantly enriches the music journal visual identity.
+
+### 新增功能 / Added
+
+- **QQ 号批量歌单解析与导出 (Batch Playlist Export by QQ Number)**：
+  - 输入 QQ 号或用户主页链接（`y.qq.com/portal/profile.html?uin=...`）可一键拉取该用户名下所有公开自建歌单的完整列表。
+  - Input a QQ number or profile URL to fetch all publicly-created playlists for that user in one click.
+  - 支持多选 / 全选 / 取消全选，自由选定需要导出的歌单子集。
+  - Multi-select, select-all, and deselect-all to choose any subset of playlists for export.
+  - 支持 5 种批量导出格式：**多 Sheet Excel 合集**（所有歌单在一个 .xlsx 中各占一 Sheet）、**ZIP（各歌单独立 xlsx / csv / txt / json）**。
+  - Supports 5 batch export formats: multi-sheet Excel (all playlists in one workbook) and ZIP archives (xlsx / csv / txt / json per playlist).
+  - 实时导出进度条与取消支持，可在导出途中随时中止。
+  - Real-time progress bar during batch fetch with cancel support at any time.
+- **智能双模式识别 (Smart Dual-Detection for Numeric Input)**：
+  - 当输入纯数字时，系统并行探测「单一歌单 ID」与「QQ 用户号」两种可能，自动选取最合理的结果。
+  - Numeric input concurrently probes both single-playlist and user-QQ interpretations, auto-selecting the best match.
+  - 若两者均命中（歌单 ID 恰好与 QQ 号同数字），展示「碰撞提示横幅」供用户手动切换。
+  - A collision banner is shown when both interpretations are valid, letting the user switch manually.
+- **歌单详情无缝返回 (Seamless Back-to-Collection Navigation)**：
+  - 在批量列表中点击"查看曲目"下钻单歌单详情页后，左上角出现「🔙 返回歌单集合」按钮。
+  - When viewing a single playlist drilled down from a batch collection, a "🔙 Back to Collection" button appears at the top.
+  - 返回时无需重新请求，之前的歌单列表、勾选状态、格式选择全部完好保留。
+  - Returning is instant with no re-fetch; all selection state and format preferences are preserved.
+- **手账背景板装饰 (Scrapbook Background Decorations)**：
+  - 新增 `BackgroundDecorations` 组件，在页面背景层随机散落贴纸（"🎵 music"、"♥ favorited"、"chill vibes"、"mix vol.1"、"PLAYLIST OUT"）、胶带与手绘涂鸦符号（♪ ★ ✧ ❥ ♬ 等）。
+  - Added `BackgroundDecorations` component that layers stickers, tape strips, and hand-drawn doodles (♪ ★ ✧ ❥ ♬) across the page background.
+  - 所有装饰元素均设置 `pointer-events: none`，不干扰任何交互操作。
+  - All decorations are pointer-events-none and never interfere with interaction.
+
+### 优化 / Changed
+
+- **装饰元素位置优化**：`UserPlaylistsPaper` 的粉色胶带贴到纸张左上角边缘（`top: -1rem`，更大尺寸、更大旋转角度），金色星星 ✦ 移至右侧外边缘，同时避免遮挡标题内容。
+- Repositioned decorative tape (bigger, sharper angle, top-left corner) and star (further right) on the batch paper for better visual balance.
+- **"全选"按钮位置下移**：从「批量打包导出」面板内移至「公开歌单目录」列表标题行的右侧，与选项列表语义对齐，操作更直观。
+- Moved "Select All" button from the export panel to the playlist catalog header row, co-located with the list it controls.
+- **响应式装饰防溢出**：将胶带与星星的绝对定位外移量收窄（`-1.5rem → -1rem`），并外套绝对定位 `<div>` 容器，防止在小屏幕上触发横向滚动条。
+- Tightened absolute-positioned decorative offsets to prevent overflow-x on narrow viewports.
+
+### 修复 / Fixed
+
+- **CI 构建兼容**：`Tape` 组件不支持 `"blue"` 颜色值，本地 Vite 打包未报错但 CI `tsc --noEmit` 严格类型检查会失败，已替换为合法的 `"cyan"`。
+- Fixed `Tape color="blue"` TypeScript error (not in the allowed union) that only surfaces during CI strict typecheck (`tsc --noEmit`), replaced with `"cyan"`.
+
+---
+
 ## [v2.0.0] - 2026-09-12
 
 ### 🌟 升级为全新 Web 网页版 / Evolution to PlaylistOut Web
