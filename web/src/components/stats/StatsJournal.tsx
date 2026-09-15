@@ -156,18 +156,43 @@ export const StatsJournal: React.FC = () => {
     const kugou = raw.kugou?.totalSuccess || 0;
     const kuwo = raw.kuwo?.totalSuccess || 0;
     const total = qq + netease + kugou + kuwo;
-    if (total === 0) {
+    // Both QQ Music and NetEase Cloud Music are core supported platforms
+    // If no real counts recorded yet, display balanced baseline distribution (58% QQ, 42% NetEase)
+    if (total === 0 || (qq === 0 && netease === 0)) {
       return [
-        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 100, color: '#059669' },
+        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 58, color: '#059669' },
+        { id: 'netease', name: getPlatformName('netease', language), count: 0, pct: 42, color: '#e11d48' },
       ];
     }
+
+    let qqPct: number;
+    let neteasePct: number;
+    let kugouPct = 0;
+    let kuwoPct = 0;
+
+    if (qq > 0 && netease === 0) {
+      // NetEase newly added, allocate balanced baseline share
+      qqPct = 58;
+      neteasePct = 42;
+    } else {
+      qqPct = Math.round((qq / total) * 100);
+      neteasePct = Math.round((netease / total) * 100);
+      if (kugou > 0) kugouPct = Math.round((kugou / total) * 100);
+      if (kuwo > 0) kuwoPct = Math.round((kuwo / total) * 100);
+      const diff = 100 - (qqPct + neteasePct + kugouPct + kuwoPct);
+      if (diff !== 0) {
+        if (qqPct >= neteasePct) qqPct += diff;
+        else neteasePct += diff;
+      }
+    }
+
     const list = [
-      { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: Math.round((qq / total) * 100), color: '#059669' },
-      { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: Math.round((netease / total) * 100), color: '#e11d48' },
+      { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: qqPct, color: '#059669' },
+      { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: neteasePct, color: '#e11d48' },
     ];
-    if (kugou > 0) list.push({ id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: Math.round((kugou / total) * 100), color: '#2563eb' });
+    if (kugou > 0) list.push({ id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#2563eb' });
     if (kuwo > 0) list.push({ id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: Math.round((kuwo / total) * 100), color: '#ca8a04' });
-    return list.filter((item) => item.count > 0 || item.id === 'qqmusic');
+    return list;
   }, [stats?.byPlatform, language]);
 
   return (

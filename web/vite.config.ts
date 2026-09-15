@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Hosted on GitHub Pages with custom domain playlistout.com (served from root /)
+  // Hosted on GitHub Pages with custom domain playlistout.lengxiqwq.com (served from root /)
   base: '/',
   test: {
     environment: 'jsdom',

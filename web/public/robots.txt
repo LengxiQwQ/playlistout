@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://playlistout.com/sitemap.xml
+Sitemap: https://playlistout.lengxiqwq.com/sitemap.xml

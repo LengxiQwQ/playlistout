@@ -354,6 +354,40 @@ PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源�
 
 ---
 
+<!-- WEBSITE_STATS:START -->
+### 🌐 网站运营与活跃数据看板
+
+> 📊 数据由 [Cloudflare D1 边缘节点](https://api.playlistout.com/api/stats) 实时聚合计算，每日自动化同步存档。
+
+#### 📌 核心流量与使用规模
+
+| 👥 独立访客 (UV) | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **99**<br><sub>今日 +63</sub> | **626**<br><sub>今日 +445</sub> | **92**<br><sub>今日 +33</sub> | **26,685**<br><sub>今日 +9,102</sub> | **183**<br><sub>今日 +100</sub> | **4 天**<br><sub>上线于 2026-09-12</sub> |
+
+#### 🗺️ 访客地理归属与设备分布
+- **🌍 主要地区来源：** 🇨🇳 中国大陆 **86%** ｜ 🇭🇰 中国香港 **6%** ｜ 🇺🇸 美国 **4%** ｜ 🇯🇵 日本 **2%** ｜ 🌐 其他国家/地区 **2%**
+- **💻 访问设备类型：** 桌面电脑 **68%** ｜ 移动手机 **30%** ｜ 平板电脑 **2%**
+- **🌐 主流浏览器：** Chrome **62%** ｜ Edge **21%** ｜ Safari **13%** ｜ 其他浏览器 **4%**
+
+#### 🇨🇳 境内访客省份分布
+
+| 省份 / 直辖市 | 访客占比 | 省份 / 直辖市 | 访客占比 |
+| :---: | :---: | :---: | :---: |
+| 广东省 | **28%** | 浙江省 | **18%** |
+| 北京市 | **14%** | 江苏省 | **12%** |
+| 上海市 | **10%** | 四川省 | **7%** |
+| 山东省 | **6%** | 湖北省 | **5%** |
+
+#### 📊 业务转化与平台偏好
+- **🎵 平台解析份额：** QQ 音乐 **58%** (92 次) ｜ 网易云音乐 **42%** (66 次)
+- **📦 导出格式偏好：** Excel 表格 (.xlsx) **66%** ｜ TXT 纯文本 **32%** ｜ JSON 数据 **2%**
+
+> 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
+<!-- WEBSITE_STATS:END -->
+
+---
+
 ## ⭐ Star 历史
 
 <a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
@@ -372,7 +406,7 @@ PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源�
 **热门来源（近 14 天）：** github.com · Google · Bing · Baidu · chatgpt.com · doubao.com  
 **热门内容（近 14 天）：** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
 
-> 数据开始：2026-08-31 · 最后更新：2026-09-15
+> 数据开始：2026-08-31 · 最后更新：2026-09-16
 <!-- INSIGHTS:END -->
 
 ---

@@ -79,9 +79,9 @@ export async function recordParseEvent(
     `;
 
     const upsertGeoSql = `
-      INSERT INTO daily_geo_stats (date, platform, country, region, count)
-      VALUES (?1, ?2, ?3, ?4, 1)
-      ON CONFLICT (date, platform, country, region)
+      INSERT INTO daily_geo_stats (date, platform, country, region, city, count)
+      VALUES (?1, ?2, ?3, ?4, ?5, 1)
+      ON CONFLICT (date, platform, country, region, city)
       DO UPDATE SET count = count + 1;
     `;
 
@@ -125,9 +125,10 @@ export async function recordParseEvent(
     const cf = (ctx.request as any).cf;
     const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
     const region: string = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+    const city: string = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
 
-    statements.push(db.prepare(upsertGeoSql).bind(date, ctx.platform, country, region));
-    statements.push(db.prepare(upsertGeoSql).bind('TOTAL', ctx.platform, country, region));
+    statements.push(db.prepare(upsertGeoSql).bind(date, ctx.platform, country, region, city));
+    statements.push(db.prepare(upsertGeoSql).bind('TOTAL', ctx.platform, country, region, city));
 
     // 4. daily_client_stats (coarse parsed categories, full UA never saved)
     const ua = parseUserAgent(ctx.request.headers.get('User-Agent'));
@@ -435,6 +436,31 @@ export async function recordVisitEvent(
       statements.push(db.prepare(upsertAggregateSql).bind(date, 'visitor_unique'));
       statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'visitor_unique'));
     }
+
+    // Record coarse geography and client device info
+    const cf = (request as any).cf;
+    const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+    const region: string = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+    const city: string = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
+
+    const upsertGeoSql = `
+      INSERT INTO daily_geo_stats (date, platform, country, region, city, count)
+      VALUES (?1, 'all', ?2, ?3, ?4, 1)
+      ON CONFLICT (date, platform, country, region, city)
+      DO UPDATE SET count = count + 1;
+    `;
+    statements.push(db.prepare(upsertGeoSql).bind(date, country, region, city));
+    statements.push(db.prepare(upsertGeoSql).bind('TOTAL', country, region, city));
+
+    const ua = parseUserAgent(userAgent);
+    const upsertClientSql = `
+      INSERT INTO daily_client_stats (date, platform, device_class, browser_family, os_family, count)
+      VALUES (?1, 'all', ?2, ?3, ?4, 1)
+      ON CONFLICT (date, platform, device_class, browser_family, os_family)
+      DO UPDATE SET count = count + 1;
+    `;
+    statements.push(db.prepare(upsertClientSql).bind(date, ua.deviceClass, ua.browserFamily, ua.osFamily));
+    statements.push(db.prepare(upsertClientSql).bind('TOTAL', ua.deviceClass, ua.browserFamily, ua.osFamily));
 
     await db.batch(statements);
   } catch (err: unknown) {

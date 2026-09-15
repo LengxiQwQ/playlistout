@@ -1,7 +1,7 @@
 import type { ApiResponse, Playlist, UserPlaylistsData } from './types';
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? '' : 'https://api.playlistout.com');
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? '' : 'https://playlistout-api.lengxiqwq.com');
 
 export interface HealthResponse {
   status: string;
@@ -27,13 +27,13 @@ export async function fetchHealth(): Promise<HealthResponse> {
   throw new Error('Health check failed');
 }
 
-export const REMOTE_API_BASE_URL = 'https://api.playlistout.com';
+export const REMOTE_API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 
 /**
  * API client method to parse a playlist.
  * In dev mode, proxies through local Vite dev server to local Cloudflare Worker on port 8787.
  * If the local Worker is not running or proxy times out in dev mode, automatically falls back to production API.
- * In production mode, requests https://api.playlistout.com directly.
+ * In production mode, requests https://playlistout-api.lengxiqwq.com directly.
  */
 export async function parsePlaylist(
   urlOrId: string,
