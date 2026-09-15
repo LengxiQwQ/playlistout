@@ -97,31 +97,31 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `createTime` | `string \| null` | Yes | **Playlist creation time** (1st position). Formatted as `YYYY-MM-DD HH:mm:ss` (e.g. `"2021-06-18 14:30:00"`), or `null` if unavailable upstream. |
 | `exportedAt` | `string` | No | **Data export time** (2nd position, immediately adjacent to creation time). Local generation timestamp `YYYY-MM-DD HH:mm:ss`. |
 | `generator` | `string` | No | **Generator platform identifier**. Fixed to `"PlaylistOut"` for easy identification and ingestion by third parties. |
-| `generatorUrl` | `string` | No | **Official website URL**. Fixed to `"https://playlistout.com"`. |
-| `name` | `string` | No | Full title of the playlist. |
-| `creator` | `string` | No (may be empty) | Nickname of the playlist creator / curator. |
-| `updateTime` | `string \| null` | Yes | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. |
-| `platform` | `string` | No | Source music platform identifier (e.g., `"qqmusic"`). |
-| `id` | `string` | No | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
-| `sourceUrl` | `string` | No | Direct canonical web URL of the playlist on the source platform. |
-| `trackCount` | `number` | No | Total number of tracks contained in the playlist (integer). |
-| `totalDuration` | `string \| null` | Yes | Formatted total playlist duration string (e.g., `"3 小时 45 分钟"` or `"48 分钟"`). |
-| `playCount` | `number \| null` | Yes | Cumulative listen / play count as an integer. |
-| `tags` | `string[]` | No | Array of genre and category tags (e.g., `["Pop", "Acoustic"]`). |
-| `description` | `string` | No (may be empty) | Playlist introduction / background description. |
-| `tracks` | `Track[]` | No | Array of track items, preserving the original curator order. |
+| `generatorUrl` | `string` | Required | **Official website URL**. Fixed to `"https://playlistout.com"`. |
+| `name` | `string` | Required | Full title of the playlist. |
+| `creator` | `string` | Optional | Nickname of the playlist creator / curator. May be absent on some platforms. |
+| `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
+| `platform` | `string` | Required | Source music platform identifier (e.g., `"qqmusic"`). |
+| `id` | `string` | Required | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
+| `sourceUrl` | `string` | Required | Direct canonical web URL of the playlist on the source platform. |
+| `trackCount` | `number` | Required | Total number of tracks contained in the playlist (integer). |
+| `totalDuration` | `string \| null` | Optional | Formatted total playlist duration string (e.g., `"3 小时 45 分钟"`), derived from track `durationMs`. `null` if duration data is unavailable. |
+| `playCount` | `number \| null` | Optional | Cumulative listen / play count as an integer. Not available on all platforms. |
+| `tags` | `string[]` | Optional | Array of genre and category tags (e.g., `["Pop", "Acoustic"]`). Not all platforms provide tags. |
+| `description` | `string` | Optional | Playlist introduction / background description. Not all platforms return this field. |
+| `tracks` | `Track[]` | Required | Array of track items, preserving the original curator order. |
 
 #### Track Item Schema
 
-| Field | Type | Nullable | Description & Format |
+| Field | Type | Required | Description & Format |
 |---|---|---|---|
-| `index` | `number` | No | 1-based sequential display index in the playlist. |
-| `id` | `string` | No | Unique track identifier / MID from the source platform (e.g., `"0039MnYb0qxYAc"`). |
-| `title` | `string` | No | Song title (preserving version notes and subtitles). |
-| `artists` | `string[]` | No | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
-| `album` | `string` | No (may be empty) | Album name. |
-| `durationMs` | `number` | No | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). |
-| `sourceUrl` | `string` | No | Direct canonical web URL of the track detail page. |
+| `index` | `number` | Required | 1-based sequential display index in the playlist. |
+| `id` | `string` | Required | Unique track identifier / MID from the source platform (e.g., `"0039MnYb0qxYAc"`). |
+| `title` | `string` | Required | Song title (preserving version notes and subtitles). |
+| `artists` | `string[]` | Required | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
+| `album` | `string` | Optional | Album name. May be absent for standalone singles on some platforms. |
+| `durationMs` | `number` | Optional | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). Not all platforms return this. |
+| `sourceUrl` | `string` | Required | Direct canonical web URL of the track detail page. |
 
 #### Standard JSON Example
 
