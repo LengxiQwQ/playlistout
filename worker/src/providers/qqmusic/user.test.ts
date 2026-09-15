@@ -22,14 +22,14 @@ describe('QQ Music User Playlists Input Extraction', () => {
 });
 
 describe('fetchQQUserPlaylists Upstream Handling', () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('successfully fetches and normalizes user playlists, filtering system playlists', async () => {
@@ -73,7 +73,7 @@ describe('fetchQQUserPlaylists Upstream Handling', () => {
       },
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => mockResponse,
@@ -107,7 +107,7 @@ describe('fetchQQUserPlaylists Upstream Handling', () => {
   });
 
   it('throws USER_NOT_FOUND when upstream code !== 0', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
