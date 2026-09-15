@@ -94,34 +94,34 @@
 
 | 字段名 | 类型 | 空值约定 | 字段说明与格式 |
 |---|---|---|---|
-| `createTime` | `string \| null` | 允许 `null` | **歌单创建时间**（首位字段）。标准时间字符串 `YYYY-MM-DD HH:mm:ss`，若上游平台未提供则返回 `null` |
-| `exportedAt` | `string` | 必填 | **数据导出时间**（次位字段，紧随创建时间）。客户端生成文件的本地时间 `YYYY-MM-DD HH:mm:ss` |
-| `generator` | `string` | 必填 | **导出工具平台标识**。固定为 `"PlaylistOut"`，方便第三方平台快速识别与集成 |
-| `generatorUrl` | `string` | 必填 | **平台官方网址**。固定为 `"https://playlistout.com"` |
-| `name` | `string` | 必填 | 歌单完整名称 |
-| `creator` | `string` | 可选 | 歌单创建者昵称（部分平台或私有歌单可能不返回） |
+| `createTime` | `string \| null` | 可选 | **歌单创建时间**（首位字段）。标准时间字符串 `YYYY-MM-DD HH:mm:ss`，若上游平台未提供则返回 `null` |
+| `exportedAt` | `string` | 可选 | **数据导出时间**。客户端生成文件的本地时间 `YYYY-MM-DD HH:mm:ss` |
+| `generator` | `string` | 可选 | **导出工具平台标识**。固定为 `"PlaylistOut"` |
+| `generatorUrl` | `string` | 可选 | **平台官方网址**。固定为 `"https://playlistout.com"` |
+| `name` | `string` | **必填** | 歌单完整名称 |
+| `creator` | `string` | 可选 | 歌单创建者昵称 |
 | `updateTime` | `string \| null` | 可选 | 歌单最后修改/更新时间。格式：`YYYY-MM-DD HH:mm:ss` |
-| `platform` | `string` | 必填 | 来源平台标识（例如 `"qqmusic"`） |
-| `id` | `string` | 必填 | 平台原始歌单唯一标识 ID（例如 `"773829104"`） |
-| `sourceUrl` | `string` | 必填 | 歌单在来源平台上的网页版直链 URL |
-| `trackCount` | `number` | 必填 | 歌单实际包含的曲目条目总数（整型） |
-| `totalDuration` | `string \| null` | 可选 | 歌单曲目总时长格式化文本（如 `"3 小时 45 分钟"`），由客户端根据 `durationMs` 计算，不支持时为 `null` |
-| `playCount` | `number \| null` | 可选 | 歌单累计播放量总次数（整型），不是所有平台都会返回此字段 |
-| `tags` | `string[]` | 可选 | 歌单所属风格/分类标签数组（如 `["流行", "轻音乐"]`），不是所有平台都有标签 |
-| `description` | `string` | 可选 | 歌单简介与背景文案描述，不是所有平台都会返回 |
-| `tracks` | `Track[]` | 必填 | 歌曲对象数组，严格按歌单原始顺序排列 |
+| `platform` | `string` | 可选 | 来源平台标识（例如 `"qqmusic"`） |
+| `id` | `string` | 可选 | 平台原始歌单唯一标识 ID（例如 `"773829104"`） |
+| `sourceUrl` | `string` | 可选 | 歌单在来源平台上的网页版直链 URL |
+| `trackCount` | `number` | **必填** | 歌单实际包含的曲目条目总数（整型） |
+| `totalDuration` | `string \| null` | 可选 | 歌单曲目总时长格式化文本（如 `"3 小时 45 分钟"`） |
+| `playCount` | `number \| null` | 可选 | 歌单累计播放量总次数（整型） |
+| `tags` | `string[]` | 可选 | 歌单所属风格/分类标签数组（如 `["流行", "轻音乐"]`） |
+| `description` | `string` | 可选 | 歌单简介与背景文案描述 |
+| `tracks` | `Track[]` | **必填** | 歌曲对象数组，严格按歌单原始顺序排列 |
 
 #### 歌曲对象字段规范 (Track Schema)
 
 | 字段名 | 类型 | 空值约定 | 字段说明与格式 |
 |---|---|---|---|
-| `index` | `number` | 必填 | 歌曲在歌单中的显示序号（从 1 起始自增） |
-| `id` | `string` | 必填 | 来源平台的歌曲唯一 ID / MID（例如 `"0039MnYb0qxYAc"`） |
-| `title` | `string` | 必填 | 歌曲标题（保留完整版本名与副标题） |
-| `artists` | `string[]` | 必填 | 参与歌手名数组（多位歌手分别作为独立元素，如 `["周杰伦", "阿信"]`） |
-| `album` | `string` | 可选 | 收录专辑名称，部分平台或单曲可能不返回 |
-| `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒），部分平台可能不返回 |
-| `sourceUrl` | `string` | 必填 | 该歌曲在来源平台上的网页详情直链 URL |
+| `index` | `number` | 可选 | 歌曲在歌单中的显示序号（从 1 起始自增） |
+| `id` | `string` | 可选 | 来源平台的歌曲唯一 ID / MID（例如 `"0039MnYb0qxYAc"`） |
+| `title` | `string` | **必填** | 歌曲标题（保留完整版本名与副标题） |
+| `artists` | `string[]` | **必填** | 参与歌手名数组（多位歌手分别作为独立元素，如 `["周杰伦", "阿信"]`） |
+| `album` | `string` | 可选 | 收录专辑名称 |
+| `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒） |
+| `sourceUrl` | `string` | 可选 | 该歌曲在来源平台上的网页详情直链 URL |
 
 #### 标准 JSON 示例
 
