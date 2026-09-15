@@ -68,6 +68,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
 
   return (
     <section
+      id="search-box"
       className="search-note-section"
       style={{
         maxWidth: 'var(--search-note-width, 820px)',
@@ -232,6 +233,22 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           >
             {t.search.sampleJpKr}
           </Sticker>
+          <Sticker
+            type="button"
+            color="white"
+            rotateDeg={1}
+            onClick={() => onSelectSample('https://music.163.com/playlist?id=2756674066')}
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
+          >
+            网易云示例 (613首)
+          </Sticker>
         </div>
 
         {/* Loading Feedback */}
@@ -268,9 +285,9 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           >
             {t.search.worksWith}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <Sticker
-              color="red"
+              color="green"
               rotateDeg={-2}
               style={{
                 padding: '0.25rem 0.75rem',
@@ -281,6 +298,19 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               title={t.search.platformQQDesc}
             >
               ✓ {t.search.platformQQ}
+            </Sticker>
+            <Sticker
+              color="red"
+              rotateDeg={1.5}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '1rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+              }}
+              title={t.search.platformNeteaseDesc}
+            >
+              ✓ {t.search.platformNetease}
             </Sticker>
             <span
               className="font-note"

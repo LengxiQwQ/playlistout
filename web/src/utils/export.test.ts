@@ -193,7 +193,7 @@ describe('CSV Export', () => {
     expect(exportIdx).toBeGreaterThan(createIdx);
 
     // Header check
-    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长');
+    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态');
 
     // Check track with comma and newline escaping
     expect(content).toContain('"Song with, ""Comma"" & \nNewline"');

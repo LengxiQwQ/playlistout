@@ -1,6 +1,7 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, type UserPlaylistsData, ProviderError } from './models/playlist';
 import { qqMusicProvider, fetchQQUserPlaylists, extractQQNumber } from './providers/qqmusic';
+import { neteaseProvider, fetchNeteaseUserPlaylists, extractNeteaseUserId, matchesNeteaseInput } from './providers/netease';
 import { getPublicStats } from './stats';
 import { recordParseEvent, recordRateLimitEvent } from './analytics/recorder';
 import { classifyInputType, classifyErrorCategory } from './analytics/dimensions';
@@ -173,13 +174,33 @@ export default {
         });
       }
 
-      // Check if input is recognized by QQ Music provider
-      if (!qqMusicProvider.matches(playlistInput)) {
+      // Check provider matching
+      let matchedProvider: typeof qqMusicProvider | typeof neteaseProvider | null = null;
+      let targetPlatform: 'qqmusic' | 'netease' = 'qqmusic';
+
+      if (neteaseProvider.matches(playlistInput)) {
+        matchedProvider = neteaseProvider;
+        targetPlatform = 'netease';
+      } else if (qqMusicProvider.matches(playlistInput)) {
+        matchedProvider = qqMusicProvider;
+        targetPlatform = 'qqmusic';
+      } else if (/^\d{4,18}$/.test(playlistInput.trim())) {
+        const platformParam = url.searchParams.get('platform');
+        if (platformParam === 'netease') {
+          matchedProvider = neteaseProvider;
+          targetPlatform = 'netease';
+        } else {
+          matchedProvider = qqMusicProvider;
+          targetPlatform = 'qqmusic';
+        }
+      }
+
+      if (!matchedProvider) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
             code: 'UNSUPPORTED_URL',
-            message: 'The provided URL is not a supported QQ Music playlist URL. Expected: https://y.qq.com/n/ryqq/playlist/<id>',
+            message: 'The provided URL is not a supported QQ Music or NetEase Cloud Music playlist URL.',
           },
         };
         return new Response(JSON.stringify(errorResponse), {
@@ -195,8 +216,25 @@ export default {
       const inputType = classifyInputType(playlistInput);
 
       try {
-        const playlist: Playlist = await qqMusicProvider.parse(playlistInput);
-        const providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
+        let playlist: Playlist;
+        let actualPlatform: 'qqmusic' | 'netease' = targetPlatform;
+        let providerPath: ('primary' | 'fallback') | undefined;
+
+        try {
+          playlist = await matchedProvider.parse(playlistInput);
+          actualPlatform = (playlist.platform as 'qqmusic' | 'netease') || targetPlatform;
+          providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
+        } catch (err: unknown) {
+          const platformParam = url.searchParams.get('platform');
+          if (!platformParam && /^\d{4,18}$/.test(playlistInput.trim()) && matchedProvider === qqMusicProvider) {
+            playlist = await neteaseProvider.parse(playlistInput);
+            actualPlatform = 'netease';
+            targetPlatform = 'netease';
+          } else {
+            throw err;
+          }
+        }
+
         const latencyMs = Date.now() - startTime;
 
         // Best-effort anonymous statistics recording (success) with real providerPath
@@ -204,7 +242,7 @@ export default {
           _ctx.waitUntil(
             recordParseEvent(_env.DB, {
               request,
-              platform: 'qqmusic',
+              platform: actualPlatform,
               inputType,
               success: true,
               trackCount: playlist.tracks.length,
@@ -230,12 +268,12 @@ export default {
         const errorCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
         const errorCategory = classifyErrorCategory(errorCode);
 
-        // Best-effort anonymous statistics recording (failure, no payload or fake providerPath recorded)
+        // Best-effort anonymous statistics recording (failure)
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(
             recordParseEvent(_env.DB, {
               request,
-              platform: 'qqmusic',
+              platform: targetPlatform,
               inputType,
               success: false,
               errorCategory,
@@ -327,13 +365,13 @@ export default {
         );
       }
 
-      const uinInput = url.searchParams.get('uin');
-      if (!uinInput || uinInput.trim().length === 0) {
+      const rawUserInput = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url');
+      if (!rawUserInput || rawUserInput.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
             code: 'INVALID_INPUT',
-            message: 'Missing or empty required query parameter: uin',
+            message: 'Missing or empty required query parameter: uin or uid',
           },
         };
         return new Response(JSON.stringify(errorResponse), {
@@ -345,13 +383,70 @@ export default {
         });
       }
 
-      const extractedUin = extractQQNumber(uinInput);
+      const platformParam = url.searchParams.get('platform');
+      const isNetease = matchesNeteaseInput(rawUserInput) || platformParam === 'netease';
+
+      if (isNetease) {
+        const extractedUid = await extractNeteaseUserId(rawUserInput);
+        if (!extractedUid) {
+          const errorResponse: ApiResponse<never> = {
+            success: false,
+            error: {
+              code: 'INVALID_INPUT',
+              message: `The provided input is not a valid NetEase user ID or profile URL: "${rawUserInput}"`,
+            },
+          };
+          return new Response(JSON.stringify(errorResponse), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...responseHeaders,
+            },
+          });
+        }
+
+        try {
+          const userData: UserPlaylistsData = await fetchNeteaseUserPlaylists(extractedUid);
+          const successResponse: ApiResponse<UserPlaylistsData> = {
+            success: true,
+            data: userData,
+          };
+          return new Response(JSON.stringify(successResponse), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              ...responseHeaders,
+            },
+          });
+        } catch (err: unknown) {
+          if (err instanceof ProviderError) {
+            const errorResponse: ApiResponse<never> = {
+              success: false,
+              error: {
+                code: err.code,
+                message: err.message,
+                details: err.details,
+              },
+            };
+            return new Response(JSON.stringify(errorResponse), {
+              status: err.statusCode,
+              headers: {
+                'Content-Type': 'application/json',
+                ...responseHeaders,
+              },
+            });
+          }
+          throw err;
+        }
+      }
+
+      const extractedUin = extractQQNumber(rawUserInput);
       if (!extractedUin) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
             code: 'INVALID_INPUT',
-            message: `The provided input is not a valid QQ number or profile URL: "${uinInput}"`,
+            message: `The provided input is not a valid QQ number or profile URL: "${rawUserInput}"`,
           },
         };
         return new Response(JSON.stringify(errorResponse), {
@@ -377,6 +472,25 @@ export default {
           },
         });
       } catch (err: unknown) {
+        if (!platformParam && /^\d{4,18}$/.test(rawUserInput.trim())) {
+          try {
+            const neteaseUserData = await fetchNeteaseUserPlaylists(rawUserInput.trim());
+            const successResponse: ApiResponse<UserPlaylistsData> = {
+              success: true,
+              data: neteaseUserData,
+            };
+            return new Response(JSON.stringify(successResponse), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                ...responseHeaders,
+              },
+            });
+          } catch {
+            // Proceed to error handling below
+          }
+        }
+
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
             success: false,

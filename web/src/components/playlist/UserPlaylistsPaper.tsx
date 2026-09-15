@@ -12,11 +12,16 @@ import {
   exportToMultiSheetExcel,
   exportToZip,
 } from '../../utils/batchExport';
+import {
+  getPlatformConfig,
+  getPlatformName,
+  getPlatformUserIdLabel,
+} from '../../utils/platform';
 
 export interface UserPlaylistsPaperProps {
   userData: UserPlaylistsData;
   onReset: () => void;
-  onSelectSinglePlaylist: (playlistId: string) => void;
+  onSelectSinglePlaylist: (playlistIdOrUrl: string, platform?: 'qqmusic' | 'netease') => void;
   hasSinglePlaylistCollision?: boolean;
 }
 
@@ -26,7 +31,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
   onSelectSinglePlaylist,
   hasSinglePlaylistCollision = false,
 }) => {
-  const { t, format: formatString } = useTranslation();
+  const { t, format: formatString, language } = useTranslation();
 
   // Selected playlist IDs
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
@@ -89,10 +94,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
     setIsExporting(true);
 
     try {
+      const platform = userData.platform === 'netease' ? 'netease' : 'qqmusic';
       const { successfulPlaylists, failedCount } = await fetchMultiplePlaylists(
         targets,
         (p) => setProgress(p),
         controller.signal,
+        platform,
       );
 
       if (successfulPlaylists.length === 0) {
@@ -101,9 +108,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       }
 
       if (batchFormat === 'multi_sheet_xlsx') {
-        exportToMultiSheetExcel(successfulPlaylists, userData.nickname);
+        exportToMultiSheetExcel(successfulPlaylists, userData.nickname, userData.platform);
       } else {
-        await exportToZip(successfulPlaylists, userData.nickname, batchFormat);
+        await exportToZip(successfulPlaylists, userData.nickname, batchFormat, userData.platform);
       }
 
       if (failedCount > 0) {
@@ -201,11 +208,15 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                <Sticker color="yellow" rotateDeg={-1} style={{ padding: '0.2rem 0.6rem', fontSize: '0.85rem' }}>
-                  {t.userPlaylists.collectionSticker}
+                <Sticker
+                  color={getPlatformConfig(userData.platform).color}
+                  rotateDeg={-1}
+                  style={{ padding: '0.2rem 0.6rem', fontSize: '0.85rem' }}
+                >
+                  {getPlatformName(userData.platform, language)} · {t.userPlaylists.collectionSticker}
                 </Sticker>
                 <span className="font-mono" style={{ fontSize: '0.9rem', color: '#636e72' }}>
-                  QQ: {userData.userId}
+                  {getPlatformUserIdLabel(userData.platform, language)}: {userData.userId}
                 </span>
               </div>
 
@@ -264,7 +275,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               </span>
               <button
                 type="button"
-                onClick={() => onSelectSinglePlaylist(userData.userId)}
+                onClick={() =>
+                  onSelectSinglePlaylist(
+                    userData.userId,
+                    userData.platform === 'netease' ? 'netease' : 'qqmusic',
+                  )
+                }
                 style={{
                   background: 'none',
                   border: 'none',
@@ -559,7 +575,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
                         <button
                           type="button"
-                          onClick={() => onSelectSinglePlaylist(playlist.id)}
+                          onClick={() =>
+                            onSelectSinglePlaylist(
+                              playlist.sourceUrl || playlist.id,
+                              userData.platform === 'netease' ? 'netease' : 'qqmusic',
+                            )
+                          }
                           style={{
                             padding: '0.35rem 0.75rem',
                             fontSize: '0.85rem',

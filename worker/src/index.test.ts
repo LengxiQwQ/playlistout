@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import worker from './index';
 import { qqMusicProvider } from './providers/qqmusic';
+import { neteaseProvider } from './providers/netease';
 import { ProviderError } from './models/playlist';
 
 interface HealthResponseBody {
@@ -136,7 +137,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 400 when /api/playlist is queried with unsupported music platform', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://music.163.com/playlist?id=123');
+    const request = new Request('https://api.playlistout.com/api/playlist?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
@@ -192,6 +193,33 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(body.error.message).not.toContain('SecretDatabaseConnectionFailed');
 
     parseSpy.mockRestore();
+  });
+
+  it('falls back from QQ Music to NetEase when numeric ID without platform parameter is not found on QQ', async () => {
+    const qqSpy = vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+      new ProviderError('PLAYLIST_NOT_FOUND', 'Playlist not found on QQ Music'),
+    );
+    const neteaseSpy = vi.spyOn(neteaseProvider, 'parse').mockResolvedValueOnce({
+      platform: 'netease',
+      id: '2756674066',
+      name: '网易云兜底歌单',
+      trackCount: 1,
+      tracks: [
+        { index: 1, title: '测试歌曲', artists: ['测试歌手'] },
+      ],
+    });
+
+    const request = new Request('https://api.playlistout.com/api/playlist?url=2756674066');
+    const response = await worker.fetch(request, {}, createMockCtx());
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.platform).toBe('netease');
+    expect(body.data.name).toBe('网易云兜底歌单');
+
+    qqSpy.mockRestore();
+    neteaseSpy.mockRestore();
   });
 
   it('returns 404 for unknown routes', async () => {

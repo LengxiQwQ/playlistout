@@ -15,6 +15,7 @@ import {
   triggerDownload,
 } from './export';
 import { formatDuration } from './format';
+import { getPlatformName, getPlatformPlaylistUrl } from './platform';
 
 export type BatchExportFormat = 'multi_sheet_xlsx' | 'xlsx' | 'csv' | 'txt' | 'json';
 
@@ -49,6 +50,7 @@ export async function fetchMultiplePlaylists(
   playlists: UserPlaylistSummary[],
   onProgress?: (progress: BatchFetchProgress) => void,
   signal?: AbortSignal,
+  platform?: 'qqmusic' | 'netease',
 ): Promise<{ successfulPlaylists: Playlist[]; failedCount: number }> {
   const successfulPlaylists: Playlist[] = [];
   let failedCount = 0;
@@ -76,7 +78,8 @@ export async function fetchMultiplePlaylists(
     });
 
     try {
-      const res = await parsePlaylist(summary.id, signal);
+      const targetUrl = summary.sourceUrl || summary.id;
+      const res = await parsePlaylist(targetUrl, signal, platform);
       if (res.success && res.data) {
         successfulPlaylists.push(res.data);
       } else {
@@ -104,6 +107,7 @@ export async function fetchMultiplePlaylists(
 export function exportToMultiSheetExcel(
   playlists: Playlist[],
   nickname: string,
+  platform?: string,
 ): { filename: string } {
   const wb = XLSX.utils.book_new();
   const dateStr = new Date().toISOString().split('T')[0];
@@ -117,7 +121,7 @@ export function exportToMultiSheetExcel(
     pl.creator || nickname || '-',
     (pl.tags || []).join(', ') || '-',
     pl.playCount ? pl.playCount.toLocaleString() : '-',
-    pl.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${pl.id}`,
+    getPlatformPlaylistUrl(pl.platform || platform, pl.id, pl.sourceUrl),
   ]);
 
   const indexWs = XLSX.utils.aoa_to_sheet([
@@ -189,7 +193,9 @@ export function exportToMultiSheetExcel(
   });
 
   const rawBytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const filename = sanitizeFilename(`【QQ音乐歌单合集】${nickname} - 共${playlists.length}个歌单_${dateStr}.xlsx`);
+  const targetPlatform = platform || playlists[0]?.platform;
+  const platformName = getPlatformName(targetPlatform);
+  const filename = sanitizeFilename(`【${platformName}歌单合集】${nickname} - 共${playlists.length}个歌单_${dateStr}.xlsx`);
   triggerDownload(rawBytes, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
   return { filename };
@@ -202,6 +208,7 @@ export async function exportToZip(
   playlists: Playlist[],
   nickname: string,
   format: 'xlsx' | 'csv' | 'txt' | 'json',
+  platform?: string,
 ): Promise<{ filename: string }> {
   const zip = new JSZip();
   const dateStr = new Date().toISOString().split('T')[0];
@@ -239,7 +246,9 @@ export async function exportToZip(
     compressionOptions: { level: 6 },
   });
 
-  const zipFilename = sanitizeFilename(`【QQ音乐歌单合集】${nickname} - 共${playlists.length}个歌单 (${format.toUpperCase()})_${dateStr}.zip`);
+  const targetPlatform = platform || playlists[0]?.platform;
+  const platformName = getPlatformName(targetPlatform);
+  const zipFilename = sanitizeFilename(`【${platformName}歌单合集】${nickname} - 共${playlists.length}个歌单 (${format.toUpperCase()})_${dateStr}.zip`);
   triggerDownload(blob, zipFilename, 'application/zip');
 
   return { filename: zipFilename };

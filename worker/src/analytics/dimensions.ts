@@ -21,12 +21,18 @@ export function classifyInputType(input: string): InputType {
   }
 
   // Mobile share links
-  if (/i\.y\.qq\.com/i.test(trimmed) || /taoge\.html/i.test(trimmed) || /detail\/taoge/i.test(trimmed)) {
+  if (
+    /i\.y\.qq\.com/i.test(trimmed) ||
+    /taoge\.html/i.test(trimmed) ||
+    /detail\/taoge/i.test(trimmed) ||
+    /163cn\.tv/i.test(trimmed) ||
+    /y\.music\.163\.com/i.test(trimmed)
+  ) {
     return 'mobile_share_link';
   }
 
   // Standard web URLs
-  if (/y\.qq\.com/i.test(trimmed)) {
+  if (/y\.qq\.com/i.test(trimmed) || /music\.163\.com/i.test(trimmed)) {
     return 'web_url';
   }
 

@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import type { Playlist } from '../api/types';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
+import {
+  getPlatformName,
+  getPlatformPlaylistSticker,
+  getPlatformViewAction,
+  getPlatformPlaylistUrl,
+} from '../utils/platform';
 
 export interface PlaylistSummaryProps {
   playlist: Playlist;
   onReset: () => void;
+  onReturnToBatch?: () => void;
 }
 
-export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset }) => {
+export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset, onReturnToBatch }) => {
   const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
 
@@ -94,7 +101,14 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
               className="sticker font-handwriting"
               style={{
                 display: 'inline-block',
-                backgroundColor: '#fbcfe8',
+                backgroundColor:
+                  playlist.platform === 'netease'
+                    ? '#fecaca'
+                    : playlist.platform === 'kugou'
+                    ? '#bfdbfe'
+                    : playlist.platform === 'kuwo'
+                    ? '#fef08a'
+                    : '#bbf7d0',
                 padding: '0.25rem 0.75rem',
                 fontSize: '1rem',
                 fontFamily: 'var(--font-handwriting, cursive)',
@@ -105,7 +119,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 lineHeight: 1.2,
               }}
             >
-              {t.result.parsedPlaylistSticker}
+              {getPlatformPlaylistSticker(playlist.platform, language)}
             </span>
 
             <h2
@@ -159,7 +173,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 ·
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-                {t.search.platformQQ}
+                {getPlatformName(playlist.platform, language)}
               </span>
               {playlist.creator && (
                 <>
@@ -295,7 +309,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
           <Sticker
             as="a"
-            href={`https://y.qq.com/n/ryqq/playlist/${playlist.id}`}
+            href={getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl)}
             target="_blank"
             rel="noopener noreferrer"
             color="white"
@@ -313,8 +327,29 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
               lineHeight: 1.2,
             }}
           >
-            {t.result.viewOnQQ}
+            {getPlatformViewAction(playlist.platform, language)}
           </Sticker>
+
+          {onReturnToBatch && (
+            <Sticker
+              type="button"
+              color="pink"
+              rotateDeg={-1.5}
+              onClick={onReturnToBatch}
+              className="font-handwriting"
+              style={{
+                padding: '0.42rem 0.95rem',
+                fontSize: '1.05rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                lineHeight: 1.2,
+                color: 'var(--ink, #2d3436)',
+              }}
+            >
+              ← {t.userPlaylists.returnToCollection}
+            </Sticker>
+          )}
 
           <Sticker
             type="button"

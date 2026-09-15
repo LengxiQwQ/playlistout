@@ -55,20 +55,36 @@ describe('Client-Side Input Validation', () => {
     expect(res.error).toContain('输入内容过长');
   });
 
-  it('rejects other platforms with friendly notification', () => {
-    const res1 = validatePlaylistInput('https://music.163.com/playlist?id=12345');
-    expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('仅支持 QQ 音乐');
+  it('accepts NetEase playlist and profile URLs as valid', () => {
+    const res1 = validatePlaylistInput('https://music.163.com/playlist?id=2756674066');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('single_playlist_url');
+    expect(res1.platform).toBe('netease');
 
-    const res2 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    const res2 = validatePlaylistInput('https://163cn.tv/bgpHWLfw');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('short_link');
+
+    const res3 = validatePlaylistInput('https://music.163.com/user/home?id=1825474783');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('user_profile_url');
+    expect(res3.extractedUin).toBe('1825474783');
+  });
+
+  it('rejects other platforms with friendly notification', () => {
+    const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    expect(res1.valid).toBe(false);
+    expect(res1.error).toContain('支持 QQ 音乐与网易云音乐');
+
+    const res2 = validatePlaylistInput('https://www.kugou.com/song/xxx');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('仅支持 QQ 音乐');
+    expect(res2.error).toContain('支持 QQ 音乐与网易云音乐');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐或网易云音乐歌单链接');
   });
 });
 

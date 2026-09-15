@@ -28,6 +28,21 @@ export interface RawQQSong {
   albummid?: string;
   album?: RawQQAlbum | string;
   interval?: number;
+  pay?: {
+    payplay?: number;
+    payalbum?: number;
+    payinfo?: number;
+  };
+  action?: {
+    switch?: number;
+    msgid?: number;
+    alert?: number;
+  };
+  msgid?: number;
+  alertid?: number;
+  size128?: number;
+  size320?: number;
+  sizeflac?: number;
 }
 
 export interface RawQQCdItem {
@@ -140,6 +155,53 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   }
   const coverUrl = albumMid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${albumMid}.jpg` : undefined;
 
+  // Derive track availability & VIP status
+  const isVip = rawSong.pay?.payplay === 1;
+  let isAvailable = true;
+  let status: import('../../models/playlist').TrackAvailability = isVip ? 'vip' : 'playable';
+  let statusText = isVip ? 'VIP专享' : '正常';
+
+  const isGeoBlockedOnly =
+    rawSong.alertid === 2 ||
+    rawSong.alertid === 21 ||
+    rawSong.action?.msgid === 14 ||
+    rawSong.msgid === 14;
+
+  if (isGeoBlockedOnly) {
+    // Overseas-only restriction: completely playable in Mainland China. Treat as normal without alerts.
+    isAvailable = true;
+    if (rawSong.pay?.payalbum === 1) {
+      status = 'paid';
+      statusText = '付费专辑';
+    } else if (isVip) {
+      status = 'vip';
+      statusText = 'VIP专享';
+    } else {
+      status = 'playable';
+      statusText = '正常';
+    }
+  } else if (rawSong.alertid !== undefined && rawSong.alertid !== 0) {
+    isAvailable = false;
+    status = 'unplayable';
+    statusText = '下架/无版权';
+  } else if (
+    rawSong.size128 === 0 &&
+    rawSong.size320 === 0 &&
+    (rawSong.sizeflac === undefined || rawSong.sizeflac === 0)
+  ) {
+    isAvailable = false;
+    status = 'unplayable';
+    statusText = '下架/无版权';
+  } else if (rawSong.pay?.payalbum === 1) {
+    isAvailable = true;
+    status = 'paid';
+    statusText = '付费专辑';
+  } else if (isVip) {
+    isAvailable = true;
+    status = 'vip';
+    statusText = 'VIP专享';
+  }
+
   return {
     index,
     id,
@@ -149,6 +211,10 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     durationMs,
     sourceUrl,
     coverUrl,
+    isAvailable,
+    isVip,
+    status,
+    statusText,
   };
 }
 

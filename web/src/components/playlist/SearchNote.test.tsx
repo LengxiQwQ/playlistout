@@ -28,8 +28,9 @@ describe('SearchNote Component (Phase 4)', () => {
 
     expect(screen.getByText('在这里粘贴歌单链接 ↓')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '解析' })).toBeEnabled();
-    expect(screen.getByText('QQ 音乐公开歌单解析')).toBeInTheDocument();
+    expect(screen.getByText('跨平台公开歌单解析')).toBeInTheDocument();
     expect(screen.getByText('✓ QQ 音乐')).toBeInTheDocument();
+    expect(screen.getByText('✓ 网易云音乐')).toBeInTheDocument();
 
     // Click sample
     const sampleJay = screen.getByText('周杰伦 (172首)');
@@ -80,7 +81,7 @@ describe('SearchNote Component (Phase 4)', () => {
     );
 
     expect(screen.getByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/仅支持 QQ 音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐与网易云音乐公开歌单/)).toBeInTheDocument();
 
     const retryBtn = screen.getByRole('button', { name: '重试' });
     fireEvent.click(retryBtn);
