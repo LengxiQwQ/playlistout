@@ -189,4 +189,45 @@ describe('QQ Music Upstream Error & Malformed Response Handling', () => {
       expect((err as ProviderError).code).toBe('PARSE_ERROR');
     }
   });
+
+  it('correctly classifies overseas geo-restricted tracks as normal playable domestically and detects VIP', () => {
+    const geoTrack = normalizeQQTrack(
+      {
+        songid: 100,
+        songname: '大陆专属歌曲',
+        singer: [{ name: '歌手' }],
+        alertid: 2,
+      },
+      1,
+    );
+    expect(geoTrack.status).toBe('playable');
+    expect(geoTrack.statusText).toBe('正常');
+    expect(geoTrack.isAvailable).toBe(true);
+    expect(geoTrack.isVip).toBe(false);
+
+    const vipTrack = normalizeQQTrack(
+      {
+        songid: 102,
+        songname: 'VIP 歌曲',
+        singer: [{ name: '歌手' }],
+        pay: { payplay: 1 },
+      },
+      2,
+    );
+    expect(vipTrack.status).toBe('vip');
+    expect(vipTrack.isVip).toBe(true);
+
+    const unplayableTrack = normalizeQQTrack(
+      {
+        songid: 101,
+        songname: '下架歌曲',
+        singer: [{ name: '歌手' }],
+        alertid: 1,
+      },
+      3,
+    );
+    expect(unplayableTrack.status).toBe('unplayable');
+    expect(unplayableTrack.statusText).toBe('下架/无版权');
+    expect(unplayableTrack.isAvailable).toBe(false);
+  });
 });

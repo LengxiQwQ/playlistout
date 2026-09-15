@@ -1,6 +1,7 @@
 import type { Playlist } from '../api/types';
 import * as XLSX from 'xlsx';
 import { formatDuration } from './format';
+import { getPlatformPlaylistUrl } from './platform';
 
 
 /**
@@ -107,6 +108,20 @@ export function formatTotalDuration(tracks: { durationMs?: number }[]): string {
 }
 
 /**
+ * Returns user-friendly status text for a track.
+ */
+export function getTrackStatusText(track: { statusText?: string; isAvailable?: boolean; status?: string }): string {
+  if (track.isAvailable === false || track.status === 'unplayable') return '下架/无版权';
+  if (track.status === 'paid') return '付费专辑';
+  if (track.statusText && track.statusText !== '仅海外受限') return track.statusText;
+  return '正常';
+}
+
+export function getTrackIsVip(track: { isVip?: boolean; status?: string }): boolean {
+  return Boolean(track.isVip || track.status === 'vip');
+}
+
+/**
  * Generates plain text content with stationery header.
  * Creation time first, Export time second (adjacent).
  * Kept faithful to source text without formula injection escaping.
@@ -117,7 +132,7 @@ export function generateTXT(playlist: Playlist): string {
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime);
   const durationStr = formatTotalDuration(playlist.tracks);
-  const sourceUrl = playlist.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${playlist.id}`;
+  const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
   lines.push('==================================================');
   lines.push(`  创建时间: ${createdStr}`);
@@ -150,13 +165,17 @@ export function generateTXT(playlist: Playlist): string {
     const title = cleanSingleLine(track.title || '');
     const artistStr = cleanSingleLine(formatArtists(track.artists));
     const albumStr = cleanSingleLine(track.album || '');
+    const statusTag =
+      track.isAvailable === false || (track.status && track.status !== 'playable')
+        ? ` [${getTrackStatusText(track)}]`
+        : '';
 
     if (albumStr && artistStr) {
-      lines.push(`${title} - ${artistStr} - ${albumStr}`);
+      lines.push(`${title} - ${artistStr} - ${albumStr}${statusTag}`);
     } else if (artistStr) {
-      lines.push(`${title} - ${artistStr}`);
+      lines.push(`${title} - ${artistStr}${statusTag}`);
     } else {
-      lines.push(title);
+      lines.push(`${title}${statusTag}`);
     }
   }
 
@@ -184,7 +203,7 @@ export function generateCSV(playlist: Playlist): string {
   const createdStr = formatTimestamp(playlist.createTime) || '未知';
   const exportedStr = formatDateTime();
   const durationStr = formatTotalDuration(playlist.tracks);
-  const sourceUrl = playlist.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${playlist.id}`;
+  const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
   const headerComments: string[] = [
     `# 创建时间: ${createdStr}`,
@@ -198,7 +217,7 @@ export function generateCSV(playlist: Playlist): string {
     `# 歌单链接: ${sourceUrl}`,
   ].filter((line): line is string => line !== null);
 
-  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长'];
+  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', 'VIP', '歌曲状态'];
   const rows: string[][] = [header];
 
   for (const track of playlist.tracks) {
@@ -208,6 +227,8 @@ export function generateCSV(playlist: Playlist): string {
       formatArtists(track.artists),
       track.album || '',
       formatDuration(track.durationMs),
+      getTrackIsVip(track) ? 'VIP' : '—',
+      getTrackStatusText(track),
     ]);
   }
 
@@ -230,7 +251,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime) || '-';
   const durationStr = formatTotalDuration(playlist.tracks);
-  const sourceUrl = playlist.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${playlist.id}`;
+  const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
   const metaRows: (string | number)[][] = [
     ['歌单名称', playlist.name, '', ''],
@@ -248,13 +269,15 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   // Blank separator row
   metaRows.push([]);
 
-  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长'];
+  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', 'VIP', '歌曲状态'];
   const songRows = playlist.tracks.map((track) => [
     track.index,
     sanitizeSpreadsheetCell(track.title || ''),
     sanitizeSpreadsheetCell(formatArtists(track.artists)),
     sanitizeSpreadsheetCell(track.album || ''),
     formatDuration(track.durationMs),
+    getTrackIsVip(track) ? 'VIP' : '—',
+    sanitizeSpreadsheetCell(getTrackStatusText(track)),
   ]);
 
   const allRows = [...metaRows, tableHeader, ...songRows];
@@ -269,6 +292,8 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
     { wch: 22 }, // 歌手 / 辅助属性名
     { wch: 25 }, // 专辑 / 辅助属性值
     { wch: 10 }, // 时长
+    { wch: 8 },  // VIP
+    { wch: 14 }, // 歌曲状态
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, '歌单歌曲');
@@ -286,7 +311,7 @@ export function generateJSON(playlist: Playlist): string {
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime) || null;
   const durationStr = formatTotalDuration(playlist.tracks) || null;
-  const sourceUrl = playlist.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${playlist.id}`;
+  const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
   const exportPayload = {
     createTime: createdStr,
@@ -311,6 +336,10 @@ export function generateJSON(playlist: Playlist): string {
       artists: t.artists,
       album: t.album || '',
       durationMs: t.durationMs,
+      isVip: Boolean(t.isVip || t.status === 'vip'),
+      isAvailable: t.isAvailable ?? true,
+      status: t.status || (t.isAvailable === false ? 'unplayable' : 'playable'),
+      statusText: getTrackStatusText(t),
       sourceUrl: t.sourceUrl,
     })),
   };

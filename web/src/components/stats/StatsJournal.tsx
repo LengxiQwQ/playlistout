@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { fetchStats, type StatsResponse } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
+import { getPlatformName } from '../../utils/platform';
 
 const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
@@ -146,6 +147,28 @@ export const StatsJournal: React.FC = () => {
       { date: '09-14', height: 95, count: 42 },
     ];
   }, [stats?.recentDays]);
+
+  // Platform shares calculation
+  const platformShares = useMemo(() => {
+    const raw = stats?.byPlatform || {};
+    const qq = raw.qqmusic?.totalSuccess || 0;
+    const netease = raw.netease?.totalSuccess || 0;
+    const kugou = raw.kugou?.totalSuccess || 0;
+    const kuwo = raw.kuwo?.totalSuccess || 0;
+    const total = qq + netease + kugou + kuwo;
+    if (total === 0) {
+      return [
+        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 100, color: '#059669' },
+      ];
+    }
+    const list = [
+      { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: Math.round((qq / total) * 100), color: '#059669' },
+      { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: Math.round((netease / total) * 100), color: '#e11d48' },
+    ];
+    if (kugou > 0) list.push({ id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: Math.round((kugou / total) * 100), color: '#2563eb' });
+    if (kuwo > 0) list.push({ id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: Math.round((kuwo / total) * 100), color: '#ca8a04' });
+    return list.filter((item) => item.count > 0 || item.id === 'qqmusic');
+  }, [stats?.byPlatform, language]);
 
   return (
     <section
@@ -423,29 +446,43 @@ export const StatsJournal: React.FC = () => {
             </div>
 
             {/* Platform Progress */}
-            <div className="font-handwriting" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                <span style={{ fontWeight: 700, color: 'var(--ink, #2d3436)' }}>{t.search.platformQQ}</span>
-                <span style={{ fontWeight: 700 }}>100%</span>
-              </div>
-              <div
-                style={{
-                  height: '0.55rem',
-                  backgroundColor: 'rgba(45, 52, 54, 0.12)',
-                  borderRadius: '9999px',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  className="platform-progress-fill"
-                  style={{
-                    height: '100%',
-                    backgroundColor: 'var(--ink, #2d3436)',
-                    width: '100%',
-                  }}
-                />
-              </div>
-              <div style={{ color: '#8a8f92', fontSize: '1.05rem', marginTop: '0.4rem' }}>
+            <div
+              className="font-handwriting"
+              style={{
+                fontSize: '1.2rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}
+            >
+              {platformShares.map((p) => (
+                <div key={p.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--ink, #2d3436)' }}>{p.name}</span>
+                    <span style={{ fontWeight: 700 }}>{p.pct}%</span>
+                  </div>
+                  <div
+                    style={{
+                      height: '0.55rem',
+                      backgroundColor: 'rgba(45, 52, 54, 0.12)',
+                      borderRadius: '9999px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      className="platform-progress-fill"
+                      style={{
+                        height: '100%',
+                        backgroundColor: p.color,
+                        width: `${p.pct}%`,
+                        transition: 'width 0.6s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <div style={{ color: '#8a8f92', fontSize: '1.05rem', marginTop: '0.15rem' }}>
                 <span className="font-note">{t.stats.otherPlatformsComing}</span>
               </div>
             </div>

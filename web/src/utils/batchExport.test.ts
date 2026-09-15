@@ -45,8 +45,11 @@ describe('batchExport utilities', () => {
       ];
 
       const res = exportToMultiSheetExcel(mockPlaylists, '测试用户');
-      expect(res.filename).toContain('【QQ音乐歌单合集】测试用户');
+      expect(res.filename).toContain('【QQ 音乐歌单合集】测试用户');
       expect(res.filename).toContain('.xlsx');
+
+      const neteaseRes = exportToMultiSheetExcel(mockPlaylists, '网易云测试', 'netease');
+      expect(neteaseRes.filename).toContain('【网易云音乐歌单合集】网易云测试');
     });
   });
 
@@ -66,8 +69,11 @@ describe('batchExport utilities', () => {
       ];
 
       const res = await exportToZip(mockPlaylists, '测试用户', 'csv');
-      expect(res.filename).toContain('【QQ音乐歌单合集】测试用户');
+      expect(res.filename).toContain('【QQ 音乐歌单合集】测试用户');
       expect(res.filename).toContain('.zip');
+
+      const neteaseRes = await exportToZip(mockPlaylists, '网易云测试', 'csv', 'netease');
+      expect(neteaseRes.filename).toContain('【网易云音乐歌单合集】网易云测试');
     });
   });
 });

@@ -55,7 +55,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onR
           >
             <span style={{ fontSize: '1.2em' }}>🔙</span> 
             <span style={{ textDecoration: 'underline', textDecorationStyle: 'wavy', textUnderlineOffset: '4px' }}>
-              返回歌单集合
+              {t.userPlaylists.returnToCollection}
             </span>
           </button>
         ) : (
@@ -109,7 +109,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onR
           interactive={false}
           style={{ padding: '2.5rem' }}
         >
-          <PlaylistSummary playlist={playlist} onReset={onReset} />
+          <PlaylistSummary playlist={playlist} onReset={onReset} onReturnToBatch={onReturnToBatch} />
           <TrackTable tracks={playlist.tracks} />
           <ExportToolbar playlist={playlist} />
         </Paper>

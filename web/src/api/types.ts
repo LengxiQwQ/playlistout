@@ -3,6 +3,8 @@
  * Defined in docs/PROJECT-CONSTITUTION.md Section 6
  */
 
+export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
+
 export interface Track {
   index: number;
   id?: string;
@@ -12,6 +14,10 @@ export interface Track {
   durationMs?: number;
   sourceUrl?: string;
   coverUrl?: string;
+  isAvailable?: boolean;
+  isVip?: boolean;
+  status?: TrackAvailability;
+  statusText?: string;
 }
 
 export interface Playlist {

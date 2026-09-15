@@ -12,6 +12,7 @@ import { InfoNotes } from './components/layout/InfoNotes';
 import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
+import { DisambiguationModal, DisambiguationItem } from './components/playlist/DisambiguationModal';
 import { BinderSpine } from './components/layout/BinderSpine';
 import { BackgroundDecorations } from './components/layout/BackgroundDecorations';
 import { useBaselineGrid } from './hooks/useBaselineGrid';
@@ -28,6 +29,9 @@ export const AppContent: React.FC = () => {
   const [hasCollision, setHasCollision] = useState<boolean>(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [disambiguationCandidates, setDisambiguationCandidates] = useState<DisambiguationItem[]>([]);
+  const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
+  const [disambiguationQueryId, setDisambiguationQueryId] = useState('');
 
   useEffect(() => {
     recordVisit();
@@ -35,6 +39,24 @@ export const AppContent: React.FC = () => {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);
+  const lastCollectionScrollPosRef = useRef<number | null>(null);
+
+  const scrollToTop = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  const scrollToElement = useCallback((elementId: string) => {
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        const el = document.getElementById(elementId);
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 120);
+    }
+  }, []);
 
   const handleParse = useCallback(
     async (urlToParse?: string) => {
@@ -66,8 +88,10 @@ export const AppContent: React.FC = () => {
 
       try {
         // Case A: User profile URL -> Fetch user playlists directly
-        if (validation.kind === 'user_profile_url' && validation.extractedUin) {
-          const res = await fetchUserPlaylists(validation.extractedUin, controller.signal);
+        if (validation.kind === 'user_profile_url') {
+          const targetInput = validation.extractedUin || targetUrl;
+          const platform = validation.platform === 'netease' ? 'netease' : 'qqmusic';
+          const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
@@ -75,6 +99,7 @@ export const AppContent: React.FC = () => {
             setPlaylist(null);
             setViewMode('batch');
             setState('success');
+            scrollToElement('user-playlists');
           } else {
             setError(res.error);
             setState('error');
@@ -82,9 +107,48 @@ export const AppContent: React.FC = () => {
           return;
         }
 
-        // Case B: Explicit single playlist URL -> Parse single playlist directly
+        // Case B: Short link (e.g. 163cn.tv) -> Try single playlist first, fallback to user profile
+        if (validation.kind === 'short_link') {
+          const singleRes = await parsePlaylist(targetUrl, controller.signal).catch(() => null);
+          if (requestIdRef.current !== currentRequestId) return;
+
+          if (singleRes && singleRes.success && singleRes.data) {
+            setPlaylist(singleRes.data);
+            setUserPlaylists(null);
+            setViewMode('single');
+            setState('success');
+            scrollToElement('result');
+            return;
+          }
+
+          // Fallback to user playlists (e.g. user homepage short link)
+          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, 'netease').catch(() => null);
+          if (requestIdRef.current !== currentRequestId) return;
+
+          if (userRes && userRes.success && userRes.data && userRes.data.playlists.length > 0) {
+            setUserPlaylists(userRes.data);
+            setPlaylist(null);
+            setViewMode('batch');
+            setState('success');
+            scrollToElement('user-playlists');
+            return;
+          }
+
+          setError(
+            (singleRes && !singleRes.success ? singleRes.error : null) ||
+              (userRes && !userRes.success ? userRes.error : null) || {
+                code: 'PLAYLIST_NOT_FOUND',
+                message: '短链接解析失败或未找到对应歌单/主页，请检查链接后重试。',
+              },
+          );
+          setState('error');
+          return;
+        }
+
+        // Case C: Explicit single playlist URL -> Parse single playlist directly
         if (validation.kind === 'single_playlist_url') {
-          const res = await parsePlaylist(targetUrl, controller.signal);
+          const platform = validation.platform === 'netease' ? 'netease' : 'qqmusic';
+          const res = await parsePlaylist(targetUrl, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
@@ -92,6 +156,7 @@ export const AppContent: React.FC = () => {
             setUserPlaylists(null);
             setViewMode('single');
             setState('success');
+            scrollToElement('result');
           } else {
             setError(res.error);
             setState('error');
@@ -99,50 +164,106 @@ export const AppContent: React.FC = () => {
           return;
         }
 
-        // Case C: Numeric input -> Smart dual-detection (could be QQ number OR playlist ID)
+        // Case C: Numeric input -> Smart 4-way cross-platform & cross-type search
         if (validation.kind === 'numeric') {
-          const [singleRes, userRes] = await Promise.all([
-            parsePlaylist(targetUrl, controller.signal).catch(() => null),
-            fetchUserPlaylists(targetUrl, controller.signal).catch(() => null),
+          const [qqSingleRes, qqUserRes, neteaseSingleRes, neteaseUserRes] = await Promise.all([
+            parsePlaylist(targetUrl, controller.signal, 'qqmusic').catch(() => null),
+            fetchUserPlaylists(targetUrl, controller.signal, 'qqmusic').catch(() => null),
+            parsePlaylist(targetUrl, controller.signal, 'netease').catch(() => null),
+            fetchUserPlaylists(targetUrl, controller.signal, 'netease').catch(() => null),
           ]);
 
           if (requestIdRef.current !== currentRequestId) return;
 
-          const isSingleOk = singleRes && singleRes.success && singleRes.data;
-          const isUserOk = userRes && userRes.success && userRes.data && userRes.data.playlists.length > 0;
+          const candidates: DisambiguationItem[] = [];
 
-          if (isUserOk && isSingleOk) {
-            // Collision: both valid! Default to user playlists collection, show banner to switch
-            setUserPlaylists(userRes.data);
-            setPlaylist(singleRes.data);
-            setHasCollision(true);
-            setViewMode('batch');
-            setState('success');
-          } else if (isUserOk) {
-            // Matched as QQ number
-            setUserPlaylists(userRes.data);
-            setPlaylist(null);
-            setViewMode('batch');
-            setState('success');
-          } else if (isSingleOk) {
-            // Matched as single playlist ID
-            setPlaylist(singleRes.data);
-            setUserPlaylists(null);
-            setViewMode('single');
-            setState('success');
-          } else {
-            // Both failed: Determine the most sensible error to display
-            if (userRes && !userRes.success && userRes.error.code === 'NETWORK_ERROR') {
-              setError(userRes.error);
-            } else if (singleRes && !singleRes.success && singleRes.error.code === 'NETWORK_ERROR') {
-              setError(singleRes.error);
+          if (qqSingleRes && qqSingleRes.success && qqSingleRes.data && qqSingleRes.data.name) {
+            candidates.push({
+              id: qqSingleRes.data.id || targetUrl,
+              platform: 'qqmusic',
+              type: 'playlist',
+              title: qqSingleRes.data.name,
+              subtitle: `创建者: ${qqSingleRes.data.creator || '未知'}`,
+              count: qqSingleRes.data.trackCount ?? qqSingleRes.data.tracks?.length ?? 0,
+              coverUrl: qqSingleRes.data.coverUrl,
+              data: qqSingleRes.data,
+            });
+          }
+
+          if (qqUserRes && qqUserRes.success && qqUserRes.data && qqUserRes.data.playlists?.length > 0) {
+            candidates.push({
+              id: qqUserRes.data.userId || targetUrl,
+              platform: 'qqmusic',
+              type: 'user',
+              title: qqUserRes.data.nickname || `QQ 用户 (${targetUrl})`,
+              subtitle: `包含 ${qqUserRes.data.total || qqUserRes.data.playlists.length} 个公开歌单`,
+              count: qqUserRes.data.total || qqUserRes.data.playlists.length,
+              coverUrl: qqUserRes.data.playlists[0]?.coverUrl,
+              data: qqUserRes.data,
+            });
+          }
+
+          if (neteaseSingleRes && neteaseSingleRes.success && neteaseSingleRes.data && neteaseSingleRes.data.name) {
+            candidates.push({
+              id: neteaseSingleRes.data.id || targetUrl,
+              platform: 'netease',
+              type: 'playlist',
+              title: neteaseSingleRes.data.name,
+              subtitle: `创建者: ${neteaseSingleRes.data.creator || '未知'}`,
+              count: neteaseSingleRes.data.trackCount ?? neteaseSingleRes.data.tracks?.length ?? 0,
+              coverUrl: neteaseSingleRes.data.coverUrl,
+              data: neteaseSingleRes.data,
+            });
+          }
+
+          if (neteaseUserRes && neteaseUserRes.success && neteaseUserRes.data && neteaseUserRes.data.playlists?.length > 0) {
+            candidates.push({
+              id: neteaseUserRes.data.userId || targetUrl,
+              platform: 'netease',
+              type: 'user',
+              title: neteaseUserRes.data.nickname || `网易云用户 (${targetUrl})`,
+              subtitle: `包含 ${neteaseUserRes.data.total || neteaseUserRes.data.playlists.length} 个公开歌单`,
+              count: neteaseUserRes.data.total || neteaseUserRes.data.playlists.length,
+              coverUrl: neteaseUserRes.data.playlists[0]?.coverUrl,
+              data: neteaseUserRes.data,
+            });
+          }
+
+          if (candidates.length === 0) {
+            const anyNetworkError = [qqSingleRes, qqUserRes, neteaseSingleRes, neteaseUserRes].find(
+              (r) => r && !r.success && r.error.code === 'NETWORK_ERROR',
+            );
+            if (anyNetworkError && !anyNetworkError.success) {
+              setError(anyNetworkError.error);
             } else {
               setError({
                 code: 'PLAYLIST_NOT_FOUND',
-                message: '未找到对应歌单，且该 QQ 号名下未发现公开歌单，请检查输入是否正确。',
+                message: `在 QQ 音乐 与 网易云音乐 中均未找到 ID 为 “${targetUrl}” 的歌单或用户公开主页，请检查输入是否正确。`,
               });
             }
             setState('error');
+          } else if (candidates.length === 1) {
+            // Unambiguous! Directly load matched item
+            const only = candidates[0];
+            if (only.type === 'playlist') {
+              setPlaylist(only.data as Playlist);
+              setUserPlaylists(null);
+              setViewMode('single');
+              setState('success');
+              scrollToElement('result');
+            } else {
+              setUserPlaylists(only.data as UserPlaylistsData);
+              setPlaylist(null);
+              setViewMode('batch');
+              setState('success');
+              scrollToElement('user-playlists');
+            }
+          } else {
+            // Ambiguous: 2 or more targets matched across platforms/types
+            setDisambiguationCandidates(candidates);
+            setDisambiguationQueryId(targetUrl);
+            setIsDisambiguationOpen(true);
+            setState('idle');
           }
           return;
         }
@@ -160,7 +281,7 @@ export const AppContent: React.FC = () => {
         }
       }
     },
-    [inputUrl],
+    [inputUrl, scrollToElement],
   );
 
   const handleReset = useCallback(() => {
@@ -173,8 +294,37 @@ export const AppContent: React.FC = () => {
     setError(null);
     setHasCollision(false);
     setViewMode('single');
+    setDisambiguationCandidates([]);
+    setIsDisambiguationOpen(false);
+    setDisambiguationQueryId('');
     setState('idle');
-  }, []);
+    lastCollectionScrollPosRef.current = null;
+    scrollToTop();
+  }, [scrollToTop]);
+
+  const handleSelectDisambiguationPlaylist = useCallback(
+    (selectedPlaylist: Playlist) => {
+      setIsDisambiguationOpen(false);
+      setPlaylist(selectedPlaylist);
+      setUserPlaylists(null);
+      setViewMode('single');
+      setState('success');
+      scrollToElement('result');
+    },
+    [scrollToElement],
+  );
+
+  const handleSelectDisambiguationUser = useCallback(
+    (selectedUser: UserPlaylistsData) => {
+      setIsDisambiguationOpen(false);
+      setUserPlaylists(selectedUser);
+      setPlaylist(null);
+      setViewMode('batch');
+      setState('success');
+      scrollToElement('user-playlists');
+    },
+    [scrollToElement],
+  );
 
   const handleQuickSample = useCallback(
     (sampleId: string) => {
@@ -189,13 +339,23 @@ export const AppContent: React.FC = () => {
     if (userPlaylists) {
       setViewMode('batch');
       setState('success');
-      // Optional: scroll to top or specific section
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Smoothly preserve/restore scroll offset in the playlist collection without flying to top
+      const savedPos = lastCollectionScrollPosRef.current;
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && savedPos !== null && savedPos > 0 && typeof window.scrollTo === 'function') {
+          window.scrollTo({ top: savedPos, behavior: 'smooth' });
+        } else if (typeof document !== 'undefined') {
+          const el = document.getElementById('user-playlists');
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      }, 50);
     }
   }, [userPlaylists]);
 
   const handleDrilldownToSingle = useCallback(
-    async (playlistId: string) => {
+    async (playlistIdOrUrl: string, platformOverride?: 'qqmusic' | 'netease') => {
       // Abort any ongoing request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -205,22 +365,31 @@ export const AppContent: React.FC = () => {
       abortControllerRef.current = controller;
       const currentRequestId = ++requestIdRef.current;
 
-      // DO NOT clear userPlaylists here, just update what we need for single view
+      // 1. Remember user's scroll position in the collection
+      if (typeof window !== 'undefined') {
+        lastCollectionScrollPosRef.current = window.scrollY;
+      }
+
+      // 2. Put playlist identifier into search box & enter loading state
+      setInputUrl(playlistIdOrUrl);
       setState('loading');
       setError(null);
-      
+
+      // 3. Smoothly jump to top so the user clearly sees the active parsing state
+      scrollToTop();
+
       try {
-        const res = await parsePlaylist(playlistId, controller.signal);
+        const platform =
+          platformOverride || (userPlaylists?.platform === 'netease' ? 'netease' : 'qqmusic');
+        const res = await parsePlaylist(playlistIdOrUrl, controller.signal, platform);
         if (requestIdRef.current !== currentRequestId) return;
 
         if (res.success) {
           setPlaylist(res.data);
           setViewMode('single');
           setState('success');
-          // Scroll to result paper gracefully
-          setTimeout(() => {
-             document.getElementById('result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
+          // 4. Once parsed successfully, smoothly scroll down to the single playlist card
+          scrollToElement('result');
         } else {
           setError(res.error);
           setState('error');
@@ -238,7 +407,7 @@ export const AppContent: React.FC = () => {
         }
       }
     },
-    [],
+    [userPlaylists, scrollToTop, scrollToElement],
   );
 
   useBaselineGrid([state, playlist, userPlaylists]);
@@ -310,6 +479,15 @@ export const AppContent: React.FC = () => {
         <PrivacyModal
           isOpen={isPrivacyOpen}
           onClose={() => setIsPrivacyOpen(false)}
+        />
+
+        <DisambiguationModal
+          isOpen={isDisambiguationOpen}
+          onClose={() => setIsDisambiguationOpen(false)}
+          queryId={disambiguationQueryId}
+          candidates={disambiguationCandidates}
+          onSelectPlaylist={handleSelectDisambiguationPlaylist}
+          onSelectUserPlaylists={handleSelectDisambiguationUser}
         />
       </div>
     </>

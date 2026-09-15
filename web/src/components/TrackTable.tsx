@@ -81,6 +81,20 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
               </th>
               <th
                 scope="col"
+                className="col-vip"
+                style={{ width: '64px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
+              >
+                {t.table.colVip}
+              </th>
+              <th
+                scope="col"
+                className="col-status"
+                style={{ width: '95px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
+              >
+                {t.table.colStatus}
+              </th>
+              <th
+                scope="col"
                 className="col-duration hide-mobile"
                 style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
               >
@@ -94,13 +108,37 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                 track.artists && track.artists.length > 0 ? track.artists.join(' / ') : t.table.noArtist;
               const albumText = track.album?.trim() ? track.album : t.table.noAlbum;
               const durationText = formatDuration(track.durationMs);
+              const isUnplayable = track.status === 'unplayable' || (track.isAvailable === false && track.status !== 'geo_blocked');
+              const isGreyedOut = isUnplayable;
+              const isVipTrack = Boolean(track.isVip || track.status === 'vip');
+
+              // Derive status display (only flags unplayable or paid, overseas-only restrictions are treated as normal)
+              let statusLabel = t.table.statusPlayable;
+              let statusBg = '#f0fdf4';
+              let statusColor = '#166534';
+              let statusBorder = '#bbf7d0';
+
+              if (isUnplayable) {
+                statusLabel = t.table.statusUnplayable;
+                statusBg = '#fef2f2';
+                statusColor = '#991b1b';
+                statusBorder = '#fecaca';
+              } else if (track.status === 'paid') {
+                statusLabel = t.table.statusPaid;
+                statusBg = '#f3e8ff';
+                statusColor = '#6b21a8';
+                statusBorder = '#d8b4fe';
+              }
 
               return (
                 <tr
                   key={`${track.id || track.title}-${track.index}-${i}`}
-                  className="song-row track-row"
+                  className={`song-row track-row ${isGreyedOut ? 'track-greyed-out' : ''}`}
                   style={{
                     borderBottom: '1px solid rgba(45, 52, 54, 0.08)',
+                    opacity: isGreyedOut ? 0.65 : 1,
+                    backgroundColor: isGreyedOut ? 'rgba(243, 244, 246, 0.4)' : 'transparent',
+                    transition: 'background-color 0.15s ease',
                   }}
                 >
                   <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem' }}>
@@ -109,18 +147,24 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   <td className="col-cover" style={{ padding: '0.65rem 0.5rem' }}>
                     <TrackArtwork coverUrl={track.coverUrl} title={track.title} size={38} />
                   </td>
-                  <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: 'var(--ink, #2d3436)' }}>
+                  <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: isGreyedOut ? '#6b7280' : 'var(--ink, #2d3436)' }}>
                     <span
                       className="track-title-text"
                       title={track.title}
-                      style={{ fontWeight: 600, fontSize: '0.95rem', display: 'inline-block', fontFamily: 'var(--font-sans, sans-serif)' }}
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        display: 'inline-block',
+                        fontFamily: 'var(--font-sans, sans-serif)',
+                        color: isGreyedOut ? '#6b7280' : 'inherit',
+                      }}
                     >
                       {track.title}
                     </span>
                   </td>
                   <td
                     className="col-artist"
-                    style={{ color: '#4b5563', padding: '0.65rem 0.75rem', fontSize: '0.925rem', fontFamily: 'var(--font-sans, sans-serif)' }}
+                    style={{ color: isGreyedOut ? '#9ca3af' : '#4b5563', padding: '0.65rem 0.75rem', fontSize: '0.925rem', fontFamily: 'var(--font-sans, sans-serif)' }}
                     title={artistsText}
                   >
                     {artistsText}
@@ -128,7 +172,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   <td
                     className="col-album hide-mobile"
                     style={{
-                      color: '#6b7280',
+                      color: isGreyedOut ? '#9ca3af' : '#6b7280',
                       padding: '0.65rem 0.75rem',
                       fontSize: '0.9rem',
                       fontFamily: 'var(--font-sans, sans-serif)',
@@ -136,6 +180,54 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     title={albumText}
                   >
                     {albumText}
+                  </td>
+                  <td
+                    className="col-vip"
+                    style={{
+                      textAlign: 'center',
+                      padding: '0.65rem 0.5rem',
+                    }}
+                  >
+                    {isVipTrack ? (
+                      <span
+                        style={{
+                          fontSize: '0.725rem',
+                          fontWeight: 700,
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          backgroundColor: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #fcd34d',
+                          display: 'inline-block',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        VIP
+                      </span>
+                    ) : null}
+                  </td>
+                  <td
+                    className="col-status"
+                    style={{
+                      textAlign: 'center',
+                      padding: '0.65rem 0.5rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.725rem',
+                        fontWeight: 600,
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px',
+                        backgroundColor: statusBg,
+                        color: statusColor,
+                        border: `1px solid ${statusBorder}`,
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {statusLabel}
+                    </span>
                   </td>
                   <td
                     className="col-duration hide-mobile"

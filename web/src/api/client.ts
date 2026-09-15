@@ -35,9 +35,14 @@ export const REMOTE_API_BASE_URL = 'https://api.playlistout.com';
  * If the local Worker is not running or proxy times out in dev mode, automatically falls back to production API.
  * In production mode, requests https://api.playlistout.com directly.
  */
-export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Promise<ApiResponse<Playlist>> {
+export async function parsePlaylist(
+  urlOrId: string,
+  signal?: AbortSignal,
+  platform?: 'qqmusic' | 'netease',
+): Promise<ApiResponse<Playlist>> {
+  const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
   try {
-    const response = await fetch(`${API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+    const response = await fetch(`${API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
       signal,
       headers: {
         Accept: 'application/json',
@@ -56,7 +61,7 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
     // If local dev proxy returned HTML (e.g. 504 Gateway Timeout when local worker is down), fallback to remote API
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       console.warn('[PlaylistOut Dev] Local worker proxy returned non-JSON. Falling back to remote API...');
-      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
         signal,
         headers: { Accept: 'application/json' },
       });
@@ -85,7 +90,7 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       try {
         console.warn('[PlaylistOut Dev] Local fetch failed. Falling back to remote API...');
-        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}`, {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
           signal,
           headers: { Accept: 'application/json' },
         });
@@ -111,11 +116,13 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
  * API client method to fetch public playlists created by a specific user.
  */
 export async function fetchUserPlaylists(
-  uin: string,
+  uinOrUrl: string,
   signal?: AbortSignal,
+  platform?: 'qqmusic' | 'netease',
 ): Promise<ApiResponse<UserPlaylistsData>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/playlists?uin=${encodeURIComponent(uin)}`, {
+    const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
+    const response = await fetch(`${API_BASE_URL}/api/user/playlists?uin=${encodeURIComponent(uinOrUrl)}${platformParam}`, {
       signal,
       headers: {
         Accept: 'application/json',

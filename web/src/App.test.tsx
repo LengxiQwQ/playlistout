@@ -50,21 +50,21 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   it('renders initial idle state with heading, input and sample links', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PlaylistOut');
-    expect(screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/粘贴公开歌单链接/)).toBeInTheDocument();
     expect(screen.getByText('民谣流行 (636首)')).toBeInTheDocument();
   });
 
   it('shows client validation error when submitting empty or invalid input', async () => {
     render(<App />);
-    const input = screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
     const submitBtn = screen.getByRole('button', { name: '解析' });
 
     // Try submitting unsupported link
-    fireEvent.change(input, { target: { value: 'https://music.163.com/playlist?id=123' } });
+    fireEvent.change(input, { target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' } });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/仅支持 QQ 音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐与网易云音乐公开歌单/)).toBeInTheDocument();
   });
 
   it('renders loading state and successful playlist preview with repeated tracks preserved', async () => {
@@ -74,7 +74,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     });
 
     render(<App />);
-    const input = screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
     fireEvent.change(input, { target: { value: 'https://y.qq.com/n/ryqq/playlist/9044196528' } });
 
     const submitBtn = screen.getByRole('button', { name: '解析' });
@@ -115,7 +115,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
       });
 
     render(<App />);
-    const input = screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
     fireEvent.change(input, { target: { value: 'https://y.qq.com/n/ryqq/playlist/9044196528' } });
 
     fireEvent.click(screen.getByRole('button', { name: '解析' }));
@@ -139,27 +139,29 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
       resolveFirst = resolve;
     });
 
-    vi.spyOn(client, 'parsePlaylist')
-      .mockImplementationOnce(() => firstPromise as any)
-      .mockResolvedValueOnce({
+    vi.spyOn(client, 'parsePlaylist').mockImplementation(async (url: string) => {
+      if (url.includes('9044196528')) {
+        return firstPromise as any;
+      }
+      return {
         success: true,
         data: {
           ...mockSamplePlaylist,
           name: '最新快速解析结果',
         },
-      });
+      };
+    });
 
     render(<App />);
-    const input = screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
 
     // Request 1 (slow)
-    fireEvent.change(input, { target: { value: '9044196528' } });
+    fireEvent.change(input, { target: { value: 'https://y.qq.com/n/ryqq/playlist/9044196528' } });
     fireEvent.click(screen.getByRole('button', { name: '解析' }));
 
     // Request 2 (fast)
-    fireEvent.change(input, { target: { value: '8079931214' } });
+    fireEvent.change(input, { target: { value: 'https://y.qq.com/n/ryqq/playlist/8079931214' } });
     fireEvent.click(screen.getByRole('button', { name: /解析/ }));
-
 
     // Request 2 completes and displays
     expect(await screen.findByText('最新快速解析结果')).toBeInTheDocument();
@@ -178,6 +180,87 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     expect(screen.queryByText('过期的旧结果')).not.toBeInTheDocument();
     expect(screen.getByText('最新快速解析结果')).toBeInTheDocument();
   });
+
+  it('numeric input: directly displays when exactly 1 match is found', async () => {
+    vi.spyOn(client, 'parsePlaylist').mockImplementation(async (_id, _sig, platform) => {
+      if (platform === 'netease') {
+        return {
+          success: true,
+          data: {
+            ...mockSamplePlaylist,
+            platform: 'netease',
+            name: '网易云唯一歌单',
+          },
+        };
+      }
+      return {
+        success: false,
+        error: { code: 'PLAYLIST_NOT_FOUND', message: 'Not found' },
+      };
+    });
+
+    vi.spyOn(client, 'fetchUserPlaylists').mockResolvedValue({
+      success: false,
+      error: { code: 'USER_NOT_FOUND', message: 'Not found' },
+    });
+
+    render(<App />);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
+    fireEvent.change(input, { target: { value: '2756674066' } });
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // Expect direct load without modal
+    expect(await screen.findByText('网易云唯一歌单')).toBeInTheDocument();
+    expect(screen.queryByTestId('disambiguation-modal')).not.toBeInTheDocument();
+  });
+
+  it('numeric input: opens disambiguation modal when multiple targets match and allows selection', async () => {
+    vi.spyOn(client, 'parsePlaylist').mockImplementation(async (_id, _sig, platform) => {
+      if (platform === 'qqmusic') {
+        return {
+          success: true,
+          data: {
+            ...mockSamplePlaylist,
+            platform: 'qqmusic',
+            name: 'QQ冲突歌单',
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          ...mockSamplePlaylist,
+          platform: 'netease',
+          name: '网易云冲突歌单',
+        },
+      };
+    });
+
+    vi.spyOn(client, 'fetchUserPlaylists').mockResolvedValue({
+      success: false,
+      error: { code: 'USER_NOT_FOUND', message: 'Not found' },
+    });
+
+    render(<App />);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
+    fireEvent.change(input, { target: { value: '1825474783' } });
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // Modal appears with candidates
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('发现多个匹配目标')).toBeInTheDocument();
+    expect(screen.getByText('QQ冲突歌单')).toBeInTheDocument();
+    expect(screen.getByText('网易云冲突歌单')).toBeInTheDocument();
+
+    // User selects NetEase candidate
+    const neteaseCard = screen.getByTestId('disambiguation-card-netease-playlist');
+    fireEvent.click(neteaseCard);
+
+    // Modal closes and selected playlist is rendered
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByText('网易云冲突歌单')).toBeInTheDocument();
+  });
+
 
   it('renders large lists (1000 tracks) responsibly', async () => {
     const largeTracks = Array.from({ length: 1000 }, (_, i) => ({
@@ -203,7 +286,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     });
 
     render(<App />);
-    const input = screen.getByPlaceholderText(/粘贴 QQ 音乐公开歌单链接/);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
     fireEvent.change(input, { target: { value: '4177812546' } });
     fireEvent.click(screen.getByRole('button', { name: '解析' }));
 
@@ -216,7 +299,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   it('allows opening and closing the Privacy Policy modal via footer and feature cards', async () => {
     render(<App />);
 
-    expect(screen.getByText(/QQ 音乐公开歌单解析/)).toBeInTheDocument();
+    expect(screen.getByText(/跨平台公开歌单解析/)).toBeInTheDocument();
 
     // 1. Open via feature card link
     const featureLink = screen.getByText('查看数据说明');
@@ -236,5 +319,67 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     // Close via Escape key
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('scrolls to top on collection drilldown to show loading and restores collection smoothly without jumping to top', async () => {
+    const scrollToSpy = vi.fn();
+    window.scrollTo = scrollToSpy;
+    Element.prototype.scrollIntoView = vi.fn();
+
+    vi.spyOn(client, 'fetchUserPlaylists').mockResolvedValueOnce({
+      success: true,
+      data: {
+        platform: 'netease',
+        userId: '1825474783',
+        nickname: '冷夕QwQ',
+        total: 1,
+        playlists: [
+          {
+            id: '2756674066',
+            name: '我喜欢的音乐',
+            trackCount: 15,
+            sourceUrl: 'https://music.163.com/playlist?id=2756674066',
+          },
+        ],
+      },
+    });
+
+    vi.spyOn(client, 'parsePlaylist').mockResolvedValueOnce({
+      success: true,
+      data: mockSamplePlaylist,
+    });
+
+    render(<App />);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
+    fireEvent.change(input, { target: { value: 'https://music.163.com/user/home?id=1825474783' } });
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // 1. Collection view is shown
+    expect(await screen.findByText('我喜欢的音乐')).toBeInTheDocument();
+    expect(screen.getByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
+
+    // Reset spy before drilldown
+    scrollToSpy.mockClear();
+
+    // 2. Click drilldown "查看歌曲"
+    const drilldownBtn = screen.getByText(/查看歌曲/);
+    fireEvent.click(drilldownBtn);
+
+    // Should have smoothly scrolled to top to show loading progress
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+
+    // 3. Single playlist view lands
+    expect(await screen.findByTestId('playlist-summary')).toBeInTheDocument();
+    expect(screen.getByText('测试精选歌单')).toBeInTheDocument();
+
+    // 4. Return to collection
+    scrollToSpy.mockClear();
+    const returnBtn = screen.getAllByText(/返回歌单合集/)[0];
+    fireEvent.click(returnBtn);
+
+    // Collection view should be visible again
+    expect(await screen.findByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
+    // Must NOT jump to top: 0
+    expect(scrollToSpy).not.toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 });

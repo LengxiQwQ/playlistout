@@ -50,6 +50,27 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       await Promise.allSettled(ctx._promises);
     });
 
+    it('accepts valid export event for netease platform', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.com',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'json',
+          platform: 'netease',
+          trackCount: 42,
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
     it.each([
       'title',
       'title-artist',
@@ -225,7 +246,6 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     });
 
     it.each([
-      'netease',
       'spotify',
       'apple',
       'kugou',

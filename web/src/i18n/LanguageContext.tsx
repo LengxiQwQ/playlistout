@@ -104,3 +104,5 @@ export function useTranslation(): LanguageContextValue {
   const context = useContext(LanguageContext);
   return context || defaultContextValue;
 }
+
+export const useLanguage = useTranslation;

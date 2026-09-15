@@ -55,6 +55,8 @@ export interface Translations {
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;
+    platformNetease: string;
+    platformNeteaseDesc: string;
     moreSoon: string;
   };
   loading: {
@@ -100,6 +102,13 @@ export interface Translations {
     colArtist: string;
     colAlbum: string;
     colDuration: string;
+    colVip: string;
+    colStatus: string;
+    statusPlayable: string;
+    statusUnplayable: string;
+    statusGeoBlocked: string;
+    statusVip: string;
+    statusPaid: string;
     noArtist: string;
     noAlbum: string;
   };
@@ -206,5 +215,20 @@ export interface Translations {
     viewTracks: string;
     listHeaderTitle: string;
     noPlaylists: string;
+    returnToCollection: string;
+  };
+  disambiguation: {
+    modalTitle: string;
+    description: string;
+    platformQQ: string;
+    platformNetease: string;
+    typePlaylist: string;
+    typeUser: string;
+    selectPlaylistAction: string;
+    selectUserAction: string;
+    trackCountSuffix: string;
+    playlistCountSuffix: string;
+    creatorPrefix: string;
+    cancel: string;
   };
 }
