@@ -60,7 +60,7 @@ export const BackgroundDecorations: React.FC = () => {
       </div>
 
       <div style={{ position: 'absolute', top: '52%', left: 'max(8%, calc(50% - 600px))' }}>
-        <Tape color="blue" rotateDeg={-22} style={{ width: '3.5rem', height: '1rem', opacity: 0.6 }} />
+        <Tape color="cyan" rotateDeg={-22} style={{ width: '3.5rem', height: '1rem', opacity: 0.6 }} />
       </div>
 
       {/* Middle Right Area */}
@@ -97,7 +97,7 @@ export const BackgroundDecorations: React.FC = () => {
       </div>
 
       <div style={{ position: 'absolute', bottom: '18%', right: 'max(18%, calc(50% - 420px))' }}>
-        <Tape color="blue" rotateDeg={8} style={{ width: '4rem', height: '1rem', opacity: 0.5 }} />
+        <Tape color="cyan" rotateDeg={8} style={{ width: '4rem', height: '1rem', opacity: 0.5 }} />
       </div>
 
       <div style={{ position: 'absolute', bottom: '10%', right: 'max(5%, calc(50% - 680px))' }}>
