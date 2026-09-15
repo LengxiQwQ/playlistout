@@ -15,9 +15,28 @@ describe('Client-Side Input Validation', () => {
     ).toBe(true);
   });
 
-  it('validates raw numeric playlist IDs', () => {
-    expect(validatePlaylistInput('9044196528').valid).toBe(true);
-    expect(validatePlaylistInput('12345').valid).toBe(true);
+  it('validates raw numeric playlist IDs and QQ numbers', () => {
+    const res1 = validatePlaylistInput('9044196528');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('numeric');
+    expect(res1.extractedUin).toBe('9044196528');
+
+    const res2 = validatePlaylistInput('10001');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('numeric');
+    expect(res2.extractedUin).toBe('10001');
+  });
+
+  it('validates QQ Music user profile URLs and extracts uin', () => {
+    const res = validatePlaylistInput('https://y.qq.com/portal/profile.html?uin=10001');
+    expect(res.valid).toBe(true);
+    expect(res.kind).toBe('user_profile_url');
+    expect(res.extractedUin).toBe('10001');
+
+    const res2 = validatePlaylistInput('https://y.qq.com/n/ryqq/profile/like/song?uin=12345678');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('user_profile_url');
+    expect(res2.extractedUin).toBe('12345678');
   });
 
   it('rejects empty or whitespace input', () => {

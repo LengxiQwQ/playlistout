@@ -1,6 +1,6 @@
 import { getCorsHeaders, handleOptions } from './cors';
-import { type ApiResponse, type Playlist, ProviderError } from './models/playlist';
-import { qqMusicProvider } from './providers/qqmusic';
+import { type ApiResponse, type Playlist, type UserPlaylistsData, ProviderError } from './models/playlist';
+import { qqMusicProvider, fetchQQUserPlaylists, extractQQNumber } from './providers/qqmusic';
 import { getPublicStats } from './stats';
 import { recordParseEvent, recordRateLimitEvent } from './analytics/recorder';
 import { classifyInputType, classifyErrorCategory } from './analytics/dimensions';
@@ -267,6 +267,139 @@ export default {
           error: {
             code: 'INTERNAL_ERROR',
             message: 'An unexpected internal error occurred while processing the playlist.',
+          },
+        };
+        return new Response(JSON.stringify(fallbackResponse), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      }
+    }
+
+    // User playlists endpoint (Batch QQ Music support)
+    if (url.pathname === '/api/user/playlists') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET, OPTIONS',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Rate limit check: max 30 requests / minute per client IP
+      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      if (!rateCheck.allowed) {
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', 'qqmusic'));
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests. Please wait a moment before trying again.',
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateCheck.resetSeconds),
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const uinInput = url.searchParams.get('uin');
+      if (!uinInput || uinInput.trim().length === 0) {
+        const errorResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Missing or empty required query parameter: uin',
+          },
+        };
+        return new Response(JSON.stringify(errorResponse), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      }
+
+      const extractedUin = extractQQNumber(uinInput);
+      if (!extractedUin) {
+        const errorResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: `The provided input is not a valid QQ number or profile URL: "${uinInput}"`,
+          },
+        };
+        return new Response(JSON.stringify(errorResponse), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      }
+
+      try {
+        const userData: UserPlaylistsData = await fetchQQUserPlaylists(extractedUin);
+        const successResponse: ApiResponse<UserPlaylistsData> = {
+          success: true,
+          data: userData,
+        };
+        return new Response(JSON.stringify(successResponse), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      } catch (err: unknown) {
+        if (err instanceof ProviderError) {
+          const errorResponse: ApiResponse<never> = {
+            success: false,
+            error: {
+              code: err.code,
+              message: err.message,
+              details: err.details,
+            },
+          };
+          return new Response(JSON.stringify(errorResponse), {
+            status: err.statusCode,
+            headers: {
+              'Content-Type': 'application/json',
+              ...responseHeaders,
+            },
+          });
+        }
+
+        const fallbackResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'An unexpected internal error occurred while fetching user playlists.',
           },
         };
         return new Response(JSON.stringify(fallbackResponse), {

@@ -31,6 +31,23 @@ export interface Playlist {
   sourceUrl?: string;
 }
 
+export interface UserPlaylistSummary {
+  id: string;
+  name: string;
+  coverUrl?: string;
+  trackCount: number;
+  listenNum?: number;
+  sourceUrl: string;
+}
+
+export interface UserPlaylistsData {
+  platform: string;
+  userId: string;
+  nickname: string;
+  total: number;
+  playlists: UserPlaylistSummary[];
+}
+
 export interface ApiSuccessResponse<T> {
   success: true;
   data: T;
@@ -51,6 +68,7 @@ export type ApiErrorCode =
   | 'INVALID_INPUT'
   | 'UNSUPPORTED_URL'
   | 'PLAYLIST_NOT_FOUND'
+  | 'USER_NOT_FOUND'
   | 'UPSTREAM_ERROR'
   | 'UPSTREAM_TIMEOUT'
   | 'INCOMPLETE_PLAYLIST'

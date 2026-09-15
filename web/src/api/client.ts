@@ -1,4 +1,4 @@
-import type { ApiResponse, Playlist } from './types';
+import type { ApiResponse, Playlist, UserPlaylistsData } from './types';
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? '' : 'https://api.playlistout.com');
@@ -102,6 +102,48 @@ export async function parsePlaylist(urlOrId: string, signal?: AbortSignal): Prom
       error: {
         code: 'NETWORK_ERROR',
         message: err instanceof Error ? err.message : '网络连接失败，请检查网络后重试。',
+      },
+    };
+  }
+}
+
+/**
+ * API client method to fetch public playlists created by a specific user.
+ */
+export async function fetchUserPlaylists(
+  uin: string,
+  signal?: AbortSignal,
+): Promise<ApiResponse<UserPlaylistsData>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/playlists?uin=${encodeURIComponent(uin)}`, {
+      signal,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: '本地后端 Worker 服务未启动 (127.0.0.1:8787)。请运行根目录的 start-dev.bat 或 npm run dev 启动全栈服务。',
+      },
+    };
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw err;
+    }
+
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: '本地后端 Worker 服务未启动 (127.0.0.1:8787)。请运行根目录的 start-dev.bat 或 npm run dev 启动全栈服务。',
       },
     };
   }

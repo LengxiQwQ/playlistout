@@ -30,3 +30,4 @@ export const qqMusicProvider: Provider = {
 export * from './input';
 export * from './client';
 export * from './normalize';
+export * from './user';

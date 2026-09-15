@@ -199,6 +199,32 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(404);
   });
+
+  describe('/api/user/playlists', () => {
+    it('rejects non-GET methods with 405 Method Not Allowed', async () => {
+      const request = new Request('https://api.playlistout.com/api/user/playlists?uin=10001', { method: 'POST' });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(405);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
+    });
+
+    it('rejects missing uin query parameter with 400 INVALID_INPUT', async () => {
+      const request = new Request('https://api.playlistout.com/api/user/playlists');
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('rejects invalid uin format with 400 INVALID_INPUT', async () => {
+      const request = new Request('https://api.playlistout.com/api/user/playlists?uin=not-valid');
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe('INVALID_INPUT');
+    });
+  });
 });
 
 

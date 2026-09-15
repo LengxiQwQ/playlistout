@@ -183,4 +183,28 @@ export interface Translations {
     privacyLink: string;
     issuesLink: string;
   };
+  userPlaylists: {
+    collectionSticker: string;
+    binderTitle: string;
+    totalPlaylistsCount: string;
+    totalTracksCount: string;
+    switchSingleHint: string;
+    switchToSingle: string;
+    selectAll: string;
+    deselectAll: string;
+    batchExportTitle: string;
+    formatMultiSheet: string;
+    formatZipXlsx: string;
+    formatZipCsv: string;
+    formatZipTxt: string;
+    formatZipJson: string;
+    batchExportBtn: string;
+    exportingProgress: string;
+    exportSuccess: string;
+    exportPartialFail: string;
+    singleExport: string;
+    viewTracks: string;
+    listHeaderTitle: string;
+    noPlaylists: string;
+  };
 }
