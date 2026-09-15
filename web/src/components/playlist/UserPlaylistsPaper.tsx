@@ -154,10 +154,10 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
         <div
           style={{
             position: 'absolute',
-            right: '2rem',
-            top: '-1.85rem',
+            right: '-2rem',
+            top: '-2.5rem',
             color: '#eab308',
-            fontSize: '3rem',
+            fontSize: '4rem',
             userSelect: 'none',
             zIndex: 15,
           }}
@@ -166,19 +166,17 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           ✦
         </div>
 
-        {/* Decorative Tape */}
-        <Tape
-          color="pink"
-          rotateDeg={-4}
-          style={{
-            position: 'absolute',
-            top: '2rem',
-            left: '-1.5rem',
-            zIndex: 20,
-            width: '8.5rem',
-            height: '1.85rem',
-          }}
-        />
+        {/* Decorative Tape (stuck on the corner) */}
+        <div style={{ position: 'absolute', top: '-1rem', left: '-2.5rem', zIndex: 20 }}>
+          <Tape
+            color="pink"
+            rotateDeg={-12}
+            style={{
+              width: '10.5rem',
+              height: '2.5rem',
+            }}
+          />
+        </div>
 
         <Paper
           color="white"
@@ -309,24 +307,6 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               >
                 {t.userPlaylists.batchExportTitle}
               </span>
-
-              <button
-                type="button"
-                onClick={handleToggleSelectAll}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#2563eb',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                  textDecoration: 'underline',
-                }}
-              >
-                {selectedIds.length === userData.playlists.length
-                  ? t.userPlaylists.deselectAll
-                  : formatString(t.userPlaylists.selectAll, { count: userData.playlists.length })}
-              </button>
             </div>
 
             {/* Format Selection Stickers */}
@@ -444,16 +424,36 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
 
           {/* Playlist Rows Catalog */}
           <div style={{ marginTop: '1.5rem' }}>
-            <h3
-              className="font-handwriting"
-              style={{
-                fontSize: '1.5rem',
-                marginBottom: '1rem',
-                color: 'var(--ink, #2d3436)',
-              }}
-            >
-              {formatString(t.userPlaylists.listHeaderTitle, { count: userData.playlists.length })}
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3
+                className="font-handwriting"
+                style={{
+                  fontSize: '1.5rem',
+                  color: 'var(--ink, #2d3436)',
+                  margin: 0,
+                }}
+              >
+                {formatString(t.userPlaylists.listHeaderTitle, { count: userData.playlists.length })}
+              </h3>
+
+              <button
+                type="button"
+                onClick={handleToggleSelectAll}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#2563eb',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textDecoration: 'underline',
+                }}
+              >
+                {selectedIds.length === userData.playlists.length
+                  ? t.userPlaylists.deselectAll
+                  : formatString(t.userPlaylists.selectAll, { count: userData.playlists.length })}
+              </button>
+            </div>
 
             {userData.playlists.length === 0 ? (
               <p style={{ color: '#64748b', fontStyle: 'italic' }}>{t.userPlaylists.noPlaylists}</p>
