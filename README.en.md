@@ -101,9 +101,9 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `name` | `string` | **Required** | Full title of the playlist. |
 | `creator` | `string` | Optional | Nickname of the playlist creator / curator. |
 | `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
-| `platform` | `string` | Optional | Source music platform identifier (e.g., `"qqmusic"`). |
-| `id` | `string` | Optional | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
-| `sourceUrl` | `string` | Optional | Direct canonical web URL of the playlist on the source platform. |
+| `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`). |
+| `id` | `string` | **Required** | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
+| `sourceUrl` | `string` | **Required** | Direct canonical web URL of the playlist on the source platform. |
 | `trackCount` | `number` | **Required** | Total number of tracks contained in the playlist (integer). |
 | `totalDuration` | `string \| null` | Optional | Formatted total playlist duration string (e.g., `"3 小时 45 分钟"`). |
 | `playCount` | `number \| null` | Optional | Cumulative listen / play count as an integer. |
@@ -119,7 +119,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `id` | `string` | Optional | Unique track identifier / MID from the source platform (e.g., `"0039MnYb0qxYAc"`). |
 | `title` | `string` | **Required** | Song title (preserving version notes and subtitles). |
 | `artists` | `string[]` | **Required** | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
-| `album` | `string` | Optional | Album name. |
+| `album` | `string` | **Required** | Album name. |
 | `durationMs` | `number` | Optional | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). |
 | `sourceUrl` | `string` | Optional | Direct canonical web URL of the track detail page. |
 
