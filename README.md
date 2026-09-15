@@ -101,9 +101,9 @@
 | `name` | `string` | **必填** | 歌单完整名称 |
 | `creator` | `string` | 可选 | 歌单创建者昵称 |
 | `updateTime` | `string \| null` | 可选 | 歌单最后修改/更新时间。格式：`YYYY-MM-DD HH:mm:ss` |
-| `platform` | `string` | 可选 | 来源平台标识（例如 `"qqmusic"`） |
-| `id` | `string` | 可选 | 平台原始歌单唯一标识 ID（例如 `"773829104"`） |
-| `sourceUrl` | `string` | 可选 | 歌单在来源平台上的网页版直链 URL |
+| `platform` | `string` | **必填** | 来源平台标识（例如 `"qqmusic"`） |
+| `id` | `string` | **必填** | 平台原始歌单唯一标识 ID（例如 `"773829104"`） |
+| `sourceUrl` | `string` | **必填** | 歌单在来源平台上的网页版直链 URL |
 | `trackCount` | `number` | **必填** | 歌单实际包含的曲目条目总数（整型） |
 | `totalDuration` | `string \| null` | 可选 | 歌单曲目总时长格式化文本（如 `"3 小时 45 分钟"`） |
 | `playCount` | `number \| null` | 可选 | 歌单累计播放量总次数（整型） |
@@ -119,7 +119,7 @@
 | `id` | `string` | 可选 | 来源平台的歌曲唯一 ID / MID（例如 `"0039MnYb0qxYAc"`） |
 | `title` | `string` | **必填** | 歌曲标题（保留完整版本名与副标题） |
 | `artists` | `string[]` | **必填** | 参与歌手名数组（多位歌手分别作为独立元素，如 `["周杰伦", "阿信"]`） |
-| `album` | `string` | 可选 | 收录专辑名称 |
+| `album` | `string` | **必填** | 收录专辑名称 |
 | `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒） |
 | `sourceUrl` | `string` | 可选 | 该歌曲在来源平台上的网页详情直链 URL |
 
