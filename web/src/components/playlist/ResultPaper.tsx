@@ -10,14 +10,15 @@ import { ExportToolbar } from '../ExportToolbar';
 export interface ResultPaperProps {
   playlist: Playlist;
   onReset: () => void;
+  onReturnToBatch?: () => void;
 }
 
-export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) => {
+export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onReturnToBatch }) => {
   const { t } = useTranslation();
 
   return (
     <div>
-      {/* Transitional journal hint */}
+      {/* Transitional journal hint or Back button */}
       <div
         className="font-note"
         style={{
@@ -25,6 +26,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: onReturnToBatch ? 'flex-start' : 'center',
           gap: '0.65rem',
           fontSize: '1.65rem',
           color: '#8a8f92',
@@ -32,7 +34,33 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           lineHeight: 'var(--ruled-line-height, 38px)',
         }}
       >
-        <span>{t.result.doneParsingHint}</span>
+        {onReturnToBatch ? (
+          <button
+            type="button"
+            onClick={onReturnToBatch}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#475569',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'inherit',
+              fontSize: '1.45rem',
+              transition: 'color 0.2s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.color = '#0f172a')}
+            onMouseOut={(e) => (e.currentTarget.style.color = '#475569')}
+          >
+            <span style={{ fontSize: '1.2em' }}>🔙</span> 
+            <span style={{ textDecoration: 'underline', textDecorationStyle: 'wavy', textUnderlineOffset: '4px' }}>
+              返回歌单集合
+            </span>
+          </button>
+        ) : (
+          <span>{t.result.doneParsingHint}</span>
+        )}
       </div>
 
       <section
@@ -49,8 +77,8 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
           className="result-doodle"
           style={{
             position: 'absolute',
-            right: '2rem',
-            top: '-1.85rem',
+            right: '1rem',
+            top: '-2rem',
             color: '#a0a5a8',
             fontSize: '3rem',
             userSelect: 'none',
@@ -62,18 +90,16 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset }) =
         </div>
 
         {/* Decorative green washi tape */}
-        <Tape
-          color="green"
-          rotateDeg={-6}
-          style={{
-            position: 'absolute',
-            top: '2rem',
-            left: '-1.5rem',
-            zIndex: 20,
-            width: '8rem',
-            height: '1.85rem',
-          }}
-        />
+        <div style={{ position: 'absolute', top: '2rem', left: '-1rem', zIndex: 20 }}>
+          <Tape
+            color="green"
+            rotateDeg={-6}
+            style={{
+              width: '8rem',
+              height: '1.85rem',
+            }}
+          />
+        </div>
 
         <Paper
           color="white"

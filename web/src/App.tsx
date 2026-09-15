@@ -13,6 +13,7 @@ import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
 import { BinderSpine } from './components/layout/BinderSpine';
+import { BackgroundDecorations } from './components/layout/BackgroundDecorations';
 import { useBaselineGrid } from './hooks/useBaselineGrid';
 
 type AppState = 'idle' | 'loading' | 'success' | 'error';
@@ -184,12 +185,60 @@ export const AppContent: React.FC = () => {
     [handleParse],
   );
 
+  const handleReturnToBatch = useCallback(() => {
+    if (userPlaylists) {
+      setViewMode('batch');
+      setState('success');
+      // Optional: scroll to top or specific section
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [userPlaylists]);
+
   const handleDrilldownToSingle = useCallback(
-    (playlistId: string) => {
-      setInputUrl(playlistId);
-      handleParse(playlistId);
+    async (playlistId: string) => {
+      // Abort any ongoing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const currentRequestId = ++requestIdRef.current;
+
+      // DO NOT clear userPlaylists here, just update what we need for single view
+      setState('loading');
+      setError(null);
+      
+      try {
+        const res = await parsePlaylist(playlistId, controller.signal);
+        if (requestIdRef.current !== currentRequestId) return;
+
+        if (res.success) {
+          setPlaylist(res.data);
+          setViewMode('single');
+          setState('success');
+          // Scroll to result paper gracefully
+          setTimeout(() => {
+             document.getElementById('result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        } else {
+          setError(res.error);
+          setState('error');
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        if (requestIdRef.current === currentRequestId) {
+          setError({
+            code: 'NETWORK_ERROR',
+            message: '网络连接异常，请检查网络连接后重试。',
+          });
+          setState('error');
+        }
+      }
     },
-    [handleParse],
+    [],
   );
 
   useBaselineGrid([state, playlist, userPlaylists]);
@@ -200,7 +249,8 @@ export const AppContent: React.FC = () => {
       <BinderSpine dependencies={[state, playlist, userPlaylists]} />
       <div className="journal-margin-line" aria-hidden="true" />
 
-      <div className="journal-container">
+      <div className="journal-container" style={{ position: 'relative' }}>
+        <BackgroundDecorations />
         <Header onBrandClick={handleReset} />
         <main>
           <Hero />
@@ -222,7 +272,11 @@ export const AppContent: React.FC = () => {
           {/* Result Paper (Single Playlist) */}
           {state === 'success' && viewMode === 'single' && playlist && (
             <div className="baseline-grid-snap">
-              <ResultPaper playlist={playlist} onReset={handleReset} />
+              <ResultPaper 
+                playlist={playlist} 
+                onReset={handleReset} 
+                onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
+              />
             </div>
           )}
 
