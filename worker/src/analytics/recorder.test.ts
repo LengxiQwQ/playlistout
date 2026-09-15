@@ -70,11 +70,23 @@ function createMockD1() {
           const key = `hourly::${date}::${hour}::${platform}::${metric}`;
           store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_geo_stats')) {
-          const [date, platform, country, region] = params;
-          const key = `geo::${date}::${platform}::${country}::${region}`;
+          let date: string, platform: string, country: string, region: string, city: string;
+          if (sql.includes("'all'")) {
+            [date, country, region, city] = params;
+            platform = 'all';
+          } else {
+            [date, platform, country, region, city] = params;
+          }
+          const key = `geo::${date}::${platform}::${country}::${region}::${city || 'UNKNOWN'}`;
           store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_client_stats')) {
-          const [date, platform, dev, browser, os] = params;
+          let date: string, platform: string, dev: string, browser: string, os: string;
+          if (sql.includes("'all'")) {
+            [date, dev, browser, os] = params;
+            platform = 'all';
+          } else {
+            [date, platform, dev, browser, os] = params;
+          }
           const key = `client::${date}::${platform}::${dev}::${browser}::${os}`;
           store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_performance_stats')) {
@@ -129,7 +141,7 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       const hour = new Date().getUTCHours();
 
       await recordParseEvent(mockDb, {
-        request: createMockRequest({}, { country: 'CN', region: 'Beijing' }),
+        request: createMockRequest({}, { country: 'CN', region: 'Beijing', city: 'Beijing' }),
         platform: 'qqmusic',
         inputType: 'web_url',
         success: true,
@@ -153,8 +165,8 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       expect(mockDb._store.get(`hourly::${today}::${hour}::all::parse_success`)).toBe(1);
 
       // 3. daily_geo_stats
-      expect(mockDb._store.get(`geo::${today}::qqmusic::CN::Beijing`)).toBe(1);
-      expect(mockDb._store.get(`geo::TOTAL::qqmusic::CN::Beijing`)).toBe(1);
+      expect(mockDb._store.get(`geo::${today}::qqmusic::CN::Beijing::Beijing`)).toBe(1);
+      expect(mockDb._store.get(`geo::TOTAL::qqmusic::CN::Beijing::Beijing`)).toBe(1);
 
       // 4. daily_client_stats
       expect(mockDb._store.get(`client::${today}::qqmusic::desktop::chrome::windows`)).toBe(1);

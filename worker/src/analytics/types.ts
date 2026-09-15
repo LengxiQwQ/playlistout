@@ -18,6 +18,24 @@ export interface DailyTrendEntry {
   exports: number;
 }
 
+export interface GeoDistributionItem {
+  country: string;
+  region?: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ProvinceDistributionItem {
+  province: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ClientDistributionItem {
+  name: string;
+  percentage: number;
+}
+
 export interface PublicStatsResponse {
   launchedAt: string;
   totalVisitors: number;
@@ -33,6 +51,13 @@ export interface PublicStatsResponse {
   exportFormatsBreakdown: Record<string, number>;
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: DailyTrendEntry[];
+  topGeo?: GeoDistributionItem[];
+  chinaProvinces?: ProvinceDistributionItem[];
+  clientStats?: {
+    devices: ClientDistributionItem[];
+    browsers: ClientDistributionItem[];
+    os: ClientDistributionItem[];
+  };
   generatedAt: string;
 }
 

@@ -43,6 +43,8 @@ describe('StatsJournal Component (Phase 7)', () => {
     expect(screen.getByText('今日记录')).toBeInTheDocument();
     expect(screen.getByText('累计手账')).toBeInTheDocument();
     expect(screen.getByText('来自哪里？')).toBeInTheDocument();
+    expect(screen.getByText('QQ 音乐')).toBeInTheDocument();
+    expect(screen.getByText('网易云音乐')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('66')).toBeInTheDocument();
