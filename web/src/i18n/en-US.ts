@@ -203,7 +203,7 @@ export const enUS: Translations = {
     drawnBy: 'Handcrafted music journal for playlist backup & export',
     runningBadge: '✦ Launched 2026-09-12 · Safely running for {days} days · {visitors} friends accompanied ✦',
     copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · Licensed under ',
-    licenseText: 'GNU AGPL-3.0',
+    licenseText: 'MIT',
     licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
