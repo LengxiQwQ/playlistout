@@ -81,7 +81,7 @@ describe('SearchNote Component (Phase 4)', () => {
     );
 
     expect(screen.getByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/目前支持 QQ 音乐与网易云音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单/)).toBeInTheDocument();
 
     const retryBtn = screen.getByRole('button', { name: '重试' });
     fireEvent.click(retryBtn);

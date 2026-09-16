@@ -140,9 +140,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               pollTimerRef.current = null;
             }
             onSuccess?.();
-            setTimeout(() => {
-              onClose();
-            }, 800);
+            onClose();
           } else if (nextStatus === 'expired') {
             if (pollTimerRef.current) {
               clearInterval(pollTimerRef.current);

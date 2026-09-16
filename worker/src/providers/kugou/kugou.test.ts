@@ -132,6 +132,94 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.description).toContain('前 2 首预览');
       expect(playlist.description).toContain('共 124 首');
     });
+
+    it('extracts createTime from publishtime string', () => {
+      const playlist = normalizeKugouPlaylist({
+        id: 'test_id',
+        listInfo: {
+          name: '官方精选',
+          publishtime: '2019-09-18 00:00:00',
+          count: 50,
+        },
+        tracks: [],
+      });
+      // createTime must be a positive integer (Unix seconds)
+      expect(typeof playlist.createTime).toBe('number');
+      expect(playlist.createTime).toBeGreaterThan(0);
+      // 2019-09-18 should parse to somewhere in September 2019
+      const sep2019Start = Math.floor(new Date('2019-09-01T00:00:00').getTime() / 1000);
+      const oct2019Start = Math.floor(new Date('2019-10-01T00:00:00').getTime() / 1000);
+      expect(playlist.createTime).toBeGreaterThanOrEqual(sep2019Start);
+      expect(playlist.createTime).toBeLessThan(oct2019Start);
+    });
+
+    it('falls back to cover URL date when no publishtime', () => {
+      const playlist = normalizeKugouPlaylist({
+        id: 'test_id',
+        listInfo: {
+          name: '私人歌单',
+          pic: 'http://c1.kgimg.com/stdmusic/{size}/20210314/20210314100214878628.jpg',
+          count: 10,
+        },
+        tracks: [],
+      });
+      // 2021-03-14 UTC → 1615680000
+      expect(playlist.createTime).toBe(1615680000);
+    });
+
+    it('returns undefined createTime when no time info available', () => {
+      const playlist = normalizeKugouPlaylist({
+        id: 'test_id',
+        listInfo: { name: '无时间歌单', count: 5 },
+        tracks: [],
+      });
+      expect(playlist.createTime).toBeUndefined();
+    });
+
+    it('extracts tags from special playlist tags array', () => {
+      const playlist = normalizeKugouPlaylist({
+        id: 'test_id',
+        listInfo: {
+          name: '精选流行',
+          tags: [
+            { tagid: 9, tagname: '流行' },
+            { tagid: 84, tagname: '国语' },
+          ],
+          count: 20,
+        },
+        tracks: [],
+      });
+      expect(playlist.tags).toEqual(['流行', '国语']);
+    });
+
+    it('returns undefined tags when musiclib_tags is empty', () => {
+      const playlist = normalizeKugouPlaylist({
+        id: 'test_id',
+        listInfo: {
+          name: '用户歌单',
+          musiclib_tags: [],
+          count: 5,
+        },
+        tracks: [],
+      });
+      expect(playlist.tags).toBeUndefined();
+    });
+
+    it('reads playCount from playcount field, falls back to heat', () => {
+      const pl1 = normalizeKugouPlaylist({
+        id: 'a',
+        listInfo: { name: 'A', playcount: 282651 },
+        tracks: [],
+      });
+      expect(pl1.playCount).toBe(282651);
+
+      const pl2 = normalizeKugouPlaylist({
+        id: 'b',
+        listInfo: { name: 'B', heat: 99 },
+        tracks: [],
+      });
+      expect(pl2.playCount).toBe(99);
+    });
   });
 
   describe('QR Code Authentication Flow', () => {
