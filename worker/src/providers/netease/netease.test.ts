@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { matchesNeteaseInput, extractNeteasePlaylistId, extractNeteaseUserId } from './input';
 import {
   determineNeteaseTrackStatus,
@@ -140,5 +140,55 @@ describe('NetEase Song Status & Normalization', () => {
     expect(playlist.playCount).toBe(5857);
     expect(playlist.tags).toEqual(['流行', '二次元']);
     expect(playlist.description).toBe('测试简介');
+    // Timestamps converted to seconds (10 digits)
+    expect(playlist.createTime).toBe(1555304659);
+    expect(playlist.updateTime).toBe(1727861572);
+  });
+
+  describe('NetEase Completeness Verification', () => {
+    it('throws INCOMPLETE_PLAYLIST when upstream song detail API drops songs', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        globalThis.fetch = vi.fn()
+          // 1. Playlist detail returns 2 trackIds: [101, 102]
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              playlist: {
+                id: 12345,
+                name: '测试完整性歌单',
+                trackCount: 2,
+                trackIds: [{ id: 101 }, { id: 102 }],
+              },
+            }),
+          } as Response)
+          // 2. Song detail returns only 1 song: [101]
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [{ id: 101, name: 'Song 101', ar: [{ name: 'Artist' }] }],
+              privileges: [{ id: 101, fee: 0, st: 0, pl: 320000 }],
+            }),
+          } as Response)
+          // 3. Retry on missing ID 102 still returns empty
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [],
+              privileges: [],
+            }),
+          } as Response);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        await expect(fetchNeteasePlaylist('12345')).rejects.toThrowError(
+          /Incomplete playlist: NetEase playlist reported 2 songs, but only 1 could be retrieved/
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });

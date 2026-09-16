@@ -49,7 +49,8 @@ export function getCorsHeaders(request: Request): Record<string, string> {
   if (origin && isOriginAllowed(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept';
+    headers['Access-Control-Allow-Headers'] =
+      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token';
     headers['Access-Control-Max-Age'] = '86400';
   }
 

@@ -173,27 +173,17 @@ describe('TXT Export', () => {
 });
 
 describe('CSV Export', () => {
-  it('generates RFC-compliant CSV with UTF-8 BOM, metadata comments with createTime first, and formula mitigation', () => {
+  it('generates RFC 4180 pure standard CSV table by default (no # comment lines)', () => {
     const csv = generateCSV(samplePlaylist);
 
     // Verify UTF-8 BOM is present
     expect(csv.charCodeAt(0)).toBe(0xfeff);
 
     const content = csv.slice(1);
-    // Comments check
-    expect(content).toContain('# 创建时间: 2023-10-10');
-    expect(content).toContain('# 导出时间: ');
-    expect(content).toContain('# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
-    expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
-    expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
-
-    const createIdx = content.indexOf('# 创建时间:');
-    const exportIdx = content.indexOf('# 导出时间:');
-    expect(createIdx).toBeGreaterThan(-1);
-    expect(exportIdx).toBeGreaterThan(createIdx);
-
-    // Header check
-    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态');
+    // Standard RFC 4180: Starts directly with header row, zero comment lines
+    expect(content.startsWith('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态')).toBe(true);
+    expect(content).not.toContain('# 创建时间');
+    expect(content).not.toContain('# 导出工具');
 
     // Check track with comma and newline escaping
     expect(content).toContain('"Song with, ""Comma"" & \nNewline"');
@@ -208,6 +198,71 @@ describe('CSV Export', () => {
 
     // Check duplicate track preserved
     expect(content).toContain('8,晴天,周杰伦,叶惠美');
+  });
+
+  it('includes metadata comments when options.includeMetadata is true', () => {
+    const csv = generateCSV(samplePlaylist, { includeMetadata: true });
+
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    const content = csv.slice(1);
+    expect(content).toContain('# 创建时间: 2023-10-10');
+    expect(content).toContain('# 导出时间: ');
+    expect(content).toContain('# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
+    expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
+    expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
+    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态');
+  });
+});
+
+describe('Cross-Platform Compatibility: NetEase Millisecond Timestamps & Partial Playlists', () => {
+  it('defensively normalizes NetEase millisecond timestamps (> 1e11) to valid date strings', () => {
+    const neteasePlaylist: Playlist = {
+      platform: 'netease',
+      id: '2756674066',
+      name: '网易云测试歌单',
+      trackCount: 1,
+      tracks: [sampleTracks[0]],
+      createTime: 1555304659510, // Milliseconds timestamp
+      updateTime: 1727861572110,
+    };
+
+    const txt = generateTXT(neteasePlaylist);
+    expect(txt).toContain('创建时间: 2019-04-15');
+    expect(txt).not.toContain('5120'); // Must not be 50000+ years in the future
+
+    const jsonStr = generateJSON(neteasePlaylist);
+    const parsedJson = JSON.parse(jsonStr);
+    expect(parsedJson.createTime).toContain('2019-04-15');
+  });
+
+  it('accurately handles partial playlists (e.g. Kugou preview mode: 10 of 124 songs)', () => {
+    const partialPlaylist: Playlist = {
+      platform: 'kugou',
+      id: 'gcid_preview_123',
+      name: '酷狗预览歌单',
+      trackCount: 124,
+      tracks: [sampleTracks[0], sampleTracks[1]], // Only 2 loaded
+      createTime: 1696904605,
+    };
+
+    // TXT check
+    const txt = generateTXT(partialPlaylist);
+    expect(txt).toContain('已解析歌曲: 2 / 124 首');
+    expect(txt).toContain('已解析部分总时长');
+    expect(txt).not.toContain('歌曲总数: 124 首 (总时长');
+
+    // CSV with metadata check
+    const csv = generateCSV(partialPlaylist, { includeMetadata: true });
+    expect(csv).toContain('# 已解析歌曲: 2 / 124 首');
+
+    // JSON check
+    const jsonStr = generateJSON(partialPlaylist);
+    const parsed = JSON.parse(jsonStr);
+    expect(parsed.trackCount).toBe(124);
+    expect(parsed.loadedTrackCount).toBe(2);
+    expect(parsed.isPartial).toBe(true);
+    expect(parsed.totalDuration).toBeNull();
+    expect(parsed.loadedDuration).toBeTruthy();
   });
 });
 

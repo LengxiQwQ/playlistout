@@ -169,15 +169,21 @@ export async function parsePlaylist(
       }
     }
   }
-  const authParam = token && userid ? `&token=${encodeURIComponent(token)}&userid=${encodeURIComponent(userid)}` : '';
-  const queryString = `url=${encodeURIComponent(urlOrId)}${platformParam}${authParam}`;
+  const queryString = `url=${encodeURIComponent(urlOrId)}${platformParam}`;
+  const requestHeaders: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  if (token) {
+    requestHeaders['Authorization'] = `Bearer ${token}`;
+    if (userid) {
+      requestHeaders['X-Kugou-Userid'] = userid;
+    }
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/playlist?${queryString}`, {
       signal,
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: requestHeaders,
     });
 
     const contentType = response.headers.get('content-type') || '';
@@ -194,7 +200,7 @@ export async function parsePlaylist(
       console.warn('[PlaylistOut Dev] Local worker proxy returned non-JSON. Falling back to remote API...');
       const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?${queryString}`, {
         signal,
-        headers: { Accept: 'application/json' },
+        headers: requestHeaders,
       });
       if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
         const fallbackData: ApiResponse<Playlist> = await fallbackRes.json();
@@ -223,7 +229,7 @@ export async function parsePlaylist(
         console.warn('[PlaylistOut Dev] Local fetch failed. Falling back to remote API...');
         const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?${queryString}`, {
           signal,
-          headers: { Accept: 'application/json' },
+          headers: requestHeaders,
         });
         if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
           return await fallbackRes.json();
@@ -266,14 +272,20 @@ export async function fetchUserPlaylists(
         }
       }
     }
-    const authParam = token && userid ? `&token=${encodeURIComponent(token)}&userid=${encodeURIComponent(userid)}` : '';
-    const queryString = `uin=${encodeURIComponent(uinOrUrl)}${platformParam}${authParam}`;
+    const queryString = `uin=${encodeURIComponent(uinOrUrl)}${platformParam}`;
+    const userHeaders: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    if (token) {
+      userHeaders['Authorization'] = `Bearer ${token}`;
+      if (userid) {
+        userHeaders['X-Kugou-Userid'] = userid;
+      }
+    }
 
     const response = await fetch(`${API_BASE_URL}/api/user/playlists?${queryString}`, {
       signal,
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: userHeaders,
     });
 
     const contentType = response.headers.get('content-type') || '';

@@ -48,8 +48,9 @@ export const AppContent: React.FC = () => {
   }, []);
 
   const scrollToElement = useCallback((elementId: string) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       setTimeout(() => {
+        if (typeof document === 'undefined') return;
         const el = document.getElementById(elementId);
         if (el && typeof el.scrollIntoView === 'function') {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -118,13 +118,13 @@ export const StatsJournal: React.FC = () => {
     const json = raw.json || 0;
     const sum = xlsx + csv + txt + json;
     if (sum === 0) {
-      return { xlsx: 52, csv: 26, txt: 14, json: 8, hasRealData: false };
+      return { xlsx: 0, csv: 0, txt: 0, json: 0, hasRealData: false };
     }
     return {
-      xlsx: Math.max(5, Math.round((xlsx / sum) * 100)),
-      csv: Math.max(5, Math.round((csv / sum) * 100)),
-      txt: Math.max(5, Math.round((txt / sum) * 100)),
-      json: Math.max(5, Math.round((json / sum) * 100)),
+      xlsx: Math.round((xlsx / sum) * 100),
+      csv: Math.round((csv / sum) * 100),
+      txt: Math.round((txt / sum) * 100),
+      json: Math.round((json / sum) * 100),
       hasRealData: true,
     };
   }, [stats?.exportFormatsBreakdown]);
@@ -140,12 +140,7 @@ export const StatsJournal: React.FC = () => {
         count: d.parses + d.exports,
       }));
     }
-    // Warm fallback mock trend when fresh install without historical data
-    return [
-      { date: '09-12', height: 45, count: 12 },
-      { date: '09-13', height: 75, count: 28 },
-      { date: '09-14', height: 95, count: 42 },
-    ];
+    return [];
   }, [stats?.recentDays]);
 
   // Platform shares calculation
@@ -154,45 +149,25 @@ export const StatsJournal: React.FC = () => {
     const qq = raw.qqmusic?.totalSuccess || 0;
     const netease = raw.netease?.totalSuccess || 0;
     const kugou = raw.kugou?.totalSuccess || 0;
-    const kuwo = raw.kuwo?.totalSuccess || 0;
-    const total = qq + netease + kugou + kuwo;
-    // Both QQ Music and NetEase Cloud Music are core supported platforms
-    // If no real counts recorded yet, display balanced baseline distribution (58% QQ, 42% NetEase)
-    if (total === 0 || (qq === 0 && netease === 0)) {
+    const total = qq + netease + kugou;
+
+    if (total === 0) {
       return [
-        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 58, color: '#059669' },
-        { id: 'netease', name: getPlatformName('netease', language), count: 0, pct: 42, color: '#e11d48' },
+        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 0, color: '#059669' },
+        { id: 'netease', name: getPlatformName('netease', language), count: 0, pct: 0, color: '#e11d48' },
+        { id: 'kugou', name: getPlatformName('kugou', language), count: 0, pct: 0, color: '#2563eb' },
       ];
     }
 
-    let qqPct: number;
-    let neteasePct: number;
-    let kugouPct = 0;
-    let kuwoPct = 0;
+    const qqPct = Math.round((qq / total) * 100);
+    const neteasePct = Math.round((netease / total) * 100);
+    const kugouPct = Math.round((kugou / total) * 100);
 
-    if (qq > 0 && netease === 0) {
-      // NetEase newly added, allocate balanced baseline share
-      qqPct = 58;
-      neteasePct = 42;
-    } else {
-      qqPct = Math.round((qq / total) * 100);
-      neteasePct = Math.round((netease / total) * 100);
-      if (kugou > 0) kugouPct = Math.round((kugou / total) * 100);
-      if (kuwo > 0) kuwoPct = Math.round((kuwo / total) * 100);
-      const diff = 100 - (qqPct + neteasePct + kugouPct + kuwoPct);
-      if (diff !== 0) {
-        if (qqPct >= neteasePct) qqPct += diff;
-        else neteasePct += diff;
-      }
-    }
-
-    const list = [
+    return [
       { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: qqPct, color: '#059669' },
       { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: neteasePct, color: '#e11d48' },
+      { id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#2563eb' },
     ];
-    if (kugou > 0) list.push({ id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#2563eb' });
-    if (kuwo > 0) list.push({ id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: Math.round((kuwo / total) * 100), color: '#ca8a04' });
-    return list;
   }, [stats?.byPlatform, language]);
 
   return (

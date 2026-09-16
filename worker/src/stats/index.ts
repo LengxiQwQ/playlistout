@@ -17,9 +17,6 @@ import type {
   PublicStatsResponse,
   DailyTrendEntry,
   PlatformBreakdown,
-  GeoDistributionItem,
-  ProvinceDistributionItem,
-  ClientDistributionItem,
 } from '../analytics/types';
 
 /** Backward-compat re-export for existing imports */
@@ -255,23 +252,15 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       }
     }
 
-    // Ensure both core supported platforms exist in byPlatform
+    // Ensure all supported platforms exist in byPlatform with true counts (0 is 0)
     if (!byPlatform.qqmusic) {
       byPlatform.qqmusic = { totalSuccess: 0, todaySuccess: 0 };
     }
     if (!byPlatform.netease) {
       byPlatform.netease = { totalSuccess: 0, todaySuccess: 0 };
     }
-
-    // Realistic platform allocation:
-    // If NetEase is newly added and has 0 recorded parses in D1 while historical QQ parses exist,
-    // allocate a balanced proportion (~42% NetEase, ~58% QQ)
-    if (byPlatform.netease.totalSuccess === 0 && byPlatform.qqmusic.totalSuccess > 0) {
-      const historicalTotal = byPlatform.qqmusic.totalSuccess;
-      byPlatform.netease.totalSuccess = Math.round(historicalTotal * 0.72);
-      if (byPlatform.qqmusic.todaySuccess) {
-        byPlatform.netease.todaySuccess = Math.round(byPlatform.qqmusic.todaySuccess * 0.75);
-      }
+    if (!byPlatform.kugou) {
+      byPlatform.kugou = { totalSuccess: 0, todaySuccess: 0 };
     }
 
     // If 'all' platform not yet recorded (before analytics_foundation was deployed),
@@ -363,121 +352,6 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch daily trend data:', err);
     }
 
-    // 4. Fetch geographic distribution from daily_geo_stats
-    const topGeo: GeoDistributionItem[] = [];
-    const chinaProvinces: ProvinceDistributionItem[] = [];
-    try {
-      const geoRows = await db
-        .prepare(`
-          SELECT country, SUM(count) as total
-          FROM daily_geo_stats
-          WHERE date != 'TOTAL' AND country != 'UNKNOWN'
-          GROUP BY country
-          ORDER BY total DESC
-          LIMIT 5
-        `)
-        .all<{ country: string; total: number }>();
-
-      if (geoRows.results && geoRows.results.length > 0) {
-        const sumGeo = geoRows.results.reduce((acc, r) => acc + r.total, 0) || 1;
-        for (const r of geoRows.results) {
-          topGeo.push({
-            country: r.country,
-            count: r.total,
-            percentage: Math.round((r.total / sumGeo) * 100),
-          });
-        }
-      }
-
-      // Query China mainland provinces
-      const cnRows = await db
-        .prepare(`
-          SELECT region, SUM(count) as total
-          FROM daily_geo_stats
-          WHERE date != 'TOTAL' AND country = 'CN' AND region != 'UNKNOWN' AND region != ''
-          GROUP BY region
-          ORDER BY total DESC
-          LIMIT 8
-        `)
-        .all<{ region: string; total: number }>();
-
-      if (cnRows.results && cnRows.results.length > 0) {
-        const sumCn = cnRows.results.reduce((acc, r) => acc + r.total, 0) || 1;
-        for (const r of cnRows.results) {
-          chinaProvinces.push({
-            province: r.region,
-            count: r.total,
-            percentage: Math.round((r.total / sumCn) * 100),
-          });
-        }
-      }
-    } catch (err: unknown) {
-      console.error('Failed to fetch geo breakdown:', err);
-    }
-
-    // 5. Fetch client device and browser statistics from daily_client_stats
-    const clientStats = {
-      devices: [
-        { name: 'Desktop (桌面端)', percentage: 68 },
-        { name: 'Mobile (移动端)', percentage: 30 },
-        { name: 'Tablet (平板)', percentage: 2 },
-      ],
-      browsers: [
-        { name: 'Chrome', percentage: 62 },
-        { name: 'Edge', percentage: 21 },
-        { name: 'Safari', percentage: 13 },
-        { name: 'Other', percentage: 4 },
-      ],
-      os: [
-        { name: 'Windows', percentage: 64 },
-        { name: 'macOS', percentage: 16 },
-        { name: 'iOS', percentage: 11 },
-        { name: 'Android', percentage: 7 },
-        { name: 'Linux', percentage: 2 },
-      ],
-    };
-    try {
-      const clientRows = await db
-        .prepare(`
-          SELECT device_class, browser_family, os_family, SUM(count) as total
-          FROM daily_client_stats
-          WHERE date != 'TOTAL'
-          GROUP BY device_class, browser_family, os_family
-        `)
-        .all<{ device_class: string; browser_family: string; os_family: string; total: number }>();
-
-      if (clientRows.results && clientRows.results.length > 0) {
-        const devMap: Record<string, number> = {};
-        const browserMap: Record<string, number> = {};
-        const osMap: Record<string, number> = {};
-        let totalClient = 0;
-        for (const row of clientRows.results) {
-          totalClient += row.total;
-          devMap[row.device_class] = (devMap[row.device_class] || 0) + row.total;
-          browserMap[row.browser_family] = (browserMap[row.browser_family] || 0) + row.total;
-          osMap[row.os_family] = (osMap[row.os_family] || 0) + row.total;
-        }
-        if (totalClient > 0) {
-          clientStats.devices = Object.entries(devMap).map(([k, v]) => ({
-            name: k === 'desktop' ? 'Desktop (桌面端)' : k === 'mobile' ? 'Mobile (移动端)' : k === 'tablet' ? 'Tablet (平板)' : k,
-            percentage: Math.round((v / totalClient) * 100),
-          })).sort((a, b) => b.percentage - a.percentage);
-
-          clientStats.browsers = Object.entries(browserMap).map(([k, v]) => ({
-            name: k.charAt(0).toUpperCase() + k.slice(1),
-            percentage: Math.round((v / totalClient) * 100),
-          })).sort((a, b) => b.percentage - a.percentage);
-
-          clientStats.os = Object.entries(osMap).map(([k, v]) => ({
-            name: k === 'macos' ? 'macOS' : k === 'ios' ? 'iOS' : k.charAt(0).toUpperCase() + k.slice(1),
-            percentage: Math.round((v / totalClient) * 100),
-          })).sort((a, b) => b.percentage - a.percentage);
-        }
-      }
-    } catch (err: unknown) {
-      console.error('Failed to fetch client breakdown:', err);
-    }
-
     return {
       launchedAt: LAUNCHED_AT,
       totalVisitors,
@@ -493,9 +367,6 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       exportFormatsBreakdown,
       byPlatform,
       recentDays,
-      topGeo: topGeo.length > 0 ? topGeo : undefined,
-      chinaProvinces: chinaProvinces.length > 0 ? chinaProvinces : undefined,
-      clientStats,
       generatedAt: new Date().toISOString(),
     };
   } catch (err: unknown) {
