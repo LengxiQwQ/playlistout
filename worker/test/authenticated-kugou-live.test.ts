@@ -41,24 +41,21 @@ describe('Tier 2: Authenticated Kugou Live Acceptance', { timeout: 60000 }, () =
     // 3. Verify retrieval mode and track integrity
     expect(playlist.platform).toBe('kugou');
     expect(playlist.retrieval?.mode).toBe('full');
+    expect(playlist.trackCount).toBeGreaterThan(300);
     expect(playlist.tracks.length).toBe(playlist.trackCount);
+    expect(playlist.tracks.length).toBeGreaterThan(300);
 
-    // 4. Cross-page verification if > 300 tracks
-    if (playlist.trackCount > 300) {
-      expect(playlist.tracks.length).toBeGreaterThan(300);
+    // 4. Mandatory cross-page verification: boundary transition (page 1: 300 -> page 2: 301)
+    expect(playlist.tracks[299].index).toBe(300);
+    expect(playlist.tracks[299].title).toBeTruthy();
+    expect(playlist.tracks[300].index).toBe(301);
+    expect(playlist.tracks[300].title).toBeTruthy();
 
-      // Verify continuous 1-based ordering across page boundary (300 -> 301)
-      expect(playlist.tracks[299].index).toBe(300);
-      expect(playlist.tracks[299].title).toBeTruthy();
-      expect(playlist.tracks[300].index).toBe(301);
-      expect(playlist.tracks[300].title).toBeTruthy();
-
-      // First and last tracks
-      expect(playlist.tracks[0].index).toBe(1);
-      expect(playlist.tracks[0].title).toBeTruthy();
-      expect(playlist.tracks[playlist.tracks.length - 1].index).toBe(playlist.trackCount);
-      expect(playlist.tracks[playlist.tracks.length - 1].title).toBeTruthy();
-    }
+    // First and last tracks
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[0].title).toBeTruthy();
+    expect(playlist.tracks[playlist.tracks.length - 1].index).toBe(playlist.trackCount);
+    expect(playlist.tracks[playlist.tracks.length - 1].title).toBeTruthy();
 
     // 5. Verify all tracks have valid continuous indices and non-empty titles
     playlist.tracks.forEach((track, i) => {
