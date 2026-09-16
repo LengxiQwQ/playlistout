@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import worker from '../index';
 
 describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance)', () => {
-  const baseUrl = 'https://api.playlistout.com/api/event';
+  const baseUrl = 'https://playlistout-api.lengxiqwq.com/api/event';
 
   function createMockEnv() {
     return {
@@ -34,7 +34,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Origin: 'https://playlistout.com',
+          Origin: 'https://playlistout.lengxiqwq.com',
         },
         body: JSON.stringify({
           type: 'export',
@@ -55,7 +55,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Origin: 'https://playlistout.com',
+          Origin: 'https://playlistout.lengxiqwq.com',
         },
         body: JSON.stringify({
           type: 'export',
@@ -82,7 +82,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Origin: 'https://playlistout.com',
+          Origin: 'https://playlistout.lengxiqwq.com',
         },
         body: JSON.stringify({
           type: 'clipboard',
@@ -102,7 +102,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       for (const trackCount of [0, 50000]) {
         const request = new Request(baseUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
           body: JSON.stringify({
             type: 'export',
             format: 'json',
@@ -148,7 +148,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
 
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: 'export',
           format: 'txt',
@@ -168,7 +168,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it.each(['GET', 'PUT', 'DELETE', 'PATCH'])('rejects method %s with 405 Method Not Allowed', async (method) => {
       const request = new Request(baseUrl, {
         method,
-        headers: { Origin: 'https://playlistout.com' },
+        headers: { Origin: 'https://playlistout.lengxiqwq.com' },
       });
 
       const response = await worker.fetch(request, createMockEnv(), createMockCtx());
@@ -180,7 +180,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it('rejects malformed non-JSON payload with 400 INVALID_INPUT', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: '{ malformed json: true, ',
       });
 
@@ -193,7 +193,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it('rejects JSON array payload with 400 INVALID_INPUT', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify([{ type: 'export', format: 'txt', platform: 'qqmusic' }]),
       });
 
@@ -210,7 +210,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': '1600',
-          Origin: 'https://playlistout.com',
+          Origin: 'https://playlistout.lengxiqwq.com',
         },
         body: JSON.stringify({
           type: 'export',
@@ -230,7 +230,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it.each(['download', 'parse', 'stream', 'admin', ''])('rejects invalid event type: "%s"', async (invalidType) => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: invalidType,
           format: 'txt',
@@ -255,7 +255,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     ])('rejects unsupported platform "%s" with UNSUPPORTED_PLATFORM', async (unsupportedPlatform) => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: 'export',
           format: 'xlsx',
@@ -273,7 +273,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it('rejects export event with clipboard format', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: 'export',
           format: 'title_artist',
@@ -292,7 +292,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       for (const badFormat of ['pdf', 'mp3', 'docx', 'zip']) {
         const request = new Request(baseUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
           body: JSON.stringify({
             type: 'export',
             format: badFormat,
@@ -310,7 +310,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it('rejects clipboard event with export format', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: 'clipboard',
           format: 'xlsx',
@@ -339,7 +339,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     ])('rejects invalid trackCount: %s', async (badTrackCount) => {
       const request = new Request(baseUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.com' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
         body: JSON.stringify({
           type: 'export',
           format: 'csv',

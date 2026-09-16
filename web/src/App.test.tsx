@@ -287,7 +287,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
 
     render(<App />);
     const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
-    fireEvent.change(input, { target: { value: '4177812546' } });
+    fireEvent.change(input, { target: { value: 'https://y.qq.com/n/ryqq/playlist/4177812546' } });
     fireEvent.click(screen.getByRole('button', { name: '解析' }));
 
     expect(await screen.findByText('1000 首大型歌单')).toBeInTheDocument();

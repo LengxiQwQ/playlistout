@@ -111,7 +111,7 @@ function createMockD1() {
 }
 
 function createMockRequest(headers: Record<string, string> = {}, cf?: any): Request {
-  const req = new Request('https://api.playlistout.com/api/playlist?url=test', {
+  const req = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
       ...headers,

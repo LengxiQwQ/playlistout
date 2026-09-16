@@ -29,7 +29,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
     // First 30 requests succeed
     for (let i = 0; i < 30; i++) {
-      const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
         headers: { 'cf-connecting-ip': clientIp },
       });
       const response = await worker.fetch(request, {}, createMockCtx());
@@ -37,7 +37,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     }
 
     // 31st request must be rate limited with 429
-    const limitedRequest = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+    const limitedRequest = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       headers: { 'cf-connecting-ip': clientIp },
     });
     const limitedResponse = await worker.fetch(limitedRequest, {}, createMockCtx());
@@ -50,7 +50,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
   });
 
   it('attaches standard OWASP security headers to all responses', async () => {
-    const request = new Request('https://api.playlistout.com/health');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/health');
     const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
@@ -71,7 +71,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     ];
 
     for (const target of ssrfTargets) {
-      const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(target)}`);
+      const request = new Request(`https://playlistout-api.lengxiqwq.com/api/playlist?url=${encodeURIComponent(target)}`);
       const response = await worker.fetch(request, {}, createMockCtx());
 
       expect(response.status).toBe(400);
@@ -83,9 +83,9 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
   it('strictly blocks arbitrary proxy attempts', async () => {
     const proxyRequests = [
-      'https://api.playlistout.com/proxy?url=https://google.com',
-      'https://api.playlistout.com/proxy/raw?url=https://169.254.169.254',
-      'https://api.playlistout.com/api/proxy?target=internal',
+      'https://playlistout-api.lengxiqwq.com/proxy?url=https://google.com',
+      'https://playlistout-api.lengxiqwq.com/proxy/raw?url=https://169.254.169.254',
+      'https://playlistout-api.lengxiqwq.com/api/proxy?target=internal',
     ];
 
     for (const url of proxyRequests) {
@@ -99,7 +99,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
   it('rejects oversized inputs (> 2048 chars) with INVALID_INPUT', async () => {
     const hugeUrl = 'https://y.qq.com/n/ryqq/playlist/' + '9'.repeat(2500);
-    const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(hugeUrl)}`);
+    const request = new Request(`https://playlistout-api.lengxiqwq.com/api/playlist?url=${encodeURIComponent(hugeUrl)}`);
     const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.status).toBe(400);
@@ -112,7 +112,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       new Error('FATAL: password="super_secret_token_12345" connection to postgres://internal.net:5432 failed\n    at internal/db.ts:123'),
     );
 
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
     const response = await worker.fetch(request, {}, createMockCtx());
 
     expect(response.status).toBe(500);

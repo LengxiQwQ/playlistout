@@ -61,9 +61,9 @@ Following the v2.0.0 Web relaunch, v2.1.0 delivers a complete **batch playlist e
 
 ### 🌟 升级为全新 Web 网页版 / Evolution to PlaylistOut Web
 
-这是 PlaylistOut 的一次重要里程碑升级：项目从最初本地运行的 QQ 音乐 Python 命令行脚本，全面演进为开箱即用的现代化在线 Web 工具 [`playlistout.com`](https://playlistout.com)。无需安装 Python 环境或第三方依赖，在浏览器中即可直接解析与导出公开歌单。
+这是 PlaylistOut 的一次重要里程碑升级：项目从最初本地运行的 QQ 音乐 Python 命令行脚本，全面演进为开箱即用的现代化在线 Web 工具 [`playlistout.lengxiqwq.com`](https://playlistout.lengxiqwq.com)。无需安装 Python 环境或第三方依赖，在浏览器中即可直接解析与导出公开歌单。
 
-This is a major milestone release for PlaylistOut: the project has evolved from a local Python command-line script into a modern, ready-to-use web application at [`playlistout.com`](https://playlistout.com). Users can now parse and export public playlists directly in their browsers without installing Python or local dependencies.
+This is a major milestone release for PlaylistOut: the project has evolved from a local Python command-line script into a modern, ready-to-use web application at [`playlistout.lengxiqwq.com`](https://playlistout.lengxiqwq.com). Users can now parse and export public playlists directly in their browsers without installing Python or local dependencies.
 
 ### 新增功能 / Added
 

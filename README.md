@@ -6,13 +6,13 @@
 
 *你的歌单，不应该只困在一个音乐平台里。*
 
-[![Website](https://img.shields.io/badge/Website-playlistout.com-EAA008?style=flat-square)](https://playlistout.com)
+[![Website](https://img.shields.io/badge/Website-playlistout.lengxiqwq.com-EAA008?style=flat-square)](https://playlistout.lengxiqwq.com)
 [![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github&color=D97706)](https://github.com/LengxiQwQ/playlistout/stargazers)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
 
-**[🌐 playlistout.com](https://playlistout.com)**
+**[🌐 playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)**
 
 </div>
 
@@ -39,7 +39,7 @@
 
 ## 🚀 在线使用
 
-无需安装任何软件，直接打开 **[playlistout.com](https://playlistout.com)** 即可开始：
+无需安装任何软件，直接打开 **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)** 即可开始：
 
 1. **粘贴歌单** — 支持 PC 网页链接（`y.qq.com`）、手机分享链接（`c6.y.qq.com`）、纯歌单 ID，或直接粘贴带有文字的 App 分享内容（系统自动提取有效链接）。
 2. **实时解析** — 边缘 Worker 自动解析歌单元数据、歌曲名、歌手、专辑及封面等完整字段。
@@ -97,7 +97,7 @@
 | `createTime` | `string \| null` | 可选 | **歌单创建时间**（首位字段）。标准时间字符串 `YYYY-MM-DD HH:mm:ss`，若上游平台未提供则返回 `null` |
 | `exportedAt` | `string` | 可选 | **数据导出时间**。客户端生成文件的本地时间 `YYYY-MM-DD HH:mm:ss` |
 | `generator` | `string` | 可选 | **导出工具平台标识**。固定为 `"PlaylistOut"` |
-| `generatorUrl` | `string` | 可选 | **平台官方网址**。固定为 `"https://playlistout.com"` |
+| `generatorUrl` | `string` | 可选 | **平台官方网址**。固定为 `"https://playlistout.lengxiqwq.com"` |
 | `name` | `string` | **必填** | 歌单完整名称 |
 | `creator` | `string` | 可选 | 歌单创建者昵称 |
 | `updateTime` | `string \| null` | 可选 | 歌单最后修改/更新时间。格式：`YYYY-MM-DD HH:mm:ss` |
@@ -130,7 +130,7 @@
   "createTime": "2021-06-18 14:30:00",
   "exportedAt": "2026-09-14 23:30:00",
   "generator": "PlaylistOut",
-  "generatorUrl": "https://playlistout.com",
+  "generatorUrl": "https://playlistout.lengxiqwq.com",
   "name": "华语经典流行精选集",
   "creator": "音乐咖啡馆",
   "updateTime": "2024-03-01 09:15:20",
@@ -180,7 +180,7 @@
 ```csv
 # 创建时间: 2021-06-18 14:30:00
 # 导出时间: 2026-09-14 23:30:00
-# 导出工具: PlaylistOut (https://playlistout.com)
+# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
 # 歌单名称: 华语经典流行精选集
 # 歌单作者: 音乐咖啡馆
 # 歌曲总数: 2 首 (8 分钟)
@@ -202,7 +202,7 @@
   1. **元数据卡片区（第 1-6/7 行，双列键值对布局）**：
      - 行 1：`['歌单名称', playlist.name, '', '']`
      - 行 2：`['创建时间', createTime, '导出时间', exportedAt]`（*创建时间第 1 位，导出时间第 2 位并列紧邻*）
-     - 行 3：`['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.com']`
+     - 行 3：`['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.lengxiqwq.com']`
      - 行 4：`['歌单作者', creator, '歌曲总数', trackCountStr]`
      - 行 5：`['最后更新', updateTime, '总播放量', playCountStr]`
      - 行 6：`['风格标签', tagsStr, '歌单链接', sourceUrl]`
@@ -219,7 +219,7 @@
 - **排版风格**：信纸手账式排版（Stationery Format），兼顾人眼直观阅读与简单脚本行读取；
 - **排版结构**：
   - 顶部以 `==================================================` 分界线封装元数据卡片；
-  - 头部首行固定为 `创建时间:`，次行固定为 `导出时间:`，第三行为 `导出工具: PlaylistOut (https://playlistout.com)`；
+  - 头部首行固定为 `创建时间:`，次行固定为 `导出时间:`，第三行为 `导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)`；
   - 依次展示歌单名、作者、最后更新、曲目数与总时长、标签、播放量、链接及歌单简介；
   - 分界线下方为曲目清单，逐行输出：`${歌曲标题} - ${歌手} - ${专辑}`（若无专辑则输出 `${歌曲标题} - ${歌手}`）；
   - 保留纯净原始文本，不添加表格转义符号。
@@ -230,7 +230,7 @@
 ==================================================
   创建时间: 2021-06-18 14:30:00
   导出时间: 2026-09-14 23:30:00
-  导出工具: PlaylistOut (https://playlistout.com)
+  导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
   歌单名称: 华语经典流行精选集
   歌单作者: 音乐咖啡馆
   最后更新: 2024-03-01 09:15:20
@@ -357,7 +357,7 @@ PlaylistOut 基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源�
 <!-- WEBSITE_STATS:START -->
 ### 🌐 网站运营与活跃数据看板
 
-> 📊 数据由 [Cloudflare D1 边缘节点](https://api.playlistout.com/api/stats) 实时聚合计算，每日自动化同步存档。
+> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。
 
 #### 📌 核心流量与使用规模
 

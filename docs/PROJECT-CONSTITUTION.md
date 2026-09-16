@@ -5,7 +5,7 @@
 ## 1. Project Identity
 
 **Project name:** PlaylistOut  
-**Primary domain:** `playlistout.com`  
+**Primary domain:** `playlistout.lengxiqwq.com`  
 **Repository:** `LengxiQwQ/playlistout`
 
 PlaylistOut is a lightweight, privacy-friendly web tool for exporting public music playlists into structured data files.
@@ -97,7 +97,7 @@ The initial architecture is fixed as follows.
 - Vite
 - static deployment
 - GitHub Pages as the initial frontend hosting target
-- custom domain: `playlistout.com`
+- custom domain: `playlistout.lengxiqwq.com`
 
 Do not replace this with Next.js, Nuxt, SSR, a Node server, or another full-stack framework without first revising this constitution.
 
@@ -105,7 +105,7 @@ Do not replace this with Next.js, Nuxt, SSR, a Node server, or another full-stac
 
 - Cloudflare Workers
 - TypeScript
-- public API domain target: `api.playlistout.com`
+- public API domain target: `playlistout-api.lengxiqwq.com`
 
 The Worker exists only because browsers cannot reliably request every music-platform endpoint directly due to CORS, protected headers, signing rules, or platform-specific restrictions.
 

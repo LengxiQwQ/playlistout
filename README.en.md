@@ -6,13 +6,13 @@
 
 *Your playlists shouldn't be trapped inside one music platform.*
 
-[![Website](https://img.shields.io/badge/Website-playlistout.com-EAA008?style=flat-square)](https://playlistout.com)
+[![Website](https://img.shields.io/badge/Website-playlistout.lengxiqwq.com-EAA008?style=flat-square)](https://playlistout.lengxiqwq.com)
 [![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github&color=D97706)](https://github.com/LengxiQwQ/playlistout/stargazers)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
 
-**[🌐 playlistout.com](https://playlistout.com)**
+**[🌐 playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)**
 
 </div>
 
@@ -39,7 +39,7 @@ Walled gardens keep your playlists locked inside proprietary apps.
 
 ## 🚀 Use It Online
 
-No installation required. Simply visit **[playlistout.com](https://playlistout.com)** to get started:
+No installation required. Simply visit **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)** to get started:
 
 1. **Paste a Playlist** — Supports desktop web URLs (`y.qq.com`), mobile share links (`c6.y.qq.com`), raw playlist IDs, or copied mobile share text (automatically extracts valid URLs).
 2. **Instant Parsing** — Edge workers parse playlist metadata, song titles, artists, albums, and cover art.
@@ -97,7 +97,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `createTime` | `string \| null` | Optional | **Playlist creation time** (1st position). Formatted as `YYYY-MM-DD HH:mm:ss`, or `null` if unavailable upstream. |
 | `exportedAt` | `string` | Optional | **Data export time**. Local generation timestamp `YYYY-MM-DD HH:mm:ss`. |
 | `generator` | `string` | Optional | **Generator platform identifier**. Fixed to `"PlaylistOut"`. |
-| `generatorUrl` | `string` | Optional | **Official website URL**. Fixed to `"https://playlistout.com"`. |
+| `generatorUrl` | `string` | Optional | **Official website URL**. Fixed to `"https://playlistout.lengxiqwq.com"`. |
 | `name` | `string` | **Required** | Full title of the playlist. |
 | `creator` | `string` | Optional | Nickname of the playlist creator / curator. |
 | `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
@@ -130,7 +130,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
   "createTime": "2021-06-18 14:30:00",
   "exportedAt": "2026-09-14 23:30:00",
   "generator": "PlaylistOut",
-  "generatorUrl": "https://playlistout.com",
+  "generatorUrl": "https://playlistout.lengxiqwq.com",
   "name": "Chinese Classic Pop Hits",
   "creator": "Music Cafe",
   "updateTime": "2024-03-01 09:15:20",
@@ -180,7 +180,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 ```csv
 # 创建时间: 2021-06-18 14:30:00
 # 导出时间: 2026-09-14 23:30:00
-# 导出工具: PlaylistOut (https://playlistout.com)
+# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
 # 歌单名称: Chinese Classic Pop Hits
 # 歌单作者: Music Cafe
 # 歌曲总数: 2 首 (8 分钟)
@@ -202,7 +202,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
   1. **Metadata Header Block (Rows 1–6/7, two-column key-value layout)**:
      - Row 1: `['歌单名称', playlist.name, '', '']`
      - Row 2: `['创建时间', createTime, '导出时间', exportedAt]` (*Creation time 1st, Export time 2nd, placed side-by-side*)
-     - Row 3: `['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.com']`
+     - Row 3: `['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.lengxiqwq.com']`
      - Row 4: `['歌单作者', creator, '歌曲总数', trackCountStr]`
      - Row 5: `['最后更新', updateTime, '总播放量', playCountStr]`
      - Row 6: `['风格标签', tagsStr, '歌单链接', sourceUrl]`
@@ -219,7 +219,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 - **Format Style**: Stationery book layout, balancing clean human readability and line-by-line script ingestion.
 - **Structure**:
   - Top stationery header bounded by `==================================================`;
-  - First metadata line is `创建时间:`, followed immediately by `导出时间:`, and third line is `导出工具: PlaylistOut (https://playlistout.com)`;
+  - First metadata line is `创建时间:`, followed immediately by `导出时间:`, and third line is `导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)`;
   - Displays playlist title, curator, last updated date, track count with duration, tags, play count, link, and description;
   - Plain track entries below the divider: `${title} - ${artists} - ${album}` (or `${title} - ${artists}` if no album);
   - Preserves raw text without spreadsheet formula escape prefixes.
@@ -230,7 +230,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 ==================================================
   创建时间: 2021-06-18 14:30:00
   导出时间: 2026-09-14 23:30:00
-  导出工具: PlaylistOut (https://playlistout.com)
+  导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
   歌单名称: Chinese Classic Pop Hits
   歌单作者: Music Cafe
   最后更新: 2024-03-01 09:15:20
@@ -357,7 +357,7 @@ PlaylistOut is open-source software licensed under the **GNU Affero General Publ
 <!-- WEBSITE_STATS:START -->
 ### 🌐 Live Website Statistics & Insights
 
-> 📊 Data aggregated in real-time via [Cloudflare D1 Edge Node](https://api.playlistout.com/api/stats) and synced daily.
+> 📊 Data aggregated in real-time via [Cloudflare D1 Edge Node](https://playlistout-api.lengxiqwq.com/api/stats) and synced daily.
 
 #### 📌 Core Metrics & Usage Volume
 
