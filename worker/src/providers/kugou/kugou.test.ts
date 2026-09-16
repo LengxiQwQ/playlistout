@@ -499,5 +499,320 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks).toHaveLength(1);
       expect(playlist.tracks[0].title).toBe('预览歌曲A');
     });
+
+    it('adversarial: user-controlled URL uid must NOT prove ownership when H5 creator is missing', async () => {
+      // Attacker constructs link with ?uid=12345 hoping server trusts ?uid=
+      // H5 payload has no creator userid. Logged-in user is 12345 with matching name & count.
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_spoofed_uid","info":{"listinfo":{"name":"秘密歌单","count":50},"songs":[{"name":"预览1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 777, name: '秘密歌单', count: 50 }],
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_spoofed_uid',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_spoofed_uid/?uid=12345',
+        },
+        { token: 'valid_tok', userid: '12345' },
+      );
+
+      // Must NOT export user's 50 tracks! Must stay in preview mode with owner_unconfirmed.
+      expect(playlist.retrieval?.mode).toBe('preview');
+      expect(playlist.retrieval?.reason).toBe('owner_unconfirmed');
+      expect(playlist.tracks).toHaveLength(1);
+    });
+
+    it('adversarial: pagination repeated-page replay must fail closed with INCOMPLETE_PLAYLIST', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_replay","info":{"listinfo":{"name":"重放测试歌单","count":600,"list_create_userid":"12345"},"songs":[{"name":"预览1"}]}};</script></html>`;
+
+      const page1Songs = Array.from({ length: 300 }, (_, i) => ({
+        name: `歌曲 ${i + 1}`,
+        FileHash: `hash_${i + 1}`,
+      }));
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 999, name: '重放测试歌单', count: 600 }],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks page 1: returns 300 songs
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 600, info: page1Songs },
+          }),
+        } as Response)
+        // 4. fetchCloudlistAllTracks page 2: BUG/REPLAY - returns the exact same 300 songs as page 1
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 600, info: page1Songs },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      await expect(
+        fetchKugouPlaylist(
+          {
+            type: 'songlist',
+            id: 'gcid_replay',
+            originalUrl: 'https://m.kugou.com/songlist/gcid_replay/',
+          },
+          { token: 'valid_tok', userid: '12345' },
+        ),
+      ).rejects.toThrowError(/duplicate page sequence/i);
+    });
+
+    it('preserves legitimate duplicate individual songs in cloudlist without dropping them', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_dups","info":{"listinfo":{"name":"重复单曲歌单","count":4,"list_create_userid":"12345"},"songs":[{"name":"预览1"}]}};</script></html>`;
+
+      // Legitimate duplicate songs: same song added twice to playlist
+      const cloudSongs = [
+        { name: '晴天', FileHash: 'hash_qingtian' },
+        { name: '晴天', FileHash: 'hash_qingtian' },
+        { name: '七里香', FileHash: 'hash_qilixiang' },
+        { name: '夜曲', FileHash: 'hash_yequ' },
+      ];
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 888, name: '重复单曲歌单', count: 4 }],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 4, info: cloudSongs },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_dups',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_dups/',
+        },
+        { token: 'valid_tok', userid: '12345' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('full');
+      expect(playlist.tracks).toHaveLength(4);
+      expect(playlist.tracks[0].title).toBe('晴天');
+      expect(playlist.tracks[0].index).toBe(1);
+      expect(playlist.tracks[1].title).toBe('晴天');
+      expect(playlist.tracks[1].index).toBe(2);
+      expect(playlist.tracks[2].title).toBe('七里香');
+      expect(playlist.tracks[2].index).toBe(3);
+      expect(playlist.tracks[3].title).toBe('夜曲');
+      expect(playlist.tracks[3].index).toBe(4);
+    });
+
+    it('correctly handles >300 multi-page pagination (770 songs = 300 + 300 + 170) sequentially', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_770","info":{"listinfo":{"name":"超大歌单","count":770,"list_create_userid":"12345"},"songs":[{"name":"预览1"}]}};</script></html>`;
+
+      const page1 = Array.from({ length: 300 }, (_, i) => ({
+        name: `歌曲 ${i + 1}`,
+        FileHash: `hash_${i + 1}`,
+      }));
+      const page2 = Array.from({ length: 300 }, (_, i) => ({
+        name: `歌曲 ${i + 301}`,
+        FileHash: `hash_${i + 301}`,
+      }));
+      const page3 = Array.from({ length: 170 }, (_, i) => ({
+        name: `歌曲 ${i + 601}`,
+        FileHash: `hash_${i + 601}`,
+      }));
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 770, name: '超大歌单', count: 770 }],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks page 1
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 770, info: page1 },
+          }),
+        } as Response)
+        // 4. fetchCloudlistAllTracks page 2
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 770, info: page2 },
+          }),
+        } as Response)
+        // 5. fetchCloudlistAllTracks page 3
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: { count: 770, info: page3 },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_770',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_770/',
+        },
+        { token: 'valid_tok', userid: '12345' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('full');
+      expect(playlist.tracks).toHaveLength(770);
+      expect(playlist.tracks[0].index).toBe(1);
+      expect(playlist.tracks[0].title).toBe('歌曲 1');
+      expect(playlist.tracks[299].index).toBe(300);
+      expect(playlist.tracks[299].title).toBe('歌曲 300');
+      expect(playlist.tracks[300].index).toBe(301);
+      expect(playlist.tracks[300].title).toBe('歌曲 301');
+      expect(playlist.tracks[599].index).toBe(600);
+      expect(playlist.tracks[599].title).toBe('歌曲 600');
+      expect(playlist.tracks[600].index).toBe(601);
+      expect(playlist.tracks[600].title).toBe('歌曲 601');
+      expect(playlist.tracks[769].index).toBe(770);
+      expect(playlist.tracks[769].title).toBe('歌曲 770');
+
+      // Verify no gaps or duplicates in indices
+      playlist.tracks.forEach((track, i) => {
+        expect(track.index).toBe(i + 1);
+      });
+    });
+
+    it('returns preview with auth_required when credentials are not supplied', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_no_auth","info":{"listinfo":{"name":"公开歌单","count":100},"songs":[{"name":"预览歌曲1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => mockHtml,
+      } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist({
+        type: 'songlist',
+        id: 'gcid_no_auth',
+        originalUrl: 'https://m.kugou.com/songlist/gcid_no_auth/',
+      });
+
+      expect(playlist.retrieval?.mode).toBe('preview');
+      expect(playlist.retrieval?.reason).toBe('auth_required');
+      expect(playlist.tracks).toHaveLength(1);
+    });
+
+    it('returns preview with auth_invalid when Kugou API returns authentication error', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_exp_token","info":{"listinfo":{"name":"我的歌单","count":100,"list_create_userid":"12345"},"songs":[{"name":"预览歌曲1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists returns error code 20001 (Token expired/invalid)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 0,
+            error_code: 20001,
+            error: 'User token invalid',
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_exp_token',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_exp_token/',
+        },
+        { token: 'expired_token', userid: '12345' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('preview');
+      expect(playlist.retrieval?.reason).toBe('auth_invalid');
+      expect(playlist.tracks).toHaveLength(1);
+    });
+
+    it('returns preview with owner_mismatch when logged-in user does not match H5 creator', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_mismatch","info":{"listinfo":{"name":"他人歌单","count":50,"list_create_userid":"99999"},"songs":[{"name":"预览歌曲1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => mockHtml,
+      } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_mismatch',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_mismatch/',
+        },
+        { token: 'valid_token', userid: '12345' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('preview');
+      expect(playlist.retrieval?.reason).toBe('owner_mismatch');
+      expect(playlist.tracks).toHaveLength(1);
+    });
   });
 });

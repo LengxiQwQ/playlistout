@@ -4,7 +4,12 @@
  */
 
 import { ProviderError } from '../../models/playlist';
-import type { Playlist, UserPlaylistsData, UserPlaylistSummary } from '../../models/playlist';
+import type {
+  Playlist,
+  UserPlaylistsData,
+  UserPlaylistSummary,
+  PlaylistRetrievalReason,
+} from '../../models/playlist';
 import type { KugouTarget } from './input';
 import {
   normalizeKugouPlaylist,
@@ -29,6 +34,34 @@ export interface KugouAuthCredentials {
 }
 
 /**
+ * Determines whether a response from Kugou gateway indicates an authentication / session rejection.
+ */
+export function isKugouAuthError(json: {
+  status?: number;
+  error_code?: number;
+  error?: string;
+  msg?: string;
+  message?: string;
+}): boolean {
+  if (json.status === 1) return false;
+  const code = Number(json.error_code ?? -1);
+  if ([10001, 10002, 20001, 20002, 20003, 20005, 20010, 20011, 20012, 30001, 30002].includes(code)) {
+    return true;
+  }
+  const errorText = `${json.error || ''} ${json.msg || ''} ${json.message || ''}`.toLowerCase();
+  return (
+    errorText.includes('token') ||
+    errorText.includes('auth') ||
+    errorText.includes('登录') ||
+    errorText.includes('过期') ||
+    errorText.includes('失效') ||
+    errorText.includes('未登录') ||
+    errorText.includes('凭证') ||
+    errorText.includes('login')
+  );
+}
+
+/**
  * Fetches an official curated/special playlist by specialid.
  */
 async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Promise<Playlist> {
@@ -49,6 +82,7 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
   const pageSize = 300;
   const maxPages = 50;
   const rawSongs: KugouRawSong[] = [];
+  const seenPageFingerprints = new Set<string>();
   let page = 1;
 
   while (page <= maxPages) {
@@ -77,6 +111,21 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
     if (!Array.isArray(pageSongs) || pageSongs.length === 0) {
       break;
     }
+
+    // Repeated-page / no-progress detection (Fail-closed on replay loop)
+    const pageFingerprint = pageSongs
+      .map((s) => `${s.hash || s.FileHash || ''}:${s.name || s.songname || s.filename || ''}`)
+      .join(';');
+
+    if (seenPageFingerprints.has(pageFingerprint)) {
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Pagination made no trustworthy progress: Kugou special playlist returned duplicate page sequence at page ${page}.`,
+        502,
+        { page, expectedCount: expectedTotal, actualCount: rawSongs.length },
+      );
+    }
+    seenPageFingerprints.add(pageFingerprint);
 
     // If expectedTotal was not known from listInfo (e.g. info request failed), update it from song API's data.total
     if (expectedTotal <= 0 && typeof songJson.data?.total === 'number' && songJson.data.total > 0) {
@@ -117,6 +166,7 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
     tracks,
     sourceUrl: originalUrl || `https://www.kugou.com/yy/special/single/${specialId}.html`,
     isPartialPreview: false,
+    retrieval: { mode: 'full' },
   });
 }
 
@@ -194,6 +244,7 @@ async function fetchCloudlistAllTracks(options: {
   const maxPages = 50;
   let page = 1;
   const allSongs: KugouRawSong[] = [];
+  const seenPageFingerprints = new Set<string>();
   let expectedTotal = expectedCount && expectedCount > 0 ? expectedCount : -1;
 
   while (page <= maxPages) {
@@ -275,6 +326,21 @@ async function fetchCloudlistAllTracks(options: {
       break;
     }
 
+    // Repeated-page / no-progress detection (Fail-closed on replay loop)
+    const pageFingerprint = pageSongs
+      .map((s) => `${s.hash || s.FileHash || ''}:${s.name || s.songname || s.filename || ''}`)
+      .join(';');
+
+    if (seenPageFingerprints.has(pageFingerprint)) {
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Pagination made no trustworthy progress: Kugou cloudlist returned duplicate page sequence at page ${page}.`,
+        502,
+        { page, expectedCount: expectedTotal, actualCount: allSongs.length },
+      );
+    }
+    seenPageFingerprints.add(pageFingerprint);
+
     allSongs.push(...pageSongs);
 
     if (expectedTotal > 0 && allSongs.length >= expectedTotal) {
@@ -316,10 +382,14 @@ export async function fetchKugouPlaylist(
   const { listInfo, songs, encodeGic } = await fetchSonglistH5Output(target.id);
   const playlistId = encodeGic || target.id;
 
+  let retrievalReason: PlaylistRetrievalReason = 'auth_required';
+
   // Check if authenticated credentials are provided
   if (auth?.token && auth?.userid) {
     try {
       // 2a. Owner verification: check if H5 songlist declares a creator ID
+      // CRITICAL SECURITY RULE: NEVER read creator ID from target.originalUrl (?uid= or ?userid=).
+      // User-supplied URL query parameters are untrusted and must NOT prove ownership.
       let creatorUserId: string | undefined;
       const rawListInfo = listInfo as Record<string, unknown>;
       if (rawListInfo.list_create_userid) {
@@ -328,61 +398,71 @@ export async function fetchKugouPlaylist(
         creatorUserId = String(rawListInfo.uid).trim();
       } else if (rawListInfo.userid) {
         creatorUserId = String(rawListInfo.userid).trim();
-      } else if (target.originalUrl) {
-        try {
-          const parsedUrl = new URL(target.originalUrl);
-          const uidParam = parsedUrl.searchParams.get('uid') || parsedUrl.searchParams.get('userid');
-          if (uidParam) creatorUserId = uidParam.trim();
-        } catch {
-          // Ignore URL parse error
-        }
       }
 
-      // Owner strict verification:
-      // A songlist can only be mapped to a user's cloudlist if:
-      // 1) Direct listid match (target.id === p.id)
-      // OR
-      // 2) The creator of this shared playlist is EXPLICITLY confirmed to be the logged-in user:
-      //    (creatorUserId && creatorUserId === String(auth.userid).trim())
-      //    AND exact name match AND exact track count match
-      // If creator is NOT explicitly confirmed (missing creatorUserId or mismatch), DO NOT attempt name matching -> stay in safe Preview!
       const isOwnerConfirmed = Boolean(
         creatorUserId && creatorUserId === String(auth.userid).trim(),
       );
 
-      // Fetch user's own playlists to find matching cloudlist listid
-      const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+      // Determine tentative owner-related preview reason in case cloudlist matching does not succeed
+      if (!creatorUserId) {
+        retrievalReason = 'owner_unconfirmed';
+      } else if (!isOwnerConfirmed) {
+        retrievalReason = 'owner_mismatch';
+      } else {
+        retrievalReason = 'identity_unresolved';
+      }
 
-      // High-confidence matching:
-      // Priority 1: Match by direct listid if target.id matches a user list ID
-      // Priority 2: Match by exact playlist name AND exact trackCount ONLY IF owner is confirmed
-      // STRICT SAFETY:
-      // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
-      // - If owner cannot be confirmed, NEVER match by name -> fall back safely to preview mode
-      const targetName = (listInfo.name || '').trim();
-      const expectedTrackCount = Number(listInfo.count || 0);
-      let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
-
-      if (!matched && isOwnerConfirmed && targetName) {
-        const nameMatches = userPlaylists.playlists.filter(
-          (p) => p.name.trim() === targetName,
-        );
-        if (nameMatches.length === 1) {
-          // Only accept if track count matches exactly, or expected count is not specified
-          if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
-            matched = nameMatches[0];
-          } else if (expectedTrackCount <= 0) {
-            matched = nameMatches[0];
+      // If owner is explicitly known and is NOT current user, do not attempt cloudlist matching
+      if (!isOwnerConfirmed && creatorUserId) {
+        // Safe fall-through to preview mode with reason 'owner_mismatch'
+      } else {
+        // Fetch user's own playlists to find matching cloudlist listid
+        let userPlaylists: UserPlaylistsData;
+        try {
+          userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+        } catch (userListErr: unknown) {
+          if (
+            userListErr instanceof ProviderError &&
+            (userListErr.code === 'FORBIDDEN' || (userListErr.details as any)?.authInvalid)
+          ) {
+            retrievalReason = 'auth_invalid';
+          } else {
+            retrievalReason = 'upstream_unavailable';
           }
-        } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
-          const countMatches = nameMatches.filter(
-            (p) => p.trackCount === expectedTrackCount,
+          throw userListErr;
+        }
+
+        // High-confidence matching:
+        // Priority 1: Match by direct listid if target.id matches a user list ID
+        // Priority 2: Match by exact playlist name AND exact trackCount ONLY IF owner is confirmed
+        // STRICT SAFETY:
+        // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
+        // - If owner cannot be confirmed, NEVER match by name -> fall back safely to preview mode
+        const targetName = (listInfo.name || '').trim();
+        const expectedTrackCount = Number(listInfo.count || 0);
+        let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
+
+        if (!matched && isOwnerConfirmed && targetName) {
+          const nameMatches = userPlaylists.playlists.filter(
+            (p) => p.name.trim() === targetName,
           );
-          if (countMatches.length === 1) {
-            matched = countMatches[0];
+          if (nameMatches.length === 1) {
+            // Only accept if track count matches exactly, or expected count is not specified
+            if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
+              matched = nameMatches[0];
+            } else if (expectedTrackCount <= 0) {
+              matched = nameMatches[0];
+            }
+          } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
+            const countMatches = nameMatches.filter(
+              (p) => p.trackCount === expectedTrackCount,
+            );
+            if (countMatches.length === 1) {
+              matched = countMatches[0];
+            }
           }
         }
-      }
 
         if (matched && matched.id) {
           const trustedExpected = Number(matched.trackCount || listInfo.count || 0);
@@ -415,7 +495,9 @@ export async function fetchKugouPlaylist(
               tracks,
               sourceUrl: target.originalUrl,
               isPartialPreview: false,
+              retrieval: { mode: 'full' },
             });
+          }
         }
       }
     } catch (err: unknown) {
@@ -423,7 +505,7 @@ export async function fetchKugouPlaylist(
       if (err instanceof ProviderError && err.code === 'INCOMPLETE_PLAYLIST') {
         throw err;
       }
-      // Fall through to preview mode if cloudlist resolution fails due to network/auth error
+      // Fall through to preview mode with the established retrievalReason
     }
   }
 
@@ -435,6 +517,10 @@ export async function fetchKugouPlaylist(
     tracks,
     sourceUrl: target.originalUrl,
     isPartialPreview: true,
+    retrieval: {
+      mode: 'preview',
+      reason: auth?.token && auth?.userid ? retrievalReason : 'auth_required',
+    },
   });
 }
 
@@ -504,6 +590,9 @@ export async function fetchKugouUserPlaylists(
   const json = (await response.json()) as {
     status?: number;
     error_code?: number;
+    error?: string;
+    msg?: string;
+    message?: string;
     data?: {
       info?: Array<{
         listid?: number | string;
@@ -515,6 +604,23 @@ export async function fetchKugouUserPlaylists(
       total?: number;
     };
   };
+
+  if (json.status !== 1) {
+    if (isKugouAuthError(json)) {
+      throw new ProviderError(
+        'FORBIDDEN',
+        'Kugou credentials invalid or expired',
+        401,
+        { authInvalid: true, errorCode: json.error_code },
+      );
+    }
+    throw new ProviderError(
+      'UPSTREAM_ERROR',
+      `Kugou user playlists upstream error: status=${json.status} error_code=${json.error_code}`,
+      502,
+      { errorCode: json.error_code },
+    );
+  }
 
   const rawLists = json.data?.info || [];
   const playlists: UserPlaylistSummary[] = rawLists.map((item) => ({

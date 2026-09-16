@@ -10,19 +10,11 @@ name: Provider Live Acceptance
 on:
   workflow_dispatch:
     inputs:
-      kugou_token:
-        description: 'Optional Kugou user token for authenticated >300 pagination tests'
+      run_kugou_authenticated_acceptance:
+        description: 'Run Tier 2 Authenticated Kugou Live Acceptance (Requires GitHub Secrets: KUGOU_TEST_TOKEN, KUGOU_TEST_USERID, KUGOU_TEST_PLAYLIST_URL)'
         required: false
-        type: string
-      kugou_userid:
-        description: 'Optional Kugou user ID for authenticated >300 pagination tests'
-        required: false
-        type: string
-      kugou_playlist_url:
-        description: 'Optional Kugou playlist URL to test'
-        required: false
-        type: string
-        default: 'https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1'
+        type: boolean
+        default: false
   schedule:
     - cron: '0 3 * * 0' # Every Sunday at 03:00 UTC
 
@@ -45,9 +37,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Live Acceptance Tests
+      - name: Run Tier 1 Public Live Acceptance Tests
         run: npm --prefix worker run test:live
+
+      - name: Run Tier 2 Kugou Authenticated Live Acceptance Tests
+        if: ${{ inputs.run_kugou_authenticated_acceptance == true }}
+        run: npm --prefix worker run test:live:authenticated
         env:
-          KUGOU_TEST_TOKEN: ${{ inputs.kugou_token || secrets.KUGOU_TEST_TOKEN }}
-          KUGOU_TEST_USERID: ${{ inputs.kugou_userid || secrets.KUGOU_TEST_USERID }}
-          KUGOU_TEST_PLAYLIST_URL: ${{ inputs.kugou_playlist_url || secrets.KUGOU_TEST_PLAYLIST_URL }}
+          RUN_KUGOU_AUTHENTICATED_ACCEPTANCE: 'true'
+          KUGOU_TEST_TOKEN: ${{ secrets.KUGOU_TEST_TOKEN }}
+          KUGOU_TEST_USERID: ${{ secrets.KUGOU_TEST_USERID }}
+          KUGOU_TEST_PLAYLIST_URL: ${{ secrets.KUGOU_TEST_PLAYLIST_URL }}
+

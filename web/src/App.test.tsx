@@ -382,4 +382,35 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     // Must NOT jump to top: 0
     expect(scrollToSpy).not.toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
+
+  it('automatically clears Kugou localStorage credentials when backend returns auth_invalid', async () => {
+    localStorage.setItem('kugou_token', 'stale_token_123');
+    localStorage.setItem('kugou_userid', 'user_456');
+
+    vi.spyOn(client, 'parsePlaylist').mockResolvedValueOnce({
+      success: true,
+      data: {
+        ...mockSamplePlaylist,
+        platform: 'kugou',
+        retrieval: {
+          mode: 'preview',
+          reason: 'auth_invalid',
+          message: 'Token expired',
+        },
+      },
+    });
+
+    render(<App />);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
+    fireEvent.change(input, { target: { value: 'https://m.kugou.com/songlist/gcid_test/' } });
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // Verify summary is rendered
+    expect(await screen.findByTestId('playlist-summary')).toBeInTheDocument();
+
+    // Verify localStorage was cleared
+    expect(localStorage.getItem('kugou_token')).toBeNull();
+    expect(localStorage.getItem('kugou_userid')).toBeNull();
+  });
 });
+
