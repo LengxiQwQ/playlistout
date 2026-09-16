@@ -370,7 +370,15 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           </div>
         </div>
       </StickyNote>
-      <KugouAuthModal isOpen={isKugouModalOpen} onClose={() => setIsKugouModalOpen(false)} />
+      <KugouAuthModal
+        isOpen={isKugouModalOpen}
+        onClose={() => setIsKugouModalOpen(false)}
+        onSuccess={() => {
+          if (inputUrl && inputUrl.trim()) {
+            onParse();
+          }
+        }}
+      />
     </section>
   );
 };

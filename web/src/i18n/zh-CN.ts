@@ -109,6 +109,7 @@ export const zhCN: Translations = {
     kugouReLoginBtn: '重新登录',
     kugouSwitchAccountBtn: '切换账号',
     kugouReparseBtn: '重新解析',
+    reloadingHint: '正在为您重新解析并解锁完整歌单...',
   },
   table: {
     listTitle: '歌曲列表 ({count})',

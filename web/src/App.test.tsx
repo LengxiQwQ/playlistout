@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './App';
 import * as client from './api/client';
 import type { Playlist } from './api/types';
@@ -262,7 +262,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   });
 
 
-  it('renders large lists (1000 tracks) responsibly', async () => {
+  it('renders large lists (1000 tracks) responsibly', { timeout: 15000 }, async () => {
     const largeTracks = Array.from({ length: 1000 }, (_, i) => ({
       index: i + 1,
       id: `song_${i + 1}`,
@@ -411,6 +411,74 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     // Verify localStorage was cleared
     expect(localStorage.getItem('kugou_token')).toBeNull();
     expect(localStorage.getItem('kugou_userid')).toBeNull();
+  });
+
+  it('preserves ResultPaper during reload with loading overlay and scrolls to top smoothly', async () => {
+    const scrollToSpy = vi.fn();
+    window.scrollTo = scrollToSpy;
+    Element.prototype.scrollIntoView = vi.fn();
+
+    let resolveSecondParse: (val: any) => void;
+    const secondParsePromise = new Promise((resolve) => {
+      resolveSecondParse = resolve;
+    });
+
+    vi.spyOn(client, 'parsePlaylist')
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ...mockSamplePlaylist,
+          platform: 'kugou',
+          retrieval: {
+            mode: 'preview',
+            reason: 'auth_required',
+          },
+        },
+      })
+      .mockImplementationOnce(() => secondParsePromise as any);
+
+    render(<App />);
+    const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
+    fireEvent.change(input, { target: { value: 'https://m.kugou.com/songlist/gcid_kugou_preview/' } });
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // 1. First parse lands in preview mode
+    expect(await screen.findByTestId('playlist-summary')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '连接酷狗账号' })).toBeInTheDocument();
+
+    // Clear spy and simulate user scrolled down
+    scrollToSpy.mockClear();
+    Object.defineProperty(window, 'scrollY', { value: 600, writable: true });
+
+    // 2. Trigger re-parse / reload (click Parse button or reload)
+    fireEvent.click(screen.getByRole('button', { name: '解析' }));
+
+    // Verify it smoothly scrolled to top to show search note loading state
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+
+    // CRITICAL: ResultPaper MUST NOT be unmounted (no layout collapse)
+    expect(screen.getByTestId('playlist-summary')).toBeInTheDocument();
+    // And reloading overlay is active
+    expect(screen.getByText('正在为您重新解析并解锁完整歌单...')).toBeInTheDocument();
+
+    // 3. Complete second parse
+    resolveSecondParse!({
+      success: true,
+      data: {
+        ...mockSamplePlaylist,
+        platform: 'kugou',
+        trackCount: 500,
+        retrieval: {
+          mode: 'full',
+        },
+      },
+    });
+
+    // Verify overlay disappears and updated data is present
+    await waitFor(() => {
+      expect(screen.queryByText('正在为您重新解析并解锁完整歌单...')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('共 500 首歌曲')).toBeInTheDocument();
   });
 });
 

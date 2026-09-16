@@ -109,6 +109,7 @@ export const enUS: Translations = {
     kugouReLoginBtn: 'Sign In Again',
     kugouSwitchAccountBtn: 'Switch Account',
     kugouReparseBtn: 'Retry Parse',
+    reloadingHint: 'Reloading and unlocking full playlist...',
   },
   table: {
     listTitle: 'Song List ({count})',

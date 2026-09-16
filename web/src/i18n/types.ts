@@ -109,6 +109,7 @@ export interface Translations {
     kugouReLoginBtn: string;
     kugouSwitchAccountBtn: string;
     kugouReparseBtn: string;
+    reloadingHint: string;
   };
   table: {
     listTitle: string;
