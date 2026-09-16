@@ -448,12 +448,7 @@ export async function fetchKugouPlaylist(
             (p) => p.name.trim() === targetName,
           );
           if (nameMatches.length === 1) {
-            // Only accept if track count matches exactly, or expected count is not specified
-            if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
-              matched = nameMatches[0];
-            } else if (expectedTrackCount <= 0) {
-              matched = nameMatches[0];
-            }
+            matched = nameMatches[0];
           } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
             const countMatches = nameMatches.filter(
               (p) => p.trackCount === expectedTrackCount,
