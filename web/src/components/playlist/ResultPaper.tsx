@@ -12,9 +12,16 @@ export interface ResultPaperProps {
   onReset: () => void;
   onReturnToBatch?: () => void;
   onReload?: () => void;
+  isReloading?: boolean;
 }
 
-export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onReturnToBatch, onReload }) => {
+export const ResultPaper: React.FC<ResultPaperProps> = ({
+  playlist,
+  onReset,
+  onReturnToBatch,
+  onReload,
+  isReloading,
+}) => {
   const { t } = useTranslation();
 
   return (
@@ -108,8 +115,64 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onR
           shadow="paper"
           className="result-paper-card"
           interactive={false}
-          style={{ padding: '2.5rem' }}
+          style={{ padding: '2.5rem', position: 'relative' }}
         >
+          {isReloading && (
+            <div
+              className="reloading-overlay"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'rgba(255, 255, 255, 0.72)',
+                backdropFilter: 'blur(2px)',
+                WebkitBackdropFilter: 'blur(2px)',
+                borderRadius: 'inherit',
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                paddingTop: '6rem',
+                pointerEvents: 'all',
+                transition: 'opacity 0.25s ease',
+              }}
+              aria-live="polite"
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.85rem',
+                  padding: '1rem 1.75rem',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px dashed #2563eb',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.12)',
+                }}
+              >
+                <div
+                  className="animate-spin"
+                  style={{
+                    width: '1.5rem',
+                    height: '1.5rem',
+                    border: '2.5px solid #dbeafe',
+                    borderTopColor: '#2563eb',
+                    borderRadius: '50%',
+                  }}
+                />
+                <span
+                  className="font-note"
+                  style={{
+                    fontSize: '1.35rem',
+                    color: '#1e3a8a',
+                    fontWeight: 600,
+                  }}
+                >
+                  {t.result.reloadingHint}
+                </span>
+              </div>
+            </div>
+          )}
           <PlaylistSummary
             playlist={playlist}
             onReset={onReset}

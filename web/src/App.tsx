@@ -88,6 +88,11 @@ export const AppContent: React.FC = () => {
       setError(null);
       setHasCollision(false);
 
+      // Smoothly bring user to top so loading animation in SearchNote is visible
+      if (typeof window !== 'undefined' && typeof window.scrollY === 'number' && window.scrollY > 80) {
+        scrollToTop();
+      }
+
       try {
         // Case A: User profile URL -> Fetch user playlists directly
         if (validation.kind === 'user_profile_url') {
@@ -305,8 +310,13 @@ export const AppContent: React.FC = () => {
         }
       }
     },
-    [inputUrl, scrollToElement],
+    [inputUrl, playlist, scrollToElement, scrollToTop],
   );
+
+  const handleReload = useCallback(() => {
+    scrollToTop();
+    handleParse();
+  }, [scrollToTop, handleParse]);
 
   const handleReset = useCallback(() => {
     if (abortControllerRef.current) {
@@ -468,13 +478,14 @@ export const AppContent: React.FC = () => {
           </div>
 
           {/* Result Paper (Single Playlist) */}
-          {state === 'success' && viewMode === 'single' && playlist && (
+          {(state === 'success' || (state === 'loading' && Boolean(playlist))) && viewMode === 'single' && playlist && (
             <div className="baseline-grid-snap">
               <ResultPaper 
                 playlist={playlist} 
                 onReset={handleReset} 
                 onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
-                onReload={() => handleParse()}
+                onReload={handleReload}
+                isReloading={state === 'loading'}
               />
             </div>
           )}
