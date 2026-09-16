@@ -202,4 +202,26 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
       expect(Array.isArray(track.artists)).toBe(true);
     });
   });
+
+  it('validates live Kugou QR login code creation from official Kugou auth service', async () => {
+    const { createKugouQrCode } = await import('../src/providers/kugou/auth');
+    const session = await createKugouQrCode();
+
+    expect(session.qrcode).toBeTruthy();
+    expect(session.qrcode.length).toBeGreaterThan(10);
+    expect(session.loginUrl).toContain('kugou.com');
+    expect(session.expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  it('validates authenticated Kugou cloudlist when credentials provided via environment', async () => {
+    const token = process.env.KUGOU_TEST_TOKEN;
+    const userid = process.env.KUGOU_TEST_USERID;
+    if (!token || !userid) {
+      // Skipped in CI/local runs without explicit live user credentials
+      return;
+    }
+    const { fetchKugouUserPlaylists } = await import('../src/providers/kugou/client');
+    const userPlaylists = await fetchKugouUserPlaylists(token, userid);
+    expect(userPlaylists.playlists.length).toBeGreaterThan(0);
+  });
 });

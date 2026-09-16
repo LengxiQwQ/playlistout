@@ -60,29 +60,23 @@ The MVP should also support convenient copy actions such as:
 - `title - artist`
 - `title - artist - album`
 
-### Explicit MVP non-goals
+### Explicit MVP non-goals & Boundaries
 
 Do not add any of the following unless a later roadmap phase explicitly approves it:
 
-- user registration or login
-- PlaylistOut user accounts
-- QQ Music login
-- QR-code login
-- private playlists
-- cookie import
-- cloud sync
-- server-side file storage
-- music playback
-- music downloading
-- lyrics downloading
-- comments/social features
-- recommendations
-- AI features
-- payments or subscriptions
-- ad systems
-- Spotify/Apple Music migration
-- admin dashboards
-- generic web scraping/proxy services
+- PlaylistOut user registration, passwords, or user databases (PlaylistOut remains 100% stateless & accountless)
+- Server-side storage or database persistence of user credentials or auth tokens
+- Permanent user tracking or cross-day fingerprinting
+- Cookie imports or session hijacking
+- Cloud synchronization or server-side file hosting
+- Music streaming/playback or media file downloading
+- Lyrics scraping or audio extraction
+- Social features, comments, or algorithmic recommendations
+- Commercial monetization, payments, or ads
+- Generic proxy or scraping services
+
+*Note on Third-Party Platform Authentication*:
+PlaylistOut itself stores zero accounts or credentials. For music platforms that enforce public link preview limits (such as Kugou Music limiting public shares to 10-30 songs), optional client-side ephemeral QR authentication is supported. The resulting temporary tokens reside exclusively in the client's browser (localStorage/memory), are transmitted only via standard HTTP headers (`Authorization: Bearer`), and are never persisted in any database on the backend.
 
 ---
 

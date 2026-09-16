@@ -178,13 +178,14 @@ async function fetchCloudlistAllTracks(options: {
   listid: string | number;
   token: string;
   userid: string;
+  expectedCount?: number;
 }): Promise<KugouRawSong[]> {
-  const { listid, token, userid } = options;
+  const { listid, token, userid, expectedCount } = options;
   const pageSize = 300;
   const maxPages = 50;
   let page = 1;
   const allSongs: KugouRawSong[] = [];
-  let expectedTotal = -1;
+  let expectedTotal = expectedCount && expectedCount > 0 ? expectedCount : -1;
 
   while (page <= maxPages) {
     const clienttime = String(Math.floor(Date.now() / 1000));
@@ -255,7 +256,8 @@ async function fetchCloudlistAllTracks(options: {
       break;
     }
 
-    if (expectedTotal === -1 && typeof json.data?.count === 'number') {
+    // Only set from API if expectedTotal wasn't explicitly supplied by trusted caller
+    if (expectedTotal <= 0 && typeof json.data?.count === 'number') {
       expectedTotal = json.data.count;
     }
 
@@ -266,7 +268,7 @@ async function fetchCloudlistAllTracks(options: {
 
     allSongs.push(...pageSongs);
 
-    if (expectedTotal >= 0 && allSongs.length >= expectedTotal) {
+    if (expectedTotal > 0 && allSongs.length >= expectedTotal) {
       break;
     }
     if (pageSongs.length < pageSize) {
@@ -275,13 +277,14 @@ async function fetchCloudlistAllTracks(options: {
     page++;
   }
 
-  // Completeness check
-  if (expectedTotal >= 0 && allSongs.length < expectedTotal) {
+  // Completeness check: fail-closed if actual retrieved songs do not match expected
+  const requiredCount = expectedCount && expectedCount > 0 ? expectedCount : expectedTotal;
+  if (requiredCount > 0 && allSongs.length !== requiredCount) {
     throw new ProviderError(
       'INCOMPLETE_PLAYLIST',
-      `Incomplete cloudlist: Kugou reported ${expectedTotal} songs, but only ${allSongs.length} could be retrieved.`,
+      `Incomplete cloudlist: Kugou reported ${requiredCount} songs, but only ${allSongs.length} could be retrieved.`,
       502,
-      { expectedCount: expectedTotal, actualCount: allSongs.length },
+      { expectedCount: requiredCount, actualCount: allSongs.length },
     );
   }
 
@@ -307,60 +310,109 @@ export async function fetchKugouPlaylist(
   // Check if authenticated credentials are provided
   if (auth?.token && auth?.userid) {
     try {
-      // 2a. Fetch user's own playlists to find matching cloudlist listid
-      const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+      // 2a. Owner verification: check if H5 songlist declares a creator ID
+      let creatorUserId: string | undefined;
+      const rawListInfo = listInfo as Record<string, unknown>;
+      if (rawListInfo.list_create_userid) {
+        creatorUserId = String(rawListInfo.list_create_userid).trim();
+      } else if (rawListInfo.uid) {
+        creatorUserId = String(rawListInfo.uid).trim();
+      } else if (rawListInfo.userid) {
+        creatorUserId = String(rawListInfo.userid).trim();
+      } else if (target.originalUrl) {
+        try {
+          const parsedUrl = new URL(target.originalUrl);
+          const uidParam = parsedUrl.searchParams.get('uid') || parsedUrl.searchParams.get('userid');
+          if (uidParam) creatorUserId = uidParam.trim();
+        } catch {
+          // Ignore URL parse error
+        }
+      }
 
-      // High-confidence matching:
-      // Priority 1: Match by direct listid if target.id matches a user list ID
-      // Priority 2: Match by exact playlist name
-      // If multiple user playlists have the same name, disambiguate with trackCount
-      // STRICT SAFETY: NEVER match solely by trackCount (prevent wrong playlist extraction)
-      const targetName = (listInfo.name || '').trim();
-      let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
+      // If creator user ID is known and does NOT match the logged-in user,
+      // this playlist belongs to someone else. Do NOT match against the logged-in user's playlists!
+      const isOwnerMismatch = Boolean(creatorUserId && creatorUserId !== String(auth.userid).trim());
 
-      if (!matched && targetName) {
-        const nameMatches = userPlaylists.playlists.filter(
-          (p) => p.name.trim() === targetName,
-        );
-        if (nameMatches.length === 1) {
-          matched = nameMatches[0];
-        } else if (nameMatches.length > 1) {
-          const countMatch = nameMatches.find(
-            (p) => p.trackCount === Number(listInfo.count || 0),
+      if (!isOwnerMismatch) {
+        // Fetch user's own playlists to find matching cloudlist listid
+        const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+
+        // High-confidence matching:
+        // Priority 1: Match by direct listid if target.id matches a user list ID
+        // Priority 2: Match by exact playlist name AND exact trackCount
+        // STRICT SAFETY:
+        // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
+        // - If confidence is low, fall back safely to preview mode
+        const targetName = (listInfo.name || '').trim();
+        const expectedTrackCount = Number(listInfo.count || 0);
+        let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
+
+        if (!matched && targetName) {
+          const nameMatches = userPlaylists.playlists.filter(
+            (p) => p.name.trim() === targetName,
           );
-          matched = countMatch || nameMatches[0];
+          if (nameMatches.length === 1) {
+            // Only accept if track count matches exactly, or expected count is not specified
+            if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
+              matched = nameMatches[0];
+            } else if (expectedTrackCount <= 0) {
+              matched = nameMatches[0];
+            }
+          } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
+            const countMatches = nameMatches.filter(
+              (p) => p.trackCount === expectedTrackCount,
+            );
+            if (countMatches.length === 1) {
+              matched = countMatches[0];
+            }
+          }
         }
-      }
 
-      if (matched && matched.id) {
-        const fullSongs = await fetchCloudlistAllTracks({
-          listid: matched.id,
-          token: auth.token,
-          userid: auth.userid,
-        });
-
-        if (fullSongs.length > 0) {
-          const tracks = fullSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
-          return normalizeKugouPlaylist({
-            id: playlistId,
-            listInfo: {
-              ...listInfo,
-              name: matched.name || listInfo.name,
-              pic: matched.coverUrl || listInfo.pic,
-              count: matched.trackCount || listInfo.count || fullSongs.length,
-            },
-            tracks,
-            sourceUrl: target.originalUrl,
-            isPartialPreview: false,
+        if (matched && matched.id) {
+          const trustedExpected = Number(matched.trackCount || listInfo.count || 0);
+          const fullSongs = await fetchCloudlistAllTracks({
+            listid: matched.id,
+            token: auth.token,
+            userid: auth.userid,
+            expectedCount: trustedExpected,
           });
+
+          if (trustedExpected > 0 && fullSongs.length !== trustedExpected) {
+            throw new ProviderError(
+              'INCOMPLETE_PLAYLIST',
+              `Incomplete cloudlist: Kugou playlist expected ${trustedExpected} songs, but only ${fullSongs.length} were retrieved.`,
+              502,
+              { expectedCount: trustedExpected, actualCount: fullSongs.length },
+            );
+          }
+
+          if (fullSongs.length > 0) {
+            const tracks = fullSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
+            return normalizeKugouPlaylist({
+              id: playlistId,
+              listInfo: {
+                ...listInfo,
+                name: matched.name || listInfo.name,
+                pic: matched.coverUrl || listInfo.pic,
+                count: trustedExpected || fullSongs.length,
+              },
+              tracks,
+              sourceUrl: target.originalUrl,
+              isPartialPreview: false,
+            });
+          }
         }
       }
-    } catch {
-      // Fall through to preview mode if cloudlist resolution fails
+    } catch (err: unknown) {
+      // Re-throw INCOMPLETE_PLAYLIST: NEVER swallow completeness failure into a partial preview!
+      if (err instanceof ProviderError && err.code === 'INCOMPLETE_PLAYLIST') {
+        throw err;
+      }
+      // Fall through to preview mode if cloudlist resolution fails due to network/auth error
     }
   }
 
-  // Preview mode (unauthenticated or cloudlist fallback): return the 10 SSR songs
+  // Preview mode (unauthenticated or cloudlist fallback): return the SSR preview songs
   const tracks = songs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
   return normalizeKugouPlaylist({
     id: playlistId,

@@ -251,13 +251,9 @@ export default {
       const token =
         (bearerMatch ? bearerMatch[1].trim() : '') ||
         request.headers.get('x-kugou-token')?.trim() ||
-        url.searchParams.get('token') ||
         undefined;
 
-      const userid =
-        request.headers.get('x-kugou-userid')?.trim() ||
-        url.searchParams.get('userid') ||
-        undefined;
+      const userid = request.headers.get('x-kugou-userid')?.trim() || undefined;
 
       // Check provider matching
       let matchedProvider: typeof qqMusicProvider | typeof neteaseProvider | typeof kugouProvider | null = null;
@@ -481,26 +477,21 @@ export default {
 
       const platformParam = url.searchParams.get('platform');
 
-      // Kugou User Playlists branch (requires token & userid)
+      // Kugou User Playlists branch (requires token & userid via headers)
       if (platformParam === 'kugou' || kugouProvider.matches(rawUserInput)) {
         const authHeader = request.headers.get('authorization') || '';
         const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
         const token =
           (bearerMatch ? bearerMatch[1].trim() : '') ||
-          request.headers.get('x-kugou-token')?.trim() ||
-          url.searchParams.get('token');
-        const userid =
-          request.headers.get('x-kugou-userid')?.trim() ||
-          url.searchParams.get('userid') ||
-          url.searchParams.get('uid') ||
-          url.searchParams.get('uin');
+          request.headers.get('x-kugou-token')?.trim();
+        const userid = request.headers.get('x-kugou-userid')?.trim();
         if (!token || !userid) {
           return new Response(
             JSON.stringify({
               success: false,
               error: {
                 code: 'INVALID_INPUT',
-                message: 'Kugou user playlists require both token and userid from QR login.',
+                message: 'Kugou user playlists require both token and userid passed via Authorization / X-Kugou-* headers from QR login.',
               },
             }),
             { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },

@@ -25,19 +25,54 @@ export function matchesKugouInput(input: string): boolean {
 }
 
 /**
- * Resolves short links (e.g. t1.kugou.com/...) to their destination URL.
+ * Resolves short links (e.g. t1.kugou.com/...) safely with manual redirect loop, timeout, protocol, and host validation.
  */
 async function resolveKugouShortLink(url: string): Promise<string> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
-      },
-    });
-    return response.url || url;
+    let currentUrl = url;
+    const maxHops = 3;
+    for (let hop = 0; hop < maxHops; hop++) {
+      const parsed = new URL(currentUrl);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return url;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const resp = await fetch(currentUrl, {
+          method: 'GET',
+          redirect: 'manual',
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+          },
+          signal: controller.signal,
+        });
+
+        if (resp.status >= 300 && resp.status < 400) {
+          const location = resp.headers.get('location');
+          if (!location) break;
+
+          const nextUrl = new URL(location, currentUrl);
+          if (nextUrl.protocol !== 'http:' && nextUrl.protocol !== 'https:') {
+            return currentUrl;
+          }
+          const nextHost = nextUrl.hostname.toLowerCase();
+          const isAllowed = nextHost === 'kugou.com' || nextHost.endsWith('.kugou.com');
+          if (!isAllowed) {
+            return currentUrl;
+          }
+          currentUrl = nextUrl.toString();
+        } else {
+          break;
+        }
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    return currentUrl;
   } catch {
     return url;
   }

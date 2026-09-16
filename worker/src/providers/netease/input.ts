@@ -33,6 +33,9 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
   try {
     let currentUrl = candidateUrl;
     const parsed = new URL(currentUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return candidateUrl;
+    }
     if (parsed.hostname !== SHORTLINK_HOST && !parsed.hostname.endsWith(`.${SHORTLINK_HOST}`)) {
       return candidateUrl;
     }
@@ -59,6 +62,15 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
 
           const resolvedLocation = new URL(location, currentUrl).toString();
           const targetParsed = new URL(resolvedLocation);
+
+          if (targetParsed.protocol !== 'http:' && targetParsed.protocol !== 'https:') {
+            throw new ProviderError(
+              'FORBIDDEN',
+              `Short link redirect to non-HTTP protocol ${targetParsed.protocol} is strictly prohibited.`,
+              403,
+            );
+          }
+
           const targetHost = targetParsed.hostname.toLowerCase();
 
           // Strict outbound host verification

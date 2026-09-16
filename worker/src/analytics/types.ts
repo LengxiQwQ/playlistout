@@ -38,7 +38,10 @@ export interface ClientDistributionItem {
 
 export interface PublicStatsResponse {
   launchedAt: string;
+  /** 累计日独立访问人次（按日去重汇总，零跨日追踪，最大化保护隐私） */
   totalVisitors: number;
+  /** 语义化别名：累计日独立访问人次 */
+  cumulativeDailyVisitors: number;
   visitorsToday: number;
   totalPageViews: number;
   pageViewsToday: number;
