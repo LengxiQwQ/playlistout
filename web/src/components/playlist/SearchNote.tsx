@@ -258,7 +258,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               cursor: 'pointer',
             }}
           >
-            网易云示例 (613首)
+            {t.search.sampleNetease}
           </Sticker>
         </div>
 
@@ -323,50 +323,23 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             >
               ✓ {t.search.platformNetease}
             </Sticker>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Sticker
-                type="button"
-                color="blue"
-                rotateDeg={-1}
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  fontSize: '1rem',
-                  fontFamily: 'var(--font-handwriting, cursive)',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-                title={hasKugou ? t.search.kugouLoggedInBadge : t.search.platformKugouDesc}
-              >
-                ✓ {t.search.platformKugou}
-              </Sticker>
-              <button
-                type="button"
-                onClick={() => setIsKugouModalOpen(true)}
-                className="font-handwriting"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '0.1rem 0.35rem',
-                  fontSize: '0.85rem',
-                  color: hasKugou ? '#16a34a' : '#2563eb',
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                }}
-              >
-                {hasKugou ? `[${t.search.kugouLoggedInBadge}]` : `[${t.search.kugouLoginBadge}]`}
-              </button>
-            </div>
-            <span
-              className="font-note"
+            {/* Kugou: single unified sticker showing login state */}
+            <Sticker
+              type="button"
+              color={hasKugou ? 'green' : 'blue'}
+              rotateDeg={-1}
+              onClick={() => setIsKugouModalOpen(true)}
               style={{
-                fontSize: '1.25rem',
-                color: '#8a8f92',
-                transform: 'rotate(1deg)',
+                padding: '0.25rem 0.75rem',
+                fontSize: '1rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+                cursor: 'pointer',
               }}
+              title={hasKugou ? t.search.kugouLoggedInBadge : t.search.platformKugouDesc}
             >
-              {t.search.moreSoon}
-            </span>
+              ✓ {t.search.platformKugou}{hasKugou ? ' · ✔' : ''}
+            </Sticker>
           </div>
         </div>
       </StickyNote>

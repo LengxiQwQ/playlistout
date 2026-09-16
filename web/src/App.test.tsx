@@ -64,7 +64,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     fireEvent.click(submitBtn);
 
     expect(await screen.findByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/目前支持 QQ 音乐与网易云音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单/)).toBeInTheDocument();
   });
 
   it('renders loading state and successful playlist preview with repeated tracks preserved', async () => {

@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
 
-**[🌐 playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)**
+**🌐 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)**
 
 </div>
 
@@ -32,7 +32,7 @@ Walled gardens keep your playlists locked inside proprietary apps.
 **PlaylistOut does one simple thing: turn public playlists into structured, portable data that truly belongs to you.**
 
 - **Client-Side Export**: All exported files are generated 100% locally in your browser's memory and downloaded directly, never uploaded back to the server.
-- **No Sign-In Required**: No QQ Music account needed, no cookies required, and zero browser extensions or desktop apps to install.
+- **Zero-Friction & Secure Authorization**: Public playlists from QQ Music and NetEase Cloud Music are 100% zero-login with full tracklist export. KuGou Music supports instant guest previews with optional mobile QR code authorization to unlock complete playlists (tokens stored strictly within the user's browser, zero server storage).
 - **Pure and Focused**: It is not a music player, does not download audio files, and avoids intrusive cloud sync. It focuses purely, reliably, and completely on one job: exporting and migrating playlist data.
 
 ---
@@ -41,27 +41,41 @@ Walled gardens keep your playlists locked inside proprietary apps.
 
 No installation required. Simply visit **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)** to get started:
 
-1. **Paste a Playlist** — Supports desktop web URLs (`y.qq.com`), mobile share links (`c6.y.qq.com`), raw playlist IDs, or copied mobile share text (automatically extracts valid URLs).
-2. **Instant Parsing** — Edge workers parse playlist metadata, song titles, artists, albums, and cover art.
-3. **Full Preview** — Review the complete tracklist and total track count directly in your browser before exporting.
-4. **Export or Copy** — Save locally as TXT / CSV / Excel (.xlsx) / JSON, or copy to clipboard with a single click.
+1. **Paste a Playlist** — Supports links from QQ Music, NetEase Cloud Music, and KuGou Music (desktop URLs, mobile short links, raw IDs, or copied mobile share text). You can also paste user homepage links or user IDs to directly load all publicly created playlists.
+2. **Instant Parsing** — Edge workers parse playlist metadata, song titles, artists, albums, covers, and track availability/VIP statuses.
+3. **Full Preview** — Review the complete tracklist, total track count, and track availability directly in your browser before exporting.
+4. **Export or Copy** — Save locally as TXT / CSV / Excel (.xlsx) / JSON, or copy to clipboard with a single click; batch-package multiple playlists into multi-sheet Excel workbooks or ZIP archives.
 
 ---
 
 ## ✨ Key Features
 
-### 🔗 Web-Based, No Login Needed
-Parse playlists directly without logging into any streaming service, without providing cookies or tokens, and without installing browser extensions. A single public link is all it takes.
+### 🔗 Fast Cross-Platform Playlist Parsing & Export
+Native support for public playlists from **QQ Music**, **NetEase Cloud Music**, and **KuGou Music**:
+- **QQ Music / NetEase Cloud Music**: Fully web-based and 100% zero-login. Parse and export complete playlists without accounts, cookies, tokens, or software installation.
+- **KuGou Music**: Provides instant guest preview for initial tracks without login, and supports secure mobile App QR scan authorization to unlock complete playlists without limits (tokens remain strictly in your browser).
+
+### 📚 User Playlist Collections & Batch Packaging
+Paste a user's QQ number, NetEase UID, or profile link to load their entire collection of publicly created playlists in one click. Select all or any subset of playlists, and batch-export them into a **Multi-Sheet Excel Workbook** (one sheet per playlist) or a **ZIP Archive** containing individual Excel / CSV / TXT / JSON files.
+
+### 🐕 KuGou Mobile QR Safe Unlock
+KuGou only provides guest previews for unauthenticated requests. PlaylistOut provides **KuGou mobile App QR authorization** to unlock complete playlists without track limits. Session tokens are stored strictly within the user's local browser storage and never sent to or retained in any server database.
+
+### 🏷️ Song VIP & Availability Status Detection
+Automatically detects and marks track playable statuses: **Playable**, **Unavailable / Uncopyrighted**, **VIP Only**, **Paid Album**, etc. Displayed prominently in both the web table and exported CSV / Excel / TXT / JSON files to prevent unexpected missing tracks during cross-platform migration.
+
+### 🔍 Cross-Platform Numeric ID Disambiguation
+When entering a raw numeric ID, the system concurrently probes single-playlist and user-profile targets across platforms, presenting an interactive journal dialog to let you choose your intended destination.
 
 ### 🎵 Deep Pagination for Large Playlists
-Breaks free from the common 100-track truncation limitation found in many tools. PlaylistOut features an automated pagination engine with seamless support for **1,000+ track** playlists, preserving the original track order and legitimate duplicate tracks without silent dropping.
+Breaks free from common 100-track truncation or unauthenticated 10-track limits. PlaylistOut features an automated pagination and batch-hydration engine with seamless support for **1,000+ track** playlists, preserving the original track order and legitimate duplicate tracks without silent dropping.
 
 ### 📦 4 File Formats Generated Locally
 Export parsed playlists into multiple widely-used formats tailored for different use cases:
-- **TXT** — Clean and simple plain text list, ideal for quick inspection, notepad backups, or importing into niche music players.
-- **CSV** — Standard comma-separated values (with UTF-8 BOM by default to prevent garbled text in Excel on Windows).
-- **Excel (.xlsx)** — Native formatted spreadsheet, ready for sorting, archiving, and editing in Microsoft Excel, WPS, or LibreOffice.
-- **JSON** — Complete structured data containing track IDs, artists, albums, and metadata, built for developers and automated workflows.
+- **TXT** — Clean plain text list with stationery card styling and status tags, ideal for inspection, notepad backups, or niche music players.
+- **CSV** — Standard comma-separated values (with UTF-8 BOM, including VIP and Status columns, preventing garbled text in Excel on Windows).
+- **Excel (.xlsx)** — Native formatted spreadsheet with metadata cards, custom column widths, VIP, and availability tags.
+- **JSON** — Complete structured data containing track IDs, artists, albums, VIP flags, availability statuses, and metadata for developers.
 
 > All files are assembled and downloaded directly within browser memory. Data never passes through intermediary third-party servers.
 
@@ -101,11 +115,14 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `name` | `string` | **Required** | Full title of the playlist. |
 | `creator` | `string` | Optional | Nickname of the playlist creator / curator. |
 | `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
-| `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`). |
+| `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`, `"netease"`, `"kugou"`). |
 | `id` | `string` | **Required** | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
 | `sourceUrl` | `string` | **Required** | Direct canonical web URL of the playlist on the source platform. |
 | `trackCount` | `number` | **Required** | Total number of tracks contained in the playlist (integer). |
-| `totalDuration` | `string \| null` | Optional | Formatted total playlist duration string (e.g., `"3 小时 45 分钟"`). |
+| `loadedTrackCount` | `number` | Optional | Number of actually loaded tracks. Represents loaded subset count in guest previews. |
+| `isPartial` | `boolean` | Optional | Whether this export is a partial guest preview (e.g. `true` for unauthenticated KuGou preview). |
+| `totalDuration` | `string \| null` | Optional | Formatted total playlist duration (e.g., `"3 小时 45 分钟"`), `null` during partial preview. |
+| `loadedDuration` | `string \| null` | Optional | Formatted duration of actually loaded tracks. |
 | `playCount` | `number \| null` | Optional | Cumulative listen / play count as an integer. |
 | `tags` | `string[]` | Optional | Array of genre and category tags (e.g., `["Pop", "Acoustic"]`). |
 | `description` | `string` | Optional | Playlist introduction / background description. |
@@ -121,6 +138,10 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `artists` | `string[]` | **Required** | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
 | `album` | `string` | **Required** | Album name. |
 | `durationMs` | `number` | Optional | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). |
+| `isVip` | `boolean` | Optional | Whether this track is VIP exclusive. |
+| `isAvailable` | `boolean` | Optional | Whether track is playable on source platform (`false` when unavailable / uncopyrighted). |
+| `status` | `string` | Optional | Status enum: `"playable"`, `"unplayable"`, `"vip"`, `"paid"`, `"geo_blocked"`. |
+| `statusText` | `string` | Optional | Localized friendly status text (e.g., `"正常"`, `"下架/无版权"`, `"VIP专享"`). |
 | `sourceUrl` | `string` | Optional | Direct canonical web URL of the track detail page. |
 
 #### Standard JSON Example
@@ -138,7 +159,10 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
   "id": "773829104",
   "sourceUrl": "https://y.qq.com/n/ryqq/playlist/773829104",
   "trackCount": 2,
+  "loadedTrackCount": 2,
+  "isPartial": false,
   "totalDuration": "8 分钟",
+  "loadedDuration": "8 分钟",
   "playCount": 128500,
   "tags": ["Pop", "Classic", "Mandopop"],
   "description": "Timeless melodies that touch your soul.",
@@ -150,6 +174,10 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
       "artists": ["Jay Chou"],
       "album": "Yeh Hui-Mei",
       "durationMs": 269000,
+      "isVip": false,
+      "isAvailable": true,
+      "status": "playable",
+      "statusText": "正常",
       "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc"
     },
     {
@@ -159,6 +187,10 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
       "artists": ["Jay Chou", "Ashin"],
       "album": "Won't Cry",
       "durationMs": 222000,
+      "isVip": false,
+      "isAvailable": true,
+      "status": "playable",
+      "statusText": "正常",
       "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS"
     }
   ]
@@ -171,25 +203,17 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 
 - **Encoding**: `UTF-8 with BOM` (starts with `\uFEFF` byte order mark to avoid mojibake in Microsoft Excel on Windows).
 - **Line Ending**: `\r\n` (CRLF).
-- **Metadata Comment Block**: Prefaced by `# ` comment lines containing metadata and generator branding. Standard tabular parsers can simply skip lines starting with `#` to extract song rows.
+- **Pure Table Output**: By default, generates standard RFC 4180 pure tabular data (7 columns) without comment lines for maximum compatibility with spreadsheet software and music migration pipelines.
+- **Metadata Extension Mode**: When metadata inclusion is enabled in advanced settings, prefaced by `# ` comment lines containing playlist metadata.
 - **Formula Injection Defense**: Cells starting with `=`, `+`, `-`, `@`, `\t`, or `\r` are safely prepended with a single quote `'` to prevent DDE/macro code execution in spreadsheet applications.
 - **RFC 4180 Escaping**: Fields containing commas or quotes are wrapped in double quotes, with internal quotes escaped as `""`.
 
 #### CSV File Example
 
 ```csv
-# 创建时间: 2021-06-18 14:30:00
-# 导出时间: 2026-09-14 23:30:00
-# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
-# 歌单名称: Chinese Classic Pop Hits
-# 歌单作者: Music Cafe
-# 歌曲总数: 2 首 (8 分钟)
-# 风格标签: Pop, Classic, Mandopop
-# 总播放量: 128,500 次
-# 歌单链接: https://y.qq.com/n/ryqq/playlist/773829104
-序号,歌曲标题,歌手,专辑,时长
-1,Sunny Day,Jay Chou,Yeh Hui-Mei,04:29
-2,Won't Cry,"Jay Chou, Ashin",Won't Cry,03:42
+序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态
+1,Sunny Day,Jay Chou,Yeh Hui-Mei,04:29,—,正常
+2,Won't Cry,"Jay Chou, Ashin",Won't Cry,03:42,—,正常
 ```
 
 ---
@@ -208,8 +232,8 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
      - Row 6: `['风格标签', tagsStr, '歌单链接', sourceUrl]`
      - Row 7 (optional): `['歌单简介', description, '', '']` (present when description exists)
   2. **Blank Separator Row (Row 8)**: Natural separation between metadata and the song table.
-  3. **Table Column Headers (Row 9)**: `序号`, `歌曲标题`, `歌手`, `专辑`, `时长`.
-  4. **Track Data Rows (Row 10+)**: Sequential track list with formula injection defense and responsive column widths (10 / 32 / 22 / 25 / 10).
+  3. **Table Column Headers (Row 9)**: `序号`, `歌曲标题`, `歌手`, `专辑`, `时长`, `VIP`, `歌曲状态` (7 columns).
+  4. **Track Data Rows (Row 10+)**: Sequential track list with formula injection defense and responsive column widths (10 / 32 / 22 / 25 / 10 / 8 / 14).
 
 ---
 
@@ -220,8 +244,9 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 - **Structure**:
   - Top stationery header bounded by `==================================================`;
   - First metadata line is `创建时间:`, followed immediately by `导出时间:`, and third line is `导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)`;
-  - Displays playlist title, curator, last updated date, track count with duration, tags, play count, link, and description;
+  - Displays playlist title, curator, last updated date, track count with duration, tags, play count, link, and description (clearly notes loaded track count and duration during partial previews);
   - Plain track entries below the divider: `${title} - ${artists} - ${album}` (or `${title} - ${artists}` if no album);
+  - Automatically appends status tags for unplayable/VIP tracks (e.g. `[下架/无版权]`, `[VIP专享]`);
   - Preserves raw text without spreadsheet formula escape prefixes.
 
 #### TXT File Example
@@ -253,9 +278,9 @@ Won't Cry - Jay Chou, Ashin - Won't Cry
 
 | Platform | Web Support | Notes |
 |---|---|---|
-| **QQ Music** | ✅ Supported | Playlist share URLs / IDs / App share text parsing and export |
-| NetEase Cloud Music | Planned | On the roadmap |
-| Kugou Music | Planned | On the roadmap |
+| **QQ Music** | ✅ Supported | Playlist share URLs / IDs / App share text / QQ number batch export (No login) |
+| **NetEase Cloud Music** | ✅ Supported | Playlist URLs / short links / IDs / UID batch export / VIP & copyright status (No login) |
+| **KuGou Music** | ✅ Supported | Web & App share URLs / IDs (guest preview without login; mobile QR authorization for full export) |
 | Kuwo Music | Planned | On the roadmap |
 | Migu Music | Planned | On the roadmap |
 | Qishui Music | Planned | On the roadmap |
@@ -268,7 +293,7 @@ Each streaming platform connects through an independent Provider module, while t
 
 PlaylistOut operates with a transparent, privacy-first commitment:
 
-- **No User Accounts**: No registration, login, or identity tracking. No personal information is ever collected.
+- **No Service Accounts**: PlaylistOut itself has no account registration, user logins, or profiling system. QQ Music and NetEase Cloud Music require zero credentials. When using mobile QR code authorization to unlock KuGou Music, the temporary token is stored solely within your local browser LocalStorage and never sent to or retained in any server database.
 - **Stateless Edge Proxy**: Tracklists are fetched on demand via Cloudflare Workers and returned immediately to the frontend. No playlist database exists, and no songs are retained on the server.
 - **100% Local Export**: TXT, CSV, XLSX, and JSON files are generated entirely within the client's browser. File contents are never transmitted to any server.
 - **Anonymous Aggregated Metrics**: Cloudflare D1 stores only anonymous aggregate counters (e.g., success/failure counts, export format distributions) for service health monitoring and capacity planning. No IP addresses, URLs, or track names are stored.
@@ -276,19 +301,21 @@ PlaylistOut operates with a transparent, privacy-first commitment:
 
 ---
 
-## ⌨️ QQ Music CLI
+## ⌨️ Command-Line Tools (CLI)
 
-The repository maintains the original Python command-line utility for scripting, batch jobs, and technical reference:
-- Supports single playlist export
-- Supports batch export of all public playlists by QQ number
+In addition to the web app, standalone Python CLI scripts are provided under `cli/` for automation, cron backup jobs, and developer workflows:
+- **Supported Platforms**: **QQ Music** (`cli/qqmusic/`) and **NetEase Cloud Music** (`cli/netease/`).
+- **Key Capabilities**: Supports single playlist export by URL or ID, and batch discovery and export of all publicly created playlists by QQ number or NetEase UID. The NetEase CLI uniquely detects track availability and VIP status.
+
+Navigate to the respective directory, install requirements, and run the script (each directory includes a detailed `README.md`):
 
 ```bash
-cd cli/qqmusic
-pip install -r requirements.txt
-python qq_music_playlist_export.py
-```
+# QQ Music CLI
+cd cli/qqmusic && pip install -r requirements.txt && python qq_music_playlist_export.py
 
-For advanced arguments and configuration, see [`cli/qqmusic/README.md`](./cli/qqmusic/README.md).
+# NetEase Cloud Music CLI
+cd cli/netease && pip install -r requirements.txt && python netease_playlist_export.py
+```
 
 ---
 
@@ -301,6 +328,7 @@ PlaylistOut is organized as a lightweight Monorepo:
 | `web/` | Web application built with React 18 + TypeScript + Vite |
 | `worker/` | Edge API service built with Cloudflare Workers + TypeScript + D1 |
 | `cli/qqmusic/` | Original Python QQ Music CLI tool |
+| `cli/netease/` | Standalone Python NetEase Cloud Music CLI tool |
 | `docs/` | Roadmap, architectural constitution, API specifications, and setup manuals |
 
 ### Run Locally
@@ -318,10 +346,10 @@ npm run dev
 # TypeScript type checking
 npm run typecheck
 
-# Unit and component tests
+# Unit and component tests (Web & Worker)
 npm run test
 
-# Validate against real QQ Music playlists (including 1,000+ track pagination)
+# Validate against real public playlists (QQ Music / NetEase / KuGou)
 npm --prefix worker run test:live
 
 # Full production build

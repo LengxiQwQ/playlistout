@@ -49,14 +49,19 @@ export const AppContent: React.FC = () => {
   }, []);
 
   const scrollToElement = useCallback((elementId: string) => {
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      setTimeout(() => {
-        if (typeof document === 'undefined') return;
-        const el = document.getElementById(elementId);
-        if (el && typeof el.scrollIntoView === 'function') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const el = document.getElementById(elementId);
+    if (el && typeof el.scrollIntoView === 'function') {
+      // Element already in DOM → scroll immediately
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Element not yet mounted → wait one animation frame then scroll
+      requestAnimationFrame(() => {
+        const lazyEl = document.getElementById(elementId);
+        if (lazyEl && typeof lazyEl.scrollIntoView === 'function') {
+          lazyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 120);
+      });
     }
   }, []);
 

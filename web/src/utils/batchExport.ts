@@ -162,7 +162,7 @@ export function exportToMultiSheetExcel(
       ['歌单名称', pl.name, '', ''],
       ['歌单作者', pl.creator || nickname || '未知', '歌曲总数', `${pl.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`],
       ['风格标签', (pl.tags || []).join(', ') || '-', '总播放量', pl.playCount ? `${pl.playCount.toLocaleString()} 次` : '-'],
-      ['歌单链接', pl.sourceUrl || `https://y.qq.com/n/ryqq/playlist/${pl.id}`, '', ''],
+      ['歌单链接', getPlatformPlaylistUrl(pl.platform || platform, pl.id, pl.sourceUrl), '', ''],
     ];
 
     if (pl.description) {

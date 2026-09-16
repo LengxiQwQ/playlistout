@@ -52,6 +52,7 @@ export interface Translations {
     sampleFolk: string;
     sampleJay: string;
     sampleJpKr: string;
+    sampleNetease: string;
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;

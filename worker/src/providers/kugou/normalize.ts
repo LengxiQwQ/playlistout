@@ -39,7 +39,68 @@ export interface KugouRawListInfo {
   songcount?: number;
   heat?: number;
   playcount?: number;
+  play_count?: number;
   publishtime?: string;
+  publish_time?: string;
+  create_time?: string;
+  ctime?: number | string;
+  /** Tags from special playlists: [{ tagid, tagname }] */
+  tags?: Array<{ tagid?: number; tagname?: string; name?: string }>;
+  /** Tags from user-curated playlists (usually empty array) */
+  musiclib_tags?: Array<{ tagid?: number; tagname?: string; name?: string }>;
+}
+
+/**
+ * Extracts a Unix timestamp (seconds) for playlist creation from raw listInfo.
+ * Tries explicit time fields first, then falls back to parsing the cover image URL.
+ */
+function extractKugouCreateTime(listInfo: KugouRawListInfo): number | undefined {
+  // 1. Explicit publishtime / publish_time / create_time (e.g. "2019-09-18 00:00:00")
+  const timeStr = listInfo.publishtime || listInfo.publish_time || listInfo.create_time;
+  if (timeStr) {
+    const normalized = timeStr.trim().replace(' ', 'T');
+    const ts = Date.parse(normalized);
+    if (!isNaN(ts) && ts > 0) return Math.floor(ts / 1000);
+  }
+
+  // 2. Numeric ctime field
+  if (listInfo.ctime !== undefined && listInfo.ctime !== null) {
+    const ct = Number(listInfo.ctime);
+    if (!isNaN(ct) && ct > 0) {
+      return ct > 1e11 ? Math.floor(ct / 1000) : ct;
+    }
+  }
+
+  // 3. Fallback: parse creation date from cover image URL
+  // URLs look like: http://c1.kgimg.com/stdmusic/{size}/20210314/20210314100214878628.jpg
+  // The directory component "YYYYMMDD" encodes the upload date ≈ creation date.
+  const coverUrl = listInfo.pic || listInfo.imgurl;
+  if (coverUrl) {
+    const match = coverUrl.match(/\/(\d{4})(\d{2})(\d{2})\//);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      if (year >= 2000 && year <= 2100 && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+        const dt = Date.UTC(year, month, day, 0, 0, 0);
+        if (!isNaN(dt) && dt > 0) return Math.floor(dt / 1000);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts normalized tag strings from raw listInfo.
+ */
+function extractKugouTags(listInfo: KugouRawListInfo): string[] | undefined {
+  const rawTags = listInfo.tags || listInfo.musiclib_tags;
+  if (!Array.isArray(rawTags) || rawTags.length === 0) return undefined;
+  const tags = rawTags
+    .map((t) => (t.tagname || t.name || '').trim())
+    .filter((n) => n.length > 0);
+  return tags.length > 0 ? tags : undefined;
 }
 
 /**
@@ -174,7 +235,11 @@ export function normalizeKugouPlaylist(options: {
 
   const coverUrl = normalizeCoverUrl(listInfo.pic || listInfo.imgurl);
   const totalCount = Number(listInfo.count || listInfo.songcount || tracks.length);
-  const playCount = Number(listInfo.heat || listInfo.playcount || 0) || undefined;
+  const playCount =
+    Number(listInfo.playcount || listInfo.play_count || listInfo.heat || 0) || undefined;
+
+  const createTime = extractKugouCreateTime(listInfo);
+  const tags = extractKugouTags(listInfo);
 
   let description = (listInfo.intro || '').trim() || undefined;
 
@@ -198,8 +263,10 @@ export function normalizeKugouPlaylist(options: {
     coverUrl,
     trackCount: totalCount,
     tracks,
+    createTime,
     description,
     playCount,
+    tags,
     sourceUrl,
     retrieval,
   };

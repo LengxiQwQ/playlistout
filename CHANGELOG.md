@@ -6,6 +6,41 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ---
 
+## [v2.2.0] - 2026-09-17
+
+### 🎧 多平台矩阵拓展：网易云音乐、酷狗音乐扫码解锁与歌曲状态识别 / Multi-Platform Expansion: NetEase, KuGou QR Unlock & Track Availability
+
+在 v2.1.0 完善批量导出后，v2.2.0 迎来了重大的跨平台能力跨越：正式接入**网易云音乐**与**酷狗音乐**两大主流平台，推出手机扫码安全解锁超长歌单机制，并全面升级导出格式规范，新增歌曲 VIP 与下架版权状态识别。
+
+Following the v2.1.0 batch export features, v2.2.0 delivers a major multi-platform expansion: native support for **NetEase Cloud Music** and **KuGou Music**, mobile QR safe authorization to unlock full playlists, and an upgraded 7-column export specification with VIP and playable status detection.
+
+### 新增功能 / Added
+
+- **网易云音乐完整支持 (NetEase Cloud Music Support)**：
+  - 支持网易云歌单网页链接、手机短链（`163cn.tv`）或纯歌单 ID 解析与导出。
+  - 支持输入网易云用户 UID 或个人主页链接，一键批量拉取并导出该用户公开自建的所有歌单。
+  - 内置分批详情获取引擎，彻底突破网易云官方未登录仅返回 10 首歌的截断限制。
+  - 新增独立 Python CLI 命令行工具 [`cli/netease/`](./cli/netease/)。
+- **酷狗音乐免登录预览与 App 扫码安全解锁 (KuGou Music & QR Unlock)**：
+  - 支持酷狗公开歌单网页与 App 分享链接解析，提供免登录极速公开预览。
+  - 创新推出酷狗手机 App 扫码安全授权弹窗 (`KugouAuthModal`)，零存储换取临时凭据，无限制解锁并导出超长完整歌单。
+  - 零数据持久化保障：授权凭据（Token）严格仅保存在本地浏览器 LocalStorage，绝不上报或存储在服务器数据库。
+- **歌曲 VIP 与可用性状态识别 (Song VIP & Availability Status)**：
+  - 全链路自动识别歌曲状态：正常可播、下架/无版权变灰、VIP 专享、付费专辑等。
+  - 网页预览表格增加「VIP」与「状态」两列，彩色手绘手账徽章直观呈现。
+  - 导出格式全面升级：CSV 与 Excel (.xlsx) 表格扩展为 7 列（包含 `VIP` 与 `歌曲状态`），TXT 导出自动附带 `[状态]` 后缀，JSON 导出包含完备的 `isVip`、`isAvailable` 与 `statusText` 字段。
+- **跨平台纯数字 ID 智能消歧义 (Multi-Platform Disambiguation)**：
+  - 当输入纯数字 ID 时，系统并发探测 QQ 音乐与网易云音乐的单歌单及用户主页。
+  - 发现多目标时自动弹出消歧义手账卡片 (`DisambiguationModal`)，供用户清晰对比并直达目标。
+
+### 修复与优化 / Fixed & Improved
+
+- **多 Sheet 批量导出链接修正**：修复 `batchExport.ts` 中非 QQ 平台歌单链接缺少 sourceUrl 时错误回退至 QQ 音乐域名的 Bug，统一使用 `getPlatformPlaylistUrl` 动态解析。
+- **全站文案与国际化同步**：补齐中英文语言文件中酷狗音乐占位符、错误提示文案、平台筹备文案与隐私政策声明；新增 `sampleNetease` 示例国际化配置。
+- **文档规范同步更新**：中英文 README 全面更新平台支持表、7 列导出数据规范、JSON Schema 完整字段定义以及 Python CLI 工具指南。
+
+---
+
 ## [v2.1.0] - 2026-09-15
 
 ### 🎵 批量歌单导出 & 手账背景装饰 / Batch Playlist Export & Scrapbook Background
