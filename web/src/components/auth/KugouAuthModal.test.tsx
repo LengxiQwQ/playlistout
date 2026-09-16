@@ -75,12 +75,18 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     expect(screen.getByText('PlaylistOut 已连接酷狗账号')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '使用当前登录状态重新解析' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '退出' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '完成' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '完成' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '取消' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('kugou-modal-close-btn')).toBeInTheDocument();
+
+    // Clicking top-right "✕" close button calls onClose
+    fireEvent.click(screen.getByTestId('kugou-modal-close-btn'));
+    expect(handleClose).toHaveBeenCalledTimes(1);
 
     // Clicking "使用当前登录状态重新解析" triggers onSuccess and onClose
     fireEvent.click(screen.getByRole('button', { name: '使用当前登录状态重新解析' }));
     expect(handleSuccess).toHaveBeenCalledTimes(1);
-    expect(handleClose).toHaveBeenCalledTimes(1);
+    expect(handleClose).toHaveBeenCalledTimes(2);
   });
 
   it('shows unknown state when validation encounters network error and retains credentials', async () => {

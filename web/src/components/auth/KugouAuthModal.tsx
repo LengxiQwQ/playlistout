@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../i18n';
 import { Tape } from '../ui/Tape';
 import { MarkerButton } from '../ui/MarkerButton';
@@ -176,7 +177,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className="modal-backdrop"
       onClick={onClose}
@@ -184,13 +185,15 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(45, 52, 54, 0.5)',
-        backdropFilter: 'blur(3px)',
+        backgroundColor: 'rgba(45, 52, 54, 0.55)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.25rem',
-        zIndex: 1000,
+        zIndex: 9999,
+        overflowY: 'auto',
         animation: 'modalBackdropFadeIn 0.18s ease-out forwards',
       }}
     >
@@ -205,7 +208,8 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
           maxWidth: '460px',
           width: '100%',
           position: 'relative',
-          padding: '2rem',
+          margin: 'auto',
+          padding: '2.25rem 2rem 2rem 2rem',
           borderRadius: '4px',
           textAlign: 'center',
         }}
@@ -222,6 +226,43 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             zIndex: 10,
           }}
         />
+
+        {/* Top-Right "✕" Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="关闭"
+          data-testid="kugou-modal-close-btn"
+          style={{
+            position: 'absolute',
+            top: '0.75rem',
+            right: '0.75rem',
+            width: '2.1rem',
+            height: '2.1rem',
+            borderRadius: '50%',
+            background: 'transparent',
+            border: 'none',
+            fontSize: '1.25rem',
+            lineHeight: 1,
+            color: '#64748b',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+            zIndex: 30,
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.color = '#0f172a';
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.color = '#64748b';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          ✕
+        </button>
 
         {/* Title */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
@@ -327,9 +368,24 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             <p className="font-sans" style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '1.25rem' }}>
               已安全保存本地登录凭证，可直接读取当前账号的完整云歌单。
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                width: '100%',
+                maxWidth: '340px',
+                margin: '0 auto',
+              }}
+            >
               <MarkerButton
                 variant="ink"
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 1rem',
+                  fontSize: '1.05rem',
+                  justifyContent: 'center',
+                }}
                 onClick={() => {
                   onSuccess?.();
                   onClose();
@@ -339,6 +395,13 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               </MarkerButton>
               <MarkerButton
                 variant="paper"
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 1rem',
+                  fontSize: '1.05rem',
+                  justifyContent: 'center',
+                  color: '#dc2626',
+                }}
                 onClick={() => {
                   clearKugouAuth();
                   setAuthState('none');
@@ -346,9 +409,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                 }}
               >
                 {t.search.kugouLogoutBtn}
-              </MarkerButton>
-              <MarkerButton variant="paper" onClick={onClose}>
-                完成
               </MarkerButton>
             </div>
           </div>
@@ -513,16 +573,23 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
           {t.kugouAuth.privacyTip}
         </div>
 
-        {/* Close Button */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <MarkerButton
-            variant="paper"
-            onClick={onClose}
-          >
-            {t.kugouAuth.cancel}
-          </MarkerButton>
-        </div>
+        {/* Bottom Close Button (only when not in valid connected state) */}
+        {authState !== 'valid' && (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <MarkerButton
+              variant="paper"
+              onClick={onClose}
+            >
+              {t.kugouAuth.cancel}
+            </MarkerButton>
+          </div>
+        )}
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 };
