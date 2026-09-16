@@ -1,0 +1,35 @@
+name: Provider Live Acceptance
+#
+# Dedicated live acceptance testing workflow against real upstream music platforms:
+# QQ Music, NetEase Cloud Music, and Kugou Music.
+#
+# Runs on manual trigger (workflow_dispatch) and weekly schedule.
+# Kept independent of regular commit CI to avoid CI flaky failures due to external network variations.
+#
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0' # Every Sunday at 03:00 UTC
+
+jobs:
+  live-tests:
+    name: Upstream Real-Source Live Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Live Acceptance Tests
+        run: npm --prefix worker run test:live

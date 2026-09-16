@@ -169,6 +169,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
   const defaultResponse: PublicStatsResponse = {
     launchedAt: LAUNCHED_AT,
     totalVisitors: 0,
+    cumulativeDailyVisitors: 0,
     visitorsToday: 0,
     totalPageViews: 0,
     pageViewsToday: 0,
@@ -355,6 +356,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     return {
       launchedAt: LAUNCHED_AT,
       totalVisitors,
+      cumulativeDailyVisitors: totalVisitors,
       visitorsToday,
       totalPageViews,
       pageViewsToday,

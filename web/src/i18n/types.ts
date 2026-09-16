@@ -161,6 +161,7 @@ export interface Translations {
     todayWarmNote: string;
     allTimeTitle: string;
     allTimeVisitors: string;
+    allTimeVisitorsTip: string;
     allTimePlaylists: string;
     allTimeTracks: string;
     allTimeExports: string;

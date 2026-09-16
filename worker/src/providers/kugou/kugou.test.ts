@@ -258,7 +258,7 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks[0].title).toBe('预览歌曲 1');
     });
 
-    it('matches exact playlist by name when multiple user playlists exist', async () => {
+    it('fails closed with INCOMPLETE_PLAYLIST when expected count (100) does not match retrieved count (2)', async () => {
       const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":100},"songs":[{"name":"预览"}]}};</script></html>`;
 
       globalThis.fetch = vi.fn()
@@ -267,20 +267,66 @@ describe('Kugou Provider Unit Tests', () => {
           ok: true,
           text: async () => mockHtml,
         } as Response)
-        // 2. fetchKugouUserPlaylists (Playlist A is 100 songs, Playlist B is 100 songs)
+        // 2. fetchKugouUserPlaylists (Playlist B is 100 songs)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
             status: 1,
             data: {
               info: [
-                { listid: 111, name: '歌单 A', count: 100 },
+                { listid: 111, name: '歌单 A', count: 50 },
                 { listid: 222, name: '歌单 B', count: 100 },
               ],
             },
           }),
         } as Response)
-        // 3. fetchCloudlistAllTracks for listid 222
+        // 3. fetchCloudlistAllTracks for listid 222 returns only 2 songs despite expecting 100
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 2,
+              info: [
+                { name: '歌单B歌曲1', FileHash: 'hash1' },
+                { name: '歌单B歌曲2', FileHash: 'hash2' },
+              ],
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      await expect(
+        fetchKugouPlaylist(
+          { type: 'songlist', id: 'gcid_target_b', originalUrl: 'https://m.kugou.com/songlist/gcid_target_b/' },
+          { token: 'mock_tok', userid: '12345' },
+        ),
+      ).rejects.toThrowError(/Incomplete cloudlist/i);
+    });
+
+    it('matches exact playlist and returns full tracks when count matches expected', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":2},"songs":[{"name":"预览"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists (Playlist B is 2 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [
+                { listid: 111, name: '歌单 A', count: 10 },
+                { listid: 222, name: '歌单 B', count: 2 },
+              ],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks for listid 222 returns expected 2 songs
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -305,6 +351,68 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks).toHaveLength(2);
       expect(playlist.tracks[0].title).toBe('歌单B歌曲1');
       expect(playlist.tracks[1].title).toBe('歌单B歌曲2');
+    });
+
+    it('does NOT match user cloudlist when H5 creator userid belongs to someone else (owner mismatch)', async () => {
+      // H5 songlist was created by user 99999, but current logged-in user is 12345.
+      // Even though user 12345 has a playlist named "我喜欢的音乐", it must NOT export user 12345's playlist!
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_other","info":{"listinfo":{"name":"我喜欢的音乐","count":50,"list_create_userid":"99999"},"songs":[{"name":"他人分享预览1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        { type: 'songlist', id: 'gcid_target_other', originalUrl: 'https://m.kugou.com/songlist/gcid_target_other/?uid=99999' },
+        { token: 'mock_tok', userid: '12345' },
+      );
+
+      // Must safely stay in preview mode!
+      expect(playlist.name).toBe('我喜欢的音乐');
+      expect(playlist.tracks).toHaveLength(1);
+      expect(playlist.tracks[0].title).toBe('他人分享预览1');
+    });
+
+    it('falls back to preview mode instead of guessing when multiple same-name playlists do not match count', async () => {
+      // Target playlist is "我的歌单" with 30 songs.
+      // Logged in user has two "我的歌单", with 50 and 80 songs.
+      // Neither matches 30, so code MUST NOT guess nameMatches[0]!
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_ambig","info":{"listinfo":{"name":"我的歌单","count":30},"songs":[{"name":"预览歌曲A"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [
+                { listid: 101, name: '我的歌单', count: 50 },
+                { listid: 102, name: '我的歌单', count: 80 },
+              ],
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        { type: 'songlist', id: 'gcid_target_ambig', originalUrl: 'https://m.kugou.com/songlist/gcid_target_ambig/' },
+        { token: 'mock_tok', userid: '12345' },
+      );
+
+      // Must safely fall back to preview mode (1 song), rather than guessing listid 101 or 102!
+      expect(playlist.name).toBe('我的歌单');
+      expect(playlist.tracks).toHaveLength(1);
+      expect(playlist.tracks[0].title).toBe('预览歌曲A');
     });
   });
 });

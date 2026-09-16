@@ -332,6 +332,7 @@ export interface DailyTrendEntry {
 export interface StatsResponse {
   launchedAt: string;
   totalVisitors: number;
+  cumulativeDailyVisitors?: number;
   visitorsToday: number;
   totalPageViews: number;
   pageViewsToday: number;

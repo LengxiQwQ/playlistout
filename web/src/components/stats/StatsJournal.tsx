@@ -368,8 +368,12 @@ export const StatsJournal: React.FC = () => {
               >
                 <AnimatedCounter value={totalVisitors} />
               </div>
-              <div className="font-handwriting" style={{ fontSize: '1.3rem', color: '#4b5563', marginTop: '0.2rem' }}>
-                {t.stats.allTimeVisitors}
+              <div
+                className="font-handwriting"
+                style={{ fontSize: '1.25rem', color: '#4b5563', marginTop: '0.2rem', cursor: 'help' }}
+                title={t.stats.allTimeVisitorsTip}
+              >
+                {t.stats.allTimeVisitors} ⓘ
               </div>
             </div>
 
