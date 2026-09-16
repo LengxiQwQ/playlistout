@@ -259,7 +259,7 @@ describe('Kugou Provider Unit Tests', () => {
     });
 
     it('fails closed with INCOMPLETE_PLAYLIST when expected count (100) does not match retrieved count (2)', async () => {
-      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":100},"songs":[{"name":"预览"}]}};</script></html>`;
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":100,"list_create_userid":"12345"},"songs":[{"name":"预览"}]}};</script></html>`;
 
       globalThis.fetch = vi.fn()
         // 1. fetchSonglistH5Output
@@ -304,8 +304,8 @@ describe('Kugou Provider Unit Tests', () => {
       ).rejects.toThrowError(/Incomplete cloudlist/i);
     });
 
-    it('matches exact playlist and returns full tracks when count matches expected', async () => {
-      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":2},"songs":[{"name":"预览"}]}};</script></html>`;
+    it('matches exact playlist and returns full tracks when count matches expected and owner is confirmed', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_target_b","info":{"listinfo":{"name":"歌单 B","count":2,"list_create_userid":"12345"},"songs":[{"name":"预览"}]}};</script></html>`;
 
       globalThis.fetch = vi.fn()
         // 1. fetchSonglistH5Output
@@ -343,7 +343,7 @@ describe('Kugou Provider Unit Tests', () => {
 
       const { fetchKugouPlaylist } = await import('./client');
       const playlist = await fetchKugouPlaylist(
-        { type: 'songlist', id: 'gcid_target_b', originalUrl: 'https://m.kugou.com/songlist/gcid_target_b/' },
+        { type: 'songlist', id: 'gcid_target_b', originalUrl: 'https://m.kugou.com/songlist/gcid_target_b/?uid=12345' },
         { token: 'mock_tok', userid: '12345' },
       );
 
@@ -351,6 +351,91 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks).toHaveLength(2);
       expect(playlist.tracks[0].title).toBe('歌单B歌曲1');
       expect(playlist.tracks[1].title).toBe('歌单B歌曲2');
+    });
+
+    it('does NOT match user cloudlist by name when owner is unknown (owner unconfirmed -> Preview)', async () => {
+      // H5 songlist has no creator userid in listinfo or URL.
+      // Even though user has a playlist named "同名歌单" with 10 songs, it must NOT match!
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_unknown_owner","info":{"listinfo":{"name":"同名歌单","count":10},"songs":[{"name":"预览歌曲1"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 888, name: '同名歌单', count: 10 }],
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        { type: 'songlist', id: 'gcid_unknown_owner', originalUrl: 'https://m.kugou.com/songlist/gcid_unknown_owner/' },
+        { token: 'mock_tok', userid: '12345' },
+      );
+
+      // Must safely stay in preview mode (1 song), rather than guessing the user's cloudlist!
+      expect(playlist.name).toBe('同名歌单');
+      expect(playlist.tracks).toHaveLength(1);
+      expect(playlist.tracks[0].title).toBe('预览歌曲1');
+    });
+
+    it('fails closed with INCOMPLETE_PLAYLIST when special/info fails and song API total is truncated', async () => {
+      globalThis.fetch = vi.fn()
+        // 1. special/info fails with 500
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        } as Response)
+        // 2. special/song page 1: returns total: 900 and 300 songs
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              total: 900,
+              info: Array.from({ length: 300 }, (_, i) => ({
+                name: `Song ${i + 1}`,
+                FileHash: `hash_${i + 1}`,
+              })),
+            },
+          }),
+        } as Response)
+        // 3. special/song page 2: returns 300 songs
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              total: 900,
+              info: Array.from({ length: 300 }, (_, i) => ({
+                name: `Song ${i + 301}`,
+                FileHash: `hash_${i + 301}`,
+              })),
+            },
+          }),
+        } as Response)
+        // 4. special/song page 3: upstream network error (fails before reaching 900)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 502,
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      await expect(
+        fetchKugouPlaylist({
+          type: 'special',
+          id: '546903',
+          originalUrl: 'https://www.kugou.com/yy/special/single/546903.html',
+        }),
+      ).rejects.toThrowError(/Incomplete playlist: Kugou special playlist reported 900 songs, but only 600 could be retrieved/i);
     });
 
     it('does NOT match user cloudlist when H5 creator userid belongs to someone else (owner mismatch)', async () => {

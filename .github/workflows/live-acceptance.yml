@@ -9,6 +9,20 @@ name: Provider Live Acceptance
 
 on:
   workflow_dispatch:
+    inputs:
+      kugou_token:
+        description: 'Optional Kugou user token for authenticated >300 pagination tests'
+        required: false
+        type: string
+      kugou_userid:
+        description: 'Optional Kugou user ID for authenticated >300 pagination tests'
+        required: false
+        type: string
+      kugou_playlist_url:
+        description: 'Optional Kugou playlist URL to test'
+        required: false
+        type: string
+        default: 'https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1'
   schedule:
     - cron: '0 3 * * 0' # Every Sunday at 03:00 UTC
 
@@ -33,3 +47,7 @@ jobs:
 
       - name: Run Live Acceptance Tests
         run: npm --prefix worker run test:live
+        env:
+          KUGOU_TEST_TOKEN: ${{ inputs.kugou_token || secrets.KUGOU_TEST_TOKEN }}
+          KUGOU_TEST_USERID: ${{ inputs.kugou_userid || secrets.KUGOU_TEST_USERID }}
+          KUGOU_TEST_PLAYLIST_URL: ${{ inputs.kugou_playlist_url || secrets.KUGOU_TEST_PLAYLIST_URL }}
