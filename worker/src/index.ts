@@ -186,9 +186,20 @@ export default {
       // Rate limit check: max 30 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 30, 60);
       if (!rateCheck.allowed) {
+        let rateLimitPlatform = 'all';
+        const rawUrlParam = url.searchParams.get('url') || '';
+        const rawPlatformParam = url.searchParams.get('platform') || '';
+        if (rawPlatformParam === 'netease' || neteaseProvider.matches(rawUrlParam)) {
+          rateLimitPlatform = 'netease';
+        } else if (rawPlatformParam === 'kugou' || kugouProvider.matches(rawUrlParam)) {
+          rateLimitPlatform = 'kugou';
+        } else if (rawPlatformParam === 'qqmusic' || qqMusicProvider.matches(rawUrlParam)) {
+          rateLimitPlatform = 'qqmusic';
+        }
+
         // Record rate limit occurrence anonymously (best effort)
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', 'qqmusic'));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rateLimitPlatform));
         }
 
         return new Response(
@@ -434,8 +445,19 @@ export default {
       // Rate limit check: max 30 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 30, 60);
       if (!rateCheck.allowed) {
+        let rateLimitPlatform = 'all';
+        const userPlatformParam = url.searchParams.get('platform') || '';
+        const rawUserParam = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url') || '';
+        if (userPlatformParam === 'kugou' || kugouProvider.matches(rawUserParam)) {
+          rateLimitPlatform = 'kugou';
+        } else if (userPlatformParam === 'netease' || neteaseProvider.matches(rawUserParam)) {
+          rateLimitPlatform = 'netease';
+        } else if (userPlatformParam === 'qqmusic' || qqMusicProvider.matches(rawUserParam) || url.searchParams.has('uin')) {
+          rateLimitPlatform = 'qqmusic';
+        }
+
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', 'qqmusic'));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', rateLimitPlatform));
         }
 
         return new Response(

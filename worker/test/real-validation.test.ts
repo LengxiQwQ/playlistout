@@ -203,6 +203,26 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     });
   });
 
+  it('validates large (600+ songs) public songlist preview without login credentials', async () => {
+    const playlist = await kugouProvider.parse(
+      'https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1',
+    );
+
+    expect(playlist.platform).toBe('kugou');
+    expect(playlist.id).toBe('gcid_3zr52qfrzwz02f');
+    expect(playlist.name).toBeTruthy();
+    expect(playlist.trackCount).toBeGreaterThanOrEqual(600);
+    expect(playlist.tracks.length).toBeLessThanOrEqual(30);
+    expect(playlist.tracks.length).toBeGreaterThan(0);
+    expect(playlist.description).toContain('预览');
+
+    playlist.tracks.forEach((track, i) => {
+      expect(track.index).toBe(i + 1);
+      expect(track.title.length).toBeGreaterThan(0);
+      expect(Array.isArray(track.artists)).toBe(true);
+    });
+  });
+
   it('validates live Kugou QR login code creation from official Kugou auth service', async () => {
     const { createKugouQrCode } = await import('../src/providers/kugou/auth');
     const session = await createKugouQrCode();
@@ -213,15 +233,32 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     expect(session.expiresAt).toBeGreaterThan(Date.now());
   });
 
-  it('validates authenticated Kugou cloudlist when credentials provided via environment', async () => {
-    const token = process.env.KUGOU_TEST_TOKEN;
-    const userid = process.env.KUGOU_TEST_USERID;
-    if (!token || !userid) {
-      // Skipped in CI/local runs without explicit live user credentials
-      return;
-    }
-    const { fetchKugouUserPlaylists } = await import('../src/providers/kugou/client');
-    const userPlaylists = await fetchKugouUserPlaylists(token, userid);
-    expect(userPlaylists.playlists.length).toBeGreaterThan(0);
-  });
+  it.runIf(Boolean(process.env.KUGOU_TEST_TOKEN && process.env.KUGOU_TEST_USERID))(
+    'validates authenticated Kugou cloudlist when credentials provided via environment',
+    async () => {
+      const token = process.env.KUGOU_TEST_TOKEN!;
+      const userid = process.env.KUGOU_TEST_USERID!;
+      const testPlaylistUrl = process.env.KUGOU_TEST_PLAYLIST_URL;
+
+      const { fetchKugouUserPlaylists } = await import('../src/providers/kugou/client');
+      const userPlaylists = await fetchKugouUserPlaylists(token, userid);
+      expect(userPlaylists.playlists.length).toBeGreaterThan(0);
+
+      // If a >300 playlist URL is provided for authenticated acceptance, verify cross-page pagination
+      if (testPlaylistUrl) {
+        const playlist = await kugouProvider.parse(testPlaylistUrl, {
+          token,
+          userid,
+        });
+        expect(playlist.tracks.length).toBe(playlist.trackCount);
+        if (playlist.trackCount > 300) {
+          expect(playlist.tracks.length).toBeGreaterThan(300);
+          expect(playlist.tracks[299].index).toBe(300);
+          expect(playlist.tracks[300].index).toBe(301);
+          expect(playlist.tracks[299].title).toBeTruthy();
+          expect(playlist.tracks[300].title).toBeTruthy();
+        }
+      }
+    },
+  );
 });

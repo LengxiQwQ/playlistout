@@ -462,6 +462,14 @@ export async function recordVisitEvent(
     statements.push(db.prepare(upsertClientSql).bind(date, ua.deviceClass, ua.browserFamily, ua.osFamily));
     statements.push(db.prepare(upsertClientSql).bind('TOTAL', ua.deviceClass, ua.browserFamily, ua.osFamily));
 
+    // 6. Prune ephemeral visitor hashes older than 7 days to prevent unbounded table growth
+    const cutoffDate = new Date(Date.now() - 7 * 86400 * 1000).toISOString().slice(0, 10);
+    const pruneHashesSql = `
+      DELETE FROM daily_visitor_hashes
+      WHERE date < ?1;
+    `;
+    statements.push(db.prepare(pruneHashesSql).bind(cutoffDate));
+
     await db.batch(statements);
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);

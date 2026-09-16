@@ -45,7 +45,7 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
     // Non-fatal if info fails
   }
 
-  const expectedTotal = Number(listInfo.songcount || listInfo.count || 0);
+  let expectedTotal = Number(listInfo.songcount || listInfo.count || 0);
   const pageSize = 300;
   const maxPages = 50;
   const rawSongs: KugouRawSong[] = [];
@@ -78,9 +78,14 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
       break;
     }
 
+    // If expectedTotal was not known from listInfo (e.g. info request failed), update it from song API's data.total
+    if (expectedTotal <= 0 && typeof songJson.data?.total === 'number' && songJson.data.total > 0) {
+      expectedTotal = songJson.data.total;
+    }
+
     rawSongs.push(...pageSongs);
 
-    const totalFromSong = typeof songJson.data?.total === 'number' ? songJson.data.total : expectedTotal;
+    const totalFromSong = typeof songJson.data?.total === 'number' && songJson.data.total > 0 ? songJson.data.total : expectedTotal;
     if (totalFromSong > 0 && rawSongs.length >= totalFromSong) {
       break;
     }
@@ -90,7 +95,7 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
     page++;
   }
 
-  // Completeness check
+  // Completeness check: fail-closed if actual retrieved songs do not match expected
   if (expectedTotal > 0 && rawSongs.length !== expectedTotal) {
     throw new ProviderError(
       'INCOMPLETE_PLAYLIST',
@@ -98,6 +103,10 @@ async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Pr
       502,
       { expectedCount: expectedTotal, actualCount: rawSongs.length },
     );
+  }
+
+  if (expectedTotal > 0) {
+    listInfo.songcount = expectedTotal;
   }
 
   const tracks = rawSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
@@ -329,44 +338,51 @@ export async function fetchKugouPlaylist(
         }
       }
 
-      // If creator user ID is known and does NOT match the logged-in user,
-      // this playlist belongs to someone else. Do NOT match against the logged-in user's playlists!
-      const isOwnerMismatch = Boolean(creatorUserId && creatorUserId !== String(auth.userid).trim());
+      // Owner strict verification:
+      // A songlist can only be mapped to a user's cloudlist if:
+      // 1) Direct listid match (target.id === p.id)
+      // OR
+      // 2) The creator of this shared playlist is EXPLICITLY confirmed to be the logged-in user:
+      //    (creatorUserId && creatorUserId === String(auth.userid).trim())
+      //    AND exact name match AND exact track count match
+      // If creator is NOT explicitly confirmed (missing creatorUserId or mismatch), DO NOT attempt name matching -> stay in safe Preview!
+      const isOwnerConfirmed = Boolean(
+        creatorUserId && creatorUserId === String(auth.userid).trim(),
+      );
 
-      if (!isOwnerMismatch) {
-        // Fetch user's own playlists to find matching cloudlist listid
-        const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+      // Fetch user's own playlists to find matching cloudlist listid
+      const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
 
-        // High-confidence matching:
-        // Priority 1: Match by direct listid if target.id matches a user list ID
-        // Priority 2: Match by exact playlist name AND exact trackCount
-        // STRICT SAFETY:
-        // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
-        // - If confidence is low, fall back safely to preview mode
-        const targetName = (listInfo.name || '').trim();
-        const expectedTrackCount = Number(listInfo.count || 0);
-        let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
+      // High-confidence matching:
+      // Priority 1: Match by direct listid if target.id matches a user list ID
+      // Priority 2: Match by exact playlist name AND exact trackCount ONLY IF owner is confirmed
+      // STRICT SAFETY:
+      // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
+      // - If owner cannot be confirmed, NEVER match by name -> fall back safely to preview mode
+      const targetName = (listInfo.name || '').trim();
+      const expectedTrackCount = Number(listInfo.count || 0);
+      let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
 
-        if (!matched && targetName) {
-          const nameMatches = userPlaylists.playlists.filter(
-            (p) => p.name.trim() === targetName,
+      if (!matched && isOwnerConfirmed && targetName) {
+        const nameMatches = userPlaylists.playlists.filter(
+          (p) => p.name.trim() === targetName,
+        );
+        if (nameMatches.length === 1) {
+          // Only accept if track count matches exactly, or expected count is not specified
+          if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
+            matched = nameMatches[0];
+          } else if (expectedTrackCount <= 0) {
+            matched = nameMatches[0];
+          }
+        } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
+          const countMatches = nameMatches.filter(
+            (p) => p.trackCount === expectedTrackCount,
           );
-          if (nameMatches.length === 1) {
-            // Only accept if track count matches exactly, or expected count is not specified
-            if (expectedTrackCount > 0 && nameMatches[0].trackCount === expectedTrackCount) {
-              matched = nameMatches[0];
-            } else if (expectedTrackCount <= 0) {
-              matched = nameMatches[0];
-            }
-          } else if (nameMatches.length > 1 && expectedTrackCount > 0) {
-            const countMatches = nameMatches.filter(
-              (p) => p.trackCount === expectedTrackCount,
-            );
-            if (countMatches.length === 1) {
-              matched = countMatches[0];
-            }
+          if (countMatches.length === 1) {
+            matched = countMatches[0];
           }
         }
+      }
 
         if (matched && matched.id) {
           const trustedExpected = Number(matched.trackCount || listInfo.count || 0);
@@ -400,7 +416,6 @@ export async function fetchKugouPlaylist(
               sourceUrl: target.originalUrl,
               isPartialPreview: false,
             });
-          }
         }
       }
     } catch (err: unknown) {

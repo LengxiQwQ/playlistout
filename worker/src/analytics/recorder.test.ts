@@ -18,6 +18,7 @@ function createMockD1() {
 
   const db = {
     _store: store,
+    _insertedHashes: insertedHashes,
     prepare(sql: string) {
       return {
         _sql: sql,
@@ -101,13 +102,21 @@ function createMockD1() {
           const [date, platform, mode] = params;
           const key = `clipboard::${date}::${platform}::${mode}`;
           store.set(key, (store.get(key) || 0) + 1);
+        } else if (sql.includes('daily_visitor_hashes') && sql.includes('DELETE')) {
+          const cutoff = params[0];
+          for (const key of Array.from(insertedHashes)) {
+            const datePart = key.split('::')[0];
+            if (datePart < cutoff) {
+              insertedHashes.delete(key);
+            }
+          }
         }
       }
       return [];
     },
   };
 
-  return db as unknown as D1Database & { _store: Map<string, number> };
+  return db as unknown as D1Database & { _store: Map<string, number>; _insertedHashes: Set<string> };
 }
 
 function createMockRequest(headers: Record<string, string> = {}, cf?: any): Request {
@@ -345,6 +354,24 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       expect(mockDb._store.get(`agg::${today}::all::visitor_unique`)).toBe(2);
       expect(mockDb._store.get(`agg::TOTAL::all::visitor_unique`)).toBe(2);
       expect(mockDb._store.get(`agg::${today}::all::page_view`)).toBe(3);
+    });
+
+    it('prunes ephemeral visitor hashes older than 7 days', async () => {
+      const mockDb = createMockD1();
+      const tenDaysAgo = new Date(Date.now() - 10 * 86400 * 1000).toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 1 * 86400 * 1000).toISOString().slice(0, 10);
+      mockDb._insertedHashes.add(`${tenDaysAgo}::oldhash12345678`);
+      mockDb._insertedHashes.add(`${yesterday}::recenthash12345`);
+
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': '1.2.3.4' }),
+        'd_device_current',
+      );
+
+      // Old hash should be deleted, recent hash preserved
+      expect(mockDb._insertedHashes.has(`${tenDaysAgo}::oldhash12345678`)).toBe(false);
+      expect(mockDb._insertedHashes.has(`${yesterday}::recenthash12345`)).toBe(true);
     });
   });
 

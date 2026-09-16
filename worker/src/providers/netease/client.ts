@@ -134,7 +134,29 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   }
 
   const playlistDetail = rawJson.playlist;
+  const expectedTotal = Number(playlistDetail.trackCount || 0);
   const trackIdList = (playlistDetail.trackIds || []).map((t) => t.id);
+
+  // Level 1: Metadata ↔ IDs Completeness Check
+  if (expectedTotal > 0) {
+    if (trackIdList.length > 0 && trackIdList.length !== expectedTotal) {
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Incomplete playlist: NetEase metadata reported ${expectedTotal} tracks, but only ${trackIdList.length} track IDs were provided.`,
+        502,
+        { expectedCount: expectedTotal, actualCount: trackIdList.length },
+      );
+    }
+    if (trackIdList.length === 0 && (!Array.isArray(playlistDetail.tracks) || playlistDetail.tracks.length !== expectedTotal)) {
+      const inlineCount = Array.isArray(playlistDetail.tracks) ? playlistDetail.tracks.length : 0;
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Incomplete playlist: NetEase metadata reported ${expectedTotal} tracks, but only ${inlineCount} inline tracks were provided.`,
+        502,
+        { expectedCount: expectedTotal, actualCount: inlineCount },
+      );
+    }
+  }
 
   let tracks: Track[] = [];
 
@@ -205,6 +227,16 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       const priv = rawJson.privileges?.[index];
       return normalizeNeteaseTrack(song, index + 1, priv);
     });
+  }
+
+  // Level 3: Output ↔ Expected Count Verification
+  if (expectedTotal > 0 && tracks.length !== expectedTotal) {
+    throw new ProviderError(
+      'INCOMPLETE_PLAYLIST',
+      `Incomplete playlist: NetEase metadata expected ${expectedTotal} tracks, but final output has ${tracks.length} tracks.`,
+      502,
+      { expectedCount: expectedTotal, actualCount: tracks.length },
+    );
   }
 
   return normalizeNeteasePlaylist(playlistDetail, tracks);

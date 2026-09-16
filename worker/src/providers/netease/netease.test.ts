@@ -190,5 +190,59 @@ describe('NetEase Song Status & Normalization', () => {
         globalThis.fetch = originalFetch;
       }
     });
+
+    it('throws INCOMPLETE_PLAYLIST when trackIds length does not match trackCount (Level 1)', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            code: 200,
+            playlist: {
+              id: 99999,
+              name: 'ID缺失歌单',
+              trackCount: 500,
+              trackIds: Array.from({ length: 499 }, (_, i) => ({ id: i + 1 })),
+            },
+          }),
+        } as Response);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        await expect(fetchNeteasePlaylist('99999')).rejects.toThrowError(
+          /Incomplete playlist: NetEase metadata reported 500 tracks, but only 499 track IDs were provided/
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('throws INCOMPLETE_PLAYLIST when only truncated inline tracks are present (Level 1 fallback)', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            code: 200,
+            playlist: {
+              id: 88888,
+              name: '仅截断内联歌曲歌单',
+              trackCount: 500,
+              tracks: Array.from({ length: 10 }, (_, i) => ({
+                id: i + 1,
+                name: `Song ${i + 1}`,
+                ar: [{ name: 'Artist' }],
+              })),
+            },
+          }),
+        } as Response);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        await expect(fetchNeteasePlaylist('88888')).rejects.toThrowError(
+          /Incomplete playlist: NetEase metadata reported 500 tracks, but only 10 inline tracks were provided/
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });
