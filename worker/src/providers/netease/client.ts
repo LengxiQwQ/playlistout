@@ -59,6 +59,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
  */
 export async function fetchSongDetails(
   songIds: Array<number | string>,
+  batchSize: number = BATCH_SIZE,
 ): Promise<{ songs: RawNeteaseSong[]; privileges: RawNeteasePrivilege[] }> {
   if (songIds.length === 0) {
     return { songs: [], privileges: [] };
@@ -67,8 +68,8 @@ export async function fetchSongDetails(
   const allSongs: RawNeteaseSong[] = [];
   const allPrivileges: RawNeteasePrivilege[] = [];
 
-  for (let i = 0; i < songIds.length; i += BATCH_SIZE) {
-    const chunk = songIds.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < songIds.length; i += batchSize) {
+    const chunk = songIds.slice(i, i + batchSize);
     const cParam = JSON.stringify(chunk.map((id) => ({ id: Number(id) })));
     const postBody = new URLSearchParams({ c: cParam }).toString();
 
@@ -156,10 +157,45 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       }
     }
 
-    // Keep exact order from trackIds
+    // Completeness verification: Check for missing song IDs
+    const missingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+    if (missingIds.length > 0) {
+      // Retry missing IDs in smaller chunks (100 per batch)
+      try {
+        const retryRes = await fetchSongDetails(missingIds, 100);
+        for (const s of retryRes.songs) {
+          if (s.id !== undefined && s.id !== null) {
+            songMap.set(String(s.id), s);
+          }
+        }
+        for (const p of retryRes.privileges) {
+          if (p.id !== undefined && p.id !== null) {
+            privMap.set(String(p.id), p);
+          }
+        }
+      } catch {
+        // Retry failed; will be caught by completeness check below
+      }
+    }
+
+    const stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+    if (stillMissingIds.length > 0) {
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Incomplete playlist: NetEase playlist reported ${trackIdList.length} songs, but only ${trackIdList.length - stillMissingIds.length} could be retrieved (${stillMissingIds.length} missing).`,
+        502,
+        {
+          expectedCount: trackIdList.length,
+          actualCount: trackIdList.length - stillMissingIds.length,
+          missingIds: stillMissingIds.slice(0, 10),
+        },
+      );
+    }
+
+    // Keep exact order from trackIds (no fabricated placeholders)
     tracks = trackIdList.map((id, index) => {
       const idStr = String(id);
-      const rawSong = songMap.get(idStr) || { id, name: `歌曲 #${id}` };
+      const rawSong = songMap.get(idStr)!;
       const priv = privMap.get(idStr);
       return normalizeNeteaseTrack(rawSong, index + 1, priv);
     });

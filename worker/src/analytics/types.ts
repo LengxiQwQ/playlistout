@@ -51,13 +51,6 @@ export interface PublicStatsResponse {
   exportFormatsBreakdown: Record<string, number>;
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: DailyTrendEntry[];
-  topGeo?: GeoDistributionItem[];
-  chinaProvinces?: ProvinceDistributionItem[];
-  clientStats?: {
-    devices: ClientDistributionItem[];
-    browsers: ClientDistributionItem[];
-    os: ClientDistributionItem[];
-  };
   generatedAt: string;
 }
 

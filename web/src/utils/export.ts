@@ -68,7 +68,8 @@ export function cleanSingleLine(str: string): string {
  */
 export function formatTimestamp(seconds?: number): string {
   if (!seconds || seconds <= 0) return '';
-  const d = new Date(seconds * 1000);
+  const sec = seconds > 1e11 ? Math.floor(seconds / 1000) : seconds;
+  const d = new Date(sec * 1000);
   if (isNaN(d.getTime())) return '';
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -145,7 +146,14 @@ export function generateTXT(playlist: Playlist): string {
   if (updatedStr) {
     lines.push(`  最后更新: ${updatedStr}`);
   }
-  lines.push(`  歌曲总数: ${playlist.trackCount} 首${durationStr ? ` (总时长 ${durationStr})` : ''}`);
+  const isPartial = playlist.tracks.length < playlist.trackCount;
+  if (isPartial) {
+    lines.push(
+      `  已解析歌曲: ${playlist.tracks.length} / ${playlist.trackCount} 首${durationStr ? ` (已解析部分总时长 ${durationStr})` : ''}`,
+    );
+  } else {
+    lines.push(`  歌曲总数: ${playlist.trackCount} 首${durationStr ? ` (总时长 ${durationStr})` : ''}`);
+  }
   if (playlist.tags && playlist.tags.length > 0) {
     lines.push(`  风格标签: ${playlist.tags.join(' · ')}`);
   }
@@ -194,12 +202,19 @@ function escapeCsvField(field: string): string {
   return sanitized;
 }
 
+export interface CsvExportOptions {
+  includeMetadata?: boolean;
+}
+
 /**
- * Generates CSV content with UTF-8 BOM (\uFEFF) and metadata comments.
- * Creation time first, Export time second (adjacent).
+ * Generates CSV content with UTF-8 BOM (\uFEFF).
+ * Default output is standard RFC 4180 pure table (no # comments) for maximum compatibility with
+ * external spreadsheet and music migration tools.
+ * When options.includeMetadata is true, prepends stationery comments.
  * Formula injection protected.
  */
-export function generateCSV(playlist: Playlist): string {
+export function generateCSV(playlist: Playlist, options?: CsvExportOptions): string {
+  const isPartial = playlist.tracks.length < playlist.trackCount;
   const createdStr = formatTimestamp(playlist.createTime) || '未知';
   const exportedStr = formatDateTime();
   const durationStr = formatTotalDuration(playlist.tracks);
@@ -211,7 +226,9 @@ export function generateCSV(playlist: Playlist): string {
     '# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)',
     `# 歌单名称: ${cleanSingleLine(playlist.name)}`,
     playlist.creator ? `# 歌单作者: ${cleanSingleLine(playlist.creator)}` : null,
-    `# 歌曲总数: ${playlist.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`,
+    isPartial
+      ? `# 已解析歌曲: ${playlist.tracks.length} / ${playlist.trackCount} 首${durationStr ? ` (已解析时长: ${durationStr})` : ''}`
+      : `# 歌曲总数: ${playlist.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`,
     playlist.tags && playlist.tags.length > 0 ? `# 风格标签: ${playlist.tags.join(', ')}` : null,
     playlist.playCount ? `# 总播放量: ${playlist.playCount.toLocaleString()} 次` : null,
     `# 歌单链接: ${sourceUrl}`,
@@ -236,9 +253,13 @@ export function generateCSV(playlist: Playlist): string {
     .map((row) => row.map(escapeCsvField).join(','))
     .join('\r\n');
 
-  // Prepend UTF-8 BOM and metadata header comments
-  const commentsBlock = headerComments.join('\r\n') + '\r\n';
-  return `\uFEFF${commentsBlock}${csvBody}`;
+  // RFC 4180 Pure CSV by default; include comments only when explicitly requested
+  if (options?.includeMetadata) {
+    const commentsBlock = headerComments.join('\r\n') + '\r\n';
+    return `\uFEFF${commentsBlock}${csvBody}`;
+  }
+
+  return `\uFEFF${csvBody}`;
 }
 
 /**
@@ -247,17 +268,22 @@ export function generateCSV(playlist: Playlist): string {
  * Formula injection protected.
  */
 export function generateXLSX(playlist: Playlist): Uint8Array {
+  const isPartial = playlist.tracks.length < playlist.trackCount;
   const createdStr = formatTimestamp(playlist.createTime) || '未知';
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime) || '-';
   const durationStr = formatTotalDuration(playlist.tracks);
   const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
+  const countLabel = isPartial
+    ? `已解析 ${playlist.tracks.length} / ${playlist.trackCount} 首${durationStr ? ` (已解析时长: ${durationStr})` : ''}`
+    : `${playlist.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`;
+
   const metaRows: (string | number)[][] = [
     ['歌单名称', playlist.name, '', ''],
     ['创建时间', createdStr, '导出时间', exportedStr],
     ['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.lengxiqwq.com'],
-    ['歌单作者', playlist.creator || '未知', '歌曲总数', `${playlist.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`],
+    ['歌单作者', playlist.creator || '未知', '歌曲总数', countLabel],
     ['最后更新', updatedStr, '总播放量', playlist.playCount ? `${playlist.playCount.toLocaleString()} 次` : '-'],
     ['风格标签', (playlist.tags || []).join(', ') || '-', '歌单链接', sourceUrl],
   ];
@@ -307,6 +333,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
  * Kept faithful to source text without formula injection escaping.
  */
 export function generateJSON(playlist: Playlist): string {
+  const isPartial = playlist.tracks.length < playlist.trackCount;
   const createdStr = formatTimestamp(playlist.createTime) || null;
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime) || null;
@@ -325,7 +352,10 @@ export function generateJSON(playlist: Playlist): string {
     id: playlist.id,
     sourceUrl,
     trackCount: playlist.trackCount,
-    totalDuration: durationStr,
+    loadedTrackCount: playlist.tracks.length,
+    isPartial,
+    totalDuration: isPartial ? null : durationStr,
+    loadedDuration: durationStr,
     playCount: playlist.playCount || null,
     tags: playlist.tags || [],
     description: playlist.description || '',

@@ -25,27 +25,76 @@ export function extractUrlFromText(text: string): string {
 }
 
 /**
- * Resolves short links like https://163cn.tv/xxxx if present.
+ * Resolves short links like https://163cn.tv/xxxx safely.
+ * Enforces redirect: 'manual', max 3 hops, 5000ms timeout, and strict host verification.
  */
 export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<string> {
   const candidateUrl = extractUrlFromText(urlOrText);
   try {
-    const parsed = new URL(candidateUrl);
-    if (parsed.hostname === SHORTLINK_HOST || parsed.hostname.endsWith(`.${SHORTLINK_HOST}`)) {
-      const resp = await fetch(candidateUrl, {
-        method: 'GET',
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-        redirect: 'follow',
-      });
-      return resp.url;
+    let currentUrl = candidateUrl;
+    const parsed = new URL(currentUrl);
+    if (parsed.hostname !== SHORTLINK_HOST && !parsed.hostname.endsWith(`.${SHORTLINK_HOST}`)) {
+      return candidateUrl;
     }
-  } catch {
-    // If not a valid URL or fetch fails, return original
+
+    const maxHops = 3;
+    for (let hop = 0; hop < maxHops; hop++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const resp = await fetch(currentUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          redirect: 'manual',
+          signal: controller.signal,
+        });
+
+        if (resp.status >= 300 && resp.status < 400) {
+          const location = resp.headers.get('location');
+          if (!location) break;
+
+          const resolvedLocation = new URL(location, currentUrl).toString();
+          const targetParsed = new URL(resolvedLocation);
+          const targetHost = targetParsed.hostname.toLowerCase();
+
+          // Strict outbound host verification
+          const isHostAllowed =
+            targetHost === '163cn.tv' ||
+            targetHost.endsWith('.163cn.tv') ||
+            targetHost === 'music.163.com' ||
+            targetHost === 'y.music.163.com' ||
+            targetHost.endsWith('.music.163.com');
+
+          if (!isHostAllowed) {
+            throw new ProviderError(
+              'FORBIDDEN',
+              `Short link redirect to unauthorized host ${targetHost} is strictly prohibited.`,
+              403,
+            );
+          }
+
+          currentUrl = resolvedLocation;
+          // If redirected to music.163.com or y.music.163.com, we reached the destination
+          if (targetHost.includes('163.com')) {
+            return currentUrl;
+          }
+        } else {
+          break;
+        }
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    return currentUrl;
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
+    // If network or timeout occurs, return original candidate
+    return candidateUrl;
   }
-  return candidateUrl;
 }
 
 /**

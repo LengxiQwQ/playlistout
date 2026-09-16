@@ -247,8 +247,14 @@ export function normalizeNeteasePlaylist(
     coverUrl,
     trackCount,
     tracks,
-    createTime: typeof detail.createTime === 'number' ? detail.createTime : undefined,
-    updateTime: typeof detail.updateTime === 'number' ? detail.updateTime : undefined,
+    createTime:
+      typeof detail.createTime === 'number' && detail.createTime > 0
+        ? (detail.createTime > 1e11 ? Math.floor(detail.createTime / 1000) : detail.createTime)
+        : undefined,
+    updateTime:
+      typeof detail.updateTime === 'number' && detail.updateTime > 0
+        ? (detail.updateTime > 1e11 ? Math.floor(detail.updateTime / 1000) : detail.updateTime)
+        : undefined,
     description: typeof detail.description === 'string' ? detail.description.trim() : undefined,
     tags: Array.isArray(detail.tags) ? detail.tags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0) : undefined,
     playCount: typeof detail.playCount === 'number' ? detail.playCount : undefined,

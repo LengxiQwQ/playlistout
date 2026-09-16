@@ -289,6 +289,9 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       const statsStr = JSON.stringify(stats);
 
       // Should not contain any private dimensional fields
+      expect(statsStr).not.toContain('topGeo');
+      expect(statsStr).not.toContain('chinaProvinces');
+      expect(statsStr).not.toContain('clientStats');
       expect(statsStr).not.toContain('country');
       expect(statsStr).not.toContain('region');
       expect(statsStr).not.toContain('deviceClass');
@@ -298,6 +301,17 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(statsStr).not.toContain('latencyBucket');
       expect(statsStr).not.toContain('inputType');
       expect(statsStr).not.toContain('providerPath');
+    });
+
+    it('does NOT fabricate NetEase statistics when NetEase parses are 0 (0 is 0)', async () => {
+      const mockDb = createMockD1();
+      mockDb._store.set(`TOTAL::all::parse_success`, 100);
+      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
+
+      const stats = await getPublicStats(mockDb);
+      expect(stats.byPlatform['netease'].totalSuccess).toBe(0);
+      expect(stats.byPlatform['kugou'].totalSuccess).toBe(0);
+      expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(100);
     });
 
     it('handles D1 failure gracefully for public stats', async () => {

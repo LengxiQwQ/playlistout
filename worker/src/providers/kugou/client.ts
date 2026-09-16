@@ -33,40 +33,73 @@ export interface KugouAuthCredentials {
  */
 async function fetchSpecialPlaylist(specialId: string, originalUrl?: string): Promise<Playlist> {
   const infoUrl = `http://mobilecdn.kugou.com/api/v3/special/info?specialid=${specialId}`;
-  const songUrl = `http://mobilecdn.kugou.com/api/v3/special/song?specialid=${specialId}&page=1&pagesize=300&version=9108&area_code=1`;
 
-  const [infoRes, songRes] = await Promise.all([
-    fetch(infoUrl, { headers: { 'User-Agent': MOBILE_UA } }),
-    fetch(songUrl, { headers: { 'User-Agent': MOBILE_UA } }),
-  ]);
+  let listInfo: KugouRawListInfo = { specialname: '酷狗专题歌单' };
+  try {
+    const infoRes = await fetch(infoUrl, { headers: { 'User-Agent': MOBILE_UA } });
+    if (infoRes.ok) {
+      const infoJson = (await infoRes.json()) as { data?: KugouRawListInfo };
+      if (infoJson.data) listInfo = infoJson.data;
+    }
+  } catch {
+    // Non-fatal if info fails
+  }
 
-  if (!songRes.ok) {
+  const expectedTotal = Number(listInfo.songcount || listInfo.count || 0);
+  const pageSize = 300;
+  const maxPages = 50;
+  const rawSongs: KugouRawSong[] = [];
+  let page = 1;
+
+  while (page <= maxPages) {
+    const songUrl = `http://mobilecdn.kugou.com/api/v3/special/song?specialid=${specialId}&page=${page}&pagesize=${pageSize}&version=9108&area_code=1`;
+    const songRes = await fetch(songUrl, { headers: { 'User-Agent': MOBILE_UA } });
+
+    if (!songRes.ok) {
+      if (rawSongs.length > 0) break;
+      throw new ProviderError(
+        'UPSTREAM_ERROR',
+        `Kugou special playlist upstream error: ${songRes.status}`,
+        502,
+      );
+    }
+
+    const songJson = (await songRes.json()) as {
+      status?: number;
+      errcode?: number;
+      data?: {
+        info?: KugouRawSong[];
+        total?: number;
+      };
+    };
+
+    const pageSongs = songJson.data?.info;
+    if (!Array.isArray(pageSongs) || pageSongs.length === 0) {
+      break;
+    }
+
+    rawSongs.push(...pageSongs);
+
+    const totalFromSong = typeof songJson.data?.total === 'number' ? songJson.data.total : expectedTotal;
+    if (totalFromSong > 0 && rawSongs.length >= totalFromSong) {
+      break;
+    }
+    if (pageSongs.length < pageSize) {
+      break;
+    }
+    page++;
+  }
+
+  // Completeness check
+  if (expectedTotal > 0 && rawSongs.length !== expectedTotal) {
     throw new ProviderError(
-      'UPSTREAM_ERROR',
-      `Kugou special playlist upstream error: ${songRes.status}`,
+      'INCOMPLETE_PLAYLIST',
+      `Incomplete playlist: Kugou special playlist reported ${expectedTotal} songs, but only ${rawSongs.length} could be retrieved.`,
       502,
+      { expectedCount: expectedTotal, actualCount: rawSongs.length },
     );
   }
 
-  const songJson = (await songRes.json()) as {
-    status?: number;
-    errcode?: number;
-    data?: {
-      info?: KugouRawSong[];
-    };
-  };
-
-  let listInfo: KugouRawListInfo = { specialname: '酷狗专题歌单' };
-  if (infoRes.ok) {
-    try {
-      const infoJson = (await infoRes.json()) as { data?: KugouRawListInfo };
-      if (infoJson.data) listInfo = infoJson.data;
-    } catch {
-      // Non-fatal if info fails
-    }
-  }
-
-  const rawSongs = songJson.data?.info || [];
   const tracks = rawSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
 
   return normalizeKugouPlaylist({
@@ -139,6 +172,7 @@ async function fetchSonglistH5Output(gcid: string): Promise<{
 
 /**
  * Fetches all tracks of a cloudlist playlist using authenticated credentials.
+ * Handles pagination up to 50 pages (15,000 songs) and verifies completeness.
  */
 async function fetchCloudlistAllTracks(options: {
   listid: string | number;
@@ -146,75 +180,112 @@ async function fetchCloudlistAllTracks(options: {
   userid: string;
 }): Promise<KugouRawSong[]> {
   const { listid, token, userid } = options;
-  const clienttime = String(Math.floor(Date.now() / 1000));
-  const mid = md5(`cloudlist_${clienttime}_${userid}`);
+  const pageSize = 300;
+  const maxPages = 50;
+  let page = 1;
+  const allSongs: KugouRawSong[] = [];
+  let expectedTotal = -1;
 
-  const postData = {
-    listid: String(listid),
-    userid: String(userid),
-    area_code: 1,
-    show_relate_goods: 1,
-    pagesize: 300,
-    allplatform: 1,
-    show_cover: 1,
-    type: 0,
-    token,
-    page: 1,
-  };
+  while (page <= maxPages) {
+    const clienttime = String(Math.floor(Date.now() / 1000));
+    const mid = md5(`cloudlist_${clienttime}_${userid}_${page}`);
 
-  const dataStr = JSON.stringify(postData);
-
-  const queryParams: Record<string, string> = {
-    dfid: '-',
-    mid,
-    uuid: '-',
-    appid: KUGOU_LITE_APPID,
-    clientver: KUGOU_LITE_CLIENTVER,
-    clienttime,
-    token,
-    userid,
-  };
-
-  queryParams.signature = signKugouGatewayParams(queryParams, dataStr, KUGOU_LITE_SALT);
-
-  const queryString = new URLSearchParams(queryParams).toString();
-  const url = `https://gateway.kugou.com/v4/get_list_all_file?${queryString}`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'User-Agent': 'Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi',
-      'Content-Type': 'application/json',
-      'x-router': 'cloudlist.service.kugou.com',
-      dfid: '-',
-      clienttime,
-      mid,
-      'kg-rc': '1',
-      'kg-thash': '5d816a0',
-      'kg-rec': '1',
-      'kg-rf': 'B9EDA08A64250DEFFBCADDEE00F8F25F',
-    },
-    body: dataStr,
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const json = (await response.json()) as {
-    status?: number;
-    error_code?: number;
-    data?: {
-      info?: KugouRawSong[];
-      count?: number;
+    const postData = {
+      listid: String(listid),
+      userid: String(userid),
+      area_code: 1,
+      show_relate_goods: 1,
+      pagesize: pageSize,
+      allplatform: 1,
+      show_cover: 1,
+      type: 0,
+      token,
+      page,
     };
-  };
 
-  if (json.status === 1 && Array.isArray(json.data?.info)) {
-    return json.data.info;
+    const dataStr = JSON.stringify(postData);
+
+    const queryParams: Record<string, string> = {
+      dfid: '-',
+      mid,
+      uuid: '-',
+      appid: KUGOU_LITE_APPID,
+      clientver: KUGOU_LITE_CLIENTVER,
+      clienttime,
+      token,
+      userid,
+    };
+
+    queryParams.signature = signKugouGatewayParams(queryParams, dataStr, KUGOU_LITE_SALT);
+
+    const queryString = new URLSearchParams(queryParams).toString();
+    const url = `https://gateway.kugou.com/v4/get_list_all_file?${queryString}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi',
+        'Content-Type': 'application/json',
+        'x-router': 'cloudlist.service.kugou.com',
+        dfid: '-',
+        clienttime,
+        mid,
+        'kg-rc': '1',
+        'kg-thash': '5d816a0',
+        'kg-rec': '1',
+        'kg-rf': 'B9EDA08A64250DEFFBCADDEE00F8F25F',
+      },
+      body: dataStr,
+    });
+
+    if (!response.ok) {
+      break;
+    }
+
+    const json = (await response.json()) as {
+      status?: number;
+      error_code?: number;
+      data?: {
+        info?: KugouRawSong[];
+        count?: number;
+      };
+    };
+
+    if (json.status !== 1 || !Array.isArray(json.data?.info)) {
+      break;
+    }
+
+    if (expectedTotal === -1 && typeof json.data?.count === 'number') {
+      expectedTotal = json.data.count;
+    }
+
+    const pageSongs = json.data.info;
+    if (pageSongs.length === 0) {
+      break;
+    }
+
+    allSongs.push(...pageSongs);
+
+    if (expectedTotal >= 0 && allSongs.length >= expectedTotal) {
+      break;
+    }
+    if (pageSongs.length < pageSize) {
+      break;
+    }
+    page++;
   }
 
-  return [];
+  // Completeness check
+  if (expectedTotal >= 0 && allSongs.length < expectedTotal) {
+    throw new ProviderError(
+      'INCOMPLETE_PLAYLIST',
+      `Incomplete cloudlist: Kugou reported ${expectedTotal} songs, but only ${allSongs.length} could be retrieved.`,
+      502,
+      { expectedCount: expectedTotal, actualCount: allSongs.length },
+    );
+  }
+
+  return allSongs;
 }
 
 /**
@@ -238,11 +309,28 @@ export async function fetchKugouPlaylist(
     try {
       // 2a. Fetch user's own playlists to find matching cloudlist listid
       const userPlaylists = await fetchKugouUserPlaylists(auth.token, auth.userid);
-      const matched = userPlaylists.playlists.find(
-        (p) =>
-          p.name.trim() === (listInfo.name || '').trim() ||
-          p.trackCount === Number(listInfo.count || 0),
-      );
+
+      // High-confidence matching:
+      // Priority 1: Match by direct listid if target.id matches a user list ID
+      // Priority 2: Match by exact playlist name
+      // If multiple user playlists have the same name, disambiguate with trackCount
+      // STRICT SAFETY: NEVER match solely by trackCount (prevent wrong playlist extraction)
+      const targetName = (listInfo.name || '').trim();
+      let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
+
+      if (!matched && targetName) {
+        const nameMatches = userPlaylists.playlists.filter(
+          (p) => p.name.trim() === targetName,
+        );
+        if (nameMatches.length === 1) {
+          matched = nameMatches[0];
+        } else if (nameMatches.length > 1) {
+          const countMatch = nameMatches.find(
+            (p) => p.trackCount === Number(listInfo.count || 0),
+          );
+          matched = countMatch || nameMatches[0];
+        }
+      }
 
       if (matched && matched.id) {
         const fullSongs = await fetchCloudlistAllTracks({
@@ -259,7 +347,7 @@ export async function fetchKugouPlaylist(
               ...listInfo,
               name: matched.name || listInfo.name,
               pic: matched.coverUrl || listInfo.pic,
-              count: fullSongs.length,
+              count: matched.trackCount || listInfo.count || fullSongs.length,
             },
             tracks,
             sourceUrl: target.originalUrl,

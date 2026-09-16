@@ -246,8 +246,18 @@ export default {
         });
       }
 
-      const token = url.searchParams.get('token') || undefined;
-      const userid = url.searchParams.get('userid') || undefined;
+      const authHeader = request.headers.get('authorization') || '';
+      const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+      const token =
+        (bearerMatch ? bearerMatch[1].trim() : '') ||
+        request.headers.get('x-kugou-token')?.trim() ||
+        url.searchParams.get('token') ||
+        undefined;
+
+      const userid =
+        request.headers.get('x-kugou-userid')?.trim() ||
+        url.searchParams.get('userid') ||
+        undefined;
 
       // Check provider matching
       let matchedProvider: typeof qqMusicProvider | typeof neteaseProvider | typeof kugouProvider | null = null;
@@ -473,8 +483,17 @@ export default {
 
       // Kugou User Playlists branch (requires token & userid)
       if (platformParam === 'kugou' || kugouProvider.matches(rawUserInput)) {
-        const token = url.searchParams.get('token');
-        const userid = url.searchParams.get('userid') || url.searchParams.get('uid') || url.searchParams.get('uin');
+        const authHeader = request.headers.get('authorization') || '';
+        const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+        const token =
+          (bearerMatch ? bearerMatch[1].trim() : '') ||
+          request.headers.get('x-kugou-token')?.trim() ||
+          url.searchParams.get('token');
+        const userid =
+          request.headers.get('x-kugou-userid')?.trim() ||
+          url.searchParams.get('userid') ||
+          url.searchParams.get('uid') ||
+          url.searchParams.get('uin');
         if (!token || !userid) {
           return new Response(
             JSON.stringify({
