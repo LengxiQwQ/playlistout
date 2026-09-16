@@ -6,7 +6,7 @@
 
 The Playlist Out API is a lightweight, edge-native Cloudflare Worker that fetches, parses, and normalizes public music playlists into a platform-agnostic data model, serves anonymous aggregate product statistics, and ingests frontend telemetry events.
 
-- **Production API base URL**: `https://api.playlistout.com`
+- **Production API base URL**: `https://playlistout-api.lengxiqwq.com`
 - **Local development API base URL**: `http://localhost:8787`
 
 ---
@@ -285,8 +285,8 @@ Write-only analytics ingestion endpoint for client-side export and clipboard cop
 
 ```http
 GET /api/playlist?url=https%3A%2F%2Fy.qq.com%2Fn%2Fryqq%2Fplaylist%2F9044196528 HTTP/1.1
-Host: api.playlistout.com
-Origin: https://playlistout.com
+Host: playlistout-api.lengxiqwq.com
+Origin: https://playlistout.lengxiqwq.com
 ```
 
 **Response (`200 OK`):**
@@ -322,8 +322,8 @@ Origin: https://playlistout.com
 
 ```http
 GET /api/stats HTTP/1.1
-Host: api.playlistout.com
-Origin: https://playlistout.com
+Host: playlistout-api.lengxiqwq.com
+Origin: https://playlistout.lengxiqwq.com
 ```
 
 **Response (`200 OK`):**
@@ -366,8 +366,8 @@ Origin: https://playlistout.com
 
 ```http
 POST /api/event HTTP/1.1
-Host: api.playlistout.com
-Origin: https://playlistout.com
+Host: playlistout-api.lengxiqwq.com
+Origin: https://playlistout.lengxiqwq.com
 Content-Type: application/json
 
 {
@@ -390,8 +390,8 @@ Content-Type: application/json
 
 ```http
 POST /api/event HTTP/1.1
-Host: api.playlistout.com
-Origin: https://playlistout.com
+Host: playlistout-api.lengxiqwq.com
+Origin: https://playlistout.lengxiqwq.com
 Content-Type: application/json
 
 {
@@ -434,7 +434,7 @@ Retry-After: 48
 
 ```http
 GET /proxy?url=https://example.com HTTP/1.1
-Host: api.playlistout.com
+Host: playlistout-api.lengxiqwq.com
 ```
 
 **Response (`403 Forbidden`):**
@@ -457,7 +457,7 @@ Host: api.playlistout.com
 
 ```http
 POST /api/event HTTP/1.1
-Host: api.playlistout.com
+Host: playlistout-api.lengxiqwq.com
 Content-Type: application/json
 
 {
@@ -486,8 +486,9 @@ Content-Type: application/json
 
 Cross-Origin Resource Sharing (CORS) is restricted to explicit allowlisted origins:
 
-- `https://playlistout.com` (Production canonical domain)
-- `https://www.playlistout.com` (Production www domain)
+- `https://playlistout.lengxiqwq.com` (Production canonical domain)
+- `https://playlistout.com` (Legacy domain, 301 redirects to canonical)
+- `https://www.playlistout.com` (Legacy www domain, 301 redirects to canonical)
 - `http://localhost:5173` (Vite dev server)
 - `http://127.0.0.1:5173` (Vite dev server)
 - `http://localhost:4173` (Vite preview server)

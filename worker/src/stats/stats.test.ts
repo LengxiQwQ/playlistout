@@ -164,13 +164,13 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
     mockDb._store.set(`TOTAL::all::parse_success`, 100);
     mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
 
-    const request = new Request('https://api.playlistout.com/api/stats', {
-      headers: { Origin: 'https://playlistout.com' },
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats', {
+      headers: { Origin: 'https://playlistout.lengxiqwq.com' },
     });
 
     const response = await worker.fetch(request, { DB: mockDb }, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.com');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
 
     const body: any = await response.json();
     expect(body.success).toBe(true);
@@ -178,7 +178,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
   });
 
   it('rejects POST to /api/stats with 405 Method Not Allowed', async () => {
-    const request = new Request('https://api.playlistout.com/api/stats', {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats', {
       method: 'POST',
     });
 
@@ -199,7 +199,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
     });
 
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
     const ctx = createMockCtx();
     const response = await worker.fetch(request, { DB: mockDb }, ctx);
 

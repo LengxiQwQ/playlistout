@@ -28,7 +28,7 @@ function createMockCtx(): ExecutionContext {
 
 describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   it('responds with ok to /health and returns minimal payload', async () => {
-    const request = new Request('https://api.playlistout.com/health');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/health');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
     const body = (await response.json()) as HealthResponseBody;
@@ -38,7 +38,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('rejects non-GET methods on /health with 405 Method Not Allowed', async () => {
-    const request = new Request('https://api.playlistout.com/health', { method: 'POST' });
+    const request = new Request('https://playlistout-api.lengxiqwq.com/health', { method: 'POST' });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(405);
     const body = (await response.json()) as ErrorResponseBody;
@@ -46,17 +46,17 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('responds with CORS header to /api/health for allowed origin', async () => {
-    const request = new Request('https://api.playlistout.com/api/health', {
-      headers: { Origin: 'https://playlistout.com' },
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/health', {
+      headers: { Origin: 'https://playlistout.lengxiqwq.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.com');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
     expect(response.headers.get('Vary')).toBe('Origin');
   });
 
   it('does NOT return Access-Control-Allow-Origin for unauthorized origin', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       headers: { Origin: 'https://evil-site.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
@@ -69,7 +69,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     'https://lengxiqwq.github.io',
     'http://localhost:5173',
   ])('handles CORS OPTIONS preflight for allowed origin: %s', async (origin) => {
-    const request = new Request('https://api.playlistout.com/api/playlist', {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist', {
       method: 'OPTIONS',
       headers: { Origin: origin },
     });
@@ -80,7 +80,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('rejects CORS OPTIONS preflight for unauthorized origin with 403', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist', {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist', {
       method: 'OPTIONS',
       headers: { Origin: 'https://malicious-domain.com' },
     });
@@ -90,14 +90,14 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns Cache-Control no-cache, no-store on /api/stats', async () => {
-    const request = new Request('https://api.playlistout.com/api/stats');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate');
   });
 
   it('rejects non-GET methods on /api/playlist with 405 Method Not Allowed', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       method: 'POST',
     });
     const response = await worker.fetch(request, {}, createMockCtx());
@@ -108,7 +108,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 400 when /api/playlist is missing url parameter', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
@@ -117,7 +117,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 400 when /api/playlist has empty or whitespace url parameter', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=%20%20%20');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=%20%20%20');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
@@ -127,7 +127,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
 
   it('returns 400 when /api/playlist url parameter exceeds 2048 characters', async () => {
     const oversizedUrl = 'https://y.qq.com/n/ryqq/playlist/' + 'a'.repeat(2100);
-    const request = new Request(`https://api.playlistout.com/api/playlist?url=${encodeURIComponent(oversizedUrl)}`);
+    const request = new Request(`https://playlistout-api.lengxiqwq.com/api/playlist?url=${encodeURIComponent(oversizedUrl)}`);
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
@@ -137,7 +137,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 400 when /api/playlist is queried with unsupported music platform', async () => {
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;
@@ -147,9 +147,9 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
 
   it('strictly blocks generic /proxy, /proxy/..., and /api/proxy attempts with 403 Forbidden', async () => {
     const proxyPaths = [
-      'https://api.playlistout.com/proxy?url=https://example.com',
-      'https://api.playlistout.com/proxy/subpath?target=10.0.0.1',
-      'https://api.playlistout.com/api/proxy?url=https://qq.com',
+      'https://playlistout-api.lengxiqwq.com/proxy?url=https://example.com',
+      'https://playlistout-api.lengxiqwq.com/proxy/subpath?target=10.0.0.1',
+      'https://playlistout-api.lengxiqwq.com/api/proxy?url=https://qq.com',
     ];
 
     for (const p of proxyPaths) {
@@ -167,7 +167,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       new ProviderError('UPSTREAM_TIMEOUT', 'Request to QQ Music timed out after 15000ms.', 504),
     );
 
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(504);
     const body = (await response.json()) as ErrorResponseBody;
@@ -183,7 +183,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       new Error('SecretDatabaseConnectionFailed: pass=hunter2 at Object.<anonymous> (/internal/app.ts:42)'),
     );
 
-    const request = new Request('https://api.playlistout.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/12345');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(500);
     const body = (await response.json()) as ErrorResponseBody;
@@ -209,7 +209,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       ],
     });
 
-    const request = new Request('https://api.playlistout.com/api/playlist?url=2756674066');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=2756674066');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
 
@@ -223,14 +223,14 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 404 for unknown routes', async () => {
-    const request = new Request('https://api.playlistout.com/unknown');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/unknown');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(404);
   });
 
   describe('/api/user/playlists', () => {
     it('rejects non-GET methods with 405 Method Not Allowed', async () => {
-      const request = new Request('https://api.playlistout.com/api/user/playlists?uin=10001', { method: 'POST' });
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/user/playlists?uin=10001', { method: 'POST' });
       const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(405);
       const body = (await response.json()) as ErrorResponseBody;
@@ -238,7 +238,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     });
 
     it('rejects missing uin query parameter with 400 INVALID_INPUT', async () => {
-      const request = new Request('https://api.playlistout.com/api/user/playlists');
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/user/playlists');
       const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(400);
       const body = (await response.json()) as ErrorResponseBody;
@@ -246,7 +246,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     });
 
     it('rejects invalid uin format with 400 INVALID_INPUT', async () => {
-      const request = new Request('https://api.playlistout.com/api/user/playlists?uin=not-valid');
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/user/playlists?uin=not-valid');
       const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(400);
       const body = (await response.json()) as ErrorResponseBody;

@@ -34,7 +34,7 @@ from pathlib import Path
 
 API_BASE = "https://api.github.com"
 WEBSITE_STATS_API = os.environ.get(
-    "WEBSITE_STATS_API", "https://api.playlistout.com/api/stats"
+    "WEBSITE_STATS_API", "https://playlistout-api.lengxiqwq.com/api/stats"
 )
 
 
@@ -47,7 +47,7 @@ def log(msg: str) -> None:
 def fetch_website_stats(retries: int = 3) -> dict | None:
     """抓取 Cloudflare Worker 提供的网站聚合运营数据（实时 PV/UV/解析/导出统计）。"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; PlaylistOutInsights/1.0; +https://playlistout.com)",
+        "User-Agent": "Mozilla/5.0 (compatible; PlaylistOutInsights/1.0; +https://playlistout.lengxiqwq.com)",
         "Accept": "application/json",
     }
     url = WEBSITE_STATS_API
@@ -593,7 +593,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
         lines = [
             "### 🌐 网站运营与活跃数据看板",
             "",
-            "> 📊 数据由 [Cloudflare D1 边缘节点](https://api.playlistout.com/api/stats) 实时聚合计算，每日自动化同步存档。",
+            "> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。",
             "",
             "#### 📌 核心流量与使用规模",
             "",
@@ -620,7 +620,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
         lines = [
             "### 🌐 Live Website Statistics & Insights",
             "",
-            "> 📊 Data aggregated in real-time via [Cloudflare D1 Edge Node](https://api.playlistout.com/api/stats) and synced daily.",
+            "> 📊 Data aggregated in real-time via [Cloudflare D1 Edge Node](https://playlistout-api.lengxiqwq.com/api/stats) and synced daily.",
             "",
             "#### 📌 Core Metrics & Usage Volume",
             "",

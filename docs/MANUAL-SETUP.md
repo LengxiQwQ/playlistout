@@ -9,9 +9,10 @@
 | 部分 | 生产配置 |
 |---|---|
 | Web | GitHub Pages |
-| 主域名 | `https://playlistout.com` |
+| 主域名 | `https://playlistout.lengxiqwq.com` |
+| 旧域名 301 重定向 | `https://playlistout.com` / `https://www.playlistout.com` |
 | API | Cloudflare Worker `playlistout-api` |
-| API 域名 | `https://api.playlistout.com` |
+| API 域名 | `https://playlistout-api.lengxiqwq.com` |
 | 匿名统计 | Cloudflare D1 `playlistout-stats` |
 | Web 自动部署 | `.github/workflows/deploy-pages.yml` |
 | Worker 自动部署 | `.github/workflows/deploy-worker.yml` |
@@ -31,7 +32,7 @@ GitHub Pages 应使用 **GitHub Actions** 作为部署源。
 
 1. Settings → Pages。
 2. Build and deployment → Source 选择 **GitHub Actions**。
-3. Custom domain 设置为 `playlistout.com`。
+3. Custom domain 设置为 `playlistout.lengxiqwq.com`。
 4. 启用 **Enforce HTTPS**。
 5. push 到 `main` 后由 `.github/workflows/deploy-pages.yml` 自动构建和部署 `web/`。
 
@@ -41,22 +42,26 @@ GitHub Pages 应使用 **GitHub Actions** 作为部署源。
 
 ### 前端
 
-`playlistout.com` 指向 GitHub Pages。标准 GitHub Pages IPv4 地址为：
+在 Cloudflare 的 `lengxiqwq.com` DNS 中添加记录：
 
-```text
-185.199.108.153
-185.199.109.153
-185.199.110.153
-185.199.111.153
-```
-
-`www.playlistout.com` 应重定向到主域名。
+- 类型：`CNAME`
+- 名称：`playlistout`
+- 内容：`lengxiqwq.github.io`
+- 代理状态：已代理 (Proxied 橙色云)
 
 ### API
 
-`api.playlistout.com` 绑定 Cloudflare Worker `playlistout-api`。
+`playlistout-api.lengxiqwq.com` 绑定 Cloudflare Worker `playlistout-api`。
 
 Cloudflare Dashboard → Workers & Pages → `playlistout-api` → Settings → Domains & Routes 可检查或恢复绑定。
+
+### 旧域名 301 重定向 (`playlistout.com`)
+
+在 Cloudflare `playlistout.com` 控制台配置 Redirect Rules（重定向规则）：
+- 匹配条件：主机名包含 `playlistout.com` 与 `www.playlistout.com`
+- 目标表达式：`concat("https://playlistout.lengxiqwq.com", http.request.uri.path)`
+- 状态码：`301 Moved Permanently`
+- 保留查询参数：开启
 
 ---
 
@@ -141,10 +146,10 @@ Worker 自动部署依赖以下 Repository Secrets：
 
 当前 v2.0.0 基线：
 
-- [x] `https://playlistout.com` 可由 GitHub Pages 部署
-- [x] `https://www.playlistout.com` 重定向至主域名
+- [x] `https://playlistout.lengxiqwq.com` 可由 GitHub Pages 部署
+- [x] `https://playlistout.com` / `https://www.playlistout.com` 301 重定向至主域名
 - [x] `robots.txt` / `sitemap.xml` 已部署
-- [x] `https://api.playlistout.com/health` 为生产 API 健康检查入口
+- [x] `https://playlistout-api.lengxiqwq.com/health` 为生产 API 健康检查入口
 - [x] GitHub Actions 可检测 Cloudflare credentials
 - [x] D1 `playlistout-stats` 已创建并绑定
 - [x] D1 migration 已在生产环境执行

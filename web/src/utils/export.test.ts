@@ -143,7 +143,7 @@ describe('TXT Export', () => {
 
     expect(txt).toContain('创建时间: 2023-10-10');
     expect(txt).toContain('导出时间: ');
-    expect(txt).toContain('导出工具: PlaylistOut (https://playlistout.com)');
+    expect(txt).toContain('导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
     expect(txt).toContain('歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(txt).toContain('歌单作者: MusicMaster / 音乐家');
     expect(txt).toContain('风格标签: 民谣 · 流行');
@@ -183,7 +183,7 @@ describe('CSV Export', () => {
     // Comments check
     expect(content).toContain('# 创建时间: 2023-10-10');
     expect(content).toContain('# 导出时间: ');
-    expect(content).toContain('# 导出工具: PlaylistOut (https://playlistout.com)');
+    expect(content).toContain('# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
     expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
 
@@ -232,7 +232,7 @@ describe('XLSX Export', () => {
     expect(rows[2][0]).toBe('导出工具');
     expect(rows[2][1]).toBe('PlaylistOut');
     expect(rows[2][2]).toBe('平台网址');
-    expect(rows[2][3]).toBe('https://playlistout.com');
+    expect(rows[2][3]).toBe('https://playlistout.lengxiqwq.com');
     expect(rows[3][0]).toBe('歌单作者');
     expect(rows[3][1]).toBe('MusicMaster / 音乐家');
   });
@@ -246,7 +246,7 @@ describe('JSON Export', () => {
     expect(parsed.createTime).toContain('2023-10-10');
     expect(parsed.exportedAt).toBeTruthy();
     expect(parsed.generator).toBe('PlaylistOut');
-    expect(parsed.generatorUrl).toBe('https://playlistout.com');
+    expect(parsed.generatorUrl).toBe('https://playlistout.lengxiqwq.com');
     expect(parsed.name).toBe('多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(parsed.creator).toBe('MusicMaster / 音乐家');
     expect(parsed.updateTime).toBeTruthy();
