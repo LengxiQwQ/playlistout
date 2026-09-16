@@ -363,25 +363,24 @@ PlaylistOut is open-source software licensed under the **GNU Affero General Publ
 
 | 👥 Unique Visitors (UV) | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **99**<br><sub>Today +63</sub> | **626**<br><sub>Today +445</sub> | **92**<br><sub>Today +33</sub> | **26,685**<br><sub>Today +9,102</sub> | **183**<br><sub>Today +100</sub> | **4 Days**<br><sub>Since 2026-09-12</sub> |
+| **132**<br><sub>Today +18</sub> | **779**<br><sub>Today +52</sub> | **104**<br><sub>Today +11</sub> | **29,918**<br><sub>Today +2,620</sub> | **217**<br><sub>Today +19</sub> | **5 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 🗺️ Geographic & Client Distribution
-- **🌍 Top Visitor Regions:** 🇨🇳 Mainland China **86%** ｜ 🇭🇰 Hong Kong **6%** ｜ 🇺🇸 United States **4%** ｜ 🇯🇵 Japan **2%** ｜ 🌐 Other Regions **2%**
-- **💻 Client Devices:** Desktop **68%** ｜ Mobile **30%** ｜ Tablet **2%**
-- **🌐 Browsers:** Chrome **62%** ｜ Edge **21%** ｜ Safari **13%** ｜ Other **4%**
+- **🌍 Top Visitor Regions:** 🌐 MY **50%** ｜ 🇨🇳 Mainland China **21%** ｜ 🇺🇸 United States **16%** ｜ 🇨🇦 Canada **7%** ｜ 🇨🇳 Taiwan **6%**
+- **💻 Client Devices:** Desktop **92%** ｜ Mobile **8%**
+- **🌐 Browsers:** Chrome **44%** ｜ Edge **35%** ｜ Other **19%** ｜ Safari **3%**
 
 #### 🇨🇳 Mainland China Visitor Province Distribution
 
 | Province / Municipality | Share | Province / Municipality | Share |
 | :---: | :---: | :---: | :---: |
-| Guangdong | **28%** | Zhejiang | **18%** |
-| Beijing | **14%** | Jiangsu | **12%** |
-| Shanghai | **10%** | Sichuan | **7%** |
-| Shandong | **6%** | Hubei | **5%** |
+| Guangdong | **31%** | Shanghai | **26%** |
+| Fujian | **16%** | Zhejiang | **11%** |
+| Jiangsu | **11%** | Hunan | **3%** |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **58%** (92 parses) ｜ NetEase Cloud Music **42%** (66 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **66%** ｜ TXT **32%** ｜ JSON **2%**
+- **🎵 Platform Shares:** QQ Music **2%** (101 parses) ｜ NetEase Cloud Music **98%** (5,423 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **63%** ｜ TXT **33%** ｜ CSV **2%** ｜ JSON **2%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -401,9 +400,9 @@ PlaylistOut is open-source software licensed under the **GNU Affero General Publ
 <!-- INSIGHTS:START -->
 **📊 Repository Traffic**
 
-Views: **402** ｜ Uniques: **111** (14-day) ｜ Clones: **763** ｜ Cloners: **178** (14-day)
+Views: **463** ｜ Uniques: **109** (14-day) ｜ Clones: **900** ｜ Cloners: **205** (14-day)
 
-**Top referrers (14-day):** github.com · Google · Bing · Baidu · chatgpt.com · doubao.com  
+**Top referrers (14-day):** github.com · Google · Bing · Baidu · chatgpt.com · Yahoo  
 **Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
 
 > Data since 2026-08-31 · Last updated: 2026-09-16
