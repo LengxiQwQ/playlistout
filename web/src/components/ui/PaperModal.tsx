@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Tape } from './Tape';
 
 export interface PaperModalProps {
@@ -43,7 +44,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className="modal-backdrop"
       onClick={onClose}
@@ -53,11 +54,13 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         inset: 0,
         backgroundColor: 'rgba(45, 52, 54, 0.45)',
         backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.25rem',
         zIndex: 1000,
+        overflowY: 'auto',
         animation: 'modalBackdropFadeIn 0.18s ease-out forwards',
       }}
     >
@@ -157,4 +160,9 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 };
