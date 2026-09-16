@@ -9,6 +9,6 @@ export interface Provider {
   name: string;
   matches(input: string): boolean;
   extractId(input: string): string | null;
-  parse(id: string): Promise<Playlist>;
+  parse(id: string, options?: any): Promise<Playlist>;
   parseWithMeta?(id: string): Promise<ParseMetaResult>;
 }
