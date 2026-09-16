@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { Playlist } from '../api/types';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
+import { MarkerButton } from './ui/MarkerButton';
+import { KugouAuthModal } from './auth/KugouAuthModal';
 import {
   getPlatformName,
   getPlatformPlaylistSticker,
@@ -13,11 +15,15 @@ export interface PlaylistSummaryProps {
   playlist: Playlist;
   onReset: () => void;
   onReturnToBatch?: () => void;
+  onReload?: () => void;
 }
 
-export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset, onReturnToBatch }) => {
+export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset, onReturnToBatch, onReload }) => {
   const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
+  const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
+
+  const isKugouPartial = playlist.platform === 'kugou' && playlist.tracks.length < playlist.trackCount;
 
   const tracksText = format(t.result.tracksCount, { count: playlist.trackCount });
   const createdDateStr = playlist.createTime
@@ -370,6 +376,52 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           </Sticker>
         </div>
       </div>
+
+      {/* Kugou Preview Notice Banner */}
+      {isKugouPartial && (
+        <div
+          data-testid="kugou-preview-banner"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            padding: '0.85rem 1.25rem',
+            backgroundColor: '#eff6ff',
+            border: '2px dashed #3b82f6',
+            borderRadius: '6px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
+            <span
+              className="font-sans"
+              style={{ fontSize: '0.92rem', color: '#1e40af', fontWeight: 500 }}
+            >
+              {format(t.result.kugouPreviewNotice, {
+                previewCount: playlist.tracks.length,
+                totalCount: playlist.trackCount,
+              })}
+            </span>
+          </div>
+          <MarkerButton
+            variant="ink"
+            onClick={() => setIsKugouModalOpen(true)}
+            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+          >
+            {format(t.result.kugouUnlockAllBtn, { totalCount: playlist.trackCount })}
+          </MarkerButton>
+        </div>
+      )}
+
+      <KugouAuthModal
+        isOpen={isKugouModalOpen}
+        onClose={() => setIsKugouModalOpen(false)}
+        onSuccess={() => {
+          onReload?.();
+        }}
+      />
     </div>
   );
 };

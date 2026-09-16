@@ -57,6 +57,11 @@ export interface Translations {
     platformQQDesc: string;
     platformNetease: string;
     platformNeteaseDesc: string;
+    platformKugou: string;
+    platformKugouDesc: string;
+    kugouLoginBadge: string;
+    kugouLoggedInBadge: string;
+    kugouLogoutBtn: string;
     moreSoon: string;
   };
   loading: {
@@ -93,6 +98,8 @@ export interface Translations {
     totalDurationLabel: string;
     tagsLabel: string;
     descriptionLabel: string;
+    kugouPreviewNotice: string;
+    kugouUnlockAllBtn: string;
   };
   table: {
     listTitle: string;
@@ -229,6 +236,22 @@ export interface Translations {
     trackCountSuffix: string;
     playlistCountSuffix: string;
     creatorPrefix: string;
+    cancel: string;
+  };
+  kugouAuth: {
+    modalTitle: string;
+    modalSubtitle: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    waitingScan: string;
+    scannedConfirm: string;
+    loginSuccess: string;
+    loginExpired: string;
+    refreshQr: string;
+    privacyTip: string;
+    logoutConfirm: string;
+    logoutSuccess: string;
     cancel: string;
   };
 }

@@ -21,7 +21,7 @@ import {
 export interface UserPlaylistsPaperProps {
   userData: UserPlaylistsData;
   onReset: () => void;
-  onSelectSinglePlaylist: (playlistIdOrUrl: string, platform?: 'qqmusic' | 'netease') => void;
+  onSelectSinglePlaylist: (playlistIdOrUrl: string, platform?: 'qqmusic' | 'netease' | 'kugou') => void;
   hasSinglePlaylistCollision?: boolean;
 }
 

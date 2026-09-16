@@ -11,9 +11,10 @@ export interface ResultPaperProps {
   playlist: Playlist;
   onReset: () => void;
   onReturnToBatch?: () => void;
+  onReload?: () => void;
 }
 
-export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onReturnToBatch }) => {
+export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onReturnToBatch, onReload }) => {
   const { t } = useTranslation();
 
   return (
@@ -109,7 +110,12 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({ playlist, onReset, onR
           interactive={false}
           style={{ padding: '2.5rem' }}
         >
-          <PlaylistSummary playlist={playlist} onReset={onReset} onReturnToBatch={onReturnToBatch} />
+          <PlaylistSummary
+            playlist={playlist}
+            onReset={onReset}
+            onReturnToBatch={onReturnToBatch}
+            onReload={onReload}
+          />
           <TrackTable tracks={playlist.tracks} />
           <ExportToolbar playlist={playlist} />
         </Paper>

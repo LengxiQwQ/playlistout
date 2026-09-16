@@ -71,20 +71,37 @@ describe('Client-Side Input Validation', () => {
     expect(res3.extractedUin).toBe('1825474783');
   });
 
+  it('accepts Kugou playlist URLs and short links as valid', () => {
+    const res1 = validatePlaylistInput('https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/?src_cid=3zr52qfrzaz06a&uid=1425711902');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('single_playlist_url');
+    expect(res1.platform).toBe('kugou');
+
+    const res2 = validatePlaylistInput('https://t1.kugou.com/abcdef');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('short_link');
+    expect(res2.platform).toBe('kugou');
+
+    const res3 = validatePlaylistInput('gcid_3zr52qfrzaz06a');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('single_playlist_url');
+    expect(res3.platform).toBe('kugou');
+  });
+
   it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐与网易云音乐');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐与酷狗音乐');
 
-    const res2 = validatePlaylistInput('https://www.kugou.com/song/xxx');
+    const res2 = validatePlaylistInput('https://www.kuwo.cn/playlist_detail/123');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐与网易云音乐');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐与酷狗音乐');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐或网易云音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐或酷狗音乐歌单链接');
   });
 });
 
