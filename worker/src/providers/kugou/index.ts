@@ -8,7 +8,11 @@ import { ProviderError } from '../../models/playlist';
 import { matchesKugouInput, extractKugouTarget } from './input';
 import { fetchKugouPlaylist, type KugouAuthCredentials } from './client';
 
-export const kugouProvider: Provider = {
+export interface KugouProvider extends Provider {
+  parse(inputOrId: string, auth?: KugouAuthCredentials): Promise<Playlist>;
+}
+
+export const kugouProvider: KugouProvider = {
   name: 'kugou',
 
   matches(input: string): boolean {
