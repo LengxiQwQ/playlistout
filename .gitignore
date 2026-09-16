@@ -34,6 +34,7 @@ Desktop.ini
 1160951354/
 *.txt
 !web/public/robots.txt
+!**/requirements.txt
 *.csv
 *.xlsx
 # Specific JSON outputs from exports while preserving config JSONs
