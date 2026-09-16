@@ -355,7 +355,7 @@ export const AppContent: React.FC = () => {
   }, [userPlaylists]);
 
   const handleDrilldownToSingle = useCallback(
-    async (playlistIdOrUrl: string, platformOverride?: 'qqmusic' | 'netease') => {
+    async (playlistIdOrUrl: string, platformOverride?: 'qqmusic' | 'netease' | 'kugou') => {
       // Abort any ongoing request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -445,6 +445,7 @@ export const AppContent: React.FC = () => {
                 playlist={playlist} 
                 onReset={handleReset} 
                 onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
+                onReload={() => handleParse()}
               />
             </div>
           )}

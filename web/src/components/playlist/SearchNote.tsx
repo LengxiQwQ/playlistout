@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { StickyNote } from '../ui/StickyNote';
 import { PaperInput } from '../ui/PaperInput';
@@ -8,6 +8,8 @@ import { LoadingNote } from './LoadingNote';
 import { StatusAlert } from '../StatusAlert';
 import type { ApiError } from '../../api/types';
 import { getFriendlyErrorMessage } from '../../utils/errors';
+import { KugouAuthModal } from '../auth/KugouAuthModal';
+import { hasKugouAuth } from '../../utils/kugouAuth';
 
 export interface SearchNoteProps {
   inputUrl: string;
@@ -31,6 +33,15 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
   onSelectSample,
 }) => {
   const { t, language } = useTranslation();
+  const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
+  const [hasKugou, setHasKugou] = useState(false);
+
+  useEffect(() => {
+    setHasKugou(hasKugouAuth());
+    const handleAuthChange = () => setHasKugou(hasKugouAuth());
+    window.addEventListener('playlistout:kugou-auth-changed', handleAuthChange);
+    return () => window.removeEventListener('playlistout:kugou-auth-changed', handleAuthChange);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +323,40 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             >
               ✓ {t.search.platformNetease}
             </Sticker>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Sticker
+                type="button"
+                color="blue"
+                rotateDeg={-1}
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '1rem',
+                  fontFamily: 'var(--font-handwriting, cursive)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+                title={hasKugou ? t.search.kugouLoggedInBadge : t.search.platformKugouDesc}
+              >
+                ✓ {t.search.platformKugou}
+              </Sticker>
+              <button
+                type="button"
+                onClick={() => setIsKugouModalOpen(true)}
+                className="font-handwriting"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '0.1rem 0.35rem',
+                  fontSize: '0.85rem',
+                  color: hasKugou ? '#16a34a' : '#2563eb',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                }}
+              >
+                {hasKugou ? `[${t.search.kugouLoggedInBadge}]` : `[${t.search.kugouLoginBadge}]`}
+              </button>
+            </div>
             <span
               className="font-note"
               style={{
@@ -325,6 +370,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           </div>
         </div>
       </StickyNote>
+      <KugouAuthModal isOpen={isKugouModalOpen} onClose={() => setIsKugouModalOpen(false)} />
     </section>
   );
 };

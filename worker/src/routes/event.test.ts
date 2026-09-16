@@ -71,6 +71,27 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       await Promise.allSettled(ctx._promises);
     });
 
+    it('accepts valid export event for kugou platform', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.lengxiqwq.com',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'json',
+          platform: 'kugou',
+          trackCount: 124,
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
     it.each([
       'title',
       'title-artist',
@@ -248,7 +269,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it.each([
       'spotify',
       'apple',
-      'kugou',
+      'migu',
       'kuwo',
       'arbitrary_platform',
       '<script>alert(1)</script>',

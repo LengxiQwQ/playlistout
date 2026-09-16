@@ -1,5 +1,5 @@
 export type InputKind = 'single_playlist_url' | 'user_profile_url' | 'numeric' | 'short_link' | 'unknown';
-export type PlatformType = 'qqmusic' | 'netease' | 'numeric' | 'unknown';
+export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'numeric' | 'unknown';
 
 export interface ValidationResult {
   valid: boolean;
@@ -40,6 +40,14 @@ export function extractUinFromProfileUrl(input: string): string | null {
         return match[1];
       }
     }
+
+    // Kugou Music profile or share link with uid
+    if (parsed.hostname.includes('kugou.com')) {
+      const uid = parsed.searchParams.get('uid') || parsed.searchParams.get('userid');
+      if (uid && /^\d{4,18}$/.test(uid.trim())) {
+        return uid.trim();
+      }
+    }
   } catch {
     // Not a valid URL
   }
@@ -73,11 +81,11 @@ export function validatePlaylistInput(input: string): ValidationResult {
   }
 
   // Check if user submitted a link from other music platforms
-  if (/kugou\.com|kuwo\.cn|migu\.cn|spotify\.com|apple\.com/i.test(trimmed)) {
+  if (/kuwo\.cn|migu\.cn|spotify\.com|apple\.com/i.test(trimmed)) {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前版本支持 QQ 音乐与网易云音乐公开歌单。',
+      error: '当前版本支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单。',
     };
   }
 
@@ -100,7 +108,44 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 3. NetEase Music URL
+  // 3. Kugou short link (t.kugou.com or t1.kugou.com)
+  if (/t\d?\.kugou\.com/i.test(trimmed)) {
+    return {
+      valid: true,
+      kind: 'short_link',
+      platform: 'kugou',
+    };
+  }
+
+  // 4. Kugou raw gcid ID (e.g. gcid_3zr52qfrzaz06a)
+  if (/^gcid_[a-zA-Z0-9]+$/i.test(trimmed)) {
+    return {
+      valid: true,
+      kind: 'single_playlist_url',
+      platform: 'kugou',
+    };
+  }
+
+  // 5. Kugou Music URL
+  const isKugouUrl = /kugou\.com/i.test(trimmed);
+  if (isKugouUrl) {
+    const kugouUid = extractUinFromProfileUrl(trimmed);
+    if (kugouUid && (trimmed.includes('/user') || trimmed.includes('/profile') || trimmed.includes('/home'))) {
+      return {
+        valid: true,
+        kind: 'user_profile_url',
+        platform: 'kugou',
+        extractedUin: kugouUid,
+      };
+    }
+    return {
+      valid: true,
+      kind: 'single_playlist_url',
+      platform: 'kugou',
+    };
+  }
+
+  // 6. NetEase Music URL
   const isNeteaseUrl = /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed);
   if (isNeteaseUrl) {
     const neteaseUid = extractUinFromProfileUrl(trimmed);
@@ -119,7 +164,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 4. QQ Music URL
+  // 7. QQ Music URL
   const isQQUrl = /y\.qq\.com/i.test(trimmed);
   if (isQQUrl) {
     const profileUin = extractUinFromProfileUrl(trimmed);
@@ -142,6 +187,6 @@ export function validatePlaylistInput(input: string): ValidationResult {
   return {
     valid: false,
     code: 'UNSUPPORTED_URL',
-    error: '请输入有效的 QQ 音乐或网易云音乐歌单链接、用户主页链接或数字 ID。',
+    error: '请输入有效的 QQ 音乐、网易云音乐或酷狗音乐歌单链接、用户主页链接或数字 ID。',
   };
 }

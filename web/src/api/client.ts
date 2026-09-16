@@ -29,6 +29,118 @@ export async function fetchHealth(): Promise<HealthResponse> {
 
 export const REMOTE_API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 
+import { getKugouAuth } from '../utils/kugouAuth';
+
+export interface KugouQrSession {
+  qrcode: string;
+  qrcodeImg: string;
+  loginUrl: string;
+  expiresAt: number;
+}
+
+export interface KugouQrStatusResult {
+  status: 'waiting' | 'scanned' | 'success' | 'expired' | 'failed';
+  token?: string;
+  userid?: string;
+  message?: string;
+}
+
+/**
+ * Requests a new Kugou QR code session from Worker backend.
+ */
+export async function fetchKugouQrCode(): Promise<ApiResponse<KugouQrSession>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/kugou/login/qr`, {
+      headers: { Accept: 'application/json' },
+    });
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/kugou/login/qr`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+        return await fallbackRes.json();
+      }
+    }
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: '获取酷狗登录二维码失败' },
+    };
+  } catch (err: unknown) {
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/kugou/login/qr`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+          return await fallbackRes.json();
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '获取酷狗登录二维码失败',
+      },
+    };
+  }
+}
+
+/**
+ * Checks status of Kugou QR code session.
+ */
+export async function checkKugouQrCode(qrcode: string): Promise<ApiResponse<KugouQrStatusResult>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/kugou/login/check?qrcode=${encodeURIComponent(qrcode)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      const fallbackRes = await fetch(
+        `${REMOTE_API_BASE_URL}/api/kugou/login/check?qrcode=${encodeURIComponent(qrcode)}`,
+        { headers: { Accept: 'application/json' } },
+      );
+      if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+        return await fallbackRes.json();
+      }
+    }
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: '检测酷狗登录状态失败' },
+    };
+  } catch (err: unknown) {
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        const fallbackRes = await fetch(
+          `${REMOTE_API_BASE_URL}/api/kugou/login/check?qrcode=${encodeURIComponent(qrcode)}`,
+          { headers: { Accept: 'application/json' } },
+        );
+        if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+          return await fallbackRes.json();
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '检测酷狗登录状态失败',
+      },
+    };
+  }
+}
+
 /**
  * API client method to parse a playlist.
  * In dev mode, proxies through local Vite dev server to local Cloudflare Worker on port 8787.
@@ -38,11 +150,30 @@ export const REMOTE_API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 export async function parsePlaylist(
   urlOrId: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease',
+  platform?: 'qqmusic' | 'netease' | 'kugou',
+  authOptions?: { token?: string; userid?: string },
 ): Promise<ApiResponse<Playlist>> {
   const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
+
+  let token = authOptions?.token;
+  let userid = authOptions?.userid;
+  if (!token || !userid) {
+    const isKugou =
+      platform === 'kugou' ||
+      /kugou\.com|gcid_|src_cid=|special\/single\/|t\d?\.kugou\.com/i.test(urlOrId);
+    if (isKugou) {
+      const stored = getKugouAuth();
+      if (stored) {
+        token = stored.token;
+        userid = stored.userid;
+      }
+    }
+  }
+  const authParam = token && userid ? `&token=${encodeURIComponent(token)}&userid=${encodeURIComponent(userid)}` : '';
+  const queryString = `url=${encodeURIComponent(urlOrId)}${platformParam}${authParam}`;
+
   try {
-    const response = await fetch(`${API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
+    const response = await fetch(`${API_BASE_URL}/api/playlist?${queryString}`, {
       signal,
       headers: {
         Accept: 'application/json',
@@ -61,7 +192,7 @@ export async function parsePlaylist(
     // If local dev proxy returned HTML (e.g. 504 Gateway Timeout when local worker is down), fallback to remote API
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       console.warn('[PlaylistOut Dev] Local worker proxy returned non-JSON. Falling back to remote API...');
-      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?${queryString}`, {
         signal,
         headers: { Accept: 'application/json' },
       });
@@ -90,7 +221,7 @@ export async function parsePlaylist(
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       try {
         console.warn('[PlaylistOut Dev] Local fetch failed. Falling back to remote API...');
-        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?url=${encodeURIComponent(urlOrId)}${platformParam}`, {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/playlist?${queryString}`, {
           signal,
           headers: { Accept: 'application/json' },
         });
@@ -118,11 +249,27 @@ export async function parsePlaylist(
 export async function fetchUserPlaylists(
   uinOrUrl: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease',
+  platform?: 'qqmusic' | 'netease' | 'kugou',
+  authOptions?: { token?: string; userid?: string },
 ): Promise<ApiResponse<UserPlaylistsData>> {
   try {
     const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
-    const response = await fetch(`${API_BASE_URL}/api/user/playlists?uin=${encodeURIComponent(uinOrUrl)}${platformParam}`, {
+    let token = authOptions?.token;
+    let userid = authOptions?.userid;
+    if (!token || !userid) {
+      const isKugou = platform === 'kugou' || /kugou\.com|gcid_|src_cid=/i.test(uinOrUrl);
+      if (isKugou) {
+        const stored = getKugouAuth();
+        if (stored) {
+          token = stored.token;
+          userid = stored.userid;
+        }
+      }
+    }
+    const authParam = token && userid ? `&token=${encodeURIComponent(token)}&userid=${encodeURIComponent(userid)}` : '';
+    const queryString = `uin=${encodeURIComponent(uinOrUrl)}${platformParam}${authParam}`;
+
+    const response = await fetch(`${API_BASE_URL}/api/user/playlists?${queryString}`, {
       signal,
       headers: {
         Accept: 'application/json',
