@@ -3,7 +3,7 @@
  * Conforms to PlaylistOut Normalized Data Contract (docs/PROJECT-CONSTITUTION.md Section 6)
  */
 
-import type { Playlist, Track } from '../../models/playlist';
+import type { Playlist, Track, PlaylistRetrievalInfo } from '../../models/playlist';
 
 export interface KugouRawSong {
   hash?: string;
@@ -160,8 +160,9 @@ export function normalizeKugouPlaylist(options: {
   tracks: Track[];
   sourceUrl?: string;
   isPartialPreview?: boolean;
+  retrieval?: PlaylistRetrievalInfo;
 }): Playlist {
-  const { id, listInfo, tracks, sourceUrl, isPartialPreview } = options;
+  const { id, listInfo, tracks, sourceUrl, isPartialPreview, retrieval: explicitRetrieval } = options;
 
   const name = (listInfo.name || listInfo.specialname || '酷狗歌单').trim();
   const creator =
@@ -183,6 +184,12 @@ export function normalizeKugouPlaylist(options: {
     description = description ? `${description}\n\n${previewNotice}` : previewNotice;
   }
 
+  const retrieval: PlaylistRetrievalInfo =
+    explicitRetrieval ||
+    (isPartialPreview
+      ? { mode: 'preview', reason: 'platform_preview' }
+      : { mode: 'full' });
+
   return {
     platform: 'kugou',
     id,
@@ -194,5 +201,6 @@ export function normalizeKugouPlaylist(options: {
     description,
     playCount,
     sourceUrl,
+    retrieval,
   };
 }

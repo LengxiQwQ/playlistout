@@ -20,6 +20,23 @@ export interface Track {
   statusText?: string;
 }
 
+export type PlaylistRetrievalMode = 'full' | 'preview';
+
+export type PlaylistRetrievalReason =
+  | 'auth_required'
+  | 'auth_invalid'
+  | 'owner_unconfirmed'
+  | 'owner_mismatch'
+  | 'identity_unresolved'
+  | 'upstream_unavailable'
+  | 'platform_preview';
+
+export interface PlaylistRetrievalInfo {
+  mode: PlaylistRetrievalMode;
+  reason?: PlaylistRetrievalReason;
+  message?: string;
+}
+
 export interface Playlist {
   platform: string;
   id: string;
@@ -35,6 +52,7 @@ export interface Playlist {
   tags?: string[];
   playCount?: number;
   sourceUrl?: string;
+  retrieval?: PlaylistRetrievalInfo;
 }
 
 export interface UserPlaylistSummary {

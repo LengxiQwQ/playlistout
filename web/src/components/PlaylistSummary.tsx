@@ -23,7 +23,11 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
   const [coverFailed, setCoverFailed] = useState(false);
   const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
 
-  const isKugouPartial = playlist.platform === 'kugou' && playlist.tracks.length < playlist.trackCount;
+  const isKugouPreview =
+    playlist.platform === 'kugou' &&
+    (playlist.retrieval?.mode === 'preview' ||
+      (!playlist.retrieval && playlist.tracks.length < playlist.trackCount));
+  const retrievalReason = playlist.retrieval?.reason;
 
   const tracksText = format(t.result.tracksCount, { count: playlist.trackCount });
   const createdDateStr = playlist.createTime
@@ -378,7 +382,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
       </div>
 
       {/* Kugou Preview Notice Banner */}
-      {isKugouPartial && (
+      {isKugouPreview && (
         <div
           data-testid="kugou-preview-banner"
           style={{
@@ -388,30 +392,121 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
             flexWrap: 'wrap',
             gap: '0.75rem',
             padding: '0.85rem 1.25rem',
-            backgroundColor: '#eff6ff',
-            border: '2px dashed #3b82f6',
+            backgroundColor: retrievalReason === 'auth_invalid' ? '#fef2f2' : '#eff6ff',
+            border: `2px dashed ${retrievalReason === 'auth_invalid' ? '#ef4444' : '#3b82f6'}`,
             borderRadius: '6px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', minWidth: '240px' }}>
+            <span style={{ fontSize: '1.25rem' }}>
+              {retrievalReason === 'auth_invalid' ? '⚠️' : 'ℹ️'}
+            </span>
             <span
               className="font-sans"
-              style={{ fontSize: '0.92rem', color: '#1e40af', fontWeight: 500 }}
+              style={{
+                fontSize: '0.92rem',
+                color: retrievalReason === 'auth_invalid' ? '#991b1b' : '#1e40af',
+                fontWeight: 500,
+                lineHeight: 1.4,
+              }}
             >
-              {format(t.result.kugouPreviewNotice, {
-                previewCount: playlist.tracks.length,
-                totalCount: playlist.trackCount,
-              })}
+              {retrievalReason === 'auth_required'
+                ? t.result.kugouAuthRequiredNotice
+                : retrievalReason === 'auth_invalid'
+                ? t.result.kugouAuthInvalidNotice
+                : retrievalReason === 'owner_unconfirmed'
+                ? t.result.kugouOwnerUnconfirmedNotice
+                : retrievalReason === 'owner_mismatch'
+                ? t.result.kugouOwnerMismatchNotice
+                : retrievalReason === 'upstream_unavailable'
+                ? t.result.kugouUpstreamUnavailableNotice
+                : format(t.result.kugouPreviewNotice, {
+                    previewCount: playlist.tracks.length,
+                    totalCount: playlist.trackCount,
+                  })}
             </span>
           </div>
-          <MarkerButton
-            variant="ink"
-            onClick={() => setIsKugouModalOpen(true)}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
-          >
-            {format(t.result.kugouUnlockAllBtn, { totalCount: playlist.trackCount })}
-          </MarkerButton>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {retrievalReason === 'auth_required' && (
+              <MarkerButton
+                variant="ink"
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+              >
+                {t.result.kugouConnectBtn}
+              </MarkerButton>
+            )}
+
+            {retrievalReason === 'auth_invalid' && (
+              <MarkerButton
+                variant="ink"
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '0.45rem 1rem' }}
+              >
+                {t.result.kugouReLoginBtn}
+              </MarkerButton>
+            )}
+
+            {retrievalReason === 'owner_unconfirmed' && (
+              <>
+                <MarkerButton
+                  variant="paper"
+                  onClick={() => onReload?.()}
+                  style={{ padding: '0.45rem 0.85rem' }}
+                >
+                  {t.result.kugouReparseBtn}
+                </MarkerButton>
+                <MarkerButton
+                  variant="ink"
+                  onClick={() => setIsKugouModalOpen(true)}
+                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+                >
+                  {t.result.kugouSwitchAccountBtn}
+                </MarkerButton>
+              </>
+            )}
+
+            {retrievalReason === 'owner_mismatch' && (
+              <MarkerButton
+                variant="ink"
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+              >
+                {t.result.kugouSwitchAccountBtn}
+              </MarkerButton>
+            )}
+
+            {retrievalReason === 'upstream_unavailable' && (
+              <MarkerButton
+                variant="ink"
+                onClick={() => onReload?.()}
+                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+              >
+                {t.errors.retry}
+              </MarkerButton>
+            )}
+
+            {!retrievalReason && (
+              <MarkerButton
+                variant="ink"
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+              >
+                {format(t.result.kugouUnlockAllBtn, { totalCount: playlist.trackCount })}
+              </MarkerButton>
+            )}
+
+            {(retrievalReason === 'platform_preview' || retrievalReason === 'identity_unresolved') && (
+              <MarkerButton
+                variant="paper"
+                onClick={() => setIsKugouModalOpen(true)}
+                style={{ padding: '0.45rem 0.85rem' }}
+              >
+                {t.result.kugouSwitchAccountBtn}
+              </MarkerButton>
+            )}
+          </div>
         </div>
       )}
 

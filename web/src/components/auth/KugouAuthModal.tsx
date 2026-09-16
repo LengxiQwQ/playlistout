@@ -8,7 +8,13 @@ import {
   checkKugouQrCode,
   type KugouQrSession,
 } from '../../api/client';
-import { setKugouAuth, getKugouAuth, clearKugouAuth } from '../../utils/kugouAuth';
+import {
+  setKugouAuth,
+  getKugouAuth,
+  clearKugouAuth,
+  checkKugouSession,
+  type KugouAuthState,
+} from '../../utils/kugouAuth';
 
 export interface KugouAuthModalProps {
   isOpen: boolean;
@@ -26,14 +32,16 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [qrSession, setQrSession] = useState<KugouQrSession | null>(null);
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [authState, setAuthState] = useState<KugouAuthState>('none');
 
   const pollTimerRef = useRef<any>(null);
+  const consecutiveErrorsRef = useRef<number>(0);
 
   const loadQrCode = async () => {
     setLoading(true);
     setErrorMessage(null);
     setStatus('waiting');
+    consecutiveErrorsRef.current = 0;
     try {
       const res = await fetchKugouQrCode();
       if (res.success) {
@@ -50,13 +58,23 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     }
   };
 
-  // Sync login status and load QR on open
+  const runValidation = async () => {
+    setAuthState('checking');
+    const resState = await checkKugouSession();
+    setAuthState(resState);
+    if (resState === 'invalid' || resState === 'none') {
+      loadQrCode();
+    }
+  };
+
+  // Sync login status and validate session on open
   useEffect(() => {
     if (isOpen) {
-      const auth = getKugouAuth();
-      setIsLoggedIn(!!auth);
-
-      if (!auth) {
+      const existing = getKugouAuth();
+      if (existing) {
+        runValidation();
+      } else {
+        setAuthState('none');
         loadQrCode();
       }
 
@@ -79,9 +97,15 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     }
   }, [isOpen]);
 
-  // Polling logic when qrSession is active
+  // Polling logic when qrSession is active and user is not validated
   useEffect(() => {
-    if (!isOpen || !qrSession?.qrcode || status === 'success' || status === 'expired') {
+    if (
+      !isOpen ||
+      !qrSession?.qrcode ||
+      authState === 'valid' ||
+      status === 'success' ||
+      status === 'expired'
+    ) {
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
@@ -90,15 +114,26 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     }
 
     const poll = async () => {
+      // Proactive client-side expiration check against expiresAt
+      if (qrSession.expiresAt && Date.now() > qrSession.expiresAt) {
+        setStatus('expired');
+        if (pollTimerRef.current) {
+          clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+        }
+        return;
+      }
+
       try {
         const res = await checkKugouQrCode(qrSession.qrcode);
         if (res.success && res.data) {
+          consecutiveErrorsRef.current = 0;
           const nextStatus = res.data.status;
           setStatus(nextStatus);
 
           if (nextStatus === 'success' && res.data.token && res.data.userid) {
             setKugouAuth(res.data.token, res.data.userid);
-            setIsLoggedIn(true);
+            setAuthState('valid');
             if (pollTimerRef.current) {
               clearInterval(pollTimerRef.current);
               pollTimerRef.current = null;
@@ -106,16 +141,26 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             onSuccess?.();
             setTimeout(() => {
               onClose();
-            }, 1200);
+            }, 800);
           } else if (nextStatus === 'expired') {
             if (pollTimerRef.current) {
               clearInterval(pollTimerRef.current);
               pollTimerRef.current = null;
             }
           }
+        } else {
+          consecutiveErrorsRef.current++;
+          if (consecutiveErrorsRef.current >= 3) {
+            setStatus('failed');
+            setErrorMessage('登录状态检查失败，请检查网络');
+          }
         }
       } catch {
-        // Network hiccup during poll
+        consecutiveErrorsRef.current++;
+        if (consecutiveErrorsRef.current >= 3) {
+          setStatus('failed');
+          setErrorMessage('登录状态检查遇到网络异常，请重试');
+        }
       }
     };
 
@@ -127,7 +172,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
         pollTimerRef.current = null;
       }
     };
-  }, [isOpen, qrSession?.qrcode, status]);
+  }, [isOpen, qrSession?.qrcode, status, authState]);
 
   if (!isOpen) return null;
 
@@ -198,9 +243,72 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
           {t.kugouAuth.modalSubtitle}
         </p>
 
-        {/* If currently logged in, provide status and logout option */}
-        {isLoggedIn ? (
+        {/* State A: Checking session */}
+        {authState === 'checking' && (
           <div
+            data-testid="kugou-auth-checking"
+            style={{
+              padding: '2rem 1rem',
+              backgroundColor: '#f8fafc',
+              borderRadius: '8px',
+              border: '2px dashed #94a3b8',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div>
+            <div className="font-sans" style={{ fontWeight: 600, color: '#334155', fontSize: '1rem' }}>
+              正在验证登录状态...
+            </div>
+          </div>
+        )}
+
+        {/* State B: Unknown / Network error (Retains token, allows retry) */}
+        {authState === 'unknown' && (
+          <div
+            data-testid="kugou-auth-unknown"
+            style={{
+              padding: '1.5rem',
+              backgroundColor: '#fffbeb',
+              borderRadius: '8px',
+              border: '2px dashed #f59e0b',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem', color: '#d97706' }}>⚠️</div>
+            <div
+              className="font-sans"
+              style={{ fontWeight: 700, fontSize: '1.05rem', color: '#b45309', marginBottom: '0.5rem' }}
+            >
+              暂时无法验证酷狗登录状态
+            </div>
+            <p className="font-sans" style={{ fontSize: '0.85rem', color: '#78350f', marginBottom: '1rem' }}>
+              网络连接可能存在波动或酷狗接口暂时不可达。本地保存的凭据已保留。
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <MarkerButton variant="ink" onClick={runValidation}>
+                重试验证
+              </MarkerButton>
+              <MarkerButton
+                variant="paper"
+                onClick={() => {
+                  clearKugouAuth();
+                  setAuthState('none');
+                  loadQrCode();
+                }}
+              >
+                重新登录
+              </MarkerButton>
+              <MarkerButton variant="paper" onClick={onClose}>
+                关闭
+              </MarkerButton>
+            </div>
+          </div>
+        )}
+
+        {/* State C: Valid - PlaylistOut Connected */}
+        {authState === 'valid' && (
+          <div
+            data-testid="kugou-auth-valid"
             style={{
               padding: '1.5rem',
               backgroundColor: '#eff6ff',
@@ -214,30 +322,56 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               className="font-sans"
               style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1d4ed8', marginBottom: '0.5rem' }}
             >
-              {t.search.kugouLoggedInBadge}
+              PlaylistOut 已连接酷狗账号
             </div>
-            <p className="font-sans" style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '1rem' }}>
-              已安全保存本地登录凭证，所有歌单均可直接无损完整导出。
+            <p className="font-sans" style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '1.25rem' }}>
+              已安全保存本地登录凭证，可直接读取当前账号的完整云歌单。
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <MarkerButton
+                variant="ink"
+                onClick={() => {
+                  onSuccess?.();
+                  onClose();
+                }}
+              >
+                使用当前登录状态重新解析
+              </MarkerButton>
               <MarkerButton
                 variant="paper"
                 onClick={() => {
                   clearKugouAuth();
-                  setIsLoggedIn(false);
+                  setAuthState('none');
                   loadQrCode();
                 }}
               >
                 {t.search.kugouLogoutBtn}
               </MarkerButton>
-              <MarkerButton variant="ink" onClick={onClose}>
+              <MarkerButton variant="paper" onClick={onClose}>
                 完成
               </MarkerButton>
             </div>
           </div>
-        ) : (
-          /* Normal QR Code Scan Flow */
+        )}
+
+        {/* State D: QR Code Scan Flow (none or invalid/expired) */}
+        {(authState === 'none' || authState === 'invalid') && (
           <div>
+            {authState === 'invalid' && (
+              <div
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #f87171',
+                  borderRadius: '6px',
+                  color: '#b91c1c',
+                  fontSize: '0.85rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                酷狗登录已过期，请重新登录
+              </div>
+            )}
             {/* Steps mini list */}
             <div
               style={{

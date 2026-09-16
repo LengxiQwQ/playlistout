@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run src/",
     "test:live": "vitest run test/real-validation.test.ts",
+    "test:live:authenticated": "vitest run test/authenticated-kugou-live.test.ts",
     "test:all": "vitest run"
   },
   "devDependencies": {

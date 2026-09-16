@@ -141,6 +141,68 @@ export async function checkKugouQrCode(qrcode: string): Promise<ApiResponse<Kugo
   }
 }
 
+export interface KugouSessionValidationResult {
+  status: 'valid' | 'invalid';
+  userid?: string;
+  message?: string;
+}
+
+/**
+ * Validates whether existing Kugou credentials are still active and accepted by upstream service.
+ * Follows zero-trust: passes credentials strictly via headers (Authorization: Bearer + X-Kugou-Userid).
+ */
+export async function validateKugouAuth(
+  token: string,
+  userid: string,
+): Promise<ApiResponse<KugouSessionValidationResult>> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    Authorization: `Bearer ${token}`,
+    'X-Kugou-Userid': userid,
+  };
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/kugou/auth/status`, {
+      headers,
+    });
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/kugou/auth/status`, {
+        headers,
+      });
+      if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+        return await fallbackRes.json();
+      }
+    }
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: '验证酷狗登录状态失败' },
+    };
+  } catch (err: unknown) {
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/kugou/auth/status`, {
+          headers,
+        });
+        if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
+          return await fallbackRes.json();
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '验证酷狗登录状态失败',
+      },
+    };
+  }
+}
+
 /**
  * API client method to parse a playlist.
  * In dev mode, proxies through local Vite dev server to local Cloudflare Worker on port 8787.

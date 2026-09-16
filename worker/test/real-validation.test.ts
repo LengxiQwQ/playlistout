@@ -195,6 +195,8 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     expect(playlist.trackCount).toBeGreaterThan(0);
     expect(playlist.tracks.length).toBeGreaterThan(0);
     expect(playlist.tracks.length).toBeLessThanOrEqual(playlist.trackCount);
+    expect(playlist.retrieval?.mode).toBe('preview');
+    expect(playlist.retrieval?.reason).toBe('auth_required');
 
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
@@ -215,6 +217,8 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     expect(playlist.tracks.length).toBeLessThanOrEqual(30);
     expect(playlist.tracks.length).toBeGreaterThan(0);
     expect(playlist.description).toContain('预览');
+    expect(playlist.retrieval?.mode).toBe('preview');
+    expect(playlist.retrieval?.reason).toBe('auth_required');
 
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
@@ -232,33 +236,4 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     expect(session.loginUrl).toContain('kugou.com');
     expect(session.expiresAt).toBeGreaterThan(Date.now());
   });
-
-  it.runIf(Boolean(process.env.KUGOU_TEST_TOKEN && process.env.KUGOU_TEST_USERID))(
-    'validates authenticated Kugou cloudlist when credentials provided via environment',
-    async () => {
-      const token = process.env.KUGOU_TEST_TOKEN!;
-      const userid = process.env.KUGOU_TEST_USERID!;
-      const testPlaylistUrl = process.env.KUGOU_TEST_PLAYLIST_URL;
-
-      const { fetchKugouUserPlaylists } = await import('../src/providers/kugou/client');
-      const userPlaylists = await fetchKugouUserPlaylists(token, userid);
-      expect(userPlaylists.playlists.length).toBeGreaterThan(0);
-
-      // If a >300 playlist URL is provided for authenticated acceptance, verify cross-page pagination
-      if (testPlaylistUrl) {
-        const playlist = await kugouProvider.parse(testPlaylistUrl, {
-          token,
-          userid,
-        });
-        expect(playlist.tracks.length).toBe(playlist.trackCount);
-        if (playlist.trackCount > 300) {
-          expect(playlist.tracks.length).toBeGreaterThan(300);
-          expect(playlist.tracks[299].index).toBe(300);
-          expect(playlist.tracks[300].index).toBe(301);
-          expect(playlist.tracks[299].title).toBeTruthy();
-          expect(playlist.tracks[300].title).toBeTruthy();
-        }
-      }
-    },
-  );
 });

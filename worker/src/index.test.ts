@@ -253,6 +253,124 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       expect(body.error.code).toBe('INVALID_INPUT');
     });
   });
+
+  describe('/api/kugou/auth/status', () => {
+    it('rejects non-GET methods with 405 Method Not Allowed', async () => {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        method: 'POST',
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(405);
+    });
+
+    it('rejects token passed via query parameter with 400 INVALID_INPUT', async () => {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status?token=leaked_secret', {
+        headers: {
+          'X-Kugou-Userid': '12345',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('query parameters is strictly forbidden');
+    });
+
+    it('rejects missing Authorization or X-Kugou-Userid with 400 INVALID_INPUT', async () => {
+      const req1 = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        headers: {
+          Authorization: 'Bearer my_token',
+          // missing X-Kugou-Userid
+        },
+      });
+      const res1 = await worker.fetch(req1, {}, createMockCtx());
+      expect(res1.status).toBe(400);
+
+      const req2 = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        headers: {
+          'X-Kugou-Userid': '12345',
+          // missing token
+        },
+      });
+      const res2 = await worker.fetch(req2, {}, createMockCtx());
+      expect(res2.status).toBe(400);
+    });
+
+    it('returns status: valid when credentials are valid', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          data: { info: [{ listid: 1, name: 'My List', count: 10 }] },
+        }),
+      } as Response);
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        headers: {
+          Authorization: 'Bearer valid_tok',
+          'X-Kugou-Userid': '12345',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as any;
+      expect(body.success).toBe(true);
+      expect(body.data.status).toBe('valid');
+      expect(body.data.userid).toBe('12345');
+
+      globalThis.fetch = originalFetch;
+    });
+
+    it('returns status: invalid when upstream rejects credentials with auth error', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 0,
+          error_code: 20001,
+          error: 'token expired',
+        }),
+      } as Response);
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        headers: {
+          Authorization: 'Bearer expired_tok',
+          'X-Kugou-Userid': '12345',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as any;
+      expect(body.success).toBe(true);
+      expect(body.data.status).toBe('invalid');
+
+      globalThis.fetch = originalFetch;
+    });
+
+    it('returns 502 UPSTREAM_ERROR when upstream network or service fails', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+      } as Response);
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/auth/status', {
+        headers: {
+          Authorization: 'Bearer any_tok',
+          'X-Kugou-Userid': '12345',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(502);
+      const body = (await response.json()) as any;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UPSTREAM_ERROR');
+
+      globalThis.fetch = originalFetch;
+    });
+  });
 });
 
 

@@ -100,6 +100,15 @@ export interface Translations {
     descriptionLabel: string;
     kugouPreviewNotice: string;
     kugouUnlockAllBtn: string;
+    kugouAuthRequiredNotice: string;
+    kugouAuthInvalidNotice: string;
+    kugouOwnerUnconfirmedNotice: string;
+    kugouOwnerMismatchNotice: string;
+    kugouUpstreamUnavailableNotice: string;
+    kugouConnectBtn: string;
+    kugouReLoginBtn: string;
+    kugouSwitchAccountBtn: string;
+    kugouReparseBtn: string;
   };
   table: {
     listTitle: string;

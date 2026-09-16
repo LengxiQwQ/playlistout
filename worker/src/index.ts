@@ -161,6 +161,100 @@ export default {
       }
     }
 
+    // Kugou session status validation endpoint
+    if (url.pathname === '/api/kugou/auth/status') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
+          }),
+          { status: 405, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+
+      // Prohibit passing token or credentials in query parameters (strict constitutional privacy rule)
+      if (
+        url.searchParams.has('token') ||
+        url.searchParams.has('auth') ||
+        url.searchParams.has('credential') ||
+        url.searchParams.has('kugou_token')
+      ) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'INVALID_INPUT',
+              message: 'Passing credentials in query parameters is strictly forbidden. Use Authorization: Bearer <token> and X-Kugou-Userid headers.',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+
+      const authHeader = request.headers.get('authorization') || '';
+      const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+      const token =
+        (bearerMatch ? bearerMatch[1].trim() : '') ||
+        request.headers.get('x-kugou-token')?.trim();
+      const userid = request.headers.get('x-kugou-userid')?.trim();
+
+      if (!token || !userid) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'INVALID_INPUT',
+              message: 'Missing Authorization Bearer token or X-Kugou-Userid header.',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+
+      try {
+        await fetchKugouUserPlaylists(token, userid);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              status: 'valid',
+              userid,
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      } catch (err: unknown) {
+        if (
+          err instanceof ProviderError &&
+          (err.code === 'FORBIDDEN' || (err.details as any)?.authInvalid)
+        ) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                status: 'invalid',
+                message: 'Kugou session expired or rejected by upstream service.',
+              },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+          );
+        }
+
+        // Upstream unavailable / network failure: retain token, return 502 UPSTREAM_ERROR
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'UPSTREAM_ERROR',
+              message: 'Kugou upstream service temporarily unavailable. Could not verify session status.',
+            },
+          }),
+          { status: 502, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+    }
+
     // Playlist parse endpoint
     if (url.pathname === '/api/playlist') {
       if (request.method !== 'GET') {

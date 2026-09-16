@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Playlist, UserPlaylistsData, ApiError } from './api/types';
 import { parsePlaylist, fetchUserPlaylists, recordVisit } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
+import { clearKugouAuth } from './utils/kugouAuth';
 import { LanguageProvider } from './i18n';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/layout/Hero';
@@ -61,7 +62,7 @@ export const AppContent: React.FC = () => {
 
   const handleParse = useCallback(
     async (urlToParse?: string) => {
-      const targetUrl = (urlToParse !== undefined ? urlToParse : inputUrl).trim();
+      const targetUrl = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
       // 1. Client-side fast validation
       const validation = validatePlaylistInput(targetUrl);
@@ -91,7 +92,12 @@ export const AppContent: React.FC = () => {
         // Case A: User profile URL -> Fetch user playlists directly
         if (validation.kind === 'user_profile_url') {
           const targetInput = validation.extractedUin || targetUrl;
-          const platform = validation.platform === 'netease' ? 'netease' : 'qqmusic';
+          const platform =
+            validation.platform === 'netease'
+              ? 'netease'
+              : validation.platform === 'kugou'
+              ? 'kugou'
+              : 'qqmusic';
           const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
@@ -108,12 +114,21 @@ export const AppContent: React.FC = () => {
           return;
         }
 
-        // Case B: Short link (e.g. 163cn.tv) -> Try single playlist first, fallback to user profile
+        // Case B: Short link (e.g. 163cn.tv or t.kugou.com) -> Try single playlist first, fallback to user profile
         if (validation.kind === 'short_link') {
-          const singleRes = await parsePlaylist(targetUrl, controller.signal).catch(() => null);
+          const platform =
+            validation.platform === 'netease'
+              ? 'netease'
+              : validation.platform === 'kugou'
+              ? 'kugou'
+              : undefined;
+          const singleRes = await parsePlaylist(targetUrl, controller.signal, platform).catch(() => null);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (singleRes && singleRes.success && singleRes.data) {
+            if (singleRes.data.retrieval?.reason === 'auth_invalid') {
+              clearKugouAuth();
+            }
             setPlaylist(singleRes.data);
             setUserPlaylists(null);
             setViewMode('single');
@@ -123,7 +138,7 @@ export const AppContent: React.FC = () => {
           }
 
           // Fallback to user playlists (e.g. user homepage short link)
-          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, 'netease').catch(() => null);
+          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, platform || 'netease').catch(() => null);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (userRes && userRes.success && userRes.data && userRes.data.playlists.length > 0) {
@@ -148,11 +163,19 @@ export const AppContent: React.FC = () => {
 
         // Case C: Explicit single playlist URL -> Parse single playlist directly
         if (validation.kind === 'single_playlist_url') {
-          const platform = validation.platform === 'netease' ? 'netease' : 'qqmusic';
+          const platform =
+            validation.platform === 'netease'
+              ? 'netease'
+              : validation.platform === 'kugou'
+              ? 'kugou'
+              : 'qqmusic';
           const res = await parsePlaylist(targetUrl, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
+            if (res.data.retrieval?.reason === 'auth_invalid') {
+              clearKugouAuth();
+            }
             setPlaylist(res.data);
             setUserPlaylists(null);
             setViewMode('single');
@@ -381,7 +404,12 @@ export const AppContent: React.FC = () => {
 
       try {
         const platform =
-          platformOverride || (userPlaylists?.platform === 'netease' ? 'netease' : 'qqmusic');
+          platformOverride ||
+          (userPlaylists?.platform === 'netease'
+            ? 'netease'
+            : userPlaylists?.platform === 'kugou'
+            ? 'kugou'
+            : 'qqmusic');
         const res = await parsePlaylist(playlistIdOrUrl, controller.signal, platform);
         if (requestIdRef.current !== currentRequestId) return;
 
