@@ -9,16 +9,27 @@
  */
 
 import { createKugouQrCode, checkKugouQrCode } from '../worker/src/providers/kugou/auth';
+import { fetchKugouUserPlaylists } from '../worker/src/providers/kugou/client';
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const htmlPath = path.resolve(process.cwd(), 'kugou-login-qr.html');
+const imgPath = path.resolve(process.cwd(), 'kugou-qr.png');
+const artifactDir = 'C:\\Users\\LengxiQwQ\\.gemini\\antigravity\\brain\\a233ecf6-7e88-4201-8fa1-fe6662e9da5d';
+const artifactImgPath = path.resolve(artifactDir, 'kugou-qr.png');
 
 function cleanupTempQr(): void {
   try {
     if (fs.existsSync(htmlPath)) {
       fs.unlinkSync(htmlPath);
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+  try {
+    if (fs.existsSync(imgPath)) {
+      fs.unlinkSync(imgPath);
     }
   } catch {
     // Ignore cleanup errors
@@ -107,8 +118,28 @@ async function main() {
         </body></html>`,
         'utf-8',
       );
+
+      try {
+        const base64Str = session.qrcodeImg.split(',')[1];
+        if (base64Str) {
+          const imgBuf = Buffer.from(base64Str, 'base64');
+          fs.writeFileSync(imgPath, imgBuf);
+          if (fs.existsSync(artifactDir)) {
+            fs.writeFileSync(artifactImgPath, imgBuf);
+          }
+        }
+      } catch {
+        // Ignore image writing errors
+      }
+
       console.log(`[Action Required] 请用酷狗音乐手机 App 扫描以下页面中的二维码或点击链接确认授权：`);
       console.log(`file://${htmlPath}\n`);
+
+      try {
+        spawnSync('cmd.exe', ['/c', 'start', htmlPath], { stdio: 'ignore' });
+      } catch {
+        // Ignore browser launch errors
+      }
     }
 
     console.log('2. Polling login status (timeout: 5 minutes)...');
@@ -149,6 +180,19 @@ async function main() {
             } else {
               console.log('[Notice] Please configure KUGOU_TEST_PLAYLIST_URL pointing to the current account\'s >300 own playlist.');
             }
+          }
+
+          try {
+            console.log('\nQuerying user playlists for this account from Kugou gateway...');
+            const userPlaylists = await fetchKugouUserPlaylists(res.token, res.userid);
+            console.log('\n==================================================');
+            console.log(`Found ${userPlaylists.playlists.length} playlists for user ${res.userid}:`);
+            for (const p of userPlaylists.playlists) {
+              console.log(`  - [ID: ${p.id}] "${p.name}" (${p.trackCount} tracks) ${p.trackCount > 300 ? '--> [QUALIFIES FOR >300 TEST]' : ''}`);
+            }
+            console.log('==================================================\n');
+          } catch (listErr) {
+            console.log('[Notice] Could not fetch user playlists automatically:', listErr);
           }
 
           return;
