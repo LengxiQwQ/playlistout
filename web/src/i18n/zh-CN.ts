@@ -203,7 +203,7 @@ export const zhCN: Translations = {
     drawnBy: 'Handcrafted music journal for playlist backup & export',
     runningBadge: '✦ 始于 2026-09-12 · 已安全稳定运行 {days} 天 · 累计陪伴 {visitors} 位朋友 ✦',
     copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · Licensed under ',
-    licenseText: 'GNU AGPL-3.0',
+    licenseText: 'MIT',
     licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
