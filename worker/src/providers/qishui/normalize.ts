@@ -41,6 +41,7 @@ export interface RawQishuiLabelInfo {
   quality_only_vip_can_play?: string[];
   quality_only_vip_can_download?: string[];
   quality_map?: Record<string, RawQishuiQualityMapItem>;
+  is_original?: boolean;
 }
 
 export interface RawQishuiTrack {
@@ -213,7 +214,7 @@ export function determineQishuiTrackStatus(track: Partial<RawQishuiTrack>): {
 
   // 3. Lossless VIP only (but standard is free)
   const losslessOnlyVip = labelInfo?.quality_only_vip_can_play?.includes('lossless');
-  if (losslessOnlyVip && !labelInfo.only_vip_playable) {
+  if (losslessOnlyVip && !labelInfo?.only_vip_playable) {
     return {
       isAvailable: true,
       isVip: false,
@@ -398,7 +399,7 @@ export function normalizeQishuiTrack(
     artists: ['未知艺人'],
     isAvailable: false,
     isVip: false,
-    status: 'unavailable',
+    status: 'unplayable',
     statusText: '下架或不支持的内容',
   };
 }

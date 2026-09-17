@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePlaylistInput } from './validation';
+import { validatePlaylistInput, extractCleanUrlOrInput } from './validation';
 import { getFriendlyErrorMessage } from './errors';
 import { formatDuration } from './format';
 
@@ -151,3 +151,85 @@ describe('Duration Formatting', () => {
     expect(formatDuration(0)).toBe('—');
   });
 });
+
+describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
+  const example1 = '歌单｜钢琴流行曲999首：轻音乐钢琴曲｜钢琴纯音乐放松大脑缓解焦虑 https://qishui.douyin.com/s/iXHhKHhY/ @汽水音乐';
+  const example2 = '歌单｜抖音收藏的音乐 https://qishui.douyin.com/s/iXHhmCAW/ @汽水音乐';
+  const example3 = '发现一个很不错的歌单哦《测试大量歌单》你也来听听吧!（来自 @酷狗音乐 海量曲库，极致音质）https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1';
+  const example4 = '发现一个很不错的歌单哦《是冷汐呀喜欢的音乐》你也来听听吧!（来自 @酷狗音乐 海量曲库，极致音质）https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1';
+  const example5 = '【推荐】来自网易云音乐的是冷汐呀233 听过2984首歌，拥有11位粉丝 https://163cn.tv/bgpHWLfw';
+  const example6 = '分享歌单: 是冷汐呀233喜欢的音乐 是冷汐呀233 https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783';
+
+  it('extracts exact URLs from all 6 real-world platform share text samples', () => {
+    expect(extractCleanUrlOrInput(example1)).toBe('https://qishui.douyin.com/s/iXHhKHhY/');
+    expect(extractCleanUrlOrInput(example2)).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
+    expect(extractCleanUrlOrInput(example3)).toBe(
+      'https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1',
+    );
+    expect(extractCleanUrlOrInput(example4)).toBe(
+      'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1',
+    );
+    expect(extractCleanUrlOrInput(example5)).toBe('https://163cn.tv/bgpHWLfw');
+    expect(extractCleanUrlOrInput(example6)).toBe(
+      'https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783',
+    );
+  });
+
+  it('extracts QQ numbers from labeled text', () => {
+    expect(extractCleanUrlOrInput('qq：3197635836')).toBe('3197635836');
+    expect(extractCleanUrlOrInput('QQ: 3197635836')).toBe('3197635836');
+    expect(extractCleanUrlOrInput('QQ号：3197635836')).toBe('3197635836');
+    expect(extractCleanUrlOrInput(' 3197635836 ')).toBe('3197635836');
+  });
+
+  it('handles protocol-less music domains surrounded by text', () => {
+    expect(extractCleanUrlOrInput('分享 y.qq.com/n/ryqq/playlist/9044196528 给你听')).toBe(
+      'https://y.qq.com/n/ryqq/playlist/9044196528',
+    );
+  });
+
+  it('validates mixed share text directly via validatePlaylistInput', () => {
+    const res1 = validatePlaylistInput(example1);
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('short_link');
+    expect(res1.platform).toBe('qishui');
+    expect(res1.cleanedInput).toBe('https://qishui.douyin.com/s/iXHhKHhY/');
+
+    const res2 = validatePlaylistInput(example2);
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('short_link');
+    expect(res2.platform).toBe('qishui');
+    expect(res2.cleanedInput).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
+
+    const res3 = validatePlaylistInput(example3);
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('single_playlist_url');
+    expect(res3.platform).toBe('kugou');
+    expect(res3.cleanedInput).toBe(
+      'https://m.kugou.com/songlist/gcid_3zr52qfrzwz02f/?src_cid=3zr52qfrzwz02f&uid=1425711902&chl=message&iszlist=1',
+    );
+
+    const res4 = validatePlaylistInput(example4);
+    expect(res4.valid).toBe(true);
+    expect(res4.kind).toBe('single_playlist_url');
+    expect(res4.platform).toBe('kugou');
+    expect(res4.cleanedInput).toBe(
+      'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1',
+    );
+
+    const res5 = validatePlaylistInput(example5);
+    expect(res5.valid).toBe(true);
+    expect(res5.kind).toBe('short_link');
+    expect(res5.platform).toBe('netease');
+    expect(res5.cleanedInput).toBe('https://163cn.tv/bgpHWLfw');
+
+    const res6 = validatePlaylistInput(example6);
+    expect(res6.valid).toBe(true);
+    expect(res6.kind).toBe('single_playlist_url');
+    expect(res6.platform).toBe('netease');
+    expect(res6.cleanedInput).toBe(
+      'https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783',
+    );
+  });
+});
+

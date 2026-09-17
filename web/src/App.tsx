@@ -71,10 +71,10 @@ export const AppContent: React.FC = () => {
       platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
       modeHint?: 'user' | 'playlist',
     ) => {
-      const targetUrl = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
+      const rawTarget = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
       // 1. Client-side fast validation
-      const validation = validatePlaylistInput(targetUrl);
+      const validation = validatePlaylistInput(rawTarget);
       if (!validation.valid) {
         setState('error');
         setError({
@@ -82,6 +82,11 @@ export const AppContent: React.FC = () => {
           message: validation.error || '请输入有效的歌单链接、QQ 号或主页链接。',
         });
         return;
+      }
+
+      const targetUrl = validation.cleanedInput || rawTarget;
+      if (urlToParse === undefined && targetUrl !== inputUrl) {
+        setInputUrl(targetUrl);
       }
 
       // 2. Cancel any pending in-flight request to prevent race conditions
