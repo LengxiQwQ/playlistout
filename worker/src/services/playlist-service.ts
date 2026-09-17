@@ -23,6 +23,7 @@ export interface PlaylistServiceOptions {
   request?: Request;
   db?: D1Database;
   ctx?: ExecutionContext;
+  skipAnalytics?: boolean;
 }
 
 export interface PlaylistServiceResult {
@@ -97,6 +98,20 @@ export async function parsePlaylistService(
     );
   }
 
+  // If a specific platform constraint was passed and the input URL belongs to another platform, reject with 400
+  if (
+    platformParam &&
+    platformParam !== 'auto' &&
+    !/^\d{4,20}$/.test(playlistInput.trim()) &&
+    targetPlatform !== platformParam
+  ) {
+    throw new ProviderError(
+      'INVALID_INPUT',
+      `Input URL belongs to "${targetPlatform}", which conflicts with specified platform constraint "${platformParam}".`,
+      400,
+    );
+  }
+
   const startTime = Date.now();
   const inputType = classifyInputType(playlistInput);
 
@@ -133,7 +148,7 @@ export async function parsePlaylistService(
     const latencyMs = Date.now() - startTime;
 
     // Best-effort anonymous statistics recording (success)
-    if (ctx && typeof ctx.waitUntil === 'function' && request) {
+    if (!options.skipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
         recordParseEvent(db, {
           request,
@@ -154,7 +169,7 @@ export async function parsePlaylistService(
     const errorCategory = classifyErrorCategory(errorCode);
 
     // Best-effort anonymous statistics recording (failure)
-    if (ctx && typeof ctx.waitUntil === 'function' && request) {
+    if (!options.skipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
         recordParseEvent(db, {
           request,

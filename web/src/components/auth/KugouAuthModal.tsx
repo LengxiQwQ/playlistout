@@ -547,7 +547,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                     onClick={() =>
                       handleCopy(
                         'curl',
-                        `curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?platform=kugou" \\\n  -H "Authorization: Bearer ${currentAuth.token}" \\\n  -H "X-Kugou-Userid: ${currentAuth.userid}"`,
+                        `curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=${currentAuth.userid}&platform=kugou" \\\n  -H "Authorization: Bearer ${currentAuth.token}" \\\n  -H "X-Kugou-Userid: ${currentAuth.userid}"`,
                       )
                     }
                     style={{

@@ -285,7 +285,7 @@ export default {
       }
 
       // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      const rateCheck = checkRateLimit(clientIp, 30, 60, 'resolve');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all'));
@@ -394,7 +394,7 @@ export default {
       }
 
       // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      const rateCheck = checkRateLimit(clientIp, 30, 60, 'playlist');
       if (!rateCheck.allowed) {
         const rawUrlParam = url.searchParams.get('url') || url.searchParams.get('id') || '';
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
@@ -523,7 +523,7 @@ export default {
       }
 
       // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      const rateCheck = checkRateLimit(clientIp, 30, 60, 'user_playlists');
       if (!rateCheck.allowed) {
         const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {
@@ -651,7 +651,7 @@ export default {
       }
 
       // Rate limit check: max 60 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 60, 60);
+      const rateCheck = checkRateLimit(clientIp, 60, 60, 'stats');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all'));
@@ -694,7 +694,7 @@ export default {
     // ── Frontend Event Ingestion Endpoint (POST /api/event) ──
     if (url.pathname === '/api/event') {
       // Rate limit check: max 60 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 60, 60);
+      const rateCheck = checkRateLimit(clientIp, 60, 60, 'event');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'event', 'all'));

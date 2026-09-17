@@ -271,7 +271,7 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     const copyCurlBtn = screen.getByTestId('copy-kugou-curl-btn');
     fireEvent.click(copyCurlBtn);
     expect(writeTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?platform=kugou"'),
+      expect.stringContaining('curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=1425711902&platform=kugou"'),
     );
     expect(writeTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Bearer test_token_1234567890abcdef'),

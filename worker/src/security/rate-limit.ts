@@ -36,30 +36,33 @@ export interface RateLimitResult {
 }
 
 /**
- * Checks and increments the rate limit for a client IP.
+ * Checks and increments the rate limit for a client IP and endpoint scope.
  * @param clientIp Client IP address
  * @param maxRequests Maximum allowed requests in the time window (default: 30)
  * @param windowSeconds Duration of window in seconds (default: 60)
+ * @param scope Rate limit scope/endpoint to isolate limits (default: 'default')
  */
 export function checkRateLimit(
   clientIp: string,
   maxRequests: number = 30,
   windowSeconds: number = 60,
+  scope: string = 'default',
 ): RateLimitResult {
   cleanupStaleEntries();
 
   const now = Date.now();
   const windowMs = windowSeconds * 1000;
   const ip = clientIp || 'unknown';
+  const key = `${scope}:${ip}`;
 
-  let record = ipStore.get(ip);
+  let record = ipStore.get(key);
 
   if (!record || now >= record.resetTime) {
     record = {
       count: 1,
       resetTime: now + windowMs,
     };
-    ipStore.set(ip, record);
+    ipStore.set(key, record);
 
     return {
       allowed: true,
