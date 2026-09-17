@@ -425,9 +425,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 #### 📌 Core Metrics & Usage Volume
 
-| 👥 Unique Visitors (UV) | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
+> 💡 👥 Cumulative Daily Unique Visits = the sum of daily deduplicated visitor counts; the same visitor may count again on another day because PlaylistOut performs no cross-day tracking.
+
+| 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **309**<br><sub>Today +103</sub> | **2,297**<br><sub>Today +911</sub> | **183**<br><sub>Today +40</sub> | **62,668**<br><sub>Today +19,759</sub> | **557**<br><sub>Today +194</sub> | **6 Days**<br><sub>Since 2026-09-12</sub> |
+| **309**<br><sub>Today unique +103</sub> | **2,297**<br><sub>Today +911</sub> | **183**<br><sub>Today +40</sub> | **62,668**<br><sub>Today +19,759</sub> | **557**<br><sub>Today +194</sub> | **6 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 🗺️ Geographic & Client Distribution
 - **🌍 Top Visitor Regions:** 🇲🇾 Malaysia **65%** ｜ 🇺🇸 United States **32%** ｜ 🇨🇳 Mainland China **2%** ｜ 🇭🇰 Hong Kong **1%** ｜ 🇯🇵 Japan **0%** ｜ 🇨🇳 Taiwan **0%** ｜ 🌐 CD **0%** ｜ 🇩🇪 Germany **0%** ｜ 🌐 BE **0%** ｜ 🇨🇦 Canada **0%**

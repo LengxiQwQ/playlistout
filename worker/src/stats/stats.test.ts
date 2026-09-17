@@ -333,6 +333,26 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       const stats = await getPublicStats(failingDb);
       expect(stats.totalPlaylistsParsed).toBe(0);
       expect(stats.launchedAt).toBe('2026-09-12');
+      expect(stats.cumulativeDailyVisitors).toBe(0);
+      expect(stats.totalVisitors).toBe(0);
+    });
+
+    it('maintains cumulativeDailyVisitors as canonical and totalVisitors as strictly identical alias (R2 Test A & B)', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+      // Record TOTAL cumulative daily uniques (309) and today's uniques (103)
+      mockDb._store.set(`TOTAL::all::visitor_unique`, 309);
+      mockDb._store.set(`${today}::all::visitor_unique`, 103);
+
+      const stats = await getPublicStats(mockDb);
+
+      // Canonical field must be 309
+      expect(stats.cumulativeDailyVisitors).toBe(309);
+      // Legacy compatibility alias must be strictly equal
+      expect(stats.totalVisitors).toBe(309);
+      expect(stats.totalVisitors).toBe(stats.cumulativeDailyVisitors);
+      // Today's UV must remain independent (Test C)
+      expect(stats.visitorsToday).toBe(103);
     });
   });
 });

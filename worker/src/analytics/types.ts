@@ -28,6 +28,7 @@ export interface HourlyEntry {
   /** UTC hour, 0–23 */
   hour: number;
   pageViews: number;
+  /** 当日首次访问的独立访客数（按首次访问所在小时分布） */
   visitors: number;
 }
 
@@ -59,10 +60,19 @@ export interface ClientStats {
 
 export interface PublicStatsResponse {
   launchedAt: string;
-  /** 累计日独立访问人次（按日去重汇总，零跨日追踪，最大化保护隐私） */
-  totalVisitors: number;
-  /** 语义化别名：累计日独立访问人次 */
+  /**
+   * 累计日独立访问人次（Canonical 正式字段）。
+   * 每天先进行匿名去重，再将各日独立访客数累加。
+   * PlaylistOut 不进行跨日身份追踪，同一访客在不同日期访问时可能再次计入。
+   */
   cumulativeDailyVisitors: number;
+  /**
+   * @deprecated Use cumulativeDailyVisitors.
+   * Legacy compatibility alias for cumulativeDailyVisitors.
+   * Semantically identical to cumulativeDailyVisitors; this is NOT an all-time globally unique person count.
+   */
+  totalVisitors: number;
+  /** 今日独立访客数（当前 UTC 日期内经过匿名去重后的访客数） */
   visitorsToday: number;
   totalPageViews: number;
   pageViewsToday: number;

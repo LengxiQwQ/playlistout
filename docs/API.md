@@ -312,7 +312,9 @@ Retrieves all public playlists created by a specific user.
 GET /api/v1/stats
 ```
 
-Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports, platform distribution).
+Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports, platform distribution, and visitor metrics).
+
+> 🛡️ **Privacy Notice on Visitor Metrics**: PlaylistOut deliberately avoids cross-day visitor identity tracking to maximize user privacy. Deduplication is performed strictly within individual UTC days (`visitorsToday`). The cumulative visitor metric (`cumulativeDailyVisitors`) represents the sum of daily unique visitor counts; the same visitor may be counted again across different days.
 
 #### Response (`200 OK`)
 
@@ -320,18 +322,35 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
 {
   "success": true,
   "data": {
+    "launchedAt": "2026-09-12",
+    "cumulativeDailyVisitors": 316,
+    "totalVisitors": 316,
+    "visitorsToday": 110,
+    "totalPageViews": 2297,
+    "pageViewsToday": 911,
     "totalPlaylistsParsed": 1250,
+    "playlistsParsedToday": 326,
     "totalTracksProcessed": 105400,
+    "tracksProcessedToday": 8921,
     "totalExports": 860,
+    "exportsToday": 95,
     "byPlatform": {
-      "qqmusic": { "totalSuccess": 600 },
-      "netease": { "totalSuccess": 450 },
-      "kugou": { "totalSuccess": 120 },
-      "qishui": { "totalSuccess": 80 }
+      "qqmusic": { "totalSuccess": 600, "todaySuccess": 326 },
+      "netease": { "totalSuccess": 450, "todaySuccess": 0 },
+      "kugou": { "totalSuccess": 120, "todaySuccess": 0 },
+      "qishui": { "totalSuccess": 80, "todaySuccess": 0 }
     }
   }
 }
 ```
+
+#### Key Visitor Metric Definitions
+
+| Field | Type | Description |
+| :--- | :---: | :--- |
+| `cumulativeDailyVisitors` | `number` | **Canonical metric**: Cumulative Daily Unique Visits (累计日独立访问人次). Sum of daily deduplicated visitor counts. Does not perform cross-day tracking. |
+| `totalVisitors` | `number` | **Deprecated compatibility alias** for `cumulativeDailyVisitors`. Semantically identical; guaranteed equal to `cumulativeDailyVisitors`. NOT an all-time globally unique person count. |
+| `visitorsToday` | `number` | Daily Unique Visitors (今日独立访客). Coarse-grained count deduplicated within the current UTC day via anonymous salted cryptographic hash. |
 
 ---
 

@@ -363,6 +363,82 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("未知 (Unknown)", html_future)
         self.assertNotIn("运行 1 天", html_future)
 
+    # ── R2: Visitor & UV Semantics Test Suite ───────────────────────────
+
+    def test_r2_collector_prefers_canonical_cumulative_visitors(self):
+        """Test 27: Collector prefers canonical cumulativeDailyVisitors over legacy totalVisitors."""
+        stats = {
+            "cumulativeDailyVisitors": 123,
+            "totalVisitors": 999,
+            "visitorsToday": 10,
+            "launchedAt": "2026-09-12",
+        }
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        # Must render 123 (canonical), not 999 (divergent legacy)
+        self.assertIn("**123**", md_zh)
+        self.assertNotIn("**999**", md_zh)
+        self.assertIn("**123**", md_en)
+        self.assertNotIn("**999**", md_en)
+
+    def test_r2_collector_backward_compatibility_fallback(self):
+        """Test 28: Collector falls back to totalVisitors when cumulativeDailyVisitors is omitted."""
+        stats = {
+            "totalVisitors": 123,
+            "visitorsToday": 10,
+            "launchedAt": "2026-09-12",
+        }
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        self.assertIn("**123**", md_zh)
+        self.assertIn("**123**", md_en)
+        # Even on legacy fallback, table headers must use authentic cumulative wording
+        self.assertIn("👥 累计日独立访问", md_zh)
+        self.assertIn("👥 Cumulative Daily Unique Visits", md_en)
+
+    def test_r2_readme_renderer_wording_and_privacy_note(self):
+        """Test 30: README renderer produces authentic cumulative phrasing and concise privacy explanation."""
+        stats = {
+            "cumulativeDailyVisitors": 309,
+            "totalVisitors": 309,
+            "visitorsToday": 103,
+            "launchedAt": "2026-09-12",
+        }
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        # Check Chinese labels & privacy notice
+        self.assertIn("👥 累计日独立访问", md_zh)
+        self.assertIn("今日独立 +103", md_zh)
+        self.assertIn("累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。", md_zh)
+        self.assertNotIn("独立访客 (UV)", md_zh)
+
+        # Check English labels & privacy notice
+        self.assertIn("👥 Cumulative Daily Unique Visits", md_en)
+        self.assertIn("Today unique +103", md_en)
+        self.assertIn("Cumulative Daily Unique Visits = the sum of daily deduplicated visitor counts; the same visitor may count again on another day because PlaylistOut performs no cross-day tracking.", md_en)
+        self.assertNotIn("Unique Visitors (UV)", md_en)
+
+    def test_r2_dashboard_visitor_semantics(self):
+        """Test 31: Local Dashboard reflects cumulative daily unique visits and explains no cross-day tracking."""
+        stats = {
+            "cumulativeDailyVisitors": 123,
+            "totalVisitors": 999,
+            "visitorsToday": 10,
+            "launchedAt": "2026-09-12",
+        }
+        html = build_html(stats, "2026-09-18", "2026-09-18")
+
+        # Prefers canonical 123
+        self.assertIn("123", html)
+        self.assertNotIn(">999<", html)
+        # Correct KPI labels
+        self.assertIn("累计日独立访问人次", html)
+        self.assertIn("Cumulative Daily Unique Visits", html)
+        self.assertIn("每日去重 · 无跨日追踪", html)
+
 
 if __name__ == "__main__":
     unittest.main()

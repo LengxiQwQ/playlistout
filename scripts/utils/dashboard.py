@@ -282,7 +282,10 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     uptime_badge = f"上线 / Launched: {effective_launched} · 运行 {days} 天 (Days)" if days is not None else "上线 / Launched: 未知 (Unknown)"
     uptime_footer = "连续运行天数 (Days)" if days is not None else "暂无数据 / No Data"
 
-    visitors = s(stats.get("totalVisitors"))
+    visitors_val = stats.get("cumulativeDailyVisitors")
+    if visitors_val is None:
+        visitors_val = stats.get("totalVisitors")
+    visitors = s(visitors_val)
     vis_today = s(stats.get("visitorsToday"))
     pv_total = s(stats.get("totalPageViews"))
     pv_today = s(stats.get("pageViewsToday"))
@@ -651,11 +654,11 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">
-        <span>独立访客 (UV)</span>
-        <span class="kpi-label-en">Visitors</span>
+        <span>累计日独立访问人次</span>
+        <span class="kpi-label-en">Cumulative Daily Unique Visits</span>
       </div>
       <div class="kpi-val">{n(visitors)}</div>
-      <div class="kpi-footer">今日 / Today +{n(vis_today)}</div>
+      <div class="kpi-footer">今日独立 / Today Unique +{n(vis_today)} · <span title="Daily-deduplicated, no cross-day tracking">每日去重 · 无跨日追踪</span></div>
     </div>
 
     <div class="kpi-card">
@@ -1043,7 +1046,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
               borderRadius: 3
             }},
             {{
-              label: 'UV 独立访客 / Unique Visitors',
+              label: '当日首次出现的独立访客 / First-time Daily Unique Visitors',
               data: {h_uv},
               backgroundColor: '#38bdf8',
               borderRadius: 3

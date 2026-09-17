@@ -107,7 +107,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   const tracksToday = stats?.tracksProcessedToday ?? 0;
   const exportsToday = stats?.exportsToday ?? 0;
 
-  const totalVisitors = stats?.totalVisitors ?? 0;
+  // Prefer canonical cumulativeDailyVisitors, with fallback to legacy totalVisitors alias
+  const cumulativeDailyVisitors = stats?.cumulativeDailyVisitors ?? stats?.totalVisitors ?? 0;
   const parsedTotal = stats?.totalPlaylistsParsed ?? 0;
   const tracksTotal = stats?.totalTracksProcessed ?? 0;
   const totalExports = stats?.totalExports ?? 0;
@@ -375,7 +376,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 className="font-marker"
                 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #2d3436)' }}
               >
-                <AnimatedCounter value={totalVisitors} />
+                <AnimatedCounter value={cumulativeDailyVisitors} />
               </div>
               <div
                 className="font-handwriting"
