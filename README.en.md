@@ -42,7 +42,7 @@ Walled gardens keep your playlists locked inside proprietary apps.
 
 No installation required. Simply visit **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)** to get started:
 
-1. **Paste a Playlist** — Supports links from QQ Music, NetEase Cloud Music, and KuGou Music (desktop URLs, mobile short links, raw IDs, or copied mobile share text). You can also paste user homepage links or user IDs to directly load all publicly created playlists.
+1. **Paste a Playlist** — Supports links from QQ Music, NetEase Cloud Music, KuGou Music, and Soda Music (desktop URLs, mobile short links, raw IDs, or copied mobile share text). You can also paste user homepage links or user IDs to directly load all publicly created playlists.
 2. **Instant Parsing** — Edge workers parse playlist metadata, song titles, artists, albums, covers, and track availability/VIP statuses.
 3. **Full Preview** — Review the complete tracklist, total track count, and track availability directly in your browser before exporting.
 4. **Export or Copy** — Save locally as TXT / CSV / Excel (.xlsx) / JSON, or copy to clipboard with a single click; batch-package multiple playlists into multi-sheet Excel workbooks or ZIP archives.
@@ -52,8 +52,9 @@ No installation required. Simply visit **[playlistout.lengxiqwq.com](https://pla
 ## ✨ Key Features
 
 ### 🔗 Fast Cross-Platform Playlist Parsing & Export
-Native support for public playlists from **QQ Music**, **NetEase Cloud Music**, and **KuGou Music**:
+Native support for public playlists from **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, and **Soda Music (汽水音乐)**:
 - **QQ Music / NetEase Cloud Music**: Fully web-based and 100% zero-login. Parse and export complete playlists without accounts, cookies, tokens, or software installation.
+- **Soda Music (汽水音乐)**: Zero-login direct resolution for share shortlinks and playlists, extracting synced Douyin favorites and soundtrack tracks.
 - **KuGou Music**: Provides instant guest preview for initial tracks without login, and supports secure mobile App QR scan authorization to unlock complete playlists without limits (tokens remain strictly in your browser).
 
 ### 📚 User Playlist Collections & Batch Packaging
@@ -91,6 +92,21 @@ During CSV and Excel exports, cells starting with special trigger characters (`=
 
 ---
 
+## 🌐 Public API v1
+
+PlaylistOut officially provides a unified cross-platform public API for third-party developers, automation pipelines, and custom clients.
+
+- **Production Base URL**: `https://playlistout-api.lengxiqwq.com`
+- **Universal Resolver**: `GET /api/v1/resolve?q=<input>`
+  - Replicates the server-side logic of the main search box (supports QQ Music, NetEase Cloud Music, KuGou Music, and Soda Music playlist links, profile URLs, shortlinks, and share text).
+  - Supports explicit disambiguation parameters: `&type=auto|playlist|user` and `&platform=auto|qqmusic|netease|kugou|qishui`.
+  - Public GET endpoints feature open CORS (`Access-Control-Allow-Origin: *`), enabling direct `fetch` calls from browser web apps.
+- **Single Playlist Endpoint**: `GET /api/v1/playlist?url=<url_or_id>`
+- **User Playlists Endpoint**: `GET /api/v1/user/playlists?uid=<uid_or_uin>`
+- **Full API Documentation & Code Samples (cURL / JavaScript / Python)**: See [`docs/API.md`](docs/API.md).
+
+---
+
 ## 📋 Data Export Format Specifications & Open Integration
 
 To facilitate seamless integration, ingestion, and automated parsing by third-party music platforms, developer tools, and data migration utilities, we formally define and standardize our 4 exported file formats.
@@ -116,7 +132,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `name` | `string` | **Required** | Full title of the playlist. |
 | `creator` | `string` | Optional | Nickname of the playlist creator / curator. |
 | `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
-| `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`, `"netease"`, `"kugou"`). |
+| `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`, `"netease"`, `"kugou"`, `"qishui"`). |
 | `id` | `string` | **Required** | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
 | `sourceUrl` | `string` | **Required** | Direct canonical web URL of the playlist on the source platform. |
 | `trackCount` | `number` | **Required** | Total number of tracks contained in the playlist (integer). |

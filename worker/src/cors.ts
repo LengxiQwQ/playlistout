@@ -40,7 +40,40 @@ export function isOriginAllowed(origin: string | null): boolean {
   return false;
 }
 
-export function getCorsHeaders(request: Request): Record<string, string> {
+export function isPublicEndpoint(pathname: string): boolean {
+  return (
+    pathname === '/health' ||
+    pathname === '/api/health' ||
+    pathname === '/api/stats' ||
+    pathname === '/api/playlist' ||
+    pathname === '/api/user/playlists' ||
+    pathname === '/api/v1/resolve' ||
+    pathname === '/api/v1/playlist' ||
+    pathname === '/api/v1/user/playlists' ||
+    pathname === '/api/v1/stats' ||
+    pathname === '/api/v1/health'
+  );
+}
+
+export function getCorsHeaders(request: Request, pathname?: string): Record<string, string> {
+  const path = pathname ?? (() => {
+    try {
+      return new URL(request.url).pathname;
+    } catch {
+      return '';
+    }
+  })();
+
+  if (isPublicEndpoint(path)) {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token',
+      'Access-Control-Max-Age': '86400',
+    };
+  }
+
   const origin = request.headers.get('Origin');
   const headers: Record<string, string> = {
     Vary: 'Origin',
@@ -57,7 +90,22 @@ export function getCorsHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export function handleOptions(request: Request): Response {
+export function handleOptions(request: Request, pathname?: string): Response {
+  const path = pathname ?? (() => {
+    try {
+      return new URL(request.url).pathname;
+    } catch {
+      return '';
+    }
+  })();
+
+  if (isPublicEndpoint(path)) {
+    return new Response(null, {
+      status: 204,
+      headers: getCorsHeaders(request, path),
+    });
+  }
+
   const origin = request.headers.get('Origin');
   if (origin && !isOriginAllowed(origin)) {
     return new Response(null, {
@@ -67,7 +115,7 @@ export function handleOptions(request: Request): Response {
   }
   return new Response(null, {
     status: 204,
-    headers: getCorsHeaders(request),
+    headers: getCorsHeaders(request, path),
   });
 }
 

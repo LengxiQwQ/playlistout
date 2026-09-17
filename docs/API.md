@@ -1,43 +1,72 @@
-# Playlist Out Public API Specification
+# PlaylistOut Public API Specification (v1)
 
 > Governed by `docs/PROJECT-CONSTITUTION.md` and `docs/ROADMAP.md`.
 
 ## 1. Overview
 
-The Playlist Out API is a lightweight, edge-native Cloudflare Worker that fetches, parses, and normalizes public music playlists into a platform-agnostic data model, serves anonymous aggregate product statistics, and ingests frontend telemetry events.
+The **PlaylistOut Public API** is a high-performance, edge-native Cloudflare Worker API that extracts, parses, and normalizes public music playlists and user profile collections into a unified, platform-agnostic data contract.
 
 - **Production API base URL**: `https://playlistout-api.lengxiqwq.com`
 - **Local development API base URL**: `http://localhost:8787`
 
----
-
-## 2. Global API Invariants
-
-1. **Explicit HTTP Methods**: Endpoints strictly enforce allowed HTTP methods:
-   - `GET`: Information retrieval (`/health`, `/api/health`, `/api/playlist`, `/api/stats`).
-   - `POST`: Write-only event ingestion (`/api/event`).
-   - `OPTIONS`: CORS preflight across all routes.
-   - Any other method returns `405 Method Not Allowed`.
-2. **No Arbitrary Proxying**: Outbound network requests are strictly allowlisted to official upstream music endpoints (`c.y.qq.com`, `u.y.qq.com`). Any attempt to access `/proxy`, `/proxy/*`, or pass non-allowlisted targets is rejected with `403 Forbidden`.
-3. **Strict Privacy Boundaries**:
-   - **No Raw IP Storage**: Client IP is used in-memory for ephemeral rate limiting and geographic derivation, and is never persisted to D1.
-   - **No Playlist URLs or IDs in Analytics**: Telemetry records coarse dimensions only; raw playlist URLs, IDs, and query strings are never stored in analytics tables.
-   - **No Song or User Content Persistence**: Track titles, artists, album names, durations, lyrics, and user identifiers are transient and never stored in any database.
-   - **No Full User-Agent Storage**: Only coarse classifications (device class, browser family, OS family) are recorded.
-   - **No Authentication Tokens or Cookies**: The service requires no accounts, sessions, or credentials.
-4. **Private Analytics Isolation**:
-   - Detailed dimensional aggregates (hourly traffic, country/region distributions, client environment breakdown, latency buckets, error categories, provider path metrics) are stored in private D1 tables (`hourly_stats`, `daily_geo_stats`, `daily_client_stats`, `daily_performance_stats`, `daily_clipboard_stats`).
-   - Private insights are strictly accessible to maintainers via direct D1 database access and are **never exposed through public unauthenticated endpoints**.
-5. **Best-Effort Analytics**: Telemetry write failures never interrupt playlist parsing, export generation, or client responses.
-6. **OWASP Security Headers**: All responses include defensive headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`).
+The Public API v1 powers both the official PlaylistOut web application and external developer integrations (CLI tools, desktop applications, migration utilities, and third-party web apps).
 
 ---
 
-## 3. Response Envelope Contract
+## 2. Supported Music Platforms
 
-### 3.1 Standard Success Envelope (`200 OK`)
+PlaylistOut officially supports 4 major music platforms:
 
-Used by query endpoints (`/api/playlist`, `/api/stats`):
+| Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| `qqmusic` | QQ 音乐 | QQ Music | ✅ Yes | ✅ Yes (QQ Number / Profile) | ❌ Not needed |
+| `netease` | 网易云音乐 | NetEase Cloud Music | ✅ Yes | ✅ Yes (UID / Profile) | ❌ Not needed |
+| `kugou` | 酷狗音乐 | KuGou Music | ✅ Yes (Public preview) | ✅ Yes (With QR auth) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
+| `qishui` | 汽水音乐 | Soda Music | ✅ Yes | ❌ N/A | ❌ Not needed |
+
+---
+
+## 3. Global API Invariants & Security Boundaries
+
+1. **Tiered CORS Policy**:
+   - **Public GET Endpoints** (`/api/v1/resolve`, `/api/v1/playlist`, `/api/v1/user/playlists`, `/api/v1/stats`, `/api/v1/health`, and legacy query endpoints):
+     - `Access-Control-Allow-Origin: *`
+     - `Access-Control-Allow-Methods: GET, OPTIONS`
+     - `Access-Control-Allow-Headers: Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token`
+     - Allows third-party web applications running in browsers to call the Public API directly.
+   - **Sensitive & Auth Endpoints** (`/api/kugou/*`, `POST /api/event`):
+     - Strictly restricted to official PlaylistOut domains and `localhost` development environments.
+     - Unauthorized origins receive `403 Forbidden` on OPTIONS preflight.
+2. **Zero-Trust Header-Only Authentication**:
+   - Authentication tokens and credentials must **never** appear in URLs or query strings (`?token=...`, `?auth=...`, etc.). Any request containing credential query parameters is immediately rejected with `400 INVALID_INPUT`.
+   - Third-party credentials (such as KuGou session tokens) are accepted exclusively via standard HTTP headers:
+     - `Authorization: Bearer <token>`
+     - `X-Kugou-Userid: <userid>`
+   - The backend is 100% stateless: credentials are never stored in any server database or analytics record.
+3. **No Arbitrary Proxying**:
+   - Outbound requests are strictly allowlisted to official upstream music endpoints.
+   - Any attempt to access `/proxy`, `/proxy/*`, or `/api/proxy` is rejected with `403 FORBIDDEN`.
+4. **Rate Limiting**:
+   - Standard IP-based sliding window:
+     - `/api/v1/resolve`: **30 requests / minute** per client IP.
+     - `/api/v1/playlist`: **30 requests / minute** per client IP.
+     - `/api/v1/user/playlists`: **30 requests / minute** per client IP.
+     - `/api/v1/stats`: **60 requests / minute** per client IP.
+   - When exceeded, returns HTTP `429 Too Many Requests` with a `Retry-After: <seconds>` header.
+5. **OWASP Security Headers**:
+   - All responses include defensive headers:
+     - `X-Content-Type-Options: nosniff`
+     - `X-Frame-Options: DENY`
+     - `Referrer-Policy: strict-origin-when-cross-origin`
+     - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+
+---
+
+## 4. Response Envelope Contract
+
+### 4.1 Standard Success Envelope (`200 OK`)
+
+All successful data queries return a unified JSON envelope:
 
 ```json
 {
@@ -46,60 +75,270 @@ Used by query endpoints (`/api/playlist`, `/api/stats`):
 }
 ```
 
-### 3.2 Standard Error Envelope (`4xx` / `5xx`)
+### 4.2 Standard Error Envelope (`4xx` / `5xx`)
 
-Returned on validation, rate-limiting, or server errors:
+All errors adhere to a consistent error schema:
 
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human-readable safe explanation.",
+    "message": "Human-readable explanation.",
     "details": { ... }
   }
 }
 ```
 
-### 3.3 Empty Success Response (`204 No Content`)
-
-Returned by write-only telemetry endpoints (`POST /api/event`):
-
-- HTTP Status: `204 No Content`
-- Response Body: None (empty)
-
 ---
 
-## 4. Stable Error Codes & HTTP Status Mapping
+## 5. Stable Error Codes & HTTP Status Mapping
 
 | Error Code | HTTP Status | Meaning / Trigger |
 | :--- | :---: | :--- |
-| `INVALID_INPUT` | `400` | Missing, empty, or malformed input, oversized body (> 1024 bytes for event, > 2048 chars for URL), invalid format, or out-of-range track count. |
-| `UNSUPPORTED_URL` | `400` | Input is not recognized as a supported playlist URL. |
-| `UNSUPPORTED_PLATFORM` | `400` | Platform is not in the supported provider allowlist (currently `qqmusic` only). |
-| `FORBIDDEN` | `403` | Prohibited proxy attempt or unauthorized origin. |
-| `PLAYLIST_NOT_FOUND` | `404` | Upstream playlist does not exist, is empty, or is private. |
+| `INVALID_INPUT` | `400` | Missing, empty, or malformed input; query parameter exceeds 2048 chars; or credentials passed via query string. |
+| `UNSUPPORTED_URL` | `400` | The input is not recognized as a supported music platform URL. |
+| `UNSUPPORTED_PLATFORM` | `400` | Specified platform is not in the supported provider allowlist (`qqmusic`, `netease`, `kugou`, `qishui`). |
+| `FORBIDDEN` | `403` | Prohibited arbitrary proxy attempt or unauthorized origin on sensitive endpoints. |
+| `PLAYLIST_NOT_FOUND` | `404` | Playlist does not exist, is empty, is private, or could not be found. |
+| `USER_NOT_FOUND` | `404` | User profile does not exist or has no public playlists. |
 | `NOT_FOUND` | `404` | Requested route does not exist. |
-| `METHOD_NOT_ALLOWED` | `405` | HTTP method is not permitted on the target route. |
-| `RATE_LIMITED` | `429` | Request rate limit exceeded. `Retry-After` header indicates wait duration in seconds. |
+| `METHOD_NOT_ALLOWED` | `405` | HTTP method is not permitted on the target route (use `GET`). |
+| `AMBIGUOUS_INPUT` | `409` | Numeric input matched multiple targets across platforms or types. Use `&platform=` or `&type=` to disambiguate. |
+| `RATE_LIMITED` | `429` | Request rate limit exceeded. Check `Retry-After` response header. |
 | `INTERNAL_ERROR` | `500` | Unexpected internal server error. Safe message returned without stack traces. |
-| `INCOMPLETE_PLAYLIST` | `502` | Upstream returned fewer tracks than the reported total or pagination stalled. Fail-closed guarantee. |
+| `INCOMPLETE_PLAYLIST` | `502` | Upstream returned fewer tracks than reported total or pagination stalled. Fail-closed guarantee. |
 | `UPSTREAM_ERROR` | `502` | Upstream music platform returned an error or malformed payload. |
-| `PARSE_ERROR` | `502` | Failed to parse JSON response from upstream. |
+| `PARSE_ERROR` | `502` | Failed to parse upstream response payload. |
 | `UPSTREAM_TIMEOUT` | `504` | Upstream request timed out (> 15,000ms). |
 
 ---
 
-## 5. Endpoints
+## 6. Public API v1 Endpoints
 
-### 5.1 Health Check
+### 6.1 Universal Search & Auto Resolver (Core Public API)
 
 ```http
-GET /health
-GET /api/health
+GET /api/v1/resolve?q=<input>&type=auto&platform=auto
 ```
 
-Verifies that the Cloudflare Worker is operational.
+The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side behavior of the website's universal search box:
+1. Strips promotional copy, emojis, boundaries, and punctuation from share texts.
+2. Identifies the input kind (single playlist, user profile, shortlink, or numeric ID).
+3. Detects the platform (QQ Music, NetEase, KuGou, Qishui).
+4. Concurrently probes for ambiguous numeric IDs and returns `409 AMBIGUOUS_INPUT` if multiple candidates match.
+5. Returns a normalized result with light metadata wrappers (`kind`, `platform`, `result`).
+
+#### Query Parameters
+
+| Parameter | Type | Default | Required | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `q` | `string` | — | **Yes** | User input string (up to 2048 characters). Can be a web URL, mobile share link, shortlink, mixed share text, user profile URL, QQ number, NetEase UID, or raw numeric ID. |
+| `type` | `string` | `auto` | No | Intent constraint: `auto`, `playlist` (single playlist), or `user` (user profile collections). |
+| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, or `qishui`. |
+
+#### Response: Single Playlist (`kind: "playlist"`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "kind": "playlist",
+    "platform": "qqmusic",
+    "result": {
+      "platform": "qqmusic",
+      "id": "9044196528",
+      "name": "民谣精选",
+      "creator": "民谣小筑",
+      "coverUrl": "https://y.gtimg.cn/music/photo_new/...",
+      "trackCount": 100,
+      "tracks": [
+        {
+          "index": 1,
+          "id": "003mN2sZ2...",
+          "title": "南山南",
+          "artists": ["马頔"],
+          "album": "孤岛",
+          "durationMs": 324000,
+          "isAvailable": true,
+          "isVip": false,
+          "status": "playable"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### Response: User Playlists (`kind: "user_playlists"`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "kind": "user_playlists",
+    "platform": "netease",
+    "result": {
+      "platform": "netease",
+      "userId": "1825474783",
+      "nickname": "是冷汐呀233",
+      "total": 5,
+      "playlists": [
+        {
+          "id": "2756674066",
+          "name": "是冷汐呀233喜欢的音乐",
+          "coverUrl": "https://p1.music.126.net/...",
+          "trackCount": 2984,
+          "listenNum": 12500,
+          "sourceUrl": "https://music.163.com/#/playlist?id=2756674066"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### Response: Ambiguous Numeric Input (`409 Conflict`)
+
+When a numeric ID matches multiple candidates across platforms or types in `auto` mode:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AMBIGUOUS_INPUT",
+    "message": "Numeric ID matched multiple targets across platforms/types. Please specify &platform= and/or &type= to disambiguate.",
+    "details": {
+      "candidates": [
+        {
+          "id": "12345678",
+          "kind": "playlist",
+          "platform": "qqmusic",
+          "title": "古典流行精选",
+          "subtitle": "创建者: 乐评人",
+          "trackCount": 50,
+          "coverUrl": "https://..."
+        },
+        {
+          "id": "12345678",
+          "kind": "user_playlists",
+          "platform": "netease",
+          "title": "网易云用户 (12345678)",
+          "subtitle": "包含 8 个公开歌单",
+          "trackCount": 8,
+          "coverUrl": "https://..."
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+### 6.2 Parse Single Playlist
+
+```http
+GET /api/v1/playlist?url=<url_or_id>&platform=<optional>
+GET /api/v1/playlist?id=<id>&platform=<optional>
+```
+
+Parses a single public playlist from a supported music provider and returns the normalized `Playlist` contract.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `url` / `id` | `string` | **Yes** | Public playlist URL, shortlink, or raw playlist ID. |
+| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
+
+#### Response (`200 OK`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "platform": "netease",
+    "id": "2756674066",
+    "name": "喜欢的音乐",
+    "creator": "冷汐",
+    "coverUrl": "https://p1.music.126.net/...",
+    "trackCount": 50,
+    "tracks": [ ... ]
+  }
+}
+```
+
+---
+
+### 6.3 Fetch User Playlists Collection
+
+```http
+GET /api/v1/user/playlists?uid=<user_id_or_profile_url>&platform=<optional>
+GET /api/v1/user/playlists?uin=<qq_uin>&platform=<optional>
+GET /api/v1/user/playlists?id=<user_id>&platform=<optional>
+```
+
+Retrieves all public playlists created by a specific user.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `uid` / `uin` / `id` / `url` | `string` | **Yes** | User QQ number, NetEase UID, KuGou ID, or user profile URL. |
+| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`. |
+
+#### Response (`200 OK`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "platform": "qqmusic",
+    "userId": "3197635836",
+    "nickname": "冷汐",
+    "total": 3,
+    "playlists": [ ... ]
+  }
+}
+```
+
+---
+
+### 6.4 Anonymous Aggregate Statistics
+
+```http
+GET /api/v1/stats
+```
+
+Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports, platform distribution).
+
+#### Response (`200 OK`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "totalPlaylistsParsed": 1250,
+    "totalTracksProcessed": 105400,
+    "totalExports": 860,
+    "byPlatform": {
+      "qqmusic": { "totalSuccess": 600 },
+      "netease": { "totalSuccess": 450 },
+      "kugou": { "totalSuccess": 120 },
+      "qishui": { "totalSuccess": 80 }
+    }
+  }
+}
+```
+
+---
+
+### 6.5 Health Check
+
+```http
+GET /api/v1/health
+```
 
 #### Response (`200 OK`)
 
@@ -113,391 +352,165 @@ Verifies that the Cloudflare Worker is operational.
 
 ---
 
-### 5.2 Parse Playlist
+## 7. Backward-Compatible Endpoints
 
-```http
-GET /api/playlist?url=<encoded_playlist_url_or_id>
+For backward compatibility with existing frontends, bookmarks, and automated scripts, the following legacy routes remain permanently supported with identical logic:
+
+- `GET /api/playlist` ➔ Alias to `GET /api/v1/playlist`
+- `GET /api/user/playlists` ➔ Alias to `GET /api/v1/user/playlists`
+- `GET /api/stats` ➔ Alias to `GET /api/v1/stats`
+- `GET /health` & `GET /api/health` ➔ Alias to `GET /api/v1/health`
+
+---
+
+## 8. KuGou Ephemeral Authentication
+
+Due to upstream restrictions on KuGou Music limiting unauthenticated public playlists to ~10–30 tracks, PlaylistOut supports ephemeral client-side authentication:
+
+1. **Request a QR Code session**:
+   `GET /api/kugou/login/qr` (Restricted origin)
+2. **Check scan status**:
+   `GET /api/kugou/login/check?qrcode=<qrcode>` (Restricted origin)
+3. **Pass session credentials via HTTP Headers**:
+   When requesting KuGou playlists or user playlists via Public API:
+   - `Authorization: Bearer <token>`
+   - `X-Kugou-Userid: <userid>`
+
+---
+
+## 9. Code Examples for Developers
+
+### 9.1 cURL
+
+#### Universal Resolver — Single Playlist
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/playlist/9044196528"
 ```
 
-Parses a public playlist from a supported music provider and returns a normalized track list.
+#### Universal Resolver — NetEase Playlist via App Share Text
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=%E5%88%86%E4%BA%AB%E6%AD%8C%E5%8D%95%20https://163cn.tv/bgpHWLfw"
+```
 
-#### Rate Limit
+#### Universal Resolver — Soda Music (汽水音乐) Share Link
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://qishui.douyin.com/s/iXHhKHhY/"
+```
 
-- **30 requests / minute** per client IP. Returns `429 RATE_LIMITED` when exceeded.
+#### Universal Resolver — Numeric ID with Explicit Disambiguation
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=2756674066&type=playlist&platform=netease"
+```
 
-#### Query Parameters
-
-| Parameter | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `url` | string | Yes | Public QQ Music playlist URL (e.g. `https://y.qq.com/n/ryqq/playlist/9044196528`, share links) or raw numeric playlist ID. Maximum 2048 characters. |
-
-#### Response (`200 OK`)
-
-```json
-{
-  "success": true,
-  "data": {
-    "platform": "qqmusic",
-    "id": "9044196528",
-    "name": "民谣精选",
-    "creator": "歌单达人",
-    "coverUrl": "https://y.gtimg.cn/music/photo_new/...",
-    "trackCount": 1,
-    "tracks": [
-      {
-        "index": 1,
-        "id": "003mN2sZ2...",
-        "title": "南山南",
-        "artists": ["马頔"],
-        "album": "孤岛",
-        "durationMs": 324000,
-        "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/003mN2sZ2..."
-      }
-    ]
-  }
-}
+#### KuGou Playlist with Ephemeral Token Headers
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://www.kugou.com/songlist/gcid_3zr52qfrzaz06a/" \
+  -H "Authorization: Bearer YOUR_KUGOU_TOKEN" \
+  -H "X-Kugou-Userid: YOUR_KUGOU_USERID"
 ```
 
 ---
 
-### 5.3 Public Aggregate Statistics
+### 9.2 JavaScript / TypeScript (`fetch`)
 
-```http
-GET /api/stats
-```
+```typescript
+interface ResolveResponse<T = unknown> {
+  success: boolean;
+  data?: {
+    kind: 'playlist' | 'user_playlists';
+    platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui';
+    result: T;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
 
-Retrieves privacy-safe public aggregate statistics. Exposes macro activity numbers without revealing private dimensional breakdowns or user data.
+async function resolveMusicInput(input: string): Promise<void> {
+  const url = new URL('https://playlistout-api.lengxiqwq.com/api/v1/resolve');
+  url.searchParams.set('q', input);
 
-#### Rate Limit
-
-- **60 requests / minute** per client IP. Returns `429 RATE_LIMITED` when exceeded.
-
-#### Export vs. Clipboard Semantics
-
-- `totalExports`, `exportsToday`, and `recentDays[].exports` **strictly track file downloads** (`txt`, `csv`, `xlsx`, `json`).
-- Clipboard copies are tracked separately in private counters (`clipboards_total`, `daily_clipboard_stats`) and **never count toward export totals**.
-
-#### Response (`200 OK`)
-
-```json
-{
-  "success": true,
-  "data": {
-    "launchedAt": "2026-09-12",
-    "totalPlaylistsParsed": 128,
-    "playlistsParsedToday": 14,
-    "totalTracksProcessed": 6420,
-    "tracksProcessedToday": 710,
-    "totalExports": 42,
-    "exportsToday": 6,
-    "byPlatform": {
-      "qqmusic": {
-        "totalSuccess": 128,
-        "todaySuccess": 14
-      }
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
     },
-    "recentDays": [
-      {
-        "date": "2026-09-13",
-        "parses": 14,
-        "tracks": 710,
-        "exports": 6
-      }
-    ],
-    "generatedAt": "2026-09-13T08:33:00.000Z"
+  });
+
+  const data: ResolveResponse = await response.json();
+
+  if (!data.success) {
+    if (data.error?.code === 'AMBIGUOUS_INPUT') {
+      console.warn('Multiple candidates matched:', data.error.details);
+      // Prompt user to specify platform or type
+    } else {
+      console.error('Resolution error:', data.error?.message);
+    }
+    return;
+  }
+
+  if (data.data?.kind === 'playlist') {
+    const playlist = data.data.result as any;
+    console.log(`[${data.data.platform}] ${playlist.name} (${playlist.tracks.length} tracks)`);
+  } else if (data.data?.kind === 'user_playlists') {
+    const user = data.data.result as any;
+    console.log(`[${data.data.platform}] User ${user.nickname} has ${user.playlists.length} playlists`);
   }
 }
-```
 
-#### Field Definitions
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `launchedAt` | string | Official launch date of Playlist Out Web (`2026-09-12`). |
-| `totalPlaylistsParsed` | number | All-time successful playlist parses across all platforms. |
-| `playlistsParsedToday` | number | Successful playlist parses for the current UTC date. |
-| `totalTracksProcessed` | number | All-time cumulative tracks processed from successful parses. |
-| `tracksProcessedToday` | number | Tracks processed for the current UTC date. |
-| `totalExports` | number | All-time cumulative file exports (TXT, CSV, XLSX, JSON). Excludes clipboards. |
-| `exportsToday` | number | File exports for the current UTC date. Excludes clipboards. |
-| `byPlatform` | object | Breakdown by platform (`totalSuccess`, `todaySuccess`). |
-| `recentDays` | array | Rolling 30-day daily trend entries (`date`, `parses`, `tracks`, `exports`). |
-| `generatedAt` | string | ISO 8601 UTC timestamp when the response was generated. |
-
----
-
-### 5.4 Ingest Event (Telemetry)
-
-```http
-POST /api/event
-```
-
-Write-only analytics ingestion endpoint for client-side export and clipboard copy events. Validates payloads strictly, updates atomic aggregate counters asynchronously via `waitUntil`, and returns `204 No Content`.
-
-#### Rate Limit
-
-- **60 requests / minute** per client IP. Returns `429 RATE_LIMITED` when exceeded.
-
-#### Request Headers
-
-- `Content-Type: application/json`
-- `Content-Length`: maximum 1024 bytes
-
-#### Request Body Schema
-
-```json
-{
-  "type": "export | clipboard",
-  "platform": "qqmusic",
-  "format": "string",
-  "trackCount": 42
-}
-```
-
-| Field | Type | Required | Allowed Values / Constraints |
-| :--- | :--- | :---: | :--- |
-| `type` | string | Yes | Strictly `"export"` or `"clipboard"`. |
-| `platform` | string | Yes | Strictly `"qqmusic"` (must be in the supported provider allowlist). |
-| `format` | string | Yes | Format must match the event `type`:<br>• When `type="export"`: strictly `"txt"`, `"csv"`, `"xlsx"`, `"json"`.<br>• When `type="clipboard"`: strictly `"title"`, `"title-artist"`, `"title-artist-album"`, `"title_artist"`, or `"title_artist_album"`. |
-| `trackCount` | integer | No | Integer in range `[0, 50000]`. Negative numbers, floats, `NaN`, or values > 50,000 are rejected. |
-
-#### Response (`204 No Content`)
-
-- HTTP Status: `204 No Content`
-- Response Body: empty
-
-#### Failure Responses
-
-- Method not allowed: `405 Method Not Allowed` with `Allow: POST, OPTIONS`
-- Oversized payload (> 1024 bytes): `400 INVALID_INPUT`
-- Malformed JSON / JSON array: `400 INVALID_INPUT`
-- Unsupported platform (e.g. `netease`, `spotify`): `400 UNSUPPORTED_PLATFORM`
-- Format mismatch (e.g. `type: "export"` with `format: "title"`): `400 INVALID_INPUT`
-- Invalid `trackCount` (negative, float, or > 50,000): `400 INVALID_INPUT`
-
----
-
-## 6. Examples
-
-### 6.1 Parse Playlist Request & Response
-
-**Request:**
-
-```http
-GET /api/playlist?url=https%3A%2F%2Fy.qq.com%2Fn%2Fryqq%2Fplaylist%2F9044196528 HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-Origin: https://playlistout.lengxiqwq.com
-```
-
-**Response (`200 OK`):**
-
-```json
-{
-  "success": true,
-  "data": {
-    "platform": "qqmusic",
-    "id": "9044196528",
-    "name": "民谣精选",
-    "trackCount": 1,
-    "tracks": [
-      {
-        "index": 1,
-        "id": "003mN2sZ2...",
-        "title": "南山南",
-        "artists": ["马頔"],
-        "album": "孤岛",
-        "durationMs": 324000,
-        "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/003mN2sZ2..."
-      }
-    ]
-  }
-}
+// Example calls
+resolveMusicInput('https://music.163.com/#/playlist?id=2756674066');
+resolveMusicInput('QQ: 3197635836');
 ```
 
 ---
 
-### 6.2 Public Statistics Request & Response
+### 9.3 Python (`requests`)
 
-**Request:**
+```python
+import requests
 
-```http
-GET /api/stats HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-Origin: https://playlistout.lengxiqwq.com
+API_BASE = "https://playlistout-api.lengxiqwq.com/api/v1"
+
+def resolve_input(query: str, target_type: str = "auto", platform: str = "auto"):
+    params = {
+        "q": query,
+        "type": target_type,
+        "platform": platform,
+    }
+    response = requests.get(f"{API_BASE}/resolve", params=params, timeout=15)
+    data = response.json()
+    
+    if not data.get("success"):
+        error = data.get("error", {})
+        code = error.get("code")
+        if code == "AMBIGUOUS_INPUT":
+            print("Ambiguous input! Candidates:", error.get("details", {}).get("candidates"))
+        else:
+            print(f"Error [{code}]: {error.get('message')}")
+        return None
+        
+    result_data = data["data"]
+    kind = result_data["kind"]
+    platform_name = result_data["platform"]
+    result = result_data["result"]
+    
+    if kind == "playlist":
+        print(f"[{platform_name}] Playlist: '{result.get('name')}' ({len(result.get('tracks', []))} tracks)")
+    elif kind == "user_playlists":
+        print(f"[{platform_name}] User: '{result.get('nickname')}' ({len(result.get('playlists', []))} playlists)")
+        
+    return result
+
+if __name__ == "__main__":
+    # 1. Parse QQ Music Playlist
+    resolve_input("https://y.qq.com/n/ryqq/playlist/9044196528")
+    
+    # 2. Parse Qishui Shortlink
+    resolve_input("https://qishui.douyin.com/s/iXHhKHhY/")
+    
+    # 3. Disambiguate Numeric ID
+    resolve_input("2756674066", target_type="playlist", platform="netease")
 ```
-
-**Response (`200 OK`):**
-
-```json
-{
-  "success": true,
-  "data": {
-    "launchedAt": "2026-09-12",
-    "totalPlaylistsParsed": 128,
-    "playlistsParsedToday": 14,
-    "totalTracksProcessed": 6420,
-    "tracksProcessedToday": 710,
-    "totalExports": 42,
-    "exportsToday": 6,
-    "byPlatform": {
-      "qqmusic": {
-        "totalSuccess": 128,
-        "todaySuccess": 14
-      }
-    },
-    "recentDays": [
-      {
-        "date": "2026-09-13",
-        "parses": 14,
-        "tracks": 710,
-        "exports": 6
-      }
-    ],
-    "generatedAt": "2026-09-13T08:33:00.000Z"
-  }
-}
-```
-
----
-
-### 6.3 Export Event Ingestion
-
-**Request:**
-
-```http
-POST /api/event HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-Origin: https://playlistout.lengxiqwq.com
-Content-Type: application/json
-
-{
-  "type": "export",
-  "format": "xlsx",
-  "platform": "qqmusic",
-  "trackCount": 42
-}
-```
-
-**Response (`204 No Content`):**
-
-*(Empty body)*
-
----
-
-### 6.4 Clipboard Event Ingestion
-
-**Request:**
-
-```http
-POST /api/event HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-Origin: https://playlistout.lengxiqwq.com
-Content-Type: application/json
-
-{
-  "type": "clipboard",
-  "format": "title-artist",
-  "platform": "qqmusic",
-  "trackCount": 15
-}
-```
-
-**Response (`204 No Content`):**
-
-*(Empty body)*
-
----
-
-### 6.5 Rate Limit Exceeded (`429 Too Many Requests`)
-
-**Response (`429 Too Many Requests`):**
-
-```http
-HTTP/1.1 429 Too Many Requests
-Content-Type: application/json
-Retry-After: 48
-
-{
-  "success": false,
-  "error": {
-    "code": "RATE_LIMITED",
-    "message": "Too many requests. Please wait a moment before trying again."
-  }
-}
-```
-
----
-
-### 6.6 Arbitrary Proxy Prohibited (`403 Forbidden`)
-
-**Request:**
-
-```http
-GET /proxy?url=https://example.com HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-```
-
-**Response (`403 Forbidden`):**
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "Arbitrary proxying is strictly prohibited by PlaylistOut Constitution."
-  }
-}
-```
-
----
-
-### 6.7 Unsupported Platform Rejection (`400 Bad Request`)
-
-**Request:**
-
-```http
-POST /api/event HTTP/1.1
-Host: playlistout-api.lengxiqwq.com
-Content-Type: application/json
-
-{
-  "type": "export",
-  "format": "csv",
-  "platform": "netease",
-  "trackCount": 20
-}
-```
-
-**Response (`400 Bad Request`):**
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "UNSUPPORTED_PLATFORM",
-    "message": "Platform \"netease\" is not supported. Supported platforms: qqmusic."
-  }
-}
-```
-
----
-
-## 7. CORS Security Specification
-
-Cross-Origin Resource Sharing (CORS) is restricted to explicit allowlisted origins:
-
-- `https://playlistout.lengxiqwq.com` (Production canonical domain)
-- `https://playlistout.com` (Legacy domain, 301 redirects to canonical)
-- `https://www.playlistout.com` (Legacy www domain, 301 redirects to canonical)
-- `http://localhost:5173` (Vite dev server)
-- `http://127.0.0.1:5173` (Vite dev server)
-- `http://localhost:4173` (Vite preview server)
-- `http://127.0.0.1:4173` (Vite preview server)
-
-For requests from allowlisted origins:
-- Responses include `Access-Control-Allow-Origin: <origin>`, `Access-Control-Allow-Methods: GET, POST, OPTIONS`, and standard CORS headers.
-- Preflight `OPTIONS` requests receive `204 No Content` with appropriate headers.
-
-For requests from non-allowlisted origins:
-- Requests do not receive `Access-Control-Allow-Origin` headers, causing the browser to block cross-origin access.
-- Preflight `OPTIONS` requests receive `403 Forbidden`.

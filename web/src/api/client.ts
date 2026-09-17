@@ -212,7 +212,7 @@ export async function validateKugouAuth(
 export async function parsePlaylist(
   urlOrId: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease' | 'kugou',
+  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
   authOptions?: { token?: string; userid?: string },
 ): Promise<ApiResponse<Playlist>> {
   const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';

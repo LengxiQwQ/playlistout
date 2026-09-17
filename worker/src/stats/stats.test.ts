@@ -170,7 +170,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
 
     const response = await worker.fetch(request, { DB: mockDb }, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
 
     const body: any = await response.json();
     expect(body.success).toBe(true);

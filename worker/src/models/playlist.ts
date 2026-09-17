@@ -78,6 +78,24 @@ export interface ApiSuccessResponse<T> {
   data: T;
 }
 
+export type ResolveKind = 'playlist' | 'user_playlists';
+
+export interface DisambiguationCandidate {
+  id: string;
+  kind: ResolveKind;
+  platform: string;
+  title: string;
+  subtitle?: string;
+  trackCount?: number;
+  coverUrl?: string;
+}
+
+export interface ResolveData<T = Playlist | UserPlaylistsData> {
+  kind: ResolveKind;
+  platform: string;
+  result: T;
+}
+
 export interface ApiErrorResponse {
   success: false;
   error: {
@@ -92,6 +110,7 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 export type ApiErrorCode =
   | 'INVALID_INPUT'
   | 'UNSUPPORTED_URL'
+  | 'UNSUPPORTED_PLATFORM'
   | 'PLAYLIST_NOT_FOUND'
   | 'USER_NOT_FOUND'
   | 'UPSTREAM_ERROR'
@@ -101,7 +120,8 @@ export type ApiErrorCode =
   | 'METHOD_NOT_ALLOWED'
   | 'FORBIDDEN'
   | 'RATE_LIMITED'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'AMBIGUOUS_INPUT';
 
 
 export type ProviderErrorCode = ApiErrorCode;
