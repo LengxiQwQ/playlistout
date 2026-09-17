@@ -171,6 +171,7 @@ export const zhCN: Translations = {
     subtitle: '✦ 翻开这本温暖的运行小手账 ✦',
     title: 'PlaylistOut 手账统计',
     runningDaysStamp: '✦ 温暖相伴 · 第 {days} 天 ✦',
+    runningDaysUnavailable: '✦ 运行时间暂无数据 ✦',
     runningDaysSubtext: '始于 2026.09.12 · 纯净本地导出',
     todayTitle: '今日记录',
     todayVisitors: '位朋友来过',

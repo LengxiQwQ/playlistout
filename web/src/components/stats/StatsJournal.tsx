@@ -3,6 +3,7 @@ import { fetchStats, type StatsResponse } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { getPlatformName } from '../../utils/platform';
+import { calculateRunningDays } from '../../utils/uptime';
 
 const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
@@ -33,7 +34,11 @@ const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
   return <>{displayValue.toLocaleString()}</>;
 };
 
-export const StatsJournal: React.FC = () => {
+export interface StatsJournalProps {
+  today?: Date | string;
+}
+
+export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   const { t, format: formatString, language } = useTranslation();
   const [stats, setStats] = useState<StatsResponse | null>(null);
 
@@ -82,22 +87,20 @@ export const StatsJournal: React.FC = () => {
     };
   }, [refreshStats]);
 
-  const todayDateFormatted = new Date().toLocaleDateString(language === 'zh-CN' ? 'zh-CN' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    weekday: 'long',
-  });
+  const todayDateFormatted = useMemo(() => {
+    const d = today ? (typeof today === 'string' ? new Date(`${today}T00:00:00Z`) : today) : new Date();
+    return d.toLocaleDateString(language === 'zh-CN' ? 'zh-CN' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      weekday: 'long',
+      timeZone: typeof today === 'string' ? 'UTC' : undefined,
+    });
+  }, [today, language]);
 
-  // Calculate operation days from launch date
+  // Calculate genuine operation days from launch date
   const runningDays = useMemo(() => {
-    const launchStr = stats?.launchedAt || '2026-09-12';
-    const [y, m, d] = launchStr.split('-').map(Number);
-    const launchUtc = Date.UTC(y, (m || 1) - 1, d || 1);
-    const now = new Date();
-    const nowUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    const diffDays = Math.floor((nowUtc - launchUtc) / (1000 * 60 * 60 * 24));
-    return Math.max(1, diffDays + 1);
-  }, [stats?.launchedAt]);
+    return calculateRunningDays(stats?.launchedAt, today);
+  }, [stats?.launchedAt, today]);
 
   const visitorsToday = stats?.visitorsToday ?? 0;
   const parsedToday = stats?.playlistsParsedToday ?? 0;
@@ -361,7 +364,9 @@ export const StatsJournal: React.FC = () => {
               <span style={{ fontSize: '1.25rem', userSelect: 'none', color: '#e74c3c' }}>♡ ⋆</span>
             </div>
             <div className="font-note" style={{ fontSize: '1.45rem', color: '#636e72', marginBottom: '1.25rem' }}>
-              {formatString(t.stats.runningDaysStamp, { days: runningDays })}
+              {runningDays !== null
+                ? formatString(t.stats.runningDaysStamp, { days: runningDays })
+                : t.stats.runningDaysUnavailable}
             </div>
 
             {/* Total Visitors Hero Number */}
@@ -658,7 +663,9 @@ export const StatsJournal: React.FC = () => {
               lineHeight: 1.2,
             }}
           >
-            {formatString(t.stats.runningDaysStamp, { days: runningDays })}
+            {runningDays !== null
+              ? formatString(t.stats.runningDaysStamp, { days: runningDays })
+              : t.stats.runningDaysUnavailable}
           </div>
           <div
             className="font-handwriting"
