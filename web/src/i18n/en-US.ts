@@ -171,6 +171,7 @@ export const enUS: Translations = {
     subtitle: '✦ pages from this little notebook ✦',
     title: 'PlaylistOut Journal',
     runningDaysStamp: '✦ Accompanying you for {days} days ✦',
+    runningDaysUnavailable: '✦ Uptime unavailable ✦',
     runningDaysSubtext: 'Since Sep 12, 2026 · Pure local export',
     todayTitle: "TODAY'S NOTE",
     todayVisitors: 'friends visited today',

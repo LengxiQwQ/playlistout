@@ -171,6 +171,7 @@ export interface Translations {
     subtitle: string;
     title: string;
     runningDaysStamp: string;
+    runningDaysUnavailable: string;
     runningDaysSubtext: string;
     todayTitle: string;
     todayVisitors: string;
