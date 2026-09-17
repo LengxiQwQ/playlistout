@@ -352,6 +352,15 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
 | `totalVisitors` | `number` | **Deprecated compatibility alias** for `cumulativeDailyVisitors`. Semantically identical; guaranteed equal to `cumulativeDailyVisitors`. NOT an all-time globally unique person count. |
 | `visitorsToday` | `number` | Daily Unique Visitors (今日独立访客). Coarse-grained count deduplicated within the current UTC day via anonymous salted cryptographic hash. |
 
+#### Geographic Distribution Metrics (`topGeo` and `chinaProvinces`)
+
+| Field | Type | Description |
+| :--- | :---: | :--- |
+| `topGeo` | `GeoDistributionItem[]` | Top 10 countries ranked by recorded visit events. Excludes `country = 'UNKNOWN'`. |
+| `topGeo[].percentage` | `number` | Integer percentage share among **all known geographic visit records** (`country != 'UNKNOWN'`), NOT the share within the returned Top 10 rows. When traffic outside Top 10 exists, sum of percentages is `< 100%`. |
+| `chinaProvinces` | `ProvinceDistributionItem[]` | Top 10 mainland China provinces/regions ranked by recorded visit events. Excludes `region = 'UNKNOWN'`. |
+| `chinaProvinces[].percentage` | `number` | Integer percentage share among **all known China province visit records** (`country = 'CN' AND region != 'UNKNOWN'`), NOT the share within the returned Top 10 rows. |
+
 ---
 
 ### 6.5 Health Check
