@@ -173,8 +173,16 @@ body {
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Sticky Notes & Interactive Journal Paper: Realistic 3D Interactive Orientation & Hard Warm-Yellow Shadow */
-.sticky-note-card,
+/* Sticky Notes (Hero): Static paper rotation without 3D tilt, with warm shadow */
+.sticky-note-card {
+  transform: rotate(var(--rot, 0deg));
+  box-shadow:
+    0 1.5px 2px rgba(50, 36, 6, 0.88),
+    4.5px 5.5px 2px 0.5px rgba(65, 48, 12, 0.82);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Interactive Journal Paper: Realistic 3D Interactive Orientation & Hard Warm-Yellow Shadow */
 .journal-paper.is-interactive {
   transform:
     perspective(1200px)
@@ -220,7 +228,6 @@ body {
 }
 
 /* Active tracking: instantaneous & silky smooth */
-.sticky-note-card.is-tracking,
 .journal-paper.is-interactive.is-tracking {
   transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
@@ -237,13 +244,15 @@ body {
 
 .hero-doodle-right {
   position: absolute;
-  right: 1rem;
-  top: 0;
-  height: var(--ruled-line-height, 38px);
-  line-height: var(--ruled-line-height, 38px);
-  font-size: 1.35rem;
+  right: -1.5rem;
+  top: -0.85rem;
+  height: auto;
+  line-height: 1;
+  font-size: 1.25rem;
   color: #d97706;
   user-select: none;
+  text-shadow: none;
+  white-space: nowrap;
 }
 
 .status-alert {

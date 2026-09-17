@@ -16,13 +16,6 @@ export const Hero: React.FC = () => {
         position: 'relative',
       }}
     >
-      <div
-        className="font-note hero-doodle-right mc-splash"
-        aria-hidden="true"
-      >
-        {t.hero.noLoginDoodle}
-      </div>
-
       <h2
         className="font-marker journal-hero-title"
         style={{
@@ -33,7 +26,15 @@ export const Hero: React.FC = () => {
         }}
       >
         {t.hero.titlePrefix}
-        <span className="scribble-line">{t.hero.titleHighlight}</span>
+        <span className="scribble-line">
+          {t.hero.titleHighlight}
+          <span
+            className="font-note hero-doodle-right mc-splash"
+            aria-hidden="true"
+          >
+            {t.hero.noLoginDoodle}
+          </span>
+        </span>
       </h2>
     </section>
   );

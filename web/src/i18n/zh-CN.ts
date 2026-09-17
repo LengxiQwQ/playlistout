@@ -60,6 +60,8 @@ export const zhCN: Translations = {
     platformNeteaseDesc: '公开歌单现已支持',
     platformKugou: '酷狗音乐',
     platformKugouDesc: '公开歌单现已支持',
+    kugouLoggedIn: '酷狗音乐（已登录）',
+    kugouNotLoggedIn: '酷狗音乐（未登录）',
     kugouLoginBadge: '扫码登录',
     kugouLoggedInBadge: '酷狗已登录',
     kugouLogoutBtn: '退出',
@@ -129,6 +131,8 @@ export const zhCN: Translations = {
     statusPaid: '付费专辑',
     noArtist: '—',
     noAlbum: '—',
+    showMore: '显示更多',
+    showLess: '显示更少',
   },
   export: {
     fileExportTitle: '本地文件导出',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Track } from '../api/types';
 import { formatDuration } from '../utils/format';
 import { useTranslation } from '../i18n';
@@ -10,10 +10,11 @@ export interface TrackTableProps {
 
 export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
   const { t, format } = useTranslation();
+  const [showMoreMobile, setShowMoreMobile] = useState(false);
 
   return (
     <div
-      className="track-table-container"
+      className={`track-table-container ${showMoreMobile ? 'is-expanded-mobile' : 'is-compact-mobile'}`}
       data-testid="track-table-container"
       style={{
         marginTop: '1.5rem',
@@ -27,6 +28,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           justifyContent: 'space-between',
           paddingBottom: '0.75rem',
           borderBottom: '2px dashed var(--line, #dfe6e9)',
+          gap: '0.5rem',
         }}
       >
         <h3
@@ -40,6 +42,31 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
         >
           {format(t.table.listTitle, { count: tracks.length })}
         </h3>
+
+        {/* Mobile Compact / Detailed View Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setShowMoreMobile(!showMoreMobile)}
+          className="table-view-toggle mobile-only font-handwriting"
+          style={{
+            padding: '0.22rem 0.65rem',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            borderRadius: '4px',
+            backgroundColor: showMoreMobile ? '#fef3c7' : '#f0fdf4',
+            color: showMoreMobile ? '#92400e' : '#166534',
+            border: `1.5px solid ${showMoreMobile ? '#f59e0b' : '#22c55e'}`,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            boxShadow: '1.5px 1.5px 0 rgba(45, 52, 54, 0.2)',
+          }}
+          aria-label={showMoreMobile ? t.table.showLess : t.table.showMore}
+        >
+          <span>{showMoreMobile ? '−' : '+'}</span>
+          <span>{showMoreMobile ? t.table.showLess : t.table.showMore}</span>
+        </button>
       </div>
 
       <div className="table-responsive" style={{ maxHeight: '620px', overflowY: 'auto', overflowX: 'auto' }}>
