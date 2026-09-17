@@ -786,19 +786,22 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       }}
     }};
 
-    // 甜甜圈图构造函数
+    // 甜甜圈图构造函数（含优雅空数据降级）
     function createDonut(elementId, labels, data) {{
-      const total = data.reduce((a, b) => a + b, 0);
-      new Chart(document.getElementById(elementId), {{
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
+      const total = hasData ? data.reduce((a, b) => a + b, 0) : 0;
+      new Chart(el, {{
         type: 'doughnut',
         data: {{
-          labels: labels,
+          labels: hasData ? labels : ['暂无数据 / No Data'],
           datasets: [{{
-            data: data,
-            backgroundColor: PALETTE,
+            data: hasData ? data : [1],
+            backgroundColor: hasData ? PALETTE : ['#f1f5f9'],
             borderColor: '#ffffff',
             borderWidth: 2,
-            hoverOffset: 4
+            hoverOffset: hasData ? 4 : 0
           }}]
         }},
         options: {{
@@ -810,6 +813,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
               labels: {{ boxWidth: 10, padding: 8, font: {{ size: 10 }} }}
             }},
             tooltip: {{
+              enabled: hasData,
               callbacks: {{
                 label: function(ctx) {{
                   const val = ctx.parsed;
@@ -823,14 +827,17 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       }});
     }}
 
-    // 横向柱状图
+    // 横向柱状图（含优雅空数据降级）
     function createHBar(elementId, labels, data, color) {{
-      new Chart(document.getElementById(elementId), {{
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
+      new Chart(el, {{
         type: 'bar',
         data: {{
-          labels: labels,
+          labels: hasData ? labels : ['暂无数据 / No Data'],
           datasets: [{{
-            data: data,
+            data: hasData ? data : [0],
             backgroundColor: color || '#2563eb',
             borderRadius: 4
           }}]
@@ -848,108 +855,117 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     }}
 
     // 1. 今日小时级流量
-    new Chart(document.getElementById('chartHourly'), {{
-      type: 'bar',
-      data: {{
-        labels: Array.from({{length: 24}}, (_, i) => i + ':00'),
-        datasets: [
-          {{
-            label: 'PV 页面浏览 / Page Views',
-            data: {h_pv},
-            backgroundColor: '#2563eb',
-            borderRadius: 3
-          }},
-          {{
-            label: 'UV 独立访客 / Unique Visitors',
-            data: {h_uv},
-            backgroundColor: '#38bdf8',
-            borderRadius: 3
-          }}
-        ]
-      }},
-      options: {{
-        responsive: true,
-        plugins: {{
-          legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+    const elHourly = document.getElementById('chartHourly');
+    if (elHourly) {{
+      new Chart(elHourly, {{
+        type: 'bar',
+        data: {{
+          labels: Array.from({{length: 24}}, (_, i) => i + ':00'),
+          datasets: [
+            {{
+              label: 'PV 页面浏览 / Page Views',
+              data: {h_pv},
+              backgroundColor: '#2563eb',
+              borderRadius: 3
+            }},
+            {{
+              label: 'UV 独立访客 / Unique Visitors',
+              data: {h_uv},
+              backgroundColor: '#38bdf8',
+              borderRadius: 3
+            }}
+          ]
         }},
-        scales: BASE_SCALES
-      }}
-    }});
+        options: {{
+          responsive: true,
+          plugins: {{
+            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+          }},
+          scales: BASE_SCALES
+        }}
+      }});
+    }}
 
     // 2. 近期趋势走势 (解析 / 导出 / 剪贴板 / 失败)
-    new Chart(document.getElementById('chartTrend'), {{
-      type: 'line',
-      data: {{
-        labels: {t_dates},
-        datasets: [
-          {{
-            label: '解析 / Parses',
-            data: {t_parses},
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37,99,235,0.06)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 2.5
-          }},
-          {{
-            label: '导出 / Exports',
-            data: {t_exports},
-            borderColor: '#059669',
-            backgroundColor: 'rgba(5,150,105,0.05)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 2.5
-          }},
-          {{
-            label: '剪贴板 / Clipboards',
-            data: {t_clips},
-            borderColor: '#d97706',
-            fill: false,
-            tension: 0.3,
-            pointRadius: 2
-          }},
-          {{
-            label: '失败 / Failures',
-            data: {t_failures},
-            borderColor: '#e11d48',
-            borderDash: [4, 4],
-            fill: false,
-            tension: 0.3,
-            pointRadius: 2
-          }}
-        ]
-      }},
-      options: {{
-        responsive: true,
-        interaction: {{ mode: 'index', intersect: false }},
-        plugins: {{
-          legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+    const elTrend = document.getElementById('chartTrend');
+    if (elTrend) {{
+      new Chart(elTrend, {{
+        type: 'line',
+        data: {{
+          labels: {t_dates},
+          datasets: [
+            {{
+              label: '解析 / Parses',
+              data: {t_parses},
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37,99,235,0.06)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2.5
+            }},
+            {{
+              label: '导出 / Exports',
+              data: {t_exports},
+              borderColor: '#059669',
+              backgroundColor: 'rgba(5,150,105,0.05)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2.5
+            }},
+            {{
+              label: '剪贴板 / Clipboards',
+              data: {t_clips},
+              borderColor: '#d97706',
+              fill: false,
+              tension: 0.3,
+              pointRadius: 2
+            }},
+            {{
+              label: '失败 / Failures',
+              data: {t_failures},
+              borderColor: '#e11d48',
+              borderDash: [4, 4],
+              fill: false,
+              tension: 0.3,
+              pointRadius: 2
+            }}
+          ]
         }},
-        scales: BASE_SCALES
-      }}
-    }});
+        options: {{
+          responsive: true,
+          interaction: {{ mode: 'index', intersect: false }},
+          plugins: {{
+            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+          }},
+          scales: BASE_SCALES
+        }}
+      }});
+    }}
 
     // 3. 独立访客走势
-    new Chart(document.getElementById('chartVisitors'), {{
-      type: 'line',
-      data: {{
-        labels: {t_dates},
-        datasets: [{{
-          label: '每日独立访客 / Daily Unique Visitors',
-          data: {t_visitors},
-          borderColor: '#4f46e5',
-          backgroundColor: 'rgba(79,70,229,0.08)',
-          fill: true,
-          tension: 0.35,
-          pointRadius: 3
-        }}]
-      }},
-      options: {{
-        responsive: true,
-        plugins: {{ legend: {{ display: false }} }},
-        scales: BASE_SCALES
-      }}
-    }});
+    const elVis = document.getElementById('chartVisitors');
+    if (elVis) {{
+      new Chart(elVis, {{
+        type: 'line',
+        data: {{
+          labels: {t_dates},
+          datasets: [{{
+            label: '每日独立访客 / Daily Unique Visitors',
+            data: {t_visitors},
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79,70,229,0.08)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }}]
+        }},
+        options: {{
+          responsive: true,
+          plugins: {{ legend: {{ display: false }} }},
+          scales: BASE_SCALES
+        }}
+      }});
+    }}
 
     // 4. 平台解析分布
     createDonut('chartPlatform', {plat_labels}, {plat_counts});
@@ -964,25 +980,27 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     createDonut('chartDevice', {dv_labels}, {dv_counts});
     createDonut('chartOS', {os_labels}, {os_counts});
 
-
     // 7. 导出格式 & 剪贴板 & 输入类型
-    new Chart(document.getElementById('chartExportFmt'), {{
-      type: 'bar',
-      data: {{
-        labels: {fmt_labels},
-        datasets: [{{
-          label: '导出数 / Exports',
-          data: {fmt_counts},
-          backgroundColor: '#059669',
-          borderRadius: 4
-        }}]
-      }},
-      options: {{
-        responsive: true,
-        plugins: {{ legend: {{ display: false }} }},
-        scales: BASE_SCALES
-      }}
-    }});
+    const elExport = document.getElementById('chartExportFmt');
+    if (elExport) {{
+      new Chart(elExport, {{
+        type: 'bar',
+        data: {{
+          labels: {fmt_labels},
+          datasets: [{{
+            label: '导出数 / Exports',
+            data: {fmt_counts},
+            backgroundColor: '#059669',
+            borderRadius: 4
+          }}]
+        }},
+        options: {{
+          responsive: true,
+          plugins: {{ legend: {{ display: false }} }},
+          scales: BASE_SCALES
+        }}
+      }});
+    }}
 
     createDonut('chartClipboard', {cb_labels}, {cb_counts});
     createDonut('chartInputType', {inp_labels}, {inp_counts});
@@ -990,23 +1008,26 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     // 8. 来源、延迟与错误
     createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5');
 
-    new Chart(document.getElementById('chartLatency'), {{
-      type: 'bar',
-      data: {{
-        labels: {lat_labels},
-        datasets: [{{
-          label: '请求数 / Requests',
-          data: {lat_counts},
-          backgroundColor: '#0284c7',
-          borderRadius: 4
-        }}]
-      }},
-      options: {{
-        responsive: true,
-        plugins: {{ legend: {{ display: false }} }},
-        scales: BASE_SCALES
-      }}
-    }});
+    const elLatency = document.getElementById('chartLatency');
+    if (elLatency) {{
+      new Chart(elLatency, {{
+        type: 'bar',
+        data: {{
+          labels: {lat_labels},
+          datasets: [{{
+            label: '请求数 / Requests',
+            data: {lat_counts},
+            backgroundColor: '#0284c7',
+            borderRadius: 4
+          }}]
+        }},
+        options: {{
+          responsive: true,
+          plugins: {{ legend: {{ display: false }} }},
+          scales: BASE_SCALES
+        }}
+      }});
+    }}
 
     createDonut('chartError', {err_labels}, {err_counts});
   </script>
