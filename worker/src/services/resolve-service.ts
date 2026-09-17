@@ -44,16 +44,43 @@ export interface ResolveServiceOptions {
 export type SupportedType = 'auto' | 'playlist' | 'user';
 export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui';
 
-function isOperationalError(err: unknown): boolean {
+function isNegativeProbeError(err: unknown): boolean {
   if (err instanceof ProviderError) {
     return (
-      err.code === 'UPSTREAM_ERROR' ||
-      err.code === 'UPSTREAM_TIMEOUT' ||
-      err.code === 'PARSE_ERROR' ||
-      (typeof err.statusCode === 'number' && err.statusCode >= 500)
+      err.code === 'PLAYLIST_NOT_FOUND' ||
+      err.code === 'USER_NOT_FOUND' ||
+      err.code === 'INVALID_INPUT' ||
+      err.code === 'UNSUPPORTED_URL' ||
+      err.statusCode === 404 ||
+      err.statusCode === 400
     );
   }
   return false;
+}
+
+function findPropagatableProbeError(errors: unknown[]): unknown | null {
+  // 1. Prioritize explicit upstream operational errors (502, 504, 500)
+  const operational = errors.find(
+    (err) =>
+      err instanceof ProviderError &&
+      (err.code === 'UPSTREAM_ERROR' ||
+        err.code === 'UPSTREAM_TIMEOUT' ||
+        err.code === 'PARSE_ERROR' ||
+        (typeof err.statusCode === 'number' && err.statusCode >= 500)),
+  );
+  if (operational) return operational;
+
+  // 2. Next check for any unexpected non-negative errors (e.g. bare Error, network crash)
+  const unexpected = errors.find((err) => !isNegativeProbeError(err));
+  if (unexpected) {
+    if (unexpected instanceof ProviderError) {
+      return unexpected;
+    }
+    const message = unexpected instanceof Error ? unexpected.message : String(unexpected);
+    return new ProviderError('INTERNAL_ERROR', message || 'An unexpected error occurred during probe resolution.', 500);
+  }
+
+  return null;
 }
 
 function recordFinalSuccess(
@@ -186,10 +213,14 @@ export async function resolveService(
     );
   }
 
+  const isKugouPlaylist =
+    /kugou\.com/i.test(trimmed) &&
+    (/(?:songlist|gcid_|special\/single)/i.test(trimmed) || /src_cid=[a-zA-Z0-9]+/i.test(trimmed));
+
   const isExplicitPlaylist =
     (/y\.qq\.com\/n\/ryqq\/playlist\//i.test(trimmed) || (/y\.qq\.com\/.*[?&]id=\d+/i.test(trimmed) && !isQQProfile)) ||
     (/music\.163\.com\/.*playlist/i.test(trimmed)) ||
-    (kugouProvider.matches(trimmed)) ||
+    isKugouPlaylist ||
     (qishuiProvider.matches(trimmed));
 
   if (normalizedType === 'user' && isExplicitPlaylist) {
@@ -269,7 +300,7 @@ export async function resolveService(
         });
         return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
       } catch (playlistErr: unknown) {
-        if (isOperationalError(playlistErr)) {
+        if (!isNegativeProbeError(playlistErr)) {
           throw playlistErr;
         }
         try {
@@ -280,7 +311,7 @@ export async function resolveService(
           });
           return { kind: 'user_playlists', platform: actualPlatform, result: userData };
         } catch (userErr: unknown) {
-          if (isOperationalError(userErr)) {
+          if (!isNegativeProbeError(userErr)) {
             throw userErr;
           }
           throw new ProviderError(
@@ -313,7 +344,7 @@ export async function resolveService(
         });
         return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
       } catch (err: unknown) {
-        if (isOperationalError(err)) {
+        if (!isNegativeProbeError(err)) {
           throw err;
         }
         if (auth?.token && auth?.userid) {
@@ -325,7 +356,7 @@ export async function resolveService(
             });
             return { kind: 'user_playlists', platform: actualPlatform, result: userData };
           } catch (userErr: unknown) {
-            if (isOperationalError(userErr)) {
+            if (!isNegativeProbeError(userErr)) {
               throw userErr;
             }
             // fall through
@@ -448,12 +479,12 @@ export async function resolveService(
           return { kind: 'user_playlists', platform: 'kugou', result: userRes.value.userData };
         }
 
-        const opError = [singleRes, userRes]
+        const errors = [singleRes, userRes]
           .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-          .map((r) => r.reason)
-          .find(isOperationalError);
-        if (opError) {
-          throw opError;
+          .map((r) => r.reason);
+        const propagatable = findPropagatableProbeError(errors);
+        if (propagatable) {
+          throw propagatable;
         }
 
         throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on KuGou.`, 404);
@@ -516,12 +547,12 @@ export async function resolveService(
         return { kind: 'user_playlists', platform: 'qqmusic', result: userRes.value.userData };
       }
 
-      const opError = [singleRes, userRes]
+      const errors = [singleRes, userRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason)
-        .find(isOperationalError);
-      if (opError) {
-        throw opError;
+        .map((r) => r.reason);
+      const propagatable = findPropagatableProbeError(errors);
+      if (propagatable) {
+        throw propagatable;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on QQ Music.`, 404);
@@ -572,12 +603,12 @@ export async function resolveService(
         return { kind: 'user_playlists', platform: 'netease', result: userRes.value.userData };
       }
 
-      const opError = [singleRes, userRes]
+      const errors = [singleRes, userRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason)
-        .find(isOperationalError);
-      if (opError) {
-        throw opError;
+        .map((r) => r.reason);
+      const propagatable = findPropagatableProbeError(errors);
+      if (propagatable) {
+        throw propagatable;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on NetEase Cloud Music.`, 404);
@@ -632,12 +663,12 @@ export async function resolveService(
         });
       }
 
-      const opError = results
+      const errors = results
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason)
-        .find(isOperationalError);
-      if (opError) {
-        throw opError;
+        .map((r) => r.reason);
+      const propagatable = findPropagatableProbeError(errors);
+      if (propagatable) {
+        throw propagatable;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${trimmed}" was not found on supported platforms.`, 404);
@@ -694,12 +725,12 @@ export async function resolveService(
         };
       }
 
-      const opError = [qqUserRes, neteaseUserRes]
+      const errors = [qqUserRes, neteaseUserRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason)
-        .find(isOperationalError);
-      if (opError) {
-        throw opError;
+        .map((r) => r.reason);
+      const propagatable = findPropagatableProbeError(errors);
+      if (propagatable) {
+        throw propagatable;
       }
 
       throw new ProviderError('USER_NOT_FOUND', `User profile with ID "${trimmed}" was not found on supported platforms.`, 404);
@@ -721,8 +752,9 @@ export async function resolveService(
       });
       return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'qishui', result: qishuiRes.playlist });
     } catch (err: unknown) {
-      if (isOperationalError(err)) {
-        throw err;
+      const propagatable = findPropagatableProbeError([err]);
+      if (propagatable) {
+        throw propagatable;
       }
       // Continue to standard 4-way probing
     }
@@ -821,12 +853,12 @@ export async function resolveService(
     );
   }
 
-  const opError = [qqSingle, qqUser, neteaseSingle, neteaseUser]
+  const errors = [qqSingle, qqUser, neteaseSingle, neteaseUser]
     .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => r.reason)
-    .find(isOperationalError);
-  if (opError) {
-    throw opError;
+    .map((r) => r.reason);
+  const propagatable = findPropagatableProbeError(errors);
+  if (propagatable) {
+    throw propagatable;
   }
 
   throw new ProviderError(
