@@ -427,25 +427,25 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Unique Visitors (UV) | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **236**<br><sub>Today +30</sub> | **1,576**<br><sub>Today +190</sub> | **149**<br><sub>Today +6</sub> | **45,515**<br><sub>Today +2,606</sub> | **406**<br><sub>Today +43</sub> | **6 Days**<br><sub>Since 2026-09-12</sub> |
+| **307**<br><sub>Today +101</sub> | **2,271**<br><sub>Today +885</sub> | **183**<br><sub>Today +40</sub> | **62,668**<br><sub>Today +19,759</sub> | **551**<br><sub>Today +188</sub> | **6 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 🗺️ Geographic & Client Distribution
-- **🌍 Top Visitor Regions:** 🇨🇳 Mainland China **86%** ｜ 🇭🇰 Hong Kong **6%** ｜ 🇺🇸 United States **4%** ｜ 🇯🇵 Japan **2%** ｜ 🌐 Other Regions **2%**
-- **💻 Client Devices:** Desktop **68%** ｜ Mobile **30%** ｜ Tablet **2%**
-- **🌐 Browsers:** Chrome **62%** ｜ Edge **21%** ｜ Safari **13%** ｜ Other **4%**
+- **🌍 Top Visitor Regions:** 🇲🇾 Malaysia **65%** ｜ 🇺🇸 United States **31%** ｜ 🇨🇳 Mainland China **2%** ｜ 🇭🇰 Hong Kong **1%** ｜ 🇯🇵 Japan **0%** ｜ 🇨🇳 Taiwan **0%** ｜ 🌐 CD **0%** ｜ 🇩🇪 Germany **0%** ｜ 🌐 BE **0%** ｜ 🇨🇦 Canada **0%**
+- **💻 Client Devices:** Desktop **97%** ｜ Mobile **3%**
+- **🌐 Browsers:** Other **83%** ｜ Chrome **14%** ｜ Edge **2%** ｜ Safari **1%**
 
 #### 🇨🇳 Mainland China Visitor Province Distribution
 
 | Province / Municipality | Share | Province / Municipality | Share |
 | :---: | :---: | :---: | :---: |
-| Guangdong | **28%** | Zhejiang | **18%** |
-| Beijing | **14%** | Jiangsu | **12%** |
-| Shanghai | **10%** | Sichuan | **7%** |
-| Shandong | **6%** | Hubei | **5%** |
+| Guangdong | **38%** | Shanghai | **27%** |
+| Shaanxi | **15%** | Henan | **8%** |
+| Guangxi | **4%** | Hubei | **4%** |
+| Liaoning | **4%** | — | — |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **93%** (120 parses) ｜ NetEase Cloud Music **7%** (9 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **64%** ｜ TXT **32%** ｜ CSV **2%** ｜ JSON **2%**
+- **🎵 Platform Shares:** QQ Music **89%** (134 parses) ｜ NetEase Cloud Music **11%** (17 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **64%** ｜ TXT **32%** ｜ CSV **2%** ｜ JSON **1%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->

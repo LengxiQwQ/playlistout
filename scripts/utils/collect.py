@@ -280,6 +280,7 @@ COUNTRY_NAMES = {
         "US": "🇺🇸 美国",
         "JP": "🇯🇵 日本",
         "SG": "🇸🇬 新加坡",
+        "MY": "🇲🇾 马来西亚",
         "GB": "🇬🇧 英国",
         "CA": "🇨🇦 加拿大",
         "AU": "🇦🇺 澳大利亚",
@@ -294,6 +295,7 @@ COUNTRY_NAMES = {
         "US": "🇺🇸 United States",
         "JP": "🇯🇵 Japan",
         "SG": "🇸🇬 Singapore",
+        "MY": "🇲🇾 Malaysia",
         "GB": "🇬🇧 United Kingdom",
         "CA": "🇨🇦 Canada",
         "AU": "🇦🇺 Australia",
@@ -309,17 +311,15 @@ def compute_running_days(launched_at: str) -> int:
         today = dt.datetime.now(dt.timezone.utc).date()
         return max(1, (today - launch).days + 1)
     except Exception:
-        return 5
+        return 1
 
 
 def format_platform_shares(by_platform: dict, lang: str) -> str:
     qq = (by_platform.get("qqmusic") or {}).get("totalSuccess", 0)
     netease = (by_platform.get("netease") or {}).get("totalSuccess", 0)
-    if netease == 0 and qq > 0:
-        netease = round(qq * 0.72)
     total = qq + netease
     if total == 0:
-        return "QQ 音乐 **100%**" if lang == "zh" else "QQ Music **100%**"
+        return "暂无数据" if lang == "zh" else "No data"
     qq_pct = round((qq / total) * 100)
     netease_pct = 100 - qq_pct
     if lang == "zh":
@@ -431,26 +431,28 @@ def format_china_province_table(stats: dict, lang: str) -> list[str]:
     raw_provinces = stats.get("chinaProvinces")
     items = []
     if raw_provinces and isinstance(raw_provinces, list) and len(raw_provinces) > 0:
+        total_count = sum(
+            p.get("count", 0)
+            for p in raw_provinces
+            if isinstance(p, dict) and isinstance(p.get("count"), (int, float))
+        )
         for p in raw_provinces:
+            if not isinstance(p, dict):
+                continue
             prov = p.get("province", "")
-            pct = p.get("percentage", 0)
             if not prov or prov == "UNKNOWN":
                 continue
+            if "percentage" in p and p["percentage"] is not None:
+                pct = p["percentage"]
+            elif total_count > 0 and "count" in p:
+                pct = round((p.get("count", 0) / total_count) * 100)
+            else:
+                pct = 0
             disp = get_province_display_name(prov, lang)
             items.append((disp, pct))
 
     if not items:
-        default_cn = [
-            ("Guangdong", 28),
-            ("Zhejiang", 18),
-            ("Beijing", 14),
-            ("Jiangsu", 12),
-            ("Shanghai", 10),
-            ("Sichuan", 7),
-            ("Shandong", 6),
-            ("Hubei", 5),
-        ]
-        items = [(get_province_display_name(prov, lang), pct) for prov, pct in default_cn]
+        return ["暂无数据" if lang == "zh" else "No data"]
 
     # 取前 8 个省份，排成紧凑美观的 4 行 x 4 列表格
     items = items[:8]
@@ -488,7 +490,17 @@ def clean_browser_name(name: str, lang: str) -> str:
     n = (name or "").lower()
     if "other" in n or "其他" in n:
         return "其他浏览器" if lang == "zh" else "Other"
-    return name
+    mapping = {
+        "chrome": "Chrome",
+        "edge": "Edge",
+        "safari": "Safari",
+        "firefox": "Firefox",
+        "wechat": "微信" if lang == "zh" else "WeChat",
+        "qqbrowser": "QQ浏览器" if lang == "zh" else "QQ Browser",
+    }
+    if n in mapping:
+        return mapping[n]
+    return name.capitalize() if name.islower() else name
 
 
 def format_geo_distribution(stats: dict, lang: str) -> str:
@@ -496,14 +508,25 @@ def format_geo_distribution(stats: dict, lang: str) -> str:
     names = COUNTRY_NAMES.get(lang, COUNTRY_NAMES["zh"])
     items = []
     if raw_geo and isinstance(raw_geo, list) and len(raw_geo) > 0:
+        total_count = sum(
+            g.get("count", 0)
+            for g in raw_geo
+            if isinstance(g, dict) and isinstance(g.get("count"), (int, float))
+        )
         for g in raw_geo:
+            if not isinstance(g, dict):
+                continue
             c = g.get("country", "OTHER").upper()
-            pct = g.get("percentage", 0)
+            if "percentage" in g and g["percentage"] is not None:
+                pct = g["percentage"]
+            elif total_count > 0 and "count" in g:
+                pct = round((g.get("count", 0) / total_count) * 100)
+            else:
+                pct = 0
             c_name = names.get(c, f"🌐 {c}")
             items.append(f"{c_name} **{pct}%**")
     if not items:
-        fallback = [("CN", 86), ("HK", 6), ("US", 4), ("JP", 2), ("OTHER", 2)]
-        items = [f"{names[c]} **{pct}%**" for c, pct in fallback]
+        return "暂无数据" if lang == "zh" else "No data"
     return " ｜ ".join(items)
 
 
@@ -512,27 +535,33 @@ def format_client_distribution(stats: dict, lang: str) -> tuple[str, str]:
     devices = raw_client.get("devices")
     browsers = raw_client.get("browsers")
 
-    if devices and isinstance(devices, list) and len(devices) > 0:
-        dev_str = " ｜ ".join(
-            f"{clean_device_name(d['name'], lang)} **{d['percentage']}%**"
-            for d in devices[:3]
-        )
-    else:
-        if lang == "zh":
-            dev_str = "桌面电脑 **68%** ｜ 移动手机 **30%** ｜ 平板电脑 **2%**"
-        else:
-            dev_str = "Desktop **68%** ｜ Mobile **30%** ｜ Tablet **2%**"
+    def _render_items(items: list, clean_fn, limit: int) -> str:
+        if not items or not isinstance(items, list):
+            return "暂无数据" if lang == "zh" else "No data"
+        valid = [it for it in items if isinstance(it, dict) and it.get("name")]
+        if not valid:
+            return "暂无数据" if lang == "zh" else "No data"
 
-    if browsers and isinstance(browsers, list) and len(browsers) > 0:
-        browser_str = " ｜ ".join(
-            f"{clean_browser_name(b['name'], lang)} **{b['percentage']}%**"
-            for b in browsers[:4]
+        total_count = sum(
+            it.get("count", 0)
+            for it in valid
+            if isinstance(it.get("count"), (int, float))
         )
-    else:
-        if lang == "zh":
-            browser_str = "Chrome **62%** ｜ Edge **21%** ｜ Safari **13%** ｜ 其他浏览器 **4%**"
-        else:
-            browser_str = "Chrome **62%** ｜ Edge **21%** ｜ Safari **13%** ｜ Other **4%**"
+
+        rendered = []
+        for it in valid[:limit]:
+            name = clean_fn(it["name"], lang)
+            if "percentage" in it and it["percentage"] is not None:
+                pct = it["percentage"]
+            elif total_count > 0 and "count" in it:
+                pct = round((it.get("count", 0) / total_count) * 100)
+            else:
+                pct = 0
+            rendered.append(f"{name} **{pct}%**")
+        return " ｜ ".join(rendered) if rendered else ("暂无数据" if lang == "zh" else "No data")
+
+    dev_str = _render_items(devices, clean_device_name, 3)
+    browser_str = _render_items(browsers, clean_browser_name, 4)
 
     return dev_str, browser_str
 
@@ -581,7 +610,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
         if count > 0:
             pct = round(count * 100 / total_export_fmt)
             fmt_parts.append(f"{fmt_labels[f]} **{pct}%**")
-    fmt_str = " ｜ ".join(fmt_parts) if fmt_parts else "—"
+    fmt_str = " ｜ ".join(fmt_parts) if fmt_parts else ("暂无数据" if lang == "zh" else "No data")
 
     # 平台份额、地理分布、设备环境、省份分布
     platform_str = format_platform_shares(stats.get("byPlatform") or {}, lang)
