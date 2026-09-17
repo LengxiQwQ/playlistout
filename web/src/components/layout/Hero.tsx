@@ -16,6 +16,14 @@ export const Hero: React.FC = () => {
         position: 'relative',
       }}
     >
+      {/* Desktop version: original position and size in top right */}
+      <div
+        className="font-note hero-doodle-right mc-splash desktop-only"
+        aria-hidden="true"
+      >
+        {t.hero.noLoginDoodle}
+      </div>
+
       <h2
         className="font-marker journal-hero-title"
         style={{
@@ -28,8 +36,9 @@ export const Hero: React.FC = () => {
         {t.hero.titlePrefix}
         <span className="scribble-line">
           {t.hero.titleHighlight}
+          {/* Mobile version: anchored to the top-right of the last character */}
           <span
-            className="font-note hero-doodle-right mc-splash"
+            className="font-note hero-doodle-mobile mc-splash mobile-only"
             aria-hidden="true"
           >
             {t.hero.noLoginDoodle}
