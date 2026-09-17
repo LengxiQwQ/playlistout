@@ -54,6 +54,7 @@ export interface ClientStats {
   browsers: ClientDistributionItem[];
   devices: ClientDistributionItem[];
   os: ClientDistributionItem[];
+  deviceBrands?: ClientDistributionItem[];
 }
 
 export interface PublicStatsResponse {
@@ -149,6 +150,7 @@ export interface ClipboardEventPayload {
 export interface VisitEventPayload {
   type: 'visit';
   deviceId?: string;
+  referrer?: string;
 }
 
 export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;
@@ -187,7 +189,11 @@ export type ErrorCategory = typeof ERROR_CATEGORIES[number];
 export const DEVICE_CLASSES = ['desktop', 'mobile', 'tablet'] as const;
 export type DeviceClass = typeof DEVICE_CLASSES[number];
 
-export const BROWSER_FAMILIES = ['chrome', 'firefox', 'safari', 'edge', 'other'] as const;
+export const BROWSER_FAMILIES = [
+  'chrome', 'firefox', 'safari', 'edge', 'wechat', 'qqbrowser',
+  'quark', 'uc', 'baidu', '360', 'sogou', 'opera', 'vivaldi',
+  'brave', 'bot_crawler', 'other',
+] as const;
 export type BrowserFamily = typeof BROWSER_FAMILIES[number];
 
 export const OS_FAMILIES = ['windows', 'macos', 'linux', 'android', 'ios', 'other'] as const;
@@ -195,3 +201,4 @@ export type OsFamily = typeof OS_FAMILIES[number];
 
 export const INPUT_TYPES = ['web_url', 'mobile_share_link', 'raw_id', 'other'] as const;
 export type InputType = typeof INPUT_TYPES[number];
+

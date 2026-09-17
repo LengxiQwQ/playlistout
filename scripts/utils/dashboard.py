@@ -161,6 +161,8 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     br_labels, br_counts = dist_names(client.get("browsers")), dist_counts(client.get("browsers"))
     dv_labels, dv_counts = dist_names(client.get("devices")), dist_counts(client.get("devices"))
     os_labels, os_counts = dist_names(client.get("os")), dist_counts(client.get("os"))
+    brand_labels, brand_counts = dist_names(client.get("deviceBrands")), dist_counts(client.get("deviceBrands"))
+
 
     # 导出格式与剪贴板
     fmt_raw = stats.get("exportFormatsBreakdown") or {}
@@ -611,13 +613,13 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
   </div>
 
   <!-- 客户端与环境 -->
-  <div class="section-title">💻 客户端终端环境 <span>/ Client Devices & Browsers</span></div>
-  <div class="chart-grid-3">
+  <div class="section-title">💻 客户端终端与设备品牌 <span>/ Client Devices, Browsers & Mobile Brands</span></div>
+  <div class="chart-grid">
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">主流浏览器</div>
-          <div class="card-subtitle">Web Browsers</div>
+          <div class="card-title">主流浏览器占比</div>
+          <div class="card-subtitle">Web Browsers (WeChat, Chrome, Edge, Safari, Quark, etc.)</div>
         </div>
       </div>
       <div class="chart-box">
@@ -628,8 +630,22 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     <div class="chart-card">
       <div class="card-header">
         <div>
+          <div class="card-title">手机与设备品牌</div>
+          <div class="card-subtitle">Mobile & Hardware Brands (Apple, Xiaomi, Huawei, OPPO, Vivo, etc.)</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartBrand"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
           <div class="card-title">设备终端分类</div>
-          <div class="card-subtitle">Device Categories</div>
+          <div class="card-subtitle">Device Categories (Desktop, Mobile, Tablet)</div>
         </div>
       </div>
       <div class="chart-box">
@@ -641,7 +657,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       <div class="card-header">
         <div>
           <div class="card-title">操作系统</div>
-          <div class="card-subtitle">Operating Systems</div>
+          <div class="card-subtitle">Operating Systems (Windows, iOS, Android, macOS, Linux)</div>
         </div>
       </div>
       <div class="chart-box">
@@ -649,6 +665,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       </div>
     </div>
   </div>
+
 
   <!-- 功能转化与偏好 -->
   <div class="section-title">📦 功能使用与偏好 <span>/ Feature Usage & Formats</span></div>
@@ -941,10 +958,12 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     createHBar('chartGeo', {geo_labels}, {geo_counts}, '#2563eb');
     createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2');
 
-    // 6. 客户端 (浏览器 / 设备 / 操作系统)
+    // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统)
     createDonut('chartBrowser', {br_labels}, {br_counts});
+    createDonut('chartBrand', {brand_labels}, {brand_counts});
     createDonut('chartDevice', {dv_labels}, {dv_counts});
     createDonut('chartOS', {os_labels}, {os_counts});
+
 
     // 7. 导出格式 & 剪贴板 & 输入类型
     new Chart(document.getElementById('chartExportFmt'), {{

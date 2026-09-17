@@ -500,8 +500,28 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
  */
 export async function recordVisit(): Promise<void> {
   const deviceId = getAnonymousDeviceId();
-  const payload = JSON.stringify({ type: 'visit', deviceId });
+
+  // Capture real external referrer (Google, ChatGPT, GitHub, etc.) or campaign params
+  let referrer: string | undefined = undefined;
+  if (typeof document !== 'undefined' && document.referrer) {
+    referrer = document.referrer;
+  }
+  if (!referrer && typeof window !== 'undefined' && window.location) {
+    try {
+      const search = new URLSearchParams(window.location.search);
+      referrer = search.get('utm_source') || search.get('ref') || search.get('from') || undefined;
+    } catch {
+      // ignore
+    }
+  }
+
+  const payload = JSON.stringify({
+    type: 'visit',
+    deviceId,
+    referrer: referrer ? referrer.slice(0, 500) : undefined,
+  });
   const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
 
   try {
     const res = await fetch(url, {

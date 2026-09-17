@@ -41,11 +41,18 @@ describe('Coarse User-Agent Parser', () => {
       expect(parseUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0').browserFamily).toBe('edge');
     });
 
-    it('returns other for bots and unknown', () => {
-      expect(parseUserAgent('Googlebot/2.1 (+http://www.google.com/bot.html)').browserFamily).toBe('other');
-      expect(parseUserAgent('curl/7.68.0').browserFamily).toBe('other');
+    it('identifies WeChat and Chinese mobile browsers', () => {
+      expect(parseUserAgent('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 MicroMessenger/8.0.40').browserFamily).toBe('wechat');
+      expect(parseUserAgent('Mozilla/5.0 (Linux; U; Android 13; zh-CN) Quark/6.5.0').browserFamily).toBe('quark');
+    });
+
+    it('returns bot_crawler for bots and automated tools', () => {
+      expect(parseUserAgent('Googlebot/2.1 (+http://www.google.com/bot.html)').browserFamily).toBe('bot_crawler');
+      expect(parseUserAgent('curl/7.68.0').browserFamily).toBe('bot_crawler');
+      expect(parseUserAgent('CustomUnknownBrowser/1.0').browserFamily).toBe('other');
     });
   });
+
 
   describe('OS classification', () => {
     it('identifies Windows', () => {
