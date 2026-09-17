@@ -183,6 +183,81 @@ def format_os_label(name: str) -> str:
     key = name.strip().lower()
     return OS_NAME_MAP.get(key, name)
 
+REFERRER_NAME_MAP = {
+    "direct": "直接访问 (Direct)",
+    "google": "Google 搜索",
+    "baidu": "百度搜索 (Baidu)",
+    "bing": "Bing 搜索",
+    "sogou": "搜狗搜索 (Sogou)",
+    "chatgpt": "ChatGPT (AI)",
+    "claude": "Claude (AI)",
+    "deepseek": "DeepSeek (AI)",
+    "gemini": "Gemini (AI)",
+    "copilot": "Copilot (AI)",
+    "github": "GitHub",
+    "bilibili": "哔哩哔哩 (B站)",
+    "zhihu": "知乎 (Zhihu)",
+    "v2ex": "V2EX",
+    "xiaohongshu": "小红书",
+    "wechat": "微信群 / 公众号",
+    "weibo": "微博",
+    "other": "其他来源 (Other)",
+}
+
+INPUT_TYPE_MAP = {
+    "web_url": "网页链接 (Web URL)",
+    "mobile_share_link": "手机口令/短链 (Mobile Share)",
+    "raw_id": "纯歌单 ID (Raw ID)",
+    "other": "其他 (Other)",
+}
+
+CLIPBOARD_MODE_MAP = {
+    "title": "歌名 (Title)",
+    "title_artist": "歌名 - 歌手 (Title - Artist)",
+    "title_artist_album": "歌名 - 歌手 - 专辑 (Full)",
+}
+
+ERROR_CATEGORY_MAP = {
+    "error_validation": "链接格式校验错误 (Validation)",
+    "error_not_found": "歌单未找到/未公开 (Not Found)",
+    "error_upstream": "音乐平台接口异常 (Upstream)",
+    "error_rate_limit": "请求触发频控 (Rate Limit)",
+    "error_internal": "系统服务异常 (Internal)",
+}
+
+PLATFORM_NAME_MAP = {
+    "qqmusic": "QQ音乐 (QQ Music)",
+    "netease": "网易云音乐 (NetEase)",
+    "kugou": "酷狗音乐 (KuGou)",
+    "qishui": "汽水音乐 (QiShui)",
+}
+
+def format_referrer_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return REFERRER_NAME_MAP.get(name.strip().lower(), name.capitalize())
+
+def format_input_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return INPUT_TYPE_MAP.get(name.strip().lower(), name)
+
+def format_clipboard_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return CLIPBOARD_MODE_MAP.get(name.strip().lower(), name)
+
+def format_error_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return ERROR_CATEGORY_MAP.get(name.strip().lower(), name)
+
+def format_platform_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return PLATFORM_NAME_MAP.get(name.strip().lower(), name)
+
+
 
 
 # ── 4. HTML 构建 (Modern White Bilingual Dashboard) ───────────────────
@@ -256,24 +331,25 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     fmt_labels, fmt_counts = j(list(fmt_raw.keys())), j(list(fmt_raw.values()))
 
     cb_raw = stats.get("clipboardFormatsBreakdown") or {}
-    cb_labels, cb_counts = j(list(cb_raw.keys())), j(list(cb_raw.values()))
+    cb_labels = j([format_clipboard_label(k) for k in cb_raw.keys()])
+    cb_counts = j(list(cb_raw.values()))
 
     # 平台解析
     plat_raw = stats.get("byPlatform") or {}
-    plat_labels = j(list(plat_raw.keys()))
+    plat_labels = j([format_platform_label(k) for k in plat_raw.keys()])
     plat_counts = j([s((v or {}).get("totalSuccess")) for v in plat_raw.values()])
 
     # 来源、输入方式、延迟与错误
-    ref_labels = dist_names(stats.get("referrerDistribution"))
+    ref_labels = dist_names_mapped(stats.get("referrerDistribution"), format_referrer_label)
     ref_counts = dist_counts(stats.get("referrerDistribution"))
 
-    inp_labels = dist_names(stats.get("inputTypeDistribution"))
+    inp_labels = dist_names_mapped(stats.get("inputTypeDistribution"), format_input_label)
     inp_counts = dist_counts(stats.get("inputTypeDistribution"))
 
     lat_labels = dist_names(stats.get("latencyDistribution"))
     lat_counts = dist_counts(stats.get("latencyDistribution"))
 
-    err_labels = dist_names(stats.get("errorCategoryDistribution"))
+    err_labels = dist_names_mapped(stats.get("errorCategoryDistribution"), format_error_label)
     err_counts = dist_counts(stats.get("errorCategoryDistribution"))
 
     return f"""<!DOCTYPE html>
