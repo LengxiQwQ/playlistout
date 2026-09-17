@@ -421,6 +421,16 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     const topGeo: GeoDistributionItem[] = [];
     const chinaProvinces: ProvinceDistributionItem[] = [];
     try {
+      // R3: Denominator is all known geographic visit records (full population), not just Top 10 sum.
+      const geoTotalRow = await db
+        .prepare(`
+          SELECT SUM(count) as total
+          FROM daily_geo_stats
+          WHERE date = 'TOTAL' AND platform = 'all' AND country != 'UNKNOWN'
+        `)
+        .all<{ total: number | null }>();
+      const geoTotal = geoTotalRow.results?.[0]?.total || 0;
+
       const geoRows = await db
         .prepare(`
           SELECT country, SUM(count) as total
@@ -432,14 +442,26 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         `)
         .all<{ country: string; total: number }>();
 
-      if (geoRows.results && geoRows.results.length > 0) {
-        const geoTotal = geoRows.results.reduce((s, r) => s + r.total, 0) || 1;
+      if (geoRows.results && geoRows.results.length > 0 && geoTotal > 0) {
         for (const r of geoRows.results) {
-          topGeo.push({ country: r.country, count: r.total, percentage: Math.round((r.total / geoTotal) * 100) });
+          topGeo.push({
+            country: r.country,
+            count: r.total,
+            percentage: Math.round((r.total / geoTotal) * 100),
+          });
         }
       }
 
-      // China province distribution
+      // China province distribution — Denominator is all known CN regions, not just Top 10 sum.
+      const cnTotalRow = await db
+        .prepare(`
+          SELECT SUM(count) as total
+          FROM daily_geo_stats
+          WHERE date = 'TOTAL' AND platform = 'all' AND country = 'CN' AND region != 'UNKNOWN'
+        `)
+        .all<{ total: number | null }>();
+      const cnTotal = cnTotalRow.results?.[0]?.total || 0;
+
       const cnRows = await db
         .prepare(`
           SELECT region, SUM(count) as total
@@ -451,10 +473,13 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         `)
         .all<{ region: string; total: number }>();
 
-      if (cnRows.results && cnRows.results.length > 0) {
-        const cnTotal = cnRows.results.reduce((s, r) => s + r.total, 0) || 1;
+      if (cnRows.results && cnRows.results.length > 0 && cnTotal > 0) {
         for (const r of cnRows.results) {
-          chinaProvinces.push({ province: r.region, count: r.total, percentage: Math.round((r.total / cnTotal) * 100) });
+          chinaProvinces.push({
+            province: r.region,
+            count: r.total,
+            percentage: Math.round((r.total / cnTotal) * 100),
+          });
         }
       }
     } catch (err: unknown) {

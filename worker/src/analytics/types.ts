@@ -36,12 +36,20 @@ export interface GeoDistributionItem {
   country: string;
   region?: string;
   count: number;
+  /**
+   * 占已知国家总访问记录的百分比（分母为所有已知国家的记录总和，非仅 Top 10 之和）。
+   * Percentage share among all known geographic visit records (denominator is full known population, not Top 10 sum).
+   */
   percentage: number;
 }
 
 export interface ProvinceDistributionItem {
   province: string;
   count: number;
+  /**
+   * 占中国境内已知省份总访问记录的百分比（分母为所有已知省份的记录总和，非仅 Top 10 之和）。
+   * Percentage share among all known China province visit records (denominator is full known CN population, not Top 10 sum).
+   */
   percentage: number;
 }
 
@@ -92,10 +100,16 @@ export interface PublicStatsResponse {
   /** 今日各小时页面访问量（UTC 0–23时，无数据的小时 pageViews=0） */
   todayHourlyPageViews?: HourlyEntry[];
 
-  /** 全量地理分布 TOP 10 国家 */
+  /**
+   * 访问地区分布 TOP 10 国家（来源于页面访问事件的粗粒度地区记录）。
+   * 分母为全量已知国家访问记录总和，非仅 Top 10 之和。
+   */
   topGeo?: GeoDistributionItem[];
 
-  /** 中国境内省份分布（仅 country=CN 的数据） */
+  /**
+   * 中国境内访问省份分布 TOP 10（来源于页面访问事件，仅 country=CN 且 region!='UNKNOWN' 的数据）。
+   * 分母为全量已知中国省份访问记录总和，非仅 Top 10 之和。
+   */
   chinaProvinces?: ProvinceDistributionItem[];
 
   /** 设备类型 / 浏览器 / 操作系统分布 */
