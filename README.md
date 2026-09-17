@@ -113,7 +113,9 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
   - 公开 GET 接口全面开放跨域（`Access-Control-Allow-Origin: *`），支持在浏览器端直接 `fetch` 调用。
 - **单歌单稳定接口**：`GET /api/v1/playlist?url=<歌单链接或ID>`
 - **用户合集稳定接口**：`GET /api/v1/user/playlists?uid=<UID或QQ号>`
-- **酷狗 Token 凭证传递**：严格遵循安全规范，**禁止**在 Query 参数中传递凭证（如 `?token=...` 会被直接拦截拒绝），须通过标准 HTTP 请求头传递：
+- **酷狗 Token 凭证获取与传递**：
+  - **获取方式**：在网页端「连接酷狗账号」弹窗中，支持桌面端**二维码扫码**与手机端**一键跳转酷狗 App 登录**；连接后可直接在弹窗的「开发者 API 凭证」卡片中**一键复制包含凭据的 cURL 命令、Token 与 UserID**。
+  - **安全规范**：严格遵循安全规范，**禁止**在 Query 参数中传递凭证（如 `?token=...` 会被直接拦截拒绝），须通过标准 HTTP 请求头传递：
   ```bash
   # 携带 Token 与 Userid 完整拉取酷狗 400+ 首全量歌单
   curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://m.kugou.com/songlist/gcid_xxx/" \
