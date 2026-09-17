@@ -265,6 +265,104 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("createDonut('chartDevice', [], []);", html)
         self.assertIn("createDonut('chartPlatform', [], []);", html)
 
+    # R1.1 Tests: Uptime Authenticity & Elimination of Fabricated Running Days
+    def test_uptime_test_a_valid_date(self):
+        """Test A: Valid date (2026-09-12) calculates real running days, never falling back to No data."""
+        import datetime as dt
+        from scripts.utils.collect import PROJECT_LAUNCHED_AT
+
+        self.assertEqual(PROJECT_LAUNCHED_AT, "2026-09-12")
+        days = compute_running_days("2026-09-12", today=dt.date(2026, 9, 18))
+        self.assertEqual(days, 7)
+
+        stats = {"launchedAt": "2026-09-12"}
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        self.assertIn("上线于 2026-09-12", md_zh)
+        self.assertIn("Since 2026-09-12", md_en)
+        self.assertNotIn("暂无数据", md_zh.split("|")[6])  # Uptime cell specifically has data
+        self.assertNotIn("No data", md_en.split("|")[6])
+
+    def test_uptime_test_b_invalid_date(self):
+        """Test B: Invalid date ('abc') must return None/unknown and render 暂无数据 / No data, NEVER 1 or 5."""
+        self.assertIsNone(compute_running_days("abc"))
+        self.assertIsNone(compute_running_days("invalid-date-string"))
+
+        stats = {"launchedAt": "abc"}
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        row_zh = [l for l in md_zh.splitlines() if l.startswith("| **")][0]
+        row_en = [l for l in md_en.splitlines() if l.startswith("| **")][0]
+        uptime_cell_zh = [c.strip() for c in row_zh.split("|") if c.strip()][-1]
+        uptime_cell_en = [c.strip() for c in row_en.split("|") if c.strip()][-1]
+
+        self.assertEqual(uptime_cell_zh, "暂无数据")
+        self.assertEqual(uptime_cell_en, "No data")
+
+        # Must strictly never fabricate 1 or 5
+        self.assertNotIn("1 天", md_zh)
+        self.assertNotIn("1 Day", md_en)
+        self.assertNotIn("5 天", md_zh)
+        self.assertNotIn("5 Days", md_en)
+
+    def test_uptime_test_c_future_date(self):
+        """Test C: Future date must return None and render No data; must NOT secretly clamp to 1 via max(1, ...)."""
+        import datetime as dt
+
+        self.assertIsNone(compute_running_days("2099-01-01"))
+        self.assertIsNone(compute_running_days("2026-09-25", today=dt.date(2026, 9, 18)))
+
+        stats = {"launchedAt": "2099-01-01"}
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        row_zh = [l for l in md_zh.splitlines() if l.startswith("| **")][0]
+        row_en = [l for l in md_en.splitlines() if l.startswith("| **")][0]
+        uptime_cell_zh = [c.strip() for c in row_zh.split("|") if c.strip()][-1]
+        uptime_cell_en = [c.strip() for c in row_en.split("|") if c.strip()][-1]
+
+        self.assertEqual(uptime_cell_zh, "暂无数据")
+        self.assertEqual(uptime_cell_en, "No data")
+
+        self.assertNotIn("1 天", md_zh)
+        self.assertNotIn("1 Day", md_en)
+
+    def test_uptime_test_d_missing_source_canonical_metadata(self):
+        """Test D: Missing source correctly uses canonical PROJECT_LAUNCHED_AT metadata."""
+        import datetime as dt
+        from scripts.utils.collect import PROJECT_LAUNCHED_AT
+
+        # Direct call with None defaults to verified canonical metadata
+        days = compute_running_days(None, today=dt.date(2026, 9, 18))
+        self.assertEqual(days, 7)
+
+        # Stats without launchedAt key uses canonical metadata
+        stats_no_launch = {"totalVisitors": 10}
+        md_zh = render_website_section(stats_no_launch, "2026-09-18", "zh")
+        self.assertIn(f"上线于 {PROJECT_LAUNCHED_AT}", md_zh)
+
+        # Explicitly empty string is invalid and must result in No data
+        self.assertIsNone(compute_running_days(""))
+        stats_empty_launch = {"launchedAt": ""}
+        md_zh_empty = render_website_section(stats_empty_launch, "2026-09-18", "zh")
+        row_empty = [l for l in md_zh_empty.splitlines() if l.startswith("| **")][0]
+        uptime_cell = [c.strip() for c in row_empty.split("|") if c.strip()][-1]
+        self.assertEqual(uptime_cell, "暂无数据")
+
+    def test_dashboard_uptime_handling(self):
+        """Dashboard must handle invalid and future launch dates without pretending uptime is 1."""
+        # Invalid date
+        html_invalid = build_html({"launchedAt": "invalid"}, "2026-09-18", "2026-09-18")
+        self.assertIn("未知 (Unknown)", html_invalid)
+        self.assertNotIn("运行 1 天", html_invalid)
+
+        # Future date
+        html_future = build_html({"launchedAt": "2099-01-01"}, "2026-09-18", "2026-09-18")
+        self.assertIn("未知 (Unknown)", html_future)
+        self.assertNotIn("运行 1 天", html_future)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -262,9 +262,26 @@ def format_platform_label(name: str) -> str:
 
 # ── 4. HTML 构建 (Modern White Bilingual Dashboard) ───────────────────
 
+PROJECT_LAUNCHED_AT = "2026-09-12"
+
 def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     # 基础指标
-    launched = s(stats.get("launchedAt"), "2026-09-12")
+    raw_launched = stats.get("launchedAt")
+    effective_launched = raw_launched if raw_launched is not None else PROJECT_LAUNCHED_AT
+    days = None
+    if isinstance(effective_launched, str) and effective_launched.strip():
+        try:
+            launch_date = dt.date.fromisoformat(effective_launched.strip())
+            diff = (dt.datetime.now(dt.timezone.utc).date() - launch_date).days
+            if diff >= 0:
+                days = diff + 1
+        except (ValueError, TypeError):
+            days = None
+
+    uptime_val = f"{days}" if days is not None else "—"
+    uptime_badge = f"上线 / Launched: {effective_launched} · 运行 {days} 天 (Days)" if days is not None else "上线 / Launched: 未知 (Unknown)"
+    uptime_footer = "连续运行天数 (Days)" if days is not None else "暂无数据 / No Data"
+
     visitors = s(stats.get("totalVisitors"))
     vis_today = s(stats.get("visitorsToday"))
     pv_total = s(stats.get("totalPageViews"))
@@ -275,12 +292,6 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     tracks_today = s(stats.get("tracksProcessedToday"))
     exports_total = s(stats.get("totalExports"))
     exports_today = s(stats.get("exportsToday"))
-
-    try:
-        launch_date = dt.date.fromisoformat(launched)
-        days = (dt.datetime.now(dt.timezone.utc).date() - launch_date).days + 1
-    except Exception:
-        days = 1
 
     # 小时数据 (24小时)
     hourly_raw = stats.get("todayHourlyPageViews") or []
@@ -631,7 +642,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       </div>
     </div>
     <div class="status-group">
-      <span class="status-badge">上线 / Launched: {launched} · 运行 {days} 天 (Days)</span>
+      <span class="status-badge">{uptime_badge}</span>
       <span class="status-time">更新 / Synced: {fetched_at_cn}</span>
     </div>
   </div>
@@ -688,8 +699,8 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
         <span>系统稳定运行</span>
         <span class="kpi-label-en">System Uptime</span>
       </div>
-      <div class="kpi-val">{days}</div>
-      <div class="kpi-footer amber">连续运行天数 (Days)</div>
+      <div class="kpi-val">{uptime_val}</div>
+      <div class="kpi-footer amber">{uptime_footer}</div>
     </div>
   </div>
 
