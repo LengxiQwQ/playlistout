@@ -371,6 +371,58 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       globalThis.fetch = originalFetch;
     });
   });
+
+  describe('GET /api/playlist - Qishui Provider Support', () => {
+    it('dispatches Qishui URL and successfully returns normalized playlist', async () => {
+      const originalFetch = globalThis.fetch;
+      const mockQishuiData = {
+        has_more: false,
+        next_cursor: '',
+        playlist: {
+          id: '7087507348697186339',
+          title: '冷汐的汽水歌单',
+          count_tracks: 1,
+          owner: { nickname: '冷汐' },
+        },
+        media_resources: [
+          {
+            id: '1001',
+            type: 'track',
+            entity: {
+              track_wrapper: {
+                track: {
+                  id: '1001',
+                  name: '汽水歌曲',
+                  artists: [{ name: '汽水歌手' }],
+                },
+              },
+            },
+          },
+        ],
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockQishuiData,
+      } as unknown as Response);
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/playlist?url=https%3A%2F%2Fmusic.douyin.com%2Fqishui%2Fshare%2Fplaylist%3Fplaylist_id%3D7087507348697186339',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as any;
+      expect(body.success).toBe(true);
+      expect(body.data.platform).toBe('qishui');
+      expect(body.data.id).toBe('7087507348697186339');
+      expect(body.data.name).toBe('冷汐的汽水歌单');
+      expect(body.data.tracks.length).toBe(1);
+      expect(body.data.tracks[0].title).toBe('汽水歌曲');
+
+      globalThis.fetch = originalFetch;
+    });
+  });
 });
 
 

@@ -150,6 +150,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
 
       <section
         id="user-playlists"
+        data-testid="user-playlists"
         className="result-paper-section"
         style={{
           maxWidth: 'var(--result-paper-width, 1050px)',

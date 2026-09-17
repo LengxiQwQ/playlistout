@@ -181,7 +181,7 @@ describe('CSV Export', () => {
 
     const content = csv.slice(1);
     // Standard RFC 4180: Starts directly with header row, zero comment lines
-    expect(content.startsWith('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态')).toBe(true);
+    expect(content.startsWith('序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态')).toBe(true);
     expect(content).not.toContain('# 创建时间');
     expect(content).not.toContain('# 导出工具');
 
@@ -210,7 +210,7 @@ describe('CSV Export', () => {
     expect(content).toContain('# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
     expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
-    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态');
+    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态');
   });
 });
 
@@ -320,6 +320,43 @@ describe('JSON Export', () => {
     expect(parsed.tracks[0].title).toBe('晴天');
     expect(parsed.tracks[7].title).toBe('晴天');
     expect(parsed.tracks[7].index).toBe(8);
+  });
+});
+
+describe('Original Sound Export Handling', () => {
+  it('includes [视频原声] in TXT, 类型 in CSV and XLSX, and isOriginalSound in JSON', () => {
+    const ugcPlaylist: Playlist = {
+      platform: 'qishui',
+      id: 'ugc_123',
+      name: '抖音收藏音乐',
+      trackCount: 1,
+      tracks: [
+        {
+          index: 1,
+          id: 'sound_001',
+          title: '@创作者创作的原声',
+          artists: ['创作者'],
+          isOriginalSound: true,
+        },
+      ],
+    };
+
+    const txt = generateTXT(ugcPlaylist);
+    expect(txt).toContain('@创作者创作的原声 - 创作者 [视频原声]');
+
+    const csv = generateCSV(ugcPlaylist);
+    expect(csv).toContain("1,'@创作者创作的原声,创作者,,—,视频原声,—,正常");
+
+    const bytes = generateXLSX(ugcPlaylist);
+    const wb = XLSX.read(bytes, { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets['歌单歌曲'], { header: 1 });
+    const headerRow = rows.find((r) => r[0] === '序号')!;
+    expect(headerRow).toContain('类型');
+    const songRow = rows[rows.indexOf(headerRow) + 1];
+    expect(songRow).toContain('视频原声');
+
+    const json = JSON.parse(generateJSON(ugcPlaylist));
+    expect(json.tracks[0].isOriginalSound).toBe(true);
   });
 });
 

@@ -19,7 +19,11 @@ export interface SearchNoteProps {
   isLoading: boolean;
   error: ApiError | null;
   onRetry: () => void;
-  onSelectSample: (sampleId: string) => void;
+  onSelectSample: (
+    sampleId: string,
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+    modeHint?: 'user' | 'playlist',
+  ) => void;
 }
 
 export const SearchNote: React.FC<SearchNoteProps> = ({
@@ -200,7 +204,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             type="button"
             color="white"
             rotateDeg={-1}
-            onClick={() => onSelectSample('9044196528')}
+            onClick={() => onSelectSample('3197635836', 'qqmusic', 'user')}
             className="font-handwriting"
             style={{
               padding: '0.35rem 0.9rem',
@@ -210,45 +214,13 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               cursor: 'pointer',
             }}
           >
-            {t.search.sampleFolk}
+            {t.search.sampleQQ}
           </Sticker>
           <Sticker
             type="button"
             color="white"
             rotateDeg={1}
-            onClick={() => onSelectSample('8079931214')}
-            className="font-handwriting"
-            style={{
-              padding: '0.35rem 0.9rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              fontFamily: 'var(--font-handwriting, cursive)',
-              cursor: 'pointer',
-            }}
-          >
-            {t.search.sampleJay}
-          </Sticker>
-          <Sticker
-            type="button"
-            color="white"
-            rotateDeg={-0.5}
-            onClick={() => onSelectSample('7684752768')}
-            className="font-handwriting"
-            style={{
-              padding: '0.35rem 0.9rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              fontFamily: 'var(--font-handwriting, cursive)',
-              cursor: 'pointer',
-            }}
-          >
-            {t.search.sampleJpKr}
-          </Sticker>
-          <Sticker
-            type="button"
-            color="white"
-            rotateDeg={1}
-            onClick={() => onSelectSample('https://music.163.com/playlist?id=2756674066')}
+            onClick={() => onSelectSample('https://163cn.tv/bgx9GaCN', 'netease', 'user')}
             className="font-handwriting"
             style={{
               padding: '0.35rem 0.9rem',
@@ -259,6 +231,44 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             }}
           >
             {t.search.sampleNetease}
+          </Sticker>
+          <Sticker
+            type="button"
+            color="white"
+            rotateDeg={-0.5}
+            onClick={() => onSelectSample('https://qishui.douyin.com/s/iXHhKHhY/', 'qishui', 'playlist')}
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
+          >
+            {t.search.sampleQishui}
+          </Sticker>
+          <Sticker
+            type="button"
+            color="white"
+            rotateDeg={1}
+            onClick={() =>
+              onSelectSample(
+                'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1',
+                'kugou',
+                'playlist',
+              )
+            }
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
+          >
+            {t.search.sampleKugou}
           </Sticker>
         </div>
 
@@ -323,11 +333,24 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             >
               {t.search.platformNetease}
             </Sticker>
-            {/* Kugou: single unified sticker showing login state */}
+            <Sticker
+              color="lime"
+              rotateDeg={-1}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '1rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+              }}
+              title={t.search.platformQishuiDesc}
+            >
+              {t.search.platformQishui}
+            </Sticker>
+            {/* Kugou: single unified sticker showing login state — placed last */}
             <Sticker
               type="button"
               color={hasKugou ? 'green' : 'blue'}
-              rotateDeg={-1}
+              rotateDeg={1}
               onClick={() => setIsKugouModalOpen(true)}
               style={{
                 padding: '0.25rem 0.75rem',

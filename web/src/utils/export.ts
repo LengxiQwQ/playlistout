@@ -123,6 +123,15 @@ export function getTrackIsVip(track: { isVip?: boolean; status?: string }): bool
 }
 
 /**
+ * Returns user-friendly track type text (e.g. 视频原声, 视频片段, 歌曲).
+ */
+export function getTrackTypeText(track: { isOriginalSound?: boolean; statusText?: string }): string {
+  if (track.isOriginalSound) return '视频原声';
+  if (track.statusText === '视频') return '视频片段';
+  return '歌曲';
+}
+
+/**
  * Generates plain text content with stationery header.
  * Creation time first, Export time second (adjacent).
  * Kept faithful to source text without formula injection escaping.
@@ -173,17 +182,18 @@ export function generateTXT(playlist: Playlist): string {
     const title = cleanSingleLine(track.title || '');
     const artistStr = cleanSingleLine(formatArtists(track.artists));
     const albumStr = cleanSingleLine(track.album || '');
+    const typeTag = track.isOriginalSound ? ' [视频原声]' : (track.statusText === '视频' ? ' [视频]' : '');
     const statusTag =
       track.isAvailable === false || (track.status && track.status !== 'playable')
         ? ` [${getTrackStatusText(track)}]`
         : '';
 
     if (albumStr && artistStr) {
-      lines.push(`${title} - ${artistStr} - ${albumStr}${statusTag}`);
+      lines.push(`${title} - ${artistStr} - ${albumStr}${typeTag}${statusTag}`);
     } else if (artistStr) {
-      lines.push(`${title} - ${artistStr}${statusTag}`);
+      lines.push(`${title} - ${artistStr}${typeTag}${statusTag}`);
     } else {
-      lines.push(`${title}${statusTag}`);
+      lines.push(`${title}${typeTag}${statusTag}`);
     }
   }
 
@@ -234,7 +244,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
     `# 歌单链接: ${sourceUrl}`,
   ].filter((line): line is string => line !== null);
 
-  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', 'VIP', '歌曲状态'];
+  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态'];
   const rows: string[][] = [header];
 
   for (const track of playlist.tracks) {
@@ -244,6 +254,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
       formatArtists(track.artists),
       track.album || '',
       formatDuration(track.durationMs),
+      getTrackTypeText(track),
       getTrackIsVip(track) ? 'VIP' : '—',
       getTrackStatusText(track),
     ]);
@@ -295,13 +306,14 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   // Blank separator row
   metaRows.push([]);
 
-  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', 'VIP', '歌曲状态'];
+  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态'];
   const songRows = playlist.tracks.map((track) => [
     track.index,
     sanitizeSpreadsheetCell(track.title || ''),
     sanitizeSpreadsheetCell(formatArtists(track.artists)),
     sanitizeSpreadsheetCell(track.album || ''),
     formatDuration(track.durationMs),
+    getTrackTypeText(track),
     getTrackIsVip(track) ? 'VIP' : '—',
     sanitizeSpreadsheetCell(getTrackStatusText(track)),
   ]);
@@ -318,6 +330,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
     { wch: 22 }, // 歌手 / 辅助属性名
     { wch: 25 }, // 专辑 / 辅助属性值
     { wch: 10 }, // 时长
+    { wch: 12 }, // 类型
     { wch: 8 },  // VIP
     { wch: 14 }, // 歌曲状态
   ];
@@ -366,6 +379,7 @@ export function generateJSON(playlist: Playlist): string {
       artists: t.artists,
       album: t.album || '',
       durationMs: t.durationMs,
+      isOriginalSound: Boolean(t.isOriginalSound),
       isVip: Boolean(t.isVip || t.status === 'vip'),
       isAvailable: t.isAvailable ?? true,
       status: t.status || (t.isAvailable === false ? 'unplayable' : 'playable'),

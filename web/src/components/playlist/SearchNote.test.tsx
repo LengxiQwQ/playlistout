@@ -34,9 +34,9 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.getByText('酷狗音乐（未登录）')).toBeInTheDocument();
 
     // Click sample
-    const sampleJay = screen.getByText('周杰伦 (172首)');
-    fireEvent.click(sampleJay);
-    expect(handleSelectSample).toHaveBeenCalledWith('8079931214');
+    const sampleQQ = screen.getByText('QQ音乐批量');
+    fireEvent.click(sampleQQ);
+    expect(handleSelectSample).toHaveBeenCalledWith('3197635836', 'qqmusic', 'user');
 
     // Click parse
     const parseBtn = screen.getByRole('button', { name: '解析' });
@@ -82,7 +82,7 @@ describe('SearchNote Component (Phase 4)', () => {
     );
 
     expect(screen.getByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐公开歌单/)).toBeInTheDocument();
 
     const retryBtn = screen.getByRole('button', { name: '重试' });
     fireEvent.click(retryBtn);

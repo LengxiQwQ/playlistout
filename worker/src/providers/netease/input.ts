@@ -133,22 +133,36 @@ export async function extractNeteasePlaylistId(input: string): Promise<string> {
     const cleanUrl = resolved.replace(/#\//, ''); // Handle hash routing like #/playlist?id=...
     const parsed = new URL(cleanUrl);
 
-    const idFromQuery = parsed.searchParams.get('id');
-    if (idFromQuery && /^\d{4,18}$/.test(idFromQuery)) {
-      return idFromQuery;
+    // If resolved URL is explicitly a user profile, reject immediately rather than treating UID as playlist ID
+    if (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home')) {
+      throw new ProviderError(
+        'INVALID_INPUT',
+        `The provided NetEase URL is a user profile, not a playlist: "${input}".`,
+        400,
+      );
     }
 
     const pathMatch = parsed.pathname.match(/\/playlist\/(\d{4,18})/);
     if (pathMatch) {
       return pathMatch[1];
     }
-  } catch {
+
+    if (parsed.pathname.includes('/playlist') || parsed.pathname === '/' || parsed.pathname === '') {
+      const idFromQuery = parsed.searchParams.get('id');
+      if (idFromQuery && /^\d{4,18}$/.test(idFromQuery)) {
+        return idFromQuery;
+      }
+    }
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
     // Fallback regex over string directly
   }
 
-  const directMatch = resolved.match(/(?:[?&]id=|\/playlist\/|\/playlist\?id=)(\d{4,18})/i);
-  if (directMatch) {
-    return directMatch[1];
+  if (!/(?:user|\/m\/user|\/home)/i.test(resolved)) {
+    const directMatch = resolved.match(/(?:[?&]id=|\/playlist\/|\/playlist\?id=)(\d{4,18})/i);
+    if (directMatch) {
+      return directMatch[1];
+    }
   }
 
   throw new ProviderError(

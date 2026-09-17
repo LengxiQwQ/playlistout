@@ -18,6 +18,7 @@ export interface Track {
   isVip?: boolean;
   status?: TrackAvailability;
   statusText?: string;
+  isOriginalSound?: boolean;
 }
 
 export type PlaylistRetrievalMode = 'full' | 'preview';

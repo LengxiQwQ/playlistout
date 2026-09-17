@@ -49,10 +49,10 @@ export interface Translations {
     parsingButton: string;
     clearInput: string;
     quickSamplesLabel: string;
-    sampleFolk: string;
-    sampleJay: string;
-    sampleJpKr: string;
+    sampleQQ: string;
     sampleNetease: string;
+    sampleQishui: string;
+    sampleKugou: string;
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;
@@ -60,6 +60,8 @@ export interface Translations {
     platformNeteaseDesc: string;
     platformKugou: string;
     platformKugouDesc: string;
+    platformQishui: string;
+    platformQishuiDesc: string;
     kugouLoggedIn: string;
     kugouNotLoggedIn: string;
     kugouLoginBadge: string;
@@ -124,6 +126,8 @@ export interface Translations {
     colDuration: string;
     colVip: string;
     colStatus: string;
+    typeOriginalSound: string;
+    typeVideo: string;
     statusPlayable: string;
     statusUnplayable: string;
     statusGeoBlocked: string;
