@@ -273,5 +273,12 @@ export interface Translations {
     logoutConfirm: string;
     logoutSuccess: string;
     cancel: string;
+    jumpToAppBtn: string;
+    jumpToAppTip: string;
+    apiCredentialsTitle: string;
+    copyToken: string;
+    copyUserId: string;
+    copyCurl: string;
+    copied: string;
   };
 }

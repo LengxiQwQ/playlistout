@@ -273,6 +273,13 @@ export const zhCN: Translations = {
     logoutConfirm: '确定要退出酷狗登录吗？',
     logoutSuccess: '已退出酷狗账号',
     cancel: '取消',
+    jumpToAppBtn: '📱 一键跳转酷狗 App 授权',
+    jumpToAppTip: '手机/平板无法扫码？点击上方按钮唤起酷狗 App 授权，或长按二维码保存至相册在酷狗内扫一扫识别。',
+    apiCredentialsTitle: '🔑 开发者 / API 调用凭据',
+    copyToken: '复制 Token',
+    copyUserId: '复制 User ID',
+    copyCurl: '📋 复制 cURL 命令',
+    copied: '已复制 ✓',
   },
 };
 

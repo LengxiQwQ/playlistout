@@ -207,4 +207,74 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     fireEvent.click(backdrop);
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
+
+  it('renders jump to KuGou App button with loginUrl and mobile tips', async () => {
+    vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
+      success: true,
+      data: {
+        qrcode: 'test-qr-key',
+        qrcodeImg: 'data:image/png;base64,test',
+        loginUrl: 'https://h5.kugou.com/apps/loginQRCode/html/index.html?qrcode=test-qr-key',
+        expiresAt: Date.now() + 300000,
+      },
+    });
+
+    render(<KugouAuthModal isOpen={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      const jumpBtn = screen.getByTestId('kugou-jump-app-btn');
+      expect(jumpBtn).toBeInTheDocument();
+      expect(jumpBtn).toHaveAttribute(
+        'href',
+        'https://h5.kugou.com/apps/loginQRCode/html/index.html?qrcode=test-qr-key',
+      );
+      expect(jumpBtn).toHaveAttribute('target', '_blank');
+      expect(screen.getByText(/手机\/平板无法扫码/)).toBeInTheDocument();
+    });
+  });
+
+  it('renders developer API credentials card in valid state and allows copying credentials', async () => {
+    kugouAuthUtil.setKugouAuth('test_token_1234567890abcdef', '1425711902');
+
+    vi.spyOn(apiClient, 'validateKugouAuth').mockResolvedValue({
+      success: true,
+      data: { status: 'valid', userid: '1425711902' },
+    });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(<KugouAuthModal isOpen={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('kugou-api-credentials')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('1425711902')).toBeInTheDocument();
+    expect(screen.getByText(/test_token/)).toBeInTheDocument();
+
+    // Copy User ID
+    const copyUserIdBtn = screen.getByTestId('copy-kugou-userid-btn');
+    fireEvent.click(copyUserIdBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('1425711902');
+
+    // Copy Token
+    const copyTokenBtn = screen.getByTestId('copy-kugou-token-btn');
+    fireEvent.click(copyTokenBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('test_token_1234567890abcdef');
+
+    // Copy cURL command
+    const copyCurlBtn = screen.getByTestId('copy-kugou-curl-btn');
+    fireEvent.click(copyCurlBtn);
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?platform=kugou"'),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Bearer test_token_1234567890abcdef'),
+    );
+  });
 });

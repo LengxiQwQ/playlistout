@@ -273,6 +273,13 @@ export const enUS: Translations = {
     logoutConfirm: 'Are you sure you want to disconnect KuGou account?',
     logoutSuccess: 'Disconnected KuGou account',
     cancel: 'Cancel',
+    jumpToAppBtn: '📱 Jump to KuGou App to Authorize',
+    jumpToAppTip: 'Cannot scan on phone or tablet? Tap the button above to launch KuGou App, or long-press the QR code to save to Photos and scan from album in App.',
+    apiCredentialsTitle: '🔑 Developer / API Credentials',
+    copyToken: 'Copy Token',
+    copyUserId: 'Copy User ID',
+    copyCurl: '📋 Copy cURL Command',
+    copied: 'Copied ✓',
   },
 };
 
