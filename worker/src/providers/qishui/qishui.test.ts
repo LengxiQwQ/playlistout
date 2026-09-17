@@ -324,7 +324,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(track.id).toBe('999999999');
     expect(track.title).toBe('未知或已下架音频');
     expect(track.isAvailable).toBe(false);
-    expect(track.status).toBe('unavailable');
+    expect(track.status).toBe('unplayable');
   });
 
   it('throws PARSE_ERROR when media resource is null or non-object', () => {

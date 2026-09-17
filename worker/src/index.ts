@@ -11,6 +11,7 @@ import type { PublicStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit } from './security/rate-limit';
+import { extractCleanUrlOrInput } from './utils/clean-url';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -318,9 +319,9 @@ export default {
         );
       }
 
-      const playlistInput = url.searchParams.get('url');
+      const rawPlaylistParam = url.searchParams.get('url');
 
-      if (!playlistInput || playlistInput.trim().length === 0) {
+      if (!rawPlaylistParam || rawPlaylistParam.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
@@ -337,7 +338,7 @@ export default {
         });
       }
 
-      if (playlistInput.length > 2048) {
+      if (rawPlaylistParam.length > 2048) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
@@ -353,6 +354,8 @@ export default {
           },
         });
       }
+
+      const playlistInput = extractCleanUrlOrInput(rawPlaylistParam);
 
       const authHeader = request.headers.get('authorization') || '';
       const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -585,8 +588,8 @@ export default {
         );
       }
 
-      const rawUserInput = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url');
-      if (!rawUserInput || rawUserInput.trim().length === 0) {
+      const rawUserInputParam = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url');
+      if (!rawUserInputParam || rawUserInputParam.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
           success: false,
           error: {
@@ -602,6 +605,8 @@ export default {
           },
         });
       }
+
+      const rawUserInput = extractCleanUrlOrInput(rawUserInputParam);
 
       const platformParam = url.searchParams.get('platform');
 

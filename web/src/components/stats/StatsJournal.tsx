@@ -557,6 +557,7 @@ export const StatsJournal: React.FC = () => {
         borderVariant="subtle"
         shadow="paper-sm"
         rotateDeg={0.4}
+        tiltFactor={0.25}
         style={{
           padding: '1.75rem 2rem',
           margin: '0 auto',

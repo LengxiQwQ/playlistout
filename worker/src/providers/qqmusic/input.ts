@@ -33,16 +33,23 @@ export function extractQQPlaylistId(rawInput: string): string {
   // 2. Parse as a URL
   let parsedUrl: URL;
   try {
-    // If no protocol is specified but starts with y.qq.com or i.y.qq.com, prefix https://
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(input);
+    if (hasScheme && !/^https?:\/\//i.test(input)) {
+      throw new ProviderError('UNSUPPORTED_URL', `Unsupported URL scheme in "${input}". Only HTTP and HTTPS are supported.`, 400);
+    }
     const urlToParse = /^https?:\/\//i.test(input) ? input : `https://${input}`;
     parsedUrl = new URL(urlToParse);
-  } catch {
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
     throw new ProviderError('INVALID_INPUT', 'The provided input is not a valid URL or numeric playlist ID.', 400);
   }
 
   const hostname = parsedUrl.hostname.toLowerCase();
   const allowedHosts = ['y.qq.com', 'i.y.qq.com'];
-  if (!allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))) {
+  if (
+    (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') ||
+    !allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))
+  ) {
     throw new ProviderError('UNSUPPORTED_URL', `Unsupported music platform host: "${hostname}". Currently only QQ Music is supported.`, 400);
   }
 
@@ -86,8 +93,15 @@ export function matchesQQMusicInput(rawInput: string): boolean {
   if (/^\d{5,18}$/.test(input)) return true;
 
   try {
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(input);
+    if (hasScheme && !/^https?:\/\//i.test(input)) {
+      return false;
+    }
     const urlToParse = /^https?:\/\//i.test(input) ? input : `https://${input}`;
     const parsedUrl = new URL(urlToParse);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return false;
+    }
     const host = parsedUrl.hostname.toLowerCase();
     return host === 'y.qq.com' || host === 'i.y.qq.com' || host.endsWith('.y.qq.com');
   } catch {

@@ -7,6 +7,7 @@ export interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
   rotateDeg?: number;
   ruled?: boolean;
   interactive?: boolean;
+  tiltFactor?: number;
   as?: 'div' | 'section' | 'article';
 }
 
@@ -40,6 +41,7 @@ export const Paper: React.FC<PaperProps> = ({
   rotateDeg = 0,
   ruled = false,
   interactive = true,
+  tiltFactor = 1,
   as: Component = 'div',
   className = '',
   style,
@@ -80,15 +82,16 @@ export const Paper: React.FC<PaperProps> = ({
     const pctX = (x / rect.width) * 100;
     const pctY = (y / rect.height) * 100;
 
-    // Noticeable, tactile 3D orientation for small sticky notes (幅度明显增大):
-    const tiltX = -normY * 4.2;
-    const tiltY = normX * 4.8;
-    const tiltZ = normX * normY * 0.8;
+    // 3D orientation scaling factor:
+    const factor = typeof tiltFactor === 'number' ? tiltFactor : 1;
+    const tiltX = -normY * 4.2 * factor;
+    const tiltY = normX * 4.8 * factor;
+    const tiltZ = normX * normY * 0.8 * factor;
 
     // Hard, wider warm shadow with noticeable dynamic excursion:
-    const shadowX = 4.8 + normX * 2.2;
-    const shadowY = 5.8 + normY * 2.5;
-    const shadowBlur = 2.0 + Math.abs(normX) * 1.2 + Math.abs(normY) * 1.2;
+    const shadowX = 4.8 + normX * 2.2 * factor;
+    const shadowY = 5.8 + normY * 2.5 * factor;
+    const shadowBlur = 2.0 + (Math.abs(normX) * 1.2 + Math.abs(normY) * 1.2) * factor;
 
     const el = paperRef.current;
     el.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);

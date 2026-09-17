@@ -10,6 +10,7 @@ import type { ApiError } from '../../api/types';
 import { getFriendlyErrorMessage } from '../../utils/errors';
 import { KugouAuthModal } from '../auth/KugouAuthModal';
 import { hasKugouAuth } from '../../utils/kugouAuth';
+import { extractCleanUrlOrInput } from '../../utils/validation';
 
 export interface SearchNoteProps {
   inputUrl: string;
@@ -163,6 +164,16 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
                 <PaperInput
                   value={inputUrl}
                   onChange={(e) => onInputChange(e.target.value)}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData('text');
+                    if (text) {
+                      const cleaned = extractCleanUrlOrInput(text);
+                      if (cleaned && cleaned !== text) {
+                        e.preventDefault();
+                        onInputChange(cleaned);
+                      }
+                    }
+                  }}
                   onClear={onClear}
                   placeholder={t.search.placeholder}
                   aria-label={t.search.placeholder}
