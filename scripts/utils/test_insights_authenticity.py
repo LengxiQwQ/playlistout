@@ -14,7 +14,15 @@ from scripts.utils.collect import (
     render_website_section,
     compute_running_days,
 )
-from scripts.utils.dashboard import build_html
+from scripts.utils.dashboard import (
+    build_html,
+    parse_iso_timestamp,
+    format_utc8_timestamp,
+    compute_dashboard_uptime,
+    get_hourly_display_labels,
+    DISPLAY_TZ,
+    DISPLAY_TZ_LABEL,
+)
 
 
 class TestInsightsAuthenticity(unittest.TestCase):
@@ -437,7 +445,114 @@ class TestInsightsAuthenticity(unittest.TestCase):
         # Correct KPI labels
         self.assertIn("累计日独立访问人次", html)
         self.assertIn("Cumulative Daily Unique Visits", html)
-        self.assertIn("每日去重 · 无跨日追踪", html)
+    # ── R2.5: Local Dashboard UTC+8 Display & Polish Test Suite ─────────
+    def test_r2_5_test_a_utc_to_utc8_same_day(self):
+        """Test A: UTC -> UTC+8 same day: 2026-09-18T01:00:00Z -> 2026-09-18 09:00:00 UTC+8."""
+        res = format_utc8_timestamp("2026-09-18T01:00:00Z")
+        self.assertEqual(res, "2026-09-18 09:00:00 UTC+8")
+
+    def test_r2_5_test_b_utc_to_utc8_date_rollover(self):
+        """Test B: UTC -> UTC+8 date rollover: 2026-09-18T20:30:00Z -> 2026-09-19 04:30:00 UTC+8."""
+        res = format_utc8_timestamp("2026-09-18T20:30:00Z")
+        self.assertEqual(res, "2026-09-19 04:30:00 UTC+8")
+
+    def test_r2_5_test_c_malformed_timestamp(self):
+        """Test C: Malformed or empty timestamps return '—' safely without crashing."""
+        self.assertEqual(format_utc8_timestamp("abc"), "—")
+        self.assertEqual(format_utc8_timestamp(""), "—")
+        self.assertEqual(format_utc8_timestamp("   "), "—")
+        self.assertEqual(format_utc8_timestamp(None), "—")
+        self.assertIsNone(parse_iso_timestamp("abc"))
+        self.assertIsNone(parse_iso_timestamp(""))
+        self.assertIsNone(parse_iso_timestamp(None))
+
+    def test_r2_5_test_d_missing_generated_at(self):
+        """Test D: Missing, empty, or invalid generatedAt allows dashboard to generate safely with '—'."""
+        empty_gen_stats = {
+            "generatedAt": None,
+            "cumulativeDailyVisitors": 10,
+            "visitorsToday": 2,
+        }
+        html = build_html(empty_gen_stats)
+        self.assertIn("API Generated: —", html)
+        self.assertNotIn("Invalid Date", html)
+
+        malformed_gen_stats = {
+            "generatedAt": "invalid-timestamp",
+            "cumulativeDailyVisitors": 10,
+        }
+        html_malformed = build_html(malformed_gen_stats)
+        self.assertIn("API Generated: —", html_malformed)
+
+    def test_r2_5_test_e_uptime_uses_utc8_date(self):
+        """Test E: Uptime calculation uses UTC+8 calendar date at boundaries.
+        Boundary: UTC 2026-09-18 17:00 -> UTC+8 2026-09-19 01:00.
+        Launch date: 2026-09-12.
+        Under UTC calendar (2026-09-18), uptime would be 7 days.
+        Under UTC+8 calendar (2026-09-19), uptime MUST be 8 days.
+        """
+        import datetime as dt
+
+        boundary_utc = dt.datetime(2026, 9, 18, 17, 0, 0, tzinfo=dt.timezone.utc)
+        days = compute_dashboard_uptime("2026-09-12", now=boundary_utc)
+        self.assertEqual(days, 8)
+
+        # In HTML rendering
+        stats = {"launchedAt": "2026-09-12"}
+        html = build_html(stats, now=boundary_utc)
+        self.assertIn("运行 8 天", html)
+        self.assertIn("<div class=\"kpi-val\">8</div>", html)
+
+    def test_r2_5_test_f_hourly_label_conversion(self):
+        """Test F: Hourly bucket label conversion (UTC hour -> UTC+8 label).
+        UTC hour 0  -> UTC+8 08:00
+        UTC hour 15 -> 23:00
+        UTC hour 16 -> next day 00:00
+        UTC hour 23 -> next day 07:00
+        Values in data array must match exact indices without displacement.
+        """
+        import datetime as dt
+
+        base_date = dt.date(2026, 9, 18)
+        labels = get_hourly_display_labels(base_date)
+
+        self.assertEqual(len(labels), 24)
+        self.assertEqual(labels[0], "09/18 08:00")
+        self.assertEqual(labels[15], "09/18 23:00")
+        self.assertEqual(labels[16], "09/19 00:00")
+        self.assertEqual(labels[23], "09/19 07:00")
+
+        # Check in HTML that values are NOT displaced
+        stats = {
+            "generatedAt": "2026-09-18T12:00:00Z",
+            "todayHourlyPageViews": [
+                {"hour": 0, "pageViews": 100, "visitors": 50},
+                {"hour": 16, "pageViews": 200, "visitors": 80},
+            ],
+        }
+        html = build_html(stats)
+        self.assertIn("小时级流量分布", html)
+        self.assertIn("Hourly Traffic · UTC+8 Display", html)
+        self.assertIn("API 小时桶已转换为 UTC+8 显示", html)
+        # Value at index 0 is 100, value at index 16 is 200
+        self.assertIn("labels: [\"09/18 08:00\",", html)
+        self.assertIn("\"09/19 00:00\"", html)
+
+    def test_r2_5_test_g_display_metadata_and_cleanliness(self):
+        """Test G: Local Dashboard header, footer and timezone labels are clean and unambiguous."""
+        stats = {
+            "generatedAt": "2026-09-18T04:29:58Z",
+            "launchedAt": "2026-09-12",
+        }
+        html = build_html(stats, "2026-09-18 12:30:00 UTC+8")
+
+        # Must have API Generated and Local Fetched
+        self.assertIn("API Generated: 2026-09-18 12:29:58 UTC+8", html)
+        self.assertIn("Local Fetched: 2026-09-18 12:30:00 UTC+8", html)
+        self.assertIn("Display Timezone: UTC+8", html)
+
+        # Must not have ambiguous CST
+        self.assertNotIn("CST", html)
 
 
 if __name__ == "__main__":

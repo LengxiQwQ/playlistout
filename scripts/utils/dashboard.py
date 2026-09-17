@@ -262,25 +262,107 @@ def format_platform_label(name: str) -> str:
 
 # ── 4. HTML 构建 (Modern White Bilingual Dashboard) ───────────────────
 
+DISPLAY_TZ = dt.timezone(dt.timedelta(hours=8))
+DISPLAY_TZ_LABEL = "UTC+8"
 PROJECT_LAUNCHED_AT = "2026-09-12"
 
-def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
-    # 基础指标
+
+def parse_iso_timestamp(ts: str | None) -> dt.datetime | None:
+    """安全解析 ISO 8601 时间戳字符串，返回带有时区信息的 datetime 对象。异常或缺失时返回 None。"""
+    if not ts or not isinstance(ts, str):
+        return None
+    raw = ts.strip()
+    if not raw:
+        return None
+    try:
+        clean = raw.replace("Z", "+00:00")
+        parsed = dt.datetime.fromisoformat(clean)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        return parsed
+    except Exception:
+        return None
+
+
+def format_utc8_timestamp(val: dt.datetime | str | None) -> str:
+    """将 datetime 或 ISO 时间字符串格式化为 YYYY-MM-DD HH:mm:ss UTC+8 格式。"""
+    if val is None:
+        return "—"
+    if isinstance(val, dt.datetime):
+        dt_val = val.astimezone(DISPLAY_TZ) if val.tzinfo is not None else val.replace(tzinfo=DISPLAY_TZ)
+        return f"{dt_val.strftime('%Y-%m-%d %H:%M:%S')} {DISPLAY_TZ_LABEL}"
+    if isinstance(val, str):
+        parsed = parse_iso_timestamp(val)
+        if parsed is not None:
+            dt_val = parsed.astimezone(DISPLAY_TZ)
+            return f"{dt_val.strftime('%Y-%m-%d %H:%M:%S')} {DISPLAY_TZ_LABEL}"
+        return "—"
+    return "—"
+
+
+def compute_dashboard_uptime(
+    launched_at: str | None = PROJECT_LAUNCHED_AT,
+    now: dt.datetime | None = None,
+) -> int | None:
+    """计算基于 UTC+8 当前自然日的系统稳定运行天数。"""
+    effective_launched = launched_at if launched_at is not None else PROJECT_LAUNCHED_AT
+    if not isinstance(effective_launched, str) or not effective_launched.strip():
+        return None
+    try:
+        launch_date = dt.date.fromisoformat(effective_launched.strip())
+        if now is None:
+            current_date = dt.datetime.now(DISPLAY_TZ).date()
+        else:
+            if now.tzinfo is not None:
+                current_date = now.astimezone(DISPLAY_TZ).date()
+            else:
+                current_date = now.date()
+        diff = (current_date - launch_date).days
+        if diff >= 0:
+            return diff + 1
+        return None
+    except (ValueError, TypeError):
+        return None
+
+
+def get_hourly_display_labels(base_utc_date: dt.date | None = None) -> list[str]:
+    """生成与 UTC 0..23 小时桶一一对应的 UTC+8 显示标签 (短格式 MM/DD HH:mm 带跨日标注)。"""
+    if base_utc_date is None:
+        base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+    labels = []
+    for h in range(24):
+        utc_dt = dt.datetime(
+            base_utc_date.year, base_utc_date.month, base_utc_date.day,
+            h, 0, 0, tzinfo=dt.timezone.utc
+        )
+        local_dt = utc_dt.astimezone(DISPLAY_TZ)
+        labels.append(local_dt.strftime("%m/%d %H:%M"))
+    return labels
+
+
+def build_html(
+    stats: dict,
+    fetched_at_display: str | None = None,
+    _legacy_fetched_at_utc: str | None = None,
+    now: dt.datetime | None = None,
+) -> str:
+    # 基础指标与 Uptime (严格以 UTC+8 日期基准计算)
     raw_launched = stats.get("launchedAt")
     effective_launched = raw_launched if raw_launched is not None else PROJECT_LAUNCHED_AT
-    days = None
-    if isinstance(effective_launched, str) and effective_launched.strip():
-        try:
-            launch_date = dt.date.fromisoformat(effective_launched.strip())
-            diff = (dt.datetime.now(dt.timezone.utc).date() - launch_date).days
-            if diff >= 0:
-                days = diff + 1
-        except (ValueError, TypeError):
-            days = None
+    days = compute_dashboard_uptime(effective_launched, now=now)
 
     uptime_val = f"{days}" if days is not None else "—"
     uptime_badge = f"上线 / Launched: {effective_launched} · 运行 {days} 天 (Days)" if days is not None else "上线 / Launched: 未知 (Unknown)"
     uptime_footer = "连续运行天数 (Days)" if days is not None else "暂无数据 / No Data"
+
+    # 时间信息展示 (统一为 UTC+8)
+    raw_generated_at = stats.get("generatedAt")
+    api_generated_str = format_utc8_timestamp(raw_generated_at)
+
+    if fetched_at_display is not None:
+        local_fetched_str = fetched_at_display.replace("CST (UTC+8)", "UTC+8").replace(" CST", " UTC+8")
+    else:
+        local_fetched_str = format_utc8_timestamp(now or dt.datetime.now(DISPLAY_TZ))
 
     visitors_val = stats.get("cumulativeDailyVisitors")
     if visitors_val is None:
@@ -296,7 +378,18 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     exports_total = s(stats.get("totalExports"))
     exports_today = s(stats.get("exportsToday"))
 
-    # 小时数据 (24小时)
+    # 小时数据 (24小时) - 保持与 Worker UTC hourly bucket 一一对应，禁止重排序
+    parsed_gen = parse_iso_timestamp(raw_generated_at)
+    if parsed_gen is not None:
+        base_utc_date = parsed_gen.astimezone(dt.timezone.utc).date()
+    elif now is not None:
+        base_utc_date = now.astimezone(dt.timezone.utc).date() if now.tzinfo is not None else now.date()
+    else:
+        base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+
+    hourly_labels = get_hourly_display_labels(base_utc_date)
+    hourly_labels_json = j(hourly_labels)
+
     hourly_raw = stats.get("todayHourlyPageViews") or []
     h_pv = [0] * 24
     h_uv = [0] * 24
@@ -641,12 +734,13 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       <div class="brand-icon">🎵</div>
       <div class="title-group">
         <h1>PlaylistOut 业务运营与流量统计看板</h1>
-        <div class="sub">PlaylistOut Live Analytics Dashboard · 本地实时生成 (Local Realtime View)</div>
+        <div class="sub">PlaylistOut Live Analytics Dashboard · 本地实时生成 (Local Realtime View) · Display Timezone: UTC+8</div>
       </div>
     </div>
     <div class="status-group">
       <span class="status-badge">{uptime_badge}</span>
-      <span class="status-time">更新 / Synced: {fetched_at_cn}</span>
+      <span class="status-time">API Generated: {api_generated_str}</span>
+      <span class="status-time">Local Fetched: {local_fetched_str}</span>
     </div>
   </div>
 
@@ -713,8 +807,8 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">今日小时级流量分布</div>
-          <div class="card-subtitle">Hourly Traffic Distribution (UTC 00:00 - 23:00)</div>
+          <div class="card-title">小时级流量分布</div>
+          <div class="card-subtitle">Hourly Traffic · UTC+8 Display (API 小时桶已转换为 UTC+8 显示 / API hourly buckets displayed in UTC+8)</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -726,7 +820,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       <div class="card-header">
         <div>
           <div class="card-title">近期业务量走势 (近30天)</div>
-          <div class="card-subtitle">30-Day Activity: Parses, Exports, Clipboard & Failures</div>
+          <div class="card-subtitle">30-Day Activity: Parses, Exports, Clipboard &amp; Failures (日报统计桶沿用 API 原始口径)</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -925,7 +1019,7 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
   </div>
 
   <footer>
-    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; 自动生成时间: {fetched_at_cn}
+    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Display Timezone: UTC+8
   </footer>
 
   <script>
@@ -1031,13 +1125,13 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
       }});
     }}
 
-    // 1. 今日小时级流量
+    // 1. 小时级流量分布 (UTC 小时桶转换至 UTC+8 标签展示)
     const elHourly = document.getElementById('chartHourly');
     if (elHourly) {{
       new Chart(elHourly, {{
         type: 'bar',
         data: {{
-          labels: Array.from({{length: 24}}, (_, i) => i + ':00'),
+          labels: {hourly_labels_json},
           datasets: [
             {{
               label: 'PV 页面浏览 / Page Views',
@@ -1240,18 +1334,17 @@ def main():
         print(f"[Dashboard] [ERROR] 获取数据失败: {e}")
         sys.exit(1)
 
-    now_cn = dt.datetime.now(dt.timezone(dt.timedelta(hours=8)))
-    now_utc = dt.datetime.now(dt.timezone.utc)
-    fetched_at_cn = now_cn.strftime("%Y-%m-%d %H:%M:%S CST (UTC+8)")
-    fetched_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_display = dt.datetime.now(DISPLAY_TZ)
+    fetched_at_display = f"{now_display.strftime('%Y-%m-%d %H:%M:%S')} {DISPLAY_TZ_LABEL}"
 
     print("[Dashboard] 正在渲染白底双语数据看板 / Rendering HTML ...")
-    html_content = build_html(stats, fetched_at_cn, fetched_at_utc)
+    html_content = build_html(stats, fetched_at_display)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html_content, encoding="utf-8")
     print(f"[Dashboard] [OK] 看板文件已生成 / File generated:")
     print(f"            {out_path}")
+    print(f"[Dashboard] 看板数据生成时间 / Generated at: {fetched_at_display}")
 
     if not args.no_open:
         print("[Dashboard] 正在唤起默认浏览器查看 / Launching browser ...")
