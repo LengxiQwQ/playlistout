@@ -4,6 +4,35 @@
 
 All notable changes to **PlaylistOut** will be documented in this file. Adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [v2.3.0] - 2026-09-18
+
+### 🚀 Public API v1 开放平台、汽水音乐原生接入与酷狗移动端一键授权 / Public API v1, Soda Music & KuGou Mobile Quick Auth
+
+在完成多平台矩阵拓展后，v2.3.0 正式开放了高可用、边缘原生的 **Public API v1 开放平台**，支持第三方开发者与自动化流水线直接调用，并原生接入**汽水音乐 (Soda Music)**，针对酷狗移动端推出一键拉起 App 授权与开发者 API 凭据复制卡片。
+
+Following the multi-platform matrix expansion, v2.3.0 officially releases the high-performance, edge-native **Public API v1**, enabling external developers and automation pipelines to integrate directly with PlaylistOut. It also natively integrates **Soda Music (汽水音乐)** and adds one-click mobile app deep link authentication and developer credentials copying for KuGou.
+
+### 新增功能 / Added
+
+- **PlaylistOut Public API v1 开放平台 (Public API v1 Open Platform)**：
+  - 正式发布面向第三方的现代化公共 API，包含：
+    - `GET /api/v1/resolve`：万能智能解析器，完整对齐网页大搜索框能力，支持跨平台数字 ID 并发探测与 `409 AMBIGUOUS_INPUT` 消歧义候选推荐；
+    - `GET /api/v1/playlist`：单歌单稳定检索接口；
+    - `GET /api/v1/user/playlists`：用户公开歌单合集批量检索接口；
+    - `GET /api/v1/stats`：隐私安全的匿名聚合统计接口；
+    - `GET /api/v1/health`：高频服务探活与健康检查接口。
+  - 公开 GET 接口全面开放跨域（`Access-Control-Allow-Origin: *`），支持第三方纯前端 Web 应用直接调用。
+  - 零信任 Header 鉴权规范：严禁在 Query 参数中暴露敏感凭据，凭据（如酷狗 Token）仅允许通过标准 `Authorization: Bearer <token>` 及 `X-Kugou-Userid` 请求头传递。
+  - 严谨的错误处理与安全脱敏：500 异常对公网严格返回通用脱敏文本，杜绝内部错误堆栈、数据库连接串及敏感凭据外泄。
+  - 独立路由速率限制隔离：`/api/v1/resolve`、`/api/v1/playlist`、`/api/v1/user/playlists` 彼此独立享有 30 次/分钟限额，互不影响。
+  - 撰写了详尽完备的开发者接口规范文档 [`docs/API.md`](docs/API.md)（含 cURL / TypeScript / Python 接入代码示例）。
+- **汽水音乐 (Soda Music) 原生接入**：
+  - 支持汽水音乐分享短链（`qishui.douyin.com/s/...`）及纯数字 ID 识别与解析。
+  - 完美支持抖音同步收藏歌单与官方原声原唱识别，纳入标准化数据输出契约。
+- **酷狗移动端一键跳转登录与开发者凭证复制 (KuGou Mobile Quick Auth & Developer Credentials)**：
+  - 酷狗授权弹窗全新升级为桌面端/移动端双模态：桌面端保留动态二维码扫码，手机端支持通过 `kugouURL://` 协议一键拉起官方酷狗 App 完成登录，解决单设备无法扫码的痛点。
+  - 授权成功后，弹窗内提供「开发者 API 凭证」卡片，开发者可一键复制包含凭据的可用 cURL 调试命令、原始 Token 与 UserID。
+
 ---
 
 ## [v2.2.0] - 2026-09-17

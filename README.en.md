@@ -113,7 +113,9 @@ PlaylistOut officially provides a unified cross-platform public API for third-pa
   - Public GET endpoints feature open CORS (`Access-Control-Allow-Origin: *`), enabling direct `fetch` calls from browser web apps.
 - **Single Playlist Endpoint**: `GET /api/v1/playlist?url=<url_or_id>`
 - **User Playlists Endpoint**: `GET /api/v1/user/playlists?uid=<uid_or_uin>`
-- **KuGou Token Authentication**: Strictly adhering to OWASP security practices, credential parameters in URLs (e.g. `?token=...`) are **forbidden and rejected with 400 Bad Request**. Provide credentials via standard HTTP headers:
+- **KuGou Token Acquisition & Authentication**:
+  - **How to obtain**: In the "连接酷狗账号" modal, both desktop **QR code scanning** and mobile **one-click KuGou App jump** are supported. Once connected, developers can one-click copy ready-to-run **cURL commands**, raw **Token**, and **UserID** from the Developer API Credentials card.
+  - **Security Standard**: Strictly adhering to OWASP security practices, credential parameters in URLs (e.g. `?token=...`) are **forbidden and rejected with 400 Bad Request**. Provide credentials via standard HTTP headers:
   ```bash
   # Fetch complete 400+ track KuGou playlist with Token & Userid headers
   curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://m.kugou.com/songlist/gcid_xxx/" \

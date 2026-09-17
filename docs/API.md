@@ -395,7 +395,13 @@ Credentials must be supplied exclusively via standard HTTP headers. **Never pass
 
 ### 8.4 Obtaining KuGou Credentials
 
-- **In the Web UI**: Click "连接酷狗账号" to open a mobile QR code popup. Scan with the official KuGou App to store credentials in local storage (never uploaded to the server).
+- **In the Web UI**:
+  - **Desktop / Tablets**: Click "连接酷狗账号" to display a dynamic QR code. Scan using the official KuGou App on your phone.
+  - **Mobile Phones**: Directly click "跳转酷狗 App 一键登录" (One-click App Jump). This opens the KuGou mobile app via deep link (`kugouURL://...`) to confirm login immediately on the same device without needing a second screen.
+  - **Developer API Credentials Panel**: Once connected, the modal displays a "开发者 API 凭证" card where you can one-click copy:
+    - Ready-to-run **cURL Command** (including `Authorization: Bearer ...` and `X-Kugou-Userid: ...`)
+    - Raw **Token** string
+    - Raw **UserID** string
 - **In Third-Party Client Applications**:
   1. `GET /api/kugou/login/qr` — Requests a new QR code session (`qrcode`, `qrcode_img`).
   2. `GET /api/kugou/login/check?qrcode=<qrcode>` — Polls until scan confirmed (`status: 4`), returning `{ token, userid }`.
@@ -428,9 +434,23 @@ curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://qishui.d
 curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=2756674066&type=playlist&platform=netease"
 ```
 
-#### KuGou Playlist with Ephemeral Token Headers
+#### KuGou Playlist with Ephemeral Token Headers (Universal Resolver)
 ```bash
 curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://www.kugou.com/songlist/gcid_3zr52qfrzaz06a/" \
+  -H "Authorization: Bearer YOUR_KUGOU_TOKEN" \
+  -H "X-Kugou-Userid: YOUR_KUGOU_USERID"
+```
+
+#### KuGou User Profile Playlists Collection
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=YOUR_KUGOU_USERID&platform=kugou" \
+  -H "Authorization: Bearer YOUR_KUGOU_TOKEN" \
+  -H "X-Kugou-Userid: YOUR_KUGOU_USERID"
+```
+
+#### KuGou Single Playlist (Direct Endpoint)
+```bash
+curl -s "https://playlistout-api.lengxiqwq.com/api/v1/playlist?url=https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=1000&uid=YOUR_KUGOU_USERID&platform=kugou" \
   -H "Authorization: Bearer YOUR_KUGOU_TOKEN" \
   -H "X-Kugou-Userid: YOUR_KUGOU_USERID"
 ```
