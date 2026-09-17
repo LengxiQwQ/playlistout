@@ -8,6 +8,9 @@ htmlcov/
 .venv/
 venv/
 
+# Local generated files
+dashboard.html
+
 # Node / Web / Vite
 node_modules/
 dist/

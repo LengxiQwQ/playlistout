@@ -280,7 +280,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(stats.exportsToday).toBe(5);
     });
 
-    it('does NOT expose private dimensional data in public stats', async () => {
+    it('exposes dimensional aggregate data as coarse anonymous counters (no raw privacy-sensitive values)', async () => {
       const mockDb = createMockD1();
       mockDb._store.set(`TOTAL::all::parse_success`, 100);
       mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
@@ -288,20 +288,30 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       const stats = await getPublicStats(mockDb);
       const statsStr = JSON.stringify(stats);
 
-      // Should not contain any private dimensional fields
-      expect(statsStr).not.toContain('topGeo');
-      expect(statsStr).not.toContain('chinaProvinces');
-      expect(statsStr).not.toContain('clientStats');
-      expect(statsStr).not.toContain('country');
-      expect(statsStr).not.toContain('region');
-      expect(statsStr).not.toContain('deviceClass');
-      expect(statsStr).not.toContain('browserFamily');
-      expect(statsStr).not.toContain('osFamily');
-      expect(statsStr).not.toContain('errorCategory');
-      expect(statsStr).not.toContain('latencyBucket');
-      expect(statsStr).not.toContain('inputType');
-      expect(statsStr).not.toContain('providerPath');
+      // New dimensional fields ARE now present in the public API
+      expect(stats.topGeo).toBeDefined();
+      expect(stats.chinaProvinces).toBeDefined();
+      expect(stats.clientStats).toBeDefined();
+      expect(stats.todayHourlyPageViews).toBeDefined();
+      expect(stats.referrerDistribution).toBeDefined();
+
+      // todayHourlyPageViews must be exactly 24 slots (one per UTC hour)
+      expect(stats.todayHourlyPageViews).toHaveLength(24);
+      for (const slot of stats.todayHourlyPageViews!) {
+        expect(slot.hour).toBeGreaterThanOrEqual(0);
+        expect(slot.hour).toBeLessThanOrEqual(23);
+        expect(typeof slot.pageViews).toBe('number');
+        expect(typeof slot.visitors).toBe('number');
+      }
+
+      // Raw privacy-sensitive field names must NOT appear — only coarse category labels
+      expect(statsStr).not.toContain('deviceClass');     // raw UA field name
+      expect(statsStr).not.toContain('browserFamily');   // raw UA field name
+      expect(statsStr).not.toContain('osFamily');        // raw UA field name
+      expect(statsStr).not.toContain('providerPath');    // internal infra field
+      // 'country' is allowed as coarse ISO code; 'region' is allowed as coarse province name
     });
+
 
     it('does NOT fabricate NetEase statistics when NetEase parses are 0 (0 is 0)', async () => {
       const mockDb = createMockD1();
