@@ -9,6 +9,7 @@ import * as neteaseUser from '../providers/netease/user';
 import * as kugouClient from '../providers/kugou/client';
 import * as analyticsRecorder from '../analytics/recorder';
 import { ProviderError } from '../models/playlist';
+import { resetRateLimitStore } from '../security/rate-limit';
 
 function createMockCtx(): ExecutionContext {
   return {
@@ -55,6 +56,7 @@ const mockUserData = (platform: string, userId: string, nickname: string) => ({
 describe('PlaylistOut Public API v1', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetRateLimitStore();
   });
 
   describe('GET /api/v1/health', () => {
@@ -720,6 +722,76 @@ describe('PlaylistOut Public API v1', () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('INVALID_INPUT');
       expect(body.error.message).toContain('conflicts with specified platform constraint');
+    });
+
+    it('accepts Kugou user profile URL with type=user and platform=kugou without false playlist conflict', async () => {
+      vi.spyOn(kugouClient, 'fetchKugouUserPlaylists').mockResolvedValueOnce(
+        mockUserData('kugou', '1425711902', 'KuGou User 1425711902'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://m.kugou.com/user?uid=1425711902&type=user&platform=kugou',
+        {
+          headers: {
+            Authorization: 'Bearer kg_token_abc',
+            'X-Kugou-Userid': '1425711902',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.kind).toBe('user_playlists');
+      expect(body.data.platform).toBe('kugou');
+      expect(body.data.result.userId).toBe('1425711902');
+    });
+
+    it('accepts Kugou shortlink with type=user and routes to user resolution', async () => {
+      vi.spyOn(kugouClient, 'fetchKugouUserPlaylists').mockResolvedValueOnce(
+        mockUserData('kugou', '1425711902', 'KuGou Shortlink User'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://t.kugou.com/abcde&type=user&platform=kugou',
+        {
+          headers: {
+            Authorization: 'Bearer kg_token_abc',
+            'X-Kugou-Userid': '1425711902',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.kind).toBe('user_playlists');
+      expect(body.data.platform).toBe('kugou');
+    });
+
+    it('propagates unexpected bare Error as 500 INTERNAL_ERROR during probe instead of 404', async () => {
+      vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+        new Error('Unexpected lower-level socket failure'),
+      );
+      vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
+      );
+      vi.spyOn(neteaseProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('PLAYLIST_NOT_FOUND', 'NetEase not found', 404),
+      );
+      vi.spyOn(neteaseUser, 'fetchNeteaseUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'NetEase user not found', 404),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=5555555555',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(500);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+      expect(body.error.message).toContain('Unexpected lower-level socket failure');
     });
   });
 });
