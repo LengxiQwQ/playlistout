@@ -7,6 +7,7 @@ import { qishuiProvider } from '../providers/qishui';
 import * as qqUser from '../providers/qqmusic/user';
 import * as neteaseUser from '../providers/netease/user';
 import * as kugouClient from '../providers/kugou/client';
+import * as analyticsRecorder from '../analytics/recorder';
 import { ProviderError } from '../models/playlist';
 
 function createMockCtx(): ExecutionContext {
@@ -500,6 +501,225 @@ describe('PlaylistOut Public API v1', () => {
       const body: any = await response.json();
       expect(body.success).toBe(true);
       expect(body.data.nickname).toBe('User319');
+    });
+
+    it('accepts cURL command formatted request with uid and headers for kugou (Issue 1)', async () => {
+      vi.spyOn(kugouClient, 'fetchKugouUserPlaylists').mockResolvedValueOnce(
+        mockUserData('kugou', '1425711902', 'KuGouUser'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=1425711902&platform=kugou',
+        {
+          headers: {
+            Authorization: 'Bearer test_token_123',
+            'X-Kugou-Userid': '1425711902',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.userId).toBe('1425711902');
+      expect(body.data.nickname).toBe('KuGouUser');
+    });
+
+    it('rejects user/playlists request missing uid/uin/id/url with 400 INVALID_INPUT', async () => {
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?platform=kugou',
+        {
+          headers: {
+            Authorization: 'Bearer test_token_123',
+            'X-Kugou-Userid': '1425711902',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_INPUT');
+    });
+  });
+
+  describe('Analytics Single Write & Probe Isolation (Issue 2)', () => {
+    it('records parse analytics exactly once on successful numeric resolution across internal probes', async () => {
+      const recordSpy = vi.spyOn(analyticsRecorder, 'recordParseEvent').mockResolvedValue();
+
+      // NetEase playlist succeeds, others fail/not found
+      vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('PLAYLIST_NOT_FOUND', 'QQ not found', 404),
+      );
+      vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
+      );
+      vi.spyOn(neteaseProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('netease', '2756674066', 'NetEase Playlist'),
+      );
+      vi.spyOn(neteaseUser, 'fetchNeteaseUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'NetEase user not found', 404),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=2756674066',
+      );
+      const mockCtx = createMockCtx();
+
+      const response = await worker.fetch(request, { DB: {} as any }, mockCtx);
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.platform).toBe('netease');
+
+      // Despite 4 probes executing, recordParseEvent must only be called ONCE (for the final resolved playlist)
+      expect(recordSpy).toHaveBeenCalledTimes(1);
+      expect(recordSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          platform: 'netease',
+          success: true,
+          trackCount: 1,
+        }),
+      );
+    });
+
+    it('records zero parse analytics events when numeric resolution results in 409 AMBIGUOUS_INPUT', async () => {
+      const recordSpy = vi.spyOn(analyticsRecorder, 'recordParseEvent').mockResolvedValue();
+
+      // Both QQ Music and NetEase find matching playlists
+      vi.spyOn(qqMusicProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('qqmusic', '12345678', 'QQ Match'),
+      );
+      vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
+      );
+      vi.spyOn(neteaseProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('netease', '12345678', 'NetEase Match'),
+      );
+      vi.spyOn(neteaseUser, 'fetchNeteaseUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'NetEase user not found', 404),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=12345678',
+      );
+      const response = await worker.fetch(request, { DB: {} as any }, createMockCtx());
+      expect(response.status).toBe(409);
+      const body: any = await response.json();
+      expect(body.error.code).toBe('AMBIGUOUS_INPUT');
+
+      // No successful or failure parse analytics should be recorded for ambiguous disambiguation
+      expect(recordSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Upstream Failure Propagation (Issue 3: 502 / 504 vs 404)', () => {
+    it('propagates UPSTREAM_TIMEOUT (504) when short link redirect or upstream fetch times out', async () => {
+      vi.spyOn(neteaseProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('UPSTREAM_TIMEOUT', 'NetEase upstream server timed out.', 504),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://163cn.tv/abcde',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(504);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UPSTREAM_TIMEOUT');
+    });
+
+    it('propagates UPSTREAM_ERROR (502) when numeric probe encounters upstream operational failure', async () => {
+      vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('UPSTREAM_ERROR', 'QQ Music API gateway returned 502 Bad Gateway.', 502),
+      );
+      vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
+      );
+      vi.spyOn(neteaseProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('PLAYLIST_NOT_FOUND', 'NetEase not found', 404),
+      );
+      vi.spyOn(neteaseUser, 'fetchNeteaseUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'NetEase user not found', 404),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=5555555555',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(502);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UPSTREAM_ERROR');
+    });
+
+    it('propagates UPSTREAM_TIMEOUT (504) when explicit platform numeric probe times out', async () => {
+      vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
+        new ProviderError('UPSTREAM_TIMEOUT', 'QQ Music timeout', 504),
+      );
+      vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
+        new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=5555555555&platform=qqmusic',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(504);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UPSTREAM_TIMEOUT');
+    });
+  });
+
+  describe('Explicit Platform & Type Parameter Constraints (Issue 5)', () => {
+    it('rejects when input URL platform conflicts with explicit platform parameter', async () => {
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://music.163.com/playlist?id=123&platform=qqmusic',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('conflicts with specified platform constraint');
+    });
+
+    it('rejects when input URL is a user profile but type constraint is playlist', async () => {
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/profile/like/song?uin=10001&type=playlist',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('conflicts with specified type constraint "playlist"');
+    });
+
+    it('rejects when input URL is a single playlist but type constraint is user', async () => {
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/playlist/123456&type=user',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('conflicts with specified type constraint "user"');
+    });
+
+    it('rejects in /api/v1/playlist when platform param conflicts with input URL', async () => {
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/playlist?url=https://music.163.com/playlist?id=123&platform=qqmusic',
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('conflicts with specified platform constraint');
     });
   });
 });

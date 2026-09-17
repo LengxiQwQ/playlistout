@@ -49,6 +49,41 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     expect(body.error.code).toBe('RATE_LIMITED');
   });
 
+  it('isolates rate limits by endpoint scope (stats limit does not exhaust playlist/resolve limit)', async () => {
+    vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
+      platform: 'qqmusic',
+      id: '123',
+      name: 'Rate Limit Scope Test',
+      trackCount: 1,
+      tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
+    });
+
+    const clientIp = '203.0.113.210';
+
+    // Exhaust stats rate limit (60 requests)
+    for (let i = 0; i < 60; i++) {
+      const statsReq = new Request('https://playlistout-api.lengxiqwq.com/api/v1/stats', {
+        headers: { 'cf-connecting-ip': clientIp },
+      });
+      const res = await worker.fetch(statsReq, {}, createMockCtx());
+      expect(res.status).toBe(200);
+    }
+
+    // 61st stats request must be rate limited with 429
+    const limitedStatsReq = new Request('https://playlistout-api.lengxiqwq.com/api/v1/stats', {
+      headers: { 'cf-connecting-ip': clientIp },
+    });
+    const limitedStatsRes = await worker.fetch(limitedStatsReq, {}, createMockCtx());
+    expect(limitedStatsRes.status).toBe(429);
+
+    // But request to /api/v1/playlist with the SAME IP must NOT be rate limited!
+    const playlistReq = new Request('https://playlistout-api.lengxiqwq.com/api/v1/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      headers: { 'cf-connecting-ip': clientIp },
+    });
+    const playlistRes = await worker.fetch(playlistReq, {}, createMockCtx());
+    expect(playlistRes.status).toBe(200);
+  });
+
   it('attaches standard OWASP security headers to all responses', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/health');
     const response = await worker.fetch(request, {}, createMockCtx());

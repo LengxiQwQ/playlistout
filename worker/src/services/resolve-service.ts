@@ -25,6 +25,8 @@ import { qqMusicProvider } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
+import { recordParseEvent } from '../analytics/recorder';
+import { classifyInputType } from '../analytics/dimensions';
 
 export interface ResolveServiceOptions {
   q: string;
@@ -41,6 +43,42 @@ export interface ResolveServiceOptions {
 
 export type SupportedType = 'auto' | 'playlist' | 'user';
 export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui';
+
+function isOperationalError(err: unknown): boolean {
+  if (err instanceof ProviderError) {
+    return (
+      err.code === 'UPSTREAM_ERROR' ||
+      err.code === 'UPSTREAM_TIMEOUT' ||
+      err.code === 'PARSE_ERROR' ||
+      (typeof err.statusCode === 'number' && err.statusCode >= 500)
+    );
+  }
+  return false;
+}
+
+function recordFinalSuccess(
+  request: Request | undefined,
+  db: D1Database | undefined,
+  ctx: ExecutionContext | undefined,
+  rawInput: string,
+  startTime: number,
+  data: ResolveData,
+): ResolveData {
+  if (data.kind === 'playlist' && ctx && typeof ctx.waitUntil === 'function' && request) {
+    const latencyMs = Date.now() - startTime;
+    ctx.waitUntil(
+      recordParseEvent(db, {
+        request,
+        platform: data.platform,
+        inputType: classifyInputType(rawInput),
+        success: true,
+        trackCount: (data.result as Playlist).tracks.length,
+        latencyMs,
+      }),
+    );
+  }
+  return data;
+}
 
 export async function resolveService(
   options: ResolveServiceOptions,
@@ -95,8 +133,72 @@ export async function resolveService(
     );
   }
 
+  const startTime = Date.now();
   const cleanInput = extractCleanUrlOrInput(q);
   const trimmed = cleanInput.trim();
+
+  // ── Input platform & type contract validation ──
+  let detectedPlatform: SupportedPlatform | null = null;
+  if (/y\.qq\.com/i.test(trimmed)) {
+    detectedPlatform = 'qqmusic';
+  } else if (/(?:music\.163\.com|163cn\.tv)/i.test(trimmed)) {
+    detectedPlatform = 'netease';
+  } else if (/(?:kugou\.com)/i.test(trimmed)) {
+    detectedPlatform = 'kugou';
+  } else if (/(?:qishui\.douyin\.com)/i.test(trimmed)) {
+    detectedPlatform = 'qishui';
+  }
+
+  // Reject platform constraint conflict
+  if (detectedPlatform && normalizedPlatform !== 'auto' && detectedPlatform !== normalizedPlatform) {
+    throw new ProviderError(
+      'INVALID_INPUT',
+      `Input URL belongs to "${detectedPlatform}", which conflicts with specified platform constraint "${normalizedPlatform}".`,
+      400,
+    );
+  }
+
+  // Qishui does not support user profiles
+  if (normalizedPlatform === 'qishui' && normalizedType === 'user') {
+    throw new ProviderError('INVALID_INPUT', 'Qishui Music does not support user profiles or user playlists.', 400);
+  }
+
+  // Detect explicit user profile URLs
+  const isQQProfile =
+    /y\.qq\.com/i.test(trimmed) &&
+    (/(?:[?&]uin=|[?&]hostuin=|\/profile)/i.test(trimmed));
+  const isNeteaseProfile =
+    /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed) &&
+    (/\/user\//i.test(trimmed) || (/[?&]id=\d+/i.test(trimmed) && /user/i.test(trimmed)));
+  const isKugouProfile =
+    /kugou\.com/i.test(trimmed) &&
+    !/(?:songlist|gcid_|special\/single)/i.test(trimmed) &&
+    (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /\/home/i.test(trimmed));
+
+  const isExplicitProfile = isQQProfile || isNeteaseProfile || isKugouProfile;
+
+  // Reject if type constraint conflicts with detected URL type
+  if (normalizedType === 'playlist' && isExplicitProfile) {
+    throw new ProviderError(
+      'INVALID_INPUT',
+      'Input URL is a user profile, which conflicts with specified type constraint "playlist".',
+      400,
+    );
+  }
+
+  const isExplicitPlaylist =
+    (/y\.qq\.com\/n\/ryqq\/playlist\//i.test(trimmed) || (/y\.qq\.com\/.*[?&]id=\d+/i.test(trimmed) && !isQQProfile)) ||
+    (/music\.163\.com\/.*playlist/i.test(trimmed)) ||
+    (kugouProvider.matches(trimmed)) ||
+    (qishuiProvider.matches(trimmed));
+
+  if (normalizedType === 'user' && isExplicitPlaylist) {
+    throw new ProviderError(
+      'INVALID_INPUT',
+      'Input URL is a playlist, which conflicts with specified type constraint "user".',
+      400,
+    );
+  }
 
   // Check if input is pure numeric ID (4-20 digits)
   const isNumeric = /^\d{4,20}$/.test(trimmed);
@@ -105,18 +207,7 @@ export async function resolveService(
     // ── Non-numeric input routing ──
 
     // 1. Detect explicit user profile URLs
-    const isQQProfile =
-      /y\.qq\.com/i.test(trimmed) &&
-      (/(?:[?&]uin=|[?&]hostuin=|\/profile)/i.test(trimmed));
-    const isNeteaseProfile =
-      /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed) &&
-      (/\/user\//i.test(trimmed) || (/[?&]id=\d+/i.test(trimmed) && /user/i.test(trimmed)));
-    const isKugouProfile =
-      /kugou\.com/i.test(trimmed) &&
-      !/(?:songlist|gcid_|special\/single)/i.test(trimmed) &&
-      (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /\/home/i.test(trimmed));
-
-    if (isQQProfile || (normalizedPlatform === 'qqmusic' && normalizedType === 'user')) {
+    if (isQQProfile || (detectedPlatform === 'qqmusic' && normalizedType === 'user')) {
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'qqmusic',
@@ -125,7 +216,7 @@ export async function resolveService(
       return { kind: 'user_playlists', platform: actualPlatform, result: userData };
     }
 
-    if (isNeteaseProfile || (normalizedPlatform === 'netease' && normalizedType === 'user')) {
+    if (isNeteaseProfile || (detectedPlatform === 'netease' && normalizedType === 'user')) {
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'netease',
@@ -134,7 +225,7 @@ export async function resolveService(
       return { kind: 'user_playlists', platform: actualPlatform, result: userData };
     }
 
-    if (isKugouProfile || (normalizedPlatform === 'kugou' && normalizedType === 'user')) {
+    if (isKugouProfile || (detectedPlatform === 'kugou' && normalizedType === 'user')) {
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'kugou',
@@ -161,8 +252,9 @@ export async function resolveService(
           request,
           db,
           ctx,
+          skipAnalytics: true,
         });
-        return { kind: 'playlist', platform: actualPlatform, result: playlist };
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
       }
       // auto: try single playlist first, fallback to user playlists
       try {
@@ -173,9 +265,13 @@ export async function resolveService(
           request,
           db,
           ctx,
+          skipAnalytics: true,
         });
-        return { kind: 'playlist', platform: actualPlatform, result: playlist };
-      } catch {
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+      } catch (playlistErr: unknown) {
+        if (isOperationalError(playlistErr)) {
+          throw playlistErr;
+        }
         try {
           const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
             rawInput: trimmed,
@@ -183,7 +279,10 @@ export async function resolveService(
             auth,
           });
           return { kind: 'user_playlists', platform: actualPlatform, result: userData };
-        } catch {
+        } catch (userErr: unknown) {
+          if (isOperationalError(userErr)) {
+            throw userErr;
+          }
           throw new ProviderError(
             'PLAYLIST_NOT_FOUND',
             'Failed to resolve NetEase short link as playlist or user profile.',
@@ -210,9 +309,13 @@ export async function resolveService(
           request,
           db,
           ctx,
+          skipAnalytics: true,
         });
-        return { kind: 'playlist', platform: actualPlatform, result: playlist };
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
       } catch (err: unknown) {
+        if (isOperationalError(err)) {
+          throw err;
+        }
         if (auth?.token && auth?.userid) {
           try {
             const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
@@ -221,7 +324,10 @@ export async function resolveService(
               auth,
             });
             return { kind: 'user_playlists', platform: actualPlatform, result: userData };
-          } catch {
+          } catch (userErr: unknown) {
+            if (isOperationalError(userErr)) {
+              throw userErr;
+            }
             // fall through
           }
         }
@@ -237,8 +343,9 @@ export async function resolveService(
         request,
         db,
         ctx,
+        skipAnalytics: true,
       });
-      return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
     }
 
     // 3. Known single playlist URLs
@@ -250,8 +357,9 @@ export async function resolveService(
       request,
       db,
       ctx,
+      skipAnalytics: true,
     });
-    return { kind: 'playlist', platform: actualPlatform, result: playlist };
+    return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
   }
 
   // ── Numeric input routing & disambiguation ──
@@ -266,8 +374,9 @@ export async function resolveService(
         request,
         db,
         ctx,
+        skipAnalytics: true,
       });
-      return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
     } else {
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
@@ -288,14 +397,15 @@ export async function resolveService(
         request,
         db,
         ctx,
+        skipAnalytics: true,
       });
-      return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
     }
 
     if (normalizedPlatform === 'kugou') {
       if (auth?.token && auth?.userid) {
         const [singleRes, userRes] = await Promise.allSettled([
-          parsePlaylistService({ rawInput: trimmed, platformParam: 'kugou', auth, request, db, ctx }),
+          parsePlaylistService({ rawInput: trimmed, platformParam: 'kugou', auth, request, db, ctx, skipAnalytics: true }),
           fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'kugou', auth }),
         ]);
 
@@ -332,11 +442,20 @@ export async function resolveService(
           );
         }
         if (singleRes.status === 'fulfilled') {
-          return { kind: 'playlist', platform: 'kugou', result: singleRes.value.playlist };
+          return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'kugou', result: singleRes.value.playlist });
         }
         if (userRes.status === 'fulfilled') {
           return { kind: 'user_playlists', platform: 'kugou', result: userRes.value.userData };
         }
+
+        const opError = [singleRes, userRes]
+          .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+          .map((r) => r.reason)
+          .find(isOperationalError);
+        if (opError) {
+          throw opError;
+        }
+
         throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on KuGou.`, 404);
       }
 
@@ -347,13 +466,14 @@ export async function resolveService(
         request,
         db,
         ctx,
+        skipAnalytics: true,
       });
-      return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
     }
 
     if (normalizedPlatform === 'qqmusic') {
       const [singleRes, userRes] = await Promise.allSettled([
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx }),
+        parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }),
         fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'qqmusic', auth }),
       ]);
 
@@ -390,17 +510,26 @@ export async function resolveService(
         );
       }
       if (singleRes.status === 'fulfilled') {
-        return { kind: 'playlist', platform: 'qqmusic', result: singleRes.value.playlist };
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'qqmusic', result: singleRes.value.playlist });
       }
       if (userRes.status === 'fulfilled') {
         return { kind: 'user_playlists', platform: 'qqmusic', result: userRes.value.userData };
       }
+
+      const opError = [singleRes, userRes]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason)
+        .find(isOperationalError);
+      if (opError) {
+        throw opError;
+      }
+
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on QQ Music.`, 404);
     }
 
     if (normalizedPlatform === 'netease') {
       const [singleRes, userRes] = await Promise.allSettled([
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx }),
+        parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }),
         fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'netease', auth }),
       ]);
 
@@ -437,11 +566,20 @@ export async function resolveService(
         );
       }
       if (singleRes.status === 'fulfilled') {
-        return { kind: 'playlist', platform: 'netease', result: singleRes.value.playlist };
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'netease', result: singleRes.value.playlist });
       }
       if (userRes.status === 'fulfilled') {
         return { kind: 'user_playlists', platform: 'netease', result: userRes.value.userData };
       }
+
+      const opError = [singleRes, userRes]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason)
+        .find(isOperationalError);
+      if (opError) {
+        throw opError;
+      }
+
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on NetEase Cloud Music.`, 404);
     }
   }
@@ -450,12 +588,12 @@ export async function resolveService(
   if (normalizedType !== 'auto' && normalizedPlatform === 'auto') {
     if (normalizedType === 'playlist') {
       const probeTasks = [
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx }),
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx }),
+        parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }),
+        parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }),
       ];
       if (trimmed.length >= 19) {
         probeTasks.push(
-          parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', auth, request, db, ctx }),
+          parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', auth, request, db, ctx, skipAnalytics: true }),
         );
       }
 
@@ -487,12 +625,21 @@ export async function resolveService(
         );
       }
       if (candidates.length === 1) {
-        return {
+        return recordFinalSuccess(request, db, ctx, trimmed, startTime, {
           kind: 'playlist',
           platform: successful[0].platform,
           result: successful[0].playlist,
-        };
+        });
       }
+
+      const opError = results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason)
+        .find(isOperationalError);
+      if (opError) {
+        throw opError;
+      }
+
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${trimmed}" was not found on supported platforms.`, 404);
     }
 
@@ -546,6 +693,15 @@ export async function resolveService(
           result: successful[0].userData,
         };
       }
+
+      const opError = [qqUserRes, neteaseUserRes]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason)
+        .find(isOperationalError);
+      if (opError) {
+        throw opError;
+      }
+
       throw new ProviderError('USER_NOT_FOUND', `User profile with ID "${trimmed}" was not found on supported platforms.`, 404);
     }
   }
@@ -561,18 +717,22 @@ export async function resolveService(
         request,
         db,
         ctx,
+        skipAnalytics: true,
       });
-      return { kind: 'playlist', platform: 'qishui', result: qishuiRes.playlist };
-    } catch {
+      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'qishui', result: qishuiRes.playlist });
+    } catch (err: unknown) {
+      if (isOperationalError(err)) {
+        throw err;
+      }
       // Continue to standard 4-way probing
     }
   }
 
   // 4-way concurrent probing across QQ & NetEase (single playlist & user playlists)
   const [qqSingle, qqUser, neteaseSingle, neteaseUser] = await Promise.allSettled([
-    parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx }),
+    parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }),
     fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'qqmusic', auth }),
-    parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx }),
+    parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }),
     fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'netease', auth }),
   ]);
 
@@ -648,7 +808,8 @@ export async function resolveService(
   }
 
   if (candidates.length === 1) {
-    return successfulResults[0];
+    const winner = successfulResults[0];
+    return recordFinalSuccess(request, db, ctx, trimmed, startTime, winner);
   }
 
   if (candidates.length > 1) {
@@ -658,6 +819,14 @@ export async function resolveService(
       409,
       { candidates },
     );
+  }
+
+  const opError = [qqSingle, qqUser, neteaseSingle, neteaseUser]
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => r.reason)
+    .find(isOperationalError);
+  if (opError) {
+    throw opError;
   }
 
   throw new ProviderError(
