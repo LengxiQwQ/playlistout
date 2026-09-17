@@ -72,4 +72,25 @@ describe('TrackTable Component (Mobile view modes)', () => {
     expect(container).not.toHaveClass('is-expanded-mobile');
     expect(screen.getByRole('button', { name: '显示更多' })).toHaveTextContent('+显示更多');
   });
+
+  it('automatically pads indices and reserves width for large playlists with 3 or 4 digits', () => {
+    const largePlaylist: Track[] = Array.from({ length: 1000 }, (_, idx) => ({
+      id: `track-${idx + 1}`,
+      index: idx + 1,
+      title: `Song ${idx + 1}`,
+      artists: ['Artist'],
+    }));
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <TrackTable tracks={largePlaylist} />
+      </LanguageProvider>
+    );
+
+    const container = screen.getByTestId('track-table-container');
+    // 4 digits: --index-width should be 44px
+    expect(container).toHaveStyle({ '--index-width': '44px' });
+    // First track padded to 4 digits: '0001', 1000th track: '1000'
+    expect(screen.getByText('0001')).toBeInTheDocument();
+  });
 });

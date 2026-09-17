@@ -200,15 +200,18 @@
 
   .track-table-container.is-compact-mobile .col-index {
     display: table-cell !important;
-    width: 26px !important;
+    width: var(--index-width, 36px) !important;
+    min-width: var(--index-width, 36px) !important;
     padding: 0.45rem 0.15rem !important;
     font-size: 0.76rem !important;
     text-align: center !important;
+    white-space: nowrap !important;
   }
 
   .track-table-container.is-compact-mobile .col-cover {
     display: table-cell !important;
     width: 38px !important;
+    min-width: 38px !important;
     padding: 0.45rem 0.25rem 0.45rem 0.15rem !important;
     text-align: center !important;
   }
@@ -229,7 +232,7 @@
   }
 
   .track-table-container.is-compact-mobile .col-artist {
-    width: calc(40% - 26px) !important;
+    width: calc(40% - var(--index-width, 36px)) !important;
     padding: 0.45rem 0.4rem !important;
     white-space: nowrap !important;
     overflow: hidden !important;
