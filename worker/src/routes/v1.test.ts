@@ -232,6 +232,24 @@ describe('PlaylistOut Public API v1', () => {
       );
     });
 
+    it('resolves KuGou Music songlist URL with uid in query parameter as a single playlist (not user profile)', async () => {
+      vi.spyOn(kugouProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('kugou', 'gcid_3zr52qfrz2z063', 'KuGou Shared Playlist'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=' +
+          encodeURIComponent('https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=1000&uid=1425711902&src_type=3001'),
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.kind).toBe('playlist');
+      expect(body.data.platform).toBe('kugou');
+      expect(body.data.result.name).toBe('KuGou Shared Playlist');
+    });
+
     it('resolves Qishui Music playlist URL', async () => {
       vi.spyOn(qishuiProvider, 'parse').mockResolvedValueOnce(
         mockPlaylist('qishui', '7456789012345678901', 'Qishui Soda Chill'),

@@ -113,7 +113,8 @@ export async function resolveService(
       (/\/user\//i.test(trimmed) || (/[?&]id=\d+/i.test(trimmed) && /user/i.test(trimmed)));
     const isKugouProfile =
       /kugou\.com/i.test(trimmed) &&
-      (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /[?&](?:uid|userid)=\d+/i.test(trimmed));
+      !/(?:songlist|gcid_|special\/single)/i.test(trimmed) &&
+      (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /\/home/i.test(trimmed));
 
     if (isQQProfile || (normalizedPlatform === 'qqmusic' && normalizedType === 'user')) {
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
