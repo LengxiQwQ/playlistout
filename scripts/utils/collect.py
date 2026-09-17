@@ -305,13 +305,34 @@ COUNTRY_NAMES = {
 }
 
 
-def compute_running_days(launched_at: str) -> int:
+# PlaylistOut v2.0.0 official launch date (canonical product metadata from CHANGELOG.md & worker/src/stats/index.ts)
+PROJECT_LAUNCHED_AT = "2026-09-12"
+
+
+def compute_running_days(launched_at: str | None = None, today: dt.date | None = None) -> int | None:
+    """计算自项目上线以来的实际稳定运行天数。
+
+    返回 None 表示无法可信计算（输入非法、类型异常或为未来日期），调用方展示 暂无数据 / No data。
+    若 launched_at 为 None，则使用确认的 canonical 项目元数据 PROJECT_LAUNCHED_AT。
+    """
+    raw_date = launched_at if launched_at is not None else PROJECT_LAUNCHED_AT
+    if not isinstance(raw_date, str) or not raw_date.strip():
+        return None
+
     try:
-        launch = dt.date.fromisoformat(launched_at or "2026-09-12")
+        launch = dt.date.fromisoformat(raw_date.strip())
+    except (ValueError, TypeError):
+        return None
+
+    if today is None:
         today = dt.datetime.now(dt.timezone.utc).date()
-        return max(1, (today - launch).days + 1)
-    except Exception:
-        return 1
+
+    diff_days = (today - launch).days
+    # 未来日期属于无效数据，不得通过 max(1, ...) 强行归 1
+    if diff_days < 0:
+        return None
+
+    return diff_days + 1
 
 
 def format_platform_shares(by_platform: dict, lang: str) -> str:
@@ -571,8 +592,17 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
     if not stats:
         return "<!-- WEBSITE_STATS:START -->\n<!-- WEBSITE_STATS:END -->"
 
-    running_days = compute_running_days(stats.get("launchedAt", "2026-09-12"))
-    launched_date = stats.get("launchedAt", "2026-09-12")
+    # 稳定运行天数计算与渲染（无有效数据或未来日期时严格显示 暂无数据 / No data，绝不硬编码 1 天）
+    raw_launched = stats.get("launchedAt")
+    effective_launched = raw_launched if raw_launched is not None else PROJECT_LAUNCHED_AT
+    running_days = compute_running_days(effective_launched)
+
+    if running_days is not None and effective_launched:
+        uptime_zh = f"**{running_days} 天**<br><sub>上线于 {effective_launched}</sub>"
+        uptime_en = f"**{running_days} Days**<br><sub>Since {effective_launched}</sub>"
+    else:
+        uptime_zh = "暂无数据"
+        uptime_en = "No data"
 
     visitors_total = fmt_num(stats.get("totalVisitors", 0))
     visitors_today = fmt_num(stats.get("visitorsToday", 0))
@@ -628,7 +658,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "",
             "| 👥 独立访客 (UV) | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
-            f"| **{visitors_total}**<br><sub>今日 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | **{running_days} 天**<br><sub>上线于 {launched_date}</sub> |",
+            f"| **{visitors_total}**<br><sub>今日 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | {uptime_zh} |",
             "",
             "#### 🗺️ 访客地理归属与设备分布",
             f"- **🌍 主要地区来源：** {geo_str}",
@@ -655,7 +685,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "",
             "| 👥 Unique Visitors (UV) | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
-            f"| **{visitors_total}**<br><sub>Today +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | **{running_days} Days**<br><sub>Since {launched_date}</sub> |",
+            f"| **{visitors_total}**<br><sub>Today +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | {uptime_en} |",
             "",
             "#### 🗺️ Geographic & Client Distribution",
             f"- **🌍 Top Visitor Regions:** {geo_str}",
