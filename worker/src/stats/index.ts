@@ -499,14 +499,14 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch client stats:', err);
     }
 
-    // 7. Clipboard format breakdown (total)
+    // 7. Clipboard format breakdown (total across all platforms)
     const clipboardFormatsBreakdown: Record<string, number> = {};
     try {
       const cbRows = await db
         .prepare(`
           SELECT clipboard_mode, SUM(count) as total
           FROM daily_clipboard_stats
-          WHERE date = 'TOTAL' AND platform = 'all'
+          WHERE date != 'TOTAL'
           GROUP BY clipboard_mode
         `)
         .all<{ clipboard_mode: string; total: number }>();
@@ -521,6 +521,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     }
 
     // 8. Performance dimensions — referrer, input_type, latency_bucket, error_category
+    // (Aggregated across all platforms where date != 'TOTAL' to include per-platform daily counters)
     const referrerDistribution: ClientDistributionItem[] = [];
     const inputTypeDistribution: ClientDistributionItem[] = [];
     const latencyDistribution: ClientDistributionItem[] = [];
@@ -530,12 +531,13 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         .prepare(`
           SELECT dimension, value, SUM(count) as total
           FROM daily_performance_stats
-          WHERE date = 'TOTAL' AND platform = 'all'
+          WHERE date != 'TOTAL'
           AND dimension IN ('referrer_source', 'input_type', 'latency_bucket', 'error_category')
           GROUP BY dimension, value
           ORDER BY dimension, total DESC
         `)
         .all<{ dimension: string; value: string; total: number }>();
+
 
       if (perfRows.results && perfRows.results.length > 0) {
         const dimMap = new Map<string, Array<{ value: string; total: number }>>();
