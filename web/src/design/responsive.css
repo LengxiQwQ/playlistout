@@ -113,8 +113,8 @@
     }
   }
 
-  /* Hero doodle reposition on mobile: anchored to top-right of the last word with steeper tilt */
-  .hero-doodle-right {
+  /* Hero doodle for mobile: anchored to top-right of the last word with steeper tilt */
+  .hero-doodle-mobile {
     position: absolute !important;
     right: -3.5rem !important;
     top: 0.45rem !important;
@@ -122,7 +122,18 @@
     height: auto !important;
     line-height: 1 !important;
     z-index: 10;
+    color: #d97706;
+    user-select: none;
+    white-space: nowrap;
     animation: mcSplashMobile 1.4s ease-in-out infinite !important;
+  }
+
+  /* English cursive font scale compensation for mobile */
+  :lang(en) .hero-doodle-mobile,
+  html[lang^="en"] .hero-doodle-mobile {
+    font-size: 1.25rem !important;
+    right: -3.2rem !important;
+    font-weight: 600;
   }
 
   /* Footer navigation links wrap gracefully without height clipping */
@@ -290,10 +301,18 @@
     right: -0.25rem !important;
   }
 
-  .hero-doodle-right {
+  .hero-doodle-mobile {
     right: -3.2rem !important;
     top: 0.55rem !important;
     font-size: 0.88rem !important;
+  }
+
+  :lang(en) .hero-doodle-mobile,
+  html[lang^="en"] .hero-doodle-mobile {
+    font-size: 1.15rem !important;
+    right: -2.8rem !important;
+    top: 0.45rem !important;
+    font-weight: 600;
   }
 
   .tape {

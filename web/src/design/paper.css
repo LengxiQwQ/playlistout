@@ -244,15 +244,13 @@ body {
 
 .hero-doodle-right {
   position: absolute;
-  right: -1.5rem;
-  top: -0.85rem;
-  height: auto;
-  line-height: 1;
-  font-size: 1.25rem;
+  right: 1rem;
+  top: 0;
+  height: var(--ruled-line-height, 38px);
+  line-height: var(--ruled-line-height, 38px);
+  font-size: 1.35rem;
   color: #d97706;
   user-select: none;
-  text-shadow: none;
-  white-space: nowrap;
 }
 
 .status-alert {
