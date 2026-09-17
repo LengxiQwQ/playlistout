@@ -155,7 +155,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
                 alignItems: 'center',
               }}
             >
-              <div style={{ flex: '1 1 300px' }}>
+              <div className="search-input-wrapper" style={{ flex: '1 1 300px', width: '100%' }}>
                 <PaperInput
                   value={inputUrl}
                   onChange={(e) => onInputChange(e.target.value)}
@@ -308,7 +308,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               }}
               title={t.search.platformQQDesc}
             >
-              ✓ {t.search.platformQQ}
+              {t.search.platformQQ}
             </Sticker>
             <Sticker
               color="red"
@@ -321,7 +321,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               }}
               title={t.search.platformNeteaseDesc}
             >
-              ✓ {t.search.platformNetease}
+              {t.search.platformNetease}
             </Sticker>
             {/* Kugou: single unified sticker showing login state */}
             <Sticker
@@ -338,7 +338,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               }}
               title={hasKugou ? t.search.kugouLoggedInBadge : t.search.platformKugouDesc}
             >
-              ✓ {t.search.platformKugou}{hasKugou ? ' · ✔' : ''}
+              {hasKugou ? t.search.kugouLoggedIn : t.search.kugouNotLoggedIn}
             </Sticker>
           </div>
         </div>

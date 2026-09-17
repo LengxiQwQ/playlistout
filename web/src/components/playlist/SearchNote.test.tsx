@@ -29,8 +29,9 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.getByText('在这里粘贴歌单链接 ↓')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '解析' })).toBeEnabled();
     expect(screen.getByText('跨平台公开歌单解析')).toBeInTheDocument();
-    expect(screen.getByText('✓ QQ 音乐')).toBeInTheDocument();
-    expect(screen.getByText('✓ 网易云音乐')).toBeInTheDocument();
+    expect(screen.getByText('QQ 音乐')).toBeInTheDocument();
+    expect(screen.getByText('网易云音乐')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐（未登录）')).toBeInTheDocument();
 
     // Click sample
     const sampleJay = screen.getByText('周杰伦 (172首)');
@@ -86,5 +87,28 @@ describe('SearchNote Component (Phase 4)', () => {
     const retryBtn = screen.getByRole('button', { name: '重试' });
     fireEvent.click(retryBtn);
     expect(handleRetry).toHaveBeenCalled();
+  });
+
+  it('renders Kugou logged in status when authenticated', () => {
+    localStorage.setItem('kugou_token', 'test_token');
+    localStorage.setItem('kugou_userid', 'test_uid');
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl=""
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={null}
+          onRetry={vi.fn()}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText('酷狗音乐（已登录）')).toBeInTheDocument();
+    localStorage.clear();
   });
 });

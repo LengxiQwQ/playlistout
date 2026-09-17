@@ -52,33 +52,14 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
 
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const normX = (x / rect.width - 0.5) * 2;
-    const normY = (y / rect.height - 0.5) * 2;
     const pctX = (x / rect.width) * 100;
     const pctY = (y / rect.height) * 100;
 
-    // Subtle, restrained paper 3D orientation (幅度小一点):
-    const tiltX = -normY * 1.6;
-    const tiltY = normX * 1.8;
-    const tiltZ = normX * normY * 0.3;
-
-    // Hard, wider warm shadow (阴影宽一点):
-    const shadowX = 4.5 + normX * 0.8;
-    const shadowY = 5.5 + normY * 1.0;
-    const shadowBlur = 2.0 + Math.abs(normX) * 0.5 + Math.abs(normY) * 0.5;
-
     const el = noteRef.current;
-    el.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);
-    el.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`);
-    el.style.setProperty('--tilt-z', `${tiltZ.toFixed(2)}deg`);
     el.style.setProperty('--mouse-pct-x', `${pctX.toFixed(1)}`);
     el.style.setProperty('--mouse-pct-y', `${pctY.toFixed(1)}`);
     el.style.setProperty('--tape-glare-pos', `${pctX.toFixed(1)}`);
     el.style.setProperty('--tape-glare-opacity', '0.95');
-
-    el.style.setProperty('--paper-shadow-x', `${shadowX.toFixed(1)}px`);
-    el.style.setProperty('--paper-shadow-y', `${shadowY.toFixed(1)}px`);
-    el.style.setProperty('--paper-shadow-blur', `${shadowBlur.toFixed(1)}px`);
 
     el.classList.add('is-tracking');
   };
@@ -94,17 +75,10 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     if (!interactive || !noteRef.current) return;
     const el = noteRef.current;
     el.classList.remove('is-tracking');
-    el.style.setProperty('--tilt-x', '0deg');
-    el.style.setProperty('--tilt-y', '0deg');
-    el.style.setProperty('--tilt-z', '0deg');
     el.style.setProperty('--mouse-pct-x', '50');
     el.style.setProperty('--mouse-pct-y', '50');
     el.style.setProperty('--tape-glare-pos', '50');
     el.style.setProperty('--tape-glare-opacity', '0.35');
-
-    el.style.setProperty('--paper-shadow-x', '4.5px');
-    el.style.setProperty('--paper-shadow-y', '5.5px');
-    el.style.setProperty('--paper-shadow-blur', '2px');
   };
 
   const combinedStyle: React.CSSProperties = {

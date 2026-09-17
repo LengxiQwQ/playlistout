@@ -60,6 +60,8 @@ export interface Translations {
     platformNeteaseDesc: string;
     platformKugou: string;
     platformKugouDesc: string;
+    kugouLoggedIn: string;
+    kugouNotLoggedIn: string;
     kugouLoginBadge: string;
     kugouLoggedInBadge: string;
     kugouLogoutBtn: string;
@@ -129,6 +131,8 @@ export interface Translations {
     statusPaid: string;
     noArtist: string;
     noAlbum: string;
+    showMore: string;
+    showLess: string;
   };
   export: {
     fileExportTitle: string;

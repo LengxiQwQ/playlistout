@@ -103,14 +103,26 @@
     flex-shrink: 0;
   }
 
-  /* Hero doodle reposition on mobile (prevents overlapping hero title) */
+  /* Steeper splash tilt animation for mobile */
+  @keyframes mcSplashMobile {
+    0%, 100% {
+      transform: rotate(13deg) scale(1);
+    }
+    50% {
+      transform: rotate(13deg) scale(1.08);
+    }
+  }
+
+  /* Hero doodle reposition on mobile: anchored to top-right of the last word with steeper tilt */
   .hero-doodle-right {
-    position: static !important;
-    display: inline-block !important;
-    margin-bottom: 0.35rem !important;
-    font-size: 1.15rem !important;
+    position: absolute !important;
+    right: -3.5rem !important;
+    top: 0.45rem !important;
+    font-size: 0.95rem !important;
     height: auto !important;
-    line-height: 1.2 !important;
+    line-height: 1 !important;
+    z-index: 10;
+    animation: mcSplashMobile 1.4s ease-in-out infinite !important;
   }
 
   /* Footer navigation links wrap gracefully without height clipping */
@@ -139,10 +151,22 @@
     padding: 1.25rem !important;
   }
 
+  .journal-container {
+    padding: 0.75rem 1.35rem 2rem !important;
+    padding-left: max(1.35rem, env(safe-area-inset-left)) !important;
+    padding-right: max(1.35rem, env(safe-area-inset-right)) !important;
+  }
+
   /* Search input row mobile layout */
   .search-input-row {
     flex-direction: column !important;
     align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .search-input-wrapper {
+    flex: 0 0 auto !important;
+    width: 100% !important;
   }
 
   .search-input-row .marker-button,
@@ -154,11 +178,97 @@
   .hide-mobile {
     display: none !important;
   }
+
+  /* Track Table Mobile View Modes (Compact by default vs Expanded) */
+  .track-table-container.is-compact-mobile .table-responsive {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  .track-table-container.is-compact-mobile .track-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  .track-table-container.is-compact-mobile .col-album,
+  .track-table-container.is-compact-mobile .col-vip,
+  .track-table-container.is-compact-mobile .col-status,
+  .track-table-container.is-compact-mobile .col-duration {
+    display: none !important;
+  }
+
+  .track-table-container.is-compact-mobile .col-index {
+    display: table-cell !important;
+    width: 26px !important;
+    padding: 0.45rem 0.15rem !important;
+    font-size: 0.76rem !important;
+    text-align: center !important;
+  }
+
+  .track-table-container.is-compact-mobile .col-cover {
+    display: table-cell !important;
+    width: 38px !important;
+    padding: 0.45rem 0.25rem 0.45rem 0.15rem !important;
+    text-align: center !important;
+  }
+
+  .track-table-container.is-compact-mobile .track-artwork-thumb {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    box-shadow: 1px 1px 0 var(--ink, #2d3436) !important;
+  }
+
+  .track-table-container.is-compact-mobile .col-title {
+    width: calc(60% - 38px) !important;
+    padding: 0.45rem 0.4rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .track-table-container.is-compact-mobile .col-artist {
+    width: calc(40% - 26px) !important;
+    padding: 0.45rem 0.4rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .track-table-container.is-compact-mobile .track-title-text {
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  .track-table-container.is-compact-mobile td.col-artist {
+    font-size: 0.78rem !important;
+  }
+
+  .track-table-container.is-compact-mobile .song-row td {
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
+  }
+
+  /* Expanded Mobile Mode: shows all columns with horizontal + vertical scroll */
+  .track-table-container.is-expanded-mobile .table-responsive {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+  }
+
+  .track-table-container.is-expanded-mobile .hide-mobile {
+    display: table-cell !important;
+  }
 }
 
 @media (max-width: 480px) {
   .journal-container {
-    padding: 0.75rem 0.75rem 1.75rem;
+    padding: 0.75rem 1.35rem 1.75rem !important;
+    padding-left: max(1.35rem, env(safe-area-inset-left)) !important;
+    padding-right: max(1.35rem, env(safe-area-inset-right)) !important;
   }
 
   .header-brand-title {
@@ -173,7 +283,28 @@
     gap: 0.35rem !important;
   }
 
+  .note-sparkle {
+    right: -0.25rem !important;
+  }
+
+  .hero-doodle-right {
+    right: -3.2rem !important;
+    top: 0.55rem !important;
+    font-size: 0.88rem !important;
+  }
+
   .tape {
-    display: none; /* Hide tapes on very narrow devices to save space */
+    max-width: 5.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  .tape-top-left {
+    left: -0.5rem !important;
+    top: -0.65rem !important;
+  }
+
+  .tape-bottom-right {
+    right: -0.5rem !important;
+    bottom: -0.65rem !important;
   }
 }

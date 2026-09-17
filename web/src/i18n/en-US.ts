@@ -60,6 +60,8 @@ export const enUS: Translations = {
     platformNeteaseDesc: 'Public playlists supported',
     platformKugou: 'KuGou Music',
     platformKugouDesc: 'Public playlists supported',
+    kugouLoggedIn: 'KuGou Music (Logged in)',
+    kugouNotLoggedIn: 'KuGou Music (Not logged in)',
     kugouLoginBadge: 'Scan to Login',
     kugouLoggedInBadge: 'KuGou Connected',
     kugouLogoutBtn: 'Disconnect',
@@ -129,6 +131,8 @@ export const enUS: Translations = {
     statusPaid: 'Paid Album',
     noArtist: '—',
     noAlbum: '—',
+    showMore: 'Show more',
+    showLess: 'Show less',
   },
   export: {
     fileExportTitle: 'Local File Export',
