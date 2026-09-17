@@ -187,14 +187,47 @@ export const ERROR_CATEGORIES = [
 export type ErrorCategory = typeof ERROR_CATEGORIES[number];
 
 export const DEVICE_CLASSES = ['desktop', 'mobile', 'tablet'] as const;
-export type DeviceClass = typeof DEVICE_CLASSES[number];
+export type DeviceClass = (typeof DEVICE_CLASSES)[number];
 
 export const BROWSER_FAMILIES = [
-  'chrome', 'firefox', 'safari', 'edge', 'wechat', 'qqbrowser',
-  'quark', 'uc', 'baidu', '360', 'sogou', 'opera', 'vivaldi',
-  'brave', 'bot_crawler', 'other',
+  'chrome',
+  'firefox',
+  'safari',
+  'edge',
+  'wechat',
+  'qqbrowser',
+  'quark',
+  'uc',
+  'baidu',
+  '360',
+  'sogou',
+  'opera',
+  'vivaldi',
+  'brave',
+  'samsung_browser',
+  'miui_browser',
+  'huawei_browser',
+  'oppo_browser',
+  'vivo_browser',
+  'honor_browser',
+  'via',
+  'xbrowser',
+  '115_browser',
+  'alipay',
+  'dingtalk',
+  'weibo',
+  'bilibili',
+  'douyin',
+  'yandex',
+  'arc',
+  'tor',
+  'duckduckgo',
+  'bot_crawler',
+  'other',
 ] as const;
-export type BrowserFamily = typeof BROWSER_FAMILIES[number];
+export type BrowserFamily = (typeof BROWSER_FAMILIES)[number] | (string & {});
+
+
 
 export const OS_FAMILIES = ['windows', 'macos', 'linux', 'android', 'ios', 'other'] as const;
 export type OsFamily = typeof OS_FAMILIES[number];
