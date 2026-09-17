@@ -769,9 +769,9 @@ describe('PlaylistOut Public API v1', () => {
       expect(body.data.platform).toBe('kugou');
     });
 
-    it('propagates unexpected bare Error as 500 INTERNAL_ERROR during probe instead of 404', async () => {
+    it('propagates unexpected bare Error as 500 INTERNAL_ERROR with sanitized message without leaking internal details', async () => {
       vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
-        new Error('Unexpected lower-level socket failure'),
+        new Error('SecretDatabaseConnectionFailed: password=hunter2 host=internal-db.example /internal/app.ts'),
       );
       vi.spyOn(qqUser, 'fetchQQUserPlaylists').mockRejectedValueOnce(
         new ProviderError('USER_NOT_FOUND', 'QQ user not found', 404),
@@ -791,7 +791,13 @@ describe('PlaylistOut Public API v1', () => {
       const body: any = await response.json();
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('INTERNAL_ERROR');
-      expect(body.error.message).toContain('Unexpected lower-level socket failure');
+      expect(body.error.message).toBe('An unexpected internal error occurred while resolving the input.');
+
+      const rawResponse = JSON.stringify(body);
+      expect(rawResponse).not.toContain('SecretDatabaseConnectionFailed');
+      expect(rawResponse).not.toContain('hunter2');
+      expect(rawResponse).not.toContain('internal-db.example');
+      expect(rawResponse).not.toContain('/internal/app.ts');
     });
   });
 });
