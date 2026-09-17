@@ -175,8 +175,8 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
 export async function getPublicStats(db: D1Database | undefined): Promise<PublicStatsResponse> {
   const defaultResponse: PublicStatsResponse = {
     launchedAt: LAUNCHED_AT,
-    totalVisitors: 0,
     cumulativeDailyVisitors: 0,
+    totalVisitors: 0,
     visitorsToday: 0,
     totalPageViews: 0,
     pageViewsToday: 0,
@@ -224,7 +224,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     let todayTracks = 0;
     let totalExports = 0;
     let todayExports = 0;
-    let totalVisitors = 0;
+    let cumulativeDailyVisitors = 0;
     let visitorsToday = 0;
     let totalPageViews = 0;
     let pageViewsToday = 0;
@@ -261,7 +261,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
             if (date === today) todayExports = count;
           }
         } else if (metric === 'visitor_unique') {
-          if (date === 'TOTAL') totalVisitors = count;
+          if (date === 'TOTAL') cumulativeDailyVisitors = count;
           if (date === today) visitorsToday = count;
         } else if (metric === 'page_view') {
           if (date === 'TOTAL') totalPageViews = count;
@@ -572,8 +572,8 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
 
     return {
       launchedAt: LAUNCHED_AT,
-      totalVisitors,
-      cumulativeDailyVisitors: totalVisitors,
+      cumulativeDailyVisitors,
+      totalVisitors: cumulativeDailyVisitors,
       visitorsToday,
       totalPageViews,
       pageViewsToday,

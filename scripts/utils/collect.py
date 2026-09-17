@@ -231,10 +231,15 @@ def merge(payload: dict, traffic_path: Path) -> dict:
     # 合并网站运营统计
     website_stats = data.get("website_stats")
     if website_stats is not None:
+        total_visitors_val = website_stats.get("cumulativeDailyVisitors")
+        if total_visitors_val is None:
+            total_visitors_val = website_stats.get("totalVisitors", 0)
+
         result["website_snapshots"].append(
             {
                 "fetched_at": fetched_at,
-                "total_visitors": website_stats.get("totalVisitors", 0),
+                "cumulative_daily_visitors": total_visitors_val,
+                "total_visitors": total_visitors_val,
                 "visitors_today": website_stats.get("visitorsToday", 0),
                 "total_page_views": website_stats.get("totalPageViews", 0),
                 "page_views_today": website_stats.get("pageViewsToday", 0),
@@ -604,7 +609,10 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
         uptime_zh = "暂无数据"
         uptime_en = "No data"
 
-    visitors_total = fmt_num(stats.get("totalVisitors", 0))
+    visitors_val = stats.get("cumulativeDailyVisitors")
+    if visitors_val is None:
+        visitors_val = stats.get("totalVisitors", 0)
+    visitors_total = fmt_num(visitors_val)
     visitors_today = fmt_num(stats.get("visitorsToday", 0))
     pv_total = fmt_num(stats.get("totalPageViews", 0))
     pv_today = fmt_num(stats.get("pageViewsToday", 0))
@@ -656,9 +664,11 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "",
             "#### 📌 核心流量与使用规模",
             "",
-            "| 👥 独立访客 (UV) | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |",
+            "> 💡 👥 累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。",
+            "",
+            "| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
-            f"| **{visitors_total}**<br><sub>今日 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | {uptime_zh} |",
+            f"| **{visitors_total}**<br><sub>今日独立 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | {uptime_zh} |",
             "",
             "#### 🗺️ 访客地理归属与设备分布",
             f"- **🌍 主要地区来源：** {geo_str}",
@@ -683,9 +693,11 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "",
             "#### 📌 Core Metrics & Usage Volume",
             "",
-            "| 👥 Unique Visitors (UV) | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |",
+            "> 💡 👥 Cumulative Daily Unique Visits = the sum of daily deduplicated visitor counts; the same visitor may count again on another day because PlaylistOut performs no cross-day tracking.",
+            "",
+            "| 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
-            f"| **{visitors_total}**<br><sub>Today +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | {uptime_en} |",
+            f"| **{visitors_total}**<br><sub>Today unique +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | {uptime_en} |",
             "",
             "#### 🗺️ Geographic & Client Distribution",
             f"- **🌍 Top Visitor Regions:** {geo_str}",
