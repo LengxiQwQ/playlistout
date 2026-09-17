@@ -196,7 +196,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     todayHourlyPageViews: [],
     topGeo: [],
     chinaProvinces: [],
-    clientStats: { browsers: [], devices: [], os: [] },
+    clientStats: { browsers: [], devices: [], os: [], deviceBrands: [] },
     clipboardFormatsBreakdown: {},
     referrerDistribution: [],
     inputTypeDistribution: [],
@@ -532,12 +532,11 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
           SELECT dimension, value, SUM(count) as total
           FROM daily_performance_stats
           WHERE date != 'TOTAL'
-          AND dimension IN ('referrer_source', 'input_type', 'latency_bucket', 'error_category')
+          AND dimension IN ('referrer_source', 'input_type', 'latency_bucket', 'error_category', 'device_brand')
           GROUP BY dimension, value
           ORDER BY dimension, total DESC
         `)
         .all<{ dimension: string; value: string; total: number }>();
-
 
       if (perfRows.results && perfRows.results.length > 0) {
         const dimMap = new Map<string, Array<{ value: string; total: number }>>();
@@ -562,10 +561,14 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
 
         const errorItems = dimMap.get('error_category');
         if (errorItems) errorCategoryDistribution.push(...toDistributionFromDim(errorItems));
+
+        const brandItems = dimMap.get('device_brand');
+        if (brandItems) clientStats.deviceBrands = toDistributionFromDim(brandItems);
       }
     } catch (err: unknown) {
       console.error('Failed to fetch performance dimension stats:', err);
     }
+
 
     return {
       launchedAt: LAUNCHED_AT,

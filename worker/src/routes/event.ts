@@ -68,11 +68,14 @@ export function validateEventPayload(body: unknown): ValidationResult {
   if (type === 'visit') {
     const rawDeviceId = obj.deviceId;
     const deviceId = typeof rawDeviceId === 'string' ? rawDeviceId.trim().slice(0, 64) : undefined;
+    const rawReferrer = obj.referrer;
+    const referrer = typeof rawReferrer === 'string' ? rawReferrer.trim().slice(0, 500) : undefined;
     return {
       valid: true,
-      payload: { type: 'visit', deviceId },
+      payload: { type: 'visit', deviceId, referrer },
     };
   }
+
 
   // 2. platform: required, must be in SUPPORTED_PLATFORMS allowlist
   if (!obj.platform || typeof obj.platform !== 'string') {
@@ -293,9 +296,11 @@ export async function handleEvent(
           env.DB,
           request,
           payload.deviceId,
+          payload.referrer,
         ),
       );
     }
+
   }
 
   // 204 No Content — fire-and-forget from frontend perspective

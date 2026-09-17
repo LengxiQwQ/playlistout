@@ -23,26 +23,53 @@ import type {
 import { getUtcDateString } from '../stats';
 
 /**
- * Classifies a Referer header value into a coarse, privacy-safe source category.
+ * Classifies a Referer header or document.referrer into a coarse, privacy-safe source category.
  * PRIVACY: The full Referer URL is NEVER stored — only the coarse category label.
  */
 export function classifyReferrer(referer: string | null): string {
   if (!referer) return 'direct';
-  const lower = referer.toLowerCase();
+  const lower = referer.toLowerCase().trim();
+  if (!lower || lower === 'direct') return 'direct';
+
+  // Self domains (internal clicks / refreshes)
+  if (/playlistout\.lengxiqwq\.com|localhost|127\.0\.0\.1/i.test(lower)) {
+    return 'direct';
+  }
+
+  // 1. AI Assistants (ChatGPT, Claude, DeepSeek, Copilot, Gemini, Kimi)
+  if (/chatgpt\.|openai\./i.test(lower) || lower.includes('chatgpt')) return 'chatgpt';
+  if (/claude\.ai/i.test(lower) || lower.includes('claude')) return 'claude';
+  if (/deepseek\./i.test(lower) || lower.includes('deepseek')) return 'deepseek';
+  if (/copilot\.microsoft|github\.com\/copilot/i.test(lower)) return 'copilot';
+  if (/gemini\.google/i.test(lower)) return 'gemini';
+  if (/kimi\.moonshot/i.test(lower)) return 'kimi';
+
+  // 2. Search Engines
   if (/google\./i.test(lower)) return 'google';
   if (/baidu\./i.test(lower)) return 'baidu';
   if (/bing\./i.test(lower)) return 'bing';
+  if (/sogou\./i.test(lower)) return 'sogou';
+  if (/so\.com/i.test(lower)) return '360search';
+
+  // 3. Tech & Developer Communities
   if (/github\./i.test(lower)) return 'github';
-  if (
-    /twitter\.|x\.com|t\.co|weibo\.|wechat\.|bilibili\.|zhihu\.|douyin\.|tiktok\.|facebook\.|instagram\.|reddit\./i.test(
-      lower,
-    )
-  ) {
-    return 'social';
-  }
-  if (/chatgpt\.|openai\.|claude\.|copilot\./i.test(lower)) return 'ai';
-  return 'other';
+  if (/v2ex\./i.test(lower)) return 'v2ex';
+  if (/juejin\./i.test(lower)) return 'juejin';
+  if (/zhihu\./i.test(lower)) return 'zhihu';
+  if (/bilibili\./i.test(lower)) return 'bilibili';
+  if (/xiaohongshu\.|xhslink\./i.test(lower)) return 'xiaohongshu';
+
+  // 4. Social & Messaging
+  if (/weixin|wechat/i.test(lower)) return 'wechat';
+  if (/weibo\./i.test(lower)) return 'weibo';
+  if (/twitter\.|x\.com|t\.co/i.test(lower)) return 'twitter_x';
+  if (/reddit\./i.test(lower)) return 'reddit';
+  if (/facebook\.|instagram\./i.test(lower)) return 'meta_fb';
+  if (/douyin\.|tiktok\./i.test(lower)) return 'douyin_tiktok';
+
+  return 'other_web';
 }
+
 
 /**
  * Normalizes clipboard modes (e.g. 'title-artist' -> 'title_artist')
@@ -411,12 +438,13 @@ export async function recordVisitEvent(
   db: D1Database | undefined,
   request: Request,
   deviceId?: string,
+  clientReferrer?: string,
 ): Promise<void> {
   if (!db) return;
 
   try {
     const date = getUtcDateString();
-    const hour = new Date().getUTCHours(); // BUG FIX: was missing, hourly chart had no data
+    const hour = new Date().getUTCHours();
     const clientIp =
       request.headers.get('cf-connecting-ip') ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
@@ -460,14 +488,12 @@ export async function recordVisitEvent(
     const statements: D1PreparedStatement[] = [
       db.prepare(upsertAggregateSql).bind(date, 'page_view'),
       db.prepare(upsertAggregateSql).bind('TOTAL', 'page_view'),
-      // BUG FIX: hourly page_view was never written — now fixed
       db.prepare(upsertHourlySql).bind(date, hour, 'page_view'),
     ];
 
     if (isNewVisitor) {
       statements.push(db.prepare(upsertAggregateSql).bind(date, 'visitor_unique'));
       statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'visitor_unique'));
-      // BUG FIX: hourly visitor_unique was never written — now fixed
       statements.push(db.prepare(upsertHourlySql).bind(date, hour, 'visitor_unique'));
     }
 
@@ -496,9 +522,9 @@ export async function recordVisitEvent(
     statements.push(db.prepare(upsertClientSql).bind(date, ua.deviceClass, ua.browserFamily, ua.osFamily));
     statements.push(db.prepare(upsertClientSql).bind('TOTAL', ua.deviceClass, ua.browserFamily, ua.osFamily));
 
-    // NEW: Referrer source classification (coarse category only, full URL never stored)
-    const referer = request.headers.get('referer') || request.headers.get('referrer') || null;
-    const referrerSource = classifyReferrer(referer);
+    // Referrer source classification (coarse category only, full URL never stored)
+    const rawReferer = clientReferrer || request.headers.get('referer') || request.headers.get('referrer') || null;
+    const referrerSource = classifyReferrer(rawReferer);
     const upsertPerfSql = `
       INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
       VALUES (?1, 'all', ?2, ?3, 1)
@@ -507,6 +533,12 @@ export async function recordVisitEvent(
     `;
     statements.push(db.prepare(upsertPerfSql).bind(date, 'referrer_source', referrerSource));
     statements.push(db.prepare(upsertPerfSql).bind('TOTAL', 'referrer_source', referrerSource));
+
+    // Mobile Brand & Device Hardware classification
+    if (ua.deviceBrand) {
+      statements.push(db.prepare(upsertPerfSql).bind(date, 'device_brand', ua.deviceBrand));
+      statements.push(db.prepare(upsertPerfSql).bind('TOTAL', 'device_brand', ua.deviceBrand));
+    }
 
     // Prune ephemeral visitor hashes older than 7 days to prevent unbounded table growth
     const cutoffDate = new Date(Date.now() - 7 * 86400 * 1000).toISOString().slice(0, 10);
@@ -521,4 +553,5 @@ export async function recordVisitEvent(
     console.error('Failed to record visit aggregate stats:', err);
   }
 }
+
 
