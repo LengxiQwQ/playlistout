@@ -99,11 +99,90 @@ def j(obj) -> str:
 def dist_names(lst):
     return j([x.get("name", "?") for x in (lst or [])])
 
+def dist_names_mapped(lst, mapper):
+    return j([mapper(x.get("name", "?")) for x in (lst or [])])
+
 def dist_counts(lst):
     return j([s(x.get("count")) for x in (lst or [])])
 
 def dist_pcts(lst):
     return j([s(x.get("percentage")) for x in (lst or [])])
+
+BROWSER_NAME_MAP = {
+    "chrome": "Google Chrome",
+    "edge": "Microsoft Edge",
+    "safari": "Apple Safari",
+    "firefox": "Firefox",
+    "wechat": "微信 (WeChat)",
+    "qqbrowser": "QQ浏览器",
+    "quark": "夸克 (Quark)",
+    "uc": "UC浏览器",
+    "baidu": "百度 (Baidu)",
+    "360": "360安全浏览器",
+    "sogou": "搜狗 (Sogou)",
+    "samsung_browser": "三星浏览器 (Samsung)",
+    "miui_browser": "小米浏览器 (MIUI)",
+    "huawei_browser": "华为浏览器 (Huawei)",
+    "oppo_browser": "OPPO浏览器 (HeyTap)",
+    "vivo_browser": "vivo浏览器",
+    "honor_browser": "荣耀浏览器 (Honor)",
+    "via": "Via极简浏览器",
+    "xbrowser": "X浏览器",
+    "115_browser": "115浏览器",
+    "alipay": "支付宝 (Alipay)",
+    "dingtalk": "钉钉 (DingTalk)",
+    "weibo": "微博 (Weibo)",
+    "bilibili": "哔哩哔哩 (B站)",
+    "douyin": "抖音 (Douyin)",
+    "opera": "Opera",
+    "vivaldi": "Vivaldi",
+    "brave": "Brave",
+    "yandex": "Yandex",
+    "arc": "Arc",
+    "tor": "Tor Browser",
+    "duckduckgo": "DuckDuckGo",
+    "bot_crawler": "爬虫 / 脚本 (Bot)",
+    "other": "其他浏览器 (Other)",
+}
+
+DEVICE_NAME_MAP = {
+    "desktop": "桌面电脑 (Desktop)",
+    "mobile": "移动手机 (Mobile)",
+    "tablet": "平板电脑 (Tablet)",
+    "other": "其他终端 (Other)",
+}
+
+OS_NAME_MAP = {
+    "windows": "Windows",
+    "macos": "macOS",
+    "ios": "iOS",
+    "android": "Android",
+    "linux": "Linux",
+    "other": "其他 (Other)",
+}
+
+def format_browser_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    key = name.strip().lower()
+    if key in BROWSER_NAME_MAP:
+        return BROWSER_NAME_MAP[key]
+    # Dynamic browser: e.g. "alohabrowser" -> "Alohabrowser", "waterfox" -> "Waterfox"
+    clean = key.replace("_", " ")
+    return " ".join(word.capitalize() for word in clean.split())
+
+def format_device_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    key = name.strip().lower()
+    return DEVICE_NAME_MAP.get(key, name)
+
+def format_os_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    key = name.strip().lower()
+    return OS_NAME_MAP.get(key, name)
+
 
 
 # ── 4. HTML 构建 (Modern White Bilingual Dashboard) ───────────────────
@@ -158,10 +237,18 @@ def build_html(stats: dict, fetched_at_cn: str, fetched_at_utc: str) -> str:
 
     # 客户端
     client = stats.get("clientStats") or {}
-    br_labels, br_counts = dist_names(client.get("browsers")), dist_counts(client.get("browsers"))
-    dv_labels, dv_counts = dist_names(client.get("devices")), dist_counts(client.get("devices"))
-    os_labels, os_counts = dist_names(client.get("os")), dist_counts(client.get("os"))
-    brand_labels, brand_counts = dist_names(client.get("deviceBrands")), dist_counts(client.get("deviceBrands"))
+    br_labels = dist_names_mapped(client.get("browsers"), format_browser_label)
+    br_counts = dist_counts(client.get("browsers"))
+
+    dv_labels = dist_names_mapped(client.get("devices"), format_device_label)
+    dv_counts = dist_counts(client.get("devices"))
+
+    os_labels = dist_names_mapped(client.get("os"), format_os_label)
+    os_counts = dist_counts(client.get("os"))
+
+    brand_labels = dist_names(client.get("deviceBrands"))
+    brand_counts = dist_counts(client.get("deviceBrands"))
+
 
 
     # 导出格式与剪贴板
