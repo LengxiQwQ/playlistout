@@ -55,7 +55,17 @@ No installation required. Simply visit **[playlistout.lengxiqwq.com](https://pla
 Native support for public playlists from **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, and **Soda Music (汽水音乐)**:
 - **QQ Music / NetEase Cloud Music**: Fully web-based and 100% zero-login. Parse and export complete playlists without accounts, cookies, tokens, or software installation.
 - **Soda Music (汽水音乐)**: Zero-login direct resolution for share shortlinks and playlists, extracting synced Douyin favorites and soundtrack tracks.
-- **KuGou Music**: Provides instant guest preview for initial tracks without login, and supports secure mobile App QR scan authorization to unlock complete playlists without limits (tokens remain strictly in your browser).
+- **KuGou Music**: Due to upstream H5 anti-scraping and app-funneling restrictions, guest unauthenticated requests receive a **10-track public preview**; full 100% tracklists can be unlocked seamlessly via one-click mobile QR code authorization in the web app or by passing token credentials in API request headers.
+
+#### 📊 Platform Capabilities & Upstream Limitations Matrix
+
+| Platform | Code | Single Playlist | User Playlists | Upstream Mechanism & Constraints |
+| :--- | :--- | :--- | :--- | :--- |
+| **QQ Music** | `qqmusic` | 🟢 **100% Zero-Login Full Export** (No track count cap) | 🟢 **Zero-Login Full Export** (QQ number or profile URL) | No tokens or cookies needed; uses open public web protocol. |
+| **NetEase Cloud Music** | `netease` | 🟢 **100% Zero-Login Full Export** (Deep pagination 1000+ tracks) | 🟢 **Zero-Login Full Export** (UID or profile URL) | Solves common 10-track unauthenticated limits in other tools. |
+| **Soda Music** | `qishui` | 🟢 **100% Zero-Login Full Export** (Supports synced Douyin tracks) | ⚪ *No public user profiles on platform* | No tokens needed; extracts complete tracks from shortlinks. |
+| **KuGou Music** | `kugou` | 🟡 **Zero-Login: 10-track preview only**<br/>🟢 **With Token: 100% Full Export** | 🟡 **Requires Token & Userid** | **Upstream Restriction**: KuGou mobile share pages embed only the first 10 tracks into SSR HTML, redirecting further viewing to their App. To unlock playlists beyond 10 tracks or export user profile collections, provide creator session credentials:<br/>• **Web UI**: Click "Connect KuGou Account" for one-click QR scan;<br/>• **API**: Pass `Authorization` and `X-Kugou-Userid` headers. |
+
 
 ### 📚 User Playlist Collections & Batch Packaging
 Paste a user's QQ number, NetEase UID, or profile link to load their entire collection of publicly created playlists in one click. Select all or any subset of playlists, and batch-export them into a **Multi-Sheet Excel Workbook** (one sheet per playlist) or a **ZIP Archive** containing individual Excel / CSV / TXT / JSON files.
@@ -103,6 +113,13 @@ PlaylistOut officially provides a unified cross-platform public API for third-pa
   - Public GET endpoints feature open CORS (`Access-Control-Allow-Origin: *`), enabling direct `fetch` calls from browser web apps.
 - **Single Playlist Endpoint**: `GET /api/v1/playlist?url=<url_or_id>`
 - **User Playlists Endpoint**: `GET /api/v1/user/playlists?uid=<uid_or_uin>`
+- **KuGou Token Authentication**: Strictly adhering to OWASP security practices, credential parameters in URLs (e.g. `?token=...`) are **forbidden and rejected with 400 Bad Request**. Provide credentials via standard HTTP headers:
+  ```bash
+  # Fetch complete 400+ track KuGou playlist with Token & Userid headers
+  curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://m.kugou.com/songlist/gcid_xxx/" \
+    -H "Authorization: Bearer <kugou_token>" \
+    -H "X-Kugou-Userid: <kugou_userid>"
+  ```
 - **Full API Documentation & Code Samples (cURL / JavaScript / Python)**: See [`docs/API.md`](docs/API.md).
 
 ---
