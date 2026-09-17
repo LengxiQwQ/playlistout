@@ -12,12 +12,19 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
   const { t, format } = useTranslation();
   const [showMoreMobile, setShowMoreMobile] = useState(false);
 
+  // Dynamic index padding and column width based on playlist total tracks count (supports up to 4+ digits)
+  const totalTracks = tracks.length;
+  const indexDigits = Math.max(2, String(totalTracks).length);
+  const indexColWidth = `${Math.max(28, 28 + (indexDigits - 2) * 8)}px`;
+  const formatTrackIndex = (index: number) => String(index).padStart(indexDigits, '0');
+
   return (
     <div
       className={`track-table-container ${showMoreMobile ? 'is-expanded-mobile' : 'is-compact-mobile'}`}
       data-testid="track-table-container"
       style={{
         marginTop: '1.5rem',
+        ['--index-width' as any]: indexColWidth,
       }}
     >
       <div
@@ -91,7 +98,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                 zIndex: 10,
               }}
             >
-              <th scope="col" className="col-index" style={{ width: '48px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
+              <th scope="col" className="col-index" style={{ width: 'var(--index-width, 48px)', minWidth: 'var(--index-width, 48px)', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)', textAlign: 'center' }}>
                 {t.table.colIndex}
               </th>
               <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
@@ -168,8 +175,8 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     transition: 'background-color 0.15s ease',
                   }}
                 >
-                  <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem' }}>
-                    {String(track.index).padStart(2, '0')}
+                  <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem', width: 'var(--index-width, 48px)', whiteSpace: 'nowrap' }}>
+                    {formatTrackIndex(track.index)}
                   </td>
                   <td className="col-cover" style={{ padding: '0.65rem 0.5rem' }}>
                     <TrackArtwork coverUrl={track.coverUrl} title={track.title} size={38} />
