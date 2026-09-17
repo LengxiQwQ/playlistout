@@ -16,6 +16,19 @@ export interface DailyTrendEntry {
   parses: number;
   tracks: number;
   exports: number;
+  /** 当日剪贴板复制次数 */
+  clipboards: number;
+  /** 当日独立访客数 */
+  visitors: number;
+  /** 当日解析失败次数 */
+  failures: number;
+}
+
+export interface HourlyEntry {
+  /** UTC hour, 0–23 */
+  hour: number;
+  pageViews: number;
+  visitors: number;
 }
 
 export interface GeoDistributionItem {
@@ -33,7 +46,14 @@ export interface ProvinceDistributionItem {
 
 export interface ClientDistributionItem {
   name: string;
+  count: number;
   percentage: number;
+}
+
+export interface ClientStats {
+  browsers: ClientDistributionItem[];
+  devices: ClientDistributionItem[];
+  os: ClientDistributionItem[];
 }
 
 export interface PublicStatsResponse {
@@ -55,6 +75,35 @@ export interface PublicStatsResponse {
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: DailyTrendEntry[];
   generatedAt: string;
+
+  // ── 维度数据（新增，全部可选，collect.py 向后兼容） ──
+
+  /** 今日各小时页面访问量（UTC 0–23时，无数据的小时 pageViews=0） */
+  todayHourlyPageViews?: HourlyEntry[];
+
+  /** 全量地理分布 TOP 10 国家 */
+  topGeo?: GeoDistributionItem[];
+
+  /** 中国境内省份分布（仅 country=CN 的数据） */
+  chinaProvinces?: ProvinceDistributionItem[];
+
+  /** 设备类型 / 浏览器 / 操作系统分布 */
+  clientStats?: ClientStats;
+
+  /** 剪贴板复制格式分布（全量，不含文件导出） */
+  clipboardFormatsBreakdown?: Record<string, number>;
+
+  /** 访问来源（Referrer）分类分布 */
+  referrerDistribution?: ClientDistributionItem[];
+
+  /** 输入类型分布（web_url / mobile_share_link / raw_id / other） */
+  inputTypeDistribution?: ClientDistributionItem[];
+
+  /** 请求延迟分布 */
+  latencyDistribution?: ClientDistributionItem[];
+
+  /** 错误分类分布（仅解析失败时记录） */
+  errorCategoryDistribution?: ClientDistributionItem[];
 }
 
 // ── Event Ingestion Types (POST /api/event) ──

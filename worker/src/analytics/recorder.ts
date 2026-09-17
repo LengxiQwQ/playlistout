@@ -23,6 +23,28 @@ import type {
 import { getUtcDateString } from '../stats';
 
 /**
+ * Classifies a Referer header value into a coarse, privacy-safe source category.
+ * PRIVACY: The full Referer URL is NEVER stored — only the coarse category label.
+ */
+export function classifyReferrer(referer: string | null): string {
+  if (!referer) return 'direct';
+  const lower = referer.toLowerCase();
+  if (/google\./i.test(lower)) return 'google';
+  if (/baidu\./i.test(lower)) return 'baidu';
+  if (/bing\./i.test(lower)) return 'bing';
+  if (/github\./i.test(lower)) return 'github';
+  if (
+    /twitter\.|x\.com|t\.co|weibo\.|wechat\.|bilibili\.|zhihu\.|douyin\.|tiktok\.|facebook\.|instagram\.|reddit\./i.test(
+      lower,
+    )
+  ) {
+    return 'social';
+  }
+  if (/chatgpt\.|openai\.|claude\.|copilot\./i.test(lower)) return 'ai';
+  return 'other';
+}
+
+/**
  * Normalizes clipboard modes (e.g. 'title-artist' -> 'title_artist')
  */
 export function normalizeClipboardMode(mode: ClipboardMode): CanonicalClipboardMode {
@@ -394,6 +416,7 @@ export async function recordVisitEvent(
 
   try {
     const date = getUtcDateString();
+    const hour = new Date().getUTCHours(); // BUG FIX: was missing, hourly chart had no data
     const clientIp =
       request.headers.get('cf-connecting-ip') ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
@@ -415,6 +438,13 @@ export async function recordVisitEvent(
       DO UPDATE SET count = count + 1;
     `;
 
+    const upsertHourlySql = `
+      INSERT INTO hourly_stats (date, hour, platform, metric, count)
+      VALUES (?1, ?2, 'all', ?3, 1)
+      ON CONFLICT (date, hour, platform, metric)
+      DO UPDATE SET count = count + 1;
+    `;
+
     // Attempt to insert daily hash
     let isNewVisitor = true;
     try {
@@ -430,11 +460,15 @@ export async function recordVisitEvent(
     const statements: D1PreparedStatement[] = [
       db.prepare(upsertAggregateSql).bind(date, 'page_view'),
       db.prepare(upsertAggregateSql).bind('TOTAL', 'page_view'),
+      // BUG FIX: hourly page_view was never written — now fixed
+      db.prepare(upsertHourlySql).bind(date, hour, 'page_view'),
     ];
 
     if (isNewVisitor) {
       statements.push(db.prepare(upsertAggregateSql).bind(date, 'visitor_unique'));
       statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'visitor_unique'));
+      // BUG FIX: hourly visitor_unique was never written — now fixed
+      statements.push(db.prepare(upsertHourlySql).bind(date, hour, 'visitor_unique'));
     }
 
     // Record coarse geography and client device info
@@ -462,7 +496,19 @@ export async function recordVisitEvent(
     statements.push(db.prepare(upsertClientSql).bind(date, ua.deviceClass, ua.browserFamily, ua.osFamily));
     statements.push(db.prepare(upsertClientSql).bind('TOTAL', ua.deviceClass, ua.browserFamily, ua.osFamily));
 
-    // 6. Prune ephemeral visitor hashes older than 7 days to prevent unbounded table growth
+    // NEW: Referrer source classification (coarse category only, full URL never stored)
+    const referer = request.headers.get('referer') || request.headers.get('referrer') || null;
+    const referrerSource = classifyReferrer(referer);
+    const upsertPerfSql = `
+      INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
+      VALUES (?1, 'all', ?2, ?3, 1)
+      ON CONFLICT (date, platform, dimension, value)
+      DO UPDATE SET count = count + 1;
+    `;
+    statements.push(db.prepare(upsertPerfSql).bind(date, 'referrer_source', referrerSource));
+    statements.push(db.prepare(upsertPerfSql).bind('TOTAL', 'referrer_source', referrerSource));
+
+    // Prune ephemeral visitor hashes older than 7 days to prevent unbounded table growth
     const cutoffDate = new Date(Date.now() - 7 * 86400 * 1000).toISOString().slice(0, 10);
     const pruneHashesSql = `
       DELETE FROM daily_visitor_hashes
