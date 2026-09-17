@@ -45,48 +45,52 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(body.error.code).toBe('METHOD_NOT_ALLOWED');
   });
 
-  it('responds with CORS header to /api/health for allowed origin', async () => {
+  it('responds with public CORS header (*) to /api/health', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/health', {
-      headers: { Origin: 'https://playlistout.lengxiqwq.com' },
+      headers: { Origin: 'https://third-party-app.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
-    expect(response.headers.get('Vary')).toBe('Origin');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
-  it('does NOT return Access-Control-Allow-Origin for unauthorized origin', async () => {
+  it('allows public GET endpoints like /api/playlist for any origin with *', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
-      headers: { Origin: 'https://evil-site.com' },
+      headers: { Origin: 'https://third-party-app.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
-  it.each([
-    'https://playlistout.com',
-    'https://playlistout.lengxiqwq.com',
-    'https://lengxiqwq.github.io',
-    'http://localhost:5173',
-  ])('handles CORS OPTIONS preflight for allowed origin: %s', async (origin) => {
+  it('handles CORS OPTIONS preflight for public endpoints with *', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist', {
       method: 'OPTIONS',
-      headers: { Origin: origin },
+      headers: { Origin: 'https://third-party-app.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(204);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
   });
 
-  it('rejects CORS OPTIONS preflight for unauthorized origin with 403', async () => {
-    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist', {
+  it('strictly rejects CORS OPTIONS preflight on sensitive endpoints for unauthorized origin with 403', async () => {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/login/qr', {
       method: 'OPTIONS',
       headers: { Origin: 'https://malicious-domain.com' },
     });
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(403);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('allows sensitive endpoint OPTIONS preflight for authorized origin', async () => {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/login/qr', {
+      method: 'OPTIONS',
+      headers: { Origin: 'https://playlistout.lengxiqwq.com' },
+    });
+    const response = await worker.fetch(request, {}, createMockCtx());
+    expect(response.status).toBe(204);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
   });
 
   it('returns Cache-Control no-cache, no-store on /api/stats', async () => {

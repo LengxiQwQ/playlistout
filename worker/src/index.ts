@@ -1,17 +1,15 @@
 import { getCorsHeaders, handleOptions } from './cors';
-import { type ApiResponse, type Playlist, type UserPlaylistsData, ProviderError } from './models/playlist';
-import { qqMusicProvider, fetchQQUserPlaylists, extractQQNumber } from './providers/qqmusic';
-import { neteaseProvider, fetchNeteaseUserPlaylists, extractNeteaseUserId, matchesNeteaseInput } from './providers/netease';
-import { kugouProvider, createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists } from './providers/kugou';
-import { qishuiProvider } from './providers/qishui';
+import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveData, ProviderError } from './models/playlist';
+import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists } from './providers/kugou';
 import { getPublicStats } from './stats';
-import { recordParseEvent, recordRateLimitEvent } from './analytics/recorder';
-import { classifyInputType, classifyErrorCategory } from './analytics/dimensions';
+import { recordRateLimitEvent } from './analytics/recorder';
 import type { PublicStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit } from './security/rate-limit';
-import { extractCleanUrlOrInput } from './utils/clean-url';
+import { parsePlaylistService } from './services/playlist-service';
+import { fetchUserPlaylistsService } from './services/user-service';
+import { resolveService } from './services/resolve-service';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -21,16 +19,20 @@ export interface Env {
 export default {
   async fetch(request: Request, _env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const corsHeaders = getCorsHeaders(request);
+    const corsHeaders = getCorsHeaders(request, url.pathname);
     const responseHeaders = applySecurityHeaders(corsHeaders);
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
-      return handleOptions(request);
+      return handleOptions(request, url.pathname);
     }
 
-    // Health check endpoint
-    if (url.pathname === '/health' || url.pathname === '/api/health') {
+    // Health check endpoints (/health, /api/health, /api/v1/health)
+    if (
+      url.pathname === '/health' ||
+      url.pathname === '/api/health' ||
+      url.pathname === '/api/v1/health'
+    ) {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({
@@ -92,7 +94,37 @@ export default {
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       '127.0.0.1';
 
-    // Kugou QR login endpoints
+    // Global security check: strictly prohibit passing credentials in query parameters
+    if (
+      url.searchParams.has('token') ||
+      url.searchParams.has('auth') ||
+      url.searchParams.has('credential') ||
+      url.searchParams.has('kugou_token')
+    ) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message:
+              'Passing credentials in query parameters is strictly forbidden. Use Authorization: Bearer <token> and X-Kugou-Userid headers.',
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+      );
+    }
+
+    // Extract optional client credentials from HTTP headers only
+    const authHeader = request.headers.get('authorization') || '';
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const token =
+      (bearerMatch ? bearerMatch[1].trim() : '') ||
+      request.headers.get('x-kugou-token')?.trim() ||
+      undefined;
+    const userid = request.headers.get('x-kugou-userid')?.trim() || undefined;
+    const auth = (token || userid) ? { token, userid } : undefined;
+
+    // ── Kugou QR login endpoints (Sensitive / Auth API) ──
     if (url.pathname === '/api/kugou/login/qr') {
       if (request.method !== 'GET') {
         return new Response(
@@ -100,7 +132,7 @@ export default {
             success: false,
             error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
           }),
-          { status: 405, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
         );
       }
       try {
@@ -130,7 +162,7 @@ export default {
             success: false,
             error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
           }),
-          { status: 405, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
         );
       }
       const qrcode = url.searchParams.get('qrcode');
@@ -171,35 +203,9 @@ export default {
             success: false,
             error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
           }),
-          { status: 405, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
         );
       }
-
-      // Prohibit passing token or credentials in query parameters (strict constitutional privacy rule)
-      if (
-        url.searchParams.has('token') ||
-        url.searchParams.has('auth') ||
-        url.searchParams.has('credential') ||
-        url.searchParams.has('kugou_token')
-      ) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: {
-              code: 'INVALID_INPUT',
-              message: 'Passing credentials in query parameters is strictly forbidden. Use Authorization: Bearer <token> and X-Kugou-Userid headers.',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
-        );
-      }
-
-      const authHeader = request.headers.get('authorization') || '';
-      const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
-      const token =
-        (bearerMatch ? bearerMatch[1].trim() : '') ||
-        request.headers.get('x-kugou-token')?.trim();
-      const userid = request.headers.get('x-kugou-userid')?.trim();
 
       if (!token || !userid) {
         return new Response(
@@ -243,7 +249,6 @@ export default {
           );
         }
 
-        // Upstream unavailable / network failure: retain token, return 502 UPSTREAM_ERROR
         return new Response(
           JSON.stringify({
             success: false,
@@ -257,8 +262,8 @@ export default {
       }
     }
 
-    // Playlist parse endpoint
-    if (url.pathname === '/api/playlist') {
+    // ── Public API v1: Universal Search / Auto Resolver ──
+    if (url.pathname === '/api/v1/resolve') {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({
@@ -282,22 +287,120 @@ export default {
       // Rate limit check: max 30 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 30, 60);
       if (!rateCheck.allowed) {
-        let rateLimitPlatform = 'all';
-        const rawUrlParam = url.searchParams.get('url') || '';
-        const rawPlatformParam = url.searchParams.get('platform') || '';
-        if (rawPlatformParam === 'netease' || neteaseProvider.matches(rawUrlParam)) {
-          rateLimitPlatform = 'netease';
-        } else if (rawPlatformParam === 'kugou' || kugouProvider.matches(rawUrlParam)) {
-          rateLimitPlatform = 'kugou';
-        } else if (rawPlatformParam === 'qishui' || qishuiProvider.matches(rawUrlParam)) {
-          rateLimitPlatform = 'qishui';
-        } else if (rawPlatformParam === 'qqmusic' || qqMusicProvider.matches(rawUrlParam)) {
-          rateLimitPlatform = 'qqmusic';
+        if (_ctx && typeof _ctx.waitUntil === 'function') {
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all'));
+        }
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests. Please wait a moment before trying again.',
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateCheck.resetSeconds),
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const rawQ = url.searchParams.get('q');
+      const rawType = url.searchParams.get('type');
+      const rawPlatform = url.searchParams.get('platform');
+
+      try {
+        const resolveData: ResolveData = await resolveService({
+          q: rawQ || '',
+          type: rawType,
+          platform: rawPlatform,
+          auth,
+          request,
+          db: _env.DB,
+          ctx: _ctx,
+        });
+
+        const successResponse: ApiResponse<ResolveData> = {
+          success: true,
+          data: resolveData,
+        };
+        return new Response(JSON.stringify(successResponse), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      } catch (err: unknown) {
+        if (err instanceof ProviderError) {
+          const errorResponse: ApiResponse<never> = {
+            success: false,
+            error: {
+              code: err.code,
+              message: err.message,
+              details: err.details,
+            },
+          };
+          return new Response(JSON.stringify(errorResponse), {
+            status: err.statusCode,
+            headers: {
+              'Content-Type': 'application/json',
+              ...responseHeaders,
+            },
+          });
         }
 
-        // Record rate limit occurrence anonymously (best effort)
+        const fallbackResponse: ApiResponse<never> = {
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'An unexpected internal error occurred while resolving the input.',
+          },
+        };
+        return new Response(JSON.stringify(fallbackResponse), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        });
+      }
+    }
+
+    // ── Single Playlist Endpoints (/api/v1/playlist & /api/playlist) ──
+    if (url.pathname === '/api/playlist' || url.pathname === '/api/v1/playlist') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET, OPTIONS',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Rate limit check: max 30 requests / minute per client IP
+      const rateCheck = checkRateLimit(clientIp, 30, 60);
+      if (!rateCheck.allowed) {
+        const rawUrlParam = url.searchParams.get('url') || url.searchParams.get('id') || '';
+        const rawPlatformParam = url.searchParams.get('platform') || 'all';
+
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rateLimitPlatform));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam));
         }
 
         return new Response(
@@ -319,7 +422,7 @@ export default {
         );
       }
 
-      const rawPlaylistParam = url.searchParams.get('url');
+      const rawPlaylistParam = url.searchParams.get('url') || url.searchParams.get('id');
 
       if (!rawPlaylistParam || rawPlaylistParam.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
@@ -338,131 +441,17 @@ export default {
         });
       }
 
-      if (rawPlaylistParam.length > 2048) {
-        const errorResponse: ApiResponse<never> = {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'Input parameter url exceeds maximum allowed length of 2048 characters.',
-          },
-        };
-        return new Response(JSON.stringify(errorResponse), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...responseHeaders,
-          },
-        });
-      }
-
-      const playlistInput = extractCleanUrlOrInput(rawPlaylistParam);
-
-      const authHeader = request.headers.get('authorization') || '';
-      const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
-      const token =
-        (bearerMatch ? bearerMatch[1].trim() : '') ||
-        request.headers.get('x-kugou-token')?.trim() ||
-        undefined;
-
-      const userid = request.headers.get('x-kugou-userid')?.trim() || undefined;
-
-      // Check provider matching
-      let matchedProvider: typeof qqMusicProvider | typeof neteaseProvider | typeof kugouProvider | typeof qishuiProvider | null = null;
-      let targetPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' = 'qqmusic';
-
-      if (kugouProvider.matches(playlistInput)) {
-        matchedProvider = kugouProvider;
-        targetPlatform = 'kugou';
-      } else if (qishuiProvider.matches(playlistInput)) {
-        matchedProvider = qishuiProvider;
-        targetPlatform = 'qishui';
-      } else if (neteaseProvider.matches(playlistInput)) {
-        matchedProvider = neteaseProvider;
-        targetPlatform = 'netease';
-      } else if (qqMusicProvider.matches(playlistInput)) {
-        matchedProvider = qqMusicProvider;
-        targetPlatform = 'qqmusic';
-      } else if (/^\d{4,20}$/.test(playlistInput.trim())) {
-        const platformParam = url.searchParams.get('platform');
-        if (platformParam === 'kugou') {
-          matchedProvider = kugouProvider;
-          targetPlatform = 'kugou';
-        } else if (platformParam === 'qishui') {
-          matchedProvider = qishuiProvider;
-          targetPlatform = 'qishui';
-        } else if (platformParam === 'netease') {
-          matchedProvider = neteaseProvider;
-          targetPlatform = 'netease';
-        } else if (playlistInput.trim().length >= 19) {
-          matchedProvider = qishuiProvider;
-          targetPlatform = 'qishui';
-        } else {
-          matchedProvider = qqMusicProvider;
-          targetPlatform = 'qqmusic';
-        }
-      }
-
-      if (!matchedProvider) {
-        const errorResponse: ApiResponse<never> = {
-          success: false,
-          error: {
-            code: 'UNSUPPORTED_URL',
-            message: 'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, or Qishui Music playlist URL.',
-          },
-        };
-        return new Response(JSON.stringify(errorResponse), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...responseHeaders,
-          },
-        });
-      }
-
-      const startTime = Date.now();
-      const inputType = classifyInputType(playlistInput);
+      const platformParam = url.searchParams.get('platform');
 
       try {
-        let playlist: Playlist;
-        let actualPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' = targetPlatform;
-        let providerPath: ('primary' | 'fallback') | undefined;
-
-        try {
-          if (matchedProvider === kugouProvider) {
-            playlist = await kugouProvider.parse(playlistInput, { token, userid });
-            actualPlatform = 'kugou';
-          } else {
-            playlist = await matchedProvider.parse(playlistInput);
-            actualPlatform = (playlist.platform as 'qqmusic' | 'netease' | 'kugou' | 'qishui') || targetPlatform;
-            providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
-          }
-        } catch (err: unknown) {
-          const platformParam = url.searchParams.get('platform');
-          if (!platformParam && /^\d{4,20}$/.test(playlistInput.trim()) && matchedProvider === qqMusicProvider) {
-            playlist = await neteaseProvider.parse(playlistInput);
-            actualPlatform = 'netease';
-            targetPlatform = 'netease';
-          } else {
-            throw err;
-          }
-        }
-
-        const latencyMs = Date.now() - startTime;
-
-        // Best-effort anonymous statistics recording (success) with real providerPath
-        if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(
-            recordParseEvent(_env.DB, {
-              request,
-              platform: actualPlatform,
-              inputType,
-              success: true,
-              trackCount: playlist.tracks.length,
-              latencyMs,
-              providerPath,
-            }),
-          );
-        }
+        const { playlist } = await parsePlaylistService({
+          rawInput: rawPlaylistParam,
+          platformParam,
+          auth,
+          request,
+          db: _env.DB,
+          ctx: _ctx,
+        });
 
         const successResponse: ApiResponse<Playlist> = {
           success: true,
@@ -476,24 +465,6 @@ export default {
           },
         });
       } catch (err: unknown) {
-        const latencyMs = Date.now() - startTime;
-        const errorCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
-        const errorCategory = classifyErrorCategory(errorCode);
-
-        // Best-effort anonymous statistics recording (failure)
-        if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(
-            recordParseEvent(_env.DB, {
-              request,
-              platform: targetPlatform,
-              inputType,
-              success: false,
-              errorCategory,
-              latencyMs,
-            }),
-          );
-        }
-
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
             success: false,
@@ -529,8 +500,8 @@ export default {
       }
     }
 
-    // User playlists endpoint (Batch QQ Music support)
-    if (url.pathname === '/api/user/playlists') {
+    // ── User Playlists Endpoints (/api/v1/user/playlists & /api/user/playlists) ──
+    if (url.pathname === '/api/user/playlists' || url.pathname === '/api/v1/user/playlists') {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({
@@ -554,19 +525,9 @@ export default {
       // Rate limit check: max 30 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 30, 60);
       if (!rateCheck.allowed) {
-        let rateLimitPlatform = 'all';
-        const userPlatformParam = url.searchParams.get('platform') || '';
-        const rawUserParam = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url') || '';
-        if (userPlatformParam === 'kugou' || kugouProvider.matches(rawUserParam)) {
-          rateLimitPlatform = 'kugou';
-        } else if (userPlatformParam === 'netease' || neteaseProvider.matches(rawUserParam)) {
-          rateLimitPlatform = 'netease';
-        } else if (userPlatformParam === 'qqmusic' || qqMusicProvider.matches(rawUserParam) || url.searchParams.has('uin')) {
-          rateLimitPlatform = 'qqmusic';
-        }
-
+        const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', rateLimitPlatform));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', userPlatformParam));
         }
 
         return new Response(
@@ -588,7 +549,12 @@ export default {
         );
       }
 
-      const rawUserInputParam = url.searchParams.get('uin') || url.searchParams.get('uid') || url.searchParams.get('url');
+      const rawUserInputParam =
+        url.searchParams.get('uin') ||
+        url.searchParams.get('uid') ||
+        url.searchParams.get('url') ||
+        url.searchParams.get('id');
+
       if (!rawUserInputParam || rawUserInputParam.trim().length === 0) {
         const errorResponse: ApiResponse<never> = {
           success: false,
@@ -606,126 +572,15 @@ export default {
         });
       }
 
-      const rawUserInput = extractCleanUrlOrInput(rawUserInputParam);
-
       const platformParam = url.searchParams.get('platform');
 
-      // Kugou User Playlists branch (requires token & userid via headers)
-      if (platformParam === 'kugou' || kugouProvider.matches(rawUserInput)) {
-        const authHeader = request.headers.get('authorization') || '';
-        const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
-        const token =
-          (bearerMatch ? bearerMatch[1].trim() : '') ||
-          request.headers.get('x-kugou-token')?.trim();
-        const userid = request.headers.get('x-kugou-userid')?.trim();
-        if (!token || !userid) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: {
-                code: 'INVALID_INPUT',
-                message: 'Kugou user playlists require both token and userid passed via Authorization / X-Kugou-* headers from QR login.',
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
-          );
-        }
-        try {
-          const userData = await fetchKugouUserPlaylists(token, userid);
-          return new Response(JSON.stringify({ success: true, data: userData }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json', ...responseHeaders },
-          });
-        } catch (err: unknown) {
-          if (err instanceof ProviderError) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: err.code, message: err.message, details: err.details },
-              }),
-              { status: err.statusCode, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
-            );
-          }
-          throw err;
-        }
-      }
-
-      const isNetease = matchesNeteaseInput(rawUserInput) || platformParam === 'netease';
-
-      if (isNetease) {
-        const extractedUid = await extractNeteaseUserId(rawUserInput);
-        if (!extractedUid) {
-          const errorResponse: ApiResponse<never> = {
-            success: false,
-            error: {
-              code: 'INVALID_INPUT',
-              message: `The provided input is not a valid NetEase user ID or profile URL: "${rawUserInput}"`,
-            },
-          };
-          return new Response(JSON.stringify(errorResponse), {
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              ...responseHeaders,
-            },
-          });
-        }
-
-        try {
-          const userData: UserPlaylistsData = await fetchNeteaseUserPlaylists(extractedUid);
-          const successResponse: ApiResponse<UserPlaylistsData> = {
-            success: true,
-            data: userData,
-          };
-          return new Response(JSON.stringify(successResponse), {
-            status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              ...responseHeaders,
-            },
-          });
-        } catch (err: unknown) {
-          if (err instanceof ProviderError) {
-            const errorResponse: ApiResponse<never> = {
-              success: false,
-              error: {
-                code: err.code,
-                message: err.message,
-                details: err.details,
-              },
-            };
-            return new Response(JSON.stringify(errorResponse), {
-              status: err.statusCode,
-              headers: {
-                'Content-Type': 'application/json',
-                ...responseHeaders,
-              },
-            });
-          }
-          throw err;
-        }
-      }
-
-      const extractedUin = extractQQNumber(rawUserInput);
-      if (!extractedUin) {
-        const errorResponse: ApiResponse<never> = {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: `The provided input is not a valid QQ number or profile URL: "${rawUserInput}"`,
-          },
-        };
-        return new Response(JSON.stringify(errorResponse), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...responseHeaders,
-          },
-        });
-      }
-
       try {
-        const userData: UserPlaylistsData = await fetchQQUserPlaylists(extractedUin);
+        const { userData } = await fetchUserPlaylistsService({
+          rawInput: rawUserInputParam,
+          platformParam,
+          auth,
+        });
+
         const successResponse: ApiResponse<UserPlaylistsData> = {
           success: true,
           data: userData,
@@ -738,25 +593,6 @@ export default {
           },
         });
       } catch (err: unknown) {
-        if (!platformParam && /^\d{4,18}$/.test(rawUserInput.trim())) {
-          try {
-            const neteaseUserData = await fetchNeteaseUserPlaylists(rawUserInput.trim());
-            const successResponse: ApiResponse<UserPlaylistsData> = {
-              success: true,
-              data: neteaseUserData,
-            };
-            return new Response(JSON.stringify(successResponse), {
-              status: 200,
-              headers: {
-                'Content-Type': 'application/json',
-                ...responseHeaders,
-              },
-            });
-          } catch {
-            // Proceed to error handling below
-          }
-        }
-
         if (err instanceof ProviderError) {
           const errorResponse: ApiResponse<never> = {
             success: false,
@@ -792,8 +628,8 @@ export default {
       }
     }
 
-    // Anonymous aggregate statistics endpoint
-    if (url.pathname === '/api/stats') {
+    // ── Anonymous Aggregate Statistics Endpoints (/api/v1/stats & /api/stats) ──
+    if (url.pathname === '/api/stats' || url.pathname === '/api/v1/stats') {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({
@@ -855,7 +691,7 @@ export default {
       });
     }
 
-    // Frontend event ingestion endpoint (export/clipboard analytics)
+    // ── Frontend Event Ingestion Endpoint (POST /api/event) ──
     if (url.pathname === '/api/event') {
       // Rate limit check: max 60 requests / minute per client IP
       const rateCheck = checkRateLimit(clientIp, 60, 60);

@@ -28,13 +28,20 @@ export function classifyInputType(input: string): InputType {
     /163cn\.tv/i.test(trimmed) ||
     /y\.music\.163\.com/i.test(trimmed) ||
     /m\.kugou\.com/i.test(trimmed) ||
-    /t\d?\.kugou\.com/i.test(trimmed)
+    /t\d?\.kugou\.com/i.test(trimmed) ||
+    /qishui\.douyin\.com\/s\//i.test(trimmed)
   ) {
     return 'mobile_share_link';
   }
 
   // Standard web URLs
-  if (/y\.qq\.com/i.test(trimmed) || /music\.163\.com/i.test(trimmed) || /kugou\.com/i.test(trimmed)) {
+  if (
+    /y\.qq\.com/i.test(trimmed) ||
+    /music\.163\.com/i.test(trimmed) ||
+    /kugou\.com/i.test(trimmed) ||
+    /qishui\.douyin\.com/i.test(trimmed) ||
+    /music\.douyin\.com/i.test(trimmed)
+  ) {
     return 'web_url';
   }
 
