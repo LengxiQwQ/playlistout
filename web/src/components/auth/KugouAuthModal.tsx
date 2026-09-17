@@ -34,9 +34,31 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authState, setAuthState] = useState<KugouAuthState>('none');
+  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | 'curl' | null>(null);
 
   const pollTimerRef = useRef<any>(null);
   const consecutiveErrorsRef = useRef<number>(0);
+
+  const handleCopy = async (key: 'token' | 'userid' | 'curl', text: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedKey(key);
+      setTimeout(() => {
+        setCopiedKey((prev) => (prev === key ? null : prev));
+      }, 2000);
+    } catch {
+      // ignore clipboard error
+    }
+  };
 
   const loadQrCode = async () => {
     setLoading(true);
@@ -409,6 +431,146 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                 {t.search.kugouLogoutBtn}
               </MarkerButton>
             </div>
+
+            {/* Developer / API Credentials Section */}
+            {(() => {
+              const currentAuth = getKugouAuth();
+              if (!currentAuth) return null;
+              return (
+                <div
+                  data-testid="kugou-api-credentials"
+                  style={{
+                    marginTop: '1.25rem',
+                    padding: '0.85rem 1rem',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '6px',
+                    border: '1px solid #bfdbfe',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: '#1e3a8a',
+                      marginBottom: '0.6rem',
+                    }}
+                  >
+                    {t.kugouAuth.apiCredentialsTitle}
+                  </div>
+
+                  {/* User ID row */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.8rem',
+                      marginBottom: '0.45rem',
+                      backgroundColor: '#f8fafc',
+                      padding: '0.35rem 0.5rem',
+                      borderRadius: '4px',
+                      border: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <span style={{ color: '#475569' }}>
+                      User ID: <strong style={{ color: '#0f172a' }}>{currentAuth.userid}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      data-testid="copy-kugou-userid-btn"
+                      onClick={() => handleCopy('userid', currentAuth.userid)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '4px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: copiedKey === 'userid' ? '#dcfce7' : '#ffffff',
+                        color: copiedKey === 'userid' ? '#166534' : '#1e293b',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {copiedKey === 'userid' ? t.kugouAuth.copied : t.kugouAuth.copyUserId}
+                    </button>
+                  </div>
+
+                  {/* Token row */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.8rem',
+                      marginBottom: '0.6rem',
+                      backgroundColor: '#f8fafc',
+                      padding: '0.35rem 0.5rem',
+                      borderRadius: '4px',
+                      border: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#475569',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '180px',
+                      }}
+                      title={currentAuth.token}
+                    >
+                      Token: <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>{currentAuth.token.slice(0, 10)}...</span>
+                    </span>
+                    <button
+                      type="button"
+                      data-testid="copy-kugou-token-btn"
+                      onClick={() => handleCopy('token', currentAuth.token)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '4px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: copiedKey === 'token' ? '#dcfce7' : '#ffffff',
+                        color: copiedKey === 'token' ? '#166534' : '#1e293b',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {copiedKey === 'token' ? t.kugouAuth.copied : t.kugouAuth.copyToken}
+                    </button>
+                  </div>
+
+                  {/* Copy cURL Button */}
+                  <button
+                    type="button"
+                    data-testid="copy-kugou-curl-btn"
+                    onClick={() =>
+                      handleCopy(
+                        'curl',
+                        `curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?platform=kugou" \\\n  -H "Authorization: Bearer ${currentAuth.token}" \\\n  -H "X-Kugou-Userid: ${currentAuth.userid}"`,
+                      )
+                    }
+                    style={{
+                      width: '100%',
+                      fontSize: '0.78rem',
+                      padding: '0.4rem 0.5rem',
+                      borderRadius: '4px',
+                      border: '1px dashed #94a3b8',
+                      backgroundColor: copiedKey === 'curl' ? '#dcfce7' : '#f8fafc',
+                      color: copiedKey === 'curl' ? '#166534' : '#334155',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {copiedKey === 'curl' ? t.kugouAuth.copied : t.kugouAuth.copyCurl}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -554,6 +716,54 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               {status === 'scanned' && t.kugouAuth.scannedConfirm}
               {status === 'success' && t.kugouAuth.loginSuccess}
             </div>
+
+            {/* Jump to KuGou App button (desktop, tablet & mobile) */}
+            {qrSession?.loginUrl && (status === 'waiting' || status === 'scanned') && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <a
+                  href={qrSession.loginUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="kugou-jump-app-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    maxWidth: '300px',
+                    padding: '0.6rem 1rem',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
+                    transition: 'all 0.15s ease',
+                    margin: '0 auto',
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#1d4ed8';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#2563eb';
+                  }}
+                >
+                  {t.kugouAuth.jumpToAppBtn}
+                </a>
+                <div
+                  style={{
+                    fontSize: '0.76rem',
+                    color: '#64748b',
+                    marginTop: '0.45rem',
+                    lineHeight: 1.4,
+                    padding: '0 0.5rem',
+                  }}
+                >
+                  {t.kugouAuth.jumpToAppTip}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
