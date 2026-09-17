@@ -88,20 +88,38 @@ describe('Client-Side Input Validation', () => {
     expect(res3.platform).toBe('kugou');
   });
 
+  it('accepts Qishui playlist URLs and short links as valid', () => {
+    const res1 = validatePlaylistInput('https://qishui.douyin.com/s/iXHhmCAW/');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('short_link');
+    expect(res1.platform).toBe('qishui');
+
+    const res2 = validatePlaylistInput(
+      'https://music.douyin.com/qishui/share/playlist?playlist_id=7087507348697186339',
+    );
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('single_playlist_url');
+    expect(res2.platform).toBe('qishui');
+
+    const res3 = validatePlaylistInput('7087507348697186339');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('numeric');
+  });
+
   it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐与酷狗音乐');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐');
 
     const res2 = validatePlaylistInput('https://www.kuwo.cn/playlist_detail/123');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐与酷狗音乐');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐或酷狗音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐或汽水音乐歌单链接');
   });
 });
 

@@ -5,6 +5,7 @@ import { Sticker } from './ui/Sticker';
 import { MarkerButton } from './ui/MarkerButton';
 import { KugouAuthModal } from './auth/KugouAuthModal';
 import {
+  getPlatformConfig,
   getPlatformName,
   getPlatformPlaylistSticker,
   getPlatformViewAction,
@@ -107,30 +108,24 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           )}
 
           <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <span
-              className="sticker font-handwriting"
+            <Sticker
+              as="span"
+              color={getPlatformConfig(playlist.platform).color}
+              rotateDeg={-2}
+              className="font-handwriting"
               style={{
                 display: 'inline-block',
-                backgroundColor:
-                  playlist.platform === 'netease'
-                    ? '#fecaca'
-                    : playlist.platform === 'kugou'
-                    ? '#bfdbfe'
-                    : playlist.platform === 'kuwo'
-                    ? '#fef08a'
-                    : '#bbf7d0',
                 padding: '0.25rem 0.75rem',
                 fontSize: '1rem',
                 fontFamily: 'var(--font-handwriting, cursive)',
                 fontWeight: 700,
-                transform: 'rotate(-2deg)',
                 marginBottom: '0.5rem',
                 userSelect: 'none',
                 lineHeight: 1.2,
               }}
             >
               {getPlatformPlaylistSticker(playlist.platform, language)}
-            </span>
+            </Sticker>
 
             <h2
               className="playlist-title"

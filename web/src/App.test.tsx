@@ -51,7 +51,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PlaylistOut');
     expect(screen.getByPlaceholderText(/粘贴公开歌单链接/)).toBeInTheDocument();
-    expect(screen.getByText('民谣流行 (636首)')).toBeInTheDocument();
+    expect(screen.getByText('QQ音乐批量')).toBeInTheDocument();
   });
 
   it('shows client validation error when submitting empty or invalid input', async () => {
@@ -64,7 +64,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     fireEvent.click(submitBtn);
 
     expect(await screen.findByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐公开歌单/)).toBeInTheDocument();
   });
 
   it('renders loading state and successful playlist preview with repeated tracks preserved', async () => {
@@ -480,5 +480,58 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     });
     expect(screen.getByText('共 500 首歌曲')).toBeInTheDocument();
   });
+
+  it('triggers quick sample presets directly without URL prefix concatenation', async () => {
+    const userSpy = vi.spyOn(client, 'fetchUserPlaylists').mockResolvedValue({
+      success: true,
+      data: {
+        platform: 'qqmusic',
+        userId: '3197635836',
+        nickname: '琴心月满',
+        total: 1,
+        playlists: [
+          {
+            id: '9636714353',
+            name: '琴心月满的2025年度音乐歌单',
+            trackCount: 50,
+            listenNum: 2,
+            sourceUrl: 'https://y.qq.com/n/ryqq/playlist/9636714353',
+          },
+        ],
+      },
+    });
+
+    const parseSpy = vi.spyOn(client, 'parsePlaylist').mockResolvedValue({
+      success: true,
+      data: {
+        ...mockSamplePlaylist,
+        platform: 'qishui',
+        name: '汽水音乐精选',
+      },
+    });
+
+    render(<App />);
+
+    // 1. QQ Music Batch Sample
+    const qqSampleBtn = screen.getByText('QQ音乐批量');
+    fireEvent.click(qqSampleBtn);
+
+    expect(userSpy).toHaveBeenCalledWith('3197635836', expect.any(AbortSignal), 'qqmusic');
+    expect(await screen.findByTestId('user-playlists')).toBeInTheDocument();
+    expect(screen.getAllByText(/琴心月满/).length).toBeGreaterThanOrEqual(1);
+
+    // 2. Qishui Music Sample
+    const qishuiSampleBtn = screen.getByText('汽水音乐示例');
+    fireEvent.click(qishuiSampleBtn);
+
+    expect(parseSpy).toHaveBeenCalledWith(
+      'https://qishui.douyin.com/s/iXHhKHhY/',
+      expect.any(AbortSignal),
+      undefined,
+    );
+    expect(await screen.findByTestId('playlist-summary')).toBeInTheDocument();
+    expect(screen.getByText('汽水音乐精选')).toBeInTheDocument();
+  });
 });
+
 

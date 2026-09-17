@@ -1,5 +1,5 @@
 export type InputKind = 'single_playlist_url' | 'user_profile_url' | 'numeric' | 'short_link' | 'unknown';
-export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'numeric' | 'unknown';
+export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'numeric' | 'unknown';
 
 export interface ValidationResult {
   valid: boolean;
@@ -57,9 +57,9 @@ export function extractUinFromProfileUrl(input: string): string | null {
 /**
  * Validates user input client-side before sending an API request.
  * Supports:
- * - Public QQ Music & NetEase Cloud Music playlist URLs
+ * - Public QQ Music, NetEase Cloud Music, KuGou Music & Qishui Music playlist URLs
  * - QQ Music & NetEase user profile URLs (e.g. https://y.qq.com/portal/profile.html?uin=... or https://music.163.com/user/home?id=...)
- * - 163cn.tv shortlinks
+ * - 163cn.tv & qishui.douyin.com shortlinks
  * - Numeric IDs (can be single playlist ID or user ID for batch export)
  */
 export function validatePlaylistInput(input: string): ValidationResult {
@@ -85,12 +85,12 @@ export function validatePlaylistInput(input: string): ValidationResult {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前版本支持 QQ 音乐、网易云音乐与酷狗音乐公开歌单。',
+      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐公开歌单。',
     };
   }
 
-  // 1. Check if it's a numeric ID (4-18 digits)
-  if (/^\d{4,18}$/.test(trimmed)) {
+  // 1. Check if it's a numeric ID (4-20 digits)
+  if (/^\d{4,20}$/.test(trimmed)) {
     return {
       valid: true,
       kind: 'numeric',
@@ -183,10 +183,29 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
+  // 8. Qishui short link (qishui.douyin.com/s/...)
+  if (/qishui\.douyin\.com\/s\//i.test(trimmed)) {
+    return {
+      valid: true,
+      kind: 'short_link',
+      platform: 'qishui',
+    };
+  }
+
+  // 9. Qishui / Douyin Music URL
+  const isQishuiUrl = /(?:qishui\.douyin\.com|music\.douyin\.com)/i.test(trimmed);
+  if (isQishuiUrl) {
+    return {
+      valid: true,
+      kind: 'single_playlist_url',
+      platform: 'qishui',
+    };
+  }
+
   // Not recognized
   return {
     valid: false,
     code: 'UNSUPPORTED_URL',
-    error: '请输入有效的 QQ 音乐、网易云音乐或酷狗音乐歌单链接、用户主页链接或数字 ID。',
+    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐或汽水音乐歌单链接、用户主页链接或数字 ID。',
   };
 }

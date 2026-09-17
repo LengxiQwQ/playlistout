@@ -66,7 +66,11 @@ export const AppContent: React.FC = () => {
   }, []);
 
   const handleParse = useCallback(
-    async (urlToParse?: string) => {
+    async (
+      urlToParse?: string,
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+      modeHint?: 'user' | 'playlist',
+    ) => {
       const targetUrl = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
       // 1. Client-side fast validation
@@ -99,6 +103,60 @@ export const AppContent: React.FC = () => {
       }
 
       try {
+        // Fast path for explicit user batch mode (e.g. from sample sticker or verified user intent)
+        if (modeHint === 'user') {
+          const platform =
+            platformHint === 'netease'
+              ? 'netease'
+              : platformHint === 'kugou'
+              ? 'kugou'
+              : 'qqmusic';
+          const targetInput = validation.extractedUin || targetUrl;
+          const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
+          if (requestIdRef.current !== currentRequestId) return;
+
+          if (res.success) {
+            setUserPlaylists(res.data);
+            setPlaylist(null);
+            setViewMode('batch');
+            setState('success');
+            scrollToElement('user-playlists');
+          } else {
+            setError(res.error);
+            setState('error');
+          }
+          return;
+        }
+
+        // Fast path for explicit single playlist mode (e.g. from sample sticker)
+        if (modeHint === 'playlist') {
+          const platform =
+            platformHint === 'netease'
+              ? 'netease'
+              : platformHint === 'kugou'
+              ? 'kugou'
+              : platformHint === 'qqmusic'
+              ? 'qqmusic'
+              : undefined;
+          const res = await parsePlaylist(targetUrl, controller.signal, platform);
+          if (requestIdRef.current !== currentRequestId) return;
+
+          if (res.success) {
+            if (res.data.retrieval?.reason === 'auth_invalid') {
+              clearKugouAuth();
+            }
+            setPlaylist(res.data);
+            setUserPlaylists(null);
+            setViewMode('single');
+            setState('success');
+            scrollToElement('result');
+          } else {
+            setError(res.error);
+            setState('error');
+          }
+          return;
+        }
+
         // Case A: User profile URL -> Fetch user playlists directly
         if (validation.kind === 'user_profile_url') {
           const targetInput = validation.extractedUin || targetUrl;
@@ -366,10 +424,13 @@ export const AppContent: React.FC = () => {
   );
 
   const handleQuickSample = useCallback(
-    (sampleId: string) => {
-      const sampleUrl = `https://y.qq.com/n/ryqq/playlist/${sampleId}`;
-      setInputUrl(sampleUrl);
-      handleParse(sampleUrl);
+    (
+      sampleInput: string,
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+      modeHint?: 'user' | 'playlist',
+    ) => {
+      setInputUrl(sampleInput);
+      handleParse(sampleInput, platformHint, modeHint);
     },
     [handleParse],
   );

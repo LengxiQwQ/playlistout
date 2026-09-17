@@ -93,4 +93,32 @@ describe('TrackTable Component (Mobile view modes)', () => {
     // First track padded to 4 digits: '0001', 1000th track: '1000'
     expect(screen.getByText('0001')).toBeInTheDocument();
   });
+
+  it('renders badges for original sound and video tracks', () => {
+    const specialTracks: Track[] = [
+      {
+        id: 'track-ugc',
+        index: 1,
+        title: '@用户创作的原声',
+        artists: ['创作者'],
+        isOriginalSound: true,
+      },
+      {
+        id: 'track-video',
+        index: 2,
+        title: '某影视剪辑片段',
+        artists: ['电影原声'],
+        statusText: '视频',
+      },
+    ];
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <TrackTable tracks={specialTracks} />
+      </LanguageProvider>
+    );
+
+    expect(screen.getByText('视频原声')).toBeInTheDocument();
+    expect(screen.getByText('视频')).toBeInTheDocument();
+  });
 });

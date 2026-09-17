@@ -182,19 +182,58 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     <TrackArtwork coverUrl={track.coverUrl} title={track.title} size={38} />
                   </td>
                   <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: isGreyedOut ? '#6b7280' : 'var(--ink, #2d3436)' }}>
-                    <span
-                      className="track-title-text"
-                      title={track.title}
-                      style={{
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
-                        display: 'inline-block',
-                        fontFamily: 'var(--font-sans, sans-serif)',
-                        color: isGreyedOut ? '#6b7280' : 'inherit',
-                      }}
-                    >
-                      {track.title}
-                    </span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+                      <span
+                        className="track-title-text"
+                        title={track.title}
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          display: 'inline-block',
+                          fontFamily: 'var(--font-sans, sans-serif)',
+                          color: isGreyedOut ? '#6b7280' : 'inherit',
+                        }}
+                      >
+                        {track.title}
+                      </span>
+                      {track.isOriginalSound ? (
+                        <span
+                          className="track-badge-original-sound"
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '4px',
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            display: 'inline-block',
+                            lineHeight: '1.2',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {t.table.typeOriginalSound}
+                        </span>
+                      ) : track.statusText === '视频' ? (
+                        <span
+                          className="track-badge-video"
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '4px',
+                            backgroundColor: '#fef3c7',
+                            color: '#b45309',
+                            border: '1px solid #fde68a',
+                            display: 'inline-block',
+                            lineHeight: '1.2',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {t.table.typeVideo}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td
                     className="col-artist"

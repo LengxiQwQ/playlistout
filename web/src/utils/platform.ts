@@ -4,13 +4,13 @@
  * Designed for seamless extensibility across QQ Music, NetEase Cloud Music, KuGou, Kuwo, etc.
  */
 
-export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'kuwo' | string;
+export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | string;
 
 export interface PlatformConfig {
   id: string;
   name: string;
   nameEn: string;
-  color: 'green' | 'red' | 'blue' | 'yellow' | 'pink' | 'purple';
+  color: 'green' | 'red' | 'blue' | 'yellow' | 'pink' | 'purple' | 'lime';
   badgeBg: string;
   badgeBorder: string;
   userIdLabelZh: string;
@@ -36,7 +36,12 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
     playlistStickerEn: 'QQ Music Playlist',
     viewActionZh: '在 QQ 音乐中查看 ↗',
     viewActionEn: 'View on QQ Music ↗',
-    getPlaylistUrl: (id, sourceUrl) => sourceUrl || `https://y.qq.com/n/ryqq/playlist/${id}`,
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://y.qq.com/n/ryqq/playlist/${id}`,
   },
   netease: {
     id: 'netease',
@@ -51,7 +56,32 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
     playlistStickerEn: 'NetEase Playlist',
     viewActionZh: '在网易云音乐中查看 ↗',
     viewActionEn: 'View on NetEase ↗',
-    getPlaylistUrl: (id, sourceUrl) => sourceUrl || `https://music.163.com/#/playlist?id=${id}`,
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://music.163.com/#/playlist?id=${id}`,
+  },
+  qishui: {
+    id: 'qishui',
+    name: '汽水音乐',
+    nameEn: 'Soda Music',
+    color: 'lime',
+    badgeBg: '#f7fee7',
+    badgeBorder: '#65a30d',
+    userIdLabelZh: '汽水 ID',
+    userIdLabelEn: 'Soda ID',
+    playlistStickerZh: '汽水音乐歌单',
+    playlistStickerEn: 'Soda Music Playlist',
+    viewActionZh: '在汽水音乐中查看 ↗',
+    viewActionEn: 'View on Soda Music ↗',
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://music.douyin.com/qishui/share/playlist?playlist_id=${id}`,
   },
   kugou: {
     id: 'kugou',
@@ -66,7 +96,12 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
     playlistStickerEn: 'KuGou Playlist',
     viewActionZh: '在酷狗音乐中查看 ↗',
     viewActionEn: 'View on KuGou ↗',
-    getPlaylistUrl: (id, sourceUrl) => sourceUrl || `https://www.kugou.com/songlist/${id}/`,
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://www.kugou.com/songlist/${id}/`,
   },
   kuwo: {
     id: 'kuwo',
@@ -81,7 +116,12 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
     playlistStickerEn: 'Kuwo Playlist',
     viewActionZh: '在酷我音乐中查看 ↗',
     viewActionEn: 'View on Kuwo ↗',
-    getPlaylistUrl: (id, sourceUrl) => sourceUrl || `https://www.kuwo.cn/playlist_detail/${id}`,
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://www.kuwo.cn/playlist_detail/${id}`,
   },
 };
 
@@ -101,7 +141,12 @@ export function getPlatformConfig(platform?: string): PlatformConfig {
       playlistStickerEn: 'Public Playlist',
       viewActionZh: '在原平台中查看 ↗',
       viewActionEn: 'View on Original Platform ↗',
-      getPlaylistUrl: (_id, sourceUrl) => sourceUrl || '#',
+      getPlaylistUrl: (id, sourceUrl) =>
+        sourceUrl && /^https?:\/\//i.test(sourceUrl)
+          ? sourceUrl
+          : /^https?:\/\//i.test(id)
+          ? id
+          : '#',
     }
   );
 }
@@ -127,6 +172,8 @@ export function getPlatformViewAction(platform?: string, lang: 'zh-CN' | 'en-US'
 }
 
 export function getPlatformPlaylistUrl(platform?: string, id?: string, sourceUrl?: string): string {
+  if (sourceUrl && /^https?:\/\//i.test(sourceUrl)) return sourceUrl;
+  if (id && /^https?:\/\//i.test(id)) return id;
   const config = getPlatformConfig(platform);
   return config.getPlaylistUrl(id || '', sourceUrl);
 }

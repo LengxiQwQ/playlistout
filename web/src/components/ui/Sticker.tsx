@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface StickerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  color?: 'white' | 'yellow' | 'pink' | 'cyan' | 'green' | 'blue' | 'purple' | 'red';
+  color?: 'white' | 'yellow' | 'pink' | 'cyan' | 'green' | 'blue' | 'purple' | 'red' | 'lime';
   rotateDeg?: number;
   as?: 'button' | 'span' | 'div' | 'a';
   href?: string;
@@ -18,6 +18,7 @@ const stickerColorMap = {
   blue: '#bfdbfe',
   purple: '#e9d5ff',
   red: '#fecaca',
+  lime: '#d9f99d',
 };
 
 export const Sticker: React.FC<StickerProps> = ({
