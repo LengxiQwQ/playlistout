@@ -19,10 +19,11 @@ PlaylistOut officially supports 4 major music platforms:
 
 | Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
 | :--- | :--- | :--- | :---: | :---: | :---: |
-| `qqmusic` | QQ 音乐 | QQ Music | ✅ Yes | ✅ Yes (QQ Number / Profile) | ❌ Not needed |
-| `netease` | 网易云音乐 | NetEase Cloud Music | ✅ Yes | ✅ Yes (UID / Profile) | ❌ Not needed |
-| `kugou` | 酷狗音乐 | KuGou Music | ✅ Yes (Public preview) | ✅ Yes (With QR auth) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
-| `qishui` | 汽水音乐 | Soda Music | ✅ Yes | ❌ N/A | ❌ Not needed |
+| `qqmusic` | QQ 音乐 | QQ Music | ✅ Yes (100% full) | ✅ Yes (QQ Number / Profile) | ❌ Not needed |
+| `netease` | 网易云音乐 | NetEase Cloud Music | ✅ Yes (100% full) | ✅ Yes (UID / Profile) | ❌ Not needed |
+| `kugou` | 酷狗音乐 | KuGou Music | ⚠️ 10-track preview (Zero-login)<br/>✅ 100% full (With Token Header) | ✅ Yes (Requires Token & Userid) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
+| `qishui` | 汽水音乐 | Soda Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web profiles) | ❌ Not needed |
+
 
 ---
 
@@ -363,18 +364,43 @@ For backward compatibility with existing frontends, bookmarks, and automated scr
 
 ---
 
-## 8. KuGou Ephemeral Authentication
+---
 
-Due to upstream restrictions on KuGou Music limiting unauthenticated public playlists to ~10–30 tracks, PlaylistOut supports ephemeral client-side authentication:
+## 8. KuGou Ephemeral Authentication & Upstream Constraints
 
-1. **Request a QR Code session**:
-   `GET /api/kugou/login/qr` (Restricted origin)
-2. **Check scan status**:
-   `GET /api/kugou/login/check?qrcode=<qrcode>` (Restricted origin)
-3. **Pass session credentials via HTTP Headers**:
-   When requesting KuGou playlists or user playlists via Public API:
-   - `Authorization: Bearer <token>`
-   - `X-Kugou-Userid: <userid>`
+### 8.1 Upstream Constraint Background
+
+Unlike QQ Music and NetEase Cloud Music, KuGou Music enforces strict anti-scraping and app-funneling measures on its web ecosystem:
+1. **Public H5 Share Pages (`m.kugou.com/songlist/...`)**: KuGou embeds only the **first 10 tracks** in the SSR HTML (`window.$output.info.songs`). All pagination and AJAX APIs (e.g. `mobilecdn.kugou.com/api/v3/songlist/...`) return `Access Deny !!!` to unauthenticated clients, intentionally forcing users to open their mobile App to view further songs.
+2. **User Profile Playlists**: KuGou provides no public, unauthenticated web profile pages for user playlist collections. The user playlist API (`cloudlist.service.kugou.com`) resides on KuGou's authenticated mobile gateway.
+
+### 8.2 PlaylistOut Retrieval Model for KuGou
+
+To handle this restriction gracefully without breaking or crashing:
+- **Zero-Login Public Preview**: When queried without credentials, PlaylistOut returns the 10 preview tracks, marks `trackCount` with the true total count (e.g. `417`), and tags the response envelope with:
+  ```json
+  "retrieval": {
+    "mode": "preview",
+    "reason": "auth_required"
+  }
+  ```
+- **Full Unlock via Token**: When the creator's session credentials (`token` and `userid`) are attached, PlaylistOut authenticates against KuGou's mobile cloudlist gateway, retrieving **100% of all tracks** (up to 15,000 tracks with automatic batch pagination).
+
+### 8.3 Providing Credentials in API Calls
+
+Credentials must be supplied exclusively via standard HTTP headers. **Never pass tokens in query strings** (`?token=...` is rejected with `400 INVALID_INPUT`):
+
+- `Authorization: Bearer <kugou_token>` (or `X-Kugou-Token: <kugou_token>`)
+- `X-Kugou-Userid: <kugou_userid>`
+
+### 8.4 Obtaining KuGou Credentials
+
+- **In the Web UI**: Click "连接酷狗账号" to open a mobile QR code popup. Scan with the official KuGou App to store credentials in local storage (never uploaded to the server).
+- **In Third-Party Client Applications**:
+  1. `GET /api/kugou/login/qr` — Requests a new QR code session (`qrcode`, `qrcode_img`).
+  2. `GET /api/kugou/login/check?qrcode=<qrcode>` — Polls until scan confirmed (`status: 4`), returning `{ token, userid }`.
+  3. Pass `{ token, userid }` in subsequent request headers.
+
 
 ---
 
@@ -513,4 +539,18 @@ if __name__ == "__main__":
     
     # 3. Disambiguate Numeric ID
     resolve_input("2756674066", target_type="playlist", platform="netease")
+
+    # 4. Parse KuGou Playlist with Token to unlock 100% full tracks
+    headers = {
+        "Authorization": "Bearer YOUR_KUGOU_TOKEN",
+        "X-Kugou-Userid": "YOUR_KUGOU_USERID"
+    }
+    res = requests.get(
+        f"{API_BASE}/resolve",
+        params={"q": "https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=1000&uid=1425711902"},
+        headers=headers,
+        timeout=15
+    )
+    print("KuGou Full Response:", res.json())
 ```
+
