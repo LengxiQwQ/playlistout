@@ -71,13 +71,10 @@ function findPropagatableProbeError(errors: unknown[]): unknown | null {
   if (operational) return operational;
 
   // 2. Next check for any unexpected non-negative errors (e.g. bare Error, network crash)
+  // Propagate raw unexpected error directly so index.ts fallback sanitizes it with safe 500 INTERNAL_ERROR
   const unexpected = errors.find((err) => !isNegativeProbeError(err));
   if (unexpected) {
-    if (unexpected instanceof ProviderError) {
-      return unexpected;
-    }
-    const message = unexpected instanceof Error ? unexpected.message : String(unexpected);
-    return new ProviderError('INTERNAL_ERROR', message || 'An unexpected error occurred during probe resolution.', 500);
+    return unexpected;
   }
 
   return null;
