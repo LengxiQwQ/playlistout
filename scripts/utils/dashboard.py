@@ -1204,13 +1204,21 @@ def build_html(
       }}
     }};
 
-    // 甜甜圈图构造函数（含优雅空数据降级）
-    function createDonut(elementId, labels, data) {{
+    function resolvePercentage(percentages, index, value, total) {{
+      if (Array.isArray(percentages) && index >= 0 && index < percentages.length) {{
+        const apiPct = Number(percentages[index]);
+        if (Number.isFinite(apiPct)) return apiPct;
+      }}
+      return total > 0 ? Math.round((value / total) * 100) : 0;
+    }}
+
+    // 甜甜圈图构造函数：优先显示 API 提供的真实 percentage，缺失时才由完整数据集计算。
+    function createDonut(elementId, labels, data, percentages = null) {{
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
-      const total = hasData ? data.reduce((a, b) => a + b, 0) : 0;
-      new Chart(el, {{
+      const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
+      return new Chart(el, {{
         type: 'doughnut',
         data: {{
           labels: hasData ? labels : ['暂无数据 / No Data'],
@@ -1234,9 +1242,9 @@ def build_html(
               enabled: hasData,
               callbacks: {{
                 label: function(ctx) {{
-                  const val = ctx.parsed;
-                  const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                  return ` ${{ctx.label}}: ${{val.toLocaleString()}} (${{pct}}%)`;
+                  const val = Number(ctx.parsed || 0);
+                  const pct = resolvePercentage(percentages, ctx.dataIndex, val, total);
+                  return ` ${{ctx.label}}: ${{val.toLocaleString()}} · ${{pct}}%`;
                 }}
               }}
             }}
@@ -1245,11 +1253,12 @@ def build_html(
       }});
     }}
 
-    // 横向柱状图（含优雅空数据降级）
-    function createHBar(elementId, labels, data, color) {{
+    // 横向柱状图：同样保留 API percentage，避免用 Top-N 子集重新归一化。
+    function createHBar(elementId, labels, data, color, percentages = null) {{
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
+      const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
       return new Chart(el, {{
         type: 'bar',
         data: {{
@@ -1263,7 +1272,19 @@ def build_html(
         options: {{
           indexAxis: 'y',
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              enabled: hasData,
+              callbacks: {{
+                label: function(ctx) {{
+                  const val = Number(ctx.parsed?.x ?? ctx.raw ?? 0);
+                  const pct = resolvePercentage(percentages, ctx.dataIndex, val, total);
+                  return ` ${{val.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
           scales: {{
             x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true }},
             y: {{ grid: {{ display: false }} }}
@@ -1275,6 +1296,7 @@ def build_html(
     const HOURLY_DATA = {hourly_payload_json};
     const HOURLY_SOURCE = {hourly_source_json};
     const GEO_DATA = {geo_data};
+    const PLATFORM_DATA = {plat_data};
     const timezoneSelect = document.getElementById('timezoneSelect');
     const trafficMetricSelect = document.getElementById('trafficMetricSelect');
     const hideMalaysia = document.getElementById('hideMalaysia');
