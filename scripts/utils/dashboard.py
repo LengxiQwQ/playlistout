@@ -684,6 +684,39 @@ def build_html(
       height: 280px;
     }}
 
+    .mini-stats {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }}
+
+    .mini-stat {{
+      border: 1px solid #eef2f7;
+      border-radius: 9px;
+      padding: 8px 10px;
+      background: #f8fafc;
+    }}
+
+    .mini-stat-name {{
+      color: var(--text-muted);
+      font-size: 10px;
+      margin-bottom: 2px;
+    }}
+
+    .mini-stat-value {{
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 12px;
+    }}
+
+    .mini-stat-today {{
+      color: var(--text-light);
+      font-size: 10px;
+      margin-left: 4px;
+      font-weight: 500;
+    }}
+
     /* KPI 核心指标网格 */
     .kpi-grid {{
       display: grid;
@@ -992,13 +1025,14 @@ def build_html(
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">平台解析份额分布</div>
-          <div class="card-subtitle">Supported Platform Parse Share Breakdown</div>
+          <div class="card-title">平台解析份额与今日解析</div>
+          <div class="card-subtitle">All-time share + today UTC counts for every provider returned by the API</div>
         </div>
       </div>
       <div class="chart-box">
         <canvas id="chartPlatform"></canvas>
       </div>
+      <div id="platformTodaySummary" class="mini-stats"></div>
     </div>
   </div>
 
