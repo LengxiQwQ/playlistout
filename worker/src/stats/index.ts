@@ -191,6 +191,8 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     byPlatform: {
       qqmusic: { totalSuccess: 0, todaySuccess: 0 },
       netease: { totalSuccess: 0, todaySuccess: 0 },
+      kugou: { totalSuccess: 0, todaySuccess: 0 },
+      qishui: { totalSuccess: 0, todaySuccess: 0 },
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),
@@ -233,6 +235,8 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     const byPlatform: Record<string, PlatformBreakdown> = {
       qqmusic: { totalSuccess: 0, todaySuccess: 0 },
       netease: { totalSuccess: 0, todaySuccess: 0 },
+      kugou: { totalSuccess: 0, todaySuccess: 0 },
+      qishui: { totalSuccess: 0, todaySuccess: 0 },
     };
 
     if (statsRows.results) {
@@ -247,7 +251,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
 
           if (platform !== 'all') {
             if (!byPlatform[platform]) {
-              byPlatform[platform] = { totalSuccess: 0 };
+              byPlatform[platform] = { totalSuccess: 0, todaySuccess: 0 };
             }
             if (date === 'TOTAL') byPlatform[platform].totalSuccess = count;
             if (date === today) byPlatform[platform].todaySuccess = count;
@@ -281,6 +285,9 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     }
     if (!byPlatform.kugou) {
       byPlatform.kugou = { totalSuccess: 0, todaySuccess: 0 };
+    }
+    if (!byPlatform.qishui) {
+      byPlatform.qishui = { totalSuccess: 0, todaySuccess: 0 };
     }
 
     // If 'all' platform not yet recorded (before analytics_foundation was deployed),
