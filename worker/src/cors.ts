@@ -98,6 +98,13 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     };
   }
 
+  // Strictly no browser CORS for internal maintainer endpoints (R6 Requirement 19 & 46)
+  if (path === '/api/internal/stats') {
+    return {
+      Vary: 'Origin',
+    };
+  }
+
   if (path === '/api/event') {
     const origin = request.headers.get('Origin');
     const headers: Record<string, string> = {
@@ -138,6 +145,14 @@ export function handleOptions(request: Request, pathname?: string): Response {
       return '';
     }
   })();
+
+  // Strictly reject browser preflight on internal maintainer endpoints (R6)
+  if (path === '/api/internal/stats') {
+    return new Response(null, {
+      status: 403,
+      headers: { Vary: 'Origin' },
+    });
+  }
 
   if (isPublicEndpoint(path)) {
     return new Response(null, {

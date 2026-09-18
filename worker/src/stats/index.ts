@@ -15,7 +15,8 @@
 
 import type {
   PublicStatsResponse,
-  DailyTrendEntry,
+  PublicDailyTrendEntry,
+  OperationalDailyTrendEntry,
   PlatformBreakdown,
   HourlyEntry,
   RollingHourlyEntry,
@@ -23,6 +24,8 @@ import type {
   ProvinceDistributionItem,
   ClientDistributionItem,
   ClientStats,
+  PrivateAnalyticsResponse,
+  MaintainerStatsResponse,
 } from '../analytics/types';
 
 /** Backward-compat re-export for existing imports */
@@ -165,13 +168,9 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
 }
 
 /**
- * Retrieves the enriched PUBLIC stats response (Analytics Foundation).
- * Includes track counts, export counts, per-platform breakdown, daily trends,
- * hourly distribution, geographic distribution, client/browser/OS breakdown,
- * referrer sources, input types, latency and error categories.
- *
- * PRIVACY: All data is strictly coarse-grained anonymous aggregate counters.
- * No raw IPs, identifiers, playlist content, or per-request rows are ever stored or exposed.
+ * Retrieves the public product usage statistics (GET /api/stats).
+ * Strictly contains coarse, public-safe counters.
+ * Zero private dimensional data or private table queries.
  */
 export async function getPublicStats(db: D1Database | undefined): Promise<PublicStatsResponse> {
   const defaultResponse: PublicStatsResponse = {
@@ -196,18 +195,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),
-    todayHourlyPageViews: [],
-    last24HourlyPageViews: [],
-    topGeo: [],
-    chinaProvinces: [],
-    clientStats: { browsers: [], devices: [], os: [], deviceBrands: [] },
-    clipboardFormatsBreakdown: {},
-    referrerDistribution: [],
-    inputTypeDistribution: [],
-    latencyDistribution: [],
-    errorCategoryDistribution: [],
   };
-
 
   if (!db) {
     return defaultResponse;
@@ -290,8 +278,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       byPlatform.qishui = { totalSuccess: 0, todaySuccess: 0 };
     }
 
-    // If 'all' platform not yet recorded (before analytics_foundation was deployed),
-    // fall back to per-platform totals
+    // If 'all' platform not yet recorded, fall back to sum of platform totals
     if (totalParses === 0 && Object.keys(byPlatform).length > 0) {
       for (const bp of Object.values(byPlatform)) {
         totalParses += bp.totalSuccess;
@@ -320,8 +307,8 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch export format breakdown:', err);
     }
 
-    // 3. Fetch recent daily trends (extended with clipboards, visitors, failures)
-    const recentDays: DailyTrendEntry[] = [];
+    // 3. Fetch public recent daily trends (strictly parses, tracks, exports only)
+    const recentDays: PublicDailyTrendEntry[] = [];
     try {
       const trendRows = await db
         .prepare(`
@@ -336,18 +323,15 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         .all<{ date: string; metric: string; total: number }>();
 
       if (trendRows.results && trendRows.results.length > 0) {
-        const dayMap = new Map<string, DailyTrendEntry>();
+        const dayMap = new Map<string, PublicDailyTrendEntry>();
         for (const row of trendRows.results) {
           if (!dayMap.has(row.date)) {
-            dayMap.set(row.date, { date: row.date, parses: 0, tracks: 0, exports: 0, clipboards: 0, visitors: 0, failures: 0 });
+            dayMap.set(row.date, { date: row.date, parses: 0, tracks: 0, exports: 0 });
           }
           const entry = dayMap.get(row.date)!;
           if (row.metric === 'parse_success') entry.parses = row.total;
           if (row.metric === 'tracks_processed') entry.tracks = row.total;
           if (row.metric === 'exports_total') entry.exports = row.total;
-          if (row.metric === 'clipboards_total') entry.clipboards = row.total;
-          if (row.metric === 'visitor_unique') entry.visitors = row.total;
-          if (row.metric === 'parse_failure') entry.failures = row.total;
         }
 
         // Also fetch from daily_export_stats for exports if not in aggregate_stats
@@ -365,32 +349,10 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         if (exportTrendRows.results) {
           for (const row of exportTrendRows.results) {
             if (!dayMap.has(row.date)) {
-              dayMap.set(row.date, { date: row.date, parses: 0, tracks: 0, exports: 0, clipboards: 0, visitors: 0, failures: 0 });
+              dayMap.set(row.date, { date: row.date, parses: 0, tracks: 0, exports: 0 });
             }
             const entry = dayMap.get(row.date)!;
             if (row.total > entry.exports) entry.exports = row.total;
-          }
-        }
-
-        // Also fetch clipboard totals from daily_clipboard_stats for trend
-        const clipboardTrendRows = await db
-          .prepare(`
-            SELECT date, SUM(count) as total
-            FROM daily_clipboard_stats
-            WHERE date != 'TOTAL' AND date >= ?1
-            GROUP BY date
-            ORDER BY date DESC
-          `)
-          .bind(getDateNDaysAgo(RECENT_DAYS_COUNT))
-          .all<{ date: string; total: number }>();
-
-        if (clipboardTrendRows.results) {
-          for (const row of clipboardTrendRows.results) {
-            if (!dayMap.has(row.date)) {
-              dayMap.set(row.date, { date: row.date, parses: 0, tracks: 0, exports: 0, clipboards: 0, visitors: 0, failures: 0 });
-            }
-            const entry = dayMap.get(row.date)!;
-            if (row.total > entry.clipboards) entry.clipboards = row.total;
           }
         }
 
@@ -400,7 +362,63 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch daily trend data:', err);
     }
 
-    // 4a. Legacy UTC-calendar-day hourly distribution (kept for API compatibility).
+    return {
+      launchedAt: LAUNCHED_AT,
+      cumulativeDailyVisitors,
+      totalVisitors: cumulativeDailyVisitors,
+      visitorsToday,
+      totalPageViews,
+      pageViewsToday,
+      totalPlaylistsParsed: totalParses,
+      playlistsParsedToday: todayParses,
+      totalTracksProcessed: totalTracks,
+      tracksProcessedToday: todayTracks,
+      totalExports: totalExports,
+      exportsToday: todayExports,
+      exportFormatsBreakdown,
+      byPlatform,
+      recentDays,
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (err: unknown) {
+    console.error('Failed to fetch public stats:', err);
+    return defaultResponse;
+  }
+}
+
+/**
+ * Retrieves the private maintainer analytics (GET /api/internal/stats).
+ * Includes hourly distribution, geographic breakdown, client environments,
+ * clipboard distributions, operational trends, and recorded performance dimensions.
+ */
+export async function getPrivateAnalytics(db: D1Database | undefined): Promise<PrivateAnalyticsResponse> {
+  const defaultInsights: PrivateAnalyticsResponse = {
+    todayHourlyPageViews: Array.from({ length: 24 }, (_, h) => ({ hour: h, pageViews: 0, visitors: 0 })),
+    last24HourlyPageViews: [],
+    topGeo: [],
+    chinaProvinces: [],
+    clientStats: { browsers: [], devices: [], os: [], deviceBrands: [] },
+    clipboardFormatsBreakdown: {},
+    referrerDistribution: [],
+    inputTypeDistribution: [],
+    latencyDistribution: [],
+    errorCategoryDistribution: [],
+    playlistSizeDistribution: [],
+    providerPathDistribution: [],
+    exportPlaylistSizeDistribution: [],
+    clipboardPlaylistSizeDistribution: [],
+    rateLimitEndpointDistribution: [],
+    operationalRecentDays: [],
+  };
+
+  if (!db) {
+    return defaultInsights;
+  }
+
+  const today = getUtcDateString();
+
+  try {
+    // 1a. Legacy UTC-calendar-day hourly distribution
     const todayHourlyPageViews: HourlyEntry[] = Array.from({ length: 24 }, (_, h) => ({ hour: h, pageViews: 0, visitors: 0 }));
     try {
       const hourlyRows = await db
@@ -426,8 +444,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch UTC-day hourly stats:', err);
     }
 
-    // 4b. True rolling last-24-hours window.
-    // Storage remains UTC; timestamps make timezone conversion a pure presentation concern.
+    // 1b. True rolling last-24-hours window
     const last24HourlyPageViews: RollingHourlyEntry[] = [];
     try {
       const currentHourUtc = new Date();
@@ -472,11 +489,11 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     } catch (err: unknown) {
       console.error('Failed to fetch rolling 24-hour stats:', err);
     }
-    // 5. Geographic distribution — TOP 10 countries + China province breakdown
+
+    // 2. Geographic distribution — TOP 10 countries + China provinces
     const topGeo: GeoDistributionItem[] = [];
     const chinaProvinces: ProvinceDistributionItem[] = [];
     try {
-      // R3: Denominator is all known geographic visit records (full population), not just Top 10 sum.
       const geoTotalRow = await db
         .prepare(`
           SELECT SUM(count) as total
@@ -507,7 +524,6 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         }
       }
 
-      // China province distribution — Denominator is all known CN regions, not just Top 10 sum.
       const cnTotalRow = await db
         .prepare(`
           SELECT SUM(count) as total
@@ -541,7 +557,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch geo distribution:', err);
     }
 
-    // 6. Client stats — device / browser / OS distribution
+    // 3. Client stats — device / browser / OS distribution
     const clientStats: ClientStats = { browsers: [], devices: [], os: [] };
     try {
       const clientRows = await db
@@ -579,7 +595,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch client stats:', err);
     }
 
-    // 7. Clipboard format breakdown (total across all platforms)
+    // 4. Clipboard format breakdown
     const clipboardFormatsBreakdown: Record<string, number> = {};
     try {
       const cbRows = await db
@@ -600,19 +616,27 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch clipboard format breakdown:', err);
     }
 
-    // 8. Performance dimensions — referrer, input_type, latency_bucket, error_category
-    // (Aggregated across all platforms where date != 'TOTAL' to include per-platform daily counters)
+    // 5. Performance dimensions & inventory of existing recorded dimensions
     const referrerDistribution: ClientDistributionItem[] = [];
     const inputTypeDistribution: ClientDistributionItem[] = [];
     const latencyDistribution: ClientDistributionItem[] = [];
     const errorCategoryDistribution: ClientDistributionItem[] = [];
+    const playlistSizeDistribution: ClientDistributionItem[] = [];
+    const providerPathDistribution: ClientDistributionItem[] = [];
+    const exportPlaylistSizeDistribution: ClientDistributionItem[] = [];
+    const clipboardPlaylistSizeDistribution: ClientDistributionItem[] = [];
+    const rateLimitEndpointDistribution: ClientDistributionItem[] = [];
+
     try {
       const perfRows = await db
         .prepare(`
           SELECT dimension, value, SUM(count) as total
           FROM daily_performance_stats
           WHERE date != 'TOTAL'
-          AND dimension IN ('referrer_source', 'input_type', 'latency_bucket', 'error_category', 'device_brand')
+          AND dimension IN (
+            'referrer_source', 'input_type', 'latency_bucket', 'error_category', 'device_brand',
+            'playlist_size', 'provider_path', 'export_playlist_size', 'clipboard_playlist_size', 'rate_limit_endpoint'
+          )
           GROUP BY dimension, value
           ORDER BY dimension, total DESC
         `)
@@ -644,30 +668,81 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
 
         const brandItems = dimMap.get('device_brand');
         if (brandItems) clientStats.deviceBrands = toDistributionFromDim(brandItems);
+
+        const plSizeItems = dimMap.get('playlist_size');
+        if (plSizeItems) playlistSizeDistribution.push(...toDistributionFromDim(plSizeItems));
+
+        const providerItems = dimMap.get('provider_path');
+        if (providerItems) providerPathDistribution.push(...toDistributionFromDim(providerItems));
+
+        const expSizeItems = dimMap.get('export_playlist_size');
+        if (expSizeItems) exportPlaylistSizeDistribution.push(...toDistributionFromDim(expSizeItems));
+
+        const cbSizeItems = dimMap.get('clipboard_playlist_size');
+        if (cbSizeItems) clipboardPlaylistSizeDistribution.push(...toDistributionFromDim(cbSizeItems));
+
+        const rlItems = dimMap.get('rate_limit_endpoint');
+        if (rlItems) rateLimitEndpointDistribution.push(...toDistributionFromDim(rlItems));
       }
     } catch (err: unknown) {
       console.error('Failed to fetch performance dimension stats:', err);
     }
 
+    // 6. Operational daily trends (clipboards, visitors, failures)
+    const operationalRecentDays: OperationalDailyTrendEntry[] = [];
+    try {
+      const opRows = await db
+        .prepare(`
+          SELECT date, metric, SUM(count) as total
+          FROM aggregate_stats
+          WHERE platform = 'all' AND date != 'TOTAL'
+          AND date >= ?1
+          GROUP BY date, metric
+          ORDER BY date DESC
+        `)
+        .bind(getDateNDaysAgo(RECENT_DAYS_COUNT))
+        .all<{ date: string; metric: string; total: number }>();
+
+      const dayMap = new Map<string, OperationalDailyTrendEntry>();
+      if (opRows.results && opRows.results.length > 0) {
+        for (const row of opRows.results) {
+          if (!dayMap.has(row.date)) {
+            dayMap.set(row.date, { date: row.date, clipboards: 0, visitors: 0, failures: 0 });
+          }
+          const entry = dayMap.get(row.date)!;
+          if (row.metric === 'clipboards_total') entry.clipboards = row.total;
+          if (row.metric === 'visitor_unique') entry.visitors = row.total;
+          if (row.metric === 'parse_failure') entry.failures = row.total;
+        }
+      }
+
+      const cbTrendRows = await db
+        .prepare(`
+          SELECT date, SUM(count) as total
+          FROM daily_clipboard_stats
+          WHERE date != 'TOTAL' AND date >= ?1
+          GROUP BY date
+          ORDER BY date DESC
+        `)
+        .bind(getDateNDaysAgo(RECENT_DAYS_COUNT))
+        .all<{ date: string; total: number }>();
+
+      if (cbTrendRows.results) {
+        for (const row of cbTrendRows.results) {
+          if (!dayMap.has(row.date)) {
+            dayMap.set(row.date, { date: row.date, clipboards: 0, visitors: 0, failures: 0 });
+          }
+          const entry = dayMap.get(row.date)!;
+          if (row.total > entry.clipboards) entry.clipboards = row.total;
+        }
+      }
+
+      operationalRecentDays.push(...Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date)));
+    } catch (err: unknown) {
+      console.error('Failed to fetch operational recent days:', err);
+    }
 
     return {
-      launchedAt: LAUNCHED_AT,
-      cumulativeDailyVisitors,
-      totalVisitors: cumulativeDailyVisitors,
-      visitorsToday,
-      totalPageViews,
-      pageViewsToday,
-      totalPlaylistsParsed: totalParses,
-      playlistsParsedToday: todayParses,
-      totalTracksProcessed: totalTracks,
-      tracksProcessedToday: todayTracks,
-      totalExports: totalExports,
-      exportsToday: todayExports,
-      exportFormatsBreakdown,
-      byPlatform,
-      recentDays,
-      generatedAt: new Date().toISOString(),
-      // ── 新增维度数据 ──
       todayHourlyPageViews,
       last24HourlyPageViews,
       topGeo,
@@ -678,11 +753,31 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       inputTypeDistribution,
       latencyDistribution,
       errorCategoryDistribution,
+      playlistSizeDistribution,
+      providerPathDistribution,
+      exportPlaylistSizeDistribution,
+      clipboardPlaylistSizeDistribution,
+      rateLimitEndpointDistribution,
+      operationalRecentDays,
     };
   } catch (err: unknown) {
-    console.error('Failed to fetch public stats:', err);
-    return defaultResponse;
+    console.error('Failed to fetch private maintainer analytics:', err);
+    return defaultInsights;
   }
+}
+
+/**
+ * Retrieves both public stats and maintainer insights for authenticated maintainer tooling.
+ */
+export async function getMaintainerStats(db: D1Database | undefined): Promise<MaintainerStatsResponse> {
+  const [publicStats, insights] = await Promise.all([
+    getPublicStats(db),
+    getPrivateAnalytics(db),
+  ]);
+  return {
+    public: publicStats,
+    insights,
+  };
 }
 
 function getDateNDaysAgo(n: number): string {

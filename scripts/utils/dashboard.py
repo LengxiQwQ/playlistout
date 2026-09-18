@@ -56,15 +56,76 @@ def ensure_dependencies():
 
 ensure_dependencies()
 
-API_URL = "https://playlistout-api.lengxiqwq.com/api/stats"
+API_URL = "https://playlistout-api.lengxiqwq.com/api/internal/stats"
 
 
-# ── 2. 数据获取 (Data Fetcher) ────────────────────────────────────────
+# ── 2. 数据获取与认证 (Data Fetcher & Authentication) ───────────────────
 
-def fetch_stats(url: str, retries: int = 3) -> dict:
+def get_admin_token(repo_root: Path | None = None) -> str | None:
+    """获取维护者洞察端点访问 Token (优先读取环境变量，其次尝试 gitignored 配置文件)"""
+    token = os.environ.get("INSIGHTS_ADMIN_TOKEN")
+    if token and token.strip():
+        return token.strip()
+
+    # 尝试从仓库根目录下的 gitignored 本地环境配置文件中读取
+    if repo_root is None:
+        script_dir = Path(__file__).resolve().parent
+        repo_root = script_dir.parent.parent
+
+    for fname in [".dev.vars", ".env.local"]:
+        p = repo_root / fname
+        if p.exists():
+            try:
+                for line in p.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line.startswith("INSIGHTS_ADMIN_TOKEN="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val:
+                            return val
+            except Exception:
+                pass
+    return None
+
+
+def merge_maintainer_payload(public_data: dict, insights_data: dict) -> dict:
+    """在本地内存中合并 Public Stats 与 Maintainer Insights 响应数据"""
+    merged = dict(public_data)
+    merged.update(insights_data)
+
+    # 将 public recentDays 与 insights operationalRecentDays 依 date 进行合并
+    pub_days = {
+        d["date"]: dict(d)
+        for d in public_data.get("recentDays", [])
+        if isinstance(d, dict) and "date" in d
+    }
+    for op in insights_data.get("operationalRecentDays", []):
+        if isinstance(op, dict) and "date" in op:
+            d_key = op["date"]
+            if d_key in pub_days:
+                pub_days[d_key].update(op)
+            else:
+                pub_days[d_key] = dict(op)
+
+    merged["recentDays"] = sorted(pub_days.values(), key=lambda x: x.get("date", ""), reverse=True)
+    return merged
+
+
+def fetch_stats(url: str, token: str | None = None, retries: int = 3) -> dict:
+    """抓取内部维护者统计数据 (要求 Bearer Token 认证)"""
+    effective_token = (token or "").strip()
+    if not effective_token:
+        effective_token = (get_admin_token() or "").strip()
+
+    if not effective_token:
+        raise ValueError(
+            "缺少维护者认证令牌 (INSIGHTS_ADMIN_TOKEN is missing)。\n"
+            "请设置环境变量 INSIGHTS_ADMIN_TOKEN 或在项目根目录 .dev.vars 中配置。"
+        )
+
     headers = {
         "User-Agent": "PlaylistOut-Dashboard/2.0 (local-bilingual)",
         "Accept": "application/json",
+        "Authorization": f"Bearer {effective_token}",
     }
     for attempt in range(1, retries + 1):
         req = urllib.request.Request(url, headers=headers)
@@ -72,8 +133,21 @@ def fetch_stats(url: str, retries: int = 3) -> dict:
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if data.get("success") and isinstance(data.get("data"), dict):
-                    return data["data"]
+                    payload = data["data"]
+                    if "public" in payload and "insights" in payload:
+                        return merge_maintainer_payload(payload["public"], payload["insights"])
+                    return payload
                 raise ValueError(f"API 响应异常: {data}")
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                raise PermissionError("维护者认证失败 (401 Unauthorized): 请检查 INSIGHTS_ADMIN_TOKEN 是否正确。")
+            if e.code == 503:
+                raise RuntimeError("服务端维护者密钥未配置 (503 Service Unavailable)。")
+            if attempt < retries:
+                print(f"[Dashboard] 重试第 {attempt}/{retries} 次: HTTP {e.code}")
+                time.sleep(1.5 * attempt)
+            else:
+                raise
         except Exception as e:
             if attempt < retries:
                 print(f"[Dashboard] 重试第 {attempt}/{retries} 次: {e}")
@@ -514,6 +588,27 @@ def build_html(
     err_labels = dist_names_mapped(stats.get("errorCategoryDistribution"), format_error_label)
     err_counts = dist_counts(stats.get("errorCategoryDistribution"))
     err_pcts = dist_pcts(stats.get("errorCategoryDistribution"))
+
+    # 运维工程维度 (R6 纳入的数据库已记录维度)
+    pl_size_labels = dist_names(stats.get("playlistSizeDistribution"))
+    pl_size_counts = dist_counts(stats.get("playlistSizeDistribution"))
+    pl_size_pcts = dist_pcts(stats.get("playlistSizeDistribution"))
+
+    prov_path_labels = dist_names(stats.get("providerPathDistribution"))
+    prov_path_counts = dist_counts(stats.get("providerPathDistribution"))
+    prov_path_pcts = dist_pcts(stats.get("providerPathDistribution"))
+
+    exp_size_labels = dist_names(stats.get("exportPlaylistSizeDistribution"))
+    exp_size_counts = dist_counts(stats.get("exportPlaylistSizeDistribution"))
+    exp_size_pcts = dist_pcts(stats.get("exportPlaylistSizeDistribution"))
+
+    cb_size_labels = dist_names(stats.get("clipboardPlaylistSizeDistribution"))
+    cb_size_counts = dist_counts(stats.get("clipboardPlaylistSizeDistribution"))
+    cb_size_pcts = dist_pcts(stats.get("clipboardPlaylistSizeDistribution"))
+
+    rl_labels = dist_names(stats.get("rateLimitEndpointDistribution"))
+    rl_counts = dist_counts(stats.get("rateLimitEndpointDistribution"))
+    rl_pcts = dist_pcts(stats.get("rateLimitEndpointDistribution"))
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1200,6 +1295,70 @@ def build_html(
     </div>
   </div>
 
+  <!-- 运维与工程洞察 (R6 纳入的数据库维度) -->
+  <div class="section-title">🔧 运维与工程洞察 <span>/ Operational & Engineering Insights</span></div>
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">解析歌单规模分布</div>
+          <div class="card-subtitle">Parsed Playlist Track Count Buckets</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartPlSize"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">解析链路路径</div>
+          <div class="card-subtitle">Provider Resolution Path (Primary vs Fallback)</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartProvPath"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">限流触发端点</div>
+          <div class="card-subtitle">Rate Limited Endpoints</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartRateLimit"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">导出歌单规模分布</div>
+          <div class="card-subtitle">Export Playlist Track Count Buckets</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartExpSize"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">剪贴板歌单规模分布</div>
+          <div class="card-subtitle">Clipboard Playlist Track Count Buckets</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartCbSize"></canvas>
+      </div>
+    </div>
+  </div>
+
   <footer>
     PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Storage Timezone: UTC · Display selectable above
   </footer>
@@ -1655,6 +1814,13 @@ def build_html(
     }}
 
     createDonut('chartError', {err_labels}, {err_counts}, {err_pcts});
+
+    // 9. 运维与工程洞察 (R6)
+    createDonut('chartPlSize', {pl_size_labels}, {pl_size_counts}, {pl_size_pcts});
+    createDonut('chartProvPath', {prov_path_labels}, {prov_path_counts}, {prov_path_pcts});
+    createDonut('chartRateLimit', {rl_labels}, {rl_counts}, {rl_pcts});
+    createDonut('chartExpSize', {exp_size_labels}, {exp_size_counts}, {exp_size_pcts});
+    createDonut('chartCbSize', {cb_size_labels}, {cb_size_counts}, {cb_size_pcts});
   </script>
 </body>
 </html>"""
@@ -1680,10 +1846,16 @@ def main():
     else:
         out_path = repo_root / "dashboard.html"
 
+    token = get_admin_token(repo_root)
+    if not token:
+        print("[Dashboard] [ERROR] 缺少维护者认证令牌 (INSIGHTS_ADMIN_TOKEN is missing)。")
+        print("            请设置环境变量 INSIGHTS_ADMIN_TOKEN 或在项目根目录 .dev.vars 中配置。")
+        sys.exit(1)
+
     print(f"[Dashboard] 正在从 API 抓取最新统计数据...")
     print(f"            源地址 / Endpoint: {args.api}")
     try:
-        stats = fetch_stats(args.api)
+        stats = fetch_stats(args.api, token=token)
     except Exception as e:
         print(f"[Dashboard] [ERROR] 获取数据失败: {e}")
         sys.exit(1)

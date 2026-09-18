@@ -1,9 +1,9 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveData, ProviderError } from './models/playlist';
 import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists } from './providers/kugou';
-import { getPublicStats } from './stats';
+import { getPublicStats, getMaintainerStats } from './stats';
 import { recordRateLimitEvent } from './analytics/recorder';
-import type { PublicStatsResponse } from './analytics/types';
+import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit } from './security/rate-limit';
@@ -14,6 +14,23 @@ import { resolveService } from './services/resolve-service';
 export interface Env {
   ENVIRONMENT?: string;
   DB?: D1Database;
+  INSIGHTS_ADMIN_TOKEN?: string;
+}
+
+/**
+ * Constant-time comparison for token verification using SHA-256 digests.
+ * Prevents timing side-channel leaks and never exposes token details.
+ */
+async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const hashA = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(a)));
+  const hashB = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(b)));
+  if (hashA.length !== hashB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < hashA.length; i++) {
+    diff |= hashA[i] ^ hashB[i];
+  }
+  return diff === 0;
 }
 
 export default {
@@ -686,6 +703,117 @@ export default {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
+          ...responseHeaders,
+        },
+      });
+    }
+
+    // ── Maintainer Machine Analytics Endpoint (GET /api/internal/stats) ──
+    if (url.pathname === '/api/internal/stats') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'METHOD_NOT_ALLOWED',
+              message: `HTTP method ${request.method} is not allowed on this endpoint. Use GET.`,
+            },
+          }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Authentication check BEFORE any DB access
+      const configuredSecret = _env.INSIGHTS_ADMIN_TOKEN?.trim();
+      if (!configuredSecret) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'SERVICE_UNAVAILABLE',
+              message: 'Maintainer authentication secret is not configured on server.',
+            },
+          }),
+          {
+            status: 503,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const rawAuth = request.headers.get('authorization') || '';
+      const bearerMatch = rawAuth.match(/^Bearer\s+(.+)$/i);
+      const providedToken = bearerMatch ? bearerMatch[1].trim() : '';
+
+      if (!providedToken) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Missing or invalid Authorization Bearer token.',
+            },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const isValid = await constantTimeCompare(providedToken, configuredSecret);
+      if (!isValid) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Invalid maintainer authorization token.',
+            },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      // Auth verified — now query DB
+      const stats: MaintainerStatsResponse = await getMaintainerStats(_env.DB);
+      const response: ApiResponse<MaintainerStatsResponse> = {
+        success: true,
+        data: stats,
+      };
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache',
           ...responseHeaders,
         },
       });

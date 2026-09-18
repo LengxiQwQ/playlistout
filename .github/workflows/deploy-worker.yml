@@ -64,6 +64,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Configure Insights Admin Secret
+        if: steps.check-creds.outputs.has_creds == 'true' && secrets.INSIGHTS_ADMIN_TOKEN != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          INSIGHTS_ADMIN_TOKEN: ${{ secrets.INSIGHTS_ADMIN_TOKEN }}
+        run: |
+          echo "$INSIGHTS_ADMIN_TOKEN" | npx wrangler secret put INSIGHTS_ADMIN_TOKEN --cwd worker
+
       - name: Commit Updated wrangler.jsonc if Changed
         if: steps.check-creds.outputs.has_creds == 'true'
         run: |

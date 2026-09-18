@@ -431,20 +431,6 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | **343**<br><sub>Today unique +15</sub> | **2,655**<br><sub>Today +147</sub> | **190**<br><sub>Today +5</sub> | **64,893**<br><sub>Today +1,602</sub> | **641**<br><sub>Today +36</sub> | **7 Days**<br><sub>Since 2026-09-12</sub> |
 
-#### 🗺️ Geographic & Client Distribution
-- **🌍 Top Visit Regions:** 🇲🇾 Malaysia **62%** ｜ 🇺🇸 United States **35%** ｜ 🇨🇳 Mainland China **2%** ｜ 🇭🇰 Hong Kong **0%** ｜ 🇯🇵 Japan **0%** ｜ 🇨🇳 Taiwan **0%** ｜ 🌐 CD **0%** ｜ 🇩🇪 Germany **0%** ｜ 🇦🇺 Australia **0%** ｜ 🌐 BE **0%**
-- **💻 Client Devices:** Desktop **97%** ｜ Mobile **3%**
-- **🌐 Browsers:** Other **86%** ｜ Chrome **11%** ｜ Edge **2%** ｜ Safari **1%**
-
-#### 🇨🇳 Mainland China Visit Province Distribution
-
-| Province / Municipality | Share | Province / Municipality | Share |
-| :---: | :---: | :---: | :---: |
-| Guangdong | **39%** | Shanghai | **25%** |
-| Shaanxi | **14%** | Henan | **7%** |
-| Hubei | **7%** | Guangxi | **4%** |
-| Liaoning | **4%** | — | — |
-
 #### 📊 Feature Usage & Platform Breakdown
 - **🎵 Platform Shares:** QQ Music **87%** (134 parses) ｜ NetEase Cloud Music **13%** (20 parses)
 - **📦 Export Format Distribution:** Excel (.xlsx) **64%** ｜ TXT **32%** ｜ CSV **2%** ｜ JSON **1%**
