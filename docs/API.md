@@ -423,7 +423,7 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
 | **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`). |
 | **Format / Mode** | Client JSON payload | **Validated Client-Reported** | Strictly validated against platform/format schemas. |
 | **Track Count** | Client JSON payload | **Bounded Client-Reported** | Bounded integer between `0` and `50,000`. Telemetry metric only, not server truth. |
-| **Referrer Hint** | Client JSON payload / Header | **Untrusted Hint → Coarse Category** | Normalized into privacy-preserving coarse categories (`chatgpt`, `google`, `github`, etc.). Raw URLs and queries are NEVER stored. |
+| **Referrer Source** | Browser Client Classifier | **Validated Client-Reported** | Coarse acquisition category classified client-side before transmission (`chatgpt`, `google`, `github`, `direct`, `other_web`, etc.). Raw `document.referrer` URLs, paths, search queries, fragments, and raw campaign values are NEVER transmitted in telemetry. Unknown or invalid categories are rejected with `400 INVALID_INPUT`. |
 
 ### Security Invariants for `/api/event`
 1. **Event Origin Gate (Browser Boundary)**:
@@ -433,15 +433,20 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
 2. **No Client-Driven UV Inflation**:
    - Client `deviceId` is strictly prohibited and rejected with `400 INVALID_INPUT` if present.
    - Daily unique visitors are deduplicated strictly via server-derived connection IP, server-observed UA signal, date, and salt.
-3. **Strict JSON & Schema Guard**:
+3. **Data Minimization Before Transmission (Referrer Minimization)**:
+   - Full `document.referrer` URLs, paths, search queries, fragments, and raw campaign parameters NEVER cross the network boundary.
+   - Client performs coarse classification in-browser and transmits only `referrerSource` from a strict finite enum allowlist.
+   - Legacy `referrer` field is strictly rejected with `400 INVALID_INPUT`.
+   - Unknown/unrecognized categories are rejected with generic `400 INVALID_INPUT` without echoing invalid inputs.
+4. **Strict JSON & Schema Guard**:
    - `Content-Type` must be `application/json`.
-   - Body size must not exceed 1024 bytes (verified by actual raw byte length).
+   - Body size must not exceed 1024 bytes (verified by chunked streaming reader).
    - Any unknown/extra fields trigger `400 INVALID_INPUT`.
-4. **Cross-Isolate Durable Abuse Control**:
+5. **Cross-Isolate Durable Abuse Control**:
    - Fast in-memory burst guard + D1-backed ephemeral rate bucket (`60 requests / minute`).
    - Rate limit keys are short-lived salted one-way hashes (no raw IP stored).
    - Rate-limited rejections (429) do not write to D1 (zero write amplification).
-5. **Fail-Safe Operation**:
+6. **Fail-Safe Operation**:
    - Analytics ingestion failures never disrupt user actions (returns `204 No Content`).
    - If the rate limiter database experiences an outage, it fails closed on telemetry writes (0 events recorded) while returning `204` to the client.
 

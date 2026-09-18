@@ -183,7 +183,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       }
     });
 
-    it('accepts anonymous visit event with referrer and returns Cache-Control', async () => {
+    it('accepts anonymous visit event with referrerSource and returns Cache-Control', async () => {
       const request = new Request(baseUrl, {
         method: 'POST',
         headers: {
@@ -193,7 +193,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         },
         body: JSON.stringify({
           type: 'visit',
-          referrer: 'https://chatgpt.com',
+          referrerSource: 'chatgpt',
         }),
       });
 
@@ -402,7 +402,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       // Create body with > 1024 UTF-8 bytes and remove Content-Length header
       const oversizedPayload = JSON.stringify({
         type: 'visit',
-        referrer: 'https://example.com/' + 'a'.repeat(1100),
+        referrerSource: 'other_web' + 'a'.repeat(1100),
       });
 
       const request = new Request(baseUrl, {
@@ -426,7 +426,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       const unicodeString = '中'.repeat(350);
       const payload = JSON.stringify({
         type: 'visit',
-        referrer: unicodeString,
+        referrerSource: unicodeString,
       });
 
       const request = new Request(baseUrl, {
@@ -529,6 +529,105 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       const body = (await response.json()) as any;
       expect(body.error.code).toBe('INVALID_INPUT');
       expect(body.error.message).toContain('Unknown field "deviceId"');
+    });
+
+    it('strictly rejects legacy raw "referrer" field in visit payload with 400 INVALID_INPUT', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
+        body: JSON.stringify({
+          type: 'visit',
+          referrer: 'https://chatgpt.com/c/private-conversation?token=secret_token#hash',
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('Unknown field "referrer"');
+    });
+
+    it('strictly rejects unknown referrerSource with generic 400 without echoing raw input', async () => {
+      const sensitiveRawValue = 'john@example.com-secret-source';
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
+        body: JSON.stringify({
+          type: 'visit',
+          referrerSource: sensitiveRawValue,
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const bodyText = await response.text();
+      const body = JSON.parse(bodyText);
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toBe('Invalid referrerSource.');
+
+      // CRITICAL PRIVACY INVARIANT: Error message must NEVER echo the raw invalid input
+      expect(bodyText).not.toContain(sensitiveRawValue);
+    });
+
+    it.each([
+      'https://google.com',
+      'http://chatgpt.com/c/123',
+      'google/search',
+      'github.com/copilot',
+      'arbitrary_unlisted_source',
+      '<script>alert(1)</script>',
+    ])('rejects non-allowlisted referrerSource "%s" with 400 INVALID_INPUT', async (badSource) => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
+        body: JSON.stringify({
+          type: 'visit',
+          referrerSource: badSource,
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toBe('Invalid referrerSource.');
+    });
+
+    it('prevents cardinality pollution: rejects arbitrary categories and causes 0 writes to D1', async () => {
+      const mockEnv = createMockEnv();
+      for (let i = 0; i < 20; i++) {
+        const request = new Request(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
+          body: JSON.stringify({
+            type: 'visit',
+            referrerSource: `unbounded_pollution_${i}`,
+          }),
+        });
+
+        const response = await worker.fetch(request, mockEnv, createMockCtx());
+        expect(response.status).toBe(400);
+      }
+
+      // No performance stats writes occurred
+      const perfWrites = mockEnv.DB._statements.filter(s => s.includes('daily_performance_stats'));
+      expect(perfWrites).toHaveLength(0);
+    });
+
+    it('accepts visit event with omitted referrerSource and defaults to direct', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://playlistout.lengxiqwq.com' },
+        body: JSON.stringify({
+          type: 'visit',
+        }),
+      });
+
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, createMockEnv(), ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
     });
 
     it.each([

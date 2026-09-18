@@ -20,56 +20,10 @@ import type {
   ExportFormat,
   ClipboardMode,
   CanonicalClipboardMode,
+  ReferrerSource,
 } from './types';
+import { REFERRER_SOURCES } from './types';
 import { getUtcDateString } from '../stats';
-
-/**
- * Classifies a Referer header or document.referrer into a coarse, privacy-safe source category.
- * PRIVACY: The full Referer URL is NEVER stored — only the coarse category label.
- */
-export function classifyReferrer(referer: string | null): string {
-  if (!referer) return 'direct';
-  const lower = referer.toLowerCase().trim();
-  if (!lower || lower === 'direct') return 'direct';
-
-  // Self domains (internal clicks / refreshes)
-  if (/playlistout\.lengxiqwq\.com|localhost|127\.0\.0\.1/i.test(lower)) {
-    return 'direct';
-  }
-
-  // 1. AI Assistants (ChatGPT, Claude, DeepSeek, Copilot, Gemini, Kimi)
-  if (/chatgpt\.|openai\./i.test(lower) || lower.includes('chatgpt')) return 'chatgpt';
-  if (/claude\.ai/i.test(lower) || lower.includes('claude')) return 'claude';
-  if (/deepseek\./i.test(lower) || lower.includes('deepseek')) return 'deepseek';
-  if (/copilot\.microsoft|github\.com\/copilot/i.test(lower)) return 'copilot';
-  if (/gemini\.google/i.test(lower)) return 'gemini';
-  if (/kimi\.moonshot/i.test(lower)) return 'kimi';
-
-  // 2. Search Engines
-  if (/google\./i.test(lower)) return 'google';
-  if (/baidu\./i.test(lower)) return 'baidu';
-  if (/bing\./i.test(lower)) return 'bing';
-  if (/sogou\./i.test(lower)) return 'sogou';
-  if (/so\.com/i.test(lower)) return '360search';
-
-  // 3. Tech & Developer Communities
-  if (/github\./i.test(lower)) return 'github';
-  if (/v2ex\./i.test(lower)) return 'v2ex';
-  if (/juejin\./i.test(lower)) return 'juejin';
-  if (/zhihu\./i.test(lower)) return 'zhihu';
-  if (/bilibili\./i.test(lower)) return 'bilibili';
-  if (/xiaohongshu\.|xhslink\./i.test(lower)) return 'xiaohongshu';
-
-  // 4. Social & Messaging
-  if (/weixin|wechat/i.test(lower)) return 'wechat';
-  if (/weibo\./i.test(lower)) return 'weibo';
-  if (/twitter\.|x\.com|t\.co/i.test(lower)) return 'twitter_x';
-  if (/reddit\./i.test(lower)) return 'reddit';
-  if (/facebook\.|instagram\./i.test(lower)) return 'meta_fb';
-  if (/douyin\.|tiktok\./i.test(lower)) return 'douyin_tiktok';
-
-  return 'other_web';
-}
 
 
 /**
@@ -442,7 +396,7 @@ export async function computeVisitorHash(
 export async function recordVisitEvent(
   db: D1Database | undefined,
   request: Request,
-  clientReferrer?: string,
+  referrerSource: ReferrerSource = 'direct',
 ): Promise<void> {
   if (!db) return;
 
@@ -522,17 +476,19 @@ export async function recordVisitEvent(
     statements.push(db.prepare(upsertClientSql).bind(date, ua.deviceClass, ua.browserFamily, ua.osFamily));
     statements.push(db.prepare(upsertClientSql).bind('TOTAL', ua.deviceClass, ua.browserFamily, ua.osFamily));
 
-    // Referrer source classification (coarse category only, full URL never stored)
-    const rawReferer = clientReferrer || request.headers.get('referer') || request.headers.get('referrer') || null;
-    const referrerSource = classifyReferrer(rawReferer);
+    // Referrer source recording (coarse category only, strictly bounded by REFERRER_SOURCES allowlist)
+    // Raw URLs, paths, queries, and headers are NEVER read, received, or stored
+    const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
+      ? referrerSource
+      : 'other_web';
     const upsertPerfSql = `
       INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
       VALUES (?1, 'all', ?2, ?3, 1)
       ON CONFLICT (date, platform, dimension, value)
       DO UPDATE SET count = count + 1;
     `;
-    statements.push(db.prepare(upsertPerfSql).bind(date, 'referrer_source', referrerSource));
-    statements.push(db.prepare(upsertPerfSql).bind('TOTAL', 'referrer_source', referrerSource));
+    statements.push(db.prepare(upsertPerfSql).bind(date, 'referrer_source', safeSource));
+    statements.push(db.prepare(upsertPerfSql).bind('TOTAL', 'referrer_source', safeSource));
 
     // Mobile Brand & Device Hardware classification
     if (ua.deviceBrand) {
