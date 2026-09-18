@@ -35,9 +35,11 @@ PlaylistOut officially supports 4 major music platforms:
      - `Access-Control-Allow-Methods: GET, OPTIONS`
      - `Access-Control-Allow-Headers: Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token`
      - Allows third-party web applications running in browsers to call the Public API directly.
-   - **Sensitive & Auth Endpoints** (`/api/kugou/*`, `POST /api/event`):
-     - Strictly restricted to official PlaylistOut domains and `localhost` development environments.
-     - Unauthorized origins receive `403 Forbidden` on OPTIONS preflight.
+   - **Sensitive & Auth Endpoints** (`/api/kugou/*`):
+     - Restricted to authorized PlaylistOut domains and localhost development environments.
+   - **Client Event Ingestion Endpoint** (`POST /api/event`):
+     - Strictly restricted via an exact-match allowlist (`https://playlistout.com`, `https://www.playlistout.com`, `https://playlistout.lengxiqwq.com`, `https://lengxiqwq.github.io`, and approved dev ports).
+     - Missing Origin, `Origin: null`, wildcards, and unauthorized subdomains receive `403 Forbidden` before any parsing or DB access.
 2. **Zero-Trust Header-Only Authentication**:
    - Authentication tokens and credentials must **never** appear in URLs or query strings (`?token=...`, `?auth=...`, etc.). Any request containing credential query parameters is immediately rejected with `400 INVALID_INPUT`.
    - Third-party credentials (such as KuGou session tokens) are accepted exclusively via standard HTTP headers:
@@ -47,12 +49,16 @@ PlaylistOut officially supports 4 major music platforms:
 3. **No Arbitrary Proxying**:
    - Outbound requests are strictly allowlisted to official upstream music endpoints.
    - Any attempt to access `/proxy`, `/proxy/*`, or `/api/proxy` is rejected with `403 FORBIDDEN`.
-4. **Rate Limiting**:
-   - Standard IP-based sliding window:
+4. **Rate Limiting & Abuse Boundaries**:
+   - Public API sliding window:
      - `/api/v1/resolve`: **30 requests / minute** per client IP.
      - `/api/v1/playlist`: **30 requests / minute** per client IP.
      - `/api/v1/user/playlists`: **30 requests / minute** per client IP.
      - `/api/v1/stats`: **60 requests / minute** per client IP.
+   - Telemetry Ingestion (`POST /api/event`):
+     - Multi-tier rate limiting: in-memory burst guard + D1-backed durable rate bucket (**60 requests / minute** per client IP).
+     - Keys are ephemeral salted one-way hashes (no raw IP stored).
+     - Rate-limited rejections do NOT write to D1 (zero write amplification).
    - When exceeded, returns HTTP `429 Too Many Requests` with a `Retry-After: <seconds>` header.
 5. **OWASP Security Headers**:
    - All responses include defensive headers:
@@ -400,6 +406,44 @@ For backward compatibility with existing frontends, bookmarks, and automated scr
 - `GET /health` & `GET /api/health` ➔ Alias to `GET /api/v1/health`
 
 ---
+
+## 7.5 Frontend Event Ingestion & Client Trust Boundary (`POST /api/event`)
+
+### Overview
+`POST /api/event` is an internal telemetry ingestion endpoint used exclusively by official PlaylistOut frontend clients for recording aggregate anonymous statistics (export formats, clipboard copy modes, and page visits).
+
+### Client Event Trust Boundary & Analytics Trust Levels
+In public Single Page Applications (SPAs) without mandatory user login or hardware attestation, browser telemetry cannot achieve absolute cryptographic authenticity. PlaylistOut enforces a realistic, honest trust model:
+
+| Data Element | Source | Trust Level | Description |
+| :--- | :--- | :--- | :--- |
+| **Client IP** | Cloudflare Edge (`CF-Connecting-IP`) | **Server-derived** | Determined by the edge network. `X-Forwarded-For` is strictly ignored for security identity. |
+| **User-Agent** | Request Header | **Server-observed** | Inspected by the server and parsed into coarse categories (desktop/mobile, browser family). Full UA strings are never persisted. |
+| **Geography** | Cloudflare (`request.cf`) | **Server-derived** | Country, region, and city derived by Cloudflare GeoIP at ingestion time. |
+| **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`). |
+| **Format / Mode** | Client JSON payload | **Validated Client-Reported** | Strictly validated against platform/format schemas. |
+| **Track Count** | Client JSON payload | **Bounded Client-Reported** | Bounded integer between `0` and `50,000`. Telemetry metric only, not server truth. |
+| **Referrer Hint** | Client JSON payload / Header | **Untrusted Hint → Coarse Category** | Normalized into privacy-preserving coarse categories (`chatgpt`, `google`, `github`, etc.). Raw URLs and queries are NEVER stored. |
+
+### Security Invariants for `/api/event`
+1. **Event Origin Gate (Browser Boundary)**:
+   - Only exact official origins (`https://playlistout.com`, `https://www.playlistout.com`, `https://playlistout.lengxiqwq.com`, `https://lengxiqwq.github.io`, and approved local dev ports) are permitted.
+   - Missing Origin, `Origin: null`, wildcards, or unauthorized subdomains (e.g. `foo.lengxiqwq.com`, `fake.playlistout.com`) receive `403 FORBIDDEN` before any database access or body parsing.
+   - *Note*: Origin validation is a browser cross-origin boundary, not cryptographic authentication.
+2. **No Client-Driven UV Inflation**:
+   - Client `deviceId` is strictly prohibited and rejected with `400 INVALID_INPUT` if present.
+   - Daily unique visitors are deduplicated strictly via server-derived connection IP, server-observed UA signal, date, and salt.
+3. **Strict JSON & Schema Guard**:
+   - `Content-Type` must be `application/json`.
+   - Body size must not exceed 1024 bytes (verified by actual raw byte length).
+   - Any unknown/extra fields trigger `400 INVALID_INPUT`.
+4. **Cross-Isolate Durable Abuse Control**:
+   - Fast in-memory burst guard + D1-backed ephemeral rate bucket (`60 requests / minute`).
+   - Rate limit keys are short-lived salted one-way hashes (no raw IP stored).
+   - Rate-limited rejections (429) do not write to D1 (zero write amplification).
+5. **Fail-Safe Operation**:
+   - Analytics ingestion failures never disrupt user actions (returns `204 No Content`).
+   - If the rate limiter database experiences an outage, it fails closed on telemetry writes (0 events recorded) while returning `204` to the client.
 
 ---
 

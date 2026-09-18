@@ -308,34 +308,32 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
     });
   });
 
-  describe('recordVisitEvent & computeVisitorHash (Multi-Device & UV Deduplication)', () => {
-    it('generates distinct 16-char hashes for different devices on the same IP', async () => {
+  describe('recordVisitEvent & computeVisitorHash (Server-Observed UA & UV Deduplication)', () => {
+    it('generates distinct 16-char hashes for different user-agents on the same IP', async () => {
       const date = '2026-09-15';
       const ip = '198.51.100.1';
-      const hashDeviceA = await computeVisitorHash(date, ip, 'd_device_iphone');
-      const hashDeviceB = await computeVisitorHash(date, ip, 'd_device_laptop');
-      expect(hashDeviceA).not.toBe(hashDeviceB);
-      expect(hashDeviceA).toHaveLength(16);
-      expect(hashDeviceB).toHaveLength(16);
+      const hashPhone = await computeVisitorHash(date, ip, 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+      const hashLaptop = await computeVisitorHash(date, ip, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0');
+      expect(hashPhone).not.toBe(hashLaptop);
+      expect(hashPhone).toHaveLength(16);
+      expect(hashLaptop).toHaveLength(16);
     });
 
-    it('records unique visitors for multiple devices on the same IP (same Wi-Fi)', async () => {
+    it('records unique visitors for multiple user agents on the same IP (same Wi-Fi)', async () => {
       const mockDb = createMockD1();
       const today = getUtcDateString();
       const ip = '198.51.100.1';
 
-      // Device 1 (e.g. Phone)
+      // Device 1 (e.g. iPhone)
       await recordVisitEvent(
         mockDb,
-        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone)' }),
-        'd_device_1',
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)' }),
       );
 
       // Device 2 (e.g. Laptop on same Wi-Fi)
       await recordVisitEvent(
         mockDb,
-        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (Windows)' }),
-        'd_device_2',
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }),
       );
 
       // Both devices counted as unique visitors
@@ -346,8 +344,7 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       // Device 1 refreshes the page
       await recordVisitEvent(
         mockDb,
-        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone)' }),
-        'd_device_1',
+        createMockRequest({ 'cf-connecting-ip': ip, 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)' }),
       );
 
       // visitor_unique does NOT increase, page_view DOES increase
@@ -366,7 +363,6 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       await recordVisitEvent(
         mockDb,
         createMockRequest({ 'cf-connecting-ip': '1.2.3.4' }),
-        'd_device_current',
       );
 
       // Old hash should be deleted, recent hash preserved

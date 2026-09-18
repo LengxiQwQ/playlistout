@@ -74,14 +74,13 @@ describe('Web API Client & Types', () => {
     expect(stats.recentDays[0].parses).toBe(10);
   });
 
-  it('generates and persists an anonymous device identifier', async () => {
-    const { getAnonymousDeviceId } = await import('./client');
-    const deviceId1 = getAnonymousDeviceId();
-    expect(deviceId1).toMatch(/^d_[a-z0-9]+$/);
+  it('cleans up legacy device identifier from localStorage and does not persist client deviceId', async () => {
+    const { cleanupLegacyDeviceId } = await import('./client');
+    window.localStorage.setItem('playlistout_did', 'd_legacy123');
+    expect(window.localStorage.getItem('playlistout_did')).toBe('d_legacy123');
 
-    // Subsequent calls return the same cached deviceId from localStorage
-    const deviceId2 = getAnonymousDeviceId();
-    expect(deviceId2).toBe(deviceId1);
+    cleanupLegacyDeviceId();
+    expect(window.localStorage.getItem('playlistout_did')).toBeNull();
   });
 
   it('notifies window of stats refresh event', async () => {

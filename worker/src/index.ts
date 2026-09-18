@@ -693,32 +693,6 @@ export default {
 
     // ── Frontend Event Ingestion Endpoint (POST /api/event) ──
     if (url.pathname === '/api/event') {
-      // Rate limit check: max 60 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 60, 60, 'event');
-      if (!rateCheck.allowed) {
-        if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'event', 'all'));
-        }
-
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: {
-              code: 'RATE_LIMITED',
-              message: 'Too many requests. Please wait a moment before trying again.',
-            },
-          }),
-          {
-            status: 429,
-            headers: {
-              'Content-Type': 'application/json',
-              'Retry-After': String(rateCheck.resetSeconds),
-              ...responseHeaders,
-            },
-          },
-        );
-      }
-
       return handleEvent(request, _env, _ctx, responseHeaders);
     }
 

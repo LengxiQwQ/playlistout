@@ -194,7 +194,6 @@ export interface ClipboardEventPayload {
 
 export interface VisitEventPayload {
   type: 'visit';
-  deviceId?: string;
   referrer?: string;
 }
 

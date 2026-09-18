@@ -9,6 +9,30 @@ export const ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
   'http://127.0.0.1:4173',
 ]);
 
+/**
+ * Strict exact-match allowlist for POST /api/event and preflight OPTIONS /api/event.
+ * Wildcards, hostname suffix matching (*.lengxiqwq.com), and arbitrary localhost ports
+ * are strictly prohibited to prevent unauthorized subdomains from polluting analytics.
+ *
+ * NOTE: Origin validation is a browser trust boundary, NOT cryptographic authentication.
+ * Non-browser clients (e.g. curl) can forge the Origin header.
+ */
+export const EVENT_ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
+  'https://playlistout.com',
+  'https://www.playlistout.com',
+  'https://playlistout.lengxiqwq.com',
+  'https://lengxiqwq.github.io',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+]);
+
+export function isEventOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  return EVENT_ALLOWED_ORIGINS.has(origin);
+}
+
 export function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.has(origin)) return true;
@@ -74,6 +98,22 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     };
   }
 
+  if (path === '/api/event') {
+    const origin = request.headers.get('Origin');
+    const headers: Record<string, string> = {
+      Vary: 'Origin',
+    };
+
+    if (origin && isEventOriginAllowed(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+      headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept';
+      headers['Access-Control-Max-Age'] = '86400';
+    }
+
+    return headers;
+  }
+
   const origin = request.headers.get('Origin');
   const headers: Record<string, string> = {
     Vary: 'Origin',
@@ -100,6 +140,20 @@ export function handleOptions(request: Request, pathname?: string): Response {
   })();
 
   if (isPublicEndpoint(path)) {
+    return new Response(null, {
+      status: 204,
+      headers: getCorsHeaders(request, path),
+    });
+  }
+
+  if (path === '/api/event') {
+    const origin = request.headers.get('Origin');
+    if (!origin || !isEventOriginAllowed(origin)) {
+      return new Response(null, {
+        status: 403,
+        headers: { Vary: 'Origin' },
+      });
+    }
     return new Response(null, {
       status: 204,
       headers: getCorsHeaders(request, path),
