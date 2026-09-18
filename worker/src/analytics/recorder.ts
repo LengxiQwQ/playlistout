@@ -12,6 +12,7 @@
  * - Best-effort guarantee: failures never interrupt playlist parsing, exporting, or responses.
  */
 
+import { getClientIp } from '../security/rate-limit';
 import { parseUserAgent } from './ua-parser';
 import { classifyPlaylistSize, classifyLatency, classifyErrorCategory } from './dimensions';
 import type {
@@ -410,18 +411,22 @@ export async function recordRateLimitEvent(
 }
 
 /**
- * Generates a one-way, truncated SHA-256 hash from date + clientIp + deviceIdentifier + salt.
- * Ensures zero raw IP addresses or identifiable strings are ever stored,
- * while distinguishing multiple devices behind the same Wi-Fi/NAT router.
+ * Generates a one-way, truncated SHA-256 hash from date + clientIp + userAgent + salt.
+ * Ensures zero raw IP addresses or identifiable strings are ever stored.
+ *
+ * NOTE: Client deviceId is strictly NOT trusted or accepted.
+ * Daily visitor identity is derived solely from server-observed connection IP + UA signal.
+ * Multiple devices behind the same Wi-Fi with identical UA will share the daily hash;
+ * this conservative under-counting is an intentional design choice to prevent client-driven UV inflation.
  */
 export async function computeVisitorHash(
   date: string,
   ip: string,
-  deviceIdentifier: string = '',
+  userAgent: string = '',
 ): Promise<string> {
   const salt = 'playlistout_v_salt_2026';
-  const cleanDevice = deviceIdentifier.trim().slice(0, 128);
-  const data = new TextEncoder().encode(`${date}:${ip}:${cleanDevice}:${salt}`);
+  const cleanUa = userAgent.trim().slice(0, 128);
+  const data = new TextEncoder().encode(`${date}:${ip}:${cleanUa}:${salt}`);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -431,13 +436,12 @@ export async function computeVisitorHash(
 /**
  * Records an anonymous page visit event.
  * Computes a salted one-way hash to identify daily unique visitors without recording IP.
- * Uses device identifier (or User-Agent) to distinguish different devices on the same NAT.
+ * Uses server-observed User-Agent to distinguish different devices on the same NAT.
  * Best-effort: errors never interrupt user operations.
  */
 export async function recordVisitEvent(
   db: D1Database | undefined,
   request: Request,
-  deviceId?: string,
   clientReferrer?: string,
 ): Promise<void> {
   if (!db) return;
@@ -445,14 +449,10 @@ export async function recordVisitEvent(
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
-    const clientIp =
-      request.headers.get('cf-connecting-ip') ||
-      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-      '127.0.0.1';
+    const clientIp = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || '';
-    const deviceIdentifier = deviceId || userAgent;
 
-    const hash = await computeVisitorHash(date, clientIp, deviceIdentifier);
+    const hash = await computeVisitorHash(date, clientIp, userAgent);
 
     const insertHashSql = `
       INSERT OR IGNORE INTO daily_visitor_hashes (date, hash)

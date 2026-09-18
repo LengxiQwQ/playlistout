@@ -427,30 +427,29 @@ export interface StatsResponse {
 export function notifyStatsRefresh(delayMs: number = 800): void {
   if (typeof window !== 'undefined') {
     setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('playlistout:stats-refresh'));
+      try {
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('playlistout:stats-refresh'));
+        }
+      } catch {
+        // ignore if window is torn down before timeout
+      }
     }, delayMs);
   }
 }
 
 /**
- * Generates or retrieves an anonymous, random device token persisted in localStorage.
- * Used solely for deduplicating daily unique visits across multiple devices on the same Wi-Fi.
- * Contains zero personal or hardware information.
+ * Cleans up legacy client-side device identifiers to adhere to R4 trust boundary.
+ * Clients must not generate or transmit persistent device identifiers.
  */
-export function getAnonymousDeviceId(): string {
+export function cleanupLegacyDeviceId(): void {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      let id = window.localStorage.getItem('playlistout_did');
-      if (!id) {
-        id = 'd_' + Math.random().toString(36).substring(2, 12);
-        window.localStorage.setItem('playlistout_did', id);
-      }
-      return id;
+      window.localStorage.removeItem('playlistout_did');
     }
   } catch {
     // localStorage security restrictions
   }
-  return '';
 }
 
 export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
@@ -506,11 +505,11 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
 
 /**
  * Fires an anonymous page visit event.
- * Uses anonymous client-side deviceId to distinguish devices on the same Wi-Fi.
+ * Server derives daily unique visitor identity safely without trusting client deviceId.
  * Emits live stats refresh when successfully processed.
  */
 export async function recordVisit(): Promise<void> {
-  const deviceId = getAnonymousDeviceId();
+  cleanupLegacyDeviceId();
 
   // Capture real external referrer (Google, ChatGPT, GitHub, etc.) or campaign params
   let referrer: string | undefined = undefined;
@@ -528,7 +527,6 @@ export async function recordVisit(): Promise<void> {
 
   const payload = JSON.stringify({
     type: 'visit',
-    deviceId,
     referrer: referrer ? referrer.slice(0, 500) : undefined,
   });
   const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
