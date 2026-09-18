@@ -1319,7 +1319,7 @@ def build_html(
                 title: (items) => {{
                   const idx = items?.[0]?.dataIndex ?? -1;
                   const raw = HOURLY_DATA[idx]?.timestamp;
-                  return raw ? `${formatHourLabel(raw)} · ${selectedTimeZoneLabel()}` : '';
+                  return raw ? `${{formatHourLabel(raw)}} · ${{selectedTimeZoneLabel()}}` : '';
                 }}
               }}
             }}
