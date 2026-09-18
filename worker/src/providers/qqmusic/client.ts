@@ -406,6 +406,7 @@ export async function fetchQQPlaylistWithMeta(playlistId: string): Promise<QQPla
   } catch (primaryErr: unknown) {
     // If it's a 404 (not found / private), do not retry with fallback
     if (primaryErr instanceof ProviderError && primaryErr.statusCode === 404) {
+      primaryErr.telemetry = { providerFailurePath: 'primary' };
       throw primaryErr;
     }
 
@@ -424,9 +425,13 @@ export async function fetchQQPlaylistWithMeta(playlistId: string): Promise<QQPla
         fallbackErr instanceof ProviderError &&
         (fallbackErr.code === 'INCOMPLETE_PLAYLIST' || fallbackErr.statusCode === 404)
       ) {
+        fallbackErr.telemetry = { providerFailurePath: 'fallback' };
         throw fallbackErr;
       }
-      // Otherwise rethrow the original primary error
+      // Otherwise rethrow the original primary error, noting that both endpoints failed
+      if (primaryErr instanceof ProviderError) {
+        primaryErr.telemetry = { providerFailurePath: 'both' };
+      }
       throw primaryErr;
     }
   }

@@ -131,6 +131,25 @@ export interface PrivateAnalyticsResponse {
   clipboardPlaylistSizeDistribution: ClientDistributionItem[];
   rateLimitEndpointDistribution: ClientDistributionItem[];
   operationalRecentDays: OperationalDailyTrendEntry[];
+
+  // ── R7 Resolve Failure Telemetry (Private Maintainer Contract) ──
+  resolveOutcomeDistribution: ClientDistributionItem[];
+  resolveFailureCodeDistribution: ClientDistributionItem[];
+  resolveFailureClassDistribution: ClientDistributionItem[];
+  resolveFailureStageDistribution: ClientDistributionItem[];
+  resolveRequestedTypeDistribution: ClientDistributionItem[];
+  resolveRequestedPlatformDistribution: ClientDistributionItem[];
+  resolveFailuresByPlatform: ClientDistributionItem[];
+  providerFailurePathDistribution: ClientDistributionItem[];
+
+  // Direct short aliases
+  resolveOutcomes?: ClientDistributionItem[];
+  resolveFailureCodes?: ClientDistributionItem[];
+  resolveFailureClasses?: ClientDistributionItem[];
+  resolveFailureStages?: ClientDistributionItem[];
+  resolveRequestedTypes?: ClientDistributionItem[];
+  resolveRequestedPlatforms?: ClientDistributionItem[];
+  providerFailurePaths?: ClientDistributionItem[];
 }
 
 export interface MaintainerStatsResponse {
@@ -293,4 +312,100 @@ export type OsFamily = typeof OS_FAMILIES[number];
 
 export const INPUT_TYPES = ['web_url', 'mobile_share_link', 'raw_id', 'other'] as const;
 export type InputType = typeof INPUT_TYPES[number];
+
+// ── R7 Resolve Failure Telemetry Constants & Types ──
+
+export const RESOLVE_OUTCOMES = [
+  'success_playlist',
+  'success_user',
+  'failure',
+] as const;
+export type ResolveOutcome = typeof RESOLVE_OUTCOMES[number];
+
+export const RESOLVE_FAILURE_CODES = [
+  'invalid_input',
+  'unsupported_url',
+  'unsupported_platform',
+  'playlist_not_found',
+  'user_not_found',
+  'upstream_error',
+  'upstream_timeout',
+  'incomplete_playlist',
+  'parse_error',
+  'forbidden',
+  'rate_limited',
+  'ambiguous_input',
+  'internal_error',
+] as const;
+export type ResolveFailureCode = typeof RESOLVE_FAILURE_CODES[number];
+
+export const RESOLVE_FAILURE_CLASSES = [
+  'input',
+  'not_found',
+  'ambiguous',
+  'auth',
+  'upstream',
+  'timeout',
+  'incomplete',
+  'parse',
+  'internal',
+] as const;
+export type ResolveFailureClass = typeof RESOLVE_FAILURE_CLASSES[number];
+
+export const RESOLVE_FAILURE_STAGES = [
+  'input_validation',
+  'routing',
+  'short_link_resolution',
+  'playlist_resolution',
+  'user_resolution',
+  'disambiguation_probe',
+  'provider_fetch',
+  'finalization',
+] as const;
+export type ResolveFailureStage = typeof RESOLVE_FAILURE_STAGES[number];
+
+export const RESOLVE_REQUESTED_TYPES = ['auto', 'playlist', 'user', 'unknown'] as const;
+export type ResolveRequestedType = typeof RESOLVE_REQUESTED_TYPES[number];
+
+export const RESOLVE_REQUESTED_PLATFORMS = [
+  'auto',
+  'qqmusic',
+  'netease',
+  'kugou',
+  'qishui',
+  'unknown',
+] as const;
+export type ResolveRequestedPlatform = typeof RESOLVE_REQUESTED_PLATFORMS[number];
+
+/** Internal platform token for analytics only; never exposed as a public input option */
+export const ANALYTICS_PLATFORMS = [
+  'qqmusic',
+  'netease',
+  'kugou',
+  'qishui',
+  'unknown',
+] as const;
+export type AnalyticsPlatform = typeof ANALYTICS_PLATFORMS[number];
+
+export const PROVIDER_FAILURE_PATHS = [
+  'primary',
+  'fallback',
+  'both',
+  'not_applicable',
+  'unknown',
+] as const;
+export type ProviderFailurePath = typeof PROVIDER_FAILURE_PATHS[number];
+
+export interface ResolveAnalyticsContext {
+  request?: Request;
+  outcome: ResolveOutcome;
+  platform?: AnalyticsPlatform;
+  requestedType?: ResolveRequestedType;
+  requestedPlatform?: ResolveRequestedPlatform;
+  inputType?: InputType;
+  failureCode?: ResolveFailureCode;
+  failureClass?: ResolveFailureClass;
+  failureStage?: ResolveFailureStage;
+  providerFailurePath?: ProviderFailurePath;
+}
 

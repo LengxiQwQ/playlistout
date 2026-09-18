@@ -5,7 +5,18 @@
  * No side effects, no data persistence, no privacy-sensitive data handling.
  */
 
-import type { InputType, PlaylistSizeBucket, LatencyBucket, ErrorCategory } from './types';
+import type {
+  InputType,
+  PlaylistSizeBucket,
+  LatencyBucket,
+  ErrorCategory,
+  ResolveFailureCode,
+  ResolveFailureClass,
+  ResolveRequestedType,
+  ResolveRequestedPlatform,
+  AnalyticsPlatform,
+  ProviderFailurePath,
+} from './types';
 
 /**
  * Classifies the user's input into a coarse input-type category.
@@ -75,6 +86,9 @@ export function classifyLatency(ms: number | undefined): LatencyBucket | null {
 /**
  * Classifies an error code into a stable analytics error category.
  * Maps ProviderError codes and general error patterns to fixed categories.
+ *
+ * NOTE (R7): PARSE_ERROR is mapped to 'error_upstream' as upstream response
+ * formatting breakages belong to upstream operational errors, not user validation.
  */
 export function classifyErrorCategory(errorCode: string | undefined): ErrorCategory {
   if (!errorCode) return 'error_internal';
@@ -84,11 +98,11 @@ export function classifyErrorCategory(errorCode: string | undefined): ErrorCateg
     case 'UPSTREAM_TIMEOUT':
     case 'INCOMPLETE_PLAYLIST':
     case 'PLAYLIST_NOT_FOUND':
+    case 'PARSE_ERROR':
       return errorCode === 'UPSTREAM_TIMEOUT' ? 'error_timeout' : 'error_upstream';
 
     case 'INVALID_INPUT':
     case 'UNSUPPORTED_URL':
-    case 'PARSE_ERROR':
       return 'error_validation';
 
     case 'RATE_LIMITED':
@@ -97,4 +111,144 @@ export function classifyErrorCategory(errorCode: string | undefined): ErrorCateg
     default:
       return 'error_internal';
   }
+}
+
+// ── R7 Resolve Failure Telemetry Classifiers ──
+
+/**
+ * Normalizes an API error code into a bounded lowercase resolve failure token.
+ * Unknown codes safely default to 'internal_error'.
+ */
+export function classifyResolveFailureCode(errorCode: string | undefined): ResolveFailureCode {
+  if (!errorCode) return 'internal_error';
+  const clean = errorCode.trim().toLowerCase();
+  switch (clean) {
+    case 'invalid_input':
+      return 'invalid_input';
+    case 'unsupported_url':
+      return 'unsupported_url';
+    case 'unsupported_platform':
+      return 'unsupported_platform';
+    case 'playlist_not_found':
+      return 'playlist_not_found';
+    case 'user_not_found':
+      return 'user_not_found';
+    case 'upstream_error':
+      return 'upstream_error';
+    case 'upstream_timeout':
+      return 'upstream_timeout';
+    case 'incomplete_playlist':
+      return 'incomplete_playlist';
+    case 'parse_error':
+      return 'parse_error';
+    case 'forbidden':
+      return 'forbidden';
+    case 'rate_limited':
+      return 'rate_limited';
+    case 'ambiguous_input':
+      return 'ambiguous_input';
+    case 'internal_error':
+      return 'internal_error';
+    default:
+      return 'internal_error';
+  }
+}
+
+/**
+ * Classifies a resolve failure code into a high-level stable failure class.
+ */
+export function classifyResolveFailureClass(
+  codeOrClass: ResolveFailureCode | string | undefined,
+): ResolveFailureClass {
+  const code = classifyResolveFailureCode(codeOrClass);
+  switch (code) {
+    case 'invalid_input':
+    case 'unsupported_url':
+    case 'unsupported_platform':
+      return 'input';
+    case 'playlist_not_found':
+    case 'user_not_found':
+      return 'not_found';
+    case 'ambiguous_input':
+      return 'ambiguous';
+    case 'forbidden':
+      return 'auth';
+    case 'upstream_error':
+      return 'upstream';
+    case 'upstream_timeout':
+      return 'timeout';
+    case 'incomplete_playlist':
+      return 'incomplete';
+    case 'parse_error':
+      return 'parse';
+    case 'rate_limited':
+      return 'upstream';
+    case 'internal_error':
+    default:
+      return 'internal';
+  }
+}
+
+/**
+ * Normalizes user-specified 'type' parameter into bounded enum.
+ * Invalid values normalize to 'unknown' rather than leaking.
+ */
+export function classifyResolveRequestedType(
+  rawType: string | null | undefined,
+): ResolveRequestedType {
+  if (!rawType) return 'auto';
+  const clean = rawType.trim().toLowerCase();
+  if (clean === 'playlist') return 'playlist';
+  if (clean === 'user' || clean === 'user_playlists') return 'user';
+  if (clean === 'auto') return 'auto';
+  return 'unknown';
+}
+
+/**
+ * Normalizes user-specified 'platform' parameter into bounded enum.
+ * Invalid values normalize to 'unknown' rather than leaking.
+ */
+export function classifyResolveRequestedPlatform(
+  rawPlatform: string | null | undefined,
+): ResolveRequestedPlatform {
+  if (!rawPlatform) return 'auto';
+  const clean = rawPlatform.trim().toLowerCase();
+  if (
+    clean === 'auto' ||
+    clean === 'qqmusic' ||
+    clean === 'netease' ||
+    clean === 'kugou' ||
+    clean === 'qishui'
+  ) {
+    return clean;
+  }
+  return 'unknown';
+}
+
+/**
+ * Normalizes internal analytics platform into bounded enum.
+ */
+export function classifyAnalyticsPlatform(
+  platform: string | null | undefined,
+): AnalyticsPlatform {
+  if (!platform) return 'unknown';
+  const clean = platform.trim().toLowerCase();
+  if (clean === 'qqmusic' || clean === 'netease' || clean === 'kugou' || clean === 'qishui') {
+    return clean;
+  }
+  return 'unknown';
+}
+
+/**
+ * Normalizes provider failure path metadata into bounded enum.
+ */
+export function classifyProviderFailurePath(
+  path: string | undefined,
+): ProviderFailurePath {
+  if (!path) return 'not_applicable';
+  const clean = path.trim().toLowerCase();
+  if (clean === 'primary' || clean === 'fallback' || clean === 'both' || clean === 'not_applicable') {
+    return clean as ProviderFailurePath;
+  }
+  return 'unknown';
 }

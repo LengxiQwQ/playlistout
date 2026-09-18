@@ -305,6 +305,68 @@ PLATFORM_NAME_MAP = {
     "netease": "网易云音乐 (NetEase)",
     "kugou": "酷狗音乐 (KuGou)",
     "qishui": "汽水音乐 (QiShui)",
+    "auto": "自动识别 (Auto)",
+    "unknown": "未识别/跨平台 (Unknown)",
+}
+
+RESOLVE_OUTCOME_MAP = {
+    "success_playlist": "歌单解析成功 (Playlist Success)",
+    "success_user": "用户主页成功 (User Success)",
+    "failure": "最终失败 (Final Failure)",
+}
+
+RESOLVE_FAILURE_CLASS_MAP = {
+    "input": "输入格式错误 (Input)",
+    "not_found": "目标不存在 (Not Found)",
+    "ambiguous": "多源歧义冲突 (Ambiguous)",
+    "auth": "凭证鉴权拒绝 (Auth)",
+    "upstream": "上游服务故障 (Upstream Error)",
+    "timeout": "上游请求超时 (Timeout)",
+    "incomplete": "歌单数据缺失 (Incomplete)",
+    "parse": "上游结构变化 (Parse Error)",
+    "internal": "服务内部错误 (Internal)",
+}
+
+RESOLVE_FAILURE_CODE_MAP = {
+    "invalid_input": "输入格式错误 (INVALID_INPUT)",
+    "unsupported_url": "不支持的链接 (UNSUPPORTED_URL)",
+    "unsupported_platform": "不支持的平台 (UNSUPPORTED_PLATFORM)",
+    "playlist_not_found": "歌单未找到 (PLAYLIST_NOT_FOUND)",
+    "user_not_found": "用户未找到 (USER_NOT_FOUND)",
+    "upstream_error": "上游接口异常 (UPSTREAM_ERROR)",
+    "upstream_timeout": "上游接口超时 (UPSTREAM_TIMEOUT)",
+    "incomplete_playlist": "数据截断缺失 (INCOMPLETE_PLAYLIST)",
+    "parse_error": "结构解析错误 (PARSE_ERROR)",
+    "forbidden": "权限拒绝 (FORBIDDEN)",
+    "rate_limited": "触发频控 (RATE_LIMITED)",
+    "ambiguous_input": "输入歧义冲突 (AMBIGUOUS_INPUT)",
+    "internal_error": "服务内部异常 (INTERNAL_ERROR)",
+}
+
+RESOLVE_STAGE_MAP = {
+    "input_validation": "输入校验 (Input Validation)",
+    "routing": "路由分发 (Routing)",
+    "short_link_resolution": "短链还原 (Short Link)",
+    "playlist_resolution": "歌单解析 (Playlist Resolution)",
+    "user_resolution": "用户解析 (User Resolution)",
+    "disambiguation_probe": "多路探测 (Disambiguation Probe)",
+    "provider_fetch": "平台拉取 (Provider Fetch)",
+    "finalization": "数据归一 (Finalization)",
+}
+
+REQUESTED_TYPE_MAP = {
+    "auto": "自动探测 (Auto)",
+    "playlist": "指定歌单 (Playlist)",
+    "user": "指定用户 (User)",
+    "unknown": "未知类型 (Unknown)",
+}
+
+PROVIDER_FAILURE_PATH_MAP = {
+    "primary": "主链路 (Primary)",
+    "fallback": "备用链路 (Fallback)",
+    "both": "主备均失败 (Both Failed)",
+    "not_applicable": "不适用 (N/A)",
+    "unknown": "未知路径 (Unknown)",
 }
 
 def format_referrer_label(name: str) -> str:
@@ -331,6 +393,36 @@ def format_platform_label(name: str) -> str:
     if not name:
         return "未知 (Unknown)"
     return PLATFORM_NAME_MAP.get(name.strip().lower(), name)
+
+def format_resolve_outcome_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return RESOLVE_OUTCOME_MAP.get(name.strip().lower(), name)
+
+def format_resolve_failure_class_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return RESOLVE_FAILURE_CLASS_MAP.get(name.strip().lower(), name)
+
+def format_resolve_failure_code_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return RESOLVE_FAILURE_CODE_MAP.get(name.strip().lower(), name)
+
+def format_resolve_failure_stage_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return RESOLVE_STAGE_MAP.get(name.strip().lower(), name)
+
+def format_requested_type_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return REQUESTED_TYPE_MAP.get(name.strip().lower(), name)
+
+def format_provider_failure_path_label(name: str) -> str:
+    if not name:
+        return "未知 (Unknown)"
+    return PROVIDER_FAILURE_PATH_MAP.get(name.strip().lower(), name)
 
 
 
@@ -609,6 +701,49 @@ def build_html(
     rl_labels = dist_names(stats.get("rateLimitEndpointDistribution"))
     rl_counts = dist_counts(stats.get("rateLimitEndpointDistribution"))
     rl_pcts = dist_pcts(stats.get("rateLimitEndpointDistribution"))
+
+    # R7 解析失败诊断与可靠性 (Resolve Reliability & Failure Diagnostics)
+    res_outcome_raw = stats.get("resolveOutcomeDistribution") or []
+    res_outcome_labels = dist_names_mapped(res_outcome_raw, format_resolve_outcome_label)
+    res_outcome_counts = dist_counts(res_outcome_raw)
+    res_outcome_pcts = dist_pcts(res_outcome_raw)
+
+    total_resolves = sum(item.get("count", 0) for item in res_outcome_raw)
+    failure_resolves = sum(item.get("count", 0) for item in res_outcome_raw if item.get("name") == "failure")
+    if total_resolves > 0:
+        resolve_failure_rate_str = f"{(failure_resolves / total_resolves) * 100:.1f}%"
+        resolve_failure_sub_str = f"{failure_resolves:,} 失败 / {total_resolves:,} 请求 (Requests)"
+    else:
+        resolve_failure_rate_str = "暂无数据 (No data)"
+        resolve_failure_sub_str = "自 R7 上线起统计 (Since R7 Instrumentation)"
+
+    res_fail_class_labels = dist_names_mapped(stats.get("resolveFailureClassDistribution"), format_resolve_failure_class_label)
+    res_fail_class_counts = dist_counts(stats.get("resolveFailureClassDistribution"))
+    res_fail_class_pcts = dist_pcts(stats.get("resolveFailureClassDistribution"))
+
+    res_fail_code_labels = dist_names_mapped(stats.get("resolveFailureCodeDistribution"), format_resolve_failure_code_label)
+    res_fail_code_counts = dist_counts(stats.get("resolveFailureCodeDistribution"))
+    res_fail_code_pcts = dist_pcts(stats.get("resolveFailureCodeDistribution"))
+
+    res_fail_stage_labels = dist_names_mapped(stats.get("resolveFailureStageDistribution"), format_resolve_failure_stage_label)
+    res_fail_stage_counts = dist_counts(stats.get("resolveFailureStageDistribution"))
+    res_fail_stage_pcts = dist_pcts(stats.get("resolveFailureStageDistribution"))
+
+    res_req_type_labels = dist_names_mapped(stats.get("resolveRequestedTypeDistribution"), format_requested_type_label)
+    res_req_type_counts = dist_counts(stats.get("resolveRequestedTypeDistribution"))
+    res_req_type_pcts = dist_pcts(stats.get("resolveRequestedTypeDistribution"))
+
+    res_req_plat_labels = dist_names_mapped(stats.get("resolveRequestedPlatformDistribution"), format_platform_label)
+    res_req_plat_counts = dist_counts(stats.get("resolveRequestedPlatformDistribution"))
+    res_req_plat_pcts = dist_pcts(stats.get("resolveRequestedPlatformDistribution"))
+
+    res_plat_fail_labels = dist_names_mapped(stats.get("resolveFailuresByPlatform"), format_platform_label)
+    res_plat_fail_counts = dist_counts(stats.get("resolveFailuresByPlatform"))
+    res_plat_fail_pcts = dist_pcts(stats.get("resolveFailuresByPlatform"))
+
+    prov_fail_path_labels = dist_names_mapped(stats.get("providerFailurePathDistribution"), format_provider_failure_path_label)
+    prov_fail_path_counts = dist_counts(stats.get("providerFailurePathDistribution"))
+    prov_fail_path_pcts = dist_pcts(stats.get("providerFailurePathDistribution"))
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1359,6 +1494,120 @@ def build_html(
     </div>
   </div>
 
+  <!-- R7 解析失败诊断与可靠性 (Resolve Reliability & Failure Diagnostics) -->
+  <div class="section-title">🛡️ 解析失败诊断与可靠性 <span>/ Resolve Reliability & Failure Diagnostics</span></div>
+
+  <!-- KPI 卡片: 解析失败率 -->
+  <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: 1.5rem;">
+    <div class="metric-card">
+      <div class="metric-label">Universal Resolve 最终失败率 / Failure Rate</div>
+      <div class="metric-val" style="color: var(--rose);">{resolve_failure_rate_str}</div>
+      <div class="metric-sub">{resolve_failure_sub_str}</div>
+    </div>
+  </div>
+
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Resolve 最终结果</div>
+          <div class="card-subtitle">Resolve Final Outcome</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResOutcome"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">解析失败类别</div>
+          <div class="card-subtitle">Failure Class Taxonomy</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResFailClass"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">解析失败原因</div>
+          <div class="card-subtitle">Failure Reason (Error Code)</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResFailCode"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-3" style="margin-top: 1rem;">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">失败发生阶段</div>
+          <div class="card-subtitle">Failure Resolution Stage</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResFailStage"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">各平台解析失败分布</div>
+          <div class="card-subtitle">Resolve Failures by Platform</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResPlatFail"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Provider 失败路径</div>
+          <div class="card-subtitle">Provider Failure Path (Primary / Fallback)</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartProvFailPath"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-3" style="margin-top: 1rem;">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">请求解析类型意图</div>
+          <div class="card-subtitle">Requested Type Intent</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResReqType"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">请求指定平台意图</div>
+          <div class="card-subtitle">Requested Platform Intent</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResReqPlat"></canvas>
+      </div>
+    </div>
+  </div>
+
   <footer>
     PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Storage Timezone: UTC · Display selectable above
   </footer>
@@ -1821,6 +2070,16 @@ def build_html(
     createDonut('chartRateLimit', {rl_labels}, {rl_counts}, {rl_pcts});
     createDonut('chartExpSize', {exp_size_labels}, {exp_size_counts}, {exp_size_pcts});
     createDonut('chartCbSize', {cb_size_labels}, {cb_size_counts}, {cb_size_pcts});
+
+    // 10. 解析失败诊断与可靠性 (R7)
+    createDonut('chartResOutcome', {res_outcome_labels}, {res_outcome_counts}, {res_outcome_pcts});
+    createDonut('chartResFailClass', {res_fail_class_labels}, {res_fail_class_counts}, {res_fail_class_pcts});
+    createDonut('chartResFailCode', {res_fail_code_labels}, {res_fail_code_counts}, {res_fail_code_pcts});
+    createDonut('chartResFailStage', {res_fail_stage_labels}, {res_fail_stage_counts}, {res_fail_stage_pcts});
+    createDonut('chartResPlatFail', {res_plat_fail_labels}, {res_plat_fail_counts}, {res_plat_fail_pcts});
+    createDonut('chartProvFailPath', {prov_fail_path_labels}, {prov_fail_path_counts}, {prov_fail_path_pcts});
+    createDonut('chartResReqType', {res_req_type_labels}, {res_req_type_counts}, {res_req_type_pcts});
+    createDonut('chartResReqPlat', {res_req_plat_labels}, {res_req_plat_counts}, {res_req_plat_pcts});
   </script>
 </body>
 </html>"""

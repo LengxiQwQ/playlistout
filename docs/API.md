@@ -744,11 +744,51 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
         "rateLimitEndpointDistribution": [ ... ],
         "operationalRecentDays": [
           { "date": "2026-09-18", "clipboards": 12, "visitors": 15, "failures": 1 }
-        ]
+        ],
+        "resolveOutcomeDistribution": [ ... ],
+        "resolveFailureCodeDistribution": [ ... ],
+        "resolveFailureClassDistribution": [ ... ],
+        "resolveFailureStageDistribution": [ ... ],
+        "resolveRequestedTypeDistribution": [ ... ],
+        "resolveRequestedPlatformDistribution": [ ... ],
+        "resolveFailuresByPlatform": [ ... ],
+        "providerFailurePathDistribution": [ ... ]
       }
     }
   }
   ```
 - **Consumer**: Exclusively consumed by the maintainer's local dashboard tool (`python scripts/utils/dashboard.py`). Token is read from environment variable or `.dev.vars` and is never rendered into output HTML or logs.
+
+### 10.3 Resolve Failure Telemetry (Milestone R7 — Private Maintainer Observability)
+
+To enable maintainers to diagnose search and resolve anomalies without compromising user privacy, PlaylistOut implements **Resolve Failure Telemetry** governed by the following core invariants:
+
+1. **Strict Privacy Boundary**:
+   - **Zero Raw Input Logging**: Raw input strings (`q`), normalized URLs, playlist IDs, user IDs, auth tokens, song metadata, and raw exception messages (`err.message`, `ProviderError.details`) are **never stored** in D1 or printed to transaction logs.
+   - **Bounded Enum Taxonomies**: Every telemetry dimension is strictly mapped to finite bounded sets before persistence. Unrecognized codes default safely to `'internal_error'` or `'unknown'`.
+
+2. **Authoritative Exactly-Once Final Outcome**:
+   - Every invocation of `GET /api/v1/resolve` records exactly one final outcome:
+     - `success_playlist`: Single playlist successfully resolved.
+     - `success_user`: User profile successfully resolved (does NOT increment song track counts or fake parse counts).
+     - `failure`: Terminal resolution failure.
+   - **Silent Internal Probes**: Disambiguation probes executed during multi-provider probing pass `skipAnalytics: true` and never write intermediate parse records or inflate failure counters.
+
+3. **8 Maintainer Private Telemetry Dimensions (`daily_performance_stats`)**:
+   - **`resolve_outcome`**: `success_playlist`, `success_user`, `failure`.
+   - **`resolve_failure_code`**: `invalid_input`, `unsupported_url`, `unsupported_platform`, `playlist_not_found`, `user_not_found`, `upstream_error`, `upstream_timeout`, `incomplete_playlist`, `parse_error`, `forbidden`, `rate_limited`, `ambiguous_input`, `internal_error`.
+   - **`resolve_failure_class`**: `input`, `not_found`, `ambiguous`, `auth`, `upstream`, `timeout`, `incomplete`, `parse`, `internal`.
+   - **`resolve_failure_stage`**: `input_validation`, `routing`, `short_link_resolution`, `playlist_resolution`, `user_resolution`, `disambiguation_probe`, `provider_fetch`, `finalization`.
+   - **`resolve_requested_type`**: `auto`, `playlist`, `user`, `unknown`.
+   - **`resolve_requested_platform`**: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, `unknown`.
+   - **`resolve_failures_by_platform`**: Aggregation of failure outcomes grouped by target platform (`qqmusic`, `netease`, `kugou`, `qishui`, `unknown`).
+   - **`provider_failure_path`**: Upstream execution path for failed provider requests: `primary`, `fallback`, `both`, `not_applicable`, `unknown`.
+
+4. **Global Parse Failure Convergence**:
+   - Direct playlist parse failures record both platform-specific and `platform = 'all'` rows in `aggregate_stats`, ensuring `operationalRecentDays.failures` accurately reflects aggregate operational health.
+
+5. **R6 Boundary Preservation**:
+   - All 8 R7 dimensions and charts are **strictly private** (`GET /api/internal/stats`). Public endpoints (`GET /api/stats`, `GET /api/v1/stats`), `traffic.json`, and the public README omit all R7 keys.
+
 
 
