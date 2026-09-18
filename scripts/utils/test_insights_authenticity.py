@@ -554,6 +554,104 @@ class TestInsightsAuthenticity(unittest.TestCase):
         # Must not have ambiguous CST
         self.assertNotIn("CST", html)
 
+    # ── R3: Geographic Percentage Denominators & Visit Terminology Suite ───────
+    def test_r3_geographic_visit_wording_chinese_markdown(self):
+        """Test R3.1: Chinese Markdown uses '访问' (visit events), never misleading '访客' (visitors)."""
+        stats = {
+            "topGeo": [
+                {"country": "MY", "count": 952, "percentage": 65},
+                {"country": "US", "count": 464, "percentage": 32},
+            ],
+            "chinaProvinces": [
+                {"province": "Guangdong", "count": 10, "percentage": 38},
+                {"province": "Shanghai", "count": 7, "percentage": 27},
+            ],
+            "cumulativeDailyVisitors": 309,
+            "totalVisitors": 309,
+            "visitorsToday": 103,
+            "launchedAt": "2026-09-12",
+        }
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+
+        # Must contain authentic visit phrasing
+        self.assertIn("#### 🗺️ 访问地区分布与设备分布", md_zh)
+        self.assertIn("#### 🇨🇳 境内访问省份分布", md_zh)
+        self.assertIn("| 省份 / 直辖市 | 访问占比 | 省份 / 直辖市 | 访问占比 |", md_zh)
+
+        # Must NOT contain fabricated visitor semantics in geo sections
+        self.assertNotIn("访客地理归属", md_zh)
+        self.assertNotIn("境内访客省份分布", md_zh)
+        self.assertNotIn("访客占比", md_zh)
+
+    def test_r3_geographic_visit_wording_english_markdown(self):
+        """Test R3.2: English Markdown uses 'Visit', never misleading 'Visitor' in geo sections."""
+        stats = {
+            "topGeo": [
+                {"country": "MY", "count": 952, "percentage": 65},
+                {"country": "US", "count": 464, "percentage": 32},
+            ],
+            "chinaProvinces": [
+                {"province": "Guangdong", "count": 10, "percentage": 38},
+                {"province": "Shanghai", "count": 7, "percentage": 27},
+            ],
+            "cumulativeDailyVisitors": 309,
+            "totalVisitors": 309,
+            "visitorsToday": 103,
+            "launchedAt": "2026-09-12",
+        }
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        # Must contain authentic visit phrasing
+        self.assertIn("- **🌍 Top Visit Regions:**", md_en)
+        self.assertIn("#### 🇨🇳 Mainland China Visit Province Distribution", md_en)
+
+        # Must NOT contain visitor semantics in geo sections
+        self.assertNotIn("Top Visitor Regions", md_en)
+        self.assertNotIn("Mainland China Visitor Province Distribution", md_en)
+
+    def test_r3_dashboard_geographic_wording(self):
+        """Test R3.3: Local Dashboard titles strictly adhere to visit events for geography."""
+        stats = {
+            "topGeo": [{"country": "MY", "count": 952, "percentage": 65}],
+            "chinaProvinces": [{"province": "Guangdong", "count": 10, "percentage": 38}],
+            "cumulativeDailyVisitors": 309,
+            "launchedAt": "2026-09-12",
+        }
+        html = build_html(stats)
+
+        # Must contain authentic visit phrasing
+        self.assertIn("🌍 访问地区分布", html)
+        self.assertIn("Geographic Distribution of Visits by Country / Region", html)
+
+        # Must NOT contain visitor phrasing in geo sections
+        self.assertNotIn("访客地理归属", html)
+        self.assertNotIn("Global Visitor Geography", html)
+
+    def test_r3_no_rescaling_fallback_when_percentage_missing(self):
+        """Test R3.4: When percentage is omitted from API, never fall back to re-normalizing by top sum."""
+        stats_geo = {
+            "topGeo": [
+                {"country": "MY", "count": 10},
+                {"country": "US", "count": 10},
+            ]
+        }
+        geo_zh = format_geo_distribution(stats_geo, "zh")
+        # If it re-normalized by sum(10+10)=20, it would produce 50%.
+        # Authenticity requires 0% rather than synthetic top-sum normalization.
+        self.assertNotIn("50%", geo_zh)
+        self.assertIn("0%", geo_zh)
+
+        stats_prov = {
+            "chinaProvinces": [
+                {"province": "Guangdong", "count": 10},
+                {"province": "Shanghai", "count": 10},
+            ]
+        }
+        prov_zh = format_china_province_table(stats_prov, "zh")
+        prov_zh_str = "".join(prov_zh)
+        self.assertNotIn("50%", prov_zh_str)
+        self.assertIn("0%", prov_zh_str)
+
 
 if __name__ == "__main__":
     unittest.main()

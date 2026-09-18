@@ -457,22 +457,14 @@ def format_china_province_table(stats: dict, lang: str) -> list[str]:
     raw_provinces = stats.get("chinaProvinces")
     items = []
     if raw_provinces and isinstance(raw_provinces, list) and len(raw_provinces) > 0:
-        total_count = sum(
-            p.get("count", 0)
-            for p in raw_provinces
-            if isinstance(p, dict) and isinstance(p.get("count"), (int, float))
-        )
         for p in raw_provinces:
             if not isinstance(p, dict):
                 continue
             prov = p.get("province", "")
             if not prov or prov == "UNKNOWN":
                 continue
-            if "percentage" in p and p["percentage"] is not None:
-                pct = p["percentage"]
-            elif total_count > 0 and "count" in p:
-                pct = round((p.get("count", 0) / total_count) * 100)
-            else:
+            pct = p.get("percentage")
+            if pct is None or not isinstance(pct, (int, float)):
                 pct = 0
             disp = get_province_display_name(prov, lang)
             items.append((disp, pct))
@@ -484,7 +476,7 @@ def format_china_province_table(stats: dict, lang: str) -> list[str]:
     items = items[:8]
 
     if lang == "zh":
-        headers = "| 省份 / 直辖市 | 访客占比 | 省份 / 直辖市 | 访客占比 |"
+        headers = "| 省份 / 直辖市 | 访问占比 | 省份 / 直辖市 | 访问占比 |"
         sep = "| :---: | :---: | :---: | :---: |"
     else:
         headers = "| Province / Municipality | Share | Province / Municipality | Share |"
@@ -534,20 +526,12 @@ def format_geo_distribution(stats: dict, lang: str) -> str:
     names = COUNTRY_NAMES.get(lang, COUNTRY_NAMES["zh"])
     items = []
     if raw_geo and isinstance(raw_geo, list) and len(raw_geo) > 0:
-        total_count = sum(
-            g.get("count", 0)
-            for g in raw_geo
-            if isinstance(g, dict) and isinstance(g.get("count"), (int, float))
-        )
         for g in raw_geo:
             if not isinstance(g, dict):
                 continue
             c = g.get("country", "OTHER").upper()
-            if "percentage" in g and g["percentage"] is not None:
-                pct = g["percentage"]
-            elif total_count > 0 and "count" in g:
-                pct = round((g.get("count", 0) / total_count) * 100)
-            else:
+            pct = g.get("percentage")
+            if pct is None or not isinstance(pct, (int, float)):
                 pct = 0
             c_name = names.get(c, f"🌐 {c}")
             items.append(f"{c_name} **{pct}%**")
@@ -670,12 +654,12 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
             f"| **{visitors_total}**<br><sub>今日独立 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | {uptime_zh} |",
             "",
-            "#### 🗺️ 访客地理归属与设备分布",
+            "#### 🗺️ 访问地区分布与设备分布",
             f"- **🌍 主要地区来源：** {geo_str}",
             f"- **💻 访问设备类型：** {dev_str}",
             f"- **🌐 主流浏览器：** {browser_str}",
             "",
-            "#### 🇨🇳 境内访客省份分布",
+            "#### 🇨🇳 境内访问省份分布",
             "",
             *province_table_lines,
             "",
@@ -700,11 +684,11 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             f"| **{visitors_total}**<br><sub>Today unique +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | {uptime_en} |",
             "",
             "#### 🗺️ Geographic & Client Distribution",
-            f"- **🌍 Top Visitor Regions:** {geo_str}",
+            f"- **🌍 Top Visit Regions:** {geo_str}",
             f"- **💻 Client Devices:** {dev_str}",
             f"- **🌐 Browsers:** {browser_str}",
             "",
-            "#### 🇨🇳 Mainland China Visitor Province Distribution",
+            "#### 🇨🇳 Mainland China Visit Province Distribution",
             "",
             *province_table_lines,
             "",

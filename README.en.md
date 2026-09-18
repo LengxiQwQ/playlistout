@@ -432,11 +432,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 | **309**<br><sub>Today unique +103</sub> | **2,297**<br><sub>Today +911</sub> | **183**<br><sub>Today +40</sub> | **62,668**<br><sub>Today +19,759</sub> | **557**<br><sub>Today +194</sub> | **6 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 🗺️ Geographic & Client Distribution
-- **🌍 Top Visitor Regions:** 🇲🇾 Malaysia **65%** ｜ 🇺🇸 United States **32%** ｜ 🇨🇳 Mainland China **2%** ｜ 🇭🇰 Hong Kong **1%** ｜ 🇯🇵 Japan **0%** ｜ 🇨🇳 Taiwan **0%** ｜ 🌐 CD **0%** ｜ 🇩🇪 Germany **0%** ｜ 🌐 BE **0%** ｜ 🇨🇦 Canada **0%**
+- **🌍 Top Visit Regions:** 🇲🇾 Malaysia **65%** ｜ 🇺🇸 United States **32%** ｜ 🇨🇳 Mainland China **2%** ｜ 🇭🇰 Hong Kong **1%** ｜ 🇯🇵 Japan **0%** ｜ 🇨🇳 Taiwan **0%** ｜ 🌐 CD **0%** ｜ 🇩🇪 Germany **0%** ｜ 🌐 BE **0%** ｜ 🇨🇦 Canada **0%**
 - **💻 Client Devices:** Desktop **97%** ｜ Mobile **3%**
 - **🌐 Browsers:** Other **83%** ｜ Chrome **14%** ｜ Edge **2%** ｜ Safari **1%**
 
-#### 🇨🇳 Mainland China Visitor Province Distribution
+#### 🇨🇳 Mainland China Visit Province Distribution
 
 | Province / Municipality | Share | Province / Municipality | Share |
 | :---: | :---: | :---: | :---: |
