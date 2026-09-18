@@ -8,6 +8,9 @@ Verifies that no analytics paths fabricate, estimate, infer, seed, or invent dat
 import json
 import unittest
 from pathlib import Path
+import os
+import glob
+from unittest.mock import patch, MagicMock
 
 from scripts.utils.collect import (
     format_platform_shares,
@@ -16,6 +19,8 @@ from scripts.utils.collect import (
     format_client_distribution,
     render_website_section,
     compute_running_days,
+    fetch_website_stats,
+    WEBSITE_STATS_API,
 )
 from scripts.utils.dashboard import (
     build_html,
@@ -23,6 +28,9 @@ from scripts.utils.dashboard import (
     format_utc8_timestamp,
     compute_dashboard_uptime,
     get_hourly_display_labels,
+    get_admin_token,
+    merge_maintainer_payload,
+    fetch_stats,
     DISPLAY_TZ,
     DISPLAY_TZ_LABEL,
 )
@@ -770,22 +778,12 @@ class TestInsightsAuthenticity(unittest.TestCase):
                 {"province": "Guangdong", "count": 10, "percentage": 38},
                 {"province": "Shanghai", "count": 7, "percentage": 27},
             ],
-            "cumulativeDailyVisitors": 309,
-            "totalVisitors": 309,
-            "visitorsToday": 103,
-            "launchedAt": "2026-09-12",
         }
-        md_zh = render_website_section(stats, "2026-09-18", "zh")
-
-        # Must contain authentic visit phrasing
-        self.assertIn("#### 🗺️ 访问地区分布与设备分布", md_zh)
-        self.assertIn("#### 🇨🇳 境内访问省份分布", md_zh)
-        self.assertIn("| 省份 / 直辖市 | 访问占比 | 省份 / 直辖市 | 访问占比 |", md_zh)
-
-        # Must NOT contain fabricated visitor semantics in geo sections
-        self.assertNotIn("访客地理归属", md_zh)
-        self.assertNotIn("境内访客省份分布", md_zh)
-        self.assertNotIn("访客占比", md_zh)
+        prov_lines = format_china_province_table(stats, "zh")
+        self.assertIn("| 省份 / 直辖市 | 访问占比 | 省份 / 直辖市 | 访问占比 |", prov_lines)
+        prov_str = "".join(prov_lines)
+        self.assertNotIn("访客占比", prov_str)
+        self.assertNotIn("境内访客省份分布", prov_str)
 
     def test_r3_geographic_visit_wording_english_markdown(self):
         """Test R3.2: English Markdown uses 'Visit', never misleading 'Visitor' in geo sections."""
@@ -798,20 +796,11 @@ class TestInsightsAuthenticity(unittest.TestCase):
                 {"province": "Guangdong", "count": 10, "percentage": 38},
                 {"province": "Shanghai", "count": 7, "percentage": 27},
             ],
-            "cumulativeDailyVisitors": 309,
-            "totalVisitors": 309,
-            "visitorsToday": 103,
-            "launchedAt": "2026-09-12",
         }
-        md_en = render_website_section(stats, "2026-09-18", "en")
-
-        # Must contain authentic visit phrasing
-        self.assertIn("- **🌍 Top Visit Regions:**", md_en)
-        self.assertIn("#### 🇨🇳 Mainland China Visit Province Distribution", md_en)
-
-        # Must NOT contain visitor semantics in geo sections
-        self.assertNotIn("Top Visitor Regions", md_en)
-        self.assertNotIn("Mainland China Visitor Province Distribution", md_en)
+        prov_lines = format_china_province_table(stats, "en")
+        self.assertIn("| Province / Municipality | Share | Province / Municipality | Share |", prov_lines)
+        prov_str = "".join(prov_lines)
+        self.assertNotIn("Visitor", prov_str)
 
     def test_r3_dashboard_geographic_wording(self):
         """Test R3.3: Local Dashboard titles strictly adhere to visit events for geography."""
@@ -856,6 +845,180 @@ class TestInsightsAuthenticity(unittest.TestCase):
         prov_zh_str = "".join(prov_zh)
         self.assertNotIn("50%", prov_zh_str)
         self.assertIn("0%", prov_zh_str)
+
+
+# ── R6: Public / Private Analytics Split Test Suite ────────────────────────
+class TestR6PublicPrivateSplit(unittest.TestCase):
+    """Test suite for R6: Public / Private Analytics Split."""
+
+    FORBIDDEN_PRIVATE_KEYS = {
+        "topGeo", "chinaProvinces", "clientStats",
+        "todayHourlyPageViews", "last24HourlyPageViews",
+        "clipboardFormatsBreakdown", "referrerDistribution",
+        "inputTypeDistribution", "latencyDistribution",
+        "errorCategoryDistribution", "playlistSizeDistribution",
+        "providerPathDistribution", "exportPlaylistSizeDistribution",
+        "clipboardPlaylistSizeDistribution", "rateLimitEndpointDistribution",
+        "operationalRecentDays"
+    }
+
+    def test_r6_render_website_section_excludes_all_private_dimensions(self):
+        """render_website_section must strictly exclude all private sections from public README."""
+        stats = {
+            "launchedAt": "2026-09-12",
+            "cumulativeDailyVisitors": 343,
+            "totalVisitors": 343,
+            "visitorsToday": 15,
+            "totalPageViews": 2655,
+            "pageViewsToday": 147,
+            "totalPlaylistsParsed": 190,
+            "playlistsParsedToday": 5,
+            "totalTracksProcessed": 64893,
+            "tracksProcessedToday": 1602,
+            "totalExports": 641,
+            "exportsToday": 36,
+            "exportFormatsBreakdown": {"xlsx": 412, "txt": 204, "csv": 15, "json": 10},
+            "byPlatform": {
+                "qqmusic": {"totalSuccess": 134, "todaySuccess": 3},
+                "netease": {"totalSuccess": 20, "todaySuccess": 1},
+            },
+            "recentDays": [
+                {"date": "2026-09-18", "parses": 5, "tracks": 1602, "exports": 36}
+            ],
+            # Even if private keys exist in a raw dictionary, render_website_section must ignore them
+            "topGeo": [{"country": "MY", "count": 10, "percentage": 100}],
+            "chinaProvinces": [{"province": "Guangdong", "count": 10, "percentage": 100}],
+            "clientStats": {"devices": [{"name": "Desktop", "count": 10, "percentage": 100}]},
+        }
+
+        md_zh = render_website_section(stats, "2026-09-18", "zh")
+        md_en = render_website_section(stats, "2026-09-18", "en")
+
+        # Must include public KPI, platform shares, export formats
+        self.assertIn("343", md_zh)
+        self.assertIn("64,893", md_zh)
+        self.assertIn("QQ 音乐", md_zh)
+        self.assertIn("Excel 表格 (.xlsx)", md_zh)
+        self.assertIn("QQ Music", md_en)
+        self.assertIn("Excel (.xlsx)", md_en)
+
+        # Must NOT include geographic or device distribution
+        self.assertNotIn("访问地区分布", md_zh)
+        self.assertNotIn("主要地区来源", md_zh)
+        self.assertNotIn("访问设备类型", md_zh)
+        self.assertNotIn("主流浏览器", md_zh)
+        self.assertNotIn("境内访问省份分布", md_zh)
+        self.assertNotIn("Geographic & Client Distribution", md_en)
+        self.assertNotIn("Top Visit Regions", md_en)
+        self.assertNotIn("Client Devices", md_en)
+        self.assertNotIn("Mainland China Visit Province Distribution", md_en)
+
+    def test_r6_traffic_snapshot_cleanliness(self):
+        """Sanitized traffic.json must have 0 private keys in website_latest and 0 extra keys in recentDays."""
+        repo_root = Path(__file__).resolve().parents[2]
+        traffic_path = repo_root / "insights" / "traffic.json"
+        self.assertTrue(traffic_path.exists())
+        traffic = json.loads(traffic_path.read_text(encoding="utf-8"))
+
+        w = traffic.get("website_latest", {})
+        leaked = self.FORBIDDEN_PRIVATE_KEYS.intersection(set(w.keys()))
+        self.assertEqual(leaked, set(), f"Private keys leaked in traffic.json: {leaked}")
+
+        allowed_recent_keys = {"date", "parses", "tracks", "exports"}
+        for day in w.get("recentDays", []):
+            extra = set(day.keys()) - allowed_recent_keys
+            self.assertEqual(extra, set(), f"Private keys leaked in traffic.json recentDays: {extra}")
+
+    def test_r6_raw_snapshots_cleanliness(self):
+        """All insights/raw/*.json files must have 0 private keys in data.website_stats."""
+        repo_root = Path(__file__).resolve().parents[2]
+        raw_files = list((repo_root / "insights" / "raw").glob("*.json"))
+        self.assertGreater(len(raw_files), 0)
+
+        allowed_recent_keys = {"date", "parses", "tracks", "exports"}
+        for p in raw_files:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            ws = (data.get("data") or {}).get("website_stats")
+            if not ws:
+                continue
+            leaked = self.FORBIDDEN_PRIVATE_KEYS.intersection(set(ws.keys()))
+            self.assertEqual(leaked, set(), f"Private keys leaked in {p.name}: {leaked}")
+
+            for day in ws.get("recentDays", []):
+                extra = set(day.keys()) - allowed_recent_keys
+                self.assertEqual(extra, set(), f"Private keys in recentDays in {p.name}: {extra}")
+
+    def test_r6_dashboard_admin_token_resolution(self):
+        """Test token resolution from env var and fallback files."""
+        # 1. From env var
+        with patch.dict(os.environ, {"INSIGHTS_ADMIN_TOKEN": "test_env_token"}):
+            self.assertEqual(get_admin_token(), "test_env_token")
+
+        # 2. From env var stripped
+        with patch.dict(os.environ, {"INSIGHTS_ADMIN_TOKEN": "  token_with_spaces  "}):
+            self.assertEqual(get_admin_token(), "token_with_spaces")
+
+        # 3. None when missing
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(get_admin_token(repo_root=Path("/non/existent/path")))
+
+    def test_r6_dashboard_fetch_stats_requires_token(self):
+        """fetch_stats must reject missing token with ValueError."""
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ValueError) as ctx:
+                fetch_stats("https://example.com/api/internal/stats", token=None)
+            self.assertIn("INSIGHTS_ADMIN_TOKEN is missing", str(ctx.exception))
+
+    def test_r6_dashboard_payload_merging(self):
+        """merge_maintainer_payload correctly merges public and insights responses."""
+        public_data = {
+            "launchedAt": "2026-09-12",
+            "totalVisitors": 100,
+            "recentDays": [
+                {"date": "2026-09-18", "parses": 10, "tracks": 200, "exports": 5},
+                {"date": "2026-09-17", "parses": 8, "tracks": 150, "exports": 3},
+            ]
+        }
+        insights_data = {
+            "topGeo": [{"country": "MY", "count": 50, "percentage": 100}],
+            "operationalRecentDays": [
+                {"date": "2026-09-18", "clipboards": 4, "visitors": 12, "failures": 1},
+                {"date": "2026-09-17", "clipboards": 2, "visitors": 9, "failures": 0},
+            ]
+        }
+
+        merged = merge_maintainer_payload(public_data, insights_data)
+        self.assertEqual(merged["totalVisitors"], 100)
+        self.assertEqual(merged["topGeo"], [{"country": "MY", "count": 50, "percentage": 100}])
+
+        # Check merged recentDays
+        days_map = {d["date"]: d for d in merged["recentDays"]}
+        self.assertEqual(days_map["2026-09-18"]["parses"], 10)
+        self.assertEqual(days_map["2026-09-18"]["clipboards"], 4)
+        self.assertEqual(days_map["2026-09-18"]["visitors"], 12)
+        self.assertEqual(days_map["2026-09-18"]["failures"], 1)
+        self.assertEqual(days_map["2026-09-17"]["parses"], 8)
+        self.assertEqual(days_map["2026-09-17"]["clipboards"], 2)
+
+    def test_r6_dashboard_html_token_non_leakage(self):
+        """build_html must never render token or authorization secrets into the generated HTML."""
+        secret = "super_secret_insights_admin_token_9999"
+        stats = {
+            "launchedAt": "2026-09-12",
+            "totalVisitors": 100,
+            "recentDays": [],
+            "topGeo": [],
+        }
+        html = build_html(stats, "2026-09-18 12:00:00 UTC+8")
+        self.assertNotIn(secret, html)
+        self.assertNotIn("INSIGHTS_ADMIN_TOKEN", html)
+        self.assertNotIn("Authorization", html)
+        self.assertNotIn("Bearer", html)
+
+    def test_r6_collect_calls_public_api_only(self):
+        """WEBSITE_STATS_API points to public /api/stats, not internal endpoint."""
+        self.assertIn("/api/stats", WEBSITE_STATS_API)
+        self.assertNotIn("/api/internal/stats", WEBSITE_STATS_API)
 
 
 if __name__ == "__main__":

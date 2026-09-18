@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { recordParse, getAggregateStats, getPublicStats, getUtcDateString } from './index';
+import {
+  recordParse,
+  getAggregateStats,
+  getPublicStats,
+  getPrivateAnalytics,
+  getMaintainerStats,
+  getUtcDateString,
+} from './index';
 import worker from '../index';
 import { qqMusicProvider } from '../providers/qqmusic';
 
@@ -13,14 +20,34 @@ interface MockGeoRow {
   count: number;
 }
 
+interface MockClientRow {
+  device_class: string;
+  browser_family: string;
+  os_family: string;
+  total: number;
+}
+
+interface MockPerfRow {
+  dimension: string;
+  value: string;
+  total: number;
+}
+
 function createMockD1() {
   const store = new Map<string, number>();
   const geoRows: MockGeoRow[] = [];
+  const clientRows: MockClientRow[] = [];
+  const perfRows: MockPerfRow[] = [];
+  const recordedQueries: string[] = [];
 
   const db = {
     _store: store,
     _geoRows: geoRows,
+    _clientRows: clientRows,
+    _perfRows: perfRows,
+    _recordedQueries: recordedQueries,
     prepare(sql: string) {
+      recordedQueries.push(sql);
       return {
         _sql: sql,
         _params: [] as any[],
@@ -80,6 +107,30 @@ function createMockD1() {
                 results.push({ total: sum > 0 ? sum : null });
               }
             }
+          } else if (sql.includes('daily_client_stats')) {
+            results.push(...clientRows);
+          } else if (sql.includes('daily_performance_stats')) {
+            results.push(...perfRows);
+          } else if (sql.includes('daily_clipboard_stats')) {
+            const dateThreshold = this._params[0];
+            if (sql.includes('GROUP BY clipboard_mode')) {
+              for (const [key, count] of store.entries()) {
+                if (key.startsWith('clipboard_mode::')) {
+                  const [, mode] = key.split('::');
+                  results.push({ clipboard_mode: mode, total: count });
+                }
+              }
+            } else if (dateThreshold) {
+              for (const [key, count] of store.entries()) {
+                if (key.startsWith('clipboard::')) {
+                  const parts = key.split('::');
+                  const date = parts[1];
+                  if (date !== 'TOTAL' && date >= dateThreshold) {
+                    results.push({ date, total: count });
+                  }
+                }
+              }
+            }
           } else if (sql.includes('hourly_stats')) {
             const requestedDates = this._params.filter((p) => typeof p === 'string');
             const includeDate = sql.includes('SELECT date, hour');
@@ -115,7 +166,13 @@ function createMockD1() {
           } else {
             // Standard aggregate_stats query (date IN (?1, ?2))
             for (const [key, count] of store.entries()) {
-              if (key.startsWith('export::') || key.startsWith('clipboard::') || key.startsWith('hourly::')) continue;
+              if (
+                key.startsWith('export::') ||
+                key.startsWith('clipboard::') ||
+                key.startsWith('hourly::') ||
+                key.startsWith('clipboard_mode::')
+              )
+                continue;
               const [date, platform, metric] = key.split('::');
               results.push({ date, platform, metric, count });
             }
@@ -135,19 +192,65 @@ function createMockD1() {
     },
   };
 
-  return db as unknown as D1Database & { _store: Map<string, number>; _geoRows: MockGeoRow[] };
+  return db as unknown as D1Database & {
+    _store: Map<string, number>;
+    _geoRows: MockGeoRow[];
+    _clientRows: MockClientRow[];
+    _perfRows: MockPerfRow[];
+    _recordedQueries: string[];
+  };
 }
 
 function createMockCtx() {
   const promises: Promise<any>[] = [];
   return {
-    waitUntil(p: Promise<any>) { promises.push(p); },
+    waitUntil(p: Promise<any>) {
+      promises.push(p);
+    },
     passThroughOnException() {},
     _promises: promises,
   } as unknown as ExecutionContext & { _promises: Promise<any>[] };
 }
 
-describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () => {
+const EXPECTED_PUBLIC_KEYS = [
+  'launchedAt',
+  'cumulativeDailyVisitors',
+  'totalVisitors',
+  'visitorsToday',
+  'totalPageViews',
+  'pageViewsToday',
+  'totalPlaylistsParsed',
+  'playlistsParsedToday',
+  'totalTracksProcessed',
+  'tracksProcessedToday',
+  'totalExports',
+  'exportsToday',
+  'exportFormatsBreakdown',
+  'byPlatform',
+  'recentDays',
+  'generatedAt',
+].sort();
+
+const FORBIDDEN_PUBLIC_KEYS = [
+  'todayHourlyPageViews',
+  'last24HourlyPageViews',
+  'topGeo',
+  'chinaProvinces',
+  'clientStats',
+  'clipboardFormatsBreakdown',
+  'referrerDistribution',
+  'inputTypeDistribution',
+  'latencyDistribution',
+  'errorCategoryDistribution',
+  'playlistSizeDistribution',
+  'providerPathDistribution',
+  'exportPlaylistSizeDistribution',
+  'clipboardPlaylistSizeDistribution',
+  'rateLimitEndpointDistribution',
+  'operationalRecentDays',
+];
+
+describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation + R6 Split)', () => {
   // --- Backward compatibility tests (from v2.0.0) ---
 
   it('increments success counters atomically without persisting payload data', async () => {
@@ -156,19 +259,14 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
 
     await recordParse(mockDb, 'qqmusic', true);
 
-    // Verify today's counter
     expect(mockDb._store.get(`${today}::qqmusic::parse_success`)).toBe(1);
-    // Verify TOTAL counter
     expect(mockDb._store.get(`TOTAL::qqmusic::parse_success`)).toBe(1);
-    // Verify global 'all' counter
     expect(mockDb._store.get(`TOTAL::all::parse_success`)).toBe(1);
 
-    // Increment again
     await recordParse(mockDb, 'qqmusic', true);
     expect(mockDb._store.get(`${today}::qqmusic::parse_success`)).toBe(2);
     expect(mockDb._store.get(`TOTAL::qqmusic::parse_success`)).toBe(2);
 
-    // Verify NO playlist URL or song title exists in the store keys
     for (const key of mockDb._store.keys()) {
       expect(key).not.toContain('http');
       expect(key).not.toContain('y.qq.com');
@@ -185,7 +283,6 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
 
     expect(mockDb._store.get(`${today}::qqmusic::parse_failure`)).toBe(1);
     expect(mockDb._store.get(`TOTAL::qqmusic::parse_failure`)).toBe(1);
-    // Failure should NOT increment success
     expect(mockDb._store.get(`${today}::qqmusic::parse_success`)).toBeUndefined();
   });
 
@@ -199,10 +296,8 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       },
     } as unknown as D1Database;
 
-    // Should not throw
     await expect(recordParse(failingDb, 'qqmusic', true)).resolves.not.toThrow();
 
-    // Stats retrieval on failing db returns default zeroed stats
     const stats = await getAggregateStats(failingDb);
     expect(stats.totalSuccessfulParses).toBe(0);
   });
@@ -266,7 +361,9 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
     });
 
-    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123');
+    const request = new Request(
+      'https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123',
+    );
     const ctx = createMockCtx();
     const response = await worker.fetch(request, { DB: mockDb }, ctx);
 
@@ -274,121 +371,392 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
     const body: any = await response.json();
     expect(body.success).toBe(true);
 
-    // Wait for waitUntil promises to settle
     await Promise.allSettled(ctx._promises);
-
     parseSpy.mockRestore();
   });
 
-  // --- Analytics Foundation tests ---
+  // ── R6 Public Contract Tests ──
 
-  describe('getPublicStats (Analytics Foundation)', () => {
-    it('returns official launchedAt date (2026-09-12)', async () => {
-      const stats = await getPublicStats(undefined);
-      expect(stats.launchedAt).toBe('2026-09-12');
+  describe('getPublicStats & /api/stats (R6 Public Boundary)', () => {
+    it('returns exact allowed public keys (Exact-Shape Test)', async () => {
+      const mockDb = createMockD1();
+      const stats = await getPublicStats(mockDb);
+      const actualKeys = Object.keys(stats).sort();
+
+      expect(actualKeys).toEqual(EXPECTED_PUBLIC_KEYS);
+
+      for (const forbidden of FORBIDDEN_PUBLIC_KEYS) {
+        expect((stats as any)[forbidden]).toBeUndefined();
+      }
     });
 
-    it('returns zeroed stats when DB is unavailable', async () => {
-      const stats = await getPublicStats(undefined);
+    it('returns strictly public fields in recentDays[] (Nested-Shape Test)', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      mockDb._store.set(`${today}::all::parse_success`, 10);
+      mockDb._store.set(`${today}::all::tracks_processed`, 50);
+      mockDb._store.set(`export::${today}::xlsx`, 5);
+
+      // Operational fields that must NOT leak into public recentDays
+      mockDb._store.set(`${today}::all::visitor_unique`, 8);
+      mockDb._store.set(`${today}::all::parse_failure`, 2);
+      mockDb._store.set(`${today}::all::clipboards_total`, 15);
+
+      const stats = await getPublicStats(mockDb);
+      expect(stats.recentDays.length).toBeGreaterThan(0);
+
+      for (const entry of stats.recentDays) {
+        expect(Object.keys(entry).sort()).toEqual(['date', 'exports', 'parses', 'tracks']);
+        expect((entry as any).visitors).toBeUndefined();
+        expect((entry as any).failures).toBeUndefined();
+        expect((entry as any).clipboards).toBeUndefined();
+      }
+    });
+
+    it('never queries private analytics tables (Public SQL Boundary Test)', async () => {
+      const mockDb = createMockD1();
+      await getPublicStats(mockDb);
+
+      const queries = mockDb._recordedQueries;
+      expect(queries.length).toBeGreaterThan(0);
+
+      // Must NEVER query private analytics tables
+      for (const sql of queries) {
+        expect(sql).not.toContain('daily_geo_stats');
+        expect(sql).not.toContain('daily_client_stats');
+        expect(sql).not.toContain('daily_performance_stats');
+        expect(sql).not.toContain('hourly_stats');
+        expect(sql).not.toContain('daily_clipboard_stats');
+      }
+    });
+
+    it('does not leak private dimensions even when seeded in D1 (Public Adversarial Test)', async () => {
+      const mockDb = createMockD1();
+
+      // Seed private dimensional data into D1
+      mockDb._geoRows.push(
+        { date: 'TOTAL', platform: 'all', country: 'MY', region: 'Shanghai', count: 100 },
+      );
+      mockDb._clientRows.push(
+        { device_class: 'mobile', browser_family: 'Chrome', os_family: 'Android', total: 50 },
+      );
+      mockDb._perfRows.push(
+        { dimension: 'referrer_source', value: 'ChatGPT', total: 20 },
+        { dimension: 'error_category', value: 'error_timeout', total: 10 },
+        { dimension: 'provider_path', value: 'provider_fallback', total: 5 },
+      );
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
+      const response = await worker.fetch(request, { DB: mockDb }, createMockCtx());
+
+      expect(response.status).toBe(200);
+      const jsonText = await response.text();
+
+      // Strictly verify no forbidden field names appear in output JSON
+      for (const key of FORBIDDEN_PUBLIC_KEYS) {
+        expect(jsonText).not.toContain(`"${key}"`);
+      }
+
+      // Strictly verify none of the sensitive private dimension values appear in public response
+      expect(jsonText).not.toContain('Shanghai');
+      expect(jsonText).not.toContain('Chrome');
+      expect(jsonText).not.toContain('Android');
+      expect(jsonText).not.toContain('ChatGPT');
+      expect(jsonText).not.toContain('error_timeout');
+      expect(jsonText).not.toContain('provider_fallback');
+    });
+
+    it('keeps GET /api/stats strictly public even when called with valid Admin token (No Escalation Test)', async () => {
+      const mockDb = createMockD1();
+      const adminToken = 'a'.repeat(64);
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats', {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: adminToken },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+
+      const actualKeys = Object.keys(body.data).sort();
+      expect(actualKeys).toEqual(EXPECTED_PUBLIC_KEYS);
+
+      for (const forbidden of FORBIDDEN_PUBLIC_KEYS) {
+        expect(body.data[forbidden]).toBeUndefined();
+      }
+    });
+
+    it('maintains cumulativeDailyVisitors as canonical and totalVisitors as strictly identical alias', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+      mockDb._store.set(`TOTAL::all::visitor_unique`, 309);
+      mockDb._store.set(`${today}::all::visitor_unique`, 103);
+
+      const stats = await getPublicStats(mockDb);
+
+      expect(stats.cumulativeDailyVisitors).toBe(309);
+      expect(stats.totalVisitors).toBe(309);
+      expect(stats.totalVisitors).toBe(stats.cumulativeDailyVisitors);
+      expect(stats.visitorsToday).toBe(103);
+    });
+
+    it('handles D1 failure gracefully for public stats', async () => {
+      const failingDb = {
+        prepare() {
+          throw new Error('D1 disconnected');
+        },
+        async batch() {
+          throw new Error('D1 disconnected');
+        },
+      } as unknown as D1Database;
+
+      const stats = await getPublicStats(failingDb);
       expect(stats.totalPlaylistsParsed).toBe(0);
-      expect(stats.playlistsParsedToday).toBe(0);
-      expect(stats.totalTracksProcessed).toBe(0);
-      expect(stats.tracksProcessedToday).toBe(0);
-      expect(stats.totalExports).toBe(0);
-      expect(stats.exportsToday).toBe(0);
-      expect(stats.recentDays).toEqual([]);
-      expect(stats.generatedAt).toBeTruthy();
+      expect(stats.launchedAt).toBe('2026-09-12');
+      expect(stats.cumulativeDailyVisitors).toBe(0);
+      expect(stats.totalVisitors).toBe(0);
     });
+  });
 
-    it('returns enriched stats with track and export counts', async () => {
+  // ── R6 Private Maintainer Endpoint Tests (/api/internal/stats) ──
+
+  describe('GET /api/internal/stats (R6 Private Boundary & Auth)', () => {
+    const REAL_SECRET = '6f8a92b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1';
+
+    it('rejects request with 401 when Authorization header is missing', async () => {
       const mockDb = createMockD1();
-      const today = getUtcDateString();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats');
 
-      mockDb._store.set(`TOTAL::all::parse_success`, 200);
-      mockDb._store.set(`${today}::all::parse_success`, 15);
-      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 200);
-      mockDb._store.set(`${today}::qqmusic::parse_success`, 15);
-      mockDb._store.set(`TOTAL::all::tracks_processed`, 5000);
-      mockDb._store.set(`${today}::all::tracks_processed`, 300);
-      mockDb._store.set(`TOTAL::all::exports_total`, 150);
-      mockDb._store.set(`${today}::all::exports_total`, 8);
-      mockDb._store.set(`TOTAL::all::visitor_unique`, 88);
-      mockDb._store.set(`${today}::all::visitor_unique`, 12);
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
 
-      const stats = await getPublicStats(mockDb);
-
-      expect(stats.totalPlaylistsParsed).toBe(200);
-      expect(stats.playlistsParsedToday).toBe(15);
-      expect(stats.totalTracksProcessed).toBe(5000);
-      expect(stats.tracksProcessedToday).toBe(300);
-      expect(stats.totalExports).toBe(150);
-      expect(stats.exportsToday).toBe(8);
-      expect(stats.totalVisitors).toBe(88);
-      expect(stats.visitorsToday).toBe(12);
-      expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(200);
+      expect(response.status).toBe(401);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNAUTHORIZED');
+      // Zero DB queries on auth rejection
+      expect(mockDb._recordedQueries).toHaveLength(0);
     });
 
-    it('strictly isolates exports from clipboard copies (totalExports and exportsToday DO NOT count clipboard)', async () => {
+    it('rejects request with 401 on malformed Authorization header', async () => {
       const mockDb = createMockD1();
-      const today = getUtcDateString();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: 'Basic someuser:somepass' },
+      });
 
-      // Set file exports: 100 total, 5 today
-      mockDb._store.set(`TOTAL::all::exports_total`, 100);
-      mockDb._store.set(`${today}::all::exports_total`, 5);
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
 
-      // Set clipboard copies: 500 total, 50 today
-      mockDb._store.set(`TOTAL::all::clipboards_total`, 500);
-      mockDb._store.set(`${today}::all::clipboards_total`, 50);
-
-      const stats = await getPublicStats(mockDb);
-
-      // totalExports and exportsToday must ONLY reflect exports_total
-      expect(stats.totalExports).toBe(100);
-      expect(stats.exportsToday).toBe(5);
+      expect(response.status).toBe(401);
+      expect(mockDb._recordedQueries).toHaveLength(0);
     });
 
-    it('exposes dimensional aggregate data as coarse anonymous counters (no raw privacy-sensitive values)', async () => {
+    it('rejects request with 401 on empty Bearer token', async () => {
       const mockDb = createMockD1();
-      mockDb._store.set(`TOTAL::all::parse_success`, 100);
-      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: 'Bearer   ' },
+      });
 
-      const stats = await getPublicStats(mockDb);
-      const statsStr = JSON.stringify(stats);
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
 
-      // New dimensional fields ARE now present in the public API
-      expect(stats.topGeo).toBeDefined();
-      expect(stats.chinaProvinces).toBeDefined();
-      expect(stats.clientStats).toBeDefined();
-      expect(stats.todayHourlyPageViews).toBeDefined();
-      expect(stats.last24HourlyPageViews).toBeDefined();
-      expect(stats.referrerDistribution).toBeDefined();
-
-      // todayHourlyPageViews must be exactly 24 slots (one per UTC hour)
-      expect(stats.todayHourlyPageViews).toHaveLength(24);
-      for (const slot of stats.todayHourlyPageViews!) {
-        expect(slot.hour).toBeGreaterThanOrEqual(0);
-        expect(slot.hour).toBeLessThanOrEqual(23);
-        expect(typeof slot.pageViews).toBe('number');
-        expect(typeof slot.visitors).toBe('number');
-      }
-
-      expect(stats.last24HourlyPageViews).toHaveLength(24);
-      for (const slot of stats.last24HourlyPageViews!) {
-        expect(Number.isNaN(Date.parse(slot.timestamp))).toBe(false);
-        expect(typeof slot.pageViews).toBe('number');
-        expect(typeof slot.visitors).toBe('number');
-      }
-
-      // Raw privacy-sensitive field names must NOT appear — only coarse category labels
-      expect(statsStr).not.toContain('deviceClass');     // raw UA field name
-      expect(statsStr).not.toContain('browserFamily');   // raw UA field name
-      expect(statsStr).not.toContain('osFamily');        // raw UA field name
-      expect(statsStr).not.toContain('providerPath');    // internal infra field
-      // 'country' is allowed as coarse ISO code; 'region' is allowed as coarse province name
+      expect(response.status).toBe(401);
+      expect(mockDb._recordedQueries).toHaveLength(0);
     });
 
+    it('rejects request with 401 on wrong Bearer token', async () => {
+      const mockDb = createMockD1();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: 'Bearer WRONG_TOKEN_VALUE_123456789' },
+      });
 
-    it('returns a true rolling 24-hour window across a UTC date boundary', async () => {
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(401);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNAUTHORIZED');
+      expect(mockDb._recordedQueries).toHaveLength(0);
+    });
+
+    it('fails closed with 503 when Secret is missing from Env', async () => {
+      const mockDb = createMockD1();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: `Bearer ${REAL_SECRET}` },
+      });
+
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: undefined },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(503);
+      const body: any = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('SERVICE_UNAVAILABLE');
+      expect(mockDb._recordedQueries).toHaveLength(0);
+    });
+
+    it('rejects POST to /api/internal/stats with 405 Method Not Allowed', async () => {
+      const mockDb = createMockD1();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${REAL_SECRET}` },
+      });
+
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get('Allow')).toBe('GET');
+      expect(mockDb._recordedQueries).toHaveLength(0);
+    });
+
+    it('does NOT provide public CORS for /api/internal/stats (CORS Gate)', async () => {
+      const mockDb = createMockD1();
+
+      // Preflight OPTIONS from browser
+      const optRequest = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://playlistout.com' },
+      });
+      const optResponse = await worker.fetch(
+        optRequest,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+      expect(optResponse.status).toBe(403);
+      expect(optResponse.headers.get('Access-Control-Allow-Origin')).toBeNull();
+
+      // Authenticated GET with Origin header
+      const getRequest = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: {
+          Authorization: `Bearer ${REAL_SECRET}`,
+          Origin: 'https://playlistout.com',
+        },
+      });
+      const getResponse = await worker.fetch(
+        getRequest,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+      expect(getResponse.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    });
+
+    it('sets Cache-Control: no-store and Pragma: no-cache on private endpoint', async () => {
+      const mockDb = createMockD1();
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: `Bearer ${REAL_SECRET}` },
+      });
+
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Cache-Control')).toContain('no-store');
+      expect(response.headers.get('Pragma')).toBe('no-cache');
+    });
+
+    it('succeeds with 200 and returns complete public + insights structure when authenticated', async () => {
+      const mockDb = createMockD1();
+
+      // Seed data
+      mockDb._store.set(`TOTAL::all::parse_success`, 250);
+      mockDb._geoRows.push({
+        date: 'TOTAL',
+        platform: 'all',
+        country: 'MY',
+        region: 'UNKNOWN',
+        count: 80,
+      });
+      mockDb._clientRows.push({
+        device_class: 'desktop',
+        browser_family: 'chrome',
+        os_family: 'windows',
+        total: 100,
+      });
+      mockDb._perfRows.push(
+        { dimension: 'playlist_size', value: '1-50', total: 60 },
+        { dimension: 'provider_path', value: 'primary', total: 70 },
+        { dimension: 'export_playlist_size', value: '51-200', total: 30 },
+        { dimension: 'clipboard_playlist_size', value: '1-50', total: 40 },
+        { dimension: 'rate_limit_endpoint', value: 'stats', total: 5 },
+      );
+
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
+        headers: { Authorization: `Bearer ${REAL_SECRET}` },
+      });
+
+      const response = await worker.fetch(
+        request,
+        { DB: mockDb, INSIGHTS_ADMIN_TOKEN: REAL_SECRET },
+        createMockCtx(),
+      );
+
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+
+      // Contract verification: data has { public, insights }
+      expect(body.data.public).toBeDefined();
+      expect(body.data.insights).toBeDefined();
+
+      const p = body.data.public;
+      expect(p.totalPlaylistsParsed).toBe(250);
+      expect(Object.keys(p).sort()).toEqual(EXPECTED_PUBLIC_KEYS);
+
+      const ins = body.data.insights;
+      expect(ins.topGeo).toBeDefined();
+      expect(ins.chinaProvinces).toBeDefined();
+      expect(ins.clientStats).toBeDefined();
+      expect(ins.todayHourlyPageViews).toBeDefined();
+      expect(ins.last24HourlyPageViews).toBeDefined();
+      expect(ins.clipboardFormatsBreakdown).toBeDefined();
+      expect(ins.referrerDistribution).toBeDefined();
+      expect(ins.inputTypeDistribution).toBeDefined();
+      expect(ins.latencyDistribution).toBeDefined();
+      expect(ins.errorCategoryDistribution).toBeDefined();
+      // Approved D1 inventory dimensions
+      expect(ins.playlistSizeDistribution).toBeDefined();
+      expect(ins.providerPathDistribution).toBeDefined();
+      expect(ins.exportPlaylistSizeDistribution).toBeDefined();
+      expect(ins.clipboardPlaylistSizeDistribution).toBeDefined();
+      expect(ins.rateLimitEndpointDistribution).toBeDefined();
+      expect(ins.operationalRecentDays).toBeDefined();
+    });
+  });
+
+  // ── Maintainer Insights Calculation & Integrity Tests ──
+
+  describe('getPrivateAnalytics (Dimensional Calculations & R3 Integrity)', () => {
+    it('returns rolling 24-hour window across UTC boundary', async () => {
       vi.useFakeTimers();
       try {
         vi.setSystemTime(new Date('2026-09-18T06:30:00.000Z'));
@@ -398,8 +766,8 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
         mockDb._store.set('hourly::2026-09-18::6::all::page_view', 22);
         mockDb._store.set('hourly::2026-09-18::6::all::visitor_unique', 5);
 
-        const stats = await getPublicStats(mockDb);
-        const rolling = stats.last24HourlyPageViews!;
+        const insights = await getPrivateAnalytics(mockDb);
+        const rolling = insights.last24HourlyPageViews;
 
         expect(rolling).toHaveLength(24);
         expect(rolling[0]).toEqual({
@@ -412,65 +780,13 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
           pageViews: 22,
           visitors: 5,
         });
-        expect(rolling.every((slot, i) => {
-          if (i === 0) return true;
-          return Date.parse(slot.timestamp) - Date.parse(rolling[i - 1].timestamp) === 60 * 60 * 1000;
-        })).toBe(true);
       } finally {
         vi.useRealTimers();
       }
     });
 
-
-    it('does NOT fabricate NetEase statistics when NetEase parses are 0 (0 is 0)', async () => {
-      const mockDb = createMockD1();
-      mockDb._store.set(`TOTAL::all::parse_success`, 100);
-      mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
-
-      const stats = await getPublicStats(mockDb);
-      expect(stats.byPlatform['netease']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
-      expect(stats.byPlatform['kugou']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
-      expect(stats.byPlatform['qishui']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
-      expect(stats.byPlatform['qqmusic']).toEqual({ totalSuccess: 100, todaySuccess: 0 });
-    });
-
-    it('handles D1 failure gracefully for public stats', async () => {
-      const failingDb = {
-        prepare() { throw new Error('D1 disconnected'); },
-        async batch() { throw new Error('D1 disconnected'); },
-      } as unknown as D1Database;
-
-      const stats = await getPublicStats(failingDb);
-      expect(stats.totalPlaylistsParsed).toBe(0);
-      expect(stats.launchedAt).toBe('2026-09-12');
-      expect(stats.cumulativeDailyVisitors).toBe(0);
-      expect(stats.totalVisitors).toBe(0);
-    });
-
-    it('maintains cumulativeDailyVisitors as canonical and totalVisitors as strictly identical alias (R2 Test A & B)', async () => {
-      const mockDb = createMockD1();
-      const today = getUtcDateString();
-      // Record TOTAL cumulative daily uniques (309) and today's uniques (103)
-      mockDb._store.set(`TOTAL::all::visitor_unique`, 309);
-      mockDb._store.set(`${today}::all::visitor_unique`, 103);
-
-      const stats = await getPublicStats(mockDb);
-
-      // Canonical field must be 309
-      expect(stats.cumulativeDailyVisitors).toBe(309);
-      // Legacy compatibility alias must be strictly equal
-      expect(stats.totalVisitors).toBe(309);
-      expect(stats.totalVisitors).toBe(stats.cumulativeDailyVisitors);
-      // Today's UV must remain independent (Test C)
-      expect(stats.visitorsToday).toBe(103);
-    });
-
-    // ── R3: Correct Geographic Percentage Denominators ──
-
     it('calculates country percentage against full known population, not Top 10 sum (R3 Country >10 Test)', async () => {
       const mockDb = createMockD1();
-      // 11 known countries with total count = 100
-      // Top 10 count sum = 97, 11th country (KR) count = 3
       const countryCounts = [
         { country: 'MY', count: 30 },
         { country: 'US', count: 20 },
@@ -495,32 +811,24 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
         });
       }
 
-      const stats = await getPublicStats(mockDb);
+      const insights = await getPrivateAnalytics(mockDb);
 
-      expect(stats.topGeo).toBeDefined();
-      expect(stats.topGeo).toHaveLength(10);
+      expect(insights.topGeo).toHaveLength(10);
+      expect(insights.topGeo[0].country).toBe('MY');
+      expect(insights.topGeo[0].count).toBe(30);
+      expect(insights.topGeo[0].percentage).toBe(30);
 
-      // Denominator is 100 (full known population).
-      // MY: 30 / 100 = 30% (Under old bug: 30 / 97 ≈ 31%)
-      expect(stats.topGeo![0].country).toBe('MY');
-      expect(stats.topGeo![0].count).toBe(30);
-      expect(stats.topGeo![0].percentage).toBe(30);
+      expect(insights.topGeo[1].country).toBe('US');
+      expect(insights.topGeo[1].count).toBe(20);
+      expect(insights.topGeo[1].percentage).toBe(20);
 
-      // US: 20 / 100 = 20%
-      expect(stats.topGeo![1].country).toBe('US');
-      expect(stats.topGeo![1].count).toBe(20);
-      expect(stats.topGeo![1].percentage).toBe(20);
-
-      // Sum of Top 10 percentages must be strictly less than 100% because tail countries exist
-      const top10PctSum = stats.topGeo!.reduce((sum, r) => sum + r.percentage, 0);
+      const top10PctSum = insights.topGeo.reduce((sum, r) => sum + r.percentage, 0);
       expect(top10PctSum).toBe(97);
       expect(top10PctSum).toBeLessThan(100);
     });
 
     it('calculates China province percentage against all known CN regions, not Top 10 sum (R3 Province >10 Test)', async () => {
       const mockDb = createMockD1();
-      // 11 known CN provinces with total count = 100
-      // Top 10 count sum = 97, 11th province (Henan) count = 3
       const provinceCounts = [
         { region: 'Guangdong', count: 30 },
         { region: 'Zhejiang', count: 20 },
@@ -545,98 +853,48 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
         });
       }
 
-      const stats = await getPublicStats(mockDb);
+      const insights = await getPrivateAnalytics(mockDb);
 
-      expect(stats.chinaProvinces).toBeDefined();
-      expect(stats.chinaProvinces).toHaveLength(10);
+      expect(insights.chinaProvinces).toHaveLength(10);
+      expect(insights.chinaProvinces[0].province).toBe('Guangdong');
+      expect(insights.chinaProvinces[0].count).toBe(30);
+      expect(insights.chinaProvinces[0].percentage).toBe(30);
 
-      // Denominator is 100 (full known CN population).
-      // Guangdong: 30 / 100 = 30% (Under old bug: 30 / 97 ≈ 31%)
-      expect(stats.chinaProvinces![0].province).toBe('Guangdong');
-      expect(stats.chinaProvinces![0].count).toBe(30);
-      expect(stats.chinaProvinces![0].percentage).toBe(30);
+      expect(insights.chinaProvinces[1].province).toBe('Zhejiang');
+      expect(insights.chinaProvinces[1].count).toBe(20);
+      expect(insights.chinaProvinces[1].percentage).toBe(20);
 
-      // Zhejiang: 20 / 100 = 20%
-      expect(stats.chinaProvinces![1].province).toBe('Zhejiang');
-      expect(stats.chinaProvinces![1].count).toBe(20);
-      expect(stats.chinaProvinces![1].percentage).toBe(20);
-
-      // Sum of Top 10 percentages must be strictly less than 100% because 11th province exists
-      const top10PctSum = stats.chinaProvinces!.reduce((sum, r) => sum + r.percentage, 0);
+      const top10PctSum = insights.chinaProvinces.reduce((sum, r) => sum + r.percentage, 0);
       expect(top10PctSum).toBe(97);
       expect(top10PctSum).toBeLessThan(100);
     });
 
-    it('excludes UNKNOWN from country denominator and from topGeo list (R3 UNKNOWN Country Test)', async () => {
+    it('excludes UNKNOWN from country and province denominators (R3 UNKNOWN Test)', async () => {
       const mockDb = createMockD1();
-      // MY = 40, US = 40, UNKNOWN = 20
       mockDb._geoRows.push(
         { date: 'TOTAL', platform: 'all', country: 'MY', region: 'UNKNOWN', count: 40 },
         { date: 'TOTAL', platform: 'all', country: 'US', region: 'UNKNOWN', count: 40 },
         { date: 'TOTAL', platform: 'all', country: 'UNKNOWN', region: 'UNKNOWN', count: 20 },
-      );
-
-      const stats = await getPublicStats(mockDb);
-
-      expect(stats.topGeo).toHaveLength(2);
-      expect(stats.topGeo!.some((r) => r.country === 'UNKNOWN')).toBe(false);
-
-      // Known geography total = 80 -> MY = 50%, US = 50%
-      const my = stats.topGeo!.find((r) => r.country === 'MY')!;
-      const us = stats.topGeo!.find((r) => r.country === 'US')!;
-      expect(my.count).toBe(40);
-      expect(my.percentage).toBe(50);
-      expect(us.count).toBe(40);
-      expect(us.percentage).toBe(50);
-    });
-
-    it('excludes UNKNOWN from province denominator and from chinaProvinces list (R3 UNKNOWN Region Test)', async () => {
-      const mockDb = createMockD1();
-      // CN / Guangdong = 30, CN / Zhejiang = 30, CN / UNKNOWN = 40
-      mockDb._geoRows.push(
         { date: 'TOTAL', platform: 'all', country: 'CN', region: 'Guangdong', count: 30 },
         { date: 'TOTAL', platform: 'all', country: 'CN', region: 'Zhejiang', count: 30 },
         { date: 'TOTAL', platform: 'all', country: 'CN', region: 'UNKNOWN', count: 40 },
       );
 
-      const stats = await getPublicStats(mockDb);
+      const insights = await getPrivateAnalytics(mockDb);
 
-      expect(stats.chinaProvinces).toHaveLength(2);
-      expect(stats.chinaProvinces!.some((r) => r.province === 'UNKNOWN')).toBe(false);
+      expect(insights.topGeo.some((r) => r.country === 'UNKNOWN')).toBe(false);
+      expect(insights.chinaProvinces.some((r) => r.province === 'UNKNOWN')).toBe(false);
 
-      // Known CN province denominator = 60 -> Guangdong = 50%, Zhejiang = 50%
-      const gd = stats.chinaProvinces!.find((r) => r.province === 'Guangdong')!;
-      const zj = stats.chinaProvinces!.find((r) => r.province === 'Zhejiang')!;
-      expect(gd.count).toBe(30);
+      const gd = insights.chinaProvinces.find((r) => r.province === 'Guangdong')!;
       expect(gd.percentage).toBe(50);
-      expect(zj.count).toBe(30);
-      expect(zj.percentage).toBe(50);
     });
 
-    it('returns empty array without dividing by zero or error when no geo data exists (R3 Empty Geo Test)', async () => {
+    it('returns empty arrays without error when no dimensional data exists', async () => {
       const mockDb = createMockD1();
-      // No geo records
-      const stats = await getPublicStats(mockDb);
-      expect(stats.topGeo).toEqual([]);
-      expect(stats.chinaProvinces).toEqual([]);
-    });
-
-    it('preserves Top 10 sorting and count integrity (R3 Ranking and Count Integrity Test)', async () => {
-      const mockDb = createMockD1();
-      mockDb._geoRows.push(
-        { date: 'TOTAL', platform: 'all', country: 'DE', region: 'UNKNOWN', count: 15 },
-        { date: 'TOTAL', platform: 'all', country: 'MY', region: 'UNKNOWN', count: 80 },
-        { date: 'TOTAL', platform: 'all', country: 'US', region: 'UNKNOWN', count: 50 },
-      );
-
-      const stats = await getPublicStats(mockDb);
-      expect(stats.topGeo).toHaveLength(3);
-      expect(stats.topGeo![0].country).toBe('MY');
-      expect(stats.topGeo![0].count).toBe(80);
-      expect(stats.topGeo![1].country).toBe('US');
-      expect(stats.topGeo![1].count).toBe(50);
-      expect(stats.topGeo![2].country).toBe('DE');
+      const insights = await getPrivateAnalytics(mockDb);
+      expect(insights.topGeo).toEqual([]);
+      expect(insights.chinaProvinces).toEqual([]);
+      expect(insights.clientStats.browsers).toEqual([]);
     });
   });
 });
-

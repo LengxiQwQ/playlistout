@@ -666,11 +666,8 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             fmt_parts.append(f"{fmt_labels[f]} **{pct}%**")
     fmt_str = " ｜ ".join(fmt_parts) if fmt_parts else ("暂无数据" if lang == "zh" else "No data")
 
-    # 平台份额、地理分布、设备环境、省份分布
+    # 平台份额
     platform_str = format_platform_shares(stats.get("byPlatform") or {}, lang)
-    geo_str = format_geo_distribution(stats, lang)
-    dev_str, browser_str = format_client_distribution(stats, lang)
-    province_table_lines = format_china_province_table(stats, lang)
 
     if lang == "zh":
         lines = [
@@ -685,15 +682,6 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
             f"| **{visitors_total}**<br><sub>今日独立 +{visitors_today}</sub> | **{pv_total}**<br><sub>今日 +{pv_today}</sub> | **{parses_total}**<br><sub>今日 +{parses_today}</sub> | **{tracks_total}**<br><sub>今日 +{tracks_today}</sub> | **{exports_total}**<br><sub>今日 +{exports_today}</sub> | {uptime_zh} |",
-            "",
-            "#### 🗺️ 访问地区分布与设备分布",
-            f"- **🌍 主要地区来源：** {geo_str}",
-            f"- **💻 访问设备类型：** {dev_str}",
-            f"- **🌐 主流浏览器：** {browser_str}",
-            "",
-            "#### 🇨🇳 境内访问省份分布",
-            "",
-            *province_table_lines,
             "",
             "#### 📊 业务转化与平台偏好",
             f"- **🎵 平台解析份额：** {platform_str}",
@@ -714,15 +702,6 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "| 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |",
             "| :---: | :---: | :---: | :---: | :---: | :---: |",
             f"| **{visitors_total}**<br><sub>Today unique +{visitors_today}</sub> | **{pv_total}**<br><sub>Today +{pv_today}</sub> | **{parses_total}**<br><sub>Today +{parses_today}</sub> | **{tracks_total}**<br><sub>Today +{tracks_today}</sub> | **{exports_total}**<br><sub>Today +{exports_today}</sub> | {uptime_en} |",
-            "",
-            "#### 🗺️ Geographic & Client Distribution",
-            f"- **🌍 Top Visit Regions:** {geo_str}",
-            f"- **💻 Client Devices:** {dev_str}",
-            f"- **🌐 Browsers:** {browser_str}",
-            "",
-            "#### 🇨🇳 Mainland China Visit Province Distribution",
-            "",
-            *province_table_lines,
             "",
             "#### 📊 Feature Usage & Platform Breakdown",
             f"- **🎵 Platform Shares:** {platform_str}",

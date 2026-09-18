@@ -11,16 +11,20 @@ export interface PlatformBreakdown {
   todaySuccess?: number;
 }
 
-export interface DailyTrendEntry {
+export interface PublicDailyTrendEntry {
   date: string;
   parses: number;
   tracks: number;
   exports: number;
-  /** 当日剪贴板复制次数 */
+}
+
+/** Legacy alias for backward compatibility */
+export type DailyTrendEntry = PublicDailyTrendEntry;
+
+export interface OperationalDailyTrendEntry {
+  date: string;
   clipboards: number;
-  /** 当日独立访客数 */
   visitors: number;
-  /** 当日解析失败次数 */
   failures: number;
 }
 
@@ -104,52 +108,34 @@ export interface PublicStatsResponse {
   exportsToday: number;
   exportFormatsBreakdown: Record<string, number>;
   byPlatform: Record<string, PlatformBreakdown>;
-  recentDays: DailyTrendEntry[];
+  recentDays: PublicDailyTrendEntry[];
   generatedAt: string;
+}
 
-  // ── 维度数据（新增，全部可选，collect.py 向后兼容） ──
+// ── Private Maintainer Analytics Contract (served via GET /api/internal/stats) ──
 
-  /**
-   * Legacy UTC-calendar-day hourly distribution (UTC 0–23).
-   * Kept for compatibility; new dashboards should prefer last24HourlyPageViews.
-   */
-  todayHourlyPageViews?: HourlyEntry[];
+export interface PrivateAnalyticsResponse {
+  todayHourlyPageViews: HourlyEntry[];
+  last24HourlyPageViews: RollingHourlyEntry[];
+  topGeo: GeoDistributionItem[];
+  chinaProvinces: ProvinceDistributionItem[];
+  clientStats: ClientStats;
+  clipboardFormatsBreakdown: Record<string, number>;
+  referrerDistribution: ClientDistributionItem[];
+  inputTypeDistribution: ClientDistributionItem[];
+  latencyDistribution: ClientDistributionItem[];
+  errorCategoryDistribution: ClientDistributionItem[];
+  playlistSizeDistribution: ClientDistributionItem[];
+  providerPathDistribution: ClientDistributionItem[];
+  exportPlaylistSizeDistribution: ClientDistributionItem[];
+  clipboardPlaylistSizeDistribution: ClientDistributionItem[];
+  rateLimitEndpointDistribution: ClientDistributionItem[];
+  operationalRecentDays: OperationalDailyTrendEntry[];
+}
 
-  /**
-   * True rolling last 24 hourly buckets, oldest -> newest.
-   * Each bucket carries its UTC hour-start timestamp; the newest/current hour may be partial.
-   */
-  last24HourlyPageViews?: RollingHourlyEntry[];
-
-  /**
-   * 访问地区分布 TOP 10 国家（来源于页面访问事件的粗粒度地区记录）。
-   * 分母为全量已知国家访问记录总和，非仅 Top 10 之和。
-   */
-  topGeo?: GeoDistributionItem[];
-
-  /**
-   * 中国境内访问省份分布 TOP 10（来源于页面访问事件，仅 country=CN 且 region!='UNKNOWN' 的数据）。
-   * 分母为全量已知中国省份访问记录总和，非仅 Top 10 之和。
-   */
-  chinaProvinces?: ProvinceDistributionItem[];
-
-  /** 设备类型 / 浏览器 / 操作系统分布 */
-  clientStats?: ClientStats;
-
-  /** 剪贴板复制格式分布（全量，不含文件导出） */
-  clipboardFormatsBreakdown?: Record<string, number>;
-
-  /** 访问来源（Referrer）分类分布 */
-  referrerDistribution?: ClientDistributionItem[];
-
-  /** 输入类型分布（web_url / mobile_share_link / raw_id / other） */
-  inputTypeDistribution?: ClientDistributionItem[];
-
-  /** 请求延迟分布 */
-  latencyDistribution?: ClientDistributionItem[];
-
-  /** 错误分类分布（仅解析失败时记录） */
-  errorCategoryDistribution?: ClientDistributionItem[];
+export interface MaintainerStatsResponse {
+  public: PublicStatsResponse;
+  insights: PrivateAnalyticsResponse;
 }
 
 // ── Event Ingestion Types (POST /api/event) ──

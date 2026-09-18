@@ -37,6 +37,9 @@ PlaylistOut officially supports 4 major music platforms:
      - Allows third-party web applications running in browsers to call the Public API directly.
    - **Sensitive & Auth Endpoints** (`/api/kugou/*`):
      - Restricted to authorized PlaylistOut domains and localhost development environments.
+   - **Maintainer Diagnostics Endpoint** (`GET /api/internal/stats`):
+     - Explicitly closed to browser CORS (`Vary: Origin`, no `Access-Control-Allow-Origin`). Preflight OPTIONS requests are rejected with `403 Forbidden`.
+     - Exclusively accessible by authorized server-side scripts (e.g. `scripts/utils/dashboard.py`) using Bearer Token authentication.
    - **Client Event Ingestion Endpoint** (`POST /api/event`):
      - Strictly restricted via an exact-match allowlist (`https://playlistout.com`, `https://www.playlistout.com`, `https://playlistout.lengxiqwq.com`, `https://lengxiqwq.github.io`, and approved dev ports).
      - Missing Origin, `Origin: null`, wildcards, and unauthorized subdomains receive `403 Forbidden` before any parsing or DB access.
@@ -659,4 +662,93 @@ if __name__ == "__main__":
     )
     print("KuGou Full Response:", res.json())
 ```
+
+---
+
+## 10. Product Statistics & Maintainer Analytics Specification
+
+Governed by `docs/PROJECT-CONSTITUTION.md` Section 7 & 9 and `docs/ROADMAP.md` Milestone R6.
+
+PlaylistOut enforces a strict separation between **Public Product Statistics** (intended for public transparency, the open web frontend, and GitHub README stats) and **Private Maintainer Analytics** (intended strictly for operational engineering diagnostics and capacity planning).
+
+### 10.1 Public Statistics (`GET /api/stats` & `GET /api/v1/stats`)
+
+- **Authentication**: None (open public endpoint).
+- **CORS**: `Access-Control-Allow-Origin: *` (unrestricted browser access).
+- **Cache-Control**: Edge cached (typically `max-age=60`).
+- **Privacy Boundary**: Executes zero private queries. Leaks zero geographic, provincial, client-device, hourly, or internal operational dimensions.
+- **Response Schema (`PublicStatsResponse`)**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "launchedAt": "2026-09-12",
+      "cumulativeDailyVisitors": 343,
+      "totalVisitors": 343,
+      "visitorsToday": 15,
+      "totalPageViews": 2655,
+      "pageViewsToday": 147,
+      "totalPlaylistsParsed": 190,
+      "playlistsParsedToday": 5,
+      "totalTracksProcessed": 64893,
+      "tracksProcessedToday": 1602,
+      "totalExports": 641,
+      "exportsToday": 36,
+      "exportFormatsBreakdown": { "xlsx": 412, "txt": 204, "csv": 15, "json": 10 },
+      "byPlatform": {
+        "qqmusic": { "totalSuccess": 134, "todaySuccess": 3 },
+        "netease": { "totalSuccess": 20, "todaySuccess": 1 },
+        "kugou": { "totalSuccess": 28, "todaySuccess": 1 },
+        "qishui": { "totalSuccess": 8, "todaySuccess": 0 }
+      },
+      "recentDays": [
+        { "date": "2026-09-18", "parses": 5, "tracks": 1602, "exports": 36 }
+      ],
+      "generatedAt": "2026-09-18T14:30:00.000Z"
+    }
+  }
+  ```
+
+### 10.2 Maintainer Diagnostics (`GET /api/internal/stats`)
+
+- **Authentication**: Required via HTTP Header:
+  ```http
+  Authorization: Bearer <INSIGHTS_ADMIN_TOKEN>
+  ```
+  Verification uses constant-time cryptographic hash comparison (`crypto.subtle.digest` SHA-256) to eliminate timing side-channels.
+- **Fail-Closed Behavior**: If `INSIGHTS_ADMIN_TOKEN` is not set on the server, the endpoint immediately returns `503 Service Unavailable` without accessing D1.
+- **Unauthorized Rejections**: Invalid or missing credentials return `401 Unauthorized` without querying the database.
+- **CORS**: Browser access is completely blocked (`Vary: Origin`, preflight OPTIONS returns `403 Forbidden`).
+- **Cache-Control**: `no-store, no-cache, must-revalidate`, `Pragma: no-cache`.
+- **Response Schema (`MaintainerStatsResponse`)**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "public": { ... /* PublicStatsResponse */ },
+      "insights": {
+        "todayHourlyPageViews": [ ... ],
+        "last24HourlyPageViews": [ ... ],
+        "topGeo": [ ... ],
+        "chinaProvinces": [ ... ],
+        "clientStats": { "browsers": [ ... ], "devices": [ ... ], "os": [ ... ], "deviceBrands": [ ... ] },
+        "clipboardFormatsBreakdown": { ... },
+        "referrerDistribution": [ ... ],
+        "inputTypeDistribution": [ ... ],
+        "latencyDistribution": [ ... ],
+        "errorCategoryDistribution": [ ... ],
+        "playlistSizeDistribution": [ ... ],
+        "providerPathDistribution": [ ... ],
+        "exportPlaylistSizeDistribution": [ ... ],
+        "clipboardPlaylistSizeDistribution": [ ... ],
+        "rateLimitEndpointDistribution": [ ... ],
+        "operationalRecentDays": [
+          { "date": "2026-09-18", "clipboards": 12, "visitors": 15, "failures": 1 }
+        ]
+      }
+    }
+  }
+  ```
+- **Consumer**: Exclusively consumed by the maintainer's local dashboard tool (`python scripts/utils/dashboard.py`). Token is read from environment variable or `.dev.vars` and is never rendered into output HTML or logs.
+
 
