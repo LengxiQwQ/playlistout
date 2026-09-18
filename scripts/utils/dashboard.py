@@ -1469,7 +1469,7 @@ def build_html(
       console.warn('Dashboard is using legacy UTC-day hourly data; deploy a Worker with last24HourlyPageViews for a true rolling window.');
     }}
 
-    // 2. 近期趋势走势 (解析 / 导出 / 剪贴板 / 失败)
+    // 2. 近期趋势走势 (解析 / 歌曲 / 导出 / 剪贴板 / 失败)
     const elTrend = document.getElementById('chartTrend');
     if (elTrend) {{
       new Chart(elTrend, {{
@@ -1562,19 +1562,7 @@ def build_html(
         }},
         options: {{
           responsive: true,
-          plugins: {{
-            legend: {{ display: false }},
-            tooltip: {{
-              callbacks: {{
-                label: function(ctx) {{
-                  const pcts = {lat_pcts};
-                  const value = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
-                  const pct = Number(pcts[ctx.dataIndex] ?? 0);
-                  return ` ${{value.toLocaleString()}} · ${{pct}}%`;
-                }}
-              }}
-            }}
-          }},
+          plugins: {{ legend: {{ display: false }} }},
           scales: BASE_SCALES
         }}
       }});
@@ -1647,7 +1635,19 @@ def build_html(
         }},
         options: {{
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              callbacks: {{
+                label: function(ctx) {{
+                  const pcts = {lat_pcts};
+                  const value = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                  const pct = Number(pcts[ctx.dataIndex] ?? 0);
+                  return ` ${{value.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
           scales: BASE_SCALES
         }}
       }});
