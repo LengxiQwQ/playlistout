@@ -34,7 +34,7 @@ jobs:
       - name: Run pytest
         run: |
           pytest -v cli/qqmusic/ cli/netease/
-          pytest -v scripts/utils/test_insights_authenticity.py
+          python -m pytest -v scripts/utils/test_insights_authenticity.py
 
   web:
     name: Web Frontend Validation
