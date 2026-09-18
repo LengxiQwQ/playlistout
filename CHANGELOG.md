@@ -4,13 +4,13 @@
 
 All notable changes to **PlaylistOut** will be documented in this file. Adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [v2.2.0] - 2026-09-18
+## [v2.2.0] - 2026-09-19
 
-### 🎧 四大平台矩阵、Public API v1 开放平台与酷狗安全授权体系 / Multi-Platform Matrix, Public API v1 & KuGou Safe Auth
+### 🎧 四大平台矩阵、Public API v1、酷狗安全授权 & Analytics Foundation 完整交付 / Multi-Platform Matrix, Public API v1, KuGou Safe Auth & Analytics Foundation Complete
 
-在 v2.1.0 完善批量导出后，v2.2.0 迎来了重大的跨平台能力跨越：正式接入**网易云音乐**、**酷狗音乐**与**汽水音乐**，发布高可用、边缘原生的 **Public API v1 开放平台**，推出手机 App 扫码与一键跳转安全解锁机制，并全面升级导出格式规范，新增歌曲 VIP 与版权状态识别。
+在 v2.1.0 完善批量导出后，v2.2.0 迎来了重大的跨平台能力跨越：正式接入**网易云音乐**、**酷狗音乐**与**汽水音乐**，发布高可用、边缘原生的 **Public API v1 开放平台**，推出手机 App 扫码与一键跳转安全解锁机制，全面升级导出格式规范，并完成 **Analytics Foundation R1–R8** 全栈基础设施建设，将 D1 数据库生命周期安全管理提升至生产级标准。
 
-Following the v2.1.0 batch export features, v2.2.0 delivers a major architectural leap: native support for **NetEase Cloud Music**, **KuGou Music**, and **Soda Music (汽水音乐)**, the official release of the edge-native **Public API v1**, mobile QR & one-click deep link safe authorization, and an upgraded 7-column export specification with VIP and playable status detection.
+Following v2.1.0 batch export, v2.2.0 delivers a major architectural leap: native support for **NetEase Cloud Music**, **KuGou Music**, and **Soda Music**, the official **Public API v1**, mobile QR & deep link safe auth, a 7-column export spec with VIP/availability status, and the complete **Analytics Foundation R1–R8** — elevating D1 lifecycle safety and analytics pipeline integrity to production grade.
 
 ### 新增功能 / Added
 
@@ -22,31 +22,46 @@ Following the v2.1.0 batch export features, v2.2.0 delivers a major architectura
     - `GET /api/v1/stats`：隐私安全的匿名聚合统计接口；
     - `GET /api/v1/health`：高频服务探活与健康检查接口。
   - 公开 GET 接口全面开放跨域（`Access-Control-Allow-Origin: *`），支持第三方纯前端 Web 应用直接调用。
-  - 零信任 Header 鉴权规范：严禁在 Query 参数中暴露敏感凭据，凭据（如酷狗 Token）仅允许通过标准 `Authorization: Bearer <token>` 及 `X-Kugou-Userid` 请求头传递。
+  - 零信任 Header 鉴权规范：凭据（如酷狗 Token）仅允许通过标准 `Authorization: Bearer <token>` 及 `X-Kugou-Userid` 请求头传递，禁止在 Query 参数中暴露。
   - 严谨的错误处理与安全脱敏：500 异常对公网严格返回通用脱敏文本，杜绝内部错误堆栈、数据库连接串及敏感凭据外泄。
-  - 独立路由速率限制隔离：`/api/v1/resolve`、`/api/v1/playlist`、`/api/v1/user/playlists` 彼此独立享有 30 次/分钟限额，互不影响。
-  - 撰写了详尽完备的开发者接口规范文档 [`docs/API.md`](docs/API.md)（含 cURL / TypeScript / Python 接入代码示例）。
-- **多平台矩阵拓展与汽水音乐原生接入 (Multi-Platform Matrix & Soda Music)**：
+  - 独立路由速率限制隔离：各解析路由彼此独立享有 30 次/分钟限额，互不影响。
+  - 完整开发者接口规范文档 [`docs/API.md`](docs/API.md)（含 cURL / TypeScript / Python 接入示例）。
+- **多平台矩阵拓展 (Multi-Platform Matrix)**：
   - **网易云音乐**：支持歌单网页链接、手机短链（`163cn.tv`）、纯歌单 ID 解析与 UID 用户主页批量拉取，内置分批获取引擎突破未登录截断限制。
-  - **汽水音乐 (Soda Music)**：支持分享短链（`qishui.douyin.com/s/...`）及纯数字 ID 识别与解析，完整支持抖音同步收藏歌单与官方原声原唱识别。
+  - **汽水音乐 (Soda Music)**：支持分享短链（`qishui.douyin.com/s/...`）及纯数字 ID 识别，完整支持抖音同步收藏歌单与官方原声原唱识别。
   - **酷狗音乐**：支持公开歌单网页与 App 分享链接解析，提供免登录极速公开预览。
-- **酷狗双模态安全授权与开发者凭证复制 (KuGou Dual-Mode Auth & Developer Credentials)**：
-  - 酷狗授权弹窗全新升级为桌面端/移动端双模态：桌面端支持动态二维码扫码，手机端支持通过 `kugouURL://` 协议一键拉起官方酷狗 App 完成登录，解决单设备无法扫码的痛点。
-  - 授权成功后，弹窗内提供「开发者 API 凭证」卡片，开发者可一键复制包含凭据的可用 cURL 调试命令、原始 Token 与 UserID。
-  - 零数据持久化保障：授权凭据（Token）严格仅保存在本地浏览器 LocalStorage，绝不上报或存储在服务器数据库。
+- **酷狗双模态安全授权与开发者凭证 (KuGou Dual-Mode Auth & Developer Credentials)**：
+  - 桌面端支持动态二维码扫码，手机端支持 `kugouURL://` 协议一键拉起官方 App 完成登录，解决单设备无法扫码的痛点。
+  - 授权成功后提供「开发者 API 凭证」卡片，一键复制 cURL 调试命令、原始 Token 与 UserID。
+  - 零数据持久化：凭据严格仅保存在本地浏览器 LocalStorage，绝不上报或存储至服务器。
 - **歌曲 VIP 与可用性状态识别 (Song VIP & Availability Status)**：
   - 全链路自动识别歌曲状态：正常可播、下架/无版权变灰、VIP 专享、付费专辑等。
   - 网页预览表格增加「VIP」与「状态」两列，彩色手绘手账徽章直观呈现。
-  - 导出格式全面升级：CSV 与 Excel (.xlsx) 表格扩展为 7 列（包含 `VIP` 与 `歌曲状态`），TXT 导出自动附带 `[状态]` 后缀，JSON 导出包含完备的 `isVip`、`isAvailable` 与 `statusText` 字段。
+  - CSV / Excel 扩展为 7 列（含 `VIP`、`歌曲状态`），TXT 自动附带 `[状态]` 后缀，JSON 含完备的 `isVip`、`isAvailable`、`statusText` 字段。
 - **跨平台纯数字 ID 智能消歧义 (Multi-Platform Disambiguation)**：
-  - 当输入纯数字 ID 时，系统并发探测各平台的单歌单及用户主页。
-  - 发现多目标时自动弹出消歧义手账卡片 (`DisambiguationModal`)，供用户清晰对比并直达目标。
+  - 并发探测各平台的单歌单及用户主页；发现多目标时自动弹出消歧义手账卡片 (`DisambiguationModal`)。
+
+### Analytics Foundation 基础设施全面加固 (R1–R8 Complete) / Analytics Infrastructure
+
+- **Dashboard 完整性 (R3)**：Rolling 30-day 全维度数据覆盖；CI 加入 Dashboard 完整性断言，消除数据空洞。
+- **客户端事件信任边界 (R4)**：有界流式请求体读取与非放大式 Durable Object 速率限制器，防止 DoS 放大与事件洪水攻击。
+- **Referrer 最小化 (R5)**：服务端截断 Referer 头至 Origin 级别，路径与 Query 参数不进入 D1；同步更新隐私政策。
+- **公开 / 维护者 Analytics 分离 (R6)**：`/api/stats` 仅返回安全聚合数字；`/api/internal/stats` 要求 Bearer 鉴权，未授权严格返回 `401`。
+- **解析失败分类遥测 (R7)**：结构化 `resolve_input_type` 流水线，精确分类每类输入失败原因，支持维护者在 Dashboard 直接观测失败热点。
+- **D1 Provisioning & Migration 安全 (R8/R8.1)**：
+  - **迁移历史预检门**：`verify-migration-history.js --mode=pre-apply` 在 Apply 前验证 DB 历史与仓库文件的严格前缀关系；对「有业务表但无迁移记录」的未追踪数据库**快速失败**。
+  - **后检精确等价验证**：Apply 完成后三重校验（数量 + 顺序 + 文件名），任何额外迁移均导致部署失败。
+  - **生产工作流串行化**：`concurrency: cancel-in-progress: false` 防止并发竞态；明确 9 步部署序列（UUID 校验 → 预检 → Apply → 后检 → Worker 部署）。
+  - **36 项 D1 Migration Safety Tests**：含 11 个对抗性场景（空 DB、未追踪 DB、有间隙、乱序、附加迁移等），全部通过。
+  - **本地 CI Gate**：`npm run gate` 7 项检查（Workflow 语法、机密泄漏、Python、TypeScript、Web、Worker、D1 Migration）推送前 100% 绿灯强制执行。
 
 ### 修复与优化 / Fixed & Improved
 
-- **多 Sheet 批量导出链接修正**：修复 `batchExport.ts` 中非 QQ 平台歌单链接缺少 sourceUrl 时错误回退至 QQ 音乐域名的 Bug，统一使用 `getPlatformPlaylistUrl` 动态解析。
-- **全站文案与国际化同步**：补齐中英文语言文件中酷狗音乐、汽水音乐占位符、错误提示文案与隐私政策声明。
-- **文档规范同步更新**：中英文 README 全面更新平台支持表、7 列导出数据规范、JSON Schema 完整字段定义以及 Public API 开放接口规范。
+- **批量导出链接修正**：修复非 QQ 平台歌单链接缺少 sourceUrl 时错误回退至 QQ 域名的 Bug，统一使用 `getPlatformPlaylistUrl` 动态解析。
+- **意外探测错误安全脱敏**：`/api/v1/resolve` 对未预期异常统一脱敏为通用 `500 INTERNAL_ERROR` 响应，避免内部错误栈外泄。
+- **CI 机密扫描加固**：机密扫描器扩展至 diff 多来源，CI 环境跳过 git hooks，解决流水线误报与挂起问题。
+- **全站文案与国际化同步**：补齐中英文语言文件中酷狗音乐、汽水音乐占位符、错误提示与隐私政策声明。
+- **文档规范同步更新**：README 全面更新平台支持表、7 列导出数据规范、JSON Schema 完整字段定义及 Public API 规范。
 
 ---
 
