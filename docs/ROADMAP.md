@@ -5,26 +5,34 @@
 ## Current status
 
 **PlaylistOut v2.0.0 — QQ Music Web MVP: COMPLETE**
+**PlaylistOut Analytics Foundation (Milestones R1–R8): COMPLETE**
 
-The original P0–P9 delivery roadmap has finished and is now treated as historical release documentation. Do not reopen those phases for ordinary bug fixes or compatibility work.
+The original P0–P9 delivery roadmap and the Analytics Foundation (R1–R8) have both finished and are treated as completed engineering foundations. Do not reopen completed phases for ordinary bug fixes.
 
-The complete v2.0.0 MVP roadmap is permanently preserved in the release tag:
+Analytics Foundation milestone status:
+- **R1** ✅ Initial aggregate stats
+- **R2** ✅ Analytics foundation & private dimensional schema
+- **R3** ✅ Replace events with privacy-preserving daily/hourly aggregate tables
+- **Dashboard Completeness** ✅ Admin dashboard with authentic D1 data
+- **R4** ✅ Client Event Trust Boundary & durable rate limiting
+- **R5** ✅ Referrer Minimization
+- **R6** ✅ Public / Private Analytics Split & auth isolation
+- **R7** ✅ Resolve Failure Telemetry
+- **R8** ✅ D1 Provisioning & Migration Safety (Final Infrastructure Gate)
 
-- [Archived v2.0.0 MVP Roadmap](https://github.com/LengxiQwQ/playlistout/blob/v2.0.0/docs/ROADMAP.md)
-- [v2.0.0 Release](https://github.com/LengxiQwQ/playlistout/releases/tag/v2.0.0)
-- [Documentation archive index](./archive/README.md)
+Analytics Foundation is **COMPLETE**. There is no R9 milestone. Active development returns to Provider Expansion and the Maintenance lane.
 
 The current production baseline includes:
 
-- public QQ Music playlist parsing
+- public QQ Music playlist parsing (with NetEase, KuGou, and QiShui providers in expansion/active testing)
 - normalized platform-independent playlist data
 - bounded pagination including 1000+ track playlists
 - TXT / CSV / XLSX / JSON browser-local export
 - clipboard copy modes
-- anonymous aggregate usage statistics
-- abuse/security boundaries
+- anonymous aggregate usage statistics & privacy-preserving dimensional metrics
+- abuse/security boundaries (in-memory + durable D1 rate limiting)
 - responsive web UI, privacy information and SEO metadata
-- GitHub Pages + Cloudflare Worker + D1 production deployment
+- GitHub Pages + Cloudflare Worker + D1 production deployment with Wrangler native migration safety
 - preserved Python QQ Music CLI
 
 ---
@@ -57,13 +65,17 @@ Compatibility fixes are normal maintenance. They do **not** mean the v2.0.0 MVP 
 
 ---
 
-# 2. Analytics Foundation — next backend milestone
+# 2. Analytics Foundation (R1–R8) — COMPLETE
 
-## Objective
+## Objective (Completed)
 
-Build a small, privacy-conscious analytics backend that can support future public statistics and private product insights without redesigning the frontend later.
+Build a small, privacy-conscious analytics backend and infrastructure that supports public statistics and private product insights without compromising privacy or deployment reliability.
 
-This milestone is backend/data only. Do **not** redesign the website UI, build maps, create an admin dashboard, or add a user-account system here.
+Milestones R1–R8 are fully completed, verified, and locked:
+- **R1–R7**: Data models, client trust boundary, referrer minimization, public/private API split, and failure telemetry.
+- **R8**: D1 provisioning and migration safety, transition to Wrangler native migrations, fail-closed DB verification, serialized deployment, and schema verification.
+
+Analytics Foundation is permanently closed. Development returns to Provider Expansion and the Maintenance lane.
 
 ## 2.1 Public statistics model
 

@@ -1,0 +1,10 @@
+{
+  "0001_initial_stats.sql": "ac2fd8da1959eb626396608ce597531dba9363688274c62807adc4a083d73fb4",
+  "0002_analytics_foundation.sql": "8beb24db70a3a8c5b6690ae2e3586f5a09bf8b4ab11099b52709dd761b9d8119",
+  "0003_replace_events_with_aggregates.sql": "2973f39ed90f8156d3986c248c531fde44128073ef1d569c8123e17f34f5ad36",
+  "0004_visitors_and_site_metrics.sql": "b574d751eacc27093f4accca868514b9cecff03c17d34af286fe832cfd55c226",
+  "0005_geo_city_support.sql": "915071cc32c147554ec4c619ef015d3bbe9c7ae1062c4757705ba191875c2053",
+  "0006_seed_netease_platform_stats.sql": "c1c133716c09f6a7d4a550719bf53054cbd8c321d22da51d41828c2b99291ab5",
+  "0007_cleanup_seeded_fake_stats.sql": "c108a46753118943ec9e1b23094feea54d4fc867f377e520f7c03bde23d7ad2b",
+  "0008_security_rate_limits.sql": "73c1a80952efbca88f09fd5977c337892891fea7bb452f34303a567e2b7f99aa"
+}

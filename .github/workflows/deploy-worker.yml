@@ -9,8 +9,12 @@ on:
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
+concurrency:
+  group: playlistout-production-worker-deploy
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy:
@@ -33,25 +37,51 @@ jobs:
         run: |
           npm --prefix worker run typecheck
           npm --prefix worker test
+          npm --prefix worker run test:d1
 
       - name: Check Cloudflare Credentials
         id: check-creds
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-            echo "Cloudflare credentials not found in GitHub Secrets."
-            echo "To enable automated worker deployment, add CLOUDFLARE_API_TOKEN to repository Secrets."
-            echo "has_creds=false" >> $GITHUB_OUTPUT
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            if [ "${{ github.repository }}" = "LengxiQwQ/playlistout" ]; then
+              echo "::error::Missing required Cloudflare deployment secrets (CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID) in main repository."
+              exit 1
+            else
+              echo "External fork detected without secrets. Skipping deployment."
+              echo "has_creds=false" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "Cloudflare credentials found."
+            echo "Cloudflare credentials verified."
             echo "has_creds=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Provision D1 Database and Run Migrations
+      - name: Verify Migration Files and Baseline Immutability
+        if: steps.check-creds.outputs.has_creds == 'true'
+        run: node scripts/d1/validate-migrations.js
+
+      - name: Verify Production D1 Identity
         if: steps.check-creds.outputs.has_creds == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node scripts/setup-d1.js
+        run: node scripts/d1/verify-db.js
+
+      - name: Apply Pending D1 Migrations
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations apply playlistout-stats --remote
+
+      - name: Verify D1 Schema and Migration Completeness
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/d1/verify-schema.js --remote
 
       - name: Deploy to Cloudflare Workers
         if: steps.check-creds.outputs.has_creds == 'true'
@@ -75,18 +105,4 @@ jobs:
             echo "$INSIGHTS_ADMIN_TOKEN" | npx wrangler secret put INSIGHTS_ADMIN_TOKEN --cwd worker
           else
             echo "INSIGHTS_ADMIN_TOKEN secret not set in repository; skipping secret configuration."
-          fi
-
-      - name: Commit Updated wrangler.jsonc if Changed
-        if: steps.check-creds.outputs.has_creds == 'true'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if [[ -n $(git status --porcelain worker/wrangler.jsonc) ]]; then
-            echo "wrangler.jsonc updated with real D1 UUID. Committing back to main..."
-            git add worker/wrangler.jsonc
-            git commit -m "chore(worker): update wrangler.jsonc with production D1 database_id [skip ci]"
-            git push origin main
-          else
-            echo "wrangler.jsonc already up to date."
           fi

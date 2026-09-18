@@ -3,12 +3,13 @@
  * PlaylistOut Local Pre-Push CI Gate
  *
  * Runs the exact verification pipeline executed by GitHub Actions remote CI:
- * 1. GitHub Workflows Validation (YAML syntax & secrets-in-if anti-pattern check)
+ * 1. GitHub Workflows Validation (YAML syntax, secrets-in-if check, concurrency & least privilege)
  * 2. Secret & Sensitive Data Leak Scanner
  * 3. Python Validation (compileall + pytest CLI & insights)
  * 4. TypeScript Typecheck (web + worker)
  * 5. Web Frontend Validation (vitest + production build)
  * 6. Cloudflare Worker Validation (vitest + dry-run bundle build)
+ * 7. D1 Migration Validation (naming sequence & historical immutability)
  *
  * Usage:
  *   node scripts/ci-gate.js
@@ -65,7 +66,7 @@ function runCommand(cmd, args, cwd = REPO_ROOT, options = {}) {
 
 // ── 1. Validate GitHub Workflow Files ──────────────────────────────────
 function validateWorkflows() {
-  logStep(1, 6, 'Validating GitHub Actions Workflows');
+  logStep(1, 7, 'Validating GitHub Actions Workflows');
   const workflowsDir = join(REPO_ROOT, '.github', 'workflows');
   if (!existsSync(workflowsDir)) {
     logPass('No workflows directory found.');
@@ -90,13 +91,27 @@ function validateWorkflows() {
         );
       }
     }
+
+    // Workflow concurrency & privilege checks for deploy-worker.yml
+    if (file === 'deploy-worker.yml') {
+      if (!content.includes('concurrency:')) {
+        throw new Error('deploy-worker.yml missing concurrency configuration for migration serialization');
+      }
+      if (!content.includes('cancel-in-progress: false')) {
+        throw new Error('deploy-worker.yml concurrency must specify "cancel-in-progress: false"');
+      }
+      if (content.includes('contents: write')) {
+        throw new Error('deploy-worker.yml must not use "contents: write" permission; use "contents: read"');
+      }
+    }
+
     logPass(`${file} syntax & security constraints verified`);
   }
 }
 
 // ── 2. Scan for Secrets & Credential Leaks ──────────────────────────────
 function scanSecretLeaks() {
-  logStep(2, 6, 'Scanning Working Tree and Commits for Secret Leaks');
+  logStep(2, 7, 'Scanning Working Tree and Commits for Secret Leaks');
   const res = spawnSync('git', ['status', '--porcelain'], { cwd: REPO_ROOT, encoding: 'utf-8' });
   if (res.status === 0 && res.stdout) {
     const lines = res.stdout.split('\n').filter(Boolean);
@@ -135,7 +150,7 @@ function scanSecretLeaks() {
 
 // ── 3. Python Compilation & Pytest ─────────────────────────────────────
 function validatePython() {
-  logStep(3, 6, 'Validating Python CLI & Authenticity Test Suite');
+  logStep(3, 7, 'Validating Python CLI & Authenticity Test Suite');
   runCommand('python', ['-m', 'compileall', '-q', 'cli/qqmusic/', 'cli/netease/', 'scripts/']);
   logPass('Python compilation passed (0 syntax errors)');
 
@@ -150,14 +165,14 @@ function validatePython() {
 
 // ── 4. Monorepo TypeScript Typecheck ────────────────────────────────────
 function validateTypecheck() {
-  logStep(4, 6, 'Validating TypeScript Types (Web & Worker)');
+  logStep(4, 7, 'Validating TypeScript Types (Web & Worker)');
   runCommand('npm', ['run', 'typecheck']);
   logPass('TypeScript typechecking passed (0 type errors)');
 }
 
 // ── 5. Web Frontend Tests & Build ──────────────────────────────────────
 function validateWeb() {
-  logStep(5, 6, 'Validating Web Frontend (Tests & Build)');
+  logStep(5, 7, 'Validating Web Frontend (Tests & Build)');
   runCommand('npm', ['--prefix', 'web', 'test']);
   logPass('Web unit tests passed');
 
@@ -167,12 +182,22 @@ function validateWeb() {
 
 // ── 6. Cloudflare Worker Tests & Dry-run Bundle ────────────────────────
 function validateWorker() {
-  logStep(6, 6, 'Validating Cloudflare Worker (Tests & Bundle)');
+  logStep(6, 7, 'Validating Cloudflare Worker (Tests & Bundle)');
   runCommand('npm', ['--prefix', 'worker', 'test']);
   logPass('Worker unit tests passed');
 
   runCommand('npm', ['--prefix', 'worker', 'run', 'build']);
   logPass('Worker bundle build dry-run passed');
+}
+
+// ── 7. D1 Migration Format, Immutability & Safety Suite ──────────────
+function validateMigrationsStep() {
+  logStep(7, 7, 'Validating D1 Migrations & Safety Test Suite');
+  runCommand('node', ['scripts/d1/validate-migrations.js']);
+  logPass('D1 migration files valid & immutable baseline verified');
+
+  runCommand('npm', ['--prefix', 'worker', 'run', 'test:d1']);
+  logPass('D1 migration safety test suite passed');
 }
 
 // ── Main Runner ────────────────────────────────────────────────────────
@@ -189,6 +214,7 @@ function main() {
     validateTypecheck();
     validateWeb();
     validateWorker();
+    validateMigrationsStep();
 
     const duration = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`\n${COLORS.bold}${COLORS.green}========================================${COLORS.reset}`);
