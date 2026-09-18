@@ -29,10 +29,11 @@ PlaylistOut standardizes on **Cloudflare Wrangler Native Migrations** as the aut
 2. D1 Migration Safety Test Suite (npm run test:d1)
 3. Migration File Immutability Check (validate-migrations.js)
 4. Cloudflare D1 Identity Verification (verify-db.js — fails closed if missing/mismatched)
-5. Wrangler Native Migration Apply (wrangler d1 migrations apply --remote)
-6. Post-Migration Schema Verification (verify-schema.js --remote — verifies tables, columns, indexes, 0 pending)
-7. Worker Deployment (wrangler deploy)
-8. Admin Secret Configuration
+5. Preflight Migration History Verification (verify-migration-history.js --remote --mode=pre-apply — exact prefix required; untracked fails closed)
+6. Wrangler Native Migration Apply (wrangler d1 migrations apply playlistout-stats --remote)
+7. Postflight Schema & Exact History Verification (verify-schema.js --remote — tables, columns, indexes, exact history equality)
+8. Worker Deployment (wrangler deploy)
+9. Admin Secret Configuration
 ```
 
 ---

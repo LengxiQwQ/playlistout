@@ -69,6 +69,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/d1/verify-db.js
 
+      - name: Preflight D1 Migration History
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/d1/verify-migration-history.js --remote --mode=pre-apply
+
       - name: Apply Pending D1 Migrations
         if: steps.check-creds.outputs.has_creds == 'true'
         working-directory: worker
@@ -77,7 +84,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler d1 migrations apply playlistout-stats --remote
 
-      - name: Verify D1 Schema and Migration Completeness
+      - name: Postflight D1 Schema and History Completeness
         if: steps.check-creds.outputs.has_creds == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
