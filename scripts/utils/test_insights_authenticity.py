@@ -5,7 +5,10 @@ PlaylistOut Insights Authenticity & Synthetic Data Elimination Test Suite (Phase
 Verifies that no analytics paths fabricate, estimate, infer, seed, or invent data.
 """
 
+import json
 import unittest
+from pathlib import Path
+
 from scripts.utils.collect import (
     format_platform_shares,
     format_geo_distribution,
@@ -52,6 +55,30 @@ class TestInsightsAuthenticity(unittest.TestCase):
         # Must NEVER contain 72 or any fake estimates
         self.assertNotIn("72", res_zh)
         self.assertNotIn("72", res_en)
+
+    def test_platform_shares_all_current_providers(self):
+        """KuGou and QiShui must participate in the real denominator instead of being silently dropped."""
+        by_platform = {
+            "qqmusic": {"totalSuccess": 134},
+            "netease": {"totalSuccess": 20},
+            "kugou": {"totalSuccess": 28},
+            "qishui": {"totalSuccess": 8},
+        }
+        res_zh = format_platform_shares(by_platform, "zh")
+        res_en = format_platform_shares(by_platform, "en")
+
+        self.assertIn("QQ 音乐", res_zh)
+        self.assertIn("网易云音乐", res_zh)
+        self.assertIn("酷狗音乐", res_zh)
+        self.assertIn("汽水音乐", res_zh)
+        self.assertIn("KuGou Music", res_en)
+        self.assertIn("QiShui Music", res_en)
+
+        # 190 total => 134/190 ~= 71%, 20/190 ~= 11%, 28/190 ~= 15%, 8/190 ~= 4%
+        self.assertIn("**71%** (134 次)", res_zh)
+        self.assertIn("**11%** (20 次)", res_zh)
+        self.assertIn("**15%** (28 次)", res_zh)
+        self.assertIn("**4%** (8 次)", res_zh)
 
     def test_platform_shares_both_zero(self):
         """When total parses are 0, must show 暂无数据 / No data, never QQ 100% fake."""
@@ -267,11 +294,187 @@ class TestInsightsAuthenticity(unittest.TestCase):
         }
         html = build_html(empty_stats, "2026-09-18 00:00:00 CST", "2026-09-17 16:00:00 UTC")
         self.assertIn("暂无数据 / No Data", html)
-        self.assertIn("createHBar('chartGeo', [], [],", html)
+        self.assertIn("const GEO_DATA = [];", html)
+        self.assertIn("renderGeoChart();", html)
         self.assertIn("createHBar('chartChina', [], [],", html)
-        self.assertIn("createDonut('chartBrowser', [], []);", html)
-        self.assertIn("createDonut('chartDevice', [], []);", html)
+        self.assertIn("createDonut('chartBrowser', [], [], []);", html)
+        self.assertIn("createDonut('chartDevice', [], [], []);", html)
         self.assertIn("createDonut('chartPlatform', [], []);", html)
+
+    def test_dashboard_full_contract_fixture_consumes_every_current_field(self):
+        """A sentinel-rich full contract must survive into the generated dashboard without silent field loss."""
+        stats = {
+            "launchedAt": "2026-09-12",
+            "cumulativeDailyVisitors": 1001,
+            "totalVisitors": 1001,
+            "visitorsToday": 101,
+            "totalPageViews": 2002,
+            "pageViewsToday": 202,
+            "totalPlaylistsParsed": 303,
+            "playlistsParsedToday": 33,
+            "totalTracksProcessed": 40404,
+            "tracksProcessedToday": 4444,
+            "totalExports": 505,
+            "exportsToday": 55,
+            "exportFormatsBreakdown": {"txt": 11, "csv": 22, "xlsx": 33, "json": 44},
+            "byPlatform": {
+                "qqmusic": {"totalSuccess": 111, "todaySuccess": 1},
+                "netease": {"totalSuccess": 222, "todaySuccess": 2},
+                "kugou": {"totalSuccess": 333, "todaySuccess": 3},
+                "qishui": {"totalSuccess": 444, "todaySuccess": 4},
+            },
+            "recentDays": [{
+                "date": "2026-09-18",
+                "parses": 777,
+                "tracks": 8888,
+                "exports": 666,
+                "clipboards": 555,
+                "visitors": 444,
+                "failures": 333,
+            }],
+            "generatedAt": "2026-09-18T07:00:00Z",
+            "todayHourlyPageViews": [{"hour": 7, "pageViews": 707, "visitors": 77}],
+            "last24HourlyPageViews": [
+                {"timestamp": "2026-09-18T06:00:00Z", "pageViews": 606, "visitors": 66},
+                {"timestamp": "2026-09-18T07:00:00Z", "pageViews": 707, "visitors": 77},
+            ],
+            "topGeo": [
+                {"country": "MY", "count": 321, "percentage": 61},
+                {"country": "US", "count": 123, "percentage": 23},
+            ],
+            "chinaProvinces": [{"province": "Guangdong", "count": 654, "percentage": 73}],
+            "clientStats": {
+                "browsers": [{"name": "chrome", "count": 765, "percentage": 76}],
+                "devices": [{"name": "desktop", "count": 876, "percentage": 87}],
+                "os": [{"name": "windows", "count": 987, "percentage": 98}],
+                "deviceBrands": [{"name": "Windows PC", "count": 432, "percentage": 43}],
+            },
+            "clipboardFormatsBreakdown": {
+                "title": 12,
+                "title_artist": 23,
+                "title_artist_album": 34,
+            },
+            "referrerDistribution": [{"name": "github", "count": 345, "percentage": 34}],
+            "inputTypeDistribution": [{"name": "web_url", "count": 456, "percentage": 45}],
+            "latencyDistribution": [{"name": "<500ms", "count": 567, "percentage": 56}],
+            "errorCategoryDistribution": [{"name": "error_timeout", "count": 678, "percentage": 67}],
+        }
+
+        html = build_html(stats)
+
+        for visible in ["1,001", "2,002", "303", "40,404", "505"]:
+            self.assertIn(visible, html)
+
+        # Recent-day tracks used to be dropped; it must now have its own dataset.
+        self.assertIn("label: '歌曲 / Tracks'", html)
+        self.assertIn("data: [8888]", html)
+        self.assertIn("yAxisID: 'yTracks'", html)
+
+        # Every platform plus todaySuccess must be serialized into the interactive summary.
+        for key in ["qqmusic", "netease", "kugou", "qishui"]:
+            self.assertIn(f'"key": "{key}"', html)
+        self.assertIn('"today": 4', html)
+        self.assertIn("platformTodaySummary", html)
+
+        # API percentages are preserved, not silently recomputed from truncated Top-N arrays.
+        for pct in [61, 23, 73, 76, 87, 98, 43, 34, 45, 56, 67]:
+            self.assertIn(str(pct), html)
+        self.assertIn("filtered.map(x => Number(x.percentage || 0))", html)
+        self.assertIn("error_timeout", json.dumps(stats))
+        self.assertIn("请求超时 (Timeout)", html)
+
+        # Both the rolling field and legacy UTC-day field remain handled.
+        self.assertIn('const HOURLY_SOURCE = "rolling24";', html)
+        self.assertIn("2026-09-18T07:00:00Z", html)
+
+    def test_latest_archived_real_snapshot_round_trips_without_unknown_fields(self):
+        """Replay the latest actually-collected website snapshot and fail if the API grows an unreviewed top-level field."""
+        repo_root = Path(__file__).resolve().parents[2]
+        traffic_path = repo_root / "insights" / "traffic.json"
+        self.assertTrue(traffic_path.exists(), "insights/traffic.json must exist for real-data replay")
+
+        traffic = json.loads(traffic_path.read_text(encoding="utf-8"))
+        stats = traffic.get("website_latest") or {}
+        self.assertTrue(stats, "website_latest must contain a real archived Worker snapshot")
+
+        covered_top_level = {
+            "launchedAt",
+            "cumulativeDailyVisitors",
+            "totalVisitors",
+            "visitorsToday",
+            "totalPageViews",
+            "pageViewsToday",
+            "totalPlaylistsParsed",
+            "playlistsParsedToday",
+            "totalTracksProcessed",
+            "tracksProcessedToday",
+            "totalExports",
+            "exportsToday",
+            "exportFormatsBreakdown",
+            "byPlatform",
+            "recentDays",
+            "generatedAt",
+            "todayHourlyPageViews",
+            "last24HourlyPageViews",
+            "topGeo",
+            "chinaProvinces",
+            "clientStats",
+            "clipboardFormatsBreakdown",
+            "referrerDistribution",
+            "inputTypeDistribution",
+            "latencyDistribution",
+            "errorCategoryDistribution",
+        }
+        unknown = set(stats) - covered_top_level
+        self.assertEqual(unknown, set(), f"Worker snapshot contains dashboard-unreviewed fields: {sorted(unknown)}")
+
+        html = build_html(stats)
+
+        # Core KPI values from the real snapshot must survive formatting.
+        for key in [
+            "cumulativeDailyVisitors",
+            "totalPageViews",
+            "totalPlaylistsParsed",
+            "totalTracksProcessed",
+            "totalExports",
+        ]:
+            if key in stats:
+                self.assertIn(f"{int(stats[key]):,}", html)
+
+        # Re-run every currently present dimensional family through a concrete dashboard consumer.
+        for key in (stats.get("byPlatform") or {}):
+            self.assertIn(f'"key": "{key}"', html)
+
+        if stats.get("recentDays"):
+            recent = list(reversed(stats["recentDays"]))[-30:]
+            tracks = [int((r or {}).get("tracks") or 0) for r in recent]
+            self.assertIn(f"data: {json.dumps(tracks, ensure_ascii=False)}", html)
+
+        if stats.get("topGeo"):
+            for item in stats["topGeo"]:
+                self.assertIn(f'"country": "{item.get("country")}"', html)
+                self.assertIn(f'"percentage": {int(item.get("percentage") or 0)}', html)
+
+        if stats.get("chinaProvinces"):
+            pcts = [int((x or {}).get("percentage") or 0) for x in stats["chinaProvinces"]]
+            self.assertIn(json.dumps(pcts, ensure_ascii=False), html)
+
+        for family in ["browsers", "devices", "os", "deviceBrands"]:
+            items = (stats.get("clientStats") or {}).get(family) or []
+            if items:
+                pcts = [int((x or {}).get("percentage") or 0) for x in items]
+                self.assertIn(json.dumps(pcts, ensure_ascii=False), html)
+
+        for field in [
+            "referrerDistribution",
+            "inputTypeDistribution",
+            "latencyDistribution",
+            "errorCategoryDistribution",
+        ]:
+            items = stats.get(field) or []
+            if items:
+                pcts = [int((x or {}).get("percentage") or 0) for x in items]
+                self.assertIn(json.dumps(pcts, ensure_ascii=False), html)
 
     # R1.1 Tests: Uptime Authenticity & Elimination of Fabricated Running Days
     def test_uptime_test_a_valid_date(self):
@@ -504,39 +707,39 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("<div class=\"kpi-val\">8</div>", html)
 
     def test_r2_5_test_f_hourly_label_conversion(self):
-        """Test F: Hourly bucket label conversion (UTC hour -> UTC+8 label).
-        UTC hour 0  -> UTC+8 08:00
-        UTC hour 15 -> 23:00
-        UTC hour 16 -> next day 00:00
-        UTC hour 23 -> next day 07:00
-        Values in data array must match exact indices without displacement.
-        """
+        """Legacy helper stays correct; dashboard prefers timestamped rolling-24h data and interactive timezone rendering."""
         import datetime as dt
 
         base_date = dt.date(2026, 9, 18)
         labels = get_hourly_display_labels(base_date)
-
-        self.assertEqual(len(labels), 24)
         self.assertEqual(labels[0], "09/18 08:00")
-        self.assertEqual(labels[15], "09/18 23:00")
         self.assertEqual(labels[16], "09/19 00:00")
-        self.assertEqual(labels[23], "09/19 07:00")
 
-        # Check in HTML that values are NOT displaced
         stats = {
-            "generatedAt": "2026-09-18T12:00:00Z",
-            "todayHourlyPageViews": [
-                {"hour": 0, "pageViews": 100, "visitors": 50},
-                {"hour": 16, "pageViews": 200, "visitors": 80},
+            "generatedAt": "2026-09-18T06:30:00Z",
+            "last24HourlyPageViews": [
+                {"timestamp": "2026-09-17T07:00:00.000Z", "pageViews": 100, "visitors": 50},
+                {"timestamp": "2026-09-18T06:00:00.000Z", "pageViews": 200, "visitors": 80},
+            ],
+            "topGeo": [
+                {"country": "MY", "count": 90, "percentage": 90},
+                {"country": "US", "count": 10, "percentage": 10},
             ],
         }
         html = build_html(stats)
-        self.assertIn("小时级流量分布", html)
-        self.assertIn("Hourly Traffic · UTC+8 Display", html)
-        self.assertIn("API 小时桶已转换为 UTC+8 显示", html)
-        # Value at index 0 is 100, value at index 16 is 200
-        self.assertIn("labels: [\"09/18 08:00\",", html)
-        self.assertIn("\"09/19 00:00\"", html)
+
+        self.assertIn("滚动 24 小时流量", html)
+        self.assertIn("Rolling 24 Hours", html)
+        self.assertIn("2026-09-17T07:00:00Z", html)
+        self.assertIn("2026-09-18T06:00:00Z", html)
+        self.assertIn('const HOURLY_SOURCE = "rolling24";', html)
+        self.assertIn('id="timezoneSelect"', html)
+        self.assertIn('value="Asia/Kuala_Lumpur"', html)
+        self.assertIn('id="trafficMetricSelect"', html)
+        self.assertIn('id="hideMalaysia"', html)
+        self.assertIn("隐藏马来西亚 / Hide MY", html)
+        self.assertIn("Storage: UTC", html)
+        self.assertIn("GEO_DATA.filter(x => String(x.country).toUpperCase() !== 'MY')", html)
 
     def test_r2_5_test_g_display_metadata_and_cleanliness(self):
         """Test G: Local Dashboard header, footer and timezone labels are clean and unambiguous."""
@@ -549,7 +752,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
         # Must have API Generated and Local Fetched
         self.assertIn("API Generated: 2026-09-18 12:29:58 UTC+8", html)
         self.assertIn("Local Fetched: 2026-09-18 12:30:00 UTC+8", html)
-        self.assertIn("Display Timezone: UTC+8", html)
+        self.assertIn("Storage: UTC", html)
+        self.assertIn("Display selectable above", html)
 
         # Must not have ambiguous CST
         self.assertNotIn("CST", html)
@@ -621,7 +825,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
 
         # Must contain authentic visit phrasing
         self.assertIn("🌍 访问地区分布", html)
-        self.assertIn("Geographic Distribution of Visits by Country / Region", html)
+        self.assertIn("Geographic Distribution of Visits", html)
+        self.assertIn("Hide MY", html)
 
         # Must NOT contain visitor phrasing in geo sections
         self.assertNotIn("访客地理归属", html)

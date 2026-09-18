@@ -352,6 +352,15 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
 | `totalVisitors` | `number` | **Deprecated compatibility alias** for `cumulativeDailyVisitors`. Semantically identical; guaranteed equal to `cumulativeDailyVisitors`. NOT an all-time globally unique person count. |
 | `visitorsToday` | `number` | Daily Unique Visitors (今日独立访客). Coarse-grained count deduplicated within the current UTC day via anonymous salted cryptographic hash. |
 
+#### Hourly Traffic Metrics
+
+| Field | Type | Description |
+| :--- | :---: | :--- |
+| `todayHourlyPageViews` | `HourlyEntry[]` | Legacy compatibility field: 24 buckets for the current **UTC calendar day** (hours 0–23). Do not treat this as a rolling 24-hour window. |
+| `last24HourlyPageViews` | `RollingHourlyEntry[]` | Preferred field: exactly 24 hourly buckets ordered oldest → newest, ending at the current UTC hour. Each item contains a UTC ISO `timestamp`, `pageViews`, and `visitors`. The current hour may be partial. |
+
+> Time contract: analytics storage buckets are UTC. Dashboards should convert `last24HourlyPageViews[].timestamp` only for display (for example Malaysia UTC+8, UTC, or browser-local time) and must not reorder the buckets after conversion.
+
 #### Geographic Distribution Metrics (`topGeo` and `chinaProvinces`)
 
 | Field | Type | Description |

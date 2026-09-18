@@ -341,17 +341,49 @@ def compute_running_days(launched_at: str | None = None, today: dt.date | None =
 
 
 def format_platform_shares(by_platform: dict, lang: str) -> str:
-    qq = (by_platform.get("qqmusic") or {}).get("totalSuccess", 0)
-    netease = (by_platform.get("netease") or {}).get("totalSuccess", 0)
-    total = qq + netease
+    """Render every platform returned by the Worker; never silently drop a supported provider."""
+    preferred = ["qqmusic", "netease", "kugou", "qishui"]
+    labels = {
+        "zh": {
+            "qqmusic": "QQ 音乐",
+            "netease": "网易云音乐",
+            "kugou": "酷狗音乐",
+            "qishui": "汽水音乐",
+        },
+        "en": {
+            "qqmusic": "QQ Music",
+            "netease": "NetEase Cloud Music",
+            "kugou": "KuGou Music",
+            "qishui": "QiShui Music",
+        },
+    }
+
+    keys = [k for k in preferred if k in by_platform]
+    keys.extend(sorted(k for k in by_platform if k not in keys))
+
+    counts: list[tuple[str, int]] = []
+    for key in keys:
+        payload = by_platform.get(key) or {}
+        raw = payload.get("totalSuccess", 0) if isinstance(payload, dict) else 0
+        try:
+            count = int(raw or 0)
+        except (TypeError, ValueError):
+            count = 0
+        counts.append((key, max(0, count)))
+
+    total = sum(count for _, count in counts)
     if total == 0:
         return "暂无数据" if lang == "zh" else "No data"
-    qq_pct = round((qq / total) * 100)
-    netease_pct = 100 - qq_pct
-    if lang == "zh":
-        return f"QQ 音乐 **{qq_pct}%** ({fmt_num(qq)} 次) ｜ 网易云音乐 **{netease_pct}%** ({fmt_num(netease)} 次)"
-    else:
-        return f"QQ Music **{qq_pct}%** ({fmt_num(qq)} parses) ｜ NetEase Cloud Music **{netease_pct}%** ({fmt_num(netease)} parses)"
+
+    parts = []
+    name_map = labels.get(lang, labels["zh"])
+    for key, count in counts:
+        pct = round((count / total) * 100)
+        name = name_map.get(key, key)
+        unit = "次" if lang == "zh" else "parses"
+        parts.append(f"{name} **{pct}%** ({fmt_num(count)} {unit})")
+
+    return " ｜ ".join(parts)
 
 
 PROVINCE_NAMES: dict[str, dict[str, str]] = {

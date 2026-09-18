@@ -221,6 +221,7 @@ ERROR_CATEGORY_MAP = {
     "error_validation": "链接格式校验错误 (Validation)",
     "error_not_found": "歌单未找到/未公开 (Not Found)",
     "error_upstream": "音乐平台接口异常 (Upstream)",
+    "error_timeout": "请求超时 (Timeout)",
     "error_rate_limit": "请求触发频控 (Rate Limit)",
     "error_internal": "系统服务异常 (Internal)",
 }
@@ -378,31 +379,60 @@ def build_html(
     exports_total = s(stats.get("totalExports"))
     exports_today = s(stats.get("exportsToday"))
 
-    # 小时数据 (24小时) - 保持与 Worker UTC hourly bucket 一一对应，禁止重排序
-    parsed_gen = parse_iso_timestamp(raw_generated_at)
-    if parsed_gen is not None:
-        base_utc_date = parsed_gen.astimezone(dt.timezone.utc).date()
-    elif now is not None:
-        base_utc_date = now.astimezone(dt.timezone.utc).date() if now.tzinfo is not None else now.date()
-    else:
-        base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+    # 小时流量：优先使用 Worker 提供的真实滚动 24 小时 UTC 时间戳。
+    # 时区只属于展示层；绝不重新排序或把 UTC 自然日硬伪装成“过去 24 小时”。
+    hourly_payload = []
+    for item in (stats.get("last24HourlyPageViews") or []):
+        if not isinstance(item, dict):
+            continue
+        parsed_ts = parse_iso_timestamp(item.get("timestamp"))
+        if parsed_ts is None:
+            continue
+        hourly_payload.append({
+            "timestamp": parsed_ts.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
+            "pageViews": s(item.get("pageViews")),
+            "visitors": s(item.get("visitors")),
+        })
 
-    hourly_labels = get_hourly_display_labels(base_utc_date)
-    hourly_labels_json = j(hourly_labels)
+    hourly_payload.sort(key=lambda item: item["timestamp"])
+    hourly_payload = hourly_payload[-24:]
+    hourly_source = "rolling24"
 
-    hourly_raw = stats.get("todayHourlyPageViews") or []
-    h_pv = [0] * 24
-    h_uv = [0] * 24
-    for item in hourly_raw:
-        h = item.get("hour", -1)
-        if 0 <= h <= 23:
-            h_pv[h] = s(item.get("pageViews"))
-            h_uv[h] = s(item.get("visitors"))
+    # Backward compatibility only: older Workers expose a UTC-calendar-day 0..23 array.
+    # This path is explicitly labelled legacy in the UI and is never presented as a real rolling window.
+    if not hourly_payload:
+        hourly_source = "legacyUtcDay"
+        parsed_gen = parse_iso_timestamp(raw_generated_at)
+        if parsed_gen is not None:
+            base_utc_date = parsed_gen.astimezone(dt.timezone.utc).date()
+        elif now is not None:
+            base_utc_date = now.astimezone(dt.timezone.utc).date() if now.tzinfo is not None else now.date()
+        else:
+            base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+
+        for item in (stats.get("todayHourlyPageViews") or []):
+            if not isinstance(item, dict):
+                continue
+            h = item.get("hour", -1)
+            if isinstance(h, int) and 0 <= h <= 23:
+                bucket_time = dt.datetime(
+                    base_utc_date.year, base_utc_date.month, base_utc_date.day,
+                    h, 0, 0, tzinfo=dt.timezone.utc,
+                )
+                hourly_payload.append({
+                    "timestamp": bucket_time.isoformat().replace("+00:00", "Z"),
+                    "pageViews": s(item.get("pageViews")),
+                    "visitors": s(item.get("visitors")),
+                })
+
+    hourly_payload_json = j(hourly_payload)
+    hourly_source_json = j(hourly_source)
 
     # 30天趋势
     recent = list(reversed(stats.get("recentDays") or []))[-30:]
     t_dates = j([r.get("date", "") for r in recent])
     t_parses = j([s(r.get("parses")) for r in recent])
+    t_tracks = j([s(r.get("tracks")) for r in recent])
     t_exports = j([s(r.get("exports")) for r in recent])
     t_clips = j([s(r.get("clipboards")) for r in recent])
     t_visitors = j([s(r.get("visitors")) for r in recent])
@@ -410,26 +440,38 @@ def build_html(
 
     # 地理数据
     geo_raw = stats.get("topGeo") or []
-    geo_labels = j([g.get("country", "?") for g in geo_raw])
-    geo_counts = j([s(g.get("count")) for g in geo_raw])
+    geo_data = j([
+        {
+            "country": g.get("country", "?"),
+            "count": s(g.get("count")),
+            "percentage": s(g.get("percentage")),
+        }
+        for g in geo_raw
+        if isinstance(g, dict)
+    ])
 
     cn_raw = stats.get("chinaProvinces") or []
     cn_labels = j([c.get("province", "?") for c in cn_raw])
     cn_counts = j([s(c.get("count")) for c in cn_raw])
+    cn_pcts = dist_pcts(cn_raw)
 
     # 客户端
     client = stats.get("clientStats") or {}
     br_labels = dist_names_mapped(client.get("browsers"), format_browser_label)
     br_counts = dist_counts(client.get("browsers"))
+    br_pcts = dist_pcts(client.get("browsers"))
 
     dv_labels = dist_names_mapped(client.get("devices"), format_device_label)
     dv_counts = dist_counts(client.get("devices"))
+    dv_pcts = dist_pcts(client.get("devices"))
 
     os_labels = dist_names_mapped(client.get("os"), format_os_label)
     os_counts = dist_counts(client.get("os"))
+    os_pcts = dist_pcts(client.get("os"))
 
     brand_labels = dist_names(client.get("deviceBrands"))
     brand_counts = dist_counts(client.get("deviceBrands"))
+    brand_pcts = dist_pcts(client.get("deviceBrands"))
 
 
 
@@ -445,19 +487,33 @@ def build_html(
     plat_raw = stats.get("byPlatform") or {}
     plat_labels = j([format_platform_label(k) for k in plat_raw.keys()])
     plat_counts = j([s((v or {}).get("totalSuccess")) for v in plat_raw.values()])
+    plat_today_counts = j([s((v or {}).get("todaySuccess")) for v in plat_raw.values()])
+    plat_data = j([
+        {
+            "key": k,
+            "label": format_platform_label(k),
+            "total": s((v or {}).get("totalSuccess")),
+            "today": s((v or {}).get("todaySuccess")),
+        }
+        for k, v in plat_raw.items()
+    ])
 
     # 来源、输入方式、延迟与错误
     ref_labels = dist_names_mapped(stats.get("referrerDistribution"), format_referrer_label)
     ref_counts = dist_counts(stats.get("referrerDistribution"))
+    ref_pcts = dist_pcts(stats.get("referrerDistribution"))
 
     inp_labels = dist_names_mapped(stats.get("inputTypeDistribution"), format_input_label)
     inp_counts = dist_counts(stats.get("inputTypeDistribution"))
+    inp_pcts = dist_pcts(stats.get("inputTypeDistribution"))
 
     lat_labels = dist_names(stats.get("latencyDistribution"))
     lat_counts = dist_counts(stats.get("latencyDistribution"))
+    lat_pcts = dist_pcts(stats.get("latencyDistribution"))
 
     err_labels = dist_names_mapped(stats.get("errorCategoryDistribution"), format_error_label)
     err_counts = dist_counts(stats.get("errorCategoryDistribution"))
+    err_pcts = dist_pcts(stats.get("errorCategoryDistribution"))
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -483,13 +539,17 @@ def build_html(
       --rose: #e11d48;
       --indigo: #4f46e5;
       --cyan: #0891b2;
-      --radius: 10px;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
     }}
 
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
     body {{
-      background-color: var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 28rem),
+        radial-gradient(circle at top right, rgba(8,145,178,0.06), transparent 24rem),
+        var(--bg);
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 13px;
@@ -568,6 +628,96 @@ def build_html(
       font-size: 11px;
     }}
 
+    .control-bar {{
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }}
+
+    .control-group {{
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }}
+
+    .control-group select {{
+      border: 1px solid var(--card-border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text-main);
+      padding: 7px 28px 7px 9px;
+      font-size: 11px;
+      outline: none;
+    }}
+
+    .control-group input[type="checkbox"] {{
+      width: 15px;
+      height: 15px;
+      accent-color: var(--brand);
+    }}
+
+    .control-note {{
+      margin-left: auto;
+      color: var(--text-light);
+      font-size: 10px;
+      max-width: 600px;
+    }}
+
+    .chart-scroll {{
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 5px;
+      scrollbar-width: thin;
+    }}
+
+    .chart-scroll-inner {{
+      min-width: 900px;
+      height: 280px;
+    }}
+
+    .mini-stats {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }}
+
+    .mini-stat {{
+      border: 1px solid #eef2f7;
+      border-radius: 9px;
+      padding: 8px 10px;
+      background: #f8fafc;
+    }}
+
+    .mini-stat-name {{
+      color: var(--text-muted);
+      font-size: 10px;
+      margin-bottom: 2px;
+    }}
+
+    .mini-stat-value {{
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 12px;
+    }}
+
+    .mini-stat-today {{
+      color: var(--text-light);
+      font-size: 10px;
+      margin-left: 4px;
+      font-weight: 500;
+    }}
+
     /* KPI 核心指标网格 */
     .kpi-grid {{
       display: grid;
@@ -581,12 +731,14 @@ def build_html(
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       padding: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-      transition: border-color 0.15s;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }}
 
     .kpi-card:hover {{
       border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
     }}
 
     .kpi-label {{
@@ -665,7 +817,7 @@ def build_html(
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       padding: 16px 18px 18px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      box-shadow: var(--shadow);
     }}
 
     .card-header {{
@@ -734,13 +886,40 @@ def build_html(
       <div class="brand-icon">🎵</div>
       <div class="title-group">
         <h1>PlaylistOut 业务运营与流量统计看板</h1>
-        <div class="sub">PlaylistOut Live Analytics Dashboard · 本地实时生成 (Local Realtime View) · Display Timezone: UTC+8</div>
+        <div class="sub">PlaylistOut Live Analytics Dashboard · Storage: UTC · Rolling 24h Display: <span id="displayTimezoneLabel">Malaysia · UTC+8</span></div>
       </div>
     </div>
     <div class="status-group">
       <span class="status-badge">{uptime_badge}</span>
       <span class="status-time">API Generated: {api_generated_str}</span>
       <span class="status-time">Local Fetched: {local_fetched_str}</span>
+    </div>
+  </div>
+
+  <div class="control-bar">
+    <label class="control-group">
+      <span>24h 图时区 / Chart TZ</span>
+      <select id="timezoneSelect">
+        <option value="Asia/Kuala_Lumpur" selected>Malaysia · UTC+8</option>
+        <option value="Asia/Shanghai">China · UTC+8</option>
+        <option value="UTC">UTC</option>
+        <option value="local">Browser Local</option>
+      </select>
+    </label>
+    <label class="control-group">
+      <span>24h 流量 / Traffic</span>
+      <select id="trafficMetricSelect">
+        <option value="both" selected>PV + UV</option>
+        <option value="pv">PV only</option>
+        <option value="uv">UV only</option>
+      </select>
+    </label>
+    <label class="control-group" title="只影响地区图，不会修改总 PV / UV / 解析量">
+      <input id="hideMalaysia" type="checkbox">
+      <span>隐藏马来西亚 / Hide MY</span>
+    </label>
+    <div class="control-note">
+      “今日 / 近30天”仍使用 Worker 的 UTC 自然日统计；滚动 24h 使用真实 UTC 时间戳并按所选时区显示。隐藏 MY 只影响地区图。
     </div>
   </div>
 
@@ -752,7 +931,7 @@ def build_html(
         <span class="kpi-label-en">Cumulative Daily Unique Visits</span>
       </div>
       <div class="kpi-val">{n(visitors)}</div>
-      <div class="kpi-footer">今日独立 / Today Unique +{n(vis_today)} · <span title="Daily-deduplicated, no cross-day tracking">每日去重 · 无跨日追踪</span></div>
+      <div class="kpi-footer">今日独立 (UTC) / Today Unique (UTC) +{n(vis_today)} · <span title="Daily-deduplicated, no cross-day tracking">每日去重 · 无跨日追踪</span></div>
     </div>
 
     <div class="kpi-card">
@@ -761,7 +940,7 @@ def build_html(
         <span class="kpi-label-en">Page Views</span>
       </div>
       <div class="kpi-val">{n(pv_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(pv_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(pv_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -770,7 +949,7 @@ def build_html(
         <span class="kpi-label-en">Playlists Parsed</span>
       </div>
       <div class="kpi-val">{n(parses_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(parses_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(parses_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -779,7 +958,7 @@ def build_html(
         <span class="kpi-label-en">Tracks Processed</span>
       </div>
       <div class="kpi-val">{n(tracks_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(tracks_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(tracks_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -788,7 +967,7 @@ def build_html(
         <span class="kpi-label-en">File Exports</span>
       </div>
       <div class="kpi-val">{n(exports_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(exports_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(exports_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -807,12 +986,14 @@ def build_html(
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">小时级流量分布</div>
-          <div class="card-subtitle">Hourly Traffic · UTC+8 Display (API 小时桶已转换为 UTC+8 显示 / API hourly buckets displayed in UTC+8)</div>
+          <div class="card-title">滚动 24 小时流量</div>
+          <div class="card-subtitle">Rolling 24 Hours · UTC storage · labels follow selected timezone · current hour may be partial</div>
         </div>
       </div>
-      <div class="chart-box tall">
-        <canvas id="chartHourly"></canvas>
+      <div class="chart-box tall chart-scroll">
+        <div class="chart-scroll-inner">
+          <canvas id="chartHourly"></canvas>
+        </div>
       </div>
     </div>
 
@@ -820,7 +1001,7 @@ def build_html(
       <div class="card-header">
         <div>
           <div class="card-title">近期业务量走势 (近30天)</div>
-          <div class="card-subtitle">30-Day Activity: Parses, Exports, Clipboard &amp; Failures (日报统计桶沿用 API 原始口径)</div>
+          <div class="card-subtitle">30-Day Activity · UTC calendar-day buckets (与 Worker 存储口径一致)</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -845,13 +1026,14 @@ def build_html(
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">平台解析份额分布</div>
-          <div class="card-subtitle">Supported Platform Parse Share Breakdown</div>
+          <div class="card-title">平台解析份额与今日解析</div>
+          <div class="card-subtitle">All-time share + today UTC counts for every provider returned by the API</div>
         </div>
       </div>
       <div class="chart-box">
         <canvas id="chartPlatform"></canvas>
       </div>
+      <div id="platformTodaySummary" class="mini-stats"></div>
     </div>
   </div>
 
@@ -862,7 +1044,7 @@ def build_html(
       <div class="card-header">
         <div>
           <div class="card-title">全球地区分布 (Top 10)</div>
-          <div class="card-subtitle">Geographic Distribution of Visits by Country / Region</div>
+          <div class="card-subtitle">Geographic Distribution of Visits · “Hide MY” only changes this chart, never global KPIs</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -1019,7 +1201,7 @@ def build_html(
   </div>
 
   <footer>
-    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Display Timezone: UTC+8
+    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Storage Timezone: UTC · Display selectable above
   </footer>
 
   <script>
@@ -1057,13 +1239,21 @@ def build_html(
       }}
     }};
 
-    // 甜甜圈图构造函数（含优雅空数据降级）
-    function createDonut(elementId, labels, data) {{
+    function resolvePercentage(percentages, index, value, total) {{
+      if (Array.isArray(percentages) && index >= 0 && index < percentages.length) {{
+        const apiPct = Number(percentages[index]);
+        if (Number.isFinite(apiPct)) return apiPct;
+      }}
+      return total > 0 ? Math.round((value / total) * 100) : 0;
+    }}
+
+    // 甜甜圈图构造函数：优先显示 API 提供的真实 percentage，缺失时才由完整数据集计算。
+    function createDonut(elementId, labels, data, percentages = null) {{
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
-      const total = hasData ? data.reduce((a, b) => a + b, 0) : 0;
-      new Chart(el, {{
+      const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
+      return new Chart(el, {{
         type: 'doughnut',
         data: {{
           labels: hasData ? labels : ['暂无数据 / No Data'],
@@ -1087,9 +1277,9 @@ def build_html(
               enabled: hasData,
               callbacks: {{
                 label: function(ctx) {{
-                  const val = ctx.parsed;
-                  const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                  return ` ${{ctx.label}}: ${{val.toLocaleString()}} (${{pct}}%)`;
+                  const val = Number(ctx.parsed || 0);
+                  const pct = resolvePercentage(percentages, ctx.dataIndex, val, total);
+                  return ` ${{ctx.label}}: ${{val.toLocaleString()}} · ${{pct}}%`;
                 }}
               }}
             }}
@@ -1098,12 +1288,13 @@ def build_html(
       }});
     }}
 
-    // 横向柱状图（含优雅空数据降级）
-    function createHBar(elementId, labels, data, color) {{
+    // 横向柱状图：同样保留 API percentage，避免用 Top-N 子集重新归一化。
+    function createHBar(elementId, labels, data, color, percentages = null) {{
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
-      new Chart(el, {{
+      const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
+      return new Chart(el, {{
         type: 'bar',
         data: {{
           labels: hasData ? labels : ['暂无数据 / No Data'],
@@ -1116,7 +1307,19 @@ def build_html(
         options: {{
           indexAxis: 'y',
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              enabled: hasData,
+              callbacks: {{
+                label: function(ctx) {{
+                  const val = Number(ctx.parsed?.x ?? ctx.raw ?? 0);
+                  const pct = resolvePercentage(percentages, ctx.dataIndex, val, total);
+                  return ` ${{val.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
           scales: {{
             x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true }},
             y: {{ grid: {{ display: false }} }}
@@ -1125,39 +1328,149 @@ def build_html(
       }});
     }}
 
-    // 1. 小时级流量分布 (UTC 小时桶转换至 UTC+8 标签展示)
-    const elHourly = document.getElementById('chartHourly');
-    if (elHourly) {{
-      new Chart(elHourly, {{
+    const HOURLY_DATA = {hourly_payload_json};
+    const HOURLY_SOURCE = {hourly_source_json};
+    const GEO_DATA = {geo_data};
+    const PLATFORM_DATA = {plat_data};
+    const timezoneSelect = document.getElementById('timezoneSelect');
+    const trafficMetricSelect = document.getElementById('trafficMetricSelect');
+    const hideMalaysia = document.getElementById('hideMalaysia');
+    let hourlyChart = null;
+    let geoChart = null;
+
+    function selectedTimeZone() {{
+      if (!timezoneSelect || timezoneSelect.value === 'local') {{
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      }}
+      return timezoneSelect.value;
+    }}
+
+    function selectedTimeZoneLabel() {{
+      if (!timezoneSelect) return 'Malaysia · UTC+8';
+      return timezoneSelect.options[timezoneSelect.selectedIndex]?.text || timezoneSelect.value;
+    }}
+
+    function formatHourLabel(iso) {{
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '—';
+      return new Intl.DateTimeFormat('zh-CN', {{
+        timeZone: selectedTimeZone(),
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }}).format(d);
+    }}
+
+    function renderHourlyChart() {{
+      const el = document.getElementById('chartHourly');
+      if (!el) return;
+      if (hourlyChart) hourlyChart.destroy();
+
+      const labels = HOURLY_DATA.map(x => formatHourLabel(x.timestamp));
+      const mode = trafficMetricSelect?.value || 'both';
+      hourlyChart = new Chart(el, {{
         type: 'bar',
         data: {{
-          labels: {hourly_labels_json},
+          labels,
           datasets: [
             {{
               label: 'PV 页面浏览 / Page Views',
-              data: {h_pv},
+              data: HOURLY_DATA.map(x => Number(x.pageViews || 0)),
               backgroundColor: '#2563eb',
-              borderRadius: 3
+              borderRadius: 4,
+              hidden: mode === 'uv'
             }},
             {{
-              label: '当日首次出现的独立访客 / First-time Daily Unique Visitors',
-              data: {h_uv},
+              label: 'UV 当日首次访问 / Daily-unique first visits',
+              data: HOURLY_DATA.map(x => Number(x.visitors || 0)),
               backgroundColor: '#38bdf8',
-              borderRadius: 3
+              borderRadius: 4,
+              hidden: mode === 'pv'
             }}
           ]
         }},
         options: {{
           responsive: true,
+          maintainAspectRatio: false,
+          interaction: {{ mode: 'index', intersect: false }},
           plugins: {{
-            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }},
+            tooltip: {{
+              callbacks: {{
+                title: (items) => {{
+                  const idx = items?.[0]?.dataIndex ?? -1;
+                  const raw = HOURLY_DATA[idx]?.timestamp;
+                  return raw ? `${{formatHourLabel(raw)}} · ${{selectedTimeZoneLabel()}}` : '';
+                }}
+              }}
+            }}
           }},
           scales: BASE_SCALES
         }}
       }});
     }}
 
-    // 2. 近期趋势走势 (解析 / 导出 / 剪贴板 / 失败)
+    function renderGeoChart() {{
+      const filtered = (hideMalaysia?.checked)
+        ? GEO_DATA.filter(x => String(x.country).toUpperCase() !== 'MY')
+        : GEO_DATA;
+      if (geoChart) geoChart.destroy();
+      geoChart = createHBar(
+        'chartGeo',
+        filtered.map(x => x.country),
+        filtered.map(x => Number(x.count || 0)),
+        '#2563eb',
+        filtered.map(x => Number(x.percentage || 0))
+      );
+    }}
+
+    function persistControls() {{
+      try {{
+        localStorage.setItem('playlistout.dashboard.timezone', timezoneSelect?.value || 'Asia/Kuala_Lumpur');
+        localStorage.setItem('playlistout.dashboard.trafficMetric', trafficMetricSelect?.value || 'both');
+        localStorage.setItem('playlistout.dashboard.hideMalaysia', hideMalaysia?.checked ? '1' : '0');
+      }} catch (_) {{}}
+    }}
+
+    function restoreControls() {{
+      try {{
+        const tz = localStorage.getItem('playlistout.dashboard.timezone');
+        const metric = localStorage.getItem('playlistout.dashboard.trafficMetric');
+        const hide = localStorage.getItem('playlistout.dashboard.hideMalaysia');
+        if (tz && timezoneSelect && [...timezoneSelect.options].some(o => o.value === tz)) timezoneSelect.value = tz;
+        if (metric && trafficMetricSelect && [...trafficMetricSelect.options].some(o => o.value === metric)) trafficMetricSelect.value = metric;
+        if (hideMalaysia) hideMalaysia.checked = hide === '1';
+      }} catch (_) {{}}
+    }}
+
+    restoreControls();
+    const tzLabel = document.getElementById('displayTimezoneLabel');
+    if (tzLabel) tzLabel.textContent = selectedTimeZoneLabel();
+    renderHourlyChart();
+    renderGeoChart();
+
+    timezoneSelect?.addEventListener('change', () => {{
+      const label = document.getElementById('displayTimezoneLabel');
+      if (label) label.textContent = selectedTimeZoneLabel();
+      persistControls();
+      renderHourlyChart();
+    }});
+    trafficMetricSelect?.addEventListener('change', () => {{
+      persistControls();
+      renderHourlyChart();
+    }});
+    hideMalaysia?.addEventListener('change', () => {{
+      persistControls();
+      renderGeoChart();
+    }});
+
+    if (HOURLY_SOURCE !== 'rolling24') {{
+      console.warn('Dashboard is using legacy UTC-day hourly data; deploy a Worker with last24HourlyPageViews for a true rolling window.');
+    }}
+
+    // 2. 近期趋势走势 (解析 / 歌曲 / 导出 / 剪贴板 / 失败)
     const elTrend = document.getElementById('chartTrend');
     if (elTrend) {{
       new Chart(elTrend, {{
@@ -1173,6 +1486,16 @@ def build_html(
               fill: true,
               tension: 0.3,
               pointRadius: 2.5
+            }},
+            {{
+              label: '歌曲 / Tracks',
+              data: {t_tracks},
+              borderColor: '#0891b2',
+              backgroundColor: 'rgba(8,145,178,0.04)',
+              fill: false,
+              tension: 0.25,
+              pointRadius: 2,
+              yAxisID: 'yTracks'
             }},
             {{
               label: '导出 / Exports',
@@ -1208,7 +1531,15 @@ def build_html(
           plugins: {{
             legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
           }},
-          scales: BASE_SCALES
+          scales: {{
+            ...BASE_SCALES,
+            yTracks: {{
+              position: 'right',
+              beginAtZero: true,
+              grid: {{ drawOnChartArea: false }},
+              ticks: {{ color: '#0891b2', font: {{ size: 10 }} }}
+            }}
+          }}
         }}
       }});
     }}
@@ -1238,18 +1569,29 @@ def build_html(
       }});
     }}
 
-    // 4. 平台解析分布
+    // 4. 平台解析分布 + 今日各平台真实计数
     createDonut('chartPlatform', {plat_labels}, {plat_counts});
+    const platformSummary = document.getElementById('platformTodaySummary');
+    if (platformSummary) {{
+      platformSummary.innerHTML = PLATFORM_DATA.map(item => `
+        <div class="mini-stat">
+          <div class="mini-stat-name">${{item.label}}</div>
+          <div class="mini-stat-value">
+            ${{Number(item.total || 0).toLocaleString()}}
+            <span class="mini-stat-today">今日 UTC +${{Number(item.today || 0).toLocaleString()}}</span>
+          </div>
+        </div>
+      `).join('');
+    }}
 
-    // 5. 地理分布 (全球 Top 10 + 境内省份 Top 10)
-    createHBar('chartGeo', {geo_labels}, {geo_counts}, '#2563eb');
-    createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2');
+    // 5. 地理分布：全球图由可交互的 MY 过滤器管理；中国省份图保持原始真实计数。
+    createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2', {cn_pcts});
 
     // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统)
-    createDonut('chartBrowser', {br_labels}, {br_counts});
-    createDonut('chartBrand', {brand_labels}, {brand_counts});
-    createDonut('chartDevice', {dv_labels}, {dv_counts});
-    createDonut('chartOS', {os_labels}, {os_counts});
+    createDonut('chartBrowser', {br_labels}, {br_counts}, {br_pcts});
+    createDonut('chartBrand', {brand_labels}, {brand_counts}, {brand_pcts});
+    createDonut('chartDevice', {dv_labels}, {dv_counts}, {dv_pcts});
+    createDonut('chartOS', {os_labels}, {os_counts}, {os_pcts});
 
     // 7. 导出格式 & 剪贴板 & 输入类型
     const elExport = document.getElementById('chartExportFmt');
@@ -1274,10 +1616,10 @@ def build_html(
     }}
 
     createDonut('chartClipboard', {cb_labels}, {cb_counts});
-    createDonut('chartInputType', {inp_labels}, {inp_counts});
+    createDonut('chartInputType', {inp_labels}, {inp_counts}, {inp_pcts});
 
     // 8. 来源、延迟与错误
-    createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5');
+    createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5', {ref_pcts});
 
     const elLatency = document.getElementById('chartLatency');
     if (elLatency) {{
@@ -1294,13 +1636,25 @@ def build_html(
         }},
         options: {{
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              callbacks: {{
+                label: function(ctx) {{
+                  const pcts = {lat_pcts};
+                  const value = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                  const pct = Number(pcts[ctx.dataIndex] ?? 0);
+                  return ` ${{value.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
           scales: BASE_SCALES
         }}
       }});
     }}
 
-    createDonut('chartError', {err_labels}, {err_counts});
+    createDonut('chartError', {err_labels}, {err_counts}, {err_pcts});
   </script>
 </body>
 </html>"""
