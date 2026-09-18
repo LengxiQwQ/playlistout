@@ -673,12 +673,14 @@ def build_html(
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       padding: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-      transition: border-color 0.15s;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }}
 
     .kpi-card:hover {{
       border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
     }}
 
     .kpi-label {{
@@ -757,7 +759,7 @@ def build_html(
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       padding: 16px 18px 18px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      box-shadow: var(--shadow);
     }}
 
     .card-header {{
@@ -826,7 +828,7 @@ def build_html(
       <div class="brand-icon">🎵</div>
       <div class="title-group">
         <h1>PlaylistOut 业务运营与流量统计看板</h1>
-        <div class="sub">PlaylistOut Live Analytics Dashboard · Storage: UTC · Display: <span id="displayTimezoneLabel">Malaysia · UTC+8</span></div>
+        <div class="sub">PlaylistOut Live Analytics Dashboard · Storage: UTC · Rolling 24h Display: <span id="displayTimezoneLabel">Malaysia · UTC+8</span></div>
       </div>
     </div>
     <div class="status-group">
@@ -838,7 +840,7 @@ def build_html(
 
   <div class="control-bar">
     <label class="control-group">
-      <span>显示时区 / Timezone</span>
+      <span>24h 图时区 / Chart TZ</span>
       <select id="timezoneSelect">
         <option value="Asia/Kuala_Lumpur" selected>Malaysia · UTC+8</option>
         <option value="Asia/Shanghai">China · UTC+8</option>
