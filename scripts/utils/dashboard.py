@@ -378,26 +378,54 @@ def build_html(
     exports_total = s(stats.get("totalExports"))
     exports_today = s(stats.get("exportsToday"))
 
-    # 小时数据 (24小时) - 保持与 Worker UTC hourly bucket 一一对应，禁止重排序
-    parsed_gen = parse_iso_timestamp(raw_generated_at)
-    if parsed_gen is not None:
-        base_utc_date = parsed_gen.astimezone(dt.timezone.utc).date()
-    elif now is not None:
-        base_utc_date = now.astimezone(dt.timezone.utc).date() if now.tzinfo is not None else now.date()
-    else:
-        base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+    # 小时流量：优先使用 Worker 提供的真实滚动 24 小时 UTC 时间戳。
+    # 时区只属于展示层；绝不重新排序或把 UTC 自然日硬伪装成“过去 24 小时”。
+    hourly_payload = []
+    for item in (stats.get("last24HourlyPageViews") or []):
+        if not isinstance(item, dict):
+            continue
+        parsed_ts = parse_iso_timestamp(item.get("timestamp"))
+        if parsed_ts is None:
+            continue
+        hourly_payload.append({
+            "timestamp": parsed_ts.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
+            "pageViews": s(item.get("pageViews")),
+            "visitors": s(item.get("visitors")),
+        })
 
-    hourly_labels = get_hourly_display_labels(base_utc_date)
-    hourly_labels_json = j(hourly_labels)
+    hourly_payload.sort(key=lambda item: item["timestamp"])
+    hourly_payload = hourly_payload[-24:]
+    hourly_source = "rolling24"
 
-    hourly_raw = stats.get("todayHourlyPageViews") or []
-    h_pv = [0] * 24
-    h_uv = [0] * 24
-    for item in hourly_raw:
-        h = item.get("hour", -1)
-        if 0 <= h <= 23:
-            h_pv[h] = s(item.get("pageViews"))
-            h_uv[h] = s(item.get("visitors"))
+    # Backward compatibility only: older Workers expose a UTC-calendar-day 0..23 array.
+    # This path is explicitly labelled legacy in the UI and is never presented as a real rolling window.
+    if not hourly_payload:
+        hourly_source = "legacyUtcDay"
+        parsed_gen = parse_iso_timestamp(raw_generated_at)
+        if parsed_gen is not None:
+            base_utc_date = parsed_gen.astimezone(dt.timezone.utc).date()
+        elif now is not None:
+            base_utc_date = now.astimezone(dt.timezone.utc).date() if now.tzinfo is not None else now.date()
+        else:
+            base_utc_date = dt.datetime.now(dt.timezone.utc).date()
+
+        for item in (stats.get("todayHourlyPageViews") or []):
+            if not isinstance(item, dict):
+                continue
+            h = item.get("hour", -1)
+            if isinstance(h, int) and 0 <= h <= 23:
+                bucket_time = dt.datetime(
+                    base_utc_date.year, base_utc_date.month, base_utc_date.day,
+                    h, 0, 0, tzinfo=dt.timezone.utc,
+                )
+                hourly_payload.append({
+                    "timestamp": bucket_time.isoformat().replace("+00:00", "Z"),
+                    "pageViews": s(item.get("pageViews")),
+                    "visitors": s(item.get("visitors")),
+                })
+
+    hourly_payload_json = j(hourly_payload)
+    hourly_source_json = j(hourly_source)
 
     # 30天趋势
     recent = list(reversed(stats.get("recentDays") or []))[-30:]
@@ -410,8 +438,11 @@ def build_html(
 
     # 地理数据
     geo_raw = stats.get("topGeo") or []
-    geo_labels = j([g.get("country", "?") for g in geo_raw])
-    geo_counts = j([s(g.get("count")) for g in geo_raw])
+    geo_data = j([
+        {"country": g.get("country", "?"), "count": s(g.get("count"))}
+        for g in geo_raw
+        if isinstance(g, dict)
+    ])
 
     cn_raw = stats.get("chinaProvinces") or []
     cn_labels = j([c.get("province", "?") for c in cn_raw])
