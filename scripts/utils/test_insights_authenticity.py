@@ -267,7 +267,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
         }
         html = build_html(empty_stats, "2026-09-18 00:00:00 CST", "2026-09-17 16:00:00 UTC")
         self.assertIn("暂无数据 / No Data", html)
-        self.assertIn("createHBar('chartGeo', [], [],", html)
+        self.assertIn("const GEO_DATA = [];", html)
+        self.assertIn("renderGeoChart();", html)
         self.assertIn("createHBar('chartChina', [], [],", html)
         self.assertIn("createDonut('chartBrowser', [], []);", html)
         self.assertIn("createDonut('chartDevice', [], []);", html)
@@ -527,15 +528,16 @@ class TestInsightsAuthenticity(unittest.TestCase):
 
         self.assertIn("滚动 24 小时流量", html)
         self.assertIn("Rolling 24 Hours", html)
-        self.assertIn("2026-09-17T07:00:00.000Z", html)
-        self.assertIn("2026-09-18T06:00:00.000Z", html)
+        self.assertIn("2026-09-17T07:00:00Z", html)
+        self.assertIn("2026-09-18T06:00:00Z", html)
+        self.assertIn('const HOURLY_SOURCE = "rolling24";', html)
         self.assertIn('id="timezoneSelect"', html)
         self.assertIn('value="Asia/Kuala_Lumpur"', html)
         self.assertIn('id="trafficMetricSelect"', html)
         self.assertIn('id="hideMalaysia"', html)
         self.assertIn("隐藏马来西亚 / Hide MY", html)
         self.assertIn("Storage: UTC", html)
-        self.assertIn("legacy UTC-day hourly data", html)
+        self.assertIn("GEO_DATA.filter(x => String(x.country).toUpperCase() !== 'MY')", html)
 
     def test_r2_5_test_g_display_metadata_and_cleanliness(self):
         """Test G: Local Dashboard header, footer and timezone labels are clean and unambiguous."""
@@ -621,7 +623,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
 
         # Must contain authentic visit phrasing
         self.assertIn("🌍 访问地区分布", html)
-        self.assertIn("Geographic Distribution of Visits by Country / Region", html)
+        self.assertIn("Geographic Distribution of Visits", html)
+        self.assertIn("Hide MY", html)
 
         # Must NOT contain visitor phrasing in geo sections
         self.assertNotIn("访客地理归属", html)
