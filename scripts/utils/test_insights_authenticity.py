@@ -870,6 +870,7 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         "resolveOutcomes", "resolveFailureCodes",
         "resolveFailureClasses", "resolveFailureStages",
         "resolveRequestedTypes", "resolveRequestedPlatforms",
+        "resolveInputTypes", "resolveInputTypeDistribution",
         "resolveFailuresByPlatform", "providerFailurePaths",
         "resolveOutcomeDistribution", "resolveFailureCodeDistribution",
         "resolveFailureClassDistribution", "resolveFailureStageDistribution",
@@ -1092,6 +1093,10 @@ class TestR7ResolveFailureTelemetry(unittest.TestCase):
                 {"name": "auto", "count": 14, "percentage": 70},
                 {"name": "qqmusic", "count": 6, "percentage": 30},
             ],
+            "resolveInputTypeDistribution": [
+                {"name": "standard_url", "count": 15, "percentage": 75},
+                {"name": "short_url", "count": 5, "percentage": 25},
+            ],
             "resolveFailuresByPlatform": [
                 {"name": "qqmusic", "count": 3, "percentage": 60},
                 {"name": "netease", "count": 2, "percentage": 40},
@@ -1120,6 +1125,7 @@ class TestR7ResolveFailureTelemetry(unittest.TestCase):
             "chartProvFailPath",
             "chartResReqType",
             "chartResReqPlat",
+            "chartResInputType",
         ]
         for canvas_id in expected_canvases:
             self.assertIn(f'id="{canvas_id}"', html)

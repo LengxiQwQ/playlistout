@@ -3,6 +3,8 @@
  * Defined in docs/PROJECT-CONSTITUTION.md Section 6
  */
 
+import type { ResolveFailureStage } from '../analytics/types';
+
 export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
 
 export interface Track {
@@ -128,7 +130,7 @@ export type ProviderErrorCode = ApiErrorCode;
 
 export interface ProviderErrorTelemetry {
   providerFailurePath?: 'primary' | 'fallback' | 'both' | 'not_applicable' | 'unknown';
-  stage?: string;
+  stage?: ResolveFailureStage | string;
   platform?: string;
 }
 

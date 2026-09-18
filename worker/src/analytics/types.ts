@@ -139,6 +139,7 @@ export interface PrivateAnalyticsResponse {
   resolveFailureStageDistribution: ClientDistributionItem[];
   resolveRequestedTypeDistribution: ClientDistributionItem[];
   resolveRequestedPlatformDistribution: ClientDistributionItem[];
+  resolveInputTypeDistribution: ClientDistributionItem[];
   resolveFailuresByPlatform: ClientDistributionItem[];
   providerFailurePathDistribution: ClientDistributionItem[];
 
@@ -149,6 +150,7 @@ export interface PrivateAnalyticsResponse {
   resolveFailureStages?: ClientDistributionItem[];
   resolveRequestedTypes?: ClientDistributionItem[];
   resolveRequestedPlatforms?: ClientDistributionItem[];
+  resolveInputTypes?: ClientDistributionItem[];
   providerFailurePaths?: ClientDistributionItem[];
 }
 

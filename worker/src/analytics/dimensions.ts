@@ -12,6 +12,7 @@ import type {
   ErrorCategory,
   ResolveFailureCode,
   ResolveFailureClass,
+  ResolveFailureStage,
   ResolveRequestedType,
   ResolveRequestedPlatform,
   AnalyticsPlatform,
@@ -252,3 +253,28 @@ export function classifyProviderFailurePath(
   }
   return 'unknown';
 }
+
+/**
+ * Normalizes a resolve failure stage into a strictly bounded enum value.
+ * Unrecognized or invalid stage names safely fall back to 'finalization'.
+ */
+export function classifyResolveFailureStage(
+  rawStage: string | null | undefined,
+): ResolveFailureStage {
+  if (!rawStage) return 'finalization';
+  const clean = rawStage.trim().toLowerCase();
+  switch (clean) {
+    case 'input_validation':
+    case 'routing':
+    case 'short_link_resolution':
+    case 'playlist_resolution':
+    case 'user_resolution':
+    case 'disambiguation_probe':
+    case 'provider_fetch':
+    case 'finalization':
+      return clean;
+    default:
+      return 'finalization';
+  }
+}
+

@@ -6,6 +6,7 @@ import {
   classifyErrorCategory,
   classifyResolveFailureCode,
   classifyResolveFailureClass,
+  classifyResolveFailureStage,
   classifyResolveRequestedType,
   classifyResolveRequestedPlatform,
   classifyAnalyticsPlatform,
@@ -138,6 +139,23 @@ describe('Analytics Dimension Classifiers', () => {
       // internal
       expect(classifyResolveFailureClass('INTERNAL_ERROR')).toBe('internal');
       expect(classifyResolveFailureClass('UNKNOWN')).toBe('internal');
+    });
+
+    it('bounds resolve failure stages and safely falls back to finalization', () => {
+      expect(classifyResolveFailureStage('input_validation')).toBe('input_validation');
+      expect(classifyResolveFailureStage('routing')).toBe('routing');
+      expect(classifyResolveFailureStage('short_link_resolution')).toBe('short_link_resolution');
+      expect(classifyResolveFailureStage('playlist_resolution')).toBe('playlist_resolution');
+      expect(classifyResolveFailureStage('user_resolution')).toBe('user_resolution');
+      expect(classifyResolveFailureStage('disambiguation_probe')).toBe('disambiguation_probe');
+      expect(classifyResolveFailureStage('provider_fetch')).toBe('provider_fetch');
+      expect(classifyResolveFailureStage('finalization')).toBe('finalization');
+      // Invalid or arbitrary input must fallback safely to finalization
+      expect(classifyResolveFailureStage('malicious_unbounded_stage')).toBe('finalization');
+      expect(classifyResolveFailureStage('url_detection')).toBe('finalization');
+      expect(classifyResolveFailureStage('')).toBe('finalization');
+      expect(classifyResolveFailureStage(null)).toBe('finalization');
+      expect(classifyResolveFailureStage(undefined)).toBe('finalization');
     });
 
     it('normalizes requested type into bounded enum and shields raw input', () => {

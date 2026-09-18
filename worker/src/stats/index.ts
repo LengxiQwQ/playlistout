@@ -413,6 +413,8 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
     resolveFailureStageDistribution: [],
     resolveRequestedTypeDistribution: [],
     resolveRequestedPlatformDistribution: [],
+    resolveInputTypeDistribution: [],
+    resolveInputTypes: [],
     resolveFailuresByPlatform: [],
     providerFailurePathDistribution: [],
   };
@@ -640,6 +642,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
     const resolveFailureStageDistribution: ClientDistributionItem[] = [];
     const resolveRequestedTypeDistribution: ClientDistributionItem[] = [];
     const resolveRequestedPlatformDistribution: ClientDistributionItem[] = [];
+    const resolveInputTypeDistribution: ClientDistributionItem[] = [];
     const resolveFailuresByPlatform: ClientDistributionItem[] = [];
     const providerFailurePathDistribution: ClientDistributionItem[] = [];
 
@@ -653,7 +656,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
             'referrer_source', 'input_type', 'latency_bucket', 'error_category', 'device_brand',
             'playlist_size', 'provider_path', 'export_playlist_size', 'clipboard_playlist_size', 'rate_limit_endpoint',
             'resolve_outcome', 'resolve_failure_code', 'resolve_failure_class', 'resolve_failure_stage',
-            'resolve_requested_type', 'resolve_requested_platform', 'provider_failure_path'
+            'resolve_requested_type', 'resolve_requested_platform', 'resolve_input_type', 'provider_failure_path'
           )
           GROUP BY dimension, value
           ORDER BY dimension, total DESC
@@ -720,6 +723,9 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
 
         const resReqPlatItems = dimMap.get('resolve_requested_platform');
         if (resReqPlatItems) resolveRequestedPlatformDistribution.push(...toDistributionFromDim(resReqPlatItems));
+
+        const resInputTypeItems = dimMap.get('resolve_input_type');
+        if (resInputTypeItems) resolveInputTypeDistribution.push(...toDistributionFromDim(resInputTypeItems));
 
         const provFailPathItems = dimMap.get('provider_failure_path');
         if (provFailPathItems) providerFailurePathDistribution.push(...toDistributionFromDim(provFailPathItems));
@@ -833,6 +839,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
       resolveFailureStageDistribution,
       resolveRequestedTypeDistribution,
       resolveRequestedPlatformDistribution,
+      resolveInputTypeDistribution,
       resolveFailuresByPlatform,
       providerFailurePathDistribution,
       // Direct short aliases
@@ -842,6 +849,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
       resolveFailureStages: resolveFailureStageDistribution,
       resolveRequestedTypes: resolveRequestedTypeDistribution,
       resolveRequestedPlatforms: resolveRequestedPlatformDistribution,
+      resolveInputTypes: resolveInputTypeDistribution,
       providerFailurePaths: providerFailurePathDistribution,
     };
   } catch (err: unknown) {
