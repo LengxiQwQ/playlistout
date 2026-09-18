@@ -14,6 +14,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { verifyD1Schema } from './verify-schema.js';
+import { validateMigrationHistory } from './verify-migration-history.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,22 +126,49 @@ export async function provisionDatabase(options = {}) {
     console.log(`${path.basename(configPath)} already contains database_id: ${dbUuid}`);
   }
 
-  // 4. Apply migrations if not skipped
+  // 4. Validate migration state and apply if not skipped
   if (!options.skipMigrations) {
-    console.log('Applying pending migrations using Wrangler native runner...');
-    execSync(`npx wrangler d1 migrations apply ${dbName} --remote`, {
-      cwd: workerDir,
-      stdio: 'inherit',
+    console.log('Preflight: validating migration state before applying migrations...');
+    const preflight = await validateMigrationHistory({
+      mode: 'pre-apply',
+      databaseName: dbName,
+      remote: true,
+      queryFn: options.queryFn,
       env: {
-        ...process.env,
         CLOUDFLARE_API_TOKEN: token,
         CLOUDFLARE_ACCOUNT_ID: accountId,
       },
     });
+    console.log(
+      `Preflight check passed: ${preflight.appliedCount || 0} applied (valid prefix), ${preflight.pendingCount || 0} pending.`
+    );
+
+    if (preflight.pendingCount > 0) {
+      console.log(`Applying ${preflight.pendingCount} pending migrations using Wrangler native runner...`);
+      if (options.applyFn) {
+        await options.applyFn();
+      } else {
+        execSync(`npx wrangler d1 migrations apply ${dbName} --remote`, {
+          cwd: workerDir,
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            CLOUDFLARE_API_TOKEN: token,
+            CLOUDFLARE_ACCOUNT_ID: accountId,
+          },
+        });
+      }
+    } else {
+      console.log('Database is already up to date. No pending migrations to apply.');
+    }
 
     // 5. Verify schema
-    console.log('Verifying remote schema...');
-    await verifyD1Schema({ remote: true, databaseName: dbName });
+    console.log('Verifying remote schema and migration history completeness...');
+    await verifyD1Schema({
+      remote: true,
+      databaseName: dbName,
+      queryFn: options.queryFn,
+    });
   }
 
   console.log(`✔ D1 Provisioning complete for "${dbName}" (${dbUuid}).`);

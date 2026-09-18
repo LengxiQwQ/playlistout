@@ -22,6 +22,7 @@ import {
   baselineLegacyDatabase,
   HISTORICAL_BASELINE_MIGRATIONS,
 } from '../../scripts/d1/baseline-legacy.js';
+import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -597,11 +598,17 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
     it('ensures migration step precedes worker deployment step', () => {
       const content = fs.readFileSync(workflowPath, 'utf8');
+      const identityIdx = content.indexOf('Verify Production D1 Identity');
+      const preflightIdx = content.indexOf('Preflight D1 Migration History');
       const migrationIdx = content.indexOf('Apply Pending D1 Migrations');
+      const postflightIdx = content.indexOf('Postflight D1 Schema and History Completeness');
       const deployIdx = content.indexOf('Deploy to Cloudflare Workers');
-      expect(migrationIdx).toBeGreaterThan(0);
-      expect(deployIdx).toBeGreaterThan(0);
-      expect(migrationIdx).toBeLessThan(deployIdx);
+
+      expect(identityIdx).toBeGreaterThan(0);
+      expect(preflightIdx).toBeGreaterThan(identityIdx);
+      expect(migrationIdx).toBeGreaterThan(preflightIdx);
+      expect(postflightIdx).toBeGreaterThan(migrationIdx);
+      expect(deployIdx).toBeGreaterThan(postflightIdx);
     });
 
     it('does not contain bot git commit / push step (zero source-tree mutation)', () => {
@@ -619,6 +626,212 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         expect(line).not.toMatch(/\.sqlite/);
         expect(line).not.toMatch(/\.wrangler/);
         expect(line).not.toMatch(/\.tmp_/);
+      }
+    });
+  });
+
+  describe('11. R8.1 Preflight Migration History & Adversarial Gates', () => {
+    let db: DatabaseSync;
+
+    beforeEach(() => {
+      db = new DatabaseSync(':memory:');
+    });
+
+    afterEach(() => {
+      db.close();
+    });
+
+    it('untracked existing DB cannot reach apply step: fails closed in preflight when business tables exist without d1_migrations', async () => {
+      db.exec(`
+        CREATE TABLE aggregate_stats (date TEXT, platform TEXT, metric TEXT, count INT);
+        CREATE TABLE daily_geo_stats (date TEXT, platform TEXT, country TEXT, region TEXT, city TEXT, count INT);
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'pre-apply', queryFn })
+      ).rejects.toThrow(/\[FAIL-CLOSED\] Untracked database detected/);
+    });
+
+    it('untracked existing DB fails closed when business tables exist and d1_migrations has 0 records', async () => {
+      db.exec(`
+        CREATE TABLE aggregate_stats (date TEXT, platform TEXT, metric TEXT, count INT);
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'pre-apply', queryFn })
+      ).rejects.toThrow(/\[FAIL-CLOSED\] Untracked database detected/);
+    });
+
+    it('preflight rejects unknown applied migration (e.g. 0099_manual_hotfix.sql)', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO d1_migrations (name) VALUES ('0001_initial_stats.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0099_manual_hotfix.sql');
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'pre-apply', queryFn })
+      ).rejects.toThrow(/Unknown migration in database history.*0099_manual_hotfix\.sql/);
+    });
+
+    it('preflight rejects history sequence gap (e.g. 0001 then 0003, skipping 0002)', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO d1_migrations (name) VALUES ('0001_initial_stats.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0003_replace_events_with_aggregates.sql');
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'pre-apply', queryFn })
+      ).rejects.toThrow(/Migration history mismatch or out-of-order/);
+    });
+
+    it('preflight rejects out-of-order history (e.g. 0002 then 0001)', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO d1_migrations (name) VALUES ('0002_analytics_foundation.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0001_initial_stats.sql');
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'pre-apply', queryFn })
+      ).rejects.toThrow(/Migration history mismatch or out-of-order/);
+    });
+
+    it('preflight accepts valid partial sequential prefix (e.g. 0001-0003) and identifies pending', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO d1_migrations (name) VALUES ('0001_initial_stats.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0002_analytics_foundation.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0003_replace_events_with_aggregates.sql');
+      `);
+
+      const queryFn = makeQueryFn(db);
+      const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
+      expect(res.valid).toBe(true);
+      expect(res.appliedCount).toBe(3);
+      expect(res.pendingCount).toBe(5);
+      expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
+    });
+
+    it('postflight requires exact equality and rejects incomplete history', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO d1_migrations (name) VALUES ('0001_initial_stats.sql');
+        INSERT INTO d1_migrations (name) VALUES ('0002_analytics_foundation.sql');
+      `);
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'post-apply', queryFn })
+      ).rejects.toThrow(/Post-apply history verification failed: exact equality required/);
+    });
+
+    it('postflight rejects extra migrations exceeding repository count', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
+        db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
+      }
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_unexpected_extra.sql');
+
+      const queryFn = makeQueryFn(db);
+      await expect(
+        validateMigrationHistory({ mode: 'post-apply', queryFn })
+      ).rejects.toThrow(/exceeding repository count/);
+    });
+
+    it('postflight accepts exact matching history', async () => {
+      db.exec(`
+        CREATE TABLE d1_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
+        db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
+      }
+
+      const queryFn = makeQueryFn(db);
+      const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
+      expect(res.valid).toBe(true);
+      expect(res.appliedCount).toBe(8);
+      expect(res.pendingCount).toBe(0);
+    });
+
+    it('explicit provision rejects existing untracked database target before applying migrations', async () => {
+      db.exec(`
+        CREATE TABLE aggregate_stats (date TEXT, platform TEXT, metric TEXT, count INT);
+      `);
+
+      const queryFn = makeQueryFn(db);
+      let applyCalled = false;
+      const applyFn = async () => {
+        applyCalled = true;
+      };
+
+      const mockFetch = async () => ({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: [{ name: 'playlistout-stats', uuid: 'existing-untracked-uuid' }],
+        }),
+      });
+
+      const tempConfig = path.join(rootDir, 'node_modules', '.tmp_provision_untracked.jsonc');
+      fs.writeFileSync(tempConfig, '{\n  "database_id": "placeholder"\n}', 'utf8');
+
+      try {
+        await expect(
+          provisionDatabase({
+            token: 'mock-token',
+            accountId: 'mock-account',
+            fetch: mockFetch as any,
+            wranglerPath: tempConfig,
+            queryFn,
+            applyFn,
+          })
+        ).rejects.toThrow(/\[FAIL-CLOSED\] Untracked database detected/);
+
+        expect(applyCalled).toBe(false);
+      } finally {
+        if (fs.existsSync(tempConfig)) fs.unlinkSync(tempConfig);
       }
     });
   });

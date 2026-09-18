@@ -9,16 +9,15 @@
  * 4. Migration history matches repo migration files and 0 pending migrations remain.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  executeD1Query,
+  validateMigrationHistory,
+} from './verify-migration-history.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
-const workerDir = path.resolve(rootDir, 'worker');
-const migrationsDir = path.resolve(workerDir, 'migrations');
+
+export { executeD1Query, validateMigrationHistory };
 
 export const REQUIRED_TABLES = [
   'aggregate_stats',
@@ -59,36 +58,6 @@ export const REQUIRED_INDEXES = [
   'idx_security_rate_limits_reset_at',
 ];
 
-export async function executeD1Query(sql, options = {}) {
-  const isRemote = options.remote ?? process.argv.includes('--remote');
-  const dbName = options.databaseName || 'playlistout-stats';
-  const persistTo = options.persistTo ? `--persist-to "${options.persistTo}"` : '';
-  const flag = isRemote ? '--remote' : `--local ${persistTo}`.trim();
-
-  // Escape SQL quotes for shell execution
-  const escapedSql = sql.replace(/"/g, '\\"');
-  const cmd = `npx wrangler d1 execute ${dbName} ${flag} --command "${escapedSql}" --json`;
-
-  try {
-    const stdout = execSync(cmd, {
-      cwd: workerDir,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, ...options.env },
-    });
-
-    const jsonStart = stdout.indexOf('[');
-    const jsonEnd = stdout.lastIndexOf(']');
-    if (jsonStart === -1 || jsonEnd === -1) {
-      throw new Error(`Invalid JSON output from wrangler d1 execute: ${stdout}`);
-    }
-    const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
-    return parsed[0]?.results || [];
-  } catch (err) {
-    throw new Error(`D1 query failed: ${err.message}`);
-  }
-}
-
 export async function verifyD1Schema(options = {}) {
   const queryFn = options.queryFn || ((sql) => executeD1Query(sql, options));
 
@@ -119,28 +88,19 @@ export async function verifyD1Schema(options = {}) {
     throw new Error(`Missing required indexes: ${missingIndexes.join(', ')}`);
   }
 
-  // 4. Verify migration history completeness
-  const appliedMigrations = await queryFn('SELECT name FROM d1_migrations ORDER BY id ASC;');
-  const appliedNames = appliedMigrations.map((r) => r.name);
-
-  const localFiles = fs
-    .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
-
-  const missingFromHistory = localFiles.filter((f) => !appliedNames.includes(f));
-  if (missingFromHistory.length > 0) {
-    throw new Error(
-      `Pending or unrecorded migrations detected! Following migrations are not applied:\n  ${missingFromHistory.join('\n  ')}`
-    );
-  }
+  // 4. Verify postflight migration history exact equality (length, order, names)
+  const historyResult = await validateMigrationHistory({
+    ...options,
+    mode: 'post-apply',
+    queryFn,
+  });
 
   return {
     verified: true,
     tablesCount: existingTables.size,
-    appliedMigrationsCount: appliedNames.length,
-    pendingCount: missingFromHistory.length,
-    appliedNames,
+    appliedMigrationsCount: historyResult.appliedCount,
+    pendingCount: historyResult.pendingCount,
+    appliedNames: historyResult.appliedNames,
   };
 }
 
