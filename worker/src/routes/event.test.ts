@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import worker from '../index';
-import { resetRateLimitStore } from '../security/rate-limit';
+import { resetRateLimitStore, checkDurableRateLimit } from '../security/rate-limit';
 
 describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance)', () => {
   const baseUrl = 'https://playlistout-api.lengxiqwq.com/api/event';
@@ -29,7 +29,28 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
             boundArgs = args;
             return this;
           },
+          async first() {
+            executedStatements.push(sql);
+            if (opts.failRateLimit && sql.includes('security_rate_limits')) {
+              throw new Error('D1 rate limiter failure');
+            }
+            if (sql.includes('security_rate_limits')) {
+              // Bound args: [key, resetAt, maxRequests]
+              const maxRequests = (boundArgs[2] as number | undefined) ?? 60;
+              const resetAt = (boundArgs[1] as number | undefined) ?? (Math.floor(Date.now() / 1000) + 60);
+              if (d1RateLimitCount < maxRequests) {
+                d1RateLimitCount += 1;
+                return { count: d1RateLimitCount, reset_at: resetAt };
+              }
+              // Limit reached: DO UPDATE skipped via WHERE count < ?3, RETURNING yields 0 rows (null)
+              return null;
+            }
+            return null;
+          },
           async run() {
+            if (opts.failRateLimit && sql.includes('security_rate_limits')) {
+              throw new Error('D1 rate limiter failure');
+            }
             if (opts.failAnalytics && sql.includes('INSERT INTO aggregate_stats')) {
               throw new Error('Analytics D1 error');
             }
@@ -49,23 +70,10 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         if (opts.failAnalytics && stmts.length > 2) {
           throw new Error('D1 analytics failure');
         }
-
-        // Check if this batch is for security_rate_limits
-        d1RateLimitCount += 1;
-        const nowSec = Math.floor(Date.now() / 1000);
-
         for (const _s of stmts) {
           executedStatements.push('batch_statement');
         }
-
-        return [
-          { success: true },
-          {
-            results: [
-              { count: d1RateLimitCount, reset_at: nowSec + 60 },
-            ],
-          },
-        ];
+        return [{ success: true }];
       },
     };
 
@@ -436,6 +444,44 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       expect(body.error.code).toBe('INVALID_INPUT');
       expect(body.error.message).toContain('too large');
     });
+
+    it('immediately cancels stream reader and aborts when payload exceeds 1024 bytes without reading full body', async () => {
+      let chunksRead = 0;
+      let streamCancelled = false;
+
+      // Simulated streaming body that can yield unlimited chunks
+      const stream = new ReadableStream({
+        pull(controller) {
+          chunksRead++;
+          // Yield 512 bytes each pull
+          controller.enqueue(new Uint8Array(512));
+        },
+        cancel() {
+          streamCancelled = true;
+        },
+      });
+
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.lengxiqwq.com',
+        },
+        body: stream,
+        // @ts-ignore
+        duplex: 'half',
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as any;
+      expect(body.error.code).toBe('INVALID_INPUT');
+      expect(body.error.message).toContain('too large');
+
+      // Crucial abuse boundary: stream was cancelled immediately upon exceeding 1024 bytes (at chunk 3 = 1536 bytes)
+      expect(streamCancelled).toBe(true);
+      expect(chunksRead).toBeLessThanOrEqual(3);
+    });
   });
 
   describe('Strict Schema & Unknown Fields Rejection', () => {
@@ -633,6 +679,81 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       const response = await worker.fetch(request, mockEnv, ctx);
       expect(response.status).toBe(204);
       await Promise.allSettled(ctx._promises);
+    });
+
+    it('enforces non-amplifying durable rate limiting: DB count caps at limit and does not increment on 100 subsequent 429 requests', async () => {
+      // Start with limit reached (count = 59)
+      const mockEnv = createMockEnv({ limitCount: 59 });
+      const clientIp = '198.51.100.42';
+
+      // 60th request: Allowed (count becomes 60, reaching the limit)
+      const req60 = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://playlistout.lengxiqwq.com',
+          'cf-connecting-ip': clientIp,
+        },
+        body: JSON.stringify({ type: 'visit' }),
+      });
+      const res60 = await worker.fetch(req60, mockEnv, createMockCtx());
+      expect(res60.status).toBe(204);
+      expect(mockEnv.DB._rateLimitCount()).toBe(60);
+
+      // Now send 100 subsequent requests across simulated isolate restarts/instances
+      for (let i = 0; i < 100; i++) {
+        // Clear in-memory isolate store to simulate a fresh isolate hitting D1
+        resetRateLimitStore();
+
+        const req = new Request(baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: 'https://playlistout.lengxiqwq.com',
+            'cf-connecting-ip': clientIp,
+          },
+          body: JSON.stringify({ type: 'visit' }),
+        });
+
+        const res = await worker.fetch(req, mockEnv, createMockCtx());
+        expect(res.status).toBe(429);
+      }
+
+      // CRITICAL R4 SECURITY INVARIANT:
+      // Authoritative DB count MUST remain strictly 60, NOT 160. Zero D1 write amplification.
+      expect(mockEnv.DB._rateLimitCount()).toBe(60);
+    });
+
+    it('attaches rate limit cleanup tasks to ctx.waitUntil with reliable execution semantics', async () => {
+      const pruneStatements: string[] = [];
+      const testDb = {
+        prepare(sql: string) {
+          return {
+            bind() {
+              return this;
+            },
+            first: async () => ({ count: 1, reset_at: 100 }),
+            run: async () => {
+              pruneStatements.push(sql);
+              return { success: true };
+            },
+          };
+        },
+      } as unknown as D1Database;
+
+      const ctx = createMockCtx();
+      const originalRandom = Math.random;
+      Math.random = () => 0.01; // Force cleanup branch (< 0.05)
+
+      try {
+        await checkDurableRateLimit(testDb, '1.2.3.4', 60, 60, 'event', ctx);
+        // Prune promise must be explicitly registered on ctx.waitUntil
+        expect(ctx._promises.length).toBeGreaterThanOrEqual(1);
+        await Promise.all(ctx._promises);
+        expect(pruneStatements.some((s) => s.includes('DELETE FROM security_rate_limits'))).toBe(true);
+      } finally {
+        Math.random = originalRandom;
+      }
     });
   });
 });
