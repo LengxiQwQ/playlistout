@@ -514,13 +514,17 @@ def build_html(
       --rose: #e11d48;
       --indigo: #4f46e5;
       --cyan: #0891b2;
-      --radius: 10px;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
     }}
 
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
     body {{
-      background-color: var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 28rem),
+        radial-gradient(circle at top right, rgba(8,145,178,0.06), transparent 24rem),
+        var(--bg);
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 13px;
@@ -597,6 +601,63 @@ def build_html(
       padding: 4px 10px;
       border-radius: 6px;
       font-size: 11px;
+    }}
+
+    .control-bar {{
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }}
+
+    .control-group {{
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }}
+
+    .control-group select {{
+      border: 1px solid var(--card-border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text-main);
+      padding: 7px 28px 7px 9px;
+      font-size: 11px;
+      outline: none;
+    }}
+
+    .control-group input[type="checkbox"] {{
+      width: 15px;
+      height: 15px;
+      accent-color: var(--brand);
+    }}
+
+    .control-note {{
+      margin-left: auto;
+      color: var(--text-light);
+      font-size: 10px;
+      max-width: 600px;
+    }}
+
+    .chart-scroll {{
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 5px;
+      scrollbar-width: thin;
+    }}
+
+    .chart-scroll-inner {{
+      min-width: 900px;
+      height: 280px;
     }}
 
     /* KPI 核心指标网格 */
@@ -765,13 +826,40 @@ def build_html(
       <div class="brand-icon">🎵</div>
       <div class="title-group">
         <h1>PlaylistOut 业务运营与流量统计看板</h1>
-        <div class="sub">PlaylistOut Live Analytics Dashboard · 本地实时生成 (Local Realtime View) · Display Timezone: UTC+8</div>
+        <div class="sub">PlaylistOut Live Analytics Dashboard · Storage: UTC · Display: <span id="displayTimezoneLabel">Malaysia · UTC+8</span></div>
       </div>
     </div>
     <div class="status-group">
       <span class="status-badge">{uptime_badge}</span>
       <span class="status-time">API Generated: {api_generated_str}</span>
       <span class="status-time">Local Fetched: {local_fetched_str}</span>
+    </div>
+  </div>
+
+  <div class="control-bar">
+    <label class="control-group">
+      <span>显示时区 / Timezone</span>
+      <select id="timezoneSelect">
+        <option value="Asia/Kuala_Lumpur" selected>Malaysia · UTC+8</option>
+        <option value="Asia/Shanghai">China · UTC+8</option>
+        <option value="UTC">UTC</option>
+        <option value="local">Browser Local</option>
+      </select>
+    </label>
+    <label class="control-group">
+      <span>24h 流量 / Traffic</span>
+      <select id="trafficMetricSelect">
+        <option value="both" selected>PV + UV</option>
+        <option value="pv">PV only</option>
+        <option value="uv">UV only</option>
+      </select>
+    </label>
+    <label class="control-group" title="只影响地区图，不会修改总 PV / UV / 解析量">
+      <input id="hideMalaysia" type="checkbox">
+      <span>隐藏马来西亚 / Hide MY</span>
+    </label>
+    <div class="control-note">
+      “今日 / 近30天”仍使用 Worker 的 UTC 自然日统计；滚动 24h 使用真实 UTC 时间戳并按所选时区显示。隐藏 MY 只影响地区图。
     </div>
   </div>
 
@@ -783,7 +871,7 @@ def build_html(
         <span class="kpi-label-en">Cumulative Daily Unique Visits</span>
       </div>
       <div class="kpi-val">{n(visitors)}</div>
-      <div class="kpi-footer">今日独立 / Today Unique +{n(vis_today)} · <span title="Daily-deduplicated, no cross-day tracking">每日去重 · 无跨日追踪</span></div>
+      <div class="kpi-footer">今日独立 (UTC) / Today Unique (UTC) +{n(vis_today)} · <span title="Daily-deduplicated, no cross-day tracking">每日去重 · 无跨日追踪</span></div>
     </div>
 
     <div class="kpi-card">
@@ -792,7 +880,7 @@ def build_html(
         <span class="kpi-label-en">Page Views</span>
       </div>
       <div class="kpi-val">{n(pv_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(pv_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(pv_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -801,7 +889,7 @@ def build_html(
         <span class="kpi-label-en">Playlists Parsed</span>
       </div>
       <div class="kpi-val">{n(parses_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(parses_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(parses_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -810,7 +898,7 @@ def build_html(
         <span class="kpi-label-en">Tracks Processed</span>
       </div>
       <div class="kpi-val">{n(tracks_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(tracks_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(tracks_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -819,7 +907,7 @@ def build_html(
         <span class="kpi-label-en">File Exports</span>
       </div>
       <div class="kpi-val">{n(exports_total)}</div>
-      <div class="kpi-footer">今日 / Today +{n(exports_today)}</div>
+      <div class="kpi-footer">今日 (UTC) / Today (UTC) +{n(exports_today)}</div>
     </div>
 
     <div class="kpi-card">
@@ -838,12 +926,14 @@ def build_html(
     <div class="chart-card">
       <div class="card-header">
         <div>
-          <div class="card-title">小时级流量分布</div>
-          <div class="card-subtitle">Hourly Traffic · UTC+8 Display (API 小时桶已转换为 UTC+8 显示 / API hourly buckets displayed in UTC+8)</div>
+          <div class="card-title">滚动 24 小时流量</div>
+          <div class="card-subtitle">Rolling 24 Hours · UTC storage · labels follow selected timezone · current hour may be partial</div>
         </div>
       </div>
-      <div class="chart-box tall">
-        <canvas id="chartHourly"></canvas>
+      <div class="chart-box tall chart-scroll">
+        <div class="chart-scroll-inner">
+          <canvas id="chartHourly"></canvas>
+        </div>
       </div>
     </div>
 
@@ -851,7 +941,7 @@ def build_html(
       <div class="card-header">
         <div>
           <div class="card-title">近期业务量走势 (近30天)</div>
-          <div class="card-subtitle">30-Day Activity: Parses, Exports, Clipboard &amp; Failures (日报统计桶沿用 API 原始口径)</div>
+          <div class="card-subtitle">30-Day Activity · UTC calendar-day buckets (与 Worker 存储口径一致)</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -893,7 +983,7 @@ def build_html(
       <div class="card-header">
         <div>
           <div class="card-title">全球地区分布 (Top 10)</div>
-          <div class="card-subtitle">Geographic Distribution of Visits by Country / Region</div>
+          <div class="card-subtitle">Geographic Distribution of Visits · “Hide MY” only changes this chart, never global KPIs</div>
         </div>
       </div>
       <div class="chart-box tall">
@@ -1050,7 +1140,7 @@ def build_html(
   </div>
 
   <footer>
-    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Display Timezone: UTC+8
+    PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Storage Timezone: UTC · Display selectable above
   </footer>
 
   <script>
