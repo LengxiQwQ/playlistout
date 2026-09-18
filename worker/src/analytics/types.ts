@@ -32,6 +32,18 @@ export interface HourlyEntry {
   visitors: number;
 }
 
+/**
+ * A real rolling hourly bucket. `timestamp` is the UTC start of the hour.
+ * Consumers may render it in any display timezone without changing bucket order.
+ */
+export interface RollingHourlyEntry {
+  /** UTC ISO-8601 timestamp for the start of the hour */
+  timestamp: string;
+  pageViews: number;
+  /** Daily-unique visitors whose first visit occurred in this hour */
+  visitors: number;
+}
+
 export interface GeoDistributionItem {
   country: string;
   region?: string;
@@ -97,8 +109,17 @@ export interface PublicStatsResponse {
 
   // ── 维度数据（新增，全部可选，collect.py 向后兼容） ──
 
-  /** 今日各小时页面访问量（UTC 0–23时，无数据的小时 pageViews=0） */
+  /**
+   * Legacy UTC-calendar-day hourly distribution (UTC 0–23).
+   * Kept for compatibility; new dashboards should prefer last24HourlyPageViews.
+   */
   todayHourlyPageViews?: HourlyEntry[];
+
+  /**
+   * True rolling last 24 hourly buckets, oldest -> newest.
+   * Each bucket carries its UTC hour-start timestamp; the newest/current hour may be partial.
+   */
+  last24HourlyPageViews?: RollingHourlyEntry[];
 
   /**
    * 访问地区分布 TOP 10 国家（来源于页面访问事件的粗粒度地区记录）。
