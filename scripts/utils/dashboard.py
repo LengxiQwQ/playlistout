@@ -855,14 +855,14 @@ def build_html(
     </div>
   </div>
 
-  <!-- 地理归属 -->
-  <div class="section-title">🌍 访客地理归属 <span>/ Geography & Regions</span></div>
+  <!-- 访问地区分布 -->
+  <div class="section-title">🌍 访问地区分布 <span>/ Geography & Regions</span></div>
   <div class="chart-grid">
     <div class="chart-card">
       <div class="card-header">
         <div>
           <div class="card-title">全球地区分布 (Top 10)</div>
-          <div class="card-subtitle">Global Visitor Geography by Country / Region</div>
+          <div class="card-subtitle">Geographic Distribution of Visits by Country / Region</div>
         </div>
       </div>
       <div class="chart-box tall">
