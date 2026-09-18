@@ -71,6 +71,7 @@ jobs:
 
       - name: Apply Pending D1 Migrations
         if: steps.check-creds.outputs.has_creds == 'true'
+        working-directory: worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
