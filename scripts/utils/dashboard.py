@@ -737,6 +737,11 @@ def build_html(
     res_req_plat_counts = dist_counts(stats.get("resolveRequestedPlatformDistribution"))
     res_req_plat_pcts = dist_pcts(stats.get("resolveRequestedPlatformDistribution"))
 
+    res_input_type_raw = stats.get("resolveInputTypeDistribution") or stats.get("resolveInputTypes") or []
+    res_input_type_labels = dist_names_mapped(res_input_type_raw, format_input_label)
+    res_input_type_counts = dist_counts(res_input_type_raw)
+    res_input_type_pcts = dist_pcts(res_input_type_raw)
+
     res_plat_fail_labels = dist_names_mapped(stats.get("resolveFailuresByPlatform"), format_platform_label)
     res_plat_fail_counts = dist_counts(stats.get("resolveFailuresByPlatform"))
     res_plat_fail_pcts = dist_pcts(stats.get("resolveFailuresByPlatform"))
@@ -1606,6 +1611,18 @@ def build_html(
         <canvas id="chartResReqPlat"></canvas>
       </div>
     </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">解析输入链接格式</div>
+          <div class="card-subtitle">Universal Resolve Input Link Type</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartResInputType"></canvas>
+      </div>
+    </div>
   </div>
 
   <footer>
@@ -2080,6 +2097,7 @@ def build_html(
     createDonut('chartProvFailPath', {prov_fail_path_labels}, {prov_fail_path_counts}, {prov_fail_path_pcts});
     createDonut('chartResReqType', {res_req_type_labels}, {res_req_type_counts}, {res_req_type_pcts});
     createDonut('chartResReqPlat', {res_req_plat_labels}, {res_req_plat_counts}, {res_req_plat_pcts});
+    createDonut('chartResInputType', {res_input_type_labels}, {res_input_type_counts}, {res_input_type_pcts});
   </script>
 </body>
 </html>"""

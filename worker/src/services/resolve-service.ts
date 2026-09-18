@@ -35,6 +35,7 @@ import {
   classifyInputType,
   classifyResolveFailureCode,
   classifyResolveFailureClass,
+  classifyResolveFailureStage,
   classifyResolveRequestedType,
   classifyResolveRequestedPlatform,
   classifyAnalyticsPlatform,
@@ -186,7 +187,7 @@ function recordResolveFailure(
   const rawCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
   const failureCode = classifyResolveFailureCode(rawCode);
   const failureClass = classifyResolveFailureClass(failureCode);
-  const failureStage = (errTelemetry?.stage as ResolveFailureStage) || tracking.stage;
+  const failureStage = classifyResolveFailureStage(errTelemetry?.stage || tracking.stage);
   const platform = classifyAnalyticsPlatform(errTelemetry?.platform || tracking.platform);
   const providerFailurePath = classifyProviderFailurePath(
     errTelemetry?.providerFailurePath || tracking.providerFailurePath,

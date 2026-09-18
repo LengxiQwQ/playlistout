@@ -20,6 +20,7 @@ import {
   classifyErrorCategory,
   classifyResolveFailureCode,
   classifyResolveFailureClass,
+  classifyResolveFailureStage,
   classifyResolveRequestedType,
   classifyResolveRequestedPlatform,
   classifyAnalyticsPlatform,
@@ -578,7 +579,7 @@ export async function recordResolveOutcome(
     if (ctx.outcome === 'failure') {
       const failureCode = classifyResolveFailureCode(ctx.failureCode);
       const failureClass = ctx.failureClass ? ctx.failureClass : classifyResolveFailureClass(failureCode);
-      const failureStage = ctx.failureStage || 'input_validation';
+      const failureStage = classifyResolveFailureStage(ctx.failureStage);
 
       statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_failure_code', failureCode));
       statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_failure_class', failureClass));

@@ -20,6 +20,7 @@ import {
   RESOLVE_REQUESTED_PLATFORMS,
   ANALYTICS_PLATFORMS,
   PROVIDER_FAILURE_PATHS,
+  INPUT_TYPES,
 } from './types';
 
 interface MockExecutionContext extends ExecutionContext {
@@ -520,6 +521,8 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
         expect((RESOLVE_REQUESTED_TYPES as readonly string[]).includes(value)).toBe(true);
       } else if (dimension === 'resolve_requested_platform') {
         expect((RESOLVE_REQUESTED_PLATFORMS as readonly string[]).includes(value)).toBe(true);
+      } else if (dimension === 'resolve_input_type') {
+        expect((INPUT_TYPES as readonly string[]).includes(value)).toBe(true);
       } else if (dimension === 'provider_failure_path') {
         expect((PROVIDER_FAILURE_PATHS as readonly string[]).includes(value)).toBe(true);
       }
@@ -544,6 +547,8 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
       'resolveFailureStages',
       'resolveRequestedTypes',
       'resolveRequestedPlatforms',
+      'resolveInputTypes',
+      'resolveInputTypeDistribution',
       'resolveFailuresByPlatform',
       'providerFailurePaths',
       'resolveOutcomeDistribution',
@@ -565,8 +570,8 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     }
   });
 
-  // ── Test M: Private Positive (Authenticated internal endpoint returns all 8 R7 dimensions) ──
-  it('Test M: GET /api/internal/stats returns all 8 R7 failure telemetry arrays', async () => {
+  // ── Test M: Private Positive (Authenticated internal endpoint returns all R7 dimensions) ──
+  it('Test M: GET /api/internal/stats returns all R7 failure telemetry arrays including resolveInputTypes', async () => {
     const mockDb = createTelemetryMockD1();
     const ctx = createMockCtx();
     const today = getUtcDateString();
@@ -579,6 +584,7 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     mockDb._perfMap.set(`${today}::all::resolve_failure_stage::provider_fetch`, 3);
     mockDb._perfMap.set(`${today}::all::resolve_requested_type::playlist`, 4);
     mockDb._perfMap.set(`${today}::all::resolve_requested_platform::auto`, 6);
+    mockDb._perfMap.set(`${today}::all::resolve_input_type::web_url`, 3);
     mockDb._perfMap.set(`${today}::qqmusic::provider_failure_path::primary`, 1);
 
     const req = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
@@ -591,13 +597,15 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.success).toBe(true);
     const ins = body.data.insights;
 
-    // All 8 R7 arrays must be present
+    // All R7 arrays must be present
     expect(Array.isArray(ins.resolveOutcomes)).toBe(true);
     expect(Array.isArray(ins.resolveFailureCodes)).toBe(true);
     expect(Array.isArray(ins.resolveFailureClasses)).toBe(true);
     expect(Array.isArray(ins.resolveFailureStages)).toBe(true);
     expect(Array.isArray(ins.resolveRequestedTypes)).toBe(true);
     expect(Array.isArray(ins.resolveRequestedPlatforms)).toBe(true);
+    expect(Array.isArray(ins.resolveInputTypes)).toBe(true);
+    expect(Array.isArray(ins.resolveInputTypeDistribution)).toBe(true);
     expect(Array.isArray(ins.resolveFailuresByPlatform)).toBe(true);
     expect(Array.isArray(ins.providerFailurePaths)).toBe(true);
 
@@ -605,6 +613,11 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     const qqFailures = ins.resolveFailuresByPlatform.find((x: any) => x.name === 'qqmusic');
     expect(qqFailures).toBeDefined();
     expect(qqFailures.count).toBe(4);
+
+    // Verify content of resolveInputTypes
+    const inputTypeItem = ins.resolveInputTypes.find((x: any) => x.name === 'web_url');
+    expect(inputTypeItem).toBeDefined();
+    expect(inputTypeItem.count).toBe(3);
   });
 
   // ── Test N: ProviderError telemetry metadata never leaks into API JSON response envelope ──
@@ -637,5 +650,30 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.telemetry).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain('providerFailurePath');
     expect(JSON.stringify(body)).not.toContain('provider_fetch');
+  });
+
+  // ── Test O: Adversarial stage normalization bounds arbitrary string to finalization ──
+  it('Test O: Malicious or unlisted telemetry stage is safely normalized to finalization', async () => {
+    const mockDb = createTelemetryMockD1();
+    const ctx = createMockCtx();
+    const today = getUtcDateString();
+
+    const providerErr = new ProviderError('PARSE_ERROR', 'Crash', 422);
+    providerErr.telemetry = {
+      platform: 'qqmusic',
+      stage: 'malicious_sql_injection_or_unbounded_stage' as any,
+    };
+
+    vi.spyOn(qqMusicProvider, 'parse').mockRejectedValue(providerErr);
+
+    const request = new Request(
+      'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/playlist/9044196528',
+    );
+    await worker.fetch(request, { DB: mockDb }, ctx);
+    await Promise.all(ctx._promises);
+
+    // Stage must be bounded strictly to 'finalization'
+    expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_failure_stage::finalization`)).toBe(1);
+    expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_failure_stage::malicious_sql_injection_or_unbounded_stage`)).toBeUndefined();
   });
 });
