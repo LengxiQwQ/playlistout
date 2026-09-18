@@ -224,6 +224,101 @@ export function validateEventPayload(body: unknown): ValidationResult {
   };
 }
 
+/**
+ * Reads request body stream strictly up to maxBytes.
+ * If total bytes exceed maxBytes, immediately cancels the reader and rejects,
+ * preventing memory exhaustion attacks from unbounded streaming payloads.
+ */
+export async function readBoundedBody(
+  request: Request,
+  maxBytes: number = MAX_EVENT_BODY_SIZE,
+): Promise<{ ok: true; buffer: Uint8Array } | { ok: false; code: string; message: string }> {
+  // 1. Fast check via Content-Length header if present
+  const contentLength = request.headers.get('content-length');
+  if (contentLength) {
+    const parsed = parseInt(contentLength, 10);
+    if (!isNaN(parsed) && parsed > maxBytes) {
+      return {
+        ok: false,
+        code: 'INVALID_INPUT',
+        message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+      };
+    }
+  }
+
+  // 2. If no body
+  if (!request.body) {
+    return { ok: true, buffer: new Uint8Array(0) };
+  }
+
+  // 3. Fallback if request.body does not support getReader (e.g. mock environments)
+  if (typeof request.body.getReader !== 'function') {
+    try {
+      const arrayBuf = await request.arrayBuffer();
+      if (arrayBuf.byteLength > maxBytes) {
+        return {
+          ok: false,
+          code: 'INVALID_INPUT',
+          message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+        };
+      }
+      return { ok: true, buffer: new Uint8Array(arrayBuf) };
+    } catch {
+      return {
+        ok: false,
+        code: 'INVALID_INPUT',
+        message: 'Failed to read request body.',
+      };
+    }
+  }
+
+  // 4. Bounded streaming read
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (value) {
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+          try {
+            await reader.cancel('payload_too_large');
+          } catch {
+            // Ignore cancellation errors
+          }
+          return {
+            ok: false,
+            code: 'INVALID_INPUT',
+            message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+          };
+        }
+        chunks.push(value);
+      }
+    }
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      code: 'INVALID_INPUT',
+      message: 'Failed to read request body stream.',
+    };
+  }
+
+  // 5. Concatenate chunks into a single Uint8Array
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return { ok: true, buffer: combined };
+}
+
 export async function handleEvent(
   request: Request,
   env: Env,
@@ -301,50 +396,15 @@ export async function handleEvent(
     );
   }
 
-  // 4. Body size check (Fast check via Content-Length, plus actual raw buffer byteLength)
-  const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength, 10) > MAX_EVENT_BODY_SIZE) {
+  // 4. Bounded streaming body read (enforces 1024-byte boundary at the streaming level)
+  const bodyResult = await readBoundedBody(request, MAX_EVENT_BODY_SIZE);
+  if (!bodyResult.ok) {
     return new Response(
       JSON.stringify({
         success: false,
         error: {
-          code: 'INVALID_INPUT',
-          message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
-        },
-      } satisfies ApiResponse<never>),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...eventResponseHeaders },
-      },
-    );
-  }
-
-  let rawBuffer: ArrayBuffer;
-  try {
-    rawBuffer = await request.arrayBuffer();
-  } catch {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'Failed to read request body.',
-        },
-      } satisfies ApiResponse<never>),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...eventResponseHeaders },
-      },
-    );
-  }
-
-  if (rawBuffer.byteLength > MAX_EVENT_BODY_SIZE) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+          code: bodyResult.code,
+          message: bodyResult.message,
         },
       } satisfies ApiResponse<never>),
       {
@@ -357,7 +417,7 @@ export async function handleEvent(
   // 5. Parse JSON
   let body: unknown;
   try {
-    const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(rawBuffer);
+    const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bodyResult.buffer);
     body = JSON.parse(text);
   } catch {
     return new Response(
@@ -394,7 +454,7 @@ export async function handleEvent(
 
   // 7. Abuse / Rate Limiting (Multi-tier: In-Memory + Durable D1)
   const clientIp = getClientIp(request);
-  const rateCheck = await checkDurableRateLimit(env.DB, clientIp, 60, 60, 'event');
+  const rateCheck = await checkDurableRateLimit(env.DB, clientIp, 60, 60, 'event', ctx);
 
   if (!rateCheck.allowed) {
     if (rateCheck.limiterFailed) {

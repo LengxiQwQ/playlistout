@@ -136,6 +136,12 @@ export function checkRateLimit(
 /**
  * Checks durable abuse control across multiple Worker isolates using D1 (Tier 2).
  * Privacy: Client IP is never stored directly — only an ephemeral salted hash.
+ * 
+ * SECURITY INVARIANT (Non-amplifying mutation):
+ * The database counter is bounded at the SQL engine level:
+ * `WHERE count < :limit` ensures that once the limit is reached,
+ * subsequent requests cause ZERO row updates, completely eliminating write amplification.
+ *
  * If D1 fails, fails closed for telemetry writes (limiterFailed = true) to protect D1.
  */
 export async function checkDurableRateLimit(
@@ -144,6 +150,7 @@ export async function checkDurableRateLimit(
   maxRequests: number = 60,
   windowSeconds: number = 60,
   scope: string = 'event',
+  ctx?: ExecutionContext,
 ): Promise<RateLimitResult> {
   // 1. In-memory fast burst guard (Tier 1)
   const localCheck = checkRateLimit(clientIp, maxRequests, windowSeconds, scope);
@@ -160,40 +167,34 @@ export async function checkDurableRateLimit(
     const nowSec = Math.floor(Date.now() / 1000);
     const windowBucket = Math.floor(nowSec / windowSeconds);
     const resetAt = (windowBucket + 1) * windowSeconds;
+    const resetSeconds = Math.max(1, resetAt - nowSec);
     const key = await hashRateLimitKey(scope, windowBucket, clientIp);
 
+    // Atomic bounded upsert:
+    // If key does not exist: insert count=1.
+    // If key exists and count < maxRequests: increment count by 1.
+    // If key exists and count >= maxRequests: DO UPDATE is skipped via WHERE condition.
+    // No row is modified, zero disk writes occur, and RETURNING yields 0 rows (null).
     const upsertSql = `
       INSERT INTO security_rate_limits (key, count, reset_at)
       VALUES (?1, 1, ?2)
       ON CONFLICT (key)
-      DO UPDATE SET count = count + 1;
+      DO UPDATE SET count = count + 1
+      WHERE count < ?3
+      RETURNING count, reset_at;
     `;
 
-    const selectSql = `
-      SELECT count, reset_at FROM security_rate_limits
-      WHERE key = ?1;
-    `;
+    const row = await db.prepare(upsertSql).bind(key, resetAt, maxRequests).first<{ count: number; reset_at: number }>();
 
-    const batchResults = await db.batch([
-      db.prepare(upsertSql).bind(key, resetAt),
-      db.prepare(selectSql).bind(key),
-    ]);
+    if (!row) {
+      // Counter was already at or above limit. 0 rows modified in D1.
+      // Cache this block in local memory store so subsequent requests on this isolate skip D1 entirely
+      const ipKey = `${scope}:${clientIp}`;
+      ipStore.set(ipKey, {
+        count: maxRequests + 1,
+        resetTime: resetAt * 1000,
+      });
 
-    const selectRes = batchResults[1];
-    const row = selectRes?.results?.[0] as { count?: number; reset_at?: number } | undefined;
-    const count = typeof row?.count === 'number' ? row.count : 1;
-    const resetSeconds = Math.max(1, resetAt - nowSec);
-
-    // Periodic cleanup of expired buckets
-    if (Math.random() < 0.05) {
-      const pruneSql = `
-        DELETE FROM security_rate_limits
-        WHERE reset_at < ?1;
-      `;
-      db.prepare(pruneSql).bind(nowSec - windowSeconds).run().catch(() => {});
-    }
-
-    if (count > maxRequests) {
       return {
         allowed: false,
         limit: maxRequests,
@@ -201,6 +202,26 @@ export async function checkDurableRateLimit(
         resetSeconds,
       };
     }
+
+    // Periodic cleanup of expired buckets only runs for allowed requests,
+    // guaranteeing ZERO D1 writes on 429 rate-limited requests.
+    if (Math.random() < 0.05) {
+      const pruneSql = `
+        DELETE FROM security_rate_limits
+        WHERE reset_at < ?1;
+      `;
+      const prunePromise = db.prepare(pruneSql).bind(nowSec - windowSeconds).run().catch((err) => {
+        console.error('Failed to prune security_rate_limits:', err);
+      });
+
+      if (ctx && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(prunePromise);
+      } else {
+        await prunePromise;
+      }
+    }
+
+    const count = row.count;
 
     return {
       allowed: true,
