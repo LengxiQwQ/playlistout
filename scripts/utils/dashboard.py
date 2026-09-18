@@ -1224,7 +1224,7 @@ def build_html(
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
-      new Chart(el, {{
+      return new Chart(el, {{
         type: 'bar',
         data: {{
           labels: hasData ? labels : ['暂无数据 / No Data'],
@@ -1246,36 +1246,144 @@ def build_html(
       }});
     }}
 
-    // 1. 小时级流量分布 (UTC 小时桶转换至 UTC+8 标签展示)
-    const elHourly = document.getElementById('chartHourly');
-    if (elHourly) {{
-      new Chart(elHourly, {{
+    const HOURLY_DATA = {hourly_payload_json};
+    const HOURLY_SOURCE = {hourly_source_json};
+    const GEO_DATA = {geo_data};
+    const timezoneSelect = document.getElementById('timezoneSelect');
+    const trafficMetricSelect = document.getElementById('trafficMetricSelect');
+    const hideMalaysia = document.getElementById('hideMalaysia');
+    let hourlyChart = null;
+    let geoChart = null;
+
+    function selectedTimeZone() {{
+      if (!timezoneSelect || timezoneSelect.value === 'local') {{
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      }}
+      return timezoneSelect.value;
+    }}
+
+    function selectedTimeZoneLabel() {{
+      if (!timezoneSelect) return 'Malaysia · UTC+8';
+      return timezoneSelect.options[timezoneSelect.selectedIndex]?.text || timezoneSelect.value;
+    }}
+
+    function formatHourLabel(iso) {{
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '—';
+      return new Intl.DateTimeFormat('zh-CN', {{
+        timeZone: selectedTimeZone(),
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }}).format(d);
+    }}
+
+    function renderHourlyChart() {{
+      const el = document.getElementById('chartHourly');
+      if (!el) return;
+      if (hourlyChart) hourlyChart.destroy();
+
+      const labels = HOURLY_DATA.map(x => formatHourLabel(x.timestamp));
+      const mode = trafficMetricSelect?.value || 'both';
+      hourlyChart = new Chart(el, {{
         type: 'bar',
         data: {{
-          labels: {hourly_labels_json},
+          labels,
           datasets: [
             {{
               label: 'PV 页面浏览 / Page Views',
-              data: {h_pv},
+              data: HOURLY_DATA.map(x => Number(x.pageViews || 0)),
               backgroundColor: '#2563eb',
-              borderRadius: 3
+              borderRadius: 4,
+              hidden: mode === 'uv'
             }},
             {{
-              label: '当日首次出现的独立访客 / First-time Daily Unique Visitors',
-              data: {h_uv},
+              label: 'UV 当日首次访问 / Daily-unique first visits',
+              data: HOURLY_DATA.map(x => Number(x.visitors || 0)),
               backgroundColor: '#38bdf8',
-              borderRadius: 3
+              borderRadius: 4,
+              hidden: mode === 'pv'
             }}
           ]
         }},
         options: {{
           responsive: true,
+          maintainAspectRatio: false,
+          interaction: {{ mode: 'index', intersect: false }},
           plugins: {{
-            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
+            legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }},
+            tooltip: {{
+              callbacks: {{
+                title: (items) => {{
+                  const idx = items?.[0]?.dataIndex ?? -1;
+                  const raw = HOURLY_DATA[idx]?.timestamp;
+                  return raw ? `${formatHourLabel(raw)} · ${selectedTimeZoneLabel()}` : '';
+                }}
+              }}
+            }}
           }},
           scales: BASE_SCALES
         }}
       }});
+    }}
+
+    function renderGeoChart() {{
+      const filtered = (hideMalaysia?.checked)
+        ? GEO_DATA.filter(x => String(x.country).toUpperCase() !== 'MY')
+        : GEO_DATA;
+      if (geoChart) geoChart.destroy();
+      geoChart = createHBar(
+        'chartGeo',
+        filtered.map(x => x.country),
+        filtered.map(x => Number(x.count || 0)),
+        '#2563eb'
+      );
+    }}
+
+    function persistControls() {{
+      try {{
+        localStorage.setItem('playlistout.dashboard.timezone', timezoneSelect?.value || 'Asia/Kuala_Lumpur');
+        localStorage.setItem('playlistout.dashboard.trafficMetric', trafficMetricSelect?.value || 'both');
+        localStorage.setItem('playlistout.dashboard.hideMalaysia', hideMalaysia?.checked ? '1' : '0');
+      }} catch (_) {{}}
+    }}
+
+    function restoreControls() {{
+      try {{
+        const tz = localStorage.getItem('playlistout.dashboard.timezone');
+        const metric = localStorage.getItem('playlistout.dashboard.trafficMetric');
+        const hide = localStorage.getItem('playlistout.dashboard.hideMalaysia');
+        if (tz && timezoneSelect && [...timezoneSelect.options].some(o => o.value === tz)) timezoneSelect.value = tz;
+        if (metric && trafficMetricSelect && [...trafficMetricSelect.options].some(o => o.value === metric)) trafficMetricSelect.value = metric;
+        if (hideMalaysia) hideMalaysia.checked = hide === '1';
+      }} catch (_) {{}}
+    }}
+
+    restoreControls();
+    const tzLabel = document.getElementById('displayTimezoneLabel');
+    if (tzLabel) tzLabel.textContent = selectedTimeZoneLabel();
+    renderHourlyChart();
+    renderGeoChart();
+
+    timezoneSelect?.addEventListener('change', () => {{
+      const label = document.getElementById('displayTimezoneLabel');
+      if (label) label.textContent = selectedTimeZoneLabel();
+      persistControls();
+      renderHourlyChart();
+    }});
+    trafficMetricSelect?.addEventListener('change', () => {{
+      persistControls();
+      renderHourlyChart();
+    }});
+    hideMalaysia?.addEventListener('change', () => {{
+      persistControls();
+      renderGeoChart();
+    }});
+
+    if (HOURLY_SOURCE !== 'rolling24') {{
+      console.warn('Dashboard is using legacy UTC-day hourly data; deploy a Worker with last24HourlyPageViews for a true rolling window.');
     }}
 
     // 2. 近期趋势走势 (解析 / 导出 / 剪贴板 / 失败)
@@ -1362,8 +1470,7 @@ def build_html(
     // 4. 平台解析分布
     createDonut('chartPlatform', {plat_labels}, {plat_counts});
 
-    // 5. 地理分布 (全球 Top 10 + 境内省份 Top 10)
-    createHBar('chartGeo', {geo_labels}, {geo_counts}, '#2563eb');
+    // 5. 地理分布：全球图由可交互的 MY 过滤器管理；中国省份图保持原始真实计数。
     createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2');
 
     // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统)
