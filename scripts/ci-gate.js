@@ -96,7 +96,7 @@ function validateWorkflows() {
 
 // ── 2. Scan for Secrets & Credential Leaks ──────────────────────────────
 function scanSecretLeaks() {
-  logStep(2, 6, 'Scanning Working Tree for Secret Leaks');
+  logStep(2, 6, 'Scanning Working Tree and Commits for Secret Leaks');
   const res = spawnSync('git', ['status', '--porcelain'], { cwd: REPO_ROOT, encoding: 'utf-8' });
   if (res.status === 0 && res.stdout) {
     const lines = res.stdout.split('\n').filter(Boolean);
@@ -108,16 +108,25 @@ function scanSecretLeaks() {
     }
   }
 
-  // Check diff for raw admin tokens or credentials
-  const diffRes = spawnSync('git', ['diff', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf-8' });
-  if (diffRes.status === 0 && diffRes.stdout) {
-    const forbiddenPatterns = [
-      /INSIGHTS_ADMIN_TOKEN=[a-f0-9]{32,}/i,
-      /Bearer\s+[a-f0-9]{32,}/i,
-    ];
-    for (const pattern of forbiddenPatterns) {
-      if (pattern.test(diffRes.stdout)) {
-        throw new Error(`Hardcoded secret detected in git diff matching pattern ${pattern}!`);
+  // Check diffs for raw admin tokens or credentials (working tree, staged index, unpushed commits)
+  const diffSources = [
+    ['diff', 'HEAD'],
+    ['diff', '--cached'],
+    ['log', '-p', '-n', '5'],
+  ];
+
+  const forbiddenPatterns = [
+    /^\+.*INSIGHTS_ADMIN_TOKEN=[a-f0-9]{32,}/im,
+    /^\+.*Bearer\s+[a-f0-9]{32,}/im,
+  ];
+
+  for (const args of diffSources) {
+    const diffRes = spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf-8' });
+    if (diffRes.status === 0 && diffRes.stdout) {
+      for (const pattern of forbiddenPatterns) {
+        if (pattern.test(diffRes.stdout)) {
+          throw new Error(`Hardcoded secret detected in git ${args.join(' ')} matching pattern ${pattern}!`);
+        }
       }
     }
   }

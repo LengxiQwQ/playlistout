@@ -10,6 +10,10 @@ import { join, resolve } from 'node:path';
 const REPO_ROOT = resolve(import.meta.dirname, '..');
 const HOOKS_DIR = join(REPO_ROOT, '.git', 'hooks');
 
+if (process.env.CI) {
+  process.exit(0);
+}
+
 if (!existsSync(join(REPO_ROOT, '.git'))) {
   console.log('[setup-hooks] Not a git repository. Skipping hook installation.');
   process.exit(0);
