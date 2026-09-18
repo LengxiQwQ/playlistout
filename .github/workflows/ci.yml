@@ -32,7 +32,9 @@ jobs:
           python -m compileall cli/netease/
 
       - name: Run pytest
-        run: pytest -v cli/qqmusic/ cli/netease/
+        run: |
+          pytest -v cli/qqmusic/ cli/netease/
+          pytest -v scripts/utils/test_insights_authenticity.py
 
   web:
     name: Web Frontend Validation
