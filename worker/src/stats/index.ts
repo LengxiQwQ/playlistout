@@ -18,6 +18,7 @@ import type {
   DailyTrendEntry,
   PlatformBreakdown,
   HourlyEntry,
+  RollingHourlyEntry,
   GeoDistributionItem,
   ProvinceDistributionItem,
   ClientDistributionItem,
@@ -194,6 +195,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     recentDays: [],
     generatedAt: new Date().toISOString(),
     todayHourlyPageViews: [],
+    last24HourlyPageViews: [],
     topGeo: [],
     chinaProvinces: [],
     clientStats: { browsers: [], devices: [], os: [], deviceBrands: [] },
@@ -391,7 +393,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       console.error('Failed to fetch daily trend data:', err);
     }
 
-    // 4. Today's hourly page view distribution (BUG FIX: now has data after recorder.ts fix)
+    // 4a. Legacy UTC-calendar-day hourly distribution (kept for API compatibility).
     const todayHourlyPageViews: HourlyEntry[] = Array.from({ length: 24 }, (_, h) => ({ hour: h, pageViews: 0, visitors: 0 }));
     try {
       const hourlyRows = await db
@@ -414,9 +416,55 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         }
       }
     } catch (err: unknown) {
-      console.error('Failed to fetch hourly stats:', err);
+      console.error('Failed to fetch UTC-day hourly stats:', err);
     }
 
+    // 4b. True rolling last-24-hours window.
+    // Storage remains UTC; timestamps make timezone conversion a pure presentation concern.
+    const last24HourlyPageViews: RollingHourlyEntry[] = [];
+    try {
+      const currentHourUtc = new Date();
+      currentHourUtc.setUTCMinutes(0, 0, 0);
+      const startHourUtc = new Date(currentHourUtc.getTime() - 23 * 60 * 60 * 1000);
+      const startDate = getUtcDateString(startHourUtc);
+      const endDate = getUtcDateString(currentHourUtc);
+
+      const rollingRows = await db
+        .prepare(`
+          SELECT date, hour, metric, SUM(count) as total
+          FROM hourly_stats
+          WHERE date IN (?1, ?2)
+            AND platform = 'all'
+            AND metric IN ('page_view', 'visitor_unique')
+          GROUP BY date, hour, metric
+        `)
+        .bind(startDate, endDate)
+        .all<{ date: string; hour: number; metric: string; total: number }>();
+
+      const rollingMap = new Map<string, { pageViews: number; visitors: number }>();
+      if (rollingRows.results) {
+        for (const row of rollingRows.results) {
+          const key = `${row.date}:${Number(row.hour)}`;
+          const slot = rollingMap.get(key) ?? { pageViews: 0, visitors: 0 };
+          if (row.metric === 'page_view') slot.pageViews = row.total;
+          if (row.metric === 'visitor_unique') slot.visitors = row.total;
+          rollingMap.set(key, slot);
+        }
+      }
+
+      for (let i = 0; i < 24; i += 1) {
+        const bucketTime = new Date(startHourUtc.getTime() + i * 60 * 60 * 1000);
+        const key = `${getUtcDateString(bucketTime)}:${bucketTime.getUTCHours()}`;
+        const values = rollingMap.get(key) ?? { pageViews: 0, visitors: 0 };
+        last24HourlyPageViews.push({
+          timestamp: bucketTime.toISOString(),
+          pageViews: values.pageViews,
+          visitors: values.visitors,
+        });
+      }
+    } catch (err: unknown) {
+      console.error('Failed to fetch rolling 24-hour stats:', err);
+    }
     // 5. Geographic distribution — TOP 10 countries + China province breakdown
     const topGeo: GeoDistributionItem[] = [];
     const chinaProvinces: ProvinceDistributionItem[] = [];
@@ -614,6 +662,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
       generatedAt: new Date().toISOString(),
       // ── 新增维度数据 ──
       todayHourlyPageViews,
+      last24HourlyPageViews,
       topGeo,
       chinaProvinces,
       clientStats,
