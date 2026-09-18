@@ -47,3 +47,6 @@ Desktop.ini
 !tsconfig*.json
 !wrangler*.json*
 
+# Agent / AI local instructions
+GEMINI.md
+
