@@ -504,39 +504,38 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("<div class=\"kpi-val\">8</div>", html)
 
     def test_r2_5_test_f_hourly_label_conversion(self):
-        """Test F: Hourly bucket label conversion (UTC hour -> UTC+8 label).
-        UTC hour 0  -> UTC+8 08:00
-        UTC hour 15 -> 23:00
-        UTC hour 16 -> next day 00:00
-        UTC hour 23 -> next day 07:00
-        Values in data array must match exact indices without displacement.
-        """
+        """Legacy helper stays correct; dashboard prefers timestamped rolling-24h data and interactive timezone rendering."""
         import datetime as dt
 
         base_date = dt.date(2026, 9, 18)
         labels = get_hourly_display_labels(base_date)
-
-        self.assertEqual(len(labels), 24)
         self.assertEqual(labels[0], "09/18 08:00")
-        self.assertEqual(labels[15], "09/18 23:00")
         self.assertEqual(labels[16], "09/19 00:00")
-        self.assertEqual(labels[23], "09/19 07:00")
 
-        # Check in HTML that values are NOT displaced
         stats = {
-            "generatedAt": "2026-09-18T12:00:00Z",
-            "todayHourlyPageViews": [
-                {"hour": 0, "pageViews": 100, "visitors": 50},
-                {"hour": 16, "pageViews": 200, "visitors": 80},
+            "generatedAt": "2026-09-18T06:30:00Z",
+            "last24HourlyPageViews": [
+                {"timestamp": "2026-09-17T07:00:00.000Z", "pageViews": 100, "visitors": 50},
+                {"timestamp": "2026-09-18T06:00:00.000Z", "pageViews": 200, "visitors": 80},
+            ],
+            "topGeo": [
+                {"country": "MY", "count": 90, "percentage": 90},
+                {"country": "US", "count": 10, "percentage": 10},
             ],
         }
         html = build_html(stats)
-        self.assertIn("小时级流量分布", html)
-        self.assertIn("Hourly Traffic · UTC+8 Display", html)
-        self.assertIn("API 小时桶已转换为 UTC+8 显示", html)
-        # Value at index 0 is 100, value at index 16 is 200
-        self.assertIn("labels: [\"09/18 08:00\",", html)
-        self.assertIn("\"09/19 00:00\"", html)
+
+        self.assertIn("滚动 24 小时流量", html)
+        self.assertIn("Rolling 24 Hours", html)
+        self.assertIn("2026-09-17T07:00:00.000Z", html)
+        self.assertIn("2026-09-18T06:00:00.000Z", html)
+        self.assertIn('id="timezoneSelect"', html)
+        self.assertIn('value="Asia/Kuala_Lumpur"', html)
+        self.assertIn('id="trafficMetricSelect"', html)
+        self.assertIn('id="hideMalaysia"', html)
+        self.assertIn("隐藏马来西亚 / Hide MY", html)
+        self.assertIn("Storage: UTC", html)
+        self.assertIn("legacy UTC-day hourly data", html)
 
     def test_r2_5_test_g_display_metadata_and_cleanliness(self):
         """Test G: Local Dashboard header, footer and timezone labels are clean and unambiguous."""
@@ -549,7 +548,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
         # Must have API Generated and Local Fetched
         self.assertIn("API Generated: 2026-09-18 12:29:58 UTC+8", html)
         self.assertIn("Local Fetched: 2026-09-18 12:30:00 UTC+8", html)
-        self.assertIn("Display Timezone: UTC+8", html)
+        self.assertIn("Storage: UTC", html)
+        self.assertIn("Display selectable above", html)
 
         # Must not have ambiguous CST
         self.assertNotIn("CST", html)
