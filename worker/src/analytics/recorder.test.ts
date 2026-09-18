@@ -91,7 +91,13 @@ function createMockD1() {
           const key = `client::${date}::${platform}::${dev}::${browser}::${os}`;
           store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_performance_stats')) {
-          const [date, platform, dim, val] = params;
+          let date: string, platform: string, dim: string, val: string;
+          if (params.length === 3) {
+            [date, dim, val] = params;
+            platform = 'all';
+          } else {
+            [date, platform, dim, val] = params;
+          }
           const key = `perf::${date}::${platform}::${dim}::${val}`;
           store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_export_stats')) {
@@ -368,6 +374,42 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
       // Old hash should be deleted, recent hash preserved
       expect(mockDb._insertedHashes.has(`${tenDaysAgo}::oldhash12345678`)).toBe(false);
       expect(mockDb._insertedHashes.has(`${yesterday}::recenthash12345`)).toBe(true);
+    });
+
+    it('records coarse referrerSource without raw URLs, paths, queries, or headers', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': '1.2.3.4' }),
+        'chatgpt',
+      );
+
+      // Verify that coarse category was recorded in performance stats
+      expect(mockDb._store.get(`perf::${today}::all::referrer_source::chatgpt`)).toBe(1);
+      expect(mockDb._store.get(`perf::TOTAL::all::referrer_source::chatgpt`)).toBe(1);
+
+      // Verify unlisted category is normalized to other_web
+      await recordVisitEvent(
+        mockDb,
+        createMockRequest({ 'cf-connecting-ip': '1.2.3.5' }),
+        'unknown_random_category' as any,
+      );
+
+      expect(mockDb._store.get(`perf::${today}::all::referrer_source::other_web`)).toBe(1);
+      expect(mockDb._store.get(`perf::TOTAL::all::referrer_source::other_web`)).toBe(1);
+
+      // CRITICAL PRIVACY ASSERTION: Zero raw URLs, queries, paths, or tokens in D1 keys
+      for (const key of mockDb._store.keys()) {
+        expect(key).not.toContain('http');
+        expect(key).not.toContain('https');
+        expect(key).not.toContain('://');
+        expect(key).not.toContain('?');
+        expect(key).not.toContain('&');
+        expect(key).not.toContain('token');
+        expect(key).not.toContain('secret');
+      }
     });
   });
 

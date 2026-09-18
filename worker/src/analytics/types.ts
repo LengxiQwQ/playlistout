@@ -192,9 +192,38 @@ export interface ClipboardEventPayload {
   trackCount?: number;
 }
 
+export const REFERRER_SOURCES = [
+  'direct',
+  'chatgpt',
+  'claude',
+  'deepseek',
+  'copilot',
+  'gemini',
+  'kimi',
+  'google',
+  'baidu',
+  'bing',
+  'sogou',
+  '360search',
+  'github',
+  'v2ex',
+  'juejin',
+  'zhihu',
+  'bilibili',
+  'xiaohongshu',
+  'wechat',
+  'weibo',
+  'twitter_x',
+  'reddit',
+  'meta_fb',
+  'douyin_tiktok',
+  'other_web',
+] as const;
+export type ReferrerSource = (typeof REFERRER_SOURCES)[number];
+
 export interface VisitEventPayload {
   type: 'visit';
-  referrer?: string;
+  referrerSource?: ReferrerSource;
 }
 
 export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;

@@ -23,12 +23,14 @@ import type {
   ExportFormat,
   ClipboardMode,
   SupportedPlatform,
+  ReferrerSource,
 } from '../analytics/types';
 import {
   SUPPORTED_PLATFORMS,
   VALID_EXPORT_FORMATS,
   VALID_CLIPBOARD_MODES,
   MAX_TRACK_COUNT,
+  REFERRER_SOURCES,
 } from '../analytics/types';
 import { recordExportEvent, recordClipboardEvent, recordVisitEvent } from '../analytics/recorder';
 import { isEventOriginAllowed } from '../cors';
@@ -76,7 +78,7 @@ export function validateEventPayload(body: unknown): ValidationResult {
 
   // Visit payload schema
   if (type === 'visit') {
-    const allowedVisitKeys = new Set(['type', 'referrer']);
+    const allowedVisitKeys = new Set(['type', 'referrerSource']);
     for (const key of keys) {
       if (!allowedVisitKeys.has(key)) {
         return {
@@ -86,20 +88,28 @@ export function validateEventPayload(body: unknown): ValidationResult {
       }
     }
 
-    let referrer: string | undefined;
-    if ('referrer' in obj && obj.referrer !== undefined) {
-      if (typeof obj.referrer !== 'string') {
+    let referrerSource: ReferrerSource = 'direct';
+    if ('referrerSource' in obj && obj.referrerSource !== undefined) {
+      if (typeof obj.referrerSource !== 'string') {
         return {
           valid: false,
-          error: { code: 'INVALID_INPUT', message: 'Field "referrer" must be a string if provided.' },
+          error: { code: 'INVALID_INPUT', message: 'Field "referrerSource" must be a string if provided.' },
         };
       }
-      referrer = obj.referrer.trim().slice(0, 500);
+      const normalizedSource = obj.referrerSource.trim().toLowerCase();
+      if (!(REFERRER_SOURCES as readonly string[]).includes(normalizedSource)) {
+        return {
+          valid: false,
+          // Privacy rule: do not echo raw invalid value in error response
+          error: { code: 'INVALID_INPUT', message: 'Invalid referrerSource.' },
+        };
+      }
+      referrerSource = normalizedSource as ReferrerSource;
     }
 
     return {
       valid: true,
-      payload: { type: 'visit', referrer },
+      payload: { type: 'visit', referrerSource },
     };
   }
 
@@ -517,7 +527,7 @@ export async function handleEvent(
         recordVisitEvent(
           env.DB,
           request,
-          payload.referrer,
+          payload.referrerSource,
         ),
       );
     }
