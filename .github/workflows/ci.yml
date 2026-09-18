@@ -75,11 +75,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate Migration Files and Immutability
+        run: node scripts/d1/validate-migrations.js
+
       - name: Typecheck
         run: npm --prefix worker run typecheck
 
       - name: Run unit tests
         run: npm --prefix worker test
+
+      - name: Run D1 migration safety tests
+        run: npm --prefix worker run test:d1
 
       - name: Build / dry-run
         run: npm --prefix worker run build
