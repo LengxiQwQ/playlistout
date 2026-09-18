@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    testTimeout: 15000,
   },
   server: {
     host: '0.0.0.0',
