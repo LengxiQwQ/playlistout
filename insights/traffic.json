@@ -67,6 +67,10 @@
     "2026-09-16": {
       "count": 41,
       "uniques": 11
+    },
+    "2026-09-17": {
+      "count": 30,
+      "uniques": 15
     }
   },
   "clones": {
@@ -137,6 +141,10 @@
     "2026-09-16": {
       "count": 228,
       "uniques": 58
+    },
+    "2026-09-17": {
+      "count": 331,
+      "uniques": 86
     }
   },
   "referrer_snapshots": [
@@ -512,6 +520,41 @@
           "referrer": "chatgpt.com",
           "count": 3,
           "uniques": 1
+        },
+        {
+          "referrer": "Yahoo",
+          "count": 1,
+          "uniques": 1
+        }
+      ]
+    },
+    {
+      "fetched_at": "2026-09-18T07:22:53Z",
+      "referrers": [
+        {
+          "referrer": "github.com",
+          "count": 149,
+          "uniques": 11
+        },
+        {
+          "referrer": "Google",
+          "count": 72,
+          "uniques": 46
+        },
+        {
+          "referrer": "Bing",
+          "count": 34,
+          "uniques": 29
+        },
+        {
+          "referrer": "Baidu",
+          "count": 10,
+          "uniques": 5
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 4,
+          "uniques": 2
         },
         {
           "referrer": "Yahoo",
@@ -1171,6 +1214,71 @@
           "uniques": 1
         }
       ]
+    },
+    {
+      "fetched_at": "2026-09-18T07:22:53Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 243,
+          "uniques": 49
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 58,
+          "uniques": 47
+        },
+        {
+          "path": "/lengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 19,
+          "uniques": 17
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 19,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/music-playlist-exporter",
+          "title": "Overview",
+          "count": 9,
+          "uniques": 3
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/deployments/github-pages",
+          "title": "/deployments/github-pages",
+          "count": 7,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/commits/main",
+          "title": "/commits/main",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/pulse",
+          "title": "/pulse",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/issues",
+          "title": "/issues",
+          "count": 5,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.0.0",
+          "title": "/releases/tag/v2.0.0",
+          "count": 5,
+          "uniques": 2
+        }
+      ]
     }
   ],
   "repo_meta_snapshots": [
@@ -1263,6 +1371,15 @@
       "open_issues": 0,
       "network": 1,
       "pushed_at": "2026-09-17T06:45:24Z"
+    },
+    {
+      "fetched_at": "2026-09-18T07:22:53Z",
+      "stars": 29,
+      "forks": 1,
+      "watchers": 1,
+      "open_issues": 1,
+      "network": 1,
+      "pushed_at": "2026-09-18T07:11:40Z"
     }
   ],
   "website_snapshots": [
@@ -1379,79 +1496,584 @@
         "xlsx": 259,
         "json": 8
       }
+    },
+    {
+      "fetched_at": "2026-09-18T07:22:53Z",
+      "cumulative_daily_visitors": 343,
+      "total_visitors": 343,
+      "visitors_today": 15,
+      "total_page_views": 2655,
+      "page_views_today": 147,
+      "total_playlists_parsed": 190,
+      "playlists_parsed_today": 5,
+      "total_tracks_processed": 64893,
+      "tracks_processed_today": 1602,
+      "total_exports": 641,
+      "exports_today": 36,
+      "export_formats_breakdown": {
+        "txt": 208,
+        "csv": 12,
+        "xlsx": 412,
+        "json": 9
+      }
     }
   ],
-  "updated_at": "2026-09-17T07:36:53Z",
+  "updated_at": "2026-09-18T07:22:53Z",
   "website_latest": {
     "launchedAt": "2026-09-12",
-    "totalVisitors": 236,
-    "cumulativeDailyVisitors": 236,
-    "visitorsToday": 30,
-    "totalPageViews": 1576,
-    "pageViewsToday": 190,
-    "totalPlaylistsParsed": 149,
-    "playlistsParsedToday": 6,
-    "totalTracksProcessed": 45515,
-    "tracksProcessedToday": 2606,
-    "totalExports": 406,
-    "exportsToday": 43,
+    "cumulativeDailyVisitors": 343,
+    "totalVisitors": 343,
+    "visitorsToday": 15,
+    "totalPageViews": 2655,
+    "pageViewsToday": 147,
+    "totalPlaylistsParsed": 190,
+    "playlistsParsedToday": 5,
+    "totalTracksProcessed": 64893,
+    "tracksProcessedToday": 1602,
+    "totalExports": 641,
+    "exportsToday": 36,
     "exportFormatsBreakdown": {
-      "txt": 131,
-      "csv": 8,
-      "xlsx": 259,
-      "json": 8
+      "txt": 208,
+      "csv": 12,
+      "xlsx": 412,
+      "json": 9
     },
     "byPlatform": {
       "qqmusic": {
-        "totalSuccess": 120,
-        "todaySuccess": 3
+        "totalSuccess": 134,
+        "todaySuccess": 0
       },
       "netease": {
-        "totalSuccess": 9,
+        "totalSuccess": 20,
+        "todaySuccess": 2
+      },
+      "qishui": {
+        "totalSuccess": 8,
         "todaySuccess": 3
       },
       "kugou": {
-        "totalSuccess": 20
+        "totalSuccess": 28
       }
     },
     "recentDays": [
       {
+        "date": "2026-09-18",
+        "parses": 5,
+        "tracks": 1602,
+        "exports": 36,
+        "clipboards": 11,
+        "visitors": 15,
+        "failures": 0
+      },
+      {
         "date": "2026-09-17",
-        "parses": 6,
-        "tracks": 2606,
-        "exports": 43
+        "parses": 42,
+        "tracks": 20382,
+        "exports": 242,
+        "clipboards": 79,
+        "visitors": 122,
+        "failures": 0
       },
       {
         "date": "2026-09-16",
         "parses": 50,
         "tracks": 15611,
-        "exports": 165
+        "exports": 165,
+        "clipboards": 46,
+        "visitors": 92,
+        "failures": 0
       },
       {
         "date": "2026-09-15",
         "parses": 34,
         "tracks": 9715,
-        "exports": 115
+        "exports": 115,
+        "clipboards": 38,
+        "visitors": 78,
+        "failures": 0
       },
       {
         "date": "2026-09-14",
         "parses": 39,
         "tracks": 14754,
-        "exports": 83
+        "exports": 83,
+        "clipboards": 28,
+        "visitors": 36,
+        "failures": 0
       },
       {
         "date": "2026-09-13",
         "parses": 7,
         "tracks": 2829,
-        "exports": 0
+        "exports": 0,
+        "clipboards": 0,
+        "visitors": 0,
+        "failures": 0
       },
       {
         "date": "2026-09-12",
         "parses": 13,
         "tracks": 0,
-        "exports": 0
+        "exports": 0,
+        "clipboards": 0,
+        "visitors": 0,
+        "failures": 0
       }
     ],
-    "generatedAt": "2026-09-17T07:36:53.353Z"
+    "generatedAt": "2026-09-18T07:22:53.393Z",
+    "todayHourlyPageViews": [
+      {
+        "hour": 0,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 1,
+        "pageViews": 1,
+        "visitors": 1
+      },
+      {
+        "hour": 2,
+        "pageViews": 1,
+        "visitors": 1
+      },
+      {
+        "hour": 3,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 4,
+        "pageViews": 1,
+        "visitors": 1
+      },
+      {
+        "hour": 5,
+        "pageViews": 1,
+        "visitors": 1
+      },
+      {
+        "hour": 6,
+        "pageViews": 52,
+        "visitors": 4
+      },
+      {
+        "hour": 7,
+        "pageViews": 91,
+        "visitors": 7
+      },
+      {
+        "hour": 8,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 9,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 10,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 11,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 12,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 13,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 14,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 15,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 16,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 17,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 18,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 19,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 20,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 21,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 22,
+        "pageViews": 0,
+        "visitors": 0
+      },
+      {
+        "hour": 23,
+        "pageViews": 0,
+        "visitors": 0
+      }
+    ],
+    "topGeo": [
+      {
+        "country": "MY",
+        "count": 1162,
+        "percentage": 62
+      },
+      {
+        "country": "US",
+        "count": 646,
+        "percentage": 35
+      },
+      {
+        "country": "CN",
+        "count": 28,
+        "percentage": 2
+      },
+      {
+        "country": "HK",
+        "count": 8,
+        "percentage": 0
+      },
+      {
+        "country": "JP",
+        "count": 4,
+        "percentage": 0
+      },
+      {
+        "country": "TW",
+        "count": 3,
+        "percentage": 0
+      },
+      {
+        "country": "CD",
+        "count": 2,
+        "percentage": 0
+      },
+      {
+        "country": "DE",
+        "count": 2,
+        "percentage": 0
+      },
+      {
+        "country": "AU",
+        "count": 1,
+        "percentage": 0
+      },
+      {
+        "country": "BE",
+        "count": 1,
+        "percentage": 0
+      }
+    ],
+    "chinaProvinces": [
+      {
+        "province": "Guangdong",
+        "count": 11,
+        "percentage": 39
+      },
+      {
+        "province": "Shanghai",
+        "count": 7,
+        "percentage": 25
+      },
+      {
+        "province": "Shaanxi",
+        "count": 4,
+        "percentage": 14
+      },
+      {
+        "province": "Henan",
+        "count": 2,
+        "percentage": 7
+      },
+      {
+        "province": "Hubei",
+        "count": 2,
+        "percentage": 7
+      },
+      {
+        "province": "Guangxi",
+        "count": 1,
+        "percentage": 4
+      },
+      {
+        "province": "Liaoning",
+        "count": 1,
+        "percentage": 4
+      }
+    ],
+    "clientStats": {
+      "browsers": [
+        {
+          "name": "other",
+          "count": 1714,
+          "percentage": 86
+        },
+        {
+          "name": "chrome",
+          "count": 225,
+          "percentage": 11
+        },
+        {
+          "name": "edge",
+          "count": 34,
+          "percentage": 2
+        },
+        {
+          "name": "safari",
+          "count": 17,
+          "percentage": 1
+        },
+        {
+          "name": "wechat",
+          "count": 2,
+          "percentage": 0
+        },
+        {
+          "name": "alohabrowser",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "oppo_browser",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "samsung_browser",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "vivo_browser",
+          "count": 1,
+          "percentage": 0
+        }
+      ],
+      "devices": [
+        {
+          "name": "desktop",
+          "count": 1946,
+          "percentage": 97
+        },
+        {
+          "name": "mobile",
+          "count": 50,
+          "percentage": 3
+        }
+      ],
+      "os": [
+        {
+          "name": "other",
+          "count": 1715,
+          "percentage": 86
+        },
+        {
+          "name": "windows",
+          "count": 213,
+          "percentage": 11
+        },
+        {
+          "name": "android",
+          "count": 33,
+          "percentage": 2
+        },
+        {
+          "name": "ios",
+          "count": 17,
+          "percentage": 1
+        },
+        {
+          "name": "linux",
+          "count": 9,
+          "percentage": 0
+        },
+        {
+          "name": "macos",
+          "count": 9,
+          "percentage": 0
+        }
+      ],
+      "deviceBrands": [
+        {
+          "name": "Other (其他终端)",
+          "count": 429,
+          "percentage": 96
+        },
+        {
+          "name": "Windows PC",
+          "count": 4,
+          "percentage": 1
+        },
+        {
+          "name": "Apple iPhone",
+          "count": 3,
+          "percentage": 1
+        },
+        {
+          "name": "Apple Mac",
+          "count": 2,
+          "percentage": 0
+        },
+        {
+          "name": "vivo",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "Xiaomi (小米/红米)",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "Samsung (三星)",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "OPPO",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "Huawei (华为)",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "Android: Nexus 5",
+          "count": 1,
+          "percentage": 0
+        },
+        {
+          "name": "Android: Fairphone 5",
+          "count": 1,
+          "percentage": 0
+        }
+      ]
+    },
+    "clipboardFormatsBreakdown": {
+      "title": 1,
+      "title_artist": 198,
+      "title_artist_album": 3
+    },
+    "referrerDistribution": [
+      {
+        "name": "direct",
+        "count": 465,
+        "percentage": 99
+      },
+      {
+        "name": "github",
+        "count": 2,
+        "percentage": 0
+      },
+      {
+        "name": "zhihu",
+        "count": 1,
+        "percentage": 0
+      },
+      {
+        "name": "google",
+        "count": 1,
+        "percentage": 0
+      },
+      {
+        "name": "chatgpt",
+        "count": 1,
+        "percentage": 0
+      },
+      {
+        "name": "bing",
+        "count": 1,
+        "percentage": 0
+      }
+    ],
+    "inputTypeDistribution": [
+      {
+        "name": "web_url",
+        "count": 340,
+        "percentage": 71
+      },
+      {
+        "name": "raw_id",
+        "count": 97,
+        "percentage": 20
+      },
+      {
+        "name": "mobile_share_link",
+        "count": 41,
+        "percentage": 9
+      }
+    ],
+    "latencyDistribution": [
+      {
+        "name": "<500ms",
+        "count": 314,
+        "percentage": 66
+      },
+      {
+        "name": "1-3s",
+        "count": 70,
+        "percentage": 15
+      },
+      {
+        "name": "500-1000ms",
+        "count": 45,
+        "percentage": 9
+      },
+      {
+        "name": "3-5s",
+        "count": 27,
+        "percentage": 6
+      },
+      {
+        "name": "5s+",
+        "count": 22,
+        "percentage": 5
+      }
+    ],
+    "errorCategoryDistribution": [
+      {
+        "name": "error_validation",
+        "count": 256,
+        "percentage": 84
+      },
+      {
+        "name": "error_upstream",
+        "count": 47,
+        "percentage": 16
+      }
+    ]
   }
 }
