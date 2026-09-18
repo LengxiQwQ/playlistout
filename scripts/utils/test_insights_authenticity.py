@@ -53,6 +53,30 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertNotIn("72", res_zh)
         self.assertNotIn("72", res_en)
 
+    def test_platform_shares_all_current_providers(self):
+        """KuGou and QiShui must participate in the real denominator instead of being silently dropped."""
+        by_platform = {
+            "qqmusic": {"totalSuccess": 134},
+            "netease": {"totalSuccess": 20},
+            "kugou": {"totalSuccess": 28},
+            "qishui": {"totalSuccess": 8},
+        }
+        res_zh = format_platform_shares(by_platform, "zh")
+        res_en = format_platform_shares(by_platform, "en")
+
+        self.assertIn("QQ 音乐", res_zh)
+        self.assertIn("网易云音乐", res_zh)
+        self.assertIn("酷狗音乐", res_zh)
+        self.assertIn("汽水音乐", res_zh)
+        self.assertIn("KuGou Music", res_en)
+        self.assertIn("QiShui Music", res_en)
+
+        # 190 total => 134/190 ~= 71%, 20/190 ~= 11%, 28/190 ~= 15%, 8/190 ~= 4%
+        self.assertIn("**71%** (134 次)", res_zh)
+        self.assertIn("**11%** (20 次)", res_zh)
+        self.assertIn("**15%** (28 次)", res_zh)
+        self.assertIn("**4%** (8 次)", res_zh)
+
     def test_platform_shares_both_zero(self):
         """When total parses are 0, must show 暂无数据 / No data, never QQ 100% fake."""
         by_platform = {
