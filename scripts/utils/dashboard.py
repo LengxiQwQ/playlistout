@@ -221,6 +221,7 @@ ERROR_CATEGORY_MAP = {
     "error_validation": "链接格式校验错误 (Validation)",
     "error_not_found": "歌单未找到/未公开 (Not Found)",
     "error_upstream": "音乐平台接口异常 (Upstream)",
+    "error_timeout": "请求超时 (Timeout)",
     "error_rate_limit": "请求触发频控 (Rate Limit)",
     "error_internal": "系统服务异常 (Internal)",
 }
