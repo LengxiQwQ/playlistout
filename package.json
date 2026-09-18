@@ -15,6 +15,9 @@
     "stop": "node scripts/stop-dev.js",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "gate": "node scripts/ci-gate.js",
+    "check": "npm run gate",
+    "prepare": "node scripts/setup-hooks.js"
   }
 }

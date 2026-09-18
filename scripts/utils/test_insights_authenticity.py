@@ -964,7 +964,7 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
 
     def test_r6_dashboard_fetch_stats_requires_token(self):
         """fetch_stats must reject missing token with ValueError."""
-        with patch.dict(os.environ, {}, clear=True):
+        with patch("scripts.utils.dashboard.get_admin_token", return_value=None):
             with self.assertRaises(ValueError) as ctx:
                 fetch_stats("https://example.com/api/internal/stats", token=None)
             self.assertIn("INSIGHTS_ADMIN_TOKEN is missing", str(ctx.exception))
