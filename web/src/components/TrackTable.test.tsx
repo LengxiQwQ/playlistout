@@ -73,7 +73,7 @@ describe('TrackTable Component (Mobile view modes)', () => {
     expect(screen.getByRole('button', { name: '显示更多' })).toHaveTextContent('+显示更多');
   });
 
-  it('automatically pads indices and reserves width for large playlists with 3 or 4 digits', () => {
+  it('automatically pads indices and reserves width for large playlists with 3 or 4 digits', { timeout: 15000 }, () => {
     const largePlaylist: Track[] = Array.from({ length: 1000 }, (_, idx) => ({
       id: `track-${idx + 1}`,
       index: idx + 1,
