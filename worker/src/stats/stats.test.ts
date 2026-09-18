@@ -80,6 +80,17 @@ function createMockD1() {
                 results.push({ total: sum > 0 ? sum : null });
               }
             }
+          } else if (sql.includes('hourly_stats')) {
+            const requestedDates = this._params.filter((p) => typeof p === 'string');
+            const includeDate = sql.includes('SELECT date, hour');
+            for (const [key, count] of store.entries()) {
+              if (!key.startsWith('hourly::')) continue;
+              const [, date, hourRaw, platform, metric] = key.split('::');
+              if (!requestedDates.includes(date)) continue;
+              if (platform !== 'all' || !['page_view', 'visitor_unique'].includes(metric)) continue;
+              const row = { hour: Number(hourRaw), metric, total: count };
+              results.push(includeDate ? { date, ...row } : row);
+            }
           } else if (sql.includes('GROUP BY date, metric')) {
             // Daily trend query
             const dateThreshold = this._params[0];
@@ -104,7 +115,7 @@ function createMockD1() {
           } else {
             // Standard aggregate_stats query (date IN (?1, ?2))
             for (const [key, count] of store.entries()) {
-              if (key.startsWith('export::') || key.startsWith('clipboard::')) continue;
+              if (key.startsWith('export::') || key.startsWith('clipboard::') || key.startsWith('hourly::')) continue;
               const [date, platform, metric] = key.split('::');
               results.push({ date, platform, metric, count });
             }
@@ -349,6 +360,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       expect(stats.chinaProvinces).toBeDefined();
       expect(stats.clientStats).toBeDefined();
       expect(stats.todayHourlyPageViews).toBeDefined();
+      expect(stats.last24HourlyPageViews).toBeDefined();
       expect(stats.referrerDistribution).toBeDefined();
 
       // todayHourlyPageViews must be exactly 24 slots (one per UTC hour)
@@ -360,12 +372,53 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
         expect(typeof slot.visitors).toBe('number');
       }
 
+      expect(stats.last24HourlyPageViews).toHaveLength(24);
+      for (const slot of stats.last24HourlyPageViews!) {
+        expect(Number.isNaN(Date.parse(slot.timestamp))).toBe(false);
+        expect(typeof slot.pageViews).toBe('number');
+        expect(typeof slot.visitors).toBe('number');
+      }
+
       // Raw privacy-sensitive field names must NOT appear — only coarse category labels
       expect(statsStr).not.toContain('deviceClass');     // raw UA field name
       expect(statsStr).not.toContain('browserFamily');   // raw UA field name
       expect(statsStr).not.toContain('osFamily');        // raw UA field name
       expect(statsStr).not.toContain('providerPath');    // internal infra field
       // 'country' is allowed as coarse ISO code; 'region' is allowed as coarse province name
+    });
+
+
+    it('returns a true rolling 24-hour window across a UTC date boundary', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date('2026-09-18T06:30:00.000Z'));
+        const mockDb = createMockD1();
+
+        mockDb._store.set('hourly::2026-09-17::7::all::page_view', 11);
+        mockDb._store.set('hourly::2026-09-18::6::all::page_view', 22);
+        mockDb._store.set('hourly::2026-09-18::6::all::visitor_unique', 5);
+
+        const stats = await getPublicStats(mockDb);
+        const rolling = stats.last24HourlyPageViews!;
+
+        expect(rolling).toHaveLength(24);
+        expect(rolling[0]).toEqual({
+          timestamp: '2026-09-17T07:00:00.000Z',
+          pageViews: 11,
+          visitors: 0,
+        });
+        expect(rolling[23]).toEqual({
+          timestamp: '2026-09-18T06:00:00.000Z',
+          pageViews: 22,
+          visitors: 5,
+        });
+        expect(rolling.every((slot, i) => {
+          if (i === 0) return true;
+          return Date.parse(slot.timestamp) - Date.parse(rolling[i - 1].timestamp) === 60 * 60 * 1000;
+        })).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
 
