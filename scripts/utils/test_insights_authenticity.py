@@ -297,8 +297,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("const GEO_DATA = [];", html)
         self.assertIn("renderGeoChart();", html)
         self.assertIn("createHBar('chartChina', [], [],", html)
-        self.assertIn("createDonut('chartBrowser', [], []);", html)
-        self.assertIn("createDonut('chartDevice', [], []);", html)
+        self.assertIn("createDonut('chartBrowser', [], [], []);", html)
+        self.assertIn("createDonut('chartDevice', [], [], []);", html)
         self.assertIn("createDonut('chartPlatform', [], []);", html)
 
     def test_dashboard_full_contract_fixture_consumes_every_current_field(self):
