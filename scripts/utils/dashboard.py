@@ -431,6 +431,7 @@ def build_html(
     recent = list(reversed(stats.get("recentDays") or []))[-30:]
     t_dates = j([r.get("date", "") for r in recent])
     t_parses = j([s(r.get("parses")) for r in recent])
+    t_tracks = j([s(r.get("tracks")) for r in recent])
     t_exports = j([s(r.get("exports")) for r in recent])
     t_clips = j([s(r.get("clipboards")) for r in recent])
     t_visitors = j([s(r.get("visitors")) for r in recent])
@@ -439,7 +440,11 @@ def build_html(
     # 地理数据
     geo_raw = stats.get("topGeo") or []
     geo_data = j([
-        {"country": g.get("country", "?"), "count": s(g.get("count"))}
+        {
+            "country": g.get("country", "?"),
+            "count": s(g.get("count")),
+            "percentage": s(g.get("percentage")),
+        }
         for g in geo_raw
         if isinstance(g, dict)
     ])
@@ -447,20 +452,25 @@ def build_html(
     cn_raw = stats.get("chinaProvinces") or []
     cn_labels = j([c.get("province", "?") for c in cn_raw])
     cn_counts = j([s(c.get("count")) for c in cn_raw])
+    cn_pcts = dist_pcts(cn_raw)
 
     # 客户端
     client = stats.get("clientStats") or {}
     br_labels = dist_names_mapped(client.get("browsers"), format_browser_label)
     br_counts = dist_counts(client.get("browsers"))
+    br_pcts = dist_pcts(client.get("browsers"))
 
     dv_labels = dist_names_mapped(client.get("devices"), format_device_label)
     dv_counts = dist_counts(client.get("devices"))
+    dv_pcts = dist_pcts(client.get("devices"))
 
     os_labels = dist_names_mapped(client.get("os"), format_os_label)
     os_counts = dist_counts(client.get("os"))
+    os_pcts = dist_pcts(client.get("os"))
 
     brand_labels = dist_names(client.get("deviceBrands"))
     brand_counts = dist_counts(client.get("deviceBrands"))
+    brand_pcts = dist_pcts(client.get("deviceBrands"))
 
 
 
@@ -476,19 +486,33 @@ def build_html(
     plat_raw = stats.get("byPlatform") or {}
     plat_labels = j([format_platform_label(k) for k in plat_raw.keys()])
     plat_counts = j([s((v or {}).get("totalSuccess")) for v in plat_raw.values()])
+    plat_today_counts = j([s((v or {}).get("todaySuccess")) for v in plat_raw.values()])
+    plat_data = j([
+        {
+            "key": k,
+            "label": format_platform_label(k),
+            "total": s((v or {}).get("totalSuccess")),
+            "today": s((v or {}).get("todaySuccess")),
+        }
+        for k, v in plat_raw.items()
+    ])
 
     # 来源、输入方式、延迟与错误
     ref_labels = dist_names_mapped(stats.get("referrerDistribution"), format_referrer_label)
     ref_counts = dist_counts(stats.get("referrerDistribution"))
+    ref_pcts = dist_pcts(stats.get("referrerDistribution"))
 
     inp_labels = dist_names_mapped(stats.get("inputTypeDistribution"), format_input_label)
     inp_counts = dist_counts(stats.get("inputTypeDistribution"))
+    inp_pcts = dist_pcts(stats.get("inputTypeDistribution"))
 
     lat_labels = dist_names(stats.get("latencyDistribution"))
     lat_counts = dist_counts(stats.get("latencyDistribution"))
+    lat_pcts = dist_pcts(stats.get("latencyDistribution"))
 
     err_labels = dist_names_mapped(stats.get("errorCategoryDistribution"), format_error_label)
     err_counts = dist_counts(stats.get("errorCategoryDistribution"))
+    err_pcts = dist_pcts(stats.get("errorCategoryDistribution"))
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
