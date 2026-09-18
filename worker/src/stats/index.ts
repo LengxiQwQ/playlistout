@@ -85,11 +85,9 @@ export async function recordParse(
       db.prepare(upsertSql).bind('TOTAL', platform, metric),
     ];
 
-    if (success) {
-      // Global counters for all platforms combined
-      statements.push(db.prepare(upsertSql).bind(date, 'all', metric));
-      statements.push(db.prepare(upsertSql).bind('TOTAL', 'all', metric));
-    }
+    // Global counters for all platforms combined (both success and failure)
+    statements.push(db.prepare(upsertSql).bind(date, 'all', metric));
+    statements.push(db.prepare(upsertSql).bind('TOTAL', 'all', metric));
 
     await db.batch(statements);
   } catch (err: unknown) {
@@ -409,6 +407,14 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
     clipboardPlaylistSizeDistribution: [],
     rateLimitEndpointDistribution: [],
     operationalRecentDays: [],
+    resolveOutcomeDistribution: [],
+    resolveFailureCodeDistribution: [],
+    resolveFailureClassDistribution: [],
+    resolveFailureStageDistribution: [],
+    resolveRequestedTypeDistribution: [],
+    resolveRequestedPlatformDistribution: [],
+    resolveFailuresByPlatform: [],
+    providerFailurePathDistribution: [],
   };
 
   if (!db) {
@@ -627,6 +633,16 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
     const clipboardPlaylistSizeDistribution: ClientDistributionItem[] = [];
     const rateLimitEndpointDistribution: ClientDistributionItem[] = [];
 
+    // ── R7 Resolve Failure Telemetry distributions ──
+    const resolveOutcomeDistribution: ClientDistributionItem[] = [];
+    const resolveFailureCodeDistribution: ClientDistributionItem[] = [];
+    const resolveFailureClassDistribution: ClientDistributionItem[] = [];
+    const resolveFailureStageDistribution: ClientDistributionItem[] = [];
+    const resolveRequestedTypeDistribution: ClientDistributionItem[] = [];
+    const resolveRequestedPlatformDistribution: ClientDistributionItem[] = [];
+    const resolveFailuresByPlatform: ClientDistributionItem[] = [];
+    const providerFailurePathDistribution: ClientDistributionItem[] = [];
+
     try {
       const perfRows = await db
         .prepare(`
@@ -635,7 +651,9 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
           WHERE date != 'TOTAL'
           AND dimension IN (
             'referrer_source', 'input_type', 'latency_bucket', 'error_category', 'device_brand',
-            'playlist_size', 'provider_path', 'export_playlist_size', 'clipboard_playlist_size', 'rate_limit_endpoint'
+            'playlist_size', 'provider_path', 'export_playlist_size', 'clipboard_playlist_size', 'rate_limit_endpoint',
+            'resolve_outcome', 'resolve_failure_code', 'resolve_failure_class', 'resolve_failure_stage',
+            'resolve_requested_type', 'resolve_requested_platform', 'provider_failure_path'
           )
           GROUP BY dimension, value
           ORDER BY dimension, total DESC
@@ -683,6 +701,56 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
 
         const rlItems = dimMap.get('rate_limit_endpoint');
         if (rlItems) rateLimitEndpointDistribution.push(...toDistributionFromDim(rlItems));
+
+        // R7 mappings
+        const resOutcomeItems = dimMap.get('resolve_outcome');
+        if (resOutcomeItems) resolveOutcomeDistribution.push(...toDistributionFromDim(resOutcomeItems));
+
+        const resFailCodeItems = dimMap.get('resolve_failure_code');
+        if (resFailCodeItems) resolveFailureCodeDistribution.push(...toDistributionFromDim(resFailCodeItems));
+
+        const resFailClassItems = dimMap.get('resolve_failure_class');
+        if (resFailClassItems) resolveFailureClassDistribution.push(...toDistributionFromDim(resFailClassItems));
+
+        const resFailStageItems = dimMap.get('resolve_failure_stage');
+        if (resFailStageItems) resolveFailureStageDistribution.push(...toDistributionFromDim(resFailStageItems));
+
+        const resReqTypeItems = dimMap.get('resolve_requested_type');
+        if (resReqTypeItems) resolveRequestedTypeDistribution.push(...toDistributionFromDim(resReqTypeItems));
+
+        const resReqPlatItems = dimMap.get('resolve_requested_platform');
+        if (resReqPlatItems) resolveRequestedPlatformDistribution.push(...toDistributionFromDim(resReqPlatItems));
+
+        const provFailPathItems = dimMap.get('provider_failure_path');
+        if (provFailPathItems) providerFailurePathDistribution.push(...toDistributionFromDim(provFailPathItems));
+      }
+
+      // R7: failures by platform query
+      try {
+        const platFailRows = await db
+          .prepare(`
+            SELECT platform, SUM(count) as total
+            FROM daily_performance_stats
+            WHERE date != 'TOTAL'
+              AND dimension = 'resolve_outcome'
+              AND value = 'failure'
+            GROUP BY platform
+            ORDER BY total DESC
+          `)
+          .all<{ platform: string; total: number }>();
+
+        if (platFailRows.results && platFailRows.results.length > 0) {
+          const grandTotal = platFailRows.results.reduce((s, r) => s + r.total, 0) || 1;
+          for (const r of platFailRows.results) {
+            resolveFailuresByPlatform.push({
+              name: r.platform,
+              count: r.total,
+              percentage: Math.round((r.total / grandTotal) * 100),
+            });
+          }
+        }
+      } catch (platErr: unknown) {
+        console.error('Failed to fetch resolve failures by platform:', platErr);
       }
     } catch (err: unknown) {
       console.error('Failed to fetch performance dimension stats:', err);
@@ -759,6 +827,22 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
       clipboardPlaylistSizeDistribution,
       rateLimitEndpointDistribution,
       operationalRecentDays,
+      resolveOutcomeDistribution,
+      resolveFailureCodeDistribution,
+      resolveFailureClassDistribution,
+      resolveFailureStageDistribution,
+      resolveRequestedTypeDistribution,
+      resolveRequestedPlatformDistribution,
+      resolveFailuresByPlatform,
+      providerFailurePathDistribution,
+      // Direct short aliases
+      resolveOutcomes: resolveOutcomeDistribution,
+      resolveFailureCodes: resolveFailureCodeDistribution,
+      resolveFailureClasses: resolveFailureClassDistribution,
+      resolveFailureStages: resolveFailureStageDistribution,
+      resolveRequestedTypes: resolveRequestedTypeDistribution,
+      resolveRequestedPlatforms: resolveRequestedPlatformDistribution,
+      providerFailurePaths: providerFailurePathDistribution,
     };
   } catch (err: unknown) {
     console.error('Failed to fetch private maintainer analytics:', err);

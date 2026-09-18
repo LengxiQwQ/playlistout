@@ -14,13 +14,24 @@
 
 import { getClientIp } from '../security/rate-limit';
 import { parseUserAgent } from './ua-parser';
-import { classifyPlaylistSize, classifyLatency, classifyErrorCategory } from './dimensions';
+import {
+  classifyPlaylistSize,
+  classifyLatency,
+  classifyErrorCategory,
+  classifyResolveFailureCode,
+  classifyResolveFailureClass,
+  classifyResolveRequestedType,
+  classifyResolveRequestedPlatform,
+  classifyAnalyticsPlatform,
+  classifyProviderFailurePath,
+} from './dimensions';
 import type {
   ParseAnalyticsContext,
   ExportFormat,
   ClipboardMode,
   CanonicalClipboardMode,
   ReferrerSource,
+  ResolveAnalyticsContext,
 } from './types';
 import { REFERRER_SOURCES } from './types';
 import { getUtcDateString } from '../stats';
@@ -109,10 +120,11 @@ export async function recordParseEvent(
     statements.push(db.prepare(upsertAggregateSql).bind(date, ctx.platform, metric));
     statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', ctx.platform, metric));
 
-    if (ctx.success) {
-      statements.push(db.prepare(upsertAggregateSql).bind(date, 'all', metric));
-      statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'all', metric));
+    // Global counters for all platforms combined (both success and failure)
+    statements.push(db.prepare(upsertAggregateSql).bind(date, 'all', metric));
+    statements.push(db.prepare(upsertAggregateSql).bind('TOTAL', 'all', metric));
 
+    if (ctx.success) {
       if (ctx.trackCount !== undefined && ctx.trackCount > 0) {
         statements.push(db.prepare(upsertTracksSql).bind(date, ctx.platform, ctx.trackCount));
         statements.push(db.prepare(upsertTracksSql).bind('TOTAL', ctx.platform, ctx.trackCount));
@@ -507,6 +519,81 @@ export async function recordVisitEvent(
     await db.batch(statements);
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);
+  }
+}
+
+/**
+ * Records a final resolve outcome into purpose-built aggregate performance tables.
+ *
+ * EXACTLY ONCE GUARANTEE:
+ * - One resolve request -> exactly one authoritative final resolve record (success or failure).
+ * - Internal probes remain silent and must never invoke this function.
+ *
+ * STRICT PRIVACY RULES:
+ * - Never store raw q, input URLs, playlist IDs, user IDs, track/artist/album content,
+ *   cookies, auth tokens, candidate details, or raw error messages.
+ * - All metrics are atomic aggregate counters in daily_performance_stats.
+ * - Best-effort guarantee: failures never interrupt resolver or throw to user.
+ */
+export async function recordResolveOutcome(
+  db: D1Database | undefined,
+  ctx: ResolveAnalyticsContext,
+): Promise<void> {
+  if (!db || typeof db.prepare !== 'function') return;
+
+  try {
+    const date = getUtcDateString();
+    const platform = classifyAnalyticsPlatform(ctx.platform);
+
+    const upsertPerfSql = `
+      INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
+      VALUES (?1, ?2, ?3, ?4, 1)
+      ON CONFLICT (date, platform, dimension, value)
+      DO UPDATE SET count = count + 1;
+    `;
+
+    const statements: D1PreparedStatement[] = [];
+
+    // 1. Primary resolve outcome (success_playlist | success_user | failure)
+    statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_outcome', ctx.outcome));
+
+    // 2. Requested type (auto | playlist | user | unknown)
+    if (ctx.requestedType) {
+      const safeReqType = classifyResolveRequestedType(ctx.requestedType);
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_requested_type', safeReqType));
+    }
+
+    // 3. Requested platform (auto | qqmusic | netease | kugou | qishui | unknown)
+    if (ctx.requestedPlatform) {
+      const safeReqPlat = classifyResolveRequestedPlatform(ctx.requestedPlatform);
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_requested_platform', safeReqPlat));
+    }
+
+    // 4. Coarse input type (web_url | mobile_share_link | raw_id | other)
+    if (ctx.inputType) {
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_input_type', ctx.inputType));
+    }
+
+    // 5. Detailed failure taxonomy (only for failure outcomes)
+    if (ctx.outcome === 'failure') {
+      const failureCode = classifyResolveFailureCode(ctx.failureCode);
+      const failureClass = ctx.failureClass ? ctx.failureClass : classifyResolveFailureClass(failureCode);
+      const failureStage = ctx.failureStage || 'input_validation';
+
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_failure_code', failureCode));
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_failure_class', failureClass));
+      statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_failure_stage', failureStage));
+
+      if (ctx.providerFailurePath) {
+        const safePath = classifyProviderFailurePath(ctx.providerFailurePath);
+        statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'provider_failure_path', safePath));
+      }
+    }
+
+    await db.batch(statements);
+  } catch (err: unknown) {
+    // Privacy-safe static message: never log raw error details or queries
+    console.error('Failed to record resolve aggregate stats:', err);
   }
 }
 

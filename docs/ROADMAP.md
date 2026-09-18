@@ -155,9 +155,10 @@ This milestone is complete when:
 - tests cover aggregation, privacy boundaries, malformed events, and D1 failure behavior
 - production migration/deployment succeeds
 
-> **Status (Milestones R1–R6 COMPLETE)**:
+> **Status (Milestones R1–R7 COMPLETE)**:
 > - R1–R5: Authenticity, verification, semantic consistency, client event trust boundary, and referrer minimization are verified and closed.
 > - R6: **Public / Private Analytics Split is COMPLETE**. Public product statistics (`/api/stats`) strictly decoupled from maintainer-only diagnostic insights (`/api/internal/stats` with Bearer auth). Zero private dimensions leak to unauthenticated endpoints or public GitHub snapshots.
+> - R7: **Resolve Failure Telemetry is COMPLETE**. Bounded, privacy-preserving aggregate telemetry for universal resolver outcomes (`/api/v1/resolve`), platform operational failure attribution, provider primary/fallback failure path tracking, disambiguation stage telemetry, and failure rate visualization in maintainer dashboard. Zero raw query, URL, ID, token, or error message persistence. Silent internal probes preserve metric fidelity.
 
 ---
 

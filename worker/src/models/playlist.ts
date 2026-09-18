@@ -126,10 +126,18 @@ export type ApiErrorCode =
 
 export type ProviderErrorCode = ApiErrorCode;
 
+export interface ProviderErrorTelemetry {
+  providerFailurePath?: 'primary' | 'fallback' | 'both' | 'not_applicable' | 'unknown';
+  stage?: string;
+  platform?: string;
+}
+
 export class ProviderError extends Error {
   readonly code: ApiErrorCode;
   readonly statusCode: number;
   readonly details?: unknown;
+  /** Internal telemetry metadata for server-side observability only; never included in API JSON */
+  telemetry?: ProviderErrorTelemetry;
 
   constructor(code: ApiErrorCode, message: string, statusCode: number = 400, details?: unknown) {
     super(message);

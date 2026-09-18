@@ -9,6 +9,11 @@
  * 5. Executes concurrent probing for ambiguous numeric IDs (returning 409 AMBIGUOUS_INPUT with candidates if conflicting)
  * 6. Dispatches to shared playlist/user services
  * 7. Returns normalized envelope: { kind, platform, result }
+ *
+ * R7 OBSERVABILITY & PRIVACY RULES:
+ * - Exactly once: Every resolve request produces exactly one final outcome (success_playlist, success_user, or failure).
+ * - Internal probes remain silent (skipAnalytics: true) and never pollute failure counts.
+ * - Bounded dimensions only: no raw q, URLs, IDs, tokens, or error messages stored.
  */
 
 import {
@@ -25,8 +30,24 @@ import { qqMusicProvider } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
-import { recordParseEvent } from '../analytics/recorder';
-import { classifyInputType } from '../analytics/dimensions';
+import { recordParseEvent, recordResolveOutcome } from '../analytics/recorder';
+import {
+  classifyInputType,
+  classifyResolveFailureCode,
+  classifyResolveFailureClass,
+  classifyResolveRequestedType,
+  classifyResolveRequestedPlatform,
+  classifyAnalyticsPlatform,
+  classifyProviderFailurePath,
+} from '../analytics/dimensions';
+import type {
+  ResolveOutcome,
+  ResolveFailureStage,
+  ResolveRequestedType,
+  ResolveRequestedPlatform,
+  AnalyticsPlatform,
+  ProviderFailurePath,
+} from '../analytics/types';
 
 export interface ResolveServiceOptions {
   q: string;
@@ -44,6 +65,19 @@ export interface ResolveServiceOptions {
 export type SupportedType = 'auto' | 'playlist' | 'user';
 export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui';
 
+interface ResolveTracking {
+  stage: ResolveFailureStage;
+  platform: AnalyticsPlatform;
+  requestedType: ResolveRequestedType;
+  requestedPlatform: ResolveRequestedPlatform;
+  providerFailurePath?: ProviderFailurePath;
+}
+
+interface ProbeResultWithPlatform {
+  platform: AnalyticsPlatform;
+  result: PromiseSettledResult<any>;
+}
+
 function isNegativeProbeError(err: unknown): boolean {
   if (err instanceof ProviderError) {
     return (
@@ -58,54 +92,162 @@ function isNegativeProbeError(err: unknown): boolean {
   return false;
 }
 
-function findPropagatableProbeError(errors: unknown[]): unknown | null {
+function findPropagatableProbeWithPlatform(
+  probes: ProbeResultWithPlatform[],
+): { error: unknown; platform: AnalyticsPlatform } | null {
+  const rejected = probes
+    .filter((p): p is { platform: AnalyticsPlatform; result: PromiseRejectedResult } => p.result.status === 'rejected')
+    .map((p) => ({ platform: p.platform, error: p.result.reason }));
+
   // 1. Prioritize explicit upstream operational errors (502, 504, 500)
-  const operational = errors.find(
-    (err) =>
-      err instanceof ProviderError &&
-      (err.code === 'UPSTREAM_ERROR' ||
-        err.code === 'UPSTREAM_TIMEOUT' ||
-        err.code === 'PARSE_ERROR' ||
-        (typeof err.statusCode === 'number' && err.statusCode >= 500)),
+  const operational = rejected.find(
+    (entry) =>
+      entry.error instanceof ProviderError &&
+      (entry.error.code === 'UPSTREAM_ERROR' ||
+        entry.error.code === 'UPSTREAM_TIMEOUT' ||
+        entry.error.code === 'PARSE_ERROR' ||
+        (typeof entry.error.statusCode === 'number' && entry.error.statusCode >= 500)),
   );
   if (operational) return operational;
 
   // 2. Next check for any unexpected non-negative errors (e.g. bare Error, network crash)
-  // Propagate raw unexpected error directly so index.ts fallback sanitizes it with safe 500 INTERNAL_ERROR
-  const unexpected = errors.find((err) => !isNegativeProbeError(err));
-  if (unexpected) {
-    return unexpected;
-  }
+  const unexpected = rejected.find((entry) => !isNegativeProbeError(entry.error));
+  if (unexpected) return unexpected;
 
   return null;
 }
 
-function recordFinalSuccess(
+function recordResolveSuccess(
   request: Request | undefined,
   db: D1Database | undefined,
   ctx: ExecutionContext | undefined,
   rawInput: string,
   startTime: number,
   data: ResolveData,
+  tracking: ResolveTracking,
 ): ResolveData {
-  if (data.kind === 'playlist' && ctx && typeof ctx.waitUntil === 'function' && request) {
-    const latencyMs = Date.now() - startTime;
-    ctx.waitUntil(
+  const latencyMs = Date.now() - startTime;
+  const inputType = classifyInputType(rawInput);
+  const platform = classifyAnalyticsPlatform(data.platform);
+  const outcome: ResolveOutcome = data.kind === 'playlist' ? 'success_playlist' : 'success_user';
+
+  const runAsync = (promise: Promise<unknown>) => {
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(promise);
+    } else {
+      promise.catch(() => {});
+    }
+  };
+
+  // 1. Authoritative final resolve outcome
+  runAsync(
+    recordResolveOutcome(db, {
+      request,
+      outcome,
+      platform,
+      requestedType: tracking.requestedType,
+      requestedPlatform: tracking.requestedPlatform,
+      inputType,
+    }),
+  );
+
+  // 2. If it is a playlist, ALSO record parse event (parse_success + tracks_processed)
+  if (data.kind === 'playlist' && request) {
+    const playlist = data.result as Playlist;
+    const providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
+    runAsync(
       recordParseEvent(db, {
         request,
         platform: data.platform,
-        inputType: classifyInputType(rawInput),
+        inputType,
         success: true,
-        trackCount: (data.result as Playlist).tracks.length,
+        trackCount: playlist.tracks.length,
         latencyMs,
+        providerPath,
       }),
     );
   }
+
   return data;
 }
 
+function recordResolveFailure(
+  request: Request | undefined,
+  db: D1Database | undefined,
+  ctx: ExecutionContext | undefined,
+  rawInput: string,
+  startTime: number,
+  err: unknown,
+  tracking: ResolveTracking,
+): void {
+  if (!db) return;
+
+  const errTelemetry = err instanceof ProviderError ? err.telemetry : undefined;
+  const rawCode = err instanceof ProviderError ? err.code : 'INTERNAL_ERROR';
+  const failureCode = classifyResolveFailureCode(rawCode);
+  const failureClass = classifyResolveFailureClass(failureCode);
+  const failureStage = (errTelemetry?.stage as ResolveFailureStage) || tracking.stage;
+  const platform = classifyAnalyticsPlatform(errTelemetry?.platform || tracking.platform);
+  const providerFailurePath = classifyProviderFailurePath(
+    errTelemetry?.providerFailurePath || tracking.providerFailurePath,
+  );
+  const inputType = classifyInputType(rawInput || '');
+
+  const runAsync = (promise: Promise<unknown>) => {
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(promise);
+    } else {
+      promise.catch(() => {});
+    }
+  };
+
+  runAsync(
+    recordResolveOutcome(db, {
+      request,
+      outcome: 'failure',
+      platform,
+      requestedType: tracking.requestedType,
+      requestedPlatform: tracking.requestedPlatform,
+      inputType,
+      failureCode,
+      failureClass,
+      failureStage,
+      providerFailurePath: providerFailurePath !== 'not_applicable' ? providerFailurePath : undefined,
+    }),
+  );
+}
+
+/**
+ * Universal resolve service entry point with authoritative telemetry wrapping.
+ */
 export async function resolveService(
   options: ResolveServiceOptions,
+): Promise<ResolveData> {
+  const { q, type, platform, request, db, ctx } = options;
+  const startTime = Date.now();
+
+  const tracking: ResolveTracking = {
+    stage: 'input_validation',
+    platform: 'unknown',
+    requestedType: classifyResolveRequestedType(type),
+    requestedPlatform: classifyResolveRequestedPlatform(platform),
+  };
+
+  try {
+    const data = await resolveServiceCore(options, tracking);
+    return recordResolveSuccess(request, db, ctx, q || '', startTime, data, tracking);
+  } catch (err: unknown) {
+    recordResolveFailure(request, db, ctx, q || '', startTime, err, tracking);
+    throw err;
+  }
+}
+
+/**
+ * Internal resolver core execution.
+ */
+async function resolveServiceCore(
+  options: ResolveServiceOptions,
+  tracking: ResolveTracking,
 ): Promise<ResolveData> {
   const { q, type, platform, auth, request, db, ctx } = options;
 
@@ -126,11 +268,15 @@ export async function resolveService(
   let normalizedType: SupportedType = 'auto';
   if (rawType === 'playlist') {
     normalizedType = 'playlist';
+    tracking.requestedType = 'playlist';
   } else if (rawType === 'user' || rawType === 'user_playlists') {
     normalizedType = 'user';
+    tracking.requestedType = 'user';
   } else if (rawType === 'auto') {
     normalizedType = 'auto';
+    tracking.requestedType = 'auto';
   } else {
+    tracking.requestedType = 'unknown';
     throw new ProviderError(
       'INVALID_INPUT',
       `Invalid type parameter "${type}". Supported types: auto, playlist, user.`,
@@ -149,7 +295,12 @@ export async function resolveService(
     rawPlatform === 'qishui'
   ) {
     normalizedPlatform = rawPlatform;
+    tracking.requestedPlatform = rawPlatform;
+    if (rawPlatform !== 'auto') {
+      tracking.platform = rawPlatform;
+    }
   } else {
+    tracking.requestedPlatform = 'unknown';
     throw new ProviderError(
       'UNSUPPORTED_PLATFORM',
       `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui.`,
@@ -157,7 +308,6 @@ export async function resolveService(
     );
   }
 
-  const startTime = Date.now();
   const cleanInput = extractCleanUrlOrInput(q);
   const trimmed = cleanInput.trim();
 
@@ -171,6 +321,10 @@ export async function resolveService(
     detectedPlatform = 'kugou';
   } else if (/(?:qishui\.douyin\.com)/i.test(trimmed)) {
     detectedPlatform = 'qishui';
+  }
+
+  if (detectedPlatform) {
+    tracking.platform = detectedPlatform;
   }
 
   // Reject platform constraint conflict
@@ -233,9 +387,12 @@ export async function resolveService(
 
   if (!isNumeric) {
     // ── Non-numeric input routing ──
+    tracking.stage = 'routing';
 
     // 1. Detect explicit user profile URLs
     if (isQQProfile || (detectedPlatform === 'qqmusic' && normalizedType === 'user')) {
+      tracking.stage = 'user_resolution';
+      tracking.platform = 'qqmusic';
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'qqmusic',
@@ -245,6 +402,8 @@ export async function resolveService(
     }
 
     if (isNeteaseProfile || (detectedPlatform === 'netease' && normalizedType === 'user')) {
+      tracking.stage = 'user_resolution';
+      tracking.platform = 'netease';
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'netease',
@@ -254,6 +413,8 @@ export async function resolveService(
     }
 
     if (isKugouProfile || (detectedPlatform === 'kugou' && normalizedType === 'user')) {
+      tracking.stage = 'user_resolution';
+      tracking.platform = 'kugou';
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: 'kugou',
@@ -264,6 +425,8 @@ export async function resolveService(
 
     // 2. Short links resolution
     if (/163cn\.tv/i.test(trimmed)) {
+      tracking.stage = 'short_link_resolution';
+      tracking.platform = 'netease';
       if (normalizedType === 'user') {
         const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
           rawInput: trimmed,
@@ -282,7 +445,7 @@ export async function resolveService(
           ctx,
           skipAnalytics: true,
         });
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+        return { kind: 'playlist', platform: actualPlatform, result: playlist };
       }
       // auto: try single playlist first, fallback to user playlists
       try {
@@ -295,7 +458,7 @@ export async function resolveService(
           ctx,
           skipAnalytics: true,
         });
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+        return { kind: 'playlist', platform: actualPlatform, result: playlist };
       } catch (playlistErr: unknown) {
         if (!isNegativeProbeError(playlistErr)) {
           throw playlistErr;
@@ -321,6 +484,8 @@ export async function resolveService(
     }
 
     if (/t\d?\.kugou\.com/i.test(trimmed)) {
+      tracking.stage = 'short_link_resolution';
+      tracking.platform = 'kugou';
       if (normalizedType === 'user') {
         const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
           rawInput: trimmed,
@@ -339,7 +504,7 @@ export async function resolveService(
           ctx,
           skipAnalytics: true,
         });
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+        return { kind: 'playlist', platform: actualPlatform, result: playlist };
       } catch (err: unknown) {
         if (!isNegativeProbeError(err)) {
           throw err;
@@ -364,6 +529,8 @@ export async function resolveService(
     }
 
     if (/qishui\.douyin\.com\/s\//i.test(trimmed)) {
+      tracking.stage = 'short_link_resolution';
+      tracking.platform = 'qishui';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: 'qishui',
@@ -373,10 +540,11 @@ export async function resolveService(
         ctx,
         skipAnalytics: true,
       });
-      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+      return { kind: 'playlist', platform: actualPlatform, result: playlist };
     }
 
     // 3. Known single playlist URLs
+    tracking.stage = 'playlist_resolution';
     const platformParam = normalizedPlatform !== 'auto' ? normalizedPlatform : null;
     const { playlist, platform: actualPlatform } = await parsePlaylistService({
       rawInput: trimmed,
@@ -387,14 +555,16 @@ export async function resolveService(
       ctx,
       skipAnalytics: true,
     });
-    return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+    return { kind: 'playlist', platform: actualPlatform, result: playlist };
   }
 
   // ── Numeric input routing & disambiguation ──
 
   // Case 1: Explicit type AND explicit platform
   if (normalizedType !== 'auto' && normalizedPlatform !== 'auto') {
+    tracking.platform = normalizedPlatform;
     if (normalizedType === 'playlist') {
+      tracking.stage = 'playlist_resolution';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: normalizedPlatform,
@@ -404,8 +574,9 @@ export async function resolveService(
         ctx,
         skipAnalytics: true,
       });
-      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+      return { kind: 'playlist', platform: actualPlatform, result: playlist };
     } else {
+      tracking.stage = 'user_resolution';
       const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
         rawInput: trimmed,
         platformParam: normalizedPlatform,
@@ -417,7 +588,9 @@ export async function resolveService(
 
   // Case 2: Explicit platform, auto type -> Probe single vs user within that platform
   if (normalizedPlatform !== 'auto' && normalizedType === 'auto') {
+    tracking.platform = normalizedPlatform;
     if (normalizedPlatform === 'qishui') {
+      tracking.stage = 'playlist_resolution';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: 'qishui',
@@ -427,11 +600,12 @@ export async function resolveService(
         ctx,
         skipAnalytics: true,
       });
-      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+      return { kind: 'playlist', platform: actualPlatform, result: playlist };
     }
 
     if (normalizedPlatform === 'kugou') {
       if (auth?.token && auth?.userid) {
+        tracking.stage = 'disambiguation_probe';
         const [singleRes, userRes] = await Promise.allSettled([
           parsePlaylistService({ rawInput: trimmed, platformParam: 'kugou', auth, request, db, ctx, skipAnalytics: true }),
           fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'kugou', auth }),
@@ -470,23 +644,32 @@ export async function resolveService(
           );
         }
         if (singleRes.status === 'fulfilled') {
-          return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'kugou', result: singleRes.value.playlist });
+          return { kind: 'playlist', platform: 'kugou', result: singleRes.value.playlist };
         }
         if (userRes.status === 'fulfilled') {
           return { kind: 'user_playlists', platform: 'kugou', result: userRes.value.userData };
         }
 
-        const errors = [singleRes, userRes]
-          .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-          .map((r) => r.reason);
-        const propagatable = findPropagatableProbeError(errors);
+        const probeList: ProbeResultWithPlatform[] = [
+          { platform: 'kugou', result: singleRes },
+          { platform: 'kugou', result: userRes },
+        ];
+        const propagatable = findPropagatableProbeWithPlatform(probeList);
         if (propagatable) {
-          throw propagatable;
+          if (propagatable.error instanceof ProviderError) {
+            propagatable.error.telemetry = {
+              platform: propagatable.platform,
+              stage: 'disambiguation_probe',
+              ...propagatable.error.telemetry,
+            };
+          }
+          throw propagatable.error;
         }
 
         throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on KuGou.`, 404);
       }
 
+      tracking.stage = 'playlist_resolution';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: 'kugou',
@@ -496,10 +679,11 @@ export async function resolveService(
         ctx,
         skipAnalytics: true,
       });
-      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: actualPlatform, result: playlist });
+      return { kind: 'playlist', platform: actualPlatform, result: playlist };
     }
 
     if (normalizedPlatform === 'qqmusic') {
+      tracking.stage = 'disambiguation_probe';
       const [singleRes, userRes] = await Promise.allSettled([
         parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }),
         fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'qqmusic', auth }),
@@ -538,24 +722,33 @@ export async function resolveService(
         );
       }
       if (singleRes.status === 'fulfilled') {
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'qqmusic', result: singleRes.value.playlist });
+        return { kind: 'playlist', platform: 'qqmusic', result: singleRes.value.playlist };
       }
       if (userRes.status === 'fulfilled') {
         return { kind: 'user_playlists', platform: 'qqmusic', result: userRes.value.userData };
       }
 
-      const errors = [singleRes, userRes]
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason);
-      const propagatable = findPropagatableProbeError(errors);
+      const probeList: ProbeResultWithPlatform[] = [
+        { platform: 'qqmusic', result: singleRes },
+        { platform: 'qqmusic', result: userRes },
+      ];
+      const propagatable = findPropagatableProbeWithPlatform(probeList);
       if (propagatable) {
-        throw propagatable;
+        if (propagatable.error instanceof ProviderError) {
+          propagatable.error.telemetry = {
+            platform: propagatable.platform,
+            stage: 'disambiguation_probe',
+            ...propagatable.error.telemetry,
+          };
+        }
+        throw propagatable.error;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on QQ Music.`, 404);
     }
 
     if (normalizedPlatform === 'netease') {
+      tracking.stage = 'disambiguation_probe';
       const [singleRes, userRes] = await Promise.allSettled([
         parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }),
         fetchUserPlaylistsService({ rawInput: trimmed, platformParam: 'netease', auth }),
@@ -594,18 +787,26 @@ export async function resolveService(
         );
       }
       if (singleRes.status === 'fulfilled') {
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'netease', result: singleRes.value.playlist });
+        return { kind: 'playlist', platform: 'netease', result: singleRes.value.playlist };
       }
       if (userRes.status === 'fulfilled') {
         return { kind: 'user_playlists', platform: 'netease', result: userRes.value.userData };
       }
 
-      const errors = [singleRes, userRes]
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason);
-      const propagatable = findPropagatableProbeError(errors);
+      const probeList: ProbeResultWithPlatform[] = [
+        { platform: 'netease', result: singleRes },
+        { platform: 'netease', result: userRes },
+      ];
+      const propagatable = findPropagatableProbeWithPlatform(probeList);
       if (propagatable) {
-        throw propagatable;
+        if (propagatable.error instanceof ProviderError) {
+          propagatable.error.telemetry = {
+            platform: propagatable.platform,
+            stage: 'disambiguation_probe',
+            ...propagatable.error.telemetry,
+          };
+        }
+        throw propagatable.error;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Target with ID "${trimmed}" not found on NetEase Cloud Music.`, 404);
@@ -614,22 +815,30 @@ export async function resolveService(
 
   // Case 3: Explicit type, auto platform -> Probe cross-platform
   if (normalizedType !== 'auto' && normalizedPlatform === 'auto') {
+    tracking.stage = 'disambiguation_probe';
     if (normalizedType === 'playlist') {
-      const probeTasks = [
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }),
-        parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }),
+      const probeTasks: Array<{ platform: AnalyticsPlatform; task: Promise<any> }> = [
+        { platform: 'qqmusic', task: parsePlaylistService({ rawInput: trimmed, platformParam: 'qqmusic', auth, request, db, ctx, skipAnalytics: true }) },
+        { platform: 'netease', task: parsePlaylistService({ rawInput: trimmed, platformParam: 'netease', auth, request, db, ctx, skipAnalytics: true }) },
       ];
       if (trimmed.length >= 19) {
-        probeTasks.push(
-          parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', auth, request, db, ctx, skipAnalytics: true }),
-        );
+        probeTasks.push({
+          platform: 'qishui',
+          task: parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', auth, request, db, ctx, skipAnalytics: true }),
+        });
       }
 
-      const results = await Promise.allSettled(probeTasks);
+      const settled = await Promise.allSettled(probeTasks.map((t) => t.task));
+      const probeList: ProbeResultWithPlatform[] = probeTasks.map((t, idx) => ({
+        platform: t.platform,
+        result: settled[idx],
+      }));
+
       const candidates: DisambiguationCandidate[] = [];
       const successful: { platform: 'qqmusic' | 'netease' | 'qishui'; playlist: Playlist }[] = [];
 
-      for (const res of results) {
+      for (let i = 0; i < settled.length; i++) {
+        const res = settled[i];
         if (res.status === 'fulfilled') {
           successful.push(res.value as any);
           candidates.push({
@@ -653,19 +862,23 @@ export async function resolveService(
         );
       }
       if (candidates.length === 1) {
-        return recordFinalSuccess(request, db, ctx, trimmed, startTime, {
+        return {
           kind: 'playlist',
           platform: successful[0].platform,
           result: successful[0].playlist,
-        });
+        };
       }
 
-      const errors = results
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason);
-      const propagatable = findPropagatableProbeError(errors);
+      const propagatable = findPropagatableProbeWithPlatform(probeList);
       if (propagatable) {
-        throw propagatable;
+        if (propagatable.error instanceof ProviderError) {
+          propagatable.error.telemetry = {
+            platform: propagatable.platform,
+            stage: 'disambiguation_probe',
+            ...propagatable.error.telemetry,
+          };
+        }
+        throw propagatable.error;
       }
 
       throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${trimmed}" was not found on supported platforms.`, 404);
@@ -722,12 +935,20 @@ export async function resolveService(
         };
       }
 
-      const errors = [qqUserRes, neteaseUserRes]
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason);
-      const propagatable = findPropagatableProbeError(errors);
+      const probeList: ProbeResultWithPlatform[] = [
+        { platform: 'qqmusic', result: qqUserRes },
+        { platform: 'netease', result: neteaseUserRes },
+      ];
+      const propagatable = findPropagatableProbeWithPlatform(probeList);
       if (propagatable) {
-        throw propagatable;
+        if (propagatable.error instanceof ProviderError) {
+          propagatable.error.telemetry = {
+            platform: propagatable.platform,
+            stage: 'disambiguation_probe',
+            ...propagatable.error.telemetry,
+          };
+        }
+        throw propagatable.error;
       }
 
       throw new ProviderError('USER_NOT_FOUND', `User profile with ID "${trimmed}" was not found on supported platforms.`, 404);
@@ -735,6 +956,8 @@ export async function resolveService(
   }
 
   // Case 4: Complete auto mode (type === auto AND platform === auto)
+  tracking.stage = 'disambiguation_probe';
+
   // For IDs >= 19 digits, attempt Qishui playlist first
   if (trimmed.length >= 19) {
     try {
@@ -747,11 +970,19 @@ export async function resolveService(
         ctx,
         skipAnalytics: true,
       });
-      return recordFinalSuccess(request, db, ctx, trimmed, startTime, { kind: 'playlist', platform: 'qishui', result: qishuiRes.playlist });
+      return { kind: 'playlist', platform: 'qishui', result: qishuiRes.playlist };
     } catch (err: unknown) {
-      const propagatable = findPropagatableProbeError([err]);
+      const probeList: ProbeResultWithPlatform[] = [{ platform: 'qishui', result: { status: 'rejected', reason: err } }];
+      const propagatable = findPropagatableProbeWithPlatform(probeList);
       if (propagatable) {
-        throw propagatable;
+        if (propagatable.error instanceof ProviderError) {
+          propagatable.error.telemetry = {
+            platform: 'qishui',
+            stage: 'disambiguation_probe',
+            ...propagatable.error.telemetry,
+          };
+        }
+        throw propagatable.error;
       }
       // Continue to standard 4-way probing
     }
@@ -837,8 +1068,7 @@ export async function resolveService(
   }
 
   if (candidates.length === 1) {
-    const winner = successfulResults[0];
-    return recordFinalSuccess(request, db, ctx, trimmed, startTime, winner);
+    return successfulResults[0];
   }
 
   if (candidates.length > 1) {
@@ -850,12 +1080,22 @@ export async function resolveService(
     );
   }
 
-  const errors = [qqSingle, qqUser, neteaseSingle, neteaseUser]
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => r.reason);
-  const propagatable = findPropagatableProbeError(errors);
+  const probeList: ProbeResultWithPlatform[] = [
+    { platform: 'qqmusic', result: qqSingle },
+    { platform: 'qqmusic', result: qqUser },
+    { platform: 'netease', result: neteaseSingle },
+    { platform: 'netease', result: neteaseUser },
+  ];
+  const propagatable = findPropagatableProbeWithPlatform(probeList);
   if (propagatable) {
-    throw propagatable;
+    if (propagatable.error instanceof ProviderError) {
+      propagatable.error.telemetry = {
+        platform: propagatable.platform,
+        stage: 'disambiguation_probe',
+        ...propagatable.error.telemetry,
+      };
+    }
+    throw propagatable.error;
   }
 
   throw new ProviderError(

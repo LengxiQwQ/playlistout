@@ -33,6 +33,12 @@ from scripts.utils.dashboard import (
     fetch_stats,
     DISPLAY_TZ,
     DISPLAY_TZ_LABEL,
+    format_resolve_outcome_label,
+    format_resolve_failure_class_label,
+    format_resolve_failure_code_label,
+    format_resolve_failure_stage_label,
+    format_requested_type_label,
+    format_provider_failure_path_label,
 )
 
 
@@ -859,7 +865,16 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         "errorCategoryDistribution", "playlistSizeDistribution",
         "providerPathDistribution", "exportPlaylistSizeDistribution",
         "clipboardPlaylistSizeDistribution", "rateLimitEndpointDistribution",
-        "operationalRecentDays"
+        "operationalRecentDays",
+        # R7 Resolve Failure Telemetry (Private Only - both canonical and alias names)
+        "resolveOutcomes", "resolveFailureCodes",
+        "resolveFailureClasses", "resolveFailureStages",
+        "resolveRequestedTypes", "resolveRequestedPlatforms",
+        "resolveFailuresByPlatform", "providerFailurePaths",
+        "resolveOutcomeDistribution", "resolveFailureCodeDistribution",
+        "resolveFailureClassDistribution", "resolveFailureStageDistribution",
+        "resolveRequestedTypeDistribution", "resolveRequestedPlatformDistribution",
+        "providerFailurePathDistribution",
     }
 
     def test_r6_render_website_section_excludes_all_private_dimensions(self):
@@ -1019,6 +1034,109 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         """WEBSITE_STATS_API points to public /api/stats, not internal endpoint."""
         self.assertIn("/api/stats", WEBSITE_STATS_API)
         self.assertNotIn("/api/internal/stats", WEBSITE_STATS_API)
+
+
+# ── R7: Resolve Failure Telemetry Test Suite ──────────────────────────────
+class TestR7ResolveFailureTelemetry(unittest.TestCase):
+    """Test suite for R7: Resolve Failure Telemetry & Dashboard Visualizations."""
+
+    def test_r7_formatters(self):
+        """Formatters must produce clear bilingual labels for R7 enum tokens."""
+        self.assertIn("Playlist Success", format_resolve_outcome_label("success_playlist"))
+        self.assertIn("User Success", format_resolve_outcome_label("success_user"))
+        self.assertIn("Final Failure", format_resolve_outcome_label("failure"))
+
+        self.assertIn("Input", format_resolve_failure_class_label("input"))
+        self.assertIn("Not Found", format_resolve_failure_class_label("not_found"))
+        self.assertIn("Upstream Error", format_resolve_failure_class_label("upstream"))
+        self.assertIn("Timeout", format_resolve_failure_class_label("timeout"))
+        self.assertIn("Ambiguous", format_resolve_failure_class_label("ambiguous"))
+
+        self.assertIn("PLAYLIST_NOT_FOUND", format_resolve_failure_code_label("playlist_not_found"))
+        self.assertIn("INVALID_INPUT", format_resolve_failure_code_label("invalid_input"))
+
+        self.assertIn("Input Validation", format_resolve_failure_stage_label("input_validation"))
+        self.assertIn("Disambiguation Probe", format_resolve_failure_stage_label("disambiguation_probe"))
+
+        self.assertIn("Auto", format_requested_type_label("auto"))
+        self.assertIn("Primary", format_provider_failure_path_label("primary"))
+
+    def test_r7_dashboard_html_renders_all_resolve_cards(self):
+        """build_html must render all 8 R7 cards, donut charts, and the failure rate card."""
+        stats = {
+            "launchedAt": "2026-09-12",
+            "totalVisitors": 100,
+            "recentDays": [],
+            "topGeo": [],
+            "resolveOutcomeDistribution": [
+                {"name": "success_playlist", "count": 15, "percentage": 75},
+                {"name": "failure", "count": 5, "percentage": 25},
+            ],
+            "resolveFailureClassDistribution": [
+                {"name": "not_found", "count": 3, "percentage": 60},
+                {"name": "upstream", "count": 2, "percentage": 40},
+            ],
+            "resolveFailureCodeDistribution": [
+                {"name": "playlist_not_found", "count": 3, "percentage": 60},
+                {"name": "upstream_error", "count": 2, "percentage": 40},
+            ],
+            "resolveFailureStageDistribution": [
+                {"name": "disambiguation_probe", "count": 3, "percentage": 60},
+                {"name": "provider_fetch", "count": 2, "percentage": 40},
+            ],
+            "resolveRequestedTypeDistribution": [
+                {"name": "auto", "count": 12, "percentage": 60},
+                {"name": "playlist", "count": 8, "percentage": 40},
+            ],
+            "resolveRequestedPlatformDistribution": [
+                {"name": "auto", "count": 14, "percentage": 70},
+                {"name": "qqmusic", "count": 6, "percentage": 30},
+            ],
+            "resolveFailuresByPlatform": [
+                {"name": "qqmusic", "count": 3, "percentage": 60},
+                {"name": "netease", "count": 2, "percentage": 40},
+            ],
+            "providerFailurePathDistribution": [
+                {"name": "fallback", "count": 2, "percentage": 100},
+            ],
+        }
+
+        html = build_html(stats, "2026-09-18 12:00:00 UTC+8")
+
+        # 1. KPI failure rate rendered correctly: 5 failures / 20 resolves = 25.0%
+        self.assertIn("25.0%", html)
+        self.assertIn("5 失败 / 20 请求", html)
+
+        # 2. Section title
+        self.assertIn("解析失败诊断与可靠性", html)
+
+        # 3. Canvas IDs
+        expected_canvases = [
+            "chartResOutcome",
+            "chartResFailClass",
+            "chartResFailCode",
+            "chartResFailStage",
+            "chartResPlatFail",
+            "chartProvFailPath",
+            "chartResReqType",
+            "chartResReqPlat",
+        ]
+        for canvas_id in expected_canvases:
+            self.assertIn(f'id="{canvas_id}"', html)
+            self.assertIn(f"createDonut('{canvas_id}'", html)
+
+    def test_r7_dashboard_html_empty_r7_data(self):
+        """build_html handles empty/missing R7 data gracefully without exceptions."""
+        stats = {
+            "launchedAt": "2026-09-12",
+            "totalVisitors": 100,
+            "recentDays": [],
+            "topGeo": [],
+        }
+        html = build_html(stats, "2026-09-18 12:00:00 UTC+8")
+        self.assertIn("暂无数据 (No data)", html)
+        self.assertIn("自 R7 上线起统计", html)
+        self.assertIn('id="chartResOutcome"', html)
 
 
 if __name__ == "__main__":

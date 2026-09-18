@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { classifyInputType, classifyPlaylistSize, classifyLatency, classifyErrorCategory } from './dimensions';
+import {
+  classifyInputType,
+  classifyPlaylistSize,
+  classifyLatency,
+  classifyErrorCategory,
+  classifyResolveFailureCode,
+  classifyResolveFailureClass,
+  classifyResolveRequestedType,
+  classifyResolveRequestedPlatform,
+  classifyAnalyticsPlatform,
+  classifyProviderFailurePath,
+} from './dimensions';
 
 describe('Analytics Dimension Classifiers', () => {
   describe('classifyInputType', () => {
@@ -74,7 +85,7 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyErrorCategory('PLAYLIST_NOT_FOUND')).toBe('error_upstream');
       expect(classifyErrorCategory('INVALID_INPUT')).toBe('error_validation');
       expect(classifyErrorCategory('UNSUPPORTED_URL')).toBe('error_validation');
-      expect(classifyErrorCategory('PARSE_ERROR')).toBe('error_validation');
+      expect(classifyErrorCategory('PARSE_ERROR')).toBe('error_upstream');
       expect(classifyErrorCategory('RATE_LIMITED')).toBe('error_rate_limit');
     });
 
@@ -82,6 +93,88 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyErrorCategory('UNKNOWN_CODE')).toBe('error_internal');
       expect(classifyErrorCategory(undefined)).toBe('error_internal');
       expect(classifyErrorCategory('')).toBe('error_internal');
+    });
+  });
+
+  describe('R7 Resolve Failure Classifiers', () => {
+    it('maps all ApiErrorCode tokens to bounded resolve failure codes', () => {
+      expect(classifyResolveFailureCode('INVALID_INPUT')).toBe('invalid_input');
+      expect(classifyResolveFailureCode('UNSUPPORTED_URL')).toBe('unsupported_url');
+      expect(classifyResolveFailureCode('UNSUPPORTED_PLATFORM')).toBe('unsupported_platform');
+      expect(classifyResolveFailureCode('PLAYLIST_NOT_FOUND')).toBe('playlist_not_found');
+      expect(classifyResolveFailureCode('USER_NOT_FOUND')).toBe('user_not_found');
+      expect(classifyResolveFailureCode('UPSTREAM_ERROR')).toBe('upstream_error');
+      expect(classifyResolveFailureCode('UPSTREAM_TIMEOUT')).toBe('upstream_timeout');
+      expect(classifyResolveFailureCode('INCOMPLETE_PLAYLIST')).toBe('incomplete_playlist');
+      expect(classifyResolveFailureCode('PARSE_ERROR')).toBe('parse_error');
+      expect(classifyResolveFailureCode('FORBIDDEN')).toBe('forbidden');
+      expect(classifyResolveFailureCode('RATE_LIMITED')).toBe('rate_limited');
+      expect(classifyResolveFailureCode('AMBIGUOUS_INPUT')).toBe('ambiguous_input');
+      expect(classifyResolveFailureCode('INTERNAL_ERROR')).toBe('internal_error');
+      expect(classifyResolveFailureCode('SOME_RANDOM_CRASH')).toBe('internal_error');
+      expect(classifyResolveFailureCode(undefined)).toBe('internal_error');
+    });
+
+    it('maps codes to bounded failure classes', () => {
+      // input
+      expect(classifyResolveFailureClass('INVALID_INPUT')).toBe('input');
+      expect(classifyResolveFailureClass('UNSUPPORTED_URL')).toBe('input');
+      expect(classifyResolveFailureClass('UNSUPPORTED_PLATFORM')).toBe('input');
+      // not_found
+      expect(classifyResolveFailureClass('PLAYLIST_NOT_FOUND')).toBe('not_found');
+      expect(classifyResolveFailureClass('USER_NOT_FOUND')).toBe('not_found');
+      // ambiguous
+      expect(classifyResolveFailureClass('AMBIGUOUS_INPUT')).toBe('ambiguous');
+      // auth
+      expect(classifyResolveFailureClass('FORBIDDEN')).toBe('auth');
+      // upstream
+      expect(classifyResolveFailureClass('UPSTREAM_ERROR')).toBe('upstream');
+      // timeout
+      expect(classifyResolveFailureClass('UPSTREAM_TIMEOUT')).toBe('timeout');
+      // incomplete
+      expect(classifyResolveFailureClass('INCOMPLETE_PLAYLIST')).toBe('incomplete');
+      // parse
+      expect(classifyResolveFailureClass('PARSE_ERROR')).toBe('parse');
+      // internal
+      expect(classifyResolveFailureClass('INTERNAL_ERROR')).toBe('internal');
+      expect(classifyResolveFailureClass('UNKNOWN')).toBe('internal');
+    });
+
+    it('normalizes requested type into bounded enum and shields raw input', () => {
+      expect(classifyResolveRequestedType('auto')).toBe('auto');
+      expect(classifyResolveRequestedType('playlist')).toBe('playlist');
+      expect(classifyResolveRequestedType('user')).toBe('user');
+      expect(classifyResolveRequestedType('user_playlists')).toBe('user');
+      expect(classifyResolveRequestedType(undefined)).toBe('auto');
+      expect(classifyResolveRequestedType('malicious_type_injection')).toBe('unknown');
+    });
+
+    it('normalizes requested platform into bounded enum and shields raw input', () => {
+      expect(classifyResolveRequestedPlatform('auto')).toBe('auto');
+      expect(classifyResolveRequestedPlatform('qqmusic')).toBe('qqmusic');
+      expect(classifyResolveRequestedPlatform('netease')).toBe('netease');
+      expect(classifyResolveRequestedPlatform('kugou')).toBe('kugou');
+      expect(classifyResolveRequestedPlatform('qishui')).toBe('qishui');
+      expect(classifyResolveRequestedPlatform(undefined)).toBe('auto');
+      expect(classifyResolveRequestedPlatform('spotify_secret_key')).toBe('unknown');
+    });
+
+    it('normalizes analytics platform', () => {
+      expect(classifyAnalyticsPlatform('qqmusic')).toBe('qqmusic');
+      expect(classifyAnalyticsPlatform('netease')).toBe('netease');
+      expect(classifyAnalyticsPlatform('kugou')).toBe('kugou');
+      expect(classifyAnalyticsPlatform('qishui')).toBe('qishui');
+      expect(classifyAnalyticsPlatform('other')).toBe('unknown');
+      expect(classifyAnalyticsPlatform(undefined)).toBe('unknown');
+    });
+
+    it('normalizes provider failure path', () => {
+      expect(classifyProviderFailurePath('primary')).toBe('primary');
+      expect(classifyProviderFailurePath('fallback')).toBe('fallback');
+      expect(classifyProviderFailurePath('both')).toBe('both');
+      expect(classifyProviderFailurePath('not_applicable')).toBe('not_applicable');
+      expect(classifyProviderFailurePath(undefined)).toBe('not_applicable');
+      expect(classifyProviderFailurePath('invalid')).toBe('unknown');
     });
   });
 });
