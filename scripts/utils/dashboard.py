@@ -1420,7 +1420,8 @@ def build_html(
         'chartGeo',
         filtered.map(x => x.country),
         filtered.map(x => Number(x.count || 0)),
-        '#2563eb'
+        '#2563eb',
+        filtered.map(x => Number(x.percentage || 0))
       );
     }}
 
@@ -1486,6 +1487,16 @@ def build_html(
               pointRadius: 2.5
             }},
             {{
+              label: '歌曲 / Tracks',
+              data: {t_tracks},
+              borderColor: '#0891b2',
+              backgroundColor: 'rgba(8,145,178,0.04)',
+              fill: false,
+              tension: 0.25,
+              pointRadius: 2,
+              yAxisID: 'yTracks'
+            }},
+            {{
               label: '导出 / Exports',
               data: {t_exports},
               borderColor: '#059669',
@@ -1519,7 +1530,15 @@ def build_html(
           plugins: {{
             legend: {{ position: 'top', labels: {{ boxWidth: 10, padding: 10 }} }}
           }},
-          scales: BASE_SCALES
+          scales: {{
+            ...BASE_SCALES,
+            yTracks: {{
+              position: 'right',
+              beginAtZero: true,
+              grid: {{ drawOnChartArea: false }},
+              ticks: {{ color: '#0891b2', font: {{ size: 10 }} }}
+            }}
+          }}
         }}
       }});
     }}
@@ -1543,23 +1562,47 @@ def build_html(
         }},
         options: {{
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              callbacks: {{
+                label: function(ctx) {{
+                  const pcts = {lat_pcts};
+                  const value = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                  const pct = Number(pcts[ctx.dataIndex] ?? 0);
+                  return ` ${{value.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
           scales: BASE_SCALES
         }}
       }});
     }}
 
-    // 4. 平台解析分布
+    // 4. 平台解析分布 + 今日各平台真实计数
     createDonut('chartPlatform', {plat_labels}, {plat_counts});
+    const platformSummary = document.getElementById('platformTodaySummary');
+    if (platformSummary) {{
+      platformSummary.innerHTML = PLATFORM_DATA.map(item => `
+        <div class="mini-stat">
+          <div class="mini-stat-name">${{item.label}}</div>
+          <div class="mini-stat-value">
+            ${{Number(item.total || 0).toLocaleString()}}
+            <span class="mini-stat-today">今日 UTC +${{Number(item.today || 0).toLocaleString()}}</span>
+          </div>
+        </div>
+      `).join('');
+    }}
 
     // 5. 地理分布：全球图由可交互的 MY 过滤器管理；中国省份图保持原始真实计数。
-    createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2');
+    createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2', {cn_pcts});
 
     // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统)
-    createDonut('chartBrowser', {br_labels}, {br_counts});
-    createDonut('chartBrand', {brand_labels}, {brand_counts});
-    createDonut('chartDevice', {dv_labels}, {dv_counts});
-    createDonut('chartOS', {os_labels}, {os_counts});
+    createDonut('chartBrowser', {br_labels}, {br_counts}, {br_pcts});
+    createDonut('chartBrand', {brand_labels}, {brand_counts}, {brand_pcts});
+    createDonut('chartDevice', {dv_labels}, {dv_counts}, {dv_pcts});
+    createDonut('chartOS', {os_labels}, {os_counts}, {os_pcts});
 
     // 7. 导出格式 & 剪贴板 & 输入类型
     const elExport = document.getElementById('chartExportFmt');
@@ -1584,10 +1627,10 @@ def build_html(
     }}
 
     createDonut('chartClipboard', {cb_labels}, {cb_counts});
-    createDonut('chartInputType', {inp_labels}, {inp_counts});
+    createDonut('chartInputType', {inp_labels}, {inp_counts}, {inp_pcts});
 
     // 8. 来源、延迟与错误
-    createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5');
+    createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5', {ref_pcts});
 
     const elLatency = document.getElementById('chartLatency');
     if (elLatency) {{
@@ -1610,7 +1653,7 @@ def build_html(
       }});
     }}
 
-    createDonut('chartError', {err_labels}, {err_counts});
+    createDonut('chartError', {err_labels}, {err_counts}, {err_pcts});
   </script>
 </body>
 </html>"""
