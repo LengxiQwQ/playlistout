@@ -428,9 +428,10 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation)', () =
       mockDb._store.set(`TOTAL::qqmusic::parse_success`, 100);
 
       const stats = await getPublicStats(mockDb);
-      expect(stats.byPlatform['netease'].totalSuccess).toBe(0);
-      expect(stats.byPlatform['kugou'].totalSuccess).toBe(0);
-      expect(stats.byPlatform['qqmusic'].totalSuccess).toBe(100);
+      expect(stats.byPlatform['netease']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
+      expect(stats.byPlatform['kugou']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
+      expect(stats.byPlatform['qishui']).toEqual({ totalSuccess: 0, todaySuccess: 0 });
+      expect(stats.byPlatform['qqmusic']).toEqual({ totalSuccess: 100, todaySuccess: 0 });
     });
 
     it('handles D1 failure gracefully for public stats', async () => {
