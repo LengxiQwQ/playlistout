@@ -149,8 +149,16 @@
   .hand-drawn-border-alt,
   .paper-shadow,
   .sticker,
-  .sticky-note-card {
+  .sticky-note-card,
+  .author-dropup-card {
     transform: none !important;
+  }
+
+  .author-dropup-card {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: min(90vw, 340px) !important;
+    width: min(90vw, 320px) !important;
   }
 
   /* Compact padding for paper surfaces */

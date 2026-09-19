@@ -219,6 +219,16 @@ export interface Translations {
     authorLink: string;
     privacyLink: string;
     issuesLink: string;
+    authorCardTitle: string;
+    authorCardSubtitle: string;
+    authorNameLabel: string;
+    authorGithubLabel: string;
+    authorEmailLabel: string;
+    authorQqLabel: string;
+    copyText: string;
+    copiedText: string;
+    copyFailed: string;
+    closeCard: string;
   };
   userPlaylists: {
     collectionSticker: string;
