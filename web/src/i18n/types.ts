@@ -217,6 +217,10 @@ export interface Translations {
     disclaimer: string;
     githubLink: string;
     authorLink: string;
+    sponsorLink: string;
+    sponsorMenuTitle: string;
+    sponsorMenuSubtitle: string;
+    sponsorAriaLabel: string;
     privacyLink: string;
     issuesLink: string;
     authorCardTitle: string;

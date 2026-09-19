@@ -6,7 +6,7 @@ import { SponsorButton } from './SponsorButton';
 describe('SponsorButton Component', () => {
   it('renders closed by default', () => {
     render(<SponsorButton />);
-    const button = screen.getByRole('button', { name: /sponsor/i });
+    const button = screen.getByRole('button', { name: /sponsor|赞助/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -14,13 +14,13 @@ describe('SponsorButton Component', () => {
 
   it('toggles menu on click', () => {
     render(<SponsorButton />);
-    const button = screen.getByRole('button', { name: /sponsor/i });
+    const button = screen.getByRole('button', { name: /sponsor|赞助/i });
 
     // Open
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Sponsor & Support')).toBeInTheDocument();
+    expect(screen.getByText(/sponsor & support|赞助与支持/i)).toBeInTheDocument();
 
     // Verify all 3 sponsor channels
     const githubLink = screen.getByRole('link', { name: /github sponsors/i });
@@ -46,7 +46,7 @@ describe('SponsorButton Component', () => {
       </div>,
     );
 
-    const button = screen.getByRole('button', { name: /sponsor/i });
+    const button = screen.getByRole('button', { name: /sponsor|赞助/i });
     fireEvent.click(button);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -57,7 +57,7 @@ describe('SponsorButton Component', () => {
 
   it('closes menu when pressing Escape key', () => {
     render(<SponsorButton />);
-    const button = screen.getByRole('button', { name: /sponsor/i });
+    const button = screen.getByRole('button', { name: /sponsor|赞助/i });
     fireEvent.click(button);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 

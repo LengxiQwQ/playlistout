@@ -21,12 +21,12 @@ describe('Footer Component', () => {
     expect(authorBtn).toBeInTheDocument();
     expect(authorBtn).toHaveAttribute('aria-expanded', 'false');
 
-    expect(screen.getByRole('button', { name: /sponsor/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sponsor|赞助/i })).toBeInTheDocument();
 
-    const privacyBtn = screen.getByRole('button', { name: /Privacy Policy/i });
+    const privacyBtn = screen.getByRole('button', { name: /Privacy Policy|隐私政策/i });
     expect(privacyBtn).toBeInTheDocument();
 
-    expect(screen.getByRole('link', { name: /Issues/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Issues|反馈建议/i })).toHaveAttribute(
       'href',
       'https://github.com/LengxiQwQ/playlistout/issues',
     );
@@ -36,7 +36,7 @@ describe('Footer Component', () => {
     const onOpenPrivacyMock = vi.fn();
     render(<Footer onOpenPrivacy={onOpenPrivacyMock} />);
 
-    const privacyBtn = screen.getByRole('button', { name: /Privacy Policy/i });
+    const privacyBtn = screen.getByRole('button', { name: /Privacy Policy|隐私政策/i });
     fireEvent.click(privacyBtn);
     expect(onOpenPrivacyMock).toHaveBeenCalledTimes(1);
   });
