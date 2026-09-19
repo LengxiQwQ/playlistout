@@ -1079,8 +1079,8 @@ button.sticker:disabled,
   bottom: calc(100% + 14px);
   left: 50%;
   transform: translateX(-50%) rotate(-0.5deg);
-  width: 380px;
-  max-width: min(420px, calc(100vw - 1.5rem));
+  width: 440px;
+  max-width: min(480px, calc(100vw - 1.5rem));
   background-color: var(--note-yellow, #fff8bd);
   background-image: url('/paper-grain.png');
   background-repeat: repeat;

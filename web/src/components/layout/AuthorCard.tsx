@@ -143,32 +143,14 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         }}
       >
         <div
+          className="font-marker"
           style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: '0.45rem',
+            fontSize: '1.2rem',
+            color: 'var(--ink, #2d3436)',
+            lineHeight: 1.2,
           }}
         >
-          <span
-            className="font-marker"
-            style={{
-              fontSize: '1.2rem',
-              color: 'var(--ink, #2d3436)',
-              lineHeight: 1.2,
-            }}
-          >
-            {t.footer.authorCardTitle}
-          </span>
-          <span
-            className="font-mono"
-            style={{
-              fontSize: '0.9rem',
-              color: 'var(--ink-light, #636e72)',
-              fontWeight: 600,
-            }}
-          >
-            {AUTHOR_NAME}
-          </span>
+          {t.footer.authorCardTitle}
         </div>
 
         <button
