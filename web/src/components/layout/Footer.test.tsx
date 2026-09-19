@@ -58,4 +58,21 @@ describe('Footer Component', () => {
     expect(authorBtn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
   });
+
+  it('closes Author card when clicking outside', () => {
+    const onOpenPrivacyMock = vi.fn();
+    render(
+      <div>
+        <div data-testid="outside">Outside area</div>
+        <Footer onOpenPrivacy={onOpenPrivacyMock} />
+      </div>,
+    );
+
+    const authorBtn = screen.getByRole('button', { name: /联系作者|contact author/i });
+    fireEvent.click(authorBtn);
+    expect(screen.getByRole('dialog', { name: /联系作者|contact author/i })).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
+  });
 });

@@ -50,17 +50,7 @@ describe('AuthorCard Component', () => {
     expect(onCloseMock).toHaveBeenCalledTimes(1);
   });
 
-  it('closes when clicking outside the card', () => {
-    render(
-      <div>
-        <div data-testid="outside">Outside area</div>
-        <AuthorCard isOpen={true} onClose={onCloseMock} />
-      </div>,
-    );
 
-    fireEvent.mouseDown(screen.getByTestId('outside'));
-    expect(onCloseMock).toHaveBeenCalledTimes(1);
-  });
 
   it('copies Email to clipboard via copy button and updates button status', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
