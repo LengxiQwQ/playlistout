@@ -153,7 +153,6 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             borderRadius: '50%',
             flexShrink: 0,
             border: '2px solid var(--ink, #2d3436)',
-            boxShadow: '2px 2px 0 var(--ink, #2d3436)',
             overflow: 'hidden',
             backgroundColor: '#ffffff',
             display: 'flex',
@@ -257,20 +256,13 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
         {/* GitHub */}
         <div className="author-contact-row">
-          <a
-            href={AUTHOR_GITHUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={`${AUTHOR_NAME} (${AUTHOR_GITHUB_HANDLE})`}
-            aria-label={`${AUTHOR_NAME} GitHub (${AUTHOR_GITHUB_HANDLE})`}
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.6rem',
               minWidth: 0,
               flex: 1,
-              textDecoration: 'none',
-              color: 'inherit',
             }}
           >
             <GitHubIcon size={16} />
@@ -281,18 +273,19 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
                 color: 'var(--ink, #2d3436)',
                 fontWeight: 600,
                 letterSpacing: '0.01em',
+                userSelect: 'text',
               }}
             >
               {AUTHOR_GITHUB_HANDLE}
             </span>
-          </a>
+          </div>
 
           <a
             href={AUTHOR_GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
             title={`${AUTHOR_NAME} GitHub`}
-            aria-label={`${t.footer.openText} GitHub`}
+            aria-label={`${t.footer.openText} ${AUTHOR_NAME} GitHub`}
             className="author-copy-btn font-handwriting"
             style={{ textDecoration: 'none' }}
           >
@@ -303,13 +296,10 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         {/* Email Contact */}
         <div className="author-contact-row">
           <div
-            onClick={() => copyToClipboard(AUTHOR_EMAIL, 'email')}
-            title={`${t.footer.copyText} Email`}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.6rem',
-              cursor: 'pointer',
               minWidth: 0,
               flex: 1,
             }}
@@ -320,7 +310,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontSize: '0.88rem',
                 color: 'var(--ink, #2d3436)',
-                userSelect: 'all',
+                userSelect: 'text',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -355,13 +345,10 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         {/* QQ Contact */}
         <div className="author-contact-row">
           <div
-            onClick={() => copyToClipboard(AUTHOR_QQ, 'qq')}
-            title={`${t.footer.copyText} QQ`}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.6rem',
-              cursor: 'pointer',
               minWidth: 0,
               flex: 1,
             }}
@@ -372,7 +359,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontSize: '0.92rem',
                 color: 'var(--ink, #2d3436)',
-                userSelect: 'all',
+                userSelect: 'text',
                 fontWeight: 600,
               }}
             >
