@@ -429,10 +429,10 @@ PlaylistOut 基于 **MIT License** 开源。详情参见 [LICENSE](./LICENSE)。
 
 | 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **343**<br><sub>今日独立 +15</sub> | **2,655**<br><sub>今日 +147</sub> | **190**<br><sub>今日 +5</sub> | **64,893**<br><sub>今日 +1,602</sub> | **641**<br><sub>今日 +36</sub> | **7 天**<br><sub>上线于 2026-09-12</sub> |
+| **394**<br><sub>今日独立 +8</sub> | **2,949**<br><sub>今日 +12</sub> | **270**<br><sub>今日 +3</sub> | **74,316**<br><sub>今日 +1,556</sub> | **704**<br><sub>今日 +5</sub> | **8 天**<br><sub>上线于 2026-09-12</sub> |
 
 #### 📊 业务转化与平台偏好
-- **🎵 平台解析份额：** QQ 音乐 **87%** (134 次) ｜ 网易云音乐 **13%** (20 次)
+- **🎵 平台解析份额：** QQ 音乐 **76%** (206 次) ｜ 网易云音乐 **10%** (27 次) ｜ 酷狗音乐 **11%** (29 次) ｜ 汽水音乐 **3%** (8 次)
 - **📦 导出格式偏好：** Excel 表格 (.xlsx) **64%** ｜ TXT 纯文本 **32%** ｜ CSV 表格 **2%** ｜ JSON 数据 **1%**
 
 > 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
@@ -453,12 +453,12 @@ PlaylistOut 基于 **MIT License** 开源。详情参见 [LICENSE](./LICENSE)。
 <!-- INSIGHTS:START -->
 **📊 仓库流量**
 
-访问次数：**534** ｜ 不重复访客：**119**（近 14 天） ｜ 仓库克隆：**1,459** ｜ 不重复克隆：**284**（近 14 天）
+访问次数：**571** ｜ 不重复访客：**126**（近 14 天） ｜ 仓库克隆：**1,861** ｜ 不重复克隆：**348**（近 14 天）
 
-**热门来源（近 14 天）：** github.com · Google · Bing · Baidu · chatgpt.com · Yahoo  
-**热门内容（近 14 天）：** LengxiQwQ/qqmusic-playlist-exporter · lengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter
+**热门来源（近 14 天）：** github.com · Google · Bing · Baidu · open.cd · Yahoo  
+**热门内容（近 14 天）：** LengxiQwQ/qqmusic-playlist-exporter · releases · lengxiQwQ/qqmusic-playlist-exporter · LengxiQwQ/music-playlist-exporter
 
-> 数据开始：2026-08-31 · 最后更新：2026-09-18
+> 数据开始：2026-08-31 · 最后更新：2026-09-19
 <!-- INSIGHTS:END -->
 
 ---
