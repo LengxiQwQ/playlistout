@@ -193,26 +193,36 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
       </p>
 
       {/* Contact Details List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {/* Author & GitHub */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+        {/* GitHub */}
         <div className="author-contact-row">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <GitHubIcon size={16} />
             <span
               className="font-handwriting"
               style={{
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 color: 'var(--ink, #2d3436)',
+                whiteSpace: 'nowrap',
               }}
             >
-              {t.footer.authorNameLabel}:
+              {t.footer.authorGithubLabel}:
             </span>
             <span
-              className="font-handwriting"
+              className="font-mono"
               style={{
-                fontSize: '1.05rem',
-                fontWeight: 600,
+                fontSize: '0.95rem',
                 color: 'var(--ink, #2d3436)',
+                fontWeight: 600,
               }}
             >
               {AUTHOR_NAME}
@@ -224,11 +234,10 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             target="_blank"
             rel="noopener noreferrer"
             title={`${AUTHOR_NAME} GitHub`}
-            aria-label={`${AUTHOR_NAME} GitHub (${AUTHOR_GITHUB_HANDLE})`}
+            aria-label={`${t.footer.authorGithubLabel} (${AUTHOR_GITHUB_HANDLE})`}
             className="author-copy-btn font-handwriting"
             style={{ textDecoration: 'none' }}
           >
-            <GitHubIcon size={13} />
             <span>{AUTHOR_GITHUB_HANDLE}</span>
             <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>↗</span>
           </a>
@@ -242,17 +251,28 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
+              gap: '0.45rem',
               cursor: 'pointer',
               minWidth: 0,
               flex: 1,
             }}
           >
-            <MailIcon size={14} />
+            <MailIcon size={16} />
+            <span
+              className="font-handwriting"
+              style={{
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                color: 'var(--ink, #2d3436)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t.footer.authorEmailLabel}:
+            </span>
             <span
               className="font-mono"
               style={{
-                fontSize: '0.85rem',
+                fontSize: '0.88rem',
                 color: 'var(--ink, #2d3436)',
                 userSelect: 'all',
                 overflow: 'hidden',
@@ -294,19 +314,20 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
+              gap: '0.45rem',
               cursor: 'pointer',
               minWidth: 0,
               flex: 1,
             }}
           >
-            <QqIcon size={14} />
+            <QqIcon size={16} />
             <span
               className="font-handwriting"
               style={{
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 color: 'var(--ink, #2d3436)',
+                whiteSpace: 'nowrap',
               }}
             >
               {t.footer.authorQqLabel}:
@@ -314,7 +335,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             <span
               className="font-mono"
               style={{
-                fontSize: '0.9rem',
+                fontSize: '0.92rem',
                 color: 'var(--ink, #2d3436)',
                 userSelect: 'all',
                 fontWeight: 600,
