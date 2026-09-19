@@ -1073,6 +1073,113 @@ button.sticker:disabled,
   }
 }
 
+/* Author Contact Upward Note / Dropup Card */
+.author-dropup-card {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) rotate(-0.5deg);
+  width: 310px;
+  max-width: min(340px, calc(100vw - 2rem));
+  background-color: var(--note-yellow, #fff8bd);
+  background-image: url('/paper-grain.png');
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 8px;
+  padding: 1.1rem 1.15rem 0.95rem;
+  box-shadow: 4px 6px 0 var(--ink, #2d3436);
+  z-index: 100;
+  text-align: left;
+  animation: authorSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.author-dropup-card::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: var(--note-yellow, #fff8bd);
+  border-right: 2px solid var(--ink, #2d3436);
+  border-bottom: 2px solid var(--ink, #2d3436);
+}
+
+.author-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed rgba(45, 52, 54, 0.25);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.author-contact-row:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(45, 52, 54, 0.45);
+}
+
+.author-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1.5px solid var(--ink, #2d3436);
+  background-color: #ffffff;
+  color: var(--ink, #2d3436);
+  cursor: pointer;
+  box-shadow: 1.5px 1.5px 0 var(--ink, #2d3436);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.author-copy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 2px 2.5px 0 var(--ink, #2d3436);
+  background-color: #f7f1e3;
+}
+
+.author-copy-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0.5px 0.5px 0 var(--ink, #2d3436);
+}
+
+.author-copy-btn.is-copied {
+  background-color: #2ed573;
+  color: #ffffff;
+  border-color: #26af5f;
+  box-shadow: 1.5px 1.5px 0 #26af5f;
+}
+
+.author-copy-btn.is-failed {
+  background-color: #ff4757;
+  color: #ffffff;
+  border-color: #d63031;
+}
+
+@keyframes authorSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) rotate(-0.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) rotate(-0.5deg);
+  }
+}
+
+
 /* ==========================================================================
    Ruled Notebook Paper & Baseline Alignment (方案 A: 信纸横线手写效果)
    ========================================================================== */

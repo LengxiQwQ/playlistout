@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { SponsorButton } from './SponsorButton';
+import { AuthorCard } from './AuthorCard';
 
 export interface FooterProps {
   onOpenPrivacy: () => void;
@@ -8,6 +9,24 @@ export interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
   const { t } = useTranslation();
+  const [isAuthorOpen, setIsAuthorOpen] = useState(false);
+  const authorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click for the Author pill container
+  useEffect(() => {
+    if (!isAuthorOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (authorContainerRef.current && !authorContainerRef.current.contains(e.target as Node)) {
+        setIsAuthorOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isAuthorOpen]);
 
   return (
     <footer
@@ -201,29 +220,51 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             <span style={{ fontSize: '0.85rem' }}>↗</span>
           </a>
 
-          <a
-            href="https://github.com/LengxiQwQ"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="LengxiQwQ"
-            className="sticker font-handwriting footer-pill-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              backgroundColor: '#ffffff',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-              color: 'var(--ink, #2d3436)',
-              borderRadius: '6px',
-              lineHeight: 1.2,
-            }}
+          <div
+            ref={authorContainerRef}
+            className="author-container"
+            style={{ position: 'relative', display: 'inline-block' }}
           >
-            <span>{t.footer.authorLink}</span>
-            <span style={{ fontSize: '0.85rem' }}>↗</span>
-          </a>
+            <button
+              type="button"
+              onClick={() => setIsAuthorOpen(!isAuthorOpen)}
+              aria-haspopup="dialog"
+              aria-expanded={isAuthorOpen}
+              aria-label={t.footer.authorCardTitle}
+              className="sticker font-handwriting footer-pill-link"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: isAuthorOpen ? 'var(--highlight-yellow, #ffeaa7)' : '#ffffff',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: 'var(--ink, #2d3436)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                lineHeight: 1.2,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{t.footer.authorLink}</span>
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  marginLeft: '0.1rem',
+                  transform: isAuthorOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                ▲
+              </span>
+            </button>
+
+            <AuthorCard
+              isOpen={isAuthorOpen}
+              onClose={() => setIsAuthorOpen(false)}
+            />
+          </div>
 
           <SponsorButton />
 
