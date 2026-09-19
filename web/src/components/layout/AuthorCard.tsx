@@ -198,6 +198,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             minWidth: 0,
             flex: 1,
             gap: '0.15rem',
+            userSelect: 'none',
           }}
         >
           <div
@@ -206,9 +207,6 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               fontSize: '1.18rem',
               color: 'var(--ink, #2d3436)',
               lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
             }}
           >
             {t.footer.authorCardTitle}
@@ -221,9 +219,6 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               color: 'var(--ink-light, #636e72)',
               margin: 0,
               lineHeight: 1.25,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
             }}
           >
             {t.footer.authorCardSubtitle}
