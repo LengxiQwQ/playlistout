@@ -4,6 +4,7 @@ import {
   AUTHOR_NAME,
   AUTHOR_GITHUB_HANDLE,
   AUTHOR_GITHUB_URL,
+  AUTHOR_AVATAR_URL,
   AUTHOR_EMAIL,
   AUTHOR_QQ,
 } from '../../constants/author';
@@ -39,6 +40,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [emailCopied, setEmailCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [qqCopied, setQqCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [avatarLoaded, setAvatarLoaded] = useState(true);
 
   const emailTimeoutRef = useRef<number | null>(null);
   const qqTimeoutRef = useRef<number | null>(null);
@@ -131,28 +133,105 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         }}
       />
 
-      {/* Header */}
+      {/* Profile Header (Avatar + Title & Subtitle + Close Button) */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '0.2rem',
-          paddingBottom: '0.35rem',
+          gap: '0.8rem',
+          marginBottom: '0.75rem',
+          paddingBottom: '0.65rem',
           borderBottom: '1.5px dashed rgba(45, 52, 54, 0.2)',
         }}
       >
+        {/* Circular Avatar */}
         <div
-          className="font-marker"
           style={{
-            fontSize: '1.2rem',
-            color: 'var(--ink, #2d3436)',
-            lineHeight: 1.2,
+            position: 'relative',
+            width: '46px',
+            height: '46px',
+            borderRadius: '50%',
+            flexShrink: 0,
+            border: '2px solid var(--ink, #2d3436)',
+            boxShadow: '2px 2px 0 var(--ink, #2d3436)',
+            overflow: 'hidden',
+            backgroundColor: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {t.footer.authorCardTitle}
+          {avatarLoaded ? (
+            <img
+              src={AUTHOR_AVATAR_URL}
+              alt={`${AUTHOR_NAME} Avatar`}
+              width={46}
+              height={46}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+              onError={() => setAvatarLoaded(false)}
+            />
+          ) : (
+            <div
+              className="font-mono"
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 700,
+                color: 'var(--ink, #2d3436)',
+                userSelect: 'none',
+              }}
+            >
+              {AUTHOR_NAME.slice(0, 1)}
+            </div>
+          )}
         </div>
 
+        {/* Title & Subtitle Info */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minWidth: 0,
+            flex: 1,
+            gap: '0.15rem',
+          }}
+        >
+          <div
+            className="font-marker"
+            style={{
+              fontSize: '1.18rem',
+              color: 'var(--ink, #2d3436)',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {t.footer.authorCardTitle}
+          </div>
+
+          <p
+            className="font-handwriting"
+            style={{
+              fontSize: '0.9rem',
+              color: 'var(--ink-light, #636e72)',
+              margin: 0,
+              lineHeight: 1.25,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {t.footer.authorCardSubtitle}
+          </p>
+        </div>
+
+        {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
@@ -163,27 +242,16 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             border: 'none',
             color: 'var(--ink-light, #636e72)',
             cursor: 'pointer',
-            padding: '0.1rem 0.35rem',
+            padding: '0.15rem 0.35rem',
             fontSize: '1rem',
             lineHeight: 1,
             borderRadius: '4px',
+            alignSelf: 'flex-start',
           }}
         >
           ✕
         </button>
       </div>
-
-      <p
-        className="font-handwriting"
-        style={{
-          fontSize: '0.95rem',
-          color: 'var(--ink-light, #636e72)',
-          margin: '0 0 0.75rem 0',
-          lineHeight: 1.25,
-        }}
-      >
-        {t.footer.authorCardSubtitle}
-      </p>
 
       {/* Contact Details List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>

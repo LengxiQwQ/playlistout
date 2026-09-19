@@ -216,7 +216,7 @@ export const enUS: Translations = {
     licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: 'Independent open-source project. Not affiliated with, sponsored by, or endorsed by any referenced music platforms.',
     githubLink: 'GitHub',
-    authorLink: 'Author',
+    authorLink: 'Contact Author',
     sponsorLink: 'Sponsor',
     sponsorMenuTitle: 'Sponsor & Support',
     sponsorMenuSubtitle: 'Support ongoing development & hosting',
