@@ -72,7 +72,7 @@ describe('AuthorCard Component', () => {
     });
   });
 
-  it('copies Email to clipboard when clicking email text directly', async () => {
+  it('does not copy Email when clicking email text directly (button only)', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -85,10 +85,7 @@ describe('AuthorCard Component', () => {
     const emailText = screen.getByText(AUTHOR_EMAIL);
     fireEvent.click(emailText);
 
-    expect(writeTextMock).toHaveBeenCalledWith(AUTHOR_EMAIL);
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Email (✓ 已复制|✓ Copied)/i })).toBeInTheDocument();
-    });
+    expect(writeTextMock).not.toHaveBeenCalled();
   });
 
   it('copies QQ to clipboard via copy button and updates button status', async () => {
@@ -111,7 +108,7 @@ describe('AuthorCard Component', () => {
     });
   });
 
-  it('copies QQ to clipboard when clicking QQ text directly', async () => {
+  it('does not copy QQ when clicking QQ text directly (button only)', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -124,10 +121,7 @@ describe('AuthorCard Component', () => {
     const qqText = screen.getByText(AUTHOR_QQ);
     fireEvent.click(qqText);
 
-    expect(writeTextMock).toHaveBeenCalledWith(AUTHOR_QQ);
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /QQ (✓ 已复制|✓ Copied)/i })).toBeInTheDocument();
-    });
+    expect(writeTextMock).not.toHaveBeenCalled();
   });
 
   it('handles clipboard failure gracefully', async () => {
