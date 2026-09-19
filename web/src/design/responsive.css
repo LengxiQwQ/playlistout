@@ -157,8 +157,8 @@
   .author-dropup-card {
     left: 50% !important;
     transform: translateX(-50%) !important;
-    max-width: min(94vw, 400px) !important;
-    width: min(94vw, 380px) !important;
+    max-width: min(95vw, 440px) !important;
+    width: min(95vw, 440px) !important;
   }
 
   /* Compact padding for paper surfaces */
