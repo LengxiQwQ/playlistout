@@ -232,6 +232,7 @@ export const zhCN: Translations = {
     copyText: '复制',
     copiedText: '✓ 已复制',
     copyFailed: '复制失败',
+    openText: '打开',
     closeCard: '关闭便签',
   },
   userPlaylists: {

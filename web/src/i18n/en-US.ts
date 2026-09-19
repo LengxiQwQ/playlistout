@@ -232,6 +232,7 @@ export const enUS: Translations = {
     copyText: 'Copy',
     copiedText: '✓ Copied',
     copyFailed: 'Failed',
+    openText: 'Open',
     closeCard: 'Close note',
   },
   userPlaylists: {
