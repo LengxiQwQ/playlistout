@@ -232,6 +232,7 @@ export interface Translations {
     copyText: string;
     copiedText: string;
     copyFailed: string;
+    openText: string;
     closeCard: string;
   };
   userPlaylists: {
