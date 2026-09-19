@@ -784,6 +784,12 @@ button.sticker:disabled,
   box-shadow: 1px 1px 0 var(--ink, #2d3436);
 }
 
+.footer-pill-link.is-active,
+.footer-pill-link.is-active:hover {
+  transform: none !important;
+  box-shadow: 2px 2px 0 var(--ink, #2d3436) !important;
+}
+
 .footer-author-link:hover {
   color: var(--ink, #2d3436) !important;
 }
@@ -1050,6 +1056,7 @@ button.sticker:disabled,
   background: #ffffff;
   border-right: 2px solid var(--ink, #2d3436);
   border-bottom: 2px solid var(--ink, #2d3436);
+  pointer-events: none;
 }
 
 .sponsor-action-btn:hover {
@@ -1078,7 +1085,7 @@ button.sticker:disabled,
   position: absolute;
   bottom: calc(100% + 14px);
   left: 50%;
-  transform: translateX(-50%) rotate(-0.5deg);
+  transform: translateX(-50%);
   width: 440px;
   max-width: min(480px, calc(100vw - 1.5rem));
   background-color: var(--note-yellow, #fff8bd);
@@ -1092,6 +1099,8 @@ button.sticker:disabled,
   z-index: 100;
   text-align: left;
   animation: authorSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .author-dropup-card::after {
@@ -1105,6 +1114,7 @@ button.sticker:disabled,
   background: var(--note-yellow, #fff8bd);
   border-right: 2px solid var(--ink, #2d3436);
   border-bottom: 2px solid var(--ink, #2d3436);
+  pointer-events: none;
 }
 
 .author-contact-row {
@@ -1172,11 +1182,11 @@ button.sticker:disabled,
 @keyframes authorSlideUp {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px) rotate(-0.5deg);
+    transform: translate(-50%, 8px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0) rotate(-0.5deg);
+    transform: translate(-50%, 0);
   }
 }
 

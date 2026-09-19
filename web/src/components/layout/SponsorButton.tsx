@@ -66,7 +66,7 @@ export const SponsorButton: React.FC = () => {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={t.footer.sponsorAriaLabel}
-        className="sticker font-handwriting footer-pill-link"
+        className={`sticker font-handwriting footer-pill-link ${isOpen ? 'is-active' : ''}`}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
