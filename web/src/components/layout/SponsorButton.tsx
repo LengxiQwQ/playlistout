@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from '../../i18n';
 
 const GitHubIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -25,6 +26,7 @@ const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, col
 );
 
 export const SponsorButton: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +65,7 @@ export const SponsorButton: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        aria-label="Sponsor developer / 赞助作者"
+        aria-label={t.footer.sponsorAriaLabel}
         className="sticker font-handwriting footer-pill-link"
         style={{
           display: 'inline-flex',
@@ -81,7 +83,7 @@ export const SponsorButton: React.FC = () => {
         }}
       >
         <HeartIcon size={14} color="#e11d48" />
-        <span>Sponsor</span>
+        <span>{t.footer.sponsorLink}</span>
         <span
           style={{
             fontSize: '0.65rem',
@@ -97,7 +99,7 @@ export const SponsorButton: React.FC = () => {
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Sponsor options"
+          aria-label={t.footer.sponsorMenuTitle}
           className="sponsor-dropup-menu shadow-cutout"
         >
           <div
@@ -109,7 +111,7 @@ export const SponsorButton: React.FC = () => {
               lineHeight: 1.2,
             }}
           >
-            Sponsor & Support
+            {t.footer.sponsorMenuTitle}
           </div>
 
           <p
@@ -121,7 +123,7 @@ export const SponsorButton: React.FC = () => {
               lineHeight: 1.3,
             }}
           >
-            Support ongoing development & hosting
+            {t.footer.sponsorMenuSubtitle}
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.85rem' }}>

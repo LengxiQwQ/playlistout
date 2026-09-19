@@ -312,7 +312,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     // 2. Open via footer link
-    const footerLink = screen.getByText('Privacy Policy');
+    const footerLink = screen.getByText(/Privacy Policy|隐私政策/i);
     fireEvent.click(footerLink);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
