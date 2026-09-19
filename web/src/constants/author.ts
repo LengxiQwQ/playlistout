@@ -5,5 +5,6 @@
 export const AUTHOR_NAME = 'LengxiQwQ';
 export const AUTHOR_GITHUB_HANDLE = 'LengxiQwQ';
 export const AUTHOR_GITHUB_URL = 'https://github.com/LengxiQwQ';
+export const AUTHOR_AVATAR_URL = 'https://github.com/LengxiQwQ.png?size=120';
 export const AUTHOR_EMAIL = 'playlistout@lengxiqwq.com';
 export const AUTHOR_QQ = '3197635836';
