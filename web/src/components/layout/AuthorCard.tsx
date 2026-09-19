@@ -42,15 +42,9 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
   const emailTimeoutRef = useRef<number | null>(null);
   const qqTimeoutRef = useRef<number | null>(null);
 
-  // Close on outside click and Escape key
+  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -58,11 +52,9 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
       }
     };
 
-    document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
