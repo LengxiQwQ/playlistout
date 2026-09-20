@@ -429,11 +429,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **394**<br><sub>Today unique +8</sub> | **2,949**<br><sub>Today +12</sub> | **270**<br><sub>Today +3</sub> | **74,316**<br><sub>Today +1,556</sub> | **704**<br><sub>Today +5</sub> | **8 Days**<br><sub>Since 2026-09-12</sub> |
+| **415**<br><sub>Today unique +6</sub> | **3,044**<br><sub>Today +6</sub> | **301**<br><sub>Today +3</sub> | **81,854**<br><sub>Today +118</sub> | **711**<br><sub>Today +0</sub> | **9 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **76%** (206 parses) ｜ NetEase Cloud Music **10%** (27 parses) ｜ KuGou Music **11%** (29 parses) ｜ QiShui Music **3%** (8 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **64%** ｜ TXT **32%** ｜ CSV **2%** ｜ JSON **1%**
+- **🎵 Platform Shares:** QQ Music **74%** (224 parses) ｜ NetEase Cloud Music **11%** (34 parses) ｜ KuGou Music **12%** (35 parses) ｜ QiShui Music **3%** (8 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **64%** ｜ TXT **32%** ｜ CSV **2%** ｜ JSON **2%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -453,12 +453,12 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 <!-- INSIGHTS:START -->
 **📊 Repository Traffic**
 
-Views: **571** ｜ Uniques: **126** (14-day) ｜ Clones: **1,861** ｜ Cloners: **348** (14-day)
+Views: **594** ｜ Uniques: **135** (14-day) ｜ Clones: **2,010** ｜ Cloners: **386** (14-day)
 
 **Top referrers (14-day):** github.com · Google · Bing · Baidu · open.cd · Yahoo  
 **Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · releases · lengxiQwQ/qqmusic-playlist-exporter · LengxiQwQ/music-playlist-exporter
 
-> Data since 2026-08-31 · Last updated: 2026-09-19
+> Data since 2026-08-31 · Last updated: 2026-09-20
 <!-- INSIGHTS:END -->
 
 ---
