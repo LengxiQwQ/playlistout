@@ -75,6 +75,10 @@
     "2026-09-18": {
       "count": 37,
       "uniques": 16
+    },
+    "2026-09-19": {
+      "count": 23,
+      "uniques": 18
     }
   },
   "clones": {
@@ -153,6 +157,10 @@
     "2026-09-18": {
       "count": 402,
       "uniques": 116
+    },
+    "2026-09-19": {
+      "count": 149,
+      "uniques": 59
     }
   },
   "referrer_snapshots": [
@@ -588,6 +596,46 @@
           "referrer": "Bing",
           "count": 35,
           "uniques": 30
+        },
+        {
+          "referrer": "Baidu",
+          "count": 10,
+          "uniques": 5
+        },
+        {
+          "referrer": "open.cd",
+          "count": 2,
+          "uniques": 2
+        },
+        {
+          "referrer": "Yahoo",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 1,
+          "uniques": 1
+        }
+      ]
+    },
+    {
+      "fetched_at": "2026-09-20T07:43:25Z",
+      "referrers": [
+        {
+          "referrer": "github.com",
+          "count": 162,
+          "uniques": 11
+        },
+        {
+          "referrer": "Google",
+          "count": 73,
+          "uniques": 45
+        },
+        {
+          "referrer": "Bing",
+          "count": 36,
+          "uniques": 31
         },
         {
           "referrer": "Baidu",
@@ -1392,6 +1440,71 @@
           "uniques": 2
         }
       ]
+    },
+    {
+      "fetched_at": "2026-09-20T07:43:25Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 286,
+          "uniques": 73
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 49,
+          "uniques": 37
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 22,
+          "uniques": 2
+        },
+        {
+          "path": "/lengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 14,
+          "uniques": 12
+        },
+        {
+          "path": "/LengxiQwQ/music-playlist-exporter",
+          "title": "Overview",
+          "count": 9,
+          "uniques": 3
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/deployments/github-pages",
+          "title": "/deployments/github-pages",
+          "count": 7,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/commits/main",
+          "title": "/commits/main",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/pulse",
+          "title": "/pulse",
+          "count": 6,
+          "uniques": 1
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/issues",
+          "title": "/issues",
+          "count": 5,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.0.0",
+          "title": "/releases/tag/v2.0.0",
+          "count": 5,
+          "uniques": 2
+        }
+      ]
     }
   ],
   "repo_meta_snapshots": [
@@ -1502,6 +1615,15 @@
       "open_issues": 0,
       "network": 1,
       "pushed_at": "2026-09-18T18:51:00Z"
+    },
+    {
+      "fetched_at": "2026-09-20T07:43:25Z",
+      "stars": 29,
+      "forks": 1,
+      "watchers": 1,
+      "open_issues": 0,
+      "network": 1,
+      "pushed_at": "2026-09-19T19:28:44Z"
     }
   ],
   "website_snapshots": [
@@ -1658,39 +1780,59 @@
         "xlsx": 452,
         "json": 10
       }
+    },
+    {
+      "fetched_at": "2026-09-20T07:43:25Z",
+      "cumulative_daily_visitors": 415,
+      "total_visitors": 415,
+      "visitors_today": 6,
+      "total_page_views": 3044,
+      "page_views_today": 6,
+      "total_playlists_parsed": 301,
+      "playlists_parsed_today": 3,
+      "total_tracks_processed": 81854,
+      "tracks_processed_today": 118,
+      "total_exports": 711,
+      "exports_today": 0,
+      "export_formats_breakdown": {
+        "txt": 230,
+        "csv": 15,
+        "xlsx": 454,
+        "json": 12
+      }
     }
   ],
-  "updated_at": "2026-09-19T07:19:02Z",
+  "updated_at": "2026-09-20T07:43:25Z",
   "website_latest": {
     "launchedAt": "2026-09-12",
-    "cumulativeDailyVisitors": 394,
-    "totalVisitors": 394,
-    "visitorsToday": 8,
-    "totalPageViews": 2949,
-    "pageViewsToday": 12,
-    "totalPlaylistsParsed": 270,
+    "cumulativeDailyVisitors": 415,
+    "totalVisitors": 415,
+    "visitorsToday": 6,
+    "totalPageViews": 3044,
+    "pageViewsToday": 6,
+    "totalPlaylistsParsed": 301,
     "playlistsParsedToday": 3,
-    "totalTracksProcessed": 74316,
-    "tracksProcessedToday": 1556,
-    "totalExports": 704,
-    "exportsToday": 5,
+    "totalTracksProcessed": 81854,
+    "tracksProcessedToday": 118,
+    "totalExports": 711,
+    "exportsToday": 0,
     "exportFormatsBreakdown": {
-      "txt": 228,
-      "csv": 14,
-      "xlsx": 452,
-      "json": 10
+      "txt": 230,
+      "csv": 15,
+      "xlsx": 454,
+      "json": 12
     },
     "byPlatform": {
       "qqmusic": {
-        "totalSuccess": 206,
-        "todaySuccess": 2
-      },
-      "netease": {
-        "totalSuccess": 27,
+        "totalSuccess": 224,
         "todaySuccess": 1
       },
+      "netease": {
+        "totalSuccess": 34,
+        "todaySuccess": 2
+      },
       "kugou": {
-        "totalSuccess": 29,
+        "totalSuccess": 35,
         "todaySuccess": 0
       },
       "qishui": {
@@ -1700,10 +1842,16 @@
     },
     "recentDays": [
       {
-        "date": "2026-09-19",
+        "date": "2026-09-20",
         "parses": 3,
-        "tracks": 1556,
-        "exports": 5
+        "tracks": 118,
+        "exports": 0
+      },
+      {
+        "date": "2026-09-19",
+        "parses": 31,
+        "tracks": 8976,
+        "exports": 12
       },
       {
         "date": "2026-09-18",
@@ -1748,6 +1896,6 @@
         "exports": 0
       }
     ],
-    "generatedAt": "2026-09-19T07:19:02.656Z"
+    "generatedAt": "2026-09-20T07:43:25.454Z"
   }
 }
