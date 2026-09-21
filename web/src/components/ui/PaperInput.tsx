@@ -32,6 +32,7 @@ export const PaperInput: React.FC<PaperInputProps> = ({
     >
       <input
         type="text"
+        data-clarity-mask="true"
         value={value}
         onChange={onChange}
         placeholder={placeholder}

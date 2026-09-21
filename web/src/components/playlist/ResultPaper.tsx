@@ -173,13 +173,15 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
               </div>
             </div>
           )}
-          <PlaylistSummary
-            playlist={playlist}
-            onReset={onReset}
-            onReturnToBatch={onReturnToBatch}
-            onReload={onReload}
-          />
-          <TrackTable tracks={playlist.tracks} />
+          <div data-clarity-mask="true">
+            <PlaylistSummary
+              playlist={playlist}
+              onReset={onReset}
+              onReturnToBatch={onReturnToBatch}
+              onReload={onReload}
+            />
+            <TrackTable tracks={playlist.tracks} />
+          </div>
           <ExportToolbar playlist={playlist} />
         </Paper>
       </section>

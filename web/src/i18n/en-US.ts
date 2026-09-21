@@ -203,7 +203,7 @@ export const enUS: Translations = {
     section3Title: '3. 100% Local Browser Export',
     section3Content: 'TXT, CSV, Excel (.xlsx), and JSON file exports and clipboard actions are executed 100% locally in your browser. Files are never sent to any server or cloud storage.',
     section4Title: '4. Anonymous Aggregate Statistics',
-    section4Content: 'For platform health and anti-abuse monitoring, we record coarse anonymous counters (e.g. total parses today). We never log IP addresses, device identifiers, cookies, or user accounts.',
+    section4Content: 'For platform health and anti-abuse monitoring, we record coarse anonymous counters (e.g. total parses today). In production, we also use Microsoft Clarity for anonymous UX observation (heatmaps and session recordings). All search inputs, playlist summaries, track lists, and authorization details are masked by design. We never record IP addresses, persistent device identifiers, cookies, user accounts, or playlist track data.',
     section5Title: '5. Open Infrastructure',
     section5Content: 'PlaylistOut frontend is hosted on GitHub Pages, and backend runs on Cloudflare Workers. The source code is open and fully transparent.',
     confirmButton: 'Got it',

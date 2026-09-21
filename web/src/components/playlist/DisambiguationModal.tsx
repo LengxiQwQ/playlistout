@@ -236,7 +236,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
       footer={footer}
       testId="disambiguation-modal"
     >
-      <div style={{ position: 'relative', minWidth: '320px', maxWidth: '580px', width: '100%' }}>
+      <div data-clarity-mask="true" style={{ position: 'relative', minWidth: '320px', maxWidth: '580px', width: '100%' }}>
         {/* Top prompt */}
         <p
           style={{
