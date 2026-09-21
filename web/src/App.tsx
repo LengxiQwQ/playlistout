@@ -46,7 +46,7 @@ export const AppContent: React.FC = () => {
   }, [language]);
 
   const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
-    if (platform) {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
       setClarityTag('platform', platform);
     }
     const bucket = classifyPlaylistSize(trackCount);
@@ -57,7 +57,7 @@ export const AppContent: React.FC = () => {
   }, []);
 
   const recordClarityParseFailure = useCallback((platform?: string) => {
-    if (platform) {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
       setClarityTag('platform', platform);
     }
     trackClarityEvent('playlist_parse_failure');
@@ -152,7 +152,7 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform, res.data.total || res.data.playlists?.length);
+            recordClarityParseSuccess(platform);
           } else {
             setError(res.error);
             setState('error');
@@ -213,7 +213,7 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform, res.data.total || res.data.playlists?.length);
+            recordClarityParseSuccess(platform);
           } else {
             setError(res.error);
             setState('error');
@@ -259,7 +259,7 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform || 'netease', userRes.data.total || userRes.data.playlists.length);
+            recordClarityParseSuccess(platform || 'netease');
             return;
           }
 
@@ -395,14 +395,15 @@ export const AppContent: React.FC = () => {
               setViewMode('single');
               setState('success');
               scrollToElement('result');
+              recordClarityParseSuccess(only.platform, only.count);
             } else {
               setUserPlaylists(only.data as UserPlaylistsData);
               setPlaylist(null);
               setViewMode('batch');
               setState('success');
               scrollToElement('user-playlists');
+              recordClarityParseSuccess(only.platform);
             }
-            recordClarityParseSuccess(only.platform, only.count);
           } else {
             // Ambiguous: 2 or more targets matched across platforms/types
             setDisambiguationCandidates(candidates);
@@ -477,10 +478,7 @@ export const AppContent: React.FC = () => {
       setViewMode('batch');
       setState('success');
       scrollToElement('user-playlists');
-      recordClarityParseSuccess(
-        selectedUser.platform || 'qqmusic',
-        selectedUser.total || selectedUser.playlists?.length,
-      );
+      recordClarityParseSuccess(selectedUser.platform || 'qqmusic');
     },
     [scrollToElement, recordClarityParseSuccess],
   );

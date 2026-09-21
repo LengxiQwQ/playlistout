@@ -111,19 +111,34 @@ describe('Microsoft Clarity Adapter', () => {
       expect(Clarity.init).toHaveBeenCalledWith('yloiqvw5lu');
     });
 
-    it('fails silently if Clarity.init throws an exception', () => {
+    it('fails silently and returns false when Clarity.init throws an exception', () => {
+      window.localStorage.setItem('playlistout_clarity_debug', 'true');
       (Clarity.init as any).mockImplementationOnce(() => {
-        throw new Error('Blocked by client / ad blocker');
+        throw new Error('Blocked by adblocker / client security policy');
       });
 
-      // Even if an unexpected error occurs, caller should not crash
+      let initResult: boolean | undefined;
       expect(() => {
-        try {
-          Clarity.init('bad-id');
-        } catch {
-          // caught
-        }
+        initResult = initClarity('custom-test-id');
       }).not.toThrow();
+
+      expect(initResult).toBe(false);
+      expect(isClarityInitialized()).toBe(false);
+      expect(Clarity.init).toHaveBeenCalledTimes(1);
+    });
+
+    it('enforces host guard: only canonical production host returns true', () => {
+      expect(shouldEnableClarity('localhost')).toBe(false);
+      expect(shouldEnableClarity('127.0.0.1')).toBe(false);
+      expect(shouldEnableClarity('lengxiqwq.github.io')).toBe(false);
+      expect(shouldEnableClarity('preview.pages.dev')).toBe(false);
+      expect(shouldEnableClarity('deploy-preview-12.playlistout.pages.dev')).toBe(false);
+      expect(shouldEnableClarity('playlistout.com')).toBe(false);
+      expect(shouldEnableClarity('www.playlistout.com')).toBe(false);
+
+      // Strictly canonical production host
+      expect(shouldEnableClarity('playlistout.lengxiqwq.com')).toBe(true);
+      expect(shouldEnableClarity('PLAYLISTOUT.LENGXIQWQ.COM')).toBe(true);
     });
   });
 
@@ -137,20 +152,56 @@ describe('Microsoft Clarity Adapter', () => {
       expect(Clarity.setTag).not.toHaveBeenCalled();
     });
 
-    it('safely handles errors inside Clarity.event without throwing', () => {
+    it('safely handles errors inside Clarity.event when initialized without throwing', () => {
+      window.localStorage.setItem('playlistout_clarity_debug', 'true');
+      initClarity('test-id');
+      expect(isClarityInitialized()).toBe(true);
+
       (Clarity.event as any).mockImplementationOnce(() => {
-        throw new Error('Network error');
+        throw new Error('Clarity SDK runtime network crash');
       });
 
       expect(() => trackClarityEvent('playlist_export')).not.toThrow();
+      expect(Clarity.event).toHaveBeenCalledWith('playlist_export');
     });
 
-    it('safely handles errors inside Clarity.setTag without throwing', () => {
+    it('safely handles errors inside Clarity.setTag when initialized without throwing', () => {
+      window.localStorage.setItem('playlistout_clarity_debug', 'true');
+      initClarity('test-id');
+      expect(isClarityInitialized()).toBe(true);
+
       (Clarity.setTag as any).mockImplementationOnce(() => {
-        throw new Error('Tag quota exceeded');
+        throw new Error('Clarity SDK runtime quota exceeded');
       });
 
       expect(() => setClarityTag('platform', 'qqmusic')).not.toThrow();
+      expect(Clarity.setTag).toHaveBeenCalledWith('platform', 'qqmusic');
+    });
+
+    it('rejects invalid, unknown, or non-whitelisted tag values at runtime', () => {
+      window.localStorage.setItem('playlistout_clarity_debug', 'true');
+      initClarity('test-id');
+      expect(isClarityInitialized()).toBe(true);
+
+      // Attempt to pass arbitrary or sensitive values
+      setClarityTag('platform', 'spotify' as any);
+      setClarityTag('platform', 'https://y.qq.com/n/ryqq/playlist/12345' as any);
+      setClarityTag('export_format', 'pdf' as any);
+      setClarityTag('clipboard_mode', 'unknown_mode' as any);
+      setClarityTag('playlist_size_bucket', 'huge' as any);
+      setClarityTag('language', 'ja-JP' as any);
+      setClarityTag('platform', null as any);
+      setClarityTag('platform', undefined as any);
+
+      // None of the invalid values should be forwarded to Clarity.setTag
+      expect(Clarity.setTag).not.toHaveBeenCalled();
+
+      // Valid values should succeed
+      setClarityTag('platform', 'kugou');
+      expect(Clarity.setTag).toHaveBeenCalledWith('platform', 'kugou');
+
+      setClarityTag('playlist_size_bucket', '51-200');
+      expect(Clarity.setTag).toHaveBeenCalledWith('playlist_size_bucket', '51-200');
     });
   });
 
