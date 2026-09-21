@@ -203,7 +203,7 @@ export const zhCN: Translations = {
     section3Title: '3. 浏览器本地安全导出',
     section3Content: 'TXT、CSV、Excel (.xlsx) 与 JSON 文件的构建与下载，以及各种格式的剪贴板复制操作，100% 在您的浏览器端本地完成。文件绝不上传至任何服务器或云存储。',
     section4Title: '4. 匿名聚合统计',
-    section4Content: '为了维护系统稳定性与防滥用监控，系统仅记录无用户标识的宏观匿名计数（如“今日成功解析总数”、“平台累计成功次数”）。我们绝不记录或存储 IP 地址、设备信息、Cookie、QQ 账号或歌单详情。',
+    section4Content: '为了维护系统稳定性与防滥用监控，系统仅记录无用户标识的宏观匿名计数（如“今日成功解析总数”、“平台累计成功次数”）。同时，我们在生产环境接入 Microsoft Clarity 进行匿名交互体验分析（热力图与会话回放）。所有用户输入框、歌单摘要、歌曲详情及授权信息均已按设计强制配置隐私遮罩（Masking），绝不记录或存储 IP 地址、设备指纹、Cookie、用户账号或歌单歌曲内容。',
     section5Title: '5. 托管基础设施与开源',
     section5Content: 'PlaylistOut 前端托管于 GitHub Pages，无状态 API 运行于 Cloudflare Workers，代码完全公开透明。标准网络访问受相应云平台基础网络安全政策保护。',
     confirmButton: '我知道了',

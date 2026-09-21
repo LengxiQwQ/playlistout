@@ -3,7 +3,8 @@ import type { Playlist, UserPlaylistsData, ApiError } from './api/types';
 import { parsePlaylist, fetchUserPlaylists, recordVisit } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
 import { clearKugouAuth } from './utils/kugouAuth';
-import { LanguageProvider } from './i18n';
+import { LanguageProvider, useTranslation } from './i18n';
+import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from './analytics/clarity';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/layout/Hero';
 import { SearchNote } from './components/playlist/SearchNote';
@@ -34,8 +35,32 @@ export const AppContent: React.FC = () => {
   const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
   const [disambiguationQueryId, setDisambiguationQueryId] = useState('');
 
+  const { language } = useTranslation();
+
   useEffect(() => {
     recordVisit();
+  }, []);
+
+  useEffect(() => {
+    setClarityTag('language', language);
+  }, [language]);
+
+  const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
+    if (platform) {
+      setClarityTag('platform', platform);
+    }
+    const bucket = classifyPlaylistSize(trackCount);
+    if (bucket) {
+      setClarityTag('playlist_size_bucket', bucket);
+    }
+    trackClarityEvent('playlist_parse_success');
+  }, []);
+
+  const recordClarityParseFailure = useCallback((platform?: string) => {
+    if (platform) {
+      setClarityTag('platform', platform);
+    }
+    trackClarityEvent('playlist_parse_failure');
   }, []);
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -81,6 +106,7 @@ export const AppContent: React.FC = () => {
           code: validation.code || 'INVALID_INPUT',
           message: validation.error || '请输入有效的歌单链接、QQ 号或主页链接。',
         });
+        recordClarityParseFailure();
         return;
       }
 
@@ -126,9 +152,11 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
+            recordClarityParseSuccess(platform, res.data.total || res.data.playlists?.length);
           } else {
             setError(res.error);
             setState('error');
+            recordClarityParseFailure(platform);
           }
           return;
         }
@@ -155,9 +183,14 @@ export const AppContent: React.FC = () => {
             setViewMode('single');
             setState('success');
             scrollToElement('result');
+            recordClarityParseSuccess(
+              res.data.platform || platform || 'qqmusic',
+              res.data.trackCount ?? res.data.tracks?.length,
+            );
           } else {
             setError(res.error);
             setState('error');
+            recordClarityParseFailure(platform || 'qqmusic');
           }
           return;
         }
@@ -180,9 +213,11 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
+            recordClarityParseSuccess(platform, res.data.total || res.data.playlists?.length);
           } else {
             setError(res.error);
             setState('error');
+            recordClarityParseFailure(platform);
           }
           return;
         }
@@ -207,6 +242,10 @@ export const AppContent: React.FC = () => {
             setViewMode('single');
             setState('success');
             scrollToElement('result');
+            recordClarityParseSuccess(
+              singleRes.data.platform || platform || 'unknown',
+              singleRes.data.trackCount ?? singleRes.data.tracks?.length,
+            );
             return;
           }
 
@@ -220,6 +259,7 @@ export const AppContent: React.FC = () => {
             setViewMode('batch');
             setState('success');
             scrollToElement('user-playlists');
+            recordClarityParseSuccess(platform || 'netease', userRes.data.total || userRes.data.playlists.length);
             return;
           }
 
@@ -231,6 +271,7 @@ export const AppContent: React.FC = () => {
               },
           );
           setState('error');
+          recordClarityParseFailure(platform || 'unknown');
           return;
         }
 
@@ -254,9 +295,14 @@ export const AppContent: React.FC = () => {
             setViewMode('single');
             setState('success');
             scrollToElement('result');
+            recordClarityParseSuccess(
+              res.data.platform || platform || 'qqmusic',
+              res.data.trackCount ?? res.data.tracks?.length,
+            );
           } else {
             setError(res.error);
             setState('error');
+            recordClarityParseFailure(platform || 'qqmusic');
           }
           return;
         }
@@ -339,6 +385,7 @@ export const AppContent: React.FC = () => {
               });
             }
             setState('error');
+            recordClarityParseFailure();
           } else if (candidates.length === 1) {
             // Unambiguous! Directly load matched item
             const only = candidates[0];
@@ -355,6 +402,7 @@ export const AppContent: React.FC = () => {
               setState('success');
               scrollToElement('user-playlists');
             }
+            recordClarityParseSuccess(only.platform, only.count);
           } else {
             // Ambiguous: 2 or more targets matched across platforms/types
             setDisambiguationCandidates(candidates);
@@ -375,10 +423,11 @@ export const AppContent: React.FC = () => {
             message: '网络连接异常，请检查网络连接后重试。',
           });
           setState('error');
+          recordClarityParseFailure();
         }
       }
     },
-    [inputUrl, playlist, scrollToElement, scrollToTop],
+    [inputUrl, playlist, scrollToElement, scrollToTop, recordClarityParseSuccess, recordClarityParseFailure],
   );
 
   const handleReload = useCallback(() => {
@@ -412,8 +461,12 @@ export const AppContent: React.FC = () => {
       setViewMode('single');
       setState('success');
       scrollToElement('result');
+      recordClarityParseSuccess(
+        selectedPlaylist.platform || 'qqmusic',
+        selectedPlaylist.trackCount ?? selectedPlaylist.tracks?.length,
+      );
     },
-    [scrollToElement],
+    [scrollToElement, recordClarityParseSuccess],
   );
 
   const handleSelectDisambiguationUser = useCallback(
@@ -424,8 +477,12 @@ export const AppContent: React.FC = () => {
       setViewMode('batch');
       setState('success');
       scrollToElement('user-playlists');
+      recordClarityParseSuccess(
+        selectedUser.platform || 'qqmusic',
+        selectedUser.total || selectedUser.playlists?.length,
+      );
     },
-    [scrollToElement],
+    [scrollToElement, recordClarityParseSuccess],
   );
 
   const handleQuickSample = useCallback(
@@ -500,9 +557,14 @@ export const AppContent: React.FC = () => {
           setState('success');
           // 4. Once parsed successfully, smoothly scroll down to the single playlist card
           scrollToElement('result');
+          recordClarityParseSuccess(
+            res.data.platform || platform || 'qqmusic',
+            res.data.trackCount ?? res.data.tracks?.length,
+          );
         } else {
           setError(res.error);
           setState('error');
+          recordClarityParseFailure(platform);
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
@@ -514,10 +576,11 @@ export const AppContent: React.FC = () => {
             message: '网络连接异常，请检查网络连接后重试。',
           });
           setState('error');
+          recordClarityParseFailure();
         }
       }
     },
-    [userPlaylists, scrollToTop, scrollToElement],
+    [userPlaylists, scrollToTop, scrollToElement, recordClarityParseSuccess, recordClarityParseFailure],
   );
 
   useBaselineGrid([state, playlist, userPlaylists]);

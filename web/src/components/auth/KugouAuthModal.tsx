@@ -219,6 +219,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     >
       <div
         className="modal-container hand-drawn-border paper-shadow"
+        data-clarity-mask="true"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

@@ -3,6 +3,7 @@ import type { Playlist } from '../api/types';
 import { exportPlaylist } from '../utils/export';
 import { formatTracksForClipboard, copyToClipboard, type ClipboardMode } from '../utils/clipboard';
 import { recordExportEvent, recordClipboardEvent } from '../api/client';
+import { trackClarityEvent, setClarityTag } from '../analytics/clarity';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
 import { MarkerButton } from './ui/MarkerButton';
@@ -95,6 +96,8 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         exportedFiles.push(filename);
         exportedFormatsLabels.push(fmt.toUpperCase());
         recordExportEvent(fmt, playlist.tracks.length, playlist.platform || 'qqmusic');
+        setClarityTag('export_format', fmt);
+        trackClarityEvent('playlist_export');
       } catch (err) {
         console.error(`Failed to export format ${fmt}:`, err);
       }
@@ -126,6 +129,8 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         }),
       );
       recordClipboardEvent(mode, playlist.tracks.length, playlist.platform || 'qqmusic');
+      setClarityTag('clipboard_mode', mode);
+      trackClarityEvent('clipboard_copy');
     } else {
       showToast(t.export.toastCopyFailed);
     }

@@ -207,7 +207,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               paddingBottom: '1.5rem',
             }}
           >
-            <div>
+            <div data-clarity-mask="true">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <Sticker
                   color={getPlatformConfig(userData.platform).color}
@@ -440,7 +440,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           </div>
 
           {/* Playlist Rows Catalog */}
-          <div style={{ marginTop: '1.5rem' }}>
+          <div style={{ marginTop: '1.5rem' }} data-clarity-mask="true">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3
                 className="font-handwriting"

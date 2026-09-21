@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
+import { initClarity } from './analytics/clarity';
+
 // Canonical origin enforcement: redirect legacy/secondary origins to canonical domain
 // Preserves user path and safe query params, strictly excludes any credential tokens
 if (typeof window !== 'undefined' && window.location) {
@@ -16,6 +18,9 @@ if (typeof window !== 'undefined' && window.location) {
     canonicalUrl.searchParams.delete('credential');
     canonicalUrl.searchParams.delete('kugou_token');
     window.location.replace(canonicalUrl.toString());
+  } else {
+    // Only initialize Clarity on canonical/production host, never on legacy domains prior to redirect
+    initClarity();
   }
 }
 
