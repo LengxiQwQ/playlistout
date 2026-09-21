@@ -313,19 +313,23 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
         {/* Action Stickers */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
           <Sticker
-            as="a"
-            href={getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
+            type="button"
+            onClick={() => {
+              const url = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
+              if (url && typeof window !== 'undefined') {
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }
+            }}
             color="white"
             rotateDeg={-1}
             className="font-handwriting"
+            aria-label={getPlatformViewAction(playlist.platform, language)}
             style={{
               padding: '0.42rem 0.95rem',
               fontSize: '1.05rem',
               fontFamily: 'var(--font-handwriting, cursive)',
               fontWeight: 700,
-              textDecoration: 'none',
+              cursor: 'pointer',
               color: 'var(--ink, #2d3436)',
               display: 'inline-flex',
               alignItems: 'center',
