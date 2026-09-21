@@ -17,6 +17,8 @@ export const CLARITY_PROJECT_ID =
   'yloiqvw5lu';
 
 export const CANONICAL_CLARITY_HOST = 'playlistout.lengxiqwq.com';
+export const CLARITY_CONSENT_STORAGE_KEY = 'playlistout_clarity_consent_v1';
+export type ClarityConsent = 'granted' | 'denied' | null;
 
 export const CLARITY_EVENTS = [
   'playlist_parse_success',
@@ -95,6 +97,46 @@ export function isClarityInitialized(): boolean {
   return isInitialized;
 }
 
+function hasClarityDebugOverride(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage?.getItem('playlistout_clarity_debug') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function getClarityConsent(): ClarityConsent {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = window.localStorage?.getItem(CLARITY_CONSENT_STORAGE_KEY);
+    return stored === 'granted' || stored === 'denied' ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistClarityConsent(consent: Exclude<ClarityConsent, null>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage?.setItem(CLARITY_CONSENT_STORAGE_KEY, consent);
+  } catch {
+    // Storage may be unavailable in hardened/private browsing contexts.
+  }
+}
+
+function signalClarityConsent(consent: Exclude<ClarityConsent, null>): void {
+  if (!isInitialized) return;
+  try {
+    Clarity.consentV2({
+      ad_Storage: 'denied',
+      analytics_Storage: consent === 'granted' ? 'granted' : 'denied',
+    });
+  } catch {
+    // Consent signaling is best-effort and must never affect product behavior.
+  }
+}
+
 /**
  * Evaluates whether Clarity should run in the current runtime environment.
  * Default:
@@ -123,13 +165,9 @@ export function isCanonicalClarityHost(hostname?: string): boolean {
 export function shouldEnableClarity(hostname?: string): boolean {
   if (typeof window === 'undefined') return false;
 
-  // Allow explicit debug override in dev or test environments
-  try {
-    if (window.localStorage?.getItem('playlistout_clarity_debug') === 'true') {
-      return true;
-    }
-  } catch {
-    // ignore
+  // Allow explicit maintainer-only debug override in dev or test environments.
+  if (hasClarityDebugOverride()) {
+    return true;
   }
 
   // If an explicit hostname is provided to check (e.g. host guard validation)
@@ -162,6 +200,12 @@ export function initClarity(customProjectId?: string, customHost?: string): bool
     return false;
   }
 
+  // Privacy-by-default: production Clarity never starts until analytics consent is explicitly granted.
+  // The local debug override remains available for maintainers without polluting normal development.
+  if (getClarityConsent() !== 'granted' && !hasClarityDebugOverride()) {
+    return false;
+  }
+
   const projectId = customProjectId || CLARITY_PROJECT_ID;
   if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
     return false;
@@ -170,6 +214,7 @@ export function initClarity(customProjectId?: string, customHost?: string): bool
   try {
     Clarity.init(projectId.trim());
     isInitialized = true;
+    signalClarityConsent('granted');
     return true;
   } catch (err) {
     // Best-effort: fail silently and do NOT mark initialized
@@ -182,11 +227,33 @@ export function initClarity(customProjectId?: string, customHost?: string): bool
 }
 
 /**
+ * Persists and applies the visitor's Clarity analytics-cookie preference.
+ * Advertising storage is always denied; PlaylistOut only requests analytics storage.
+ */
+export function updateClarityConsent(consent: Exclude<ClarityConsent, null>): boolean {
+  persistClarityConsent(consent);
+
+  if (consent === 'granted') {
+    if (!isInitialized) {
+      return initClarity();
+    }
+    signalClarityConsent('granted');
+    return true;
+  }
+
+  // If Clarity was already active, immediately revoke analytics/ad storage via Consent V2.
+  // On subsequent page loads, initClarity() stays disabled because stored consent is denied.
+  signalClarityConsent('denied');
+  return true;
+}
+
+/**
  * Fires a lightweight product event to Clarity.
  * Best-effort and fails silently if Clarity is unavailable or blocked.
  */
 export function trackClarityEvent(event: ClarityEvent): void {
   if (!isInitialized) return;
+  if (getClarityConsent() !== 'granted' && !hasClarityDebugOverride()) return;
 
   try {
     if ((CLARITY_EVENTS as readonly string[]).includes(event)) {
@@ -203,6 +270,7 @@ export function trackClarityEvent(event: ClarityEvent): void {
  */
 export function setClarityTag<K extends ClarityTagKey>(key: K, value: ClarityTagMap[K]): void {
   if (!isInitialized) return;
+  if (getClarityConsent() !== 'granted' && !hasClarityDebugOverride()) return;
 
   try {
     const allowed = CLARITY_TAG_VALUE_WHITELIST[key] as readonly string[] | undefined;

@@ -4,7 +4,7 @@ import { parsePlaylist, fetchUserPlaylists, recordVisit } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
 import { clearKugouAuth } from './utils/kugouAuth';
 import { LanguageProvider, useTranslation } from './i18n';
-import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from './analytics/clarity';
+import { trackClarityEvent, setClarityTag, classifyPlaylistSize, getClarityConsent, updateClarityConsent, type ClarityConsent } from './analytics/clarity';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/layout/Hero';
 import { SearchNote } from './components/playlist/SearchNote';
@@ -14,6 +14,7 @@ import { InfoNotes } from './components/layout/InfoNotes';
 import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
+import { ClarityConsentBanner } from './components/ClarityConsentBanner';
 import { DisambiguationModal, DisambiguationItem } from './components/playlist/DisambiguationModal';
 import { BinderSpine } from './components/layout/BinderSpine';
 import { BackgroundDecorations } from './components/layout/BackgroundDecorations';
@@ -31,6 +32,7 @@ export const AppContent: React.FC = () => {
   const [hasCollision, setHasCollision] = useState<boolean>(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [clarityConsent, setClarityConsentState] = useState<ClarityConsent>(() => getClarityConsent());
   const [disambiguationCandidates, setDisambiguationCandidates] = useState<DisambiguationItem[]>([]);
   const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
   const [disambiguationQueryId, setDisambiguationQueryId] = useState('');
@@ -41,9 +43,14 @@ export const AppContent: React.FC = () => {
     recordVisit();
   }, []);
 
+  const handleClarityConsentChange = useCallback((consent: Exclude<ClarityConsent, null>) => {
+    updateClarityConsent(consent);
+    setClarityConsentState(consent);
+  }, []);
+
   useEffect(() => {
     setClarityTag('language', language);
-  }, [language]);
+  }, [language, clarityConsent]);
 
   const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
     if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
@@ -652,6 +659,14 @@ export const AppContent: React.FC = () => {
         <PrivacyModal
           isOpen={isPrivacyOpen}
           onClose={() => setIsPrivacyOpen(false)}
+          clarityConsent={clarityConsent}
+          onClarityConsentChange={handleClarityConsentChange}
+        />
+
+        <ClarityConsentBanner
+          consent={clarityConsent}
+          onConsentChange={handleClarityConsentChange}
+          onOpenPrivacy={() => setIsPrivacyOpen(true)}
         />
 
         <DisambiguationModal
