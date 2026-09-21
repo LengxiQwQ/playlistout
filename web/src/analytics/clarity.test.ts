@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Clarity from '@microsoft/clarity';
 import {
   CLARITY_PROJECT_ID,
-  CLARITY_CONSENT_STORAGE_KEY,
   CLARITY_EVENTS,
   CLARITY_TAG_KEYS,
   classifyPlaylistSize,
@@ -11,8 +10,6 @@ import {
   shouldEnableClarity,
   trackClarityEvent,
   setClarityTag,
-  getClarityConsent,
-  updateClarityConsent,
   _resetClarityForTesting,
 } from './clarity';
 
@@ -22,7 +19,6 @@ vi.mock('@microsoft/clarity', () => ({
     setTag: vi.fn(),
     event: vi.fn(),
     identify: vi.fn(),
-    consentV2: vi.fn(),
   },
 }));
 
@@ -31,13 +27,11 @@ describe('Microsoft Clarity Adapter', () => {
     vi.clearAllMocks();
     _resetClarityForTesting();
     window.localStorage.removeItem('playlistout_clarity_debug');
-    window.localStorage.removeItem(CLARITY_CONSENT_STORAGE_KEY);
   });
 
   afterEach(() => {
     _resetClarityForTesting();
     window.localStorage.removeItem('playlistout_clarity_debug');
-    window.localStorage.removeItem(CLARITY_CONSENT_STORAGE_KEY);
   });
 
   describe('Configuration & Dimensions', () => {
@@ -145,43 +139,6 @@ describe('Microsoft Clarity Adapter', () => {
       // Strictly canonical production host
       expect(shouldEnableClarity('playlistout.lengxiqwq.com')).toBe(true);
       expect(shouldEnableClarity('PLAYLISTOUT.LENGXIQWQ.COM')).toBe(true);
-    });
-  });
-
-  describe('Consent V2 & Persistence', () => {
-    it('does not initialize production Clarity until analytics consent is granted', () => {
-      expect(getClarityConsent()).toBeNull();
-      expect(initClarity('test-id', 'playlistout.lengxiqwq.com')).toBe(false);
-      expect(Clarity.init).not.toHaveBeenCalled();
-
-      window.localStorage.setItem(CLARITY_CONSENT_STORAGE_KEY, 'granted');
-      expect(initClarity('test-id', 'playlistout.lengxiqwq.com')).toBe(true);
-      expect(Clarity.init).toHaveBeenCalledWith('test-id');
-      expect(Clarity.consentV2).toHaveBeenCalledWith({
-        ad_Storage: 'denied',
-        analytics_Storage: 'granted',
-      });
-    });
-
-    it('persists denial without starting a fresh Clarity instance', () => {
-      expect(updateClarityConsent('denied')).toBe(true);
-      expect(getClarityConsent()).toBe('denied');
-      expect(Clarity.init).not.toHaveBeenCalled();
-      expect(Clarity.consentV2).not.toHaveBeenCalled();
-    });
-
-    it('revokes analytics and ad storage through Consent V2 after prior consent', () => {
-      window.localStorage.setItem('playlistout_clarity_debug', 'true');
-      expect(updateClarityConsent('granted')).toBe(true);
-      expect(isClarityInitialized()).toBe(true);
-
-      vi.mocked(Clarity.consentV2).mockClear();
-      expect(updateClarityConsent('denied')).toBe(true);
-      expect(getClarityConsent()).toBe('denied');
-      expect(Clarity.consentV2).toHaveBeenCalledWith({
-        ad_Storage: 'denied',
-        analytics_Storage: 'denied',
-      });
     });
   });
 

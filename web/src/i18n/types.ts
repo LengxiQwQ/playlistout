@@ -206,15 +206,6 @@ export interface Translations {
     section4Content: string;
     section5Title: string;
     section5Content: string;
-    consentBannerTitle: string;
-    consentBannerContent: string;
-    consentPreferenceTitle: string;
-    consentStatusGranted: string;
-    consentStatusDenied: string;
-    consentStatusUnset: string;
-    consentAllow: string;
-    consentDecline: string;
-    consentLearnMore: string;
     confirmButton: string;
   };
   footer: {

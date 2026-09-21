@@ -3,21 +3,13 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from '../i18n';
 import { Tape } from './ui/Tape';
 import { MarkerButton } from './ui/MarkerButton';
-import type { ClarityConsent } from '../analytics/clarity';
 
 export interface PrivacyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  clarityConsent: ClarityConsent;
-  onClarityConsentChange: (consent: Exclude<ClarityConsent, null>) => void;
 }
 
-export const PrivacyModal: React.FC<PrivacyModalProps> = ({
-  isOpen,
-  onClose,
-  clarityConsent,
-  onClarityConsentChange,
-}) => {
+export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -169,47 +161,9 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section4Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0, whiteSpace: 'pre-line' }}>
+            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
               {t.privacy.section4Content}
             </p>
-            <div
-              style={{
-                marginTop: '1rem',
-                padding: '0.9rem 1rem',
-                backgroundColor: '#f8fafc',
-                border: '1.5px dashed #94a3b8',
-                borderRadius: '8px',
-              }}
-            >
-              <div className="font-marker" style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>
-                {t.privacy.consentPreferenceTitle}
-              </div>
-              <div className="font-sans" style={{ color: '#64748b', fontSize: '0.88rem', marginBottom: '0.75rem' }}>
-                {clarityConsent === 'granted'
-                  ? t.privacy.consentStatusGranted
-                  : clarityConsent === 'denied'
-                  ? t.privacy.consentStatusDenied
-                  : t.privacy.consentStatusUnset}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
-                <MarkerButton
-                  type="button"
-                  variant={clarityConsent === 'denied' ? 'ink' : 'paper'}
-                  onClick={() => onClarityConsentChange('denied')}
-                  style={{ padding: '0.42rem 0.85rem', fontSize: '0.92rem' }}
-                >
-                  {t.privacy.consentDecline}
-                </MarkerButton>
-                <MarkerButton
-                  type="button"
-                  variant={clarityConsent === 'granted' ? 'ink' : 'paper'}
-                  onClick={() => onClarityConsentChange('granted')}
-                  style={{ padding: '0.42rem 0.85rem', fontSize: '0.92rem' }}
-                >
-                  {t.privacy.consentAllow}
-                </MarkerButton>
-              </div>
-            </div>
           </section>
 
           <section className="privacy-section">
