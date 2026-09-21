@@ -636,7 +636,7 @@ export const AppContent: React.FC = () => {
 
           {/* Educational Stationery Notes */}
           <div className="baseline-grid-snap">
-            <InfoNotes onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+            <InfoNotes />
           </div>
 
           {/* Aggregate Public Stats Journal */}

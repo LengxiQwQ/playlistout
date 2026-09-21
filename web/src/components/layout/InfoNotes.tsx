@@ -7,7 +7,7 @@ export interface InfoNotesProps {
   onOpenPrivacy?: () => void;
 }
 
-export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
+export const InfoNotes: React.FC<InfoNotesProps> = () => {
   const { t } = useTranslation();
 
   return (
@@ -63,26 +63,6 @@ export const InfoNotes: React.FC<InfoNotesProps> = ({ onOpenPrivacy }) => {
           <div>{t.infoNotes.whatItem3}</div>
           <div>{t.infoNotes.whatItem4}</div>
         </div>
-        {onOpenPrivacy && (
-          <button
-            type="button"
-            onClick={onOpenPrivacy}
-            className="font-note feature-link-btn"
-            style={{
-              marginTop: '1.25rem',
-              fontSize: '1.25rem',
-              color: '#2563eb',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              textDecoration: 'underline',
-              textAlign: 'left',
-            }}
-          >
-            {t.privacy.viewDataNotice}
-          </button>
-        )}
       </Paper>
 
       {/* Note 3: Little note */}
