@@ -296,23 +296,22 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     expect(screen.getByText('Song 1000')).toBeInTheDocument();
   });
 
-  it('allows opening and closing the Privacy Policy modal via footer and feature cards', async () => {
+  it('allows opening and closing the Privacy Policy modal via footer', async () => {
     render(<App />);
 
     expect(screen.getByText(/跨平台公开歌单解析/)).toBeInTheDocument();
 
-    // 1. Open via feature card link
-    const featureLink = screen.getByText('查看数据说明');
-    fireEvent.click(featureLink);
+    // 1. Open via footer link
+    const footerLink = screen.getByText(/Privacy Policy|隐私政策/i);
+    fireEvent.click(footerLink);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('隐私政策与数据说明')).toBeInTheDocument();
 
-    // Close via modal button
+    // Close via modal confirm button
     fireEvent.click(screen.getByText('我知道了'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    // 2. Open via footer link
-    const footerLink = screen.getByText(/Privacy Policy|隐私政策/i);
+    // 2. Re-open via footer link
     fireEvent.click(footerLink);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
