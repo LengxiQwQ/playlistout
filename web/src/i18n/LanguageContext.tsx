@@ -52,7 +52,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; defaultLang
     if (typeof document !== 'undefined') {
       document.title =
         language === 'zh-CN'
-          ? 'PlaylistOut - 把你的歌单带走 | Paste. Parse. Export.'
+          ? '把你的歌单带走 - PlaylistOut | Paste. Parse. Export.'
           : 'PlaylistOut - Paste. Parse. Export.';
     }
     try {
