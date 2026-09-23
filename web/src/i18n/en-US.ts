@@ -2,6 +2,7 @@ import type { Translations } from './types';
 
 export const enUS: Translations = {
   header: {
+    brandChineseName: '',
     brandTagline: 'Paste. Parse. Export.',
     previewLink: 'Preview',
     numbersLink: 'Numbers',
@@ -209,6 +210,7 @@ export const enUS: Translations = {
     confirmButton: 'Got it',
   },
   footer: {
+    brandChineseName: '',
     drawnBy: 'Handcrafted music journal for playlist backup & export',
     runningBadge: '✦ Launched 2026-09-12 · Safely running for {days} days · Accompanied {visitors} daily visits ✦',
     copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · Licensed under ',
