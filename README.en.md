@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="PlaylistOut" />
 
-# Playlist Out
+# PlaylistOut
 
 *Your playlists shouldn't be trapped inside one music platform.*
 
