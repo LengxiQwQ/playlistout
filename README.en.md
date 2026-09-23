@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="PlaylistOut" />
+<img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="Playlist Out" />
 
-# PlaylistOut
+# Playlist Out
 
 *Your playlists shouldn't be trapped inside one music platform.*
 
@@ -23,14 +23,14 @@
 
 ---
 
-## 💡 Why PlaylistOut?
+## 💡 Why Playlist Out?
 
 We spend countless hours curating music playlists across streaming platforms, only to run into familiar frustrations:
 When switching platforms, there is no easy way to migrate your library; when wanting to back up your collection, no service lets you export a clean, structured tracklist; or when organizing songs into spreadsheets for analysis or printing, you are left copying and pasting one by one.
 
 Walled gardens keep your playlists locked inside proprietary apps.
 
-**PlaylistOut does one simple thing: turn public playlists into structured, portable data that truly belongs to you.**
+**Playlist Out does one simple thing: turn public playlists into structured, portable data that truly belongs to you.**
 
 - **Client-Side Export**: All exported files are generated 100% locally in your browser's memory and downloaded directly, never uploaded back to the server.
 - **Zero-Friction & Secure Authorization**: Public playlists from QQ Music and NetEase Cloud Music are 100% zero-login with full tracklist export. KuGou Music supports instant guest previews with optional mobile QR code authorization to unlock complete playlists (tokens stored strictly within the user's browser, zero server storage).
