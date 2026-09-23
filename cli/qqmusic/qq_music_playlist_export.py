@@ -43,7 +43,16 @@ def extract_playlist_id(text):
     text = text.strip()
     if re.fullmatch(r'\d+', text):
         return text
-    m = re.search(r'(\d{5,})', text)
+    # 1. 优先从 URL 路径匹配: /playlist/<id>, /taoge/<id>, /playsquare/<id>
+    m = re.search(r'/(?:playlist|taoge|playsquare)(?:_v\d+)?/(\d{5,18})', text)
+    if m:
+        return m.group(1)
+    # 2. 匹配 Query 参数: id=..., disstid=..., dissid=..., tid=..., playlist_id=...
+    m = re.search(r'[?&#](?:id|disstid|dissid|tid|playlist_id)=(\d{5,18})', text)
+    if m:
+        return m.group(1)
+    # 3. 兜底匹配任意 5-18 位连续数字
+    m = re.search(r'(\d{5,18})', text)
     if m:
         return m.group(1)
     return None

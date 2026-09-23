@@ -7,12 +7,30 @@ describe('Client-Side Input Validation', () => {
   it('validates QQ Music web playlist URLs', () => {
     expect(validatePlaylistInput('https://y.qq.com/n/ryqq/playlist/9044196528').valid).toBe(true);
     expect(validatePlaylistInput('http://y.qq.com/n/ryqq/playlist/12345').valid).toBe(true);
+    const resV2 = validatePlaylistInput('https://y.qq.com/n/ryqq_v2/playlist/9044196528?ADTAG=h5_share_playlist');
+    expect(resV2.valid).toBe(true);
+    expect(resV2.kind).toBe('single_playlist_url');
+    expect(resV2.platform).toBe('qqmusic');
   });
 
-  it('validates mobile share taoge URLs', () => {
+  it('validates mobile share taoge and details/playlist URLs', () => {
     expect(
       validatePlaylistInput('https://i.y.qq.com/n2/m/share/details/taoge.html?id=9044196528').valid,
     ).toBe(true);
+
+    const resWx = validatePlaylistInput(
+      'https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx',
+    );
+    expect(resWx.valid).toBe(true);
+    expect(resWx.kind).toBe('single_playlist_url');
+    expect(resWx.platform).toBe('qqmusic');
+  });
+
+  it('does not falsely classify playlist URL with sharer uin as user profile', () => {
+    const res = validatePlaylistInput('https://y.qq.com/n/ryqq/playlist/9044196528?uin=12345678');
+    expect(res.valid).toBe(true);
+    expect(res.kind).toBe('single_playlist_url');
+    expect(res.platform).toBe('qqmusic');
   });
 
   it('validates raw numeric playlist IDs and QQ numbers', () => {

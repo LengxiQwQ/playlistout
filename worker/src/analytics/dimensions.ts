@@ -34,7 +34,8 @@ export function classifyInputType(input: string): InputType {
 
   // Mobile share links
   if (
-    /i\.y\.qq\.com/i.test(trimmed) ||
+    /i\d*\.y\.qq\.com/i.test(trimmed) ||
+    /details\/playlist/i.test(trimmed) ||
     /taoge\.html/i.test(trimmed) ||
     /detail\/taoge/i.test(trimmed) ||
     /163cn\.tv/i.test(trimmed) ||

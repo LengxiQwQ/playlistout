@@ -45,40 +45,76 @@ export function extractQQPlaylistId(rawInput: string): string {
   }
 
   const hostname = parsedUrl.hostname.toLowerCase();
-  const allowedHosts = ['y.qq.com', 'i.y.qq.com'];
+  const isAllowedHost =
+    hostname === 'y.qq.com' ||
+    hostname.endsWith('.y.qq.com') ||
+    hostname === 'music.qq.com' ||
+    hostname.endsWith('.music.qq.com');
+
   if (
     (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') ||
-    !allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))
+    !isAllowedHost
   ) {
     throw new ProviderError('UNSUPPORTED_URL', `Unsupported music platform host: "${hostname}". Currently only QQ Music is supported.`, 400);
   }
 
   const pathname = parsedUrl.pathname;
 
-  // Case A: /n/ryqq/playlist/<id>
-  const ryqqMatch = pathname.match(/\/n\/ryqq\/playlist\/(\d{5,18})/i);
-  if (ryqqMatch) {
-    return ryqqMatch[1];
+  // Case A: Path contains /playlist/<id>, /taoge/<id>, or /playsquare/<id>
+  // Handles:
+  // - /n/ryqq/playlist/<id>
+  // - /n/ryqq_v2/playlist/<id>
+  // - /n/yqq/playlist/<id>.html
+  // - /playlist/<id>
+  // - /taoge/<id>
+  // - /playsquare/<id>
+  const pathMatch = pathname.match(/\/(?:playlist|taoge|playsquare)(?:_v\d+)?\/(\d{5,18})/i);
+  if (pathMatch) {
+    return pathMatch[1];
   }
 
-  // Case B: taoge detail URLs with query param `id`
-  // e.g. /n2/m/share/details/taoge.html?id=... or /n/m/detail/taoge/index.html?id=...
-  if (pathname.includes('/taoge')) {
-    const idParam = parsedUrl.searchParams.get('id') || parsedUrl.searchParams.get('disstid');
-    if (idParam && /^\d{5,18}$/.test(idParam.trim())) {
-      return idParam.trim();
+  // Case B: Query parameters containing playlist ID (e.g. id, disstid, dissid, tid, playlist_id)
+  // Handles mobile & WeChat share pages:
+  // - /n3/other/pages/details/playlist.html?id=<id>
+  // - /n2/m/share/details/taoge.html?id=<id>
+  // - /w/taoge.html?id=<id>
+  // - /qzone/fcg-bin/... or other legacy paths with query params
+  const candidateParams = [
+    'id',
+    'disstid',
+    'dissid',
+    'tid',
+    'playlist_id',
+    'diss_id',
+    'playlistid',
+  ];
+
+  for (const key of candidateParams) {
+    const val = parsedUrl.searchParams.get(key);
+    if (val && /^\d{5,18}$/.test(val.trim())) {
+      return val.trim();
     }
   }
 
-  // Case C: /qzone/fcg-bin/... or other legacy paths with query params
-  const disstidParam = parsedUrl.searchParams.get('disstid') || parsedUrl.searchParams.get('dissid');
-  if (disstidParam && /^\d{5,18}$/.test(disstidParam.trim())) {
-    return disstidParam.trim();
+  // Case C: Check hash for query-like parameters or route paths (e.g. #/playlist?id=... or #/playlist/123)
+  if (parsedUrl.hash) {
+    const hashContent = parsedUrl.hash.replace(/^#[/?]*/, '');
+    const hashParams = new URLSearchParams(hashContent.includes('?') ? hashContent.split('?')[1] : hashContent);
+    for (const key of candidateParams) {
+      const val = hashParams.get(key);
+      if (val && /^\d{5,18}$/.test(val.trim())) {
+        return val.trim();
+      }
+    }
+    const hashMatch = parsedUrl.hash.match(/\/(?:playlist|taoge|playsquare)(?:_v\d+)?\/(\d{5,18})/i);
+    if (hashMatch) {
+      return hashMatch[1];
+    }
   }
 
   throw new ProviderError(
     'INVALID_INPUT',
-    'Could not extract a valid QQ Music playlist ID from the provided URL. Expected format: https://y.qq.com/n/ryqq/playlist/<id>',
+    'Could not extract a valid QQ Music playlist ID from the provided URL. Expected format: https://y.qq.com/n/ryqq/playlist/<id> or https://y.qq.com/n/ryqq_v2/playlist/<id>',
     400,
   );
 }
@@ -103,7 +139,12 @@ export function matchesQQMusicInput(rawInput: string): boolean {
       return false;
     }
     const host = parsedUrl.hostname.toLowerCase();
-    return host === 'y.qq.com' || host === 'i.y.qq.com' || host.endsWith('.y.qq.com');
+    return (
+      host === 'y.qq.com' ||
+      host.endsWith('.y.qq.com') ||
+      host === 'music.qq.com' ||
+      host.endsWith('.music.qq.com')
+    );
   } catch {
     return false;
   }

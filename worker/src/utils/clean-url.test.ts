@@ -47,5 +47,19 @@ describe('Worker extractCleanUrlOrInput', () => {
     expect(extractCleanUrlOrInput('y.qq.com/n/ryqq/playlist/9044196528')).toBe(
       'https://y.qq.com/n/ryqq/playlist/9044196528',
     );
+    expect(extractCleanUrlOrInput('y.qq.com/n/ryqq_v2/playlist/9044196528')).toBe(
+      'https://y.qq.com/n/ryqq_v2/playlist/9044196528',
+    );
+    expect(
+      extractCleanUrlOrInput('i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528'),
+    ).toBe('https://i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528');
+  });
+
+  it('extracts URL from WeChat QQ Music share text', () => {
+    const shareText =
+      '分享歌单《经典流行》 https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx 来自QQ音乐';
+    expect(extractCleanUrlOrInput(shareText)).toBe(
+      'https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx',
+    );
   });
 });
