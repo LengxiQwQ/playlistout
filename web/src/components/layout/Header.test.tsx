@@ -18,7 +18,7 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
-    const title = screen.getByRole('heading', { level: 1, name: 'PlaylistOut' });
+    const title = screen.getByRole('heading', { level: 1, name: '把你的歌单带走' });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('font-marker');
 
@@ -38,6 +38,10 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
+    const title = screen.getByRole('heading', { level: 1, name: 'PlaylistOut' });
+    expect(title).toBeInTheDocument();
+    expect(title).toHaveClass('font-marker');
+
     const tagline = screen.getByText('Paste. Parse. Export.');
     expect(tagline).toBeInTheDocument();
     expect(tagline).toHaveClass('header-brand-tagline');
@@ -51,7 +55,7 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
-    const logoImg = screen.getByAltText('PlaylistOut Logo');
+    const logoImg = screen.getByAltText('PlaylistOut');
     expect(logoImg).toBeInTheDocument();
 
     const githubLink = screen.getByRole('link', { name: /Star on GitHub/i });

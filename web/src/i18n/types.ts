@@ -2,6 +2,7 @@ export type Language = 'zh-CN' | 'en-US';
 
 export interface Translations {
   header: {
+    brandTitle: string;
     brandChineseName: string;
     brandTagline: string;
     previewLink: string;
@@ -210,6 +211,7 @@ export interface Translations {
     confirmButton: string;
   };
   footer: {
+    brandTitle: string;
     brandChineseName: string;
     drawnBy: string;
     runningBadge: string;

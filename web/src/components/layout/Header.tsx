@@ -53,13 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         <a
           href="https://playlistout.lengxiqwq.com"
           className="header-logo-link"
-          aria-label="PlaylistOut (playlistout.lengxiqwq.com)"
-          title="playlistout.lengxiqwq.com"
+          aria-label={t.header.brandTitle}
+          title={t.header.brandTitle}
         >
           <img
             src="/logo-128.png"
             srcSet="/logo-128.png 1x, /logo-256.png 2x"
-            alt="PlaylistOut Logo"
+            alt={t.header.brandTitle}
             className="header-logo-img"
             width={52}
             height={52}
@@ -78,16 +78,9 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             userSelect: 'none',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem', flexWrap: 'wrap' }}>
-            <h1 className="font-marker header-brand-title">
-              PlaylistOut
-            </h1>
-            {t.header.brandChineseName && (
-              <span className="font-note header-brand-cn">
-                · {t.header.brandChineseName}
-              </span>
-            )}
-          </div>
+          <h1 className="font-marker header-brand-title">
+            {t.header.brandTitle}
+          </h1>
           <div className="header-brand-tagline font-handwriting">
             {t.header.brandTagline}
           </div>

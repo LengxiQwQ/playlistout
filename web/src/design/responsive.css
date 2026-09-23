@@ -46,13 +46,6 @@
   transition: color 0.18s ease;
 }
 
-.header-brand-cn {
-  font-size: 1.15rem;
-  color: var(--ink-light, #636e72);
-  font-weight: 600;
-  vertical-align: middle;
-  letter-spacing: 0.02em;
-}
 
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
