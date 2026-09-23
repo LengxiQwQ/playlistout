@@ -39,7 +39,7 @@ describe('i18n and Language Switching (Phase 3)', () => {
     expect(screen.getByTestId('title-display')).toHaveTextContent('歌单带走');
     expect(screen.getByTestId('formatted-display')).toHaveTextContent('共 42 首歌曲');
     expect(document.documentElement.lang).toBe('zh-CN');
-    expect(document.title).toBe('PlaylistOut - 把你的歌单带走 | Paste. Parse. Export.');
+    expect(document.title).toBe('把你的歌单带走 - PlaylistOut | Paste. Parse. Export.');
   });
 
   it('switches between languages and persists choice in localStorage', () => {
@@ -63,7 +63,7 @@ describe('i18n and Language Switching (Phase 3)', () => {
     // Switch back to Chinese
     fireEvent.click(toggleBtn);
     expect(screen.getByTestId('lang-display')).toHaveTextContent('zh-CN');
-    expect(document.title).toBe('PlaylistOut - 把你的歌单带走 | Paste. Parse. Export.');
+    expect(document.title).toBe('把你的歌单带走 - PlaylistOut | Paste. Parse. Export.');
     expect(localStorage.getItem('playlistout-language')).toBe('zh-CN');
   });
 });
