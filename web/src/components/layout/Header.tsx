@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             userSelect: 'none',
           }}
         >
-          <h1 className="font-marker header-brand-title">
+          <h1 className="font-marker font-brand-title header-brand-title">
             {t.header.brandTitle}
           </h1>
           <div className="header-brand-tagline font-handwriting">

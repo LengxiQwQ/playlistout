@@ -21,6 +21,7 @@ describe('Header Component', () => {
     const title = screen.getByRole('heading', { level: 1, name: '把你的歌单带走' });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('font-marker');
+    expect(title).toHaveClass('font-brand-title');
 
     const tagline = screen.getByText('粘贴 · 解析 · 导出');
     expect(tagline).toBeInTheDocument();
@@ -41,6 +42,7 @@ describe('Header Component', () => {
     const title = screen.getByRole('heading', { level: 1, name: 'PlaylistOut' });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('font-marker');
+    expect(title).toHaveClass('font-brand-title');
 
     const tagline = screen.getByText('Paste. Parse. Export.');
     expect(tagline).toBeInTheDocument();

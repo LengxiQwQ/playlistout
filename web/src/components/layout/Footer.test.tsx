@@ -9,7 +9,9 @@ describe('Footer Component', () => {
     render(<Footer onOpenPrivacy={onOpenPrivacyMock} />);
 
     // Brand and Tagline
-    expect(screen.getByText('把你的歌单带走')).toBeInTheDocument();
+    const brand = screen.getByText('把你的歌单带走');
+    expect(brand).toBeInTheDocument();
+    expect(brand).toHaveClass('font-brand-title');
 
     // Action Links
     expect(screen.getByRole('link', { name: /GitHub/i })).toHaveAttribute(

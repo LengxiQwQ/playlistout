@@ -6,6 +6,7 @@
   --font-note: 'Nanum Pen Script', 'Noto Sans SC', cursive;
   --font-mono: 'Space Mono', 'Noto Sans SC', monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+  --font-brand-title: 'Zhi Mang Xing', 'Permanent Marker', 'Xingkai SC', 'STXingkai', '华文行楷', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
 }
 
 /* Chinese Handwriting Presets (Dedicated Chinese Font List) */
@@ -97,4 +98,8 @@ body[data-font-preset="comic"] {
 
 .font-sans {
   font-family: var(--font-sans) !important;
+}
+
+.font-brand-title {
+  font-family: var(--font-brand-title) !important;
 }
