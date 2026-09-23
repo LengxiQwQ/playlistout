@@ -49,6 +49,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; defaultLang
 
   useEffect(() => {
     document.documentElement.lang = language;
+    if (typeof document !== 'undefined') {
+      document.title =
+        language === 'zh-CN'
+          ? 'PlaylistOut - 把你的歌单带走 | Paste. Parse. Export.'
+          : 'PlaylistOut - Paste. Parse. Export.';
+    }
     try {
       localStorage.setItem(STORAGE_KEY, language);
     } catch {

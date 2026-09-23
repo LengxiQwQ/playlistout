@@ -78,9 +78,16 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             userSelect: 'none',
           }}
         >
-          <h1 className="font-marker header-brand-title">
-            PlaylistOut
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem', flexWrap: 'wrap' }}>
+            <h1 className="font-marker header-brand-title">
+              PlaylistOut
+            </h1>
+            {t.header.brandChineseName && (
+              <span className="font-note header-brand-cn">
+                · {t.header.brandChineseName}
+              </span>
+            )}
+          </div>
           <div className="header-brand-tagline font-handwriting">
             {t.header.brandTagline}
           </div>

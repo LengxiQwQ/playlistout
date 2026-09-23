@@ -2,6 +2,7 @@ import type { Translations } from './types';
 
 export const zhCN: Translations = {
   header: {
+    brandChineseName: '把你的歌单带走',
     brandTagline: '粘贴 · 解析 · 导出',
     previewLink: '效果预览',
     numbersLink: '手账数据',
@@ -39,7 +40,7 @@ export const zhCN: Translations = {
     noLoginDoodle: '免登录 · 干净清爽 :)',
     subtitle: '一本把你喜爱的歌单轻松带走的数字音乐手账。',
     titlePrefix: '把你的 ',
-    titleHighlight: '歌单带走。',
+    titleHighlight: '歌单带走',
   },
   search: {
     badge: '跨平台公开歌单解析',
@@ -197,7 +198,7 @@ export const zhCN: Translations = {
     viewDataNotice: '查看数据说明',
     closeLabel: '关闭隐私说明',
     section1Title: '1. 仅限公开歌单',
-    section1Content: 'PlaylistOut 支持解析公开网页可访问的 QQ 音乐、网易云音乐与酷狗音乐歌单（支持免登录公开预览及酷狗 App 扫码安全授权解锁）。我们无法、也不会尝试获取或解析任何私密歌单、仅自己可见或未授权的受限内容。',
+    section1Content: 'PlaylistOut（把你的歌单带走）支持解析公开网页可访问的 QQ 音乐、网易云音乐与酷狗音乐歌单（支持免登录公开预览及酷狗 App 扫码安全授权解锁）。我们无法、也不会尝试获取或解析任何私密歌单、仅自己可见或未授权的受限内容。',
     section2Title: '2. 零数据持久化存储',
     section2Content: '服务端（Cloudflare Worker）采用纯无状态设计。处理完成后即时返回结果，绝不在服务器持久化存储您提交的歌单链接、歌单 ID、歌曲列表、歌曲标题、歌手、专辑等任何歌单内容。',
     section3Title: '3. 浏览器本地安全导出',
@@ -209,7 +210,8 @@ export const zhCN: Translations = {
     confirmButton: '我知道了',
   },
   footer: {
-    drawnBy: '为歌单备份与导出而生的手账音乐日记',
+    brandChineseName: '把你的歌单带走',
+    drawnBy: '把你的歌单带走 · 为备份与导出而生的手账音乐日记',
     runningBadge: '✦ 始于 2026-09-12 · 已安全稳定运行 {days} 天 · 累计温暖相伴 {visitors} 人次 ✦',
     copyrightPrefix: '© 2026 PlaylistOut by LengxiQwQ · 遵循开源许可协议 ',
     licenseText: 'MIT',
@@ -224,7 +226,7 @@ export const zhCN: Translations = {
     privacyLink: '隐私政策',
     issuesLink: '反馈建议',
     authorCardTitle: '联系作者',
-    authorCardSubtitle: 'PlaylistOut 开发者信息与交流反馈',
+    authorCardSubtitle: 'PlaylistOut（把你的歌单带走）开发者信息与交流反馈',
     authorNameLabel: '作者',
     authorGithubLabel: 'GitHub',
     authorEmailLabel: 'Email',
