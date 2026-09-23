@@ -314,7 +314,7 @@ async function resolveServiceCore(
 
   // ── Input platform & type contract validation ──
   let detectedPlatform: SupportedPlatform | null = null;
-  if (/y\.qq\.com/i.test(trimmed)) {
+  if (/(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed)) {
     detectedPlatform = 'qqmusic';
   } else if (/(?:music\.163\.com|163cn\.tv)/i.test(trimmed)) {
     detectedPlatform = 'netease';
@@ -343,9 +343,14 @@ async function resolveServiceCore(
   }
 
   // Detect explicit user profile URLs
+  const isQQPlaylistCandidate =
+    /(?:playlist|taoge|playsquare)/i.test(trimmed) ||
+    /[?&](?:id|disstid|dissid|tid)=\d+/i.test(trimmed);
+
   const isQQProfile =
-    /y\.qq\.com/i.test(trimmed) &&
-    (/(?:[?&]uin=|[?&]hostuin=|\/profile)/i.test(trimmed));
+    /(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed) &&
+    (/(?:portal\/profile|\/profile)/i.test(trimmed) ||
+      (/(?:[?&]uin=|[?&]hostuin=)/i.test(trimmed) && !isQQPlaylistCandidate));
   const isNeteaseProfile =
     /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed) &&
     (/\/user\//i.test(trimmed) || (/[?&]id=\d+/i.test(trimmed) && /user/i.test(trimmed)));
@@ -370,7 +375,8 @@ async function resolveServiceCore(
     (/(?:songlist|gcid_|special\/single)/i.test(trimmed) || /src_cid=[a-zA-Z0-9]+/i.test(trimmed));
 
   const isExplicitPlaylist =
-    (/y\.qq\.com\/n\/ryqq\/playlist\//i.test(trimmed) || (/y\.qq\.com\/.*[?&]id=\d+/i.test(trimmed) && !isQQProfile)) ||
+    (/(?:y\.qq\.com|music\.qq\.com)\/.*(?:playlist|taoge|playsquare)/i.test(trimmed) ||
+      (/(?:y\.qq\.com|music\.qq\.com)\/.*[?&](?:id|disstid|dissid|tid)=\d+/i.test(trimmed) && !isQQProfile)) ||
     (/music\.163\.com\/.*playlist/i.test(trimmed)) ||
     isKugouPlaylist ||
     (qishuiProvider.matches(trimmed));

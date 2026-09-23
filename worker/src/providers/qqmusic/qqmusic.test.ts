@@ -33,6 +33,29 @@ describe('QQ Music Input Validation & Parsing', () => {
     ).toBe('9044196528');
   });
 
+  it('extracts ID from modern web v2 URL (ryqq_v2)', () => {
+    expect(
+      extractQQPlaylistId(
+        'https://y.qq.com/n/ryqq_v2/playlist/9044196528?ADTAG=h5_share_playlist&redirecttag=mn.redirect.custom&mnst=0.83',
+      ),
+    ).toBe('9044196528');
+  });
+
+  it('extracts ID from mobile WeChat share URL (details/playlist.html)', () => {
+    expect(
+      extractQQPlaylistId(
+        'https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx',
+      ),
+    ).toBe('9044196528');
+  });
+
+  it('extracts ID from legacy HTML and playsquare paths', () => {
+    expect(extractQQPlaylistId('https://y.qq.com/n/yqq/playlist/9044196528.html')).toBe('9044196528');
+    expect(extractQQPlaylistId('https://y.qq.com/n/ryqq/playsquare/9044196528')).toBe('9044196528');
+    expect(extractQQPlaylistId('https://y.qq.com/w/taoge.html?id=9044196528')).toBe('9044196528');
+    expect(extractQQPlaylistId('https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg?disstid=9044196528')).toBe('9044196528');
+  });
+
   it('handles surrounding whitespace gracefully', () => {
     expect(extractQQPlaylistId('  https://y.qq.com/n/ryqq/playlist/9044196528  \n')).toBe('9044196528');
     expect(extractQQPlaylistId('   9044196528   ')).toBe('9044196528');
@@ -40,7 +63,10 @@ describe('QQ Music Input Validation & Parsing', () => {
 
   it('matches valid QQ Music inputs correctly', () => {
     expect(matchesQQMusicInput('https://y.qq.com/n/ryqq/playlist/9044196528')).toBe(true);
+    expect(matchesQQMusicInput('https://y.qq.com/n/ryqq_v2/playlist/9044196528')).toBe(true);
     expect(matchesQQMusicInput('https://i.y.qq.com/n2/m/share/details/taoge.html?id=9044196528')).toBe(true);
+    expect(matchesQQMusicInput('https://i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528')).toBe(true);
+    expect(matchesQQMusicInput('https://music.qq.com/playlist/9044196528')).toBe(true);
     expect(matchesQQMusicInput('9044196528')).toBe(true);
     expect(matchesQQMusicInput('https://music.163.com/playlist?id=123456')).toBe(false);
     expect(matchesQQMusicInput('https://example.com/playlist/9044196528')).toBe(false);

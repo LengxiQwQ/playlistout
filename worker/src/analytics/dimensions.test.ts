@@ -23,11 +23,13 @@ describe('Analytics Dimension Classifiers', () => {
 
     it('classifies standard web URLs', () => {
       expect(classifyInputType('https://y.qq.com/n/ryqq/playlist/9044196528')).toBe('web_url');
+      expect(classifyInputType('https://y.qq.com/n/ryqq_v2/playlist/9044196528')).toBe('web_url');
       expect(classifyInputType('y.qq.com/n/ryqq/playlist/12345')).toBe('web_url');
     });
 
     it('classifies mobile share links', () => {
       expect(classifyInputType('https://i.y.qq.com/n2/m/share/details/taoge.html?id=9044196528')).toBe('mobile_share_link');
+      expect(classifyInputType('https://i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528')).toBe('mobile_share_link');
       expect(classifyInputType('https://y.qq.com/n/m/detail/taoge/index.html?id=12345')).toBe('mobile_share_link');
     });
 

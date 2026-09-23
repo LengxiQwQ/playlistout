@@ -45,10 +45,10 @@ export function extractCleanUrlOrInput(input: string): string {
     return url;
   }
 
-  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/..." or "163cn.tv/...")
+  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "i2.y.qq.com/..." or "163cn.tv/...")
   // Ensure it's not a subdomain like c.y.qq.com or preceded by word characters
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:y|i\.y)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:y|i\d*\.y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];
@@ -77,10 +77,25 @@ export function extractUinFromProfileUrl(input: string): string | null {
     const parsed = new URL(cleanUrl);
 
     // QQ Music profile
-    if (parsed.hostname.includes('y.qq.com')) {
-      const uin = parsed.searchParams.get('uin') || parsed.searchParams.get('hostuin');
-      if (uin && /^\d{4,15}$/.test(uin.trim())) {
-        return uin.trim();
+    if (parsed.hostname.includes('y.qq.com') || parsed.hostname.includes('music.qq.com')) {
+      const isPlaylist =
+        parsed.pathname.includes('/playlist') ||
+        parsed.pathname.includes('/taoge') ||
+        parsed.pathname.includes('/playsquare') ||
+        parsed.searchParams.has('disstid') ||
+        parsed.searchParams.has('dissid') ||
+        parsed.searchParams.has('tid') ||
+        (parsed.searchParams.has('id') && !parsed.pathname.includes('/profile'));
+
+      const isProfilePath =
+        parsed.pathname.includes('/profile') ||
+        parsed.pathname.includes('/portal/profile');
+
+      if (isProfilePath || !isPlaylist) {
+        const uin = parsed.searchParams.get('uin') || parsed.searchParams.get('hostuin');
+        if (uin && /^\d{4,15}$/.test(uin.trim())) {
+          return uin.trim();
+        }
       }
     }
 
@@ -231,7 +246,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
   }
 
   // 7. QQ Music URL
-  const isQQUrl = /y\.qq\.com/i.test(trimmed);
+  const isQQUrl = /(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed);
   if (isQQUrl) {
     const profileUin = extractUinFromProfileUrl(trimmed);
     if (profileUin) {
