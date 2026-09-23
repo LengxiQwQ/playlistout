@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="把你的歌单带走 (PlaylistOut)" />
+<img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="PlaylistOut" />
 
-# 把你的歌单带走 (PlaylistOut)
+# PlaylistOut
 
-### 🎵 跨平台在线歌单导出与备份工具
+### 把你的歌单带走
 
 *你的歌单，不应该只困在一个音乐平台里。*
 
@@ -25,14 +25,14 @@
 
 ---
 
-## 💡 为什么做 PlaylistOut（把你的歌单带走）？
+## 💡 为什么做 PlaylistOut？
 
 我们在各大音乐平台上花了很多时间和心血整理歌单，但往往遇到这样的尴尬：
 想换平台听歌时，旧平台的歌单无法直接迁移；想备份自己的心血时，没有一个地方能把歌曲列表以干净的格式导出来；或者只是想把歌曲整理成表格打印、做统计分析，却只能手动一首首复制粘贴。
 
 主流音乐平台的封闭生态把用户的歌单牢牢锁在单一 App 里。
 
-**PlaylistOut（把你的歌单带走）的目标很简单：把公开歌单解析成结构化数据，交还到你的手中。**
+**PlaylistOut 的目标很简单：把公开歌单解析成结构化数据，交还到你的手中。**
 
 - **纯客户端导出**：所有导出文件 100% 在用户浏览器本地内存中生成并触发下载，不回传服务器。
 - **零门槛与安全授权**：QQ 音乐与网易云音乐公开歌单 100% 免登录直接导出全部歌曲；酷狗音乐支持免登录公开预览，亦可使用手机 App 扫码安全授权解锁完整歌单（授权凭据仅保存在浏览器本地，服务器零存储）。无需安装任何扩展或客户端软件。
