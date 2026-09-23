@@ -18,7 +18,7 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
-    const title = screen.getByRole('heading', { level: 1, name: 'PlaylistOut' });
+    const title = screen.getByRole('heading', { level: 1, name: 'Playlist Out' });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('font-marker');
 
@@ -38,7 +38,7 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
-    const title = screen.getByRole('heading', { level: 1, name: 'PlaylistOut' });
+    const title = screen.getByRole('heading', { level: 1, name: 'Playlist Out' });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('font-marker');
 
@@ -55,7 +55,7 @@ describe('Header Component', () => {
       </LanguageProvider>
     );
 
-    const logoImg = screen.getByAltText('PlaylistOut Logo');
+    const logoImg = screen.getByAltText('Playlist Out Logo');
     expect(logoImg).toBeInTheDocument();
 
     const githubLink = screen.getByRole('link', { name: /Star on GitHub/i });

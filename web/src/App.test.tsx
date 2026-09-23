@@ -49,7 +49,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
 
   it('renders initial idle state with heading, input and sample links', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PlaylistOut');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Playlist Out');
     expect(screen.getByPlaceholderText(/粘贴公开歌单链接/)).toBeInTheDocument();
     expect(screen.getByText('QQ音乐批量')).toBeInTheDocument();
   });

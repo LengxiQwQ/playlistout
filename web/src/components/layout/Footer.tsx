@@ -135,7 +135,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             <img
               src="/logo-64.png"
               srcSet="/logo-64.png 1x, /logo-128.png 2x"
-              alt="PlaylistOut Logo"
+              alt="Playlist Out Logo"
               width={30}
               height={30}
               style={{
@@ -154,7 +154,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 color: 'var(--ink, #2d3436)',
               }}
             >
-              PlaylistOut
+              Playlist Out
             </span>
           </div>
         </div>
