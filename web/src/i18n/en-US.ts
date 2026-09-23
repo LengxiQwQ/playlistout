@@ -2,7 +2,6 @@ import type { Translations } from './types';
 
 export const enUS: Translations = {
   header: {
-    brandTitle: 'PlaylistOut',
     brandChineseName: '',
     brandTagline: 'Paste. Parse. Export.',
     previewLink: 'Preview',
@@ -211,7 +210,6 @@ export const enUS: Translations = {
     confirmButton: 'Got it',
   },
   footer: {
-    brandTitle: 'PlaylistOut',
     brandChineseName: '',
     drawnBy: 'Handcrafted music journal for playlist backup & export',
     runningBadge: '✦ Launched 2026-09-12 · Safely running for {days} days · Accompanied {visitors} daily visits ✦',

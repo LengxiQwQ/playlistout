@@ -38,19 +38,12 @@
 }
 
 .header-brand-title {
-  font-family: var(--font-brand-title) !important;
-  font-size: 2.1rem;
+  font-size: 2rem;
   line-height: 1.1;
   color: var(--ink, #2d3436);
   margin: 0;
   text-align: left;
-  letter-spacing: 0.03em;
   transition: color 0.18s ease;
-}
-
-.footer-brand-title {
-  font-family: var(--font-brand-title) !important;
-  letter-spacing: 0.03em;
 }
 
 
