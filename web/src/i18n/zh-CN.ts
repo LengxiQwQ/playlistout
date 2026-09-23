@@ -2,6 +2,7 @@ import type { Translations } from './types';
 
 export const zhCN: Translations = {
   header: {
+    brandTitle: '把你的歌单带走',
     brandChineseName: '把你的歌单带走',
     brandTagline: '粘贴 · 解析 · 导出',
     previewLink: '效果预览',
@@ -210,6 +211,7 @@ export const zhCN: Translations = {
     confirmButton: '我知道了',
   },
   footer: {
+    brandTitle: '把你的歌单带走',
     brandChineseName: '把你的歌单带走',
     drawnBy: '把你的歌单带走 · 为备份与导出而生的手账音乐日记',
     runningBadge: '✦ 始于 2026-09-12 · 已安全稳定运行 {days} 天 · 累计温暖相伴 {visitors} 人次 ✦',

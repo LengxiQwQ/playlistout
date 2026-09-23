@@ -9,7 +9,7 @@ describe('Footer Component', () => {
     render(<Footer onOpenPrivacy={onOpenPrivacyMock} />);
 
     // Brand and Tagline
-    expect(screen.getByText('PlaylistOut')).toBeInTheDocument();
+    expect(screen.getByText('把你的歌单带走')).toBeInTheDocument();
 
     // Action Links
     expect(screen.getByRole('link', { name: /GitHub/i })).toHaveAttribute(

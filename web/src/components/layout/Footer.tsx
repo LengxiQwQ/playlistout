@@ -154,21 +154,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 color: 'var(--ink, #2d3436)',
               }}
             >
-              PlaylistOut
+              {t.footer.brandTitle}
             </span>
-            {t.footer.brandChineseName && (
-              <span
-                className="font-note"
-                style={{
-                  fontSize: '1.15rem',
-                  color: 'var(--ink-light, #636e72)',
-                  fontWeight: 600,
-                  marginLeft: '0.45rem',
-                }}
-              >
-                · {t.footer.brandChineseName}
-              </span>
-            )}
           </div>
         </div>
 
