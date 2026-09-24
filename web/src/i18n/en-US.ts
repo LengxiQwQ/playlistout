@@ -88,6 +88,9 @@ export const enUS: Translations = {
     internalError: 'Server error occurred while processing the playlist. Please try again.',
     genericError: 'Failed to parse playlist. Please try again.',
     retry: 'Retry',
+    feedbackButton: 'Report this',
+    feedbackSubmitted: 'Reported ✓',
+    feedbackNotice: 'Clicking will send your playlist link to the developer to help fix parsing.',
   },
   result: {
     doneParsingHint: 'done parsing? ↓ your result lands right here',

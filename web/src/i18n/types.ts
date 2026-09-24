@@ -88,6 +88,9 @@ export interface Translations {
     internalError: string;
     genericError: string;
     retry: string;
+    feedbackButton: string;
+    feedbackSubmitted: string;
+    feedbackNotice: string;
   };
   result: {
     doneParsingHint: string;

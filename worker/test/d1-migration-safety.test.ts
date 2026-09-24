@@ -87,13 +87,13 @@ function makeQueryFn(db: DatabaseSync) {
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0008 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0009 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(8);
-      expect(result.files).toHaveLength(8);
+      expect(result.count).toBe(9);
+      expect(result.files).toHaveLength(9);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
-      expect(result.files[7]).toBe('0008_security_rate_limits.sql');
+      expect(result.files[8]).toBe('0009_parse_feedback.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -155,9 +155,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 8 migrations sequentially from empty database', () => {
+    it('applies all 9 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(8);
+      expect(applied).toHaveLength(9);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -167,6 +167,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0006_seed_netease_platform_stats.sql',
         '0007_cleanup_seeded_fake_stats.sql',
         '0008_security_rate_limits.sql',
+        '0009_parse_feedback.sql',
       ]);
     });
 
@@ -176,7 +177,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(8);
+      expect(verification.appliedMigrationsCount).toBe(9);
       expect(verification.pendingCount).toBe(0);
 
       // Verify specific critical columns
@@ -266,7 +267,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('resumes from partially applied state (0001-0004 -> applies 0005-0008)', async () => {
+    it('resumes from partially applied state (0001-0004 -> applies 0005-0009)', async () => {
       // Simulate database that only applied 0001 to 0004
       const firstBatch = [
         '0001_initial_stats.sql',
@@ -294,12 +295,13 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0006_seed_netease_platform_stats.sql',
         '0007_cleanup_seeded_fake_stats.sql',
         '0008_security_rate_limits.sql',
+        '0009_parse_feedback.sql',
       ]);
 
       // Verify schema is now complete
       const verification = await verifyD1Schema({ queryFn: makeQueryFn(db) });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(8);
+      expect(verification.appliedMigrationsCount).toBe(9);
       expect(verification.pendingCount).toBe(0);
     });
   });
@@ -414,6 +416,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         (r) => r.name
       );
       expect(recorded).toEqual(HISTORICAL_BASELINE_MIGRATIONS);
+
+      // Apply pending 0009 migration on top of baseline
+      applyMigrationsToDb(db);
 
       // Normal schema verification now passes
       const verification = await verifyD1Schema({ queryFn });
@@ -736,7 +741,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(5);
+      expect(res.pendingCount).toBe(6);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -768,7 +773,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
         db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
       }
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -787,11 +793,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
         db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
       }
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(8);
+      expect(res.appliedCount).toBe(9);
       expect(res.pendingCount).toBe(0);
     });
 

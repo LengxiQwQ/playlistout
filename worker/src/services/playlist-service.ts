@@ -36,6 +36,10 @@ export async function parsePlaylistService(
 ): Promise<PlaylistServiceResult> {
   const { rawInput, platformParam, auth, request, db, ctx } = options;
 
+  // Sample requests (triggered by website example links) are excluded from analytics
+  const isSampleRequest = request?.headers.get('x-sample-request') === '1';
+  const shouldSkipAnalytics = options.skipAnalytics || isSampleRequest;
+
   if (!rawInput || rawInput.trim().length === 0) {
     throw new ProviderError('INVALID_INPUT', 'Missing or empty required playlist input.', 400);
   }
@@ -148,7 +152,7 @@ export async function parsePlaylistService(
     const latencyMs = Date.now() - startTime;
 
     // Best-effort anonymous statistics recording (success)
-    if (!options.skipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
+    if (!shouldSkipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
         recordParseEvent(db, {
           request,
@@ -169,7 +173,7 @@ export async function parsePlaylistService(
     const errorCategory = classifyErrorCategory(errorCode);
 
     // Best-effort anonymous statistics recording (failure)
-    if (!options.skipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
+    if (!shouldSkipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
         recordParseEvent(db, {
           request,

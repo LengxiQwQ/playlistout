@@ -234,6 +234,12 @@ export async function resolveService(
     requestedPlatform: classifyResolveRequestedPlatform(platform),
   };
 
+  // Sample requests (triggered by website example links) are excluded from analytics
+  const isSampleRequest = request?.headers.get('x-sample-request') === '1';
+  if (isSampleRequest) {
+    return resolveServiceCore(options, tracking);
+  }
+
   try {
     const data = await resolveServiceCore(options, tracking);
     return recordResolveSuccess(request, db, ctx, q || '', startTime, data, tracking);

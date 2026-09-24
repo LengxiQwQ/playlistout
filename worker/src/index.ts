@@ -5,6 +5,7 @@ import { getPublicStats, getMaintainerStats } from './stats';
 import { recordRateLimitEvent } from './analytics/recorder';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
+import { handleFeedback, handleInternalFeedback } from './routes/feedback';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit } from './security/rate-limit';
 import { parsePlaylistService } from './services/playlist-service';
@@ -822,6 +823,16 @@ export default {
     // ── Frontend Event Ingestion Endpoint (POST /api/event) ──
     if (url.pathname === '/api/event') {
       return handleEvent(request, _env, _ctx, responseHeaders);
+    }
+
+    // ── Parse Failure Feedback Endpoint (POST /api/feedback) ──
+    if (url.pathname === '/api/feedback') {
+      return handleFeedback(request, _env, _ctx, responseHeaders);
+    }
+
+    // ── Maintainer Feedback Management (GET/PUT /api/internal/feedback) ──
+    if (url.pathname === '/api/internal/feedback') {
+      return handleInternalFeedback(request, _env, responseHeaders, constantTimeCompare);
     }
 
     // Default 404

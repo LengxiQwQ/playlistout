@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Playlist, UserPlaylistsData, ApiError } from './api/types';
-import { parsePlaylist, fetchUserPlaylists, recordVisit } from './api/client';
+import { parsePlaylist, fetchUserPlaylists, recordVisit, submitFeedback } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
 import { clearKugouAuth } from './utils/kugouAuth';
 import { LanguageProvider, useTranslation } from './i18n';
@@ -30,6 +30,7 @@ export const AppContent: React.FC = () => {
   const [userPlaylists, setUserPlaylists] = useState<UserPlaylistsData | null>(null);
   const [hasCollision, setHasCollision] = useState<boolean>(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [disambiguationCandidates, setDisambiguationCandidates] = useState<DisambiguationItem[]>([]);
   const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
@@ -95,6 +96,7 @@ export const AppContent: React.FC = () => {
       urlToParse?: string,
       platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
       modeHint?: 'user' | 'playlist',
+      isSample?: boolean,
     ) => {
       const rawTarget = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
@@ -127,6 +129,7 @@ export const AppContent: React.FC = () => {
       setState('loading');
       setError(null);
       setHasCollision(false);
+      setFeedbackSubmitted(false);
 
       // Smoothly bring user to top so loading animation in SearchNote is visible
       if (typeof window !== 'undefined' && typeof window.scrollY === 'number' && window.scrollY > 80) {
@@ -171,7 +174,7 @@ export const AppContent: React.FC = () => {
               : platformHint === 'qqmusic'
               ? 'qqmusic'
               : undefined;
-          const res = await parsePlaylist(targetUrl, controller.signal, platform);
+          const res = await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
@@ -445,6 +448,7 @@ export const AppContent: React.FC = () => {
     setUserPlaylists(null);
     setError(null);
     setHasCollision(false);
+    setFeedbackSubmitted(false);
     setViewMode('single');
     setDisambiguationCandidates([]);
     setIsDisambiguationOpen(false);
@@ -490,10 +494,22 @@ export const AppContent: React.FC = () => {
       modeHint?: 'user' | 'playlist',
     ) => {
       setInputUrl(sampleInput);
-      handleParse(sampleInput, platformHint, modeHint);
+      handleParse(sampleInput, platformHint, modeHint, true);
     },
     [handleParse],
   );
+
+  /**
+   * Submits the current failed playlist URL for maintainer review.
+   * Only shown for parse-related errors (not rate-limit or local network errors).
+   */
+  const handleFeedback = useCallback(async () => {
+    if (!error || feedbackSubmitted) return;
+    const result = await submitFeedback(inputUrl, error.code);
+    if (result.success) {
+      setFeedbackSubmitted(true);
+    }
+  }, [error, feedbackSubmitted, inputUrl]);
 
   const handleReturnToBatch = useCallback(() => {
     if (userPlaylists) {
@@ -605,6 +621,8 @@ export const AppContent: React.FC = () => {
               isLoading={state === 'loading'}
               error={state === 'error' ? error : null}
               onRetry={() => handleParse()}
+              onFeedback={handleFeedback}
+              feedbackSubmitted={feedbackSubmitted}
               onSelectSample={handleQuickSample}
             />
           </div>

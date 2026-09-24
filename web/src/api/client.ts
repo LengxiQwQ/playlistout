@@ -214,6 +214,7 @@ export async function parsePlaylist(
   signal?: AbortSignal,
   platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
   authOptions?: { token?: string; userid?: string },
+  isSample?: boolean,
 ): Promise<ApiResponse<Playlist>> {
   const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
 
@@ -235,6 +236,9 @@ export async function parsePlaylist(
   const requestHeaders: Record<string, string> = {
     Accept: 'application/json',
   };
+  if (isSample) {
+    requestHeaders['X-Sample-Request'] = '1';
+  }
   if (token) {
     requestHeaders['Authorization'] = `Bearer ${token}`;
     if (userid) {
@@ -823,3 +827,40 @@ export async function recordClipboardEvent(
   }
 }
 
+
+/**
+ * Submits a failed playlist URL for maintainer review.
+ * Users explicitly opt in by clicking "一键反馈" on error cards.
+ * The URL and error code are stored so the maintainer can diagnose and fix parsing issues.
+ *
+ * PRIVACY: Only the submitted URL, error code, and optional platform hint are sent.
+ * No user identifiers, IP, or device information is transmitted by this function.
+ */
+export async function submitFeedback(
+  url: string,
+  errorCode: string,
+  platform?: string,
+): Promise<{ success: boolean; alreadyReported?: boolean }> {
+  const payload = JSON.stringify({ url, errorCode, platform });
+  const endpoint = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/feedback`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+    if (res.ok) {
+      try {
+        const data = await res.json();
+        return { success: true, alreadyReported: data?.alreadyReported };
+      } catch {
+        return { success: true };
+      }
+    }
+    return { success: false };
+  } catch {
+    return { success: false };
+  }
+}

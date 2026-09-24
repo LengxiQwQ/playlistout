@@ -527,6 +527,8 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
       'https://qishui.douyin.com/s/iXHhKHhY/',
       expect.any(AbortSignal),
       undefined,
+      undefined,
+      true,
     );
     expect(await screen.findByTestId('playlist-summary')).toBeInTheDocument();
     expect(screen.getByText('汽水音乐精选')).toBeInTheDocument();
