@@ -64,32 +64,27 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
       {hasActions && (
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
             paddingTop: '0.75rem',
             marginTop: '0.75rem',
             borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
-            flexWrap: 'wrap',
+            lineHeight: 2.2,
           }}
         >
           {feedbackNotice && (
-            <p
+            <span
               className="font-handwriting"
               style={{
                 fontSize: '0.82rem',
                 color: 'var(--ink-light, #636e72)',
-                margin: 0,
                 lineHeight: 1.4,
-                flex: '1 1 200px',
-                maxWidth: '60%',
+                marginRight: '0.75rem',
+                verticalAlign: 'middle',
               }}
             >
               {feedbackNotice}
-            </p>
+            </span>
           )}
-          <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0, marginLeft: 'auto' }}>
+          <span style={{ display: 'inline-flex', gap: '0.6rem', verticalAlign: 'middle' }}>
             {onRetry && (
               <button
                 type="button"
@@ -128,7 +123,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 {feedbackSubmitted ? feedbackSubmittedLabel : feedbackLabel}
               </button>
             )}
-          </div>
+          </span>
         </div>
       )}
     </div>
