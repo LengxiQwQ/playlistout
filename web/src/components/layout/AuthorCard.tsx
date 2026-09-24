@@ -212,9 +212,11 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
           }}
         >
           <div
-            className="font-marker"
             style={{
+              fontFamily:
+                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif',
               fontSize: '1.18rem',
+              fontWeight: 700,
               color: 'var(--ink, #2d3436)',
               lineHeight: 1.2,
             }}
