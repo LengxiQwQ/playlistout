@@ -88,6 +88,9 @@ export const zhCN: Translations = {
     internalError: '服务器处理歌单时出现异常，请稍后重试。',
     genericError: '解析歌单失败，请稍后重试。',
     retry: '重试',
+    feedbackButton: '一键反馈',
+    feedbackSubmitted: '已反馈 ✓',
+    feedbackNotice: '点击后会将你的歌单链接发送给作者，用于修复解析问题。',
   },
   result: {
     doneParsingHint: '解析完毕？↓ 你的结果就在这里',

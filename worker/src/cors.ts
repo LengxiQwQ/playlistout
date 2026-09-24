@@ -93,19 +93,19 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token',
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request',
       'Access-Control-Max-Age': '86400',
     };
   }
 
   // Strictly no browser CORS for internal maintainer endpoints (R6 Requirement 19 & 46)
-  if (path === '/api/internal/stats') {
+  if (path === '/api/internal/stats' || path === '/api/internal/feedback') {
     return {
       Vary: 'Origin',
     };
   }
 
-  if (path === '/api/event') {
+  if (path === '/api/event' || path === '/api/feedback') {
     const origin = request.headers.get('Origin');
     const headers: Record<string, string> = {
       Vary: 'Origin',
@@ -130,7 +130,7 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] =
-      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token';
+      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request';
     headers['Access-Control-Max-Age'] = '86400';
   }
 
@@ -147,7 +147,7 @@ export function handleOptions(request: Request, pathname?: string): Response {
   })();
 
   // Strictly reject browser preflight on internal maintainer endpoints (R6)
-  if (path === '/api/internal/stats') {
+  if (path === '/api/internal/stats' || path === '/api/internal/feedback') {
     return new Response(null, {
       status: 403,
       headers: { Vary: 'Origin' },
@@ -161,7 +161,7 @@ export function handleOptions(request: Request, pathname?: string): Response {
     });
   }
 
-  if (path === '/api/event') {
+  if (path === '/api/event' || path === '/api/feedback') {
     const origin = request.headers.get('Origin');
     if (!origin || !isEventOriginAllowed(origin)) {
       return new Response(null, {

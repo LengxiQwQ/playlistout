@@ -7,6 +7,11 @@ export interface StatusAlertProps {
   onRetry?: () => void;
   title?: string;
   retryLabel?: string;
+  onFeedback?: () => void;
+  feedbackLabel?: string;
+  feedbackSubmittedLabel?: string;
+  feedbackNotice?: string;
+  feedbackSubmitted?: boolean;
 }
 
 export const StatusAlert: React.FC<StatusAlertProps> = ({
@@ -16,6 +21,11 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
   onRetry,
   title,
   retryLabel = '重试',
+  onFeedback,
+  feedbackLabel = '一键反馈',
+  feedbackSubmittedLabel = '已反馈 ✓',
+  feedbackNotice,
+  feedbackSubmitted = false,
 }) => {
   const isError = type === 'error';
   const defaultTitle = isError ? 'Oops —' : 'Note —';
@@ -34,7 +44,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-        <div>
+        <div style={{ flex: 1 }}>
           <div
             className="font-marker"
             style={{
@@ -72,26 +82,61 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
               CODE: {code}
             </span>
           )}
+          {feedbackNotice && (
+            <p
+              className="font-handwriting"
+              style={{
+                fontSize: '0.85rem',
+                color: 'var(--ink-light, #636e72)',
+                margin: '0.5rem 0 0',
+                lineHeight: 1.4,
+              }}
+            >
+              {feedbackNotice}
+            </p>
+          )}
         </div>
 
-        {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="btn-retry sticker font-handwriting"
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.1rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              alignSelf: 'center',
-            }}
-          >
-            {retryLabel}
-          </button>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end', flexShrink: 0 }}>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="btn-retry sticker font-handwriting"
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {retryLabel}
+            </button>
+          )}
+          {onFeedback && (
+            <button
+              type="button"
+              onClick={onFeedback}
+              disabled={feedbackSubmitted}
+              className="btn-feedback sticker font-handwriting"
+              style={{
+                backgroundColor: feedbackSubmitted ? '#d4edda' : '#e8f5e9',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1rem',
+                fontWeight: 700,
+                cursor: feedbackSubmitted ? 'default' : 'pointer',
+                whiteSpace: 'nowrap',
+                opacity: feedbackSubmitted ? 0.8 : 1,
+                border: '1px solid #81c784',
+                color: '#2e7d32',
+              }}
+            >
+              {feedbackSubmitted ? feedbackSubmittedLabel : feedbackLabel}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

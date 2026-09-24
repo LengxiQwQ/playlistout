@@ -20,6 +20,8 @@ export interface SearchNoteProps {
   isLoading: boolean;
   error: ApiError | null;
   onRetry: () => void;
+  onFeedback?: () => void;
+  feedbackSubmitted?: boolean;
   onSelectSample: (
     sampleId: string,
     platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
@@ -35,6 +37,8 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
   isLoading,
   error,
   onRetry,
+  onFeedback,
+  feedbackSubmitted = false,
   onSelectSample,
 }) => {
   const { t, language } = useTranslation();
@@ -295,6 +299,15 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             code={error.code}
             onRetry={onRetry}
             retryLabel={t.errors.retry}
+            onFeedback={
+              onFeedback && error.code !== 'RATE_LIMITED' && error.code !== 'NETWORK_ERROR'
+                ? onFeedback
+                : undefined
+            }
+            feedbackLabel={t.errors.feedbackButton}
+            feedbackSubmittedLabel={t.errors.feedbackSubmitted}
+            feedbackNotice={t.errors.feedbackNotice}
+            feedbackSubmitted={feedbackSubmitted}
           />
         )}
 
