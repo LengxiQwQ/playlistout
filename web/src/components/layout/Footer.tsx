@@ -230,7 +230,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               onClick={() => setIsAuthorOpen(!isAuthorOpen)}
               aria-haspopup="dialog"
               aria-expanded={isAuthorOpen}
-              aria-label={t.footer.authorCardTitle}
+              aria-label={t.footer.authorLink}
               className={`sticker font-handwriting footer-pill-link ${isAuthorOpen ? 'is-active' : ''}`}
               style={{
                 display: 'inline-flex',
