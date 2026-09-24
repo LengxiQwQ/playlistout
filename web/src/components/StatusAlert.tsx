@@ -67,24 +67,27 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
             paddingTop: '0.75rem',
             marginTop: '0.75rem',
             borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
-            lineHeight: 2.2,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '0.5rem 0.75rem',
           }}
         >
           {feedbackNotice && (
             <span
               className="font-handwriting"
               style={{
+                flex: '1 1 0',
+                minWidth: 0,
                 fontSize: '0.82rem',
                 color: 'var(--ink-light, #636e72)',
-                lineHeight: 1.4,
-                marginRight: '0.75rem',
-                verticalAlign: 'middle',
+                lineHeight: 1.5,
               }}
             >
               {feedbackNotice}
             </span>
           )}
-          <span style={{ display: 'inline-flex', gap: '0.6rem', verticalAlign: 'middle' }}>
+          <span style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
             {onRetry && (
               <button
                 type="button"
