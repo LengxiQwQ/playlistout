@@ -156,6 +156,38 @@ def fetch_stats(url: str, token: str | None = None, retries: int = 3) -> dict:
                 raise
 
 
+
+
+FEEDBACK_API_URL = "https://playlistout-api.lengxiqwq.com/api/internal/feedback"
+
+
+def fetch_feedback(token: str, status: str = "", limit: int = 200) -> dict:
+    """Fetch user-reported parse error feedback (requires Bearer Token)."""
+    effective_token = (token or "").strip()
+    if not effective_token:
+        raise ValueError("Missing admin token (INSIGHTS_ADMIN_TOKEN).")
+
+    url = f"{FEEDBACK_API_URL}?limit={limit}"
+    if status:
+        url += f"&status={status}"
+
+    headers = {
+        "User-Agent": "PlaylistOut-Dashboard/2.0 (local-bilingual)",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {effective_token}",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("success") and isinstance(data.get("data"), dict):
+                return data["data"]
+            raise ValueError(f"API response error: {data}")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            raise PermissionError("Auth failed (401): check INSIGHTS_ADMIN_TOKEN.")
+        raise
+
 # ── 3. 辅助格式化 (Formatting Helpers) ────────────────────────────────
 
 def s(val, default=0):
@@ -512,7 +544,10 @@ def build_html(
     fetched_at_display: str | None = None,
     _legacy_fetched_at_utc: str | None = None,
     now: dt.datetime | None = None,
+    feedback_entries: list | None = None,
+    admin_token: str = "",
 ) -> str:
+    feedback_json = json.dumps(feedback_entries or [], ensure_ascii=False)
     # 基础指标与 Uptime (严格以 UTC+8 日期基准计算)
     raw_launched = stats.get("launchedAt")
     effective_launched = raw_launched if raw_launched is not None else PROJECT_LAUNCHED_AT
@@ -1106,6 +1141,142 @@ def build_html(
       text-decoration: none;
     }}
 
+
+    /* Feedback Management Panel */
+    .feedback-panel {{
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }}
+    .feedback-toolbar {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }}
+    .feedback-filters {{
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }}
+    .fb-filter-btn {{
+      padding: 0.35rem 0.85rem;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #475569;
+      transition: all 0.15s;
+    }}
+    .fb-filter-btn:hover {{ background: #f1f5f9; }}
+    .fb-filter-btn.active {{
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }}
+    .feedback-stats {{
+      font-size: 0.85rem;
+      color: #64748b;
+    }}
+    .feedback-table-wrap {{
+      overflow-x: auto;
+    }}
+    .feedback-table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }}
+    .feedback-table th {{
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+      color: #475569;
+      font-weight: 600;
+      white-space: nowrap;
+    }}
+    .feedback-table td {{
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }}
+    .feedback-table tr:hover {{ background: #f8fafc; }}
+    .fb-url-cell {{
+      max-width: 320px;
+    }}
+    .fb-url-text {{
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #334155;
+      cursor: pointer;
+    }}
+    .fb-url-text:hover {{ color: #2563eb; text-decoration: underline; }}
+    .fb-copy-hint {{
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }}
+    .fb-status {{
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }}
+    .fb-status.pending {{ background: #fef3c7; color: #92400e; }}
+    .fb-status.resolved {{ background: #d1fae5; color: #065f46; }}
+    .fb-status.ignored {{ background: #e2e8f0; color: #475569; }}
+    .fb-actions {{
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }}
+    .fb-action-btn {{
+      padding: 0.2rem 0.55rem;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #475569;
+      transition: all 0.15s;
+    }}
+    .fb-action-btn:hover {{ background: #f1f5f9; }}
+    .fb-action-btn.resolve:hover {{ background: #d1fae5; border-color: #6ee7b7; color: #065f46; }}
+    .fb-action-btn.ignore:hover {{ background: #e2e8f0; color: #334155; }}
+    .fb-action-btn.pending-btn:hover {{ background: #fef3c7; border-color: #fcd34d; color: #92400e; }}
+    .fb-action-btn:disabled {{ opacity: 0.5; cursor: not-allowed; }}
+    .feedback-empty {{
+      text-align: center;
+      padding: 2rem;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }}
+    .fb-toast {{
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 0.75rem 1.25rem;
+      background: #1e293b;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }}
+    .fb-toast.show {{ opacity: 1; }}
+
     @media (max-width: 640px) {{
       body {{ padding: 12px; }}
       .chart-grid, .chart-grid-3 {{ grid-template-columns: 1fr; }}
@@ -1625,6 +1796,41 @@ def build_html(
     </div>
   </div>
 
+  <!-- Feedback Management Panel -->
+  <div class="section-title" style="margin-top:2rem;">🐛 解析失败反馈 <span>/ Parse Error Feedback</span></div>
+  <div class="feedback-panel">
+    <div class="feedback-toolbar">
+      <div class="feedback-filters">
+        <button class="fb-filter-btn active" data-status="">全部 / All</button>
+        <button class="fb-filter-btn" data-status="pending">待处理 / Pending</button>
+        <button class="fb-filter-btn" data-status="resolved">已修复 / Resolved</button>
+        <button class="fb-filter-btn" data-status="ignored">已忽略 / Ignored</button>
+      </div>
+      <div class="feedback-stats" id="feedbackStats"></div>
+    </div>
+    <div class="feedback-table-wrap">
+      <table class="feedback-table" id="feedbackTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>歌单链接 / Playlist URL</th>
+            <th>错误码 / Error Code</th>
+            <th>平台 / Platform</th>
+            <th>状态 / Status</th>
+            <th>反馈次数 / Reports</th>
+            <th>首次反馈 / First</th>
+            <th>最后反馈 / Last</th>
+            <th>操作 / Actions</th>
+          </tr>
+        </thead>
+        <tbody id="feedbackTbody"></tbody>
+      </table>
+    </div>
+    <div class="feedback-empty" id="feedbackEmpty" style="display:none;">暂无反馈记录 / No feedback records yet</div>
+  </div>
+  <script type="application/json" id="fbData">{feedback_json}</script>
+  <script type="text/plain" id="fbToken">{admin_token}</script>
+
   <footer>
     PlaylistOut 本地数据仪表板 &middot; 数据源: <a href="{API_URL}" target="_blank">{API_URL}</a> &middot; Local Fetched: {local_fetched_str} &middot; Storage Timezone: UTC · Display selectable above
   </footer>
@@ -2098,6 +2304,91 @@ def build_html(
     createDonut('chartResReqType', {res_req_type_labels}, {res_req_type_counts}, {res_req_type_pcts});
     createDonut('chartResReqPlat', {res_req_plat_labels}, {res_req_plat_counts}, {res_req_plat_pcts});
     createDonut('chartResInputType', {res_input_type_labels}, {res_input_type_counts}, {res_input_type_pcts});
+
+    // ── Feedback Management Panel ──
+    (function() {{
+      const FB_API = "https://playlistout-api.lengxiqwq.com/api/internal/feedback";
+      const FB_TOKEN = document.getElementById("fbToken")?.textContent || "";
+      let fbEntries = [];
+      try {{ fbEntries = JSON.parse(document.getElementById("fbData")?.textContent || "[]"); }} catch(e) {{ fbEntries = []; }}
+      let fbCurrentFilter = "";
+
+      function fbEscapeHtml(s) {{
+        const d = document.createElement("div");
+        d.textContent = s == null ? "" : String(s);
+        return d.innerHTML;
+      }}
+      function fbFormatDate(iso) {{
+        if (!iso) return "—";
+        try {{ return new Date(iso).toLocaleString("zh-CN", {{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}}); }} catch(e) {{ return iso; }}
+      }}
+      function fbShowToast(msg) {{
+        let t = document.getElementById("fbToast");
+        if (!t) {{ t = document.createElement("div"); t.id = "fbToast"; t.className = "fb-toast"; document.body.appendChild(t); }}
+        t.textContent = msg; t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2500);
+      }}
+      function fbRender() {{
+        const tbody = document.getElementById("feedbackTbody");
+        const empty = document.getElementById("feedbackEmpty");
+        const stats = document.getElementById("feedbackStats");
+        if (!tbody) return;
+        const filtered = fbCurrentFilter ? fbEntries.filter(e => e.status === fbCurrentFilter) : fbEntries;
+        const pending = fbEntries.filter(e => e.status === "pending").length;
+        const resolved = fbEntries.filter(e => e.status === "resolved").length;
+        const ignored = fbEntries.filter(e => e.status === "ignored").length;
+        if (stats) stats.textContent = "总计 " + fbEntries.length + " · 待处理 " + pending + " · 已修复 " + resolved + " · 已忽略 " + ignored;
+        if (filtered.length === 0) {{ tbody.innerHTML = ""; if (empty) empty.style.display = "block"; return; }}
+        if (empty) empty.style.display = "none";
+        tbody.innerHTML = filtered.map(e => {{
+          const sc = e.status || "pending";
+          const sl = {{pending:"待处理",resolved:"已修复",ignored:"已忽略"}}[sc] || sc;
+          const url = fbEscapeHtml(e.url || "");
+          const actions = [];
+          if (e.status !== "resolved") actions.push('<button class="fb-action-btn resolve" onclick="window._fbMark(' + e.id + ',\'resolved\',this)">✓ 修复</button>');
+          if (e.status !== "ignored") actions.push('<button class="fb-action-btn ignore" onclick="window._fbMark(' + e.id + ',\'ignored\',this)">忽略</button>');
+          if (e.status !== "pending") actions.push('<button class="fb-action-btn pending-btn" onclick="window._fbMark(' + e.id + ',\'pending\',this)">重置</button>');
+          return '<tr data-id="' + e.id + '"><td>' + e.id + '</td>' +
+            '<td class="fb-url-cell"><span class="fb-url-text" title="点击复制" onclick="window._fbCopy(\'' + url.replace(/'/g,"\\'") + '\')">' + url + '</span><span class="fb-copy-hint">点击复制 / Click to copy</span></td>' +
+            '<td><code>' + fbEscapeHtml(e.error_code || "—") + '</code></td>' +
+            '<td>' + fbEscapeHtml(e.platform || "—") + '</td>' +
+            '<td><span class="fb-status ' + sc + '">' + sl + '</span></td>' +
+            '<td>' + (e.report_count || 1) + '</td>' +
+            '<td>' + fbFormatDate(e.first_reported_at) + '</td>' +
+            '<td>' + fbFormatDate(e.last_reported_at) + '</td>' +
+            '<td><div class="fb-actions">' + actions.join("") + '</div></td></tr>';
+        }}).join("");
+      }}
+      window._fbCopy = function(url) {{
+        navigator.clipboard.writeText(url).then(() => fbShowToast("已复制链接 / Copied!")).catch(() => {{
+          const ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); document.body.removeChild(ta); fbShowToast("已复制链接 / Copied!");
+        }});
+      }};
+      window._fbMark = async function(id, status, btn) {{
+        if (btn) btn.disabled = true;
+        try {{
+          const resp = await fetch(FB_API + "?id=" + id + "&status=" + status, {{
+            method: "PUT", headers: {{ "Authorization": "Bearer " + FB_TOKEN }}
+          }});
+          if (resp.ok) {{
+            const entry = fbEntries.find(e => e.id === id);
+            if (entry) {{ entry.status = status; if (status === "resolved") entry.resolved_at = new Date().toISOString(); }}
+            fbRender();
+            fbShowToast("已更新 / Updated!");
+          }} else {{ fbShowToast("操作失败 / Failed: " + resp.status); if (btn) btn.disabled = false; }}
+        }} catch(e) {{ fbShowToast("网络错误 / Network error"); if (btn) btn.disabled = false; }}
+      }};
+      document.querySelectorAll(".fb-filter-btn").forEach(btn => {{
+        btn.addEventListener("click", () => {{
+          document.querySelectorAll(".fb-filter-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          fbCurrentFilter = btn.dataset.status || "";
+          fbRender();
+        }});
+      }});
+      fbRender();
+    }})();
   </script>
 </body>
 </html>"""
@@ -2140,8 +2431,17 @@ def main():
     now_display = dt.datetime.now(DISPLAY_TZ)
     fetched_at_display = f"{now_display.strftime('%Y-%m-%d %H:%M:%S')} {DISPLAY_TZ_LABEL}"
 
+    print("[Dashboard] 正在抓取反馈数据 / Fetching feedback ...")
+    try:
+        fb_data = fetch_feedback(token=token)
+        feedback_entries = fb_data.get("entries", [])
+        print(f"[Dashboard] 反馈记录 / Feedback: {len(feedback_entries)} entries")
+    except Exception as e:
+        print(f"[Dashboard] [WARN] 获取反馈数据失败 / Feedback fetch failed: {e}")
+        feedback_entries = []
+
     print("[Dashboard] 正在渲染白底双语数据看板 / Rendering HTML ...")
-    html_content = build_html(stats, fetched_at_display)
+    html_content = build_html(stats, fetched_at_display, feedback_entries=feedback_entries, admin_token=token)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html_content, encoding="utf-8")
