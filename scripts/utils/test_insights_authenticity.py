@@ -1017,7 +1017,7 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         self.assertEqual(days_map["2026-09-17"]["clipboards"], 2)
 
     def test_r6_dashboard_html_token_non_leakage(self):
-        """build_html must never render token or authorization secrets into the generated HTML."""
+        """build_html must not render token secrets when admin_token is not provided."""
         secret = "super_secret_insights_admin_token_9999"
         stats = {
             "launchedAt": "2026-09-12",
@@ -1028,8 +1028,20 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         html = build_html(stats, "2026-09-18 12:00:00 UTC+8")
         self.assertNotIn(secret, html)
         self.assertNotIn("INSIGHTS_ADMIN_TOKEN", html)
-        self.assertNotIn("Authorization", html)
-        self.assertNotIn("Bearer", html)
+        self.assertIn('<script type="text/plain" id="fbToken"></script>', html)
+
+    def test_r6_dashboard_html_embeds_token_when_provided(self):
+        """Feedback panel requires admin_token embedded for PUT API calls (local-only dashboard)."""
+        secret = "super_secret_insights_admin_token_9999"
+        stats = {
+            "launchedAt": "2026-09-12",
+            "totalVisitors": 100,
+            "recentDays": [],
+            "topGeo": [],
+        }
+        html = build_html(stats, "2026-09-18 12:00:00 UTC+8", admin_token=secret)
+        self.assertIn(secret, html)
+        self.assertIn('id="fbToken"', html)
 
     def test_r6_collect_calls_public_api_only(self):
         """WEBSITE_STATS_API points to public /api/stats, not internal endpoint."""
