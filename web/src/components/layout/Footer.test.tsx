@@ -17,7 +17,7 @@ describe('Footer Component', () => {
       'https://github.com/LengxiQwQ/playlistout',
     );
 
-    const authorBtn = screen.getByRole('button', { name: /作者信息|author info/i });
+    const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
     expect(authorBtn).toBeInTheDocument();
     expect(authorBtn).toHaveAttribute('aria-expanded', 'false');
 
@@ -45,7 +45,7 @@ describe('Footer Component', () => {
     const onOpenPrivacyMock = vi.fn();
     render(<Footer onOpenPrivacy={onOpenPrivacyMock} />);
 
-    const authorBtn = screen.getByRole('button', { name: /作者信息|author info/i });
+    const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
     expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
 
     // Click to open
@@ -68,7 +68,7 @@ describe('Footer Component', () => {
       </div>,
     );
 
-    const authorBtn = screen.getByRole('button', { name: /作者信息|author info/i });
+    const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
     fireEvent.click(authorBtn);
     expect(screen.getByRole('dialog', { name: /联系作者|contact author/i })).toBeInTheDocument();
 
