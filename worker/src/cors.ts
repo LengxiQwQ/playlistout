@@ -98,10 +98,22 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     };
   }
 
-  // Strictly no browser CORS for internal maintainer endpoints (R6 Requirement 19 & 46)
-  if (path === '/api/internal/stats' || path === '/api/internal/feedback') {
+  // Strictly no browser CORS for internal stats endpoint (R6 Requirement 19 & 46)
+  if (path === '/api/internal/stats') {
     return {
       Vary: 'Origin',
+    };
+  }
+
+  // Internal feedback endpoint: token-protected, used by local dashboard (file:// origin = "null")
+  if (path === '/api/internal/feedback') {
+    const origin = request.headers.get('Origin');
+    return {
+      Vary: 'Origin',
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization',
+      'Access-Control-Max-Age': '86400',
     };
   }
 
@@ -146,11 +158,19 @@ export function handleOptions(request: Request, pathname?: string): Response {
     }
   })();
 
-  // Strictly reject browser preflight on internal maintainer endpoints (R6)
-  if (path === '/api/internal/stats' || path === '/api/internal/feedback') {
+  // Strictly reject browser preflight on internal stats endpoint (R6)
+  if (path === '/api/internal/stats') {
     return new Response(null, {
       status: 403,
       headers: { Vary: 'Origin' },
+    });
+  }
+
+  // Internal feedback endpoint: allow preflight (token-protected, local dashboard use)
+  if (path === '/api/internal/feedback') {
+    return new Response(null, {
+      status: 204,
+      headers: getCorsHeaders(request, path),
     });
   }
 
