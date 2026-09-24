@@ -174,10 +174,6 @@ h1 {
   border-radius: 8px;
   padding: 1rem 1.25rem;
   margin-top: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .status-alert-error {
