@@ -1,4 +1,4 @@
-import type { Translations } from './types';
+﻿import type { Translations } from './types';
 
 export const enUS: Translations = {
   header: {
@@ -90,7 +90,7 @@ export const enUS: Translations = {
     retry: 'Retry',
     feedbackButton: 'Report this',
     feedbackSubmitted: 'Reported ✓',
-    feedbackNotice: 'Clicking will send your playlist link to the developer to help fix parsing.',
+    feedbackNotice: 'Clicking "Report this" will send your playlist link to the developer to help fix parsing.',
   },
   result: {
     doneParsingHint: 'done parsing? ↓ your result lands right here',
