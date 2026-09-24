@@ -46,17 +46,17 @@ describe('Footer Component', () => {
     render(<Footer onOpenPrivacy={onOpenPrivacyMock} />);
 
     const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
-    expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /冷汐OωO/i })).not.toBeInTheDocument();
 
     // Click to open
     fireEvent.click(authorBtn);
     expect(authorBtn).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('dialog', { name: /联系作者|contact author/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /冷汐OωO/i })).toBeInTheDocument();
 
     // Click again to close
     fireEvent.click(authorBtn);
     expect(authorBtn).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /冷汐OωO/i })).not.toBeInTheDocument();
   });
 
   it('closes Author card when clicking outside', () => {
@@ -70,9 +70,9 @@ describe('Footer Component', () => {
 
     const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
     fireEvent.click(authorBtn);
-    expect(screen.getByRole('dialog', { name: /联系作者|contact author/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /冷汐OωO/i })).toBeInTheDocument();
 
     fireEvent.mouseDown(screen.getByTestId('outside'));
-    expect(screen.queryByRole('dialog', { name: /联系作者|contact author/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /冷汐OωO/i })).not.toBeInTheDocument();
   });
 });

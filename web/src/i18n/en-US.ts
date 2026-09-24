@@ -230,7 +230,7 @@ export const enUS: Translations = {
     sponsorAriaLabel: 'Sponsor developer / 赞助作者',
     privacyLink: 'Privacy Policy',
     issuesLink: 'Issues',
-    authorCardTitle: 'Contact Author',
+    authorCardTitle: '冷汐OωO',
     authorCardSubtitle: 'PlaylistOut developer contact & feedback',
     authorNameLabel: 'Author',
     authorGithubLabel: 'GitHub',
