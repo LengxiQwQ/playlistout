@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { StickyNote } from '../ui/StickyNote';
 import { PaperInput } from '../ui/PaperInput';
@@ -294,9 +294,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
         {error && !isLoading && (
           <StatusAlert
             type="error"
-            title={t.errors.oopsTitle}
             message={getErrorMessage(error)}
-            code={error.code}
             onRetry={onRetry}
             retryLabel={t.errors.retry}
             onFeedback={
