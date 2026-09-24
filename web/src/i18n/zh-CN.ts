@@ -281,7 +281,7 @@ export const zhCN: Translations = {
   },
   kugouAuth: {
     modalTitle: '酷狗音乐 · 扫码解锁',
-    modalSubtitle: '使用酷狗音乐手机 App 扫码登录，即可解锁完整歌单与无损导出',
+    modalSubtitle: '因酷狗音乐接口限制，未登录仅能预览 10 首歌曲；使用酷狗音乐 App 扫码登录，即可解锁完整歌单与无损导出',
     step1: '打开手机「酷狗音乐」App',
     step2: '点击首页右上角「扫一扫」',
     step3: '扫描下方二维码并在手机端确认登录',
