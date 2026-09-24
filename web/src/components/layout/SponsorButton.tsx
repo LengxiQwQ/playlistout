@@ -25,6 +25,13 @@ const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, col
   </svg>
 );
 
+const BookIcon: React.FC<{ size?: number }> = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+  </svg>
+);
+
 export const SponsorButton: React.FC = () => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -244,6 +251,57 @@ export const SponsorButton: React.FC = () => {
             >
               微信扫一扫 · 赞赏支持
             </div>
+          </div>
+
+          {/* 赞助墙：赞助记录入口 */}
+          <div
+            style={{
+              paddingTop: '0.75rem',
+              borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <p
+              className="font-handwriting"
+              style={{
+                fontSize: '0.9rem',
+                color: '#636e72',
+                margin: 0,
+                lineHeight: 1.35,
+                textAlign: 'center',
+              }}
+            >
+              {t.footer.sponsorWallHint}
+            </p>
+            <a
+              href="https://lengxiqwq.com/sponsor/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sponsor-action-btn font-handwriting"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.4rem 0.85rem',
+                backgroundColor: '#ffffff',
+                color: 'var(--ink, #2d3436)',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                lineHeight: 1.2,
+                border: '1.5px dashed var(--ink, #2d3436)',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+            >
+              <BookIcon size={14} />
+              <span>{t.footer.sponsorWallLink}</span>
+              <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+            </a>
           </div>
         </div>
       )}

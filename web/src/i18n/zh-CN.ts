@@ -225,6 +225,8 @@ export const zhCN: Translations = {
     sponsorLink: '赞助支持',
     sponsorMenuTitle: '赞助与支持',
     sponsorMenuSubtitle: '支持项目的日常维护与服务器托管',
+    sponsorWallHint: '赞助后，你的名字与想说的话都会收录进赞助页',
+    sponsorWallLink: '查看赞助记录',
     sponsorAriaLabel: '赞助作者 / Sponsor developer',
     privacyLink: '隐私政策',
     issuesLink: '反馈建议',

@@ -226,6 +226,8 @@ export interface Translations {
     sponsorMenuTitle: string;
     sponsorMenuSubtitle: string;
     sponsorAriaLabel: string;
+    sponsorWallHint: string;
+    sponsorWallLink: string;
     privacyLink: string;
     issuesLink: string;
     authorCardTitle: string;

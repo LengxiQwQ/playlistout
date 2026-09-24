@@ -7,6 +7,8 @@ import {
   AUTHOR_AVATAR_URL,
   AUTHOR_EMAIL,
   AUTHOR_QQ,
+  AUTHOR_BLOG_NAME,
+  AUTHOR_BLOG_URL,
 } from '../../constants/author';
 import { Tape } from '../ui/Tape';
 
@@ -32,6 +34,14 @@ const QqIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
     <path d="M6.048 3.323c.022.277-.13.523-.338.55-.21.026-.397-.176-.419-.453s.13-.523.338-.55c.21-.026.397.176.42.453Zm2.265-.24c-.603-.146-.894.256-.936.333-.027.048-.008.117.037.15.045.035.092.025.119-.003.361-.39.751-.172.829-.129l.011.007c.053.024.147.028.193-.098.023-.063.017-.11-.006-.142-.016-.023-.089-.08-.247-.118" />
     <path d="M11.727 6.719c0-.022.01-.375.01-.557 0-3.07-1.45-6.156-5.015-6.156S1.708 3.092 1.708 6.162c0 .182.01.535.01.557l-.72 1.795a26 26 0 0 0-.534 1.508c-.68 2.187-.46 3.093-.292 3.113.36.044 1.401-1.647 1.401-1.647 0 .979.504 2.256 1.594 3.179-.408.126-.907.319-1.228.556-.29.213-.253.43-.201.518.228.386 3.92.246 4.985.126 1.065.12 4.756.26 4.984-.126.052-.088.088-.305-.2-.518-.322-.237-.822-.43-1.23-.557 1.09-.922 1.594-2.2 1.594-3.178 0 0 1.041 1.69 1.401 1.647.168-.02.388-.926-.292-3.113a26 26 0 0 0-.534-1.508l-.72-1.795ZM9.773 5.53a.1.1 0 0 1-.009.096c-.109.159-1.554.943-3.033.943h-.017c-1.48 0-2.925-.784-3.034-.943a.1.1 0 0 1-.018-.055q0-.022.01-.04c.13-.287 1.43-.606 3.042-.606h.017c1.611 0 2.912.319 3.042.605m-4.32-.989c-.483.022-.896-.529-.922-1.229s.344-1.286.828-1.308c.483-.022.896.529.922 1.23.027.7-.344 1.286-.827 1.307Zm2.538 0c-.484-.022-.854-.607-.828-1.308.027-.7.44-1.25.923-1.23.483.023.853.608.827 1.309-.026.7-.439 1.251-.922 1.23ZM2.928 8.99q.32.063.639.117v2.336s1.104.222 2.21.068V9.363q.49.027.937.023h.017c1.117.013 2.474-.136 3.786-.396.097.622.151 1.386.097 2.284-.146 2.45-1.6 3.99-3.846 4.012h-.091c-2.245-.023-3.7-1.562-3.846-4.011-.054-.9 0-1.663.097-2.285" />
+  </svg>
+);
+
+const BlogIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
 
@@ -281,6 +291,47 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             rel="noopener noreferrer"
             title={`${AUTHOR_NAME} GitHub`}
             aria-label={`${t.footer.openText} ${AUTHOR_NAME} GitHub`}
+            className="author-copy-btn font-handwriting"
+            style={{ textDecoration: 'none' }}
+          >
+            {t.footer.openText}
+          </a>
+        </div>
+
+        {/* Blog (冷汐的杂货铺) */}
+        <div className="author-contact-row">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <BlogIcon size={16} />
+            <span
+              style={{
+                fontFamily: 'var(--font-sans, sans-serif)',
+                fontSize: '0.95rem',
+                color: 'var(--ink, #2d3436)',
+                fontWeight: 600,
+                userSelect: 'text',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {AUTHOR_BLOG_NAME}
+            </span>
+          </div>
+
+          <a
+            href={AUTHOR_BLOG_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={AUTHOR_BLOG_NAME}
+            aria-label={`${t.footer.openText} ${AUTHOR_BLOG_NAME}`}
             className="author-copy-btn font-handwriting"
             style={{ textDecoration: 'none' }}
           >
