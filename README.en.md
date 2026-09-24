@@ -429,11 +429,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **97**<br><sub>Today unique +9</sub> | **211**<br><sub>Today +12</sub> | **284**<br><sub>Today +23</sub> | **48,271**<br><sub>Today +5,489</sub> | **47**<br><sub>Today +11</sub> | **12 Days**<br><sub>Since 2026-09-12</sub> |
+| **130**<br><sub>Today unique +19</sub> | **266**<br><sub>Today +20</sub> | **313**<br><sub>Today +18</sub> | **54,208**<br><sub>Today +2,364</sub> | **73**<br><sub>Today +21</sub> | **13 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **73%** (208 parses) ｜ NetEase Cloud Music **11%** (32 parses) ｜ KuGou Music **13%** (37 parses) ｜ QiShui Music **2%** (7 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **49%** ｜ TXT **15%** ｜ CSV **17%** ｜ JSON **19%**
+- **🎵 Platform Shares:** QQ Music **72%** (226 parses) ｜ NetEase Cloud Music **12%** (37 parses) ｜ KuGou Music **14%** (43 parses) ｜ QiShui Music **2%** (7 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **44%** ｜ TXT **19%** ｜ CSV **16%** ｜ JSON **21%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -458,7 +458,7 @@ Views: **553** ｜ Uniques: **141** (14-day) ｜ Clones: **2,095** ｜ Cloners: 
 **Top referrers (14-day):** github.com · Google · Bing · Baidu · open.cd · Yahoo  
 **Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter · commits/main
 
-> Data since 2026-09-07 · Last updated: 2026-09-23
+> Data since 2026-09-07 · Last updated: 2026-09-24
 <!-- INSIGHTS:END -->
 
 ---
