@@ -2,9 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/LengxiQwQ/playlistout/main/web/public/logo-180.png" width="96" alt="Playlist Out" />
 
-# Playlist Out
-
-### 把你的歌单带走
+# Playlist Out（把你的歌单带走）
 
 *你的歌单，不应该只困在一个音乐平台里。*
 
