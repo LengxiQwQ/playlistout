@@ -1,4 +1,4 @@
-import type { Translations } from './types';
+﻿import type { Translations } from './types';
 
 export const zhCN: Translations = {
   header: {
@@ -90,7 +90,7 @@ export const zhCN: Translations = {
     retry: '重试',
     feedbackButton: '一键反馈',
     feedbackSubmitted: '已反馈 ✓',
-    feedbackNotice: '点击后会将你的歌单链接发送给作者，用于修复解析问题。',
+    feedbackNotice: '点击「一键反馈」后会将你的歌单链接发送给作者，用于修复解析问题。',
   },
   result: {
     doneParsingHint: '解析完毕？↓ 你的结果就在这里',
