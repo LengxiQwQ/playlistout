@@ -215,11 +215,6 @@ body {
       transparent 58%,
       rgba(45, 52, 54, 0.03) 80%,
       rgba(45, 52, 54, 0.07) 100%
-    ),
-    radial-gradient(
-      700px circle at calc(var(--mouse-pct-x, 50) * 1%) calc(var(--mouse-pct-y, 50) * 1%),
-      rgba(255, 255, 255, 0.28) 0%,
-      transparent 65%
     );
   opacity: 0.75;
   transition: opacity 0.35s ease;
