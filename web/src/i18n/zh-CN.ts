@@ -220,7 +220,7 @@ export const zhCN: Translations = {
     licenseText: 'MIT',
     licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: '独立开源项目。与任何所提及的音乐平台均无官方从属、赞助或许可关系。',
-    githubLink: 'GitHub',
+    githubLink: 'GitHub 仓库',
     authorLink: '作者信息',
     sponsorLink: '赞助支持',
     sponsorMenuTitle: '赞助与支持',
