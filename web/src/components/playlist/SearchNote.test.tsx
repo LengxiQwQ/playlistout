@@ -29,9 +29,9 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.getByText('在这里粘贴歌单链接 ↓')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '解析' })).toBeEnabled();
     expect(screen.getByText('跨平台公开歌单解析')).toBeInTheDocument();
-    expect(screen.getByText('QQ 音乐（批量）')).toBeInTheDocument();
-    expect(screen.getByText('网易云音乐（批量）')).toBeInTheDocument();
-    expect(screen.getByText('酷狗音乐（未登录）')).toBeInTheDocument();
+    expect(screen.getByText('QQ 音乐（可批量）')).toBeInTheDocument();
+    expect(screen.getByText('网易云音乐（可批量）')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐（需要登录）')).toBeInTheDocument();
 
     // Click sample
     const sampleQQ = screen.getByText('QQ音乐批量');
@@ -108,7 +108,7 @@ describe('SearchNote Component (Phase 4)', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByText('酷狗音乐（已登录）')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐（退出登录）')).toBeInTheDocument();
     localStorage.clear();
   });
 });
