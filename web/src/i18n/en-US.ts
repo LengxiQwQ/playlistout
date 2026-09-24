@@ -281,7 +281,7 @@ export const enUS: Translations = {
   },
   kugouAuth: {
     modalTitle: 'KuGou Music · Unlock All Tracks',
-    modalSubtitle: 'Scan with your KuGou Music mobile App to export complete playlists without track limits.',
+    modalSubtitle: 'Due to KuGou Music API restrictions, only 10 tracks can be previewed without login; scan with the KuGou Music app to unlock the full playlist and lossless export.',
     step1: 'Open the KuGou Music mobile App',
     step2: 'Tap the Scan button in the top right',
     step3: 'Scan the QR code below and confirm login on your phone',
