@@ -250,7 +250,7 @@ export const zhCN: Translations = {
     selectAll: '全选 ({count})',
     deselectAll: '取消全选',
     batchExportTitle: '批量打包导出',
-    formatMultiSheet: 'Excel 工作簿 (.xlsx / 多Sheet合一)',
+    formatMultiSheet: 'Excel 工作簿 (.xlsx / 多表合一)',
     formatZipXlsx: 'ZIP 压缩包 (Excel .xlsx)',
     formatZipCsv: 'ZIP 压缩包 (CSV)',
     formatZipTxt: 'ZIP 压缩包 (TXT 纯文本)',
