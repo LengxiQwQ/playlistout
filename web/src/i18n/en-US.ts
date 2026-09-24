@@ -225,6 +225,8 @@ export const enUS: Translations = {
     sponsorLink: 'Sponsor',
     sponsorMenuTitle: 'Sponsor & Support',
     sponsorMenuSubtitle: 'Support ongoing development & hosting',
+    sponsorWallHint: 'After sponsoring, your name & message will be featured on the sponsor page',
+    sponsorWallLink: 'View sponsor wall',
     sponsorAriaLabel: 'Sponsor developer / 赞助作者',
     privacyLink: 'Privacy Policy',
     issuesLink: 'Issues',
