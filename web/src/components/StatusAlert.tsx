@@ -17,18 +17,15 @@ export interface StatusAlertProps {
 export const StatusAlert: React.FC<StatusAlertProps> = ({
   type,
   message,
-  code,
   onRetry,
-  title,
-  retryLabel = '重试',
   onFeedback,
   feedbackLabel = '一键反馈',
   feedbackSubmittedLabel = '已反馈 ✓',
   feedbackNotice,
   feedbackSubmitted = false,
+  retryLabel = '重试',
 }) => {
   const isError = type === 'error';
-  const defaultTitle = isError ? 'Oops —' : 'Note —';
   const hasActions = onRetry || onFeedback;
 
   return (
@@ -38,60 +35,30 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
       data-testid={`status-alert-${type}`}
       style={{
         backgroundColor: isError ? 'var(--note-error, #ffebee)' : 'var(--note-blue, #e8f8ff)',
-        padding: '1.1rem 1.25rem',
+        padding: '1rem 1.25rem',
         marginTop: '1.25rem',
         ['--rot' as any]: '-0.5deg',
         position: 'relative',
       }}
     >
-      {/* Header row: icon + title + code */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.3rem', lineHeight: 1 }} aria-hidden="true">
-            {isError ? '⚠️' : 'ℹ️'}
-          </span>
-          <span
-            className="font-marker"
-            style={{
-              fontSize: '1.2rem',
-              color: isError ? 'var(--error-ink, #c0392b)' : 'var(--ink, #2d3436)',
-              fontWeight: 700,
-            }}
-          >
-            {title || defaultTitle}
-          </span>
-        </div>
-        {code && (
-          <span
-            className="alert-code font-mono"
-            style={{
-              fontSize: '0.7rem',
-              backgroundColor: 'rgba(45, 52, 54, 0.08)',
-              padding: '0.15rem 0.5rem',
-              borderRadius: '4px',
-              color: 'var(--ink-light, #636e72)',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            {code}
-          </span>
-        )}
+      {/* Row 1: icon + message */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+        <span style={{ fontSize: '1.25rem', lineHeight: 1.4, flexShrink: 0 }} aria-hidden="true">
+          {isError ? '⚠️' : 'ℹ️'}
+        </span>
+        <p
+          className="alert-message font-handwriting"
+          style={{
+            fontSize: '1.15rem',
+            color: 'var(--ink, #2d3436)',
+            lineHeight: 1.4,
+            margin: 0,
+            flex: 1,
+          }}
+        >
+          {message}
+        </p>
       </div>
-
-      {/* Message */}
-      <p
-        className="alert-message font-handwriting"
-        style={{
-          fontSize: '1.15rem',
-          color: 'var(--ink, #2d3436)',
-          lineHeight: 1.4,
-          margin: '0 0 0.75rem',
-          paddingLeft: '2rem',
-        }}
-      >
-        {message}
-      </p>
 
       {/* Bottom action bar */}
       {hasActions && (
@@ -102,9 +69,9 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
             justifyContent: 'space-between',
             gap: '1rem',
             paddingTop: '0.75rem',
+            marginTop: '0.75rem',
             borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
             flexWrap: 'wrap',
-            paddingLeft: '2rem',
           }}
         >
           {feedbackNotice && (

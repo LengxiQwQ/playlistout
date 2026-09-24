@@ -86,7 +86,7 @@ export const enUS: Translations = {
     rateLimited: 'Too many requests. Please wait a moment before trying again.',
     networkError: 'Network connection error. Please check your network and try again.',
     internalError: 'Server error occurred while processing the playlist. Please try again.',
-    genericError: 'Failed to parse playlist. Please try again.',
+    genericError: 'An unknown error occurred. Please try again later.',
     retry: 'Retry',
     feedbackButton: 'Report this',
     feedbackSubmitted: 'Reported ✓',

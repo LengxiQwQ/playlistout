@@ -86,7 +86,7 @@ export const zhCN: Translations = {
     rateLimited: '请求过于频繁，请稍候再试。',
     networkError: '网络连接异常，请检查网络连接后重试。',
     internalError: '服务器处理歌单时出现异常，请稍后重试。',
-    genericError: '解析歌单失败，请稍后重试。',
+    genericError: '发生未知错误，请稍后重试。',
     retry: '重试',
     feedbackButton: '一键反馈',
     feedbackSubmitted: '已反馈 ✓',

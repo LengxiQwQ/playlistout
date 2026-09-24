@@ -1,4 +1,4 @@
-export type Language = 'zh-CN' | 'en-US';
+﻿export type Language = 'zh-CN' | 'en-US';
 
 export interface Translations {
   header: {
