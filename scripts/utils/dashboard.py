@@ -2313,9 +2313,9 @@ def build_html(
       try {{ fbEntries = JSON.parse(document.getElementById("fbData")?.textContent || "[]"); }} catch(e) {{ fbEntries = []; }}
       let fbCurrentFilter = "";
 
-      function fbEscapeHtml(s) {{
+      function fbEscapeHtml(str) {{
         const d = document.createElement("div");
-        d.textContent = s == null ? "" : String(s);
+        d.textContent = str == null ? "" : String(str);
         return d.innerHTML;
       }}
       function fbFormatDate(iso) {{
@@ -2328,6 +2328,9 @@ def build_html(
         t.textContent = msg; t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2500);
       }}
+      function fbStatusLabel(sc) {{
+        return {{pending:"待处理",resolved:"已修复",ignored:"已忽略"}}[sc] || sc;
+      }}
       function fbRender() {{
         const tbody = document.getElementById("feedbackTbody");
         const empty = document.getElementById("feedbackEmpty");
@@ -2338,34 +2341,98 @@ def build_html(
         const resolved = fbEntries.filter(e => e.status === "resolved").length;
         const ignored = fbEntries.filter(e => e.status === "ignored").length;
         if (stats) stats.textContent = "总计 " + fbEntries.length + " · 待处理 " + pending + " · 已修复 " + resolved + " · 已忽略 " + ignored;
-        if (filtered.length === 0) {{ tbody.innerHTML = ""; if (empty) empty.style.display = "block"; return; }}
+        tbody.innerHTML = "";
+        if (filtered.length === 0) {{ if (empty) empty.style.display = "block"; return; }}
         if (empty) empty.style.display = "none";
-        tbody.innerHTML = filtered.map(e => {{
-          const sc = e.status || "pending";
-          const sl = {{pending:"待处理",resolved:"已修复",ignored:"已忽略"}}[sc] || sc;
-          const url = fbEscapeHtml(e.url || "");
-          const actions = [];
-          if (e.status !== "resolved") actions.push('<button class="fb-action-btn resolve" onclick="window._fbMark(' + e.id + ',\'resolved\',this)">✓ 修复</button>');
-          if (e.status !== "ignored") actions.push('<button class="fb-action-btn ignore" onclick="window._fbMark(' + e.id + ',\'ignored\',this)">忽略</button>');
-          if (e.status !== "pending") actions.push('<button class="fb-action-btn pending-btn" onclick="window._fbMark(' + e.id + ',\'pending\',this)">重置</button>');
-          return '<tr data-id="' + e.id + '"><td>' + e.id + '</td>' +
-            '<td class="fb-url-cell"><span class="fb-url-text" title="点击复制" onclick="window._fbCopy(\'' + url.replace(/'/g,"\\'") + '\')">' + url + '</span><span class="fb-copy-hint">点击复制 / Click to copy</span></td>' +
-            '<td><code>' + fbEscapeHtml(e.error_code || "—") + '</code></td>' +
-            '<td>' + fbEscapeHtml(e.platform || "—") + '</td>' +
-            '<td><span class="fb-status ' + sc + '">' + sl + '</span></td>' +
-            '<td>' + (e.report_count || 1) + '</td>' +
-            '<td>' + fbFormatDate(e.first_reported_at) + '</td>' +
-            '<td>' + fbFormatDate(e.last_reported_at) + '</td>' +
-            '<td><div class="fb-actions">' + actions.join("") + '</div></td></tr>';
-        }}).join("");
+
+        filtered.forEach(e => {{
+          const tr = document.createElement("tr");
+          tr.dataset.id = e.id;
+
+          const tdId = document.createElement("td");
+          tdId.textContent = e.id;
+          tr.appendChild(tdId);
+
+          const tdUrl = document.createElement("td");
+          tdUrl.className = "fb-url-cell";
+          const urlSpan = document.createElement("span");
+          urlSpan.className = "fb-url-text";
+          urlSpan.textContent = e.url || "";
+          urlSpan.title = "点击复制 / Click to copy";
+          urlSpan.addEventListener("click", () => fbCopyUrl(e.url || ""));
+          tdUrl.appendChild(urlSpan);
+          const hint = document.createElement("span");
+          hint.className = "fb-copy-hint";
+          hint.textContent = "点击复制 / Click to copy";
+          tdUrl.appendChild(hint);
+          tr.appendChild(tdUrl);
+
+          const tdErr = document.createElement("td");
+          const code = document.createElement("code");
+          code.textContent = e.error_code || "—";
+          tdErr.appendChild(code);
+          tr.appendChild(tdErr);
+
+          const tdPlat = document.createElement("td");
+          tdPlat.textContent = e.platform || "—";
+          tr.appendChild(tdPlat);
+
+          const tdStatus = document.createElement("td");
+          const statusSpan = document.createElement("span");
+          statusSpan.className = "fb-status " + (e.status || "pending");
+          statusSpan.textContent = fbStatusLabel(e.status || "pending");
+          tdStatus.appendChild(statusSpan);
+          tr.appendChild(tdStatus);
+
+          const tdCount = document.createElement("td");
+          tdCount.textContent = e.report_count || 1;
+          tr.appendChild(tdCount);
+
+          const tdFirst = document.createElement("td");
+          tdFirst.textContent = fbFormatDate(e.first_reported_at);
+          tr.appendChild(tdFirst);
+
+          const tdLast = document.createElement("td");
+          tdLast.textContent = fbFormatDate(e.last_reported_at);
+          tr.appendChild(tdLast);
+
+          const tdActions = document.createElement("td");
+          const actionsDiv = document.createElement("div");
+          actionsDiv.className = "fb-actions";
+          if (e.status !== "resolved") {{
+            const btn = document.createElement("button");
+            btn.className = "fb-action-btn resolve";
+            btn.textContent = "✓ 修复";
+            btn.addEventListener("click", () => fbMark(e.id, "resolved", btn));
+            actionsDiv.appendChild(btn);
+          }}
+          if (e.status !== "ignored") {{
+            const btn = document.createElement("button");
+            btn.className = "fb-action-btn ignore";
+            btn.textContent = "忽略";
+            btn.addEventListener("click", () => fbMark(e.id, "ignored", btn));
+            actionsDiv.appendChild(btn);
+          }}
+          if (e.status !== "pending") {{
+            const btn = document.createElement("button");
+            btn.className = "fb-action-btn pending-btn";
+            btn.textContent = "重置";
+            btn.addEventListener("click", () => fbMark(e.id, "pending", btn));
+            actionsDiv.appendChild(btn);
+          }}
+          tdActions.appendChild(actionsDiv);
+          tr.appendChild(tdActions);
+
+          tbody.appendChild(tr);
+        }});
       }}
-      window._fbCopy = function(url) {{
+      function fbCopyUrl(url) {{
         navigator.clipboard.writeText(url).then(() => fbShowToast("已复制链接 / Copied!")).catch(() => {{
           const ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta); ta.select();
           document.execCommand("copy"); document.body.removeChild(ta); fbShowToast("已复制链接 / Copied!");
         }});
-      }};
-      window._fbMark = async function(id, status, btn) {{
+      }}
+      async function fbMark(id, status, btn) {{
         if (btn) btn.disabled = true;
         try {{
           const resp = await fetch(FB_API + "?id=" + id + "&status=" + status, {{
@@ -2378,7 +2445,7 @@ def build_html(
             fbShowToast("已更新 / Updated!");
           }} else {{ fbShowToast("操作失败 / Failed: " + resp.status); if (btn) btn.disabled = false; }}
         }} catch(e) {{ fbShowToast("网络错误 / Network error"); if (btn) btn.disabled = false; }}
-      }};
+      }}
       document.querySelectorAll(".fb-filter-btn").forEach(btn => {{
         btn.addEventListener("click", () => {{
           document.querySelectorAll(".fb-filter-btn").forEach(b => b.classList.remove("active"));
