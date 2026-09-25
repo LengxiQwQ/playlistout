@@ -216,26 +216,39 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
       "id": "0039MnYb0qxYAc",
       "title": "晴天",
       "artists": ["周杰伦"],
+      "artistList": [{"id": "0025NhlN2yWrP4", "name": "周杰伦"}],
       "album": "叶惠美",
+      "albumObj": {"id": "000J1p501A7I2d", "name": "叶惠美"},
       "durationMs": 269000,
+      "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M000000J1p501A7I2d.jpg",
+      "isOriginalSound": false,
       "isVip": false,
       "isAvailable": true,
       "status": "playable",
       "statusText": "正常",
-      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc"
+      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc",
+      "maxQuality": "FLAC",
+      "rawIds": {"qq_songmid": "0039MnYb0qxYAc"}
     },
     {
       "index": 2,
       "id": "0027fM2M3wD4gS",
       "title": "说好不哭",
       "artists": ["周杰伦", "阿信"],
+      "artistList": [{"id": "0025NhlN2yWrP4", "name": "周杰伦"}, {"id": "000aHmbL2aPxVD", "name": "阿信"}],
       "album": "说好不哭",
+      "albumObj": {"id": "0018P9X93c1OaO", "name": "说好不哭"},
       "durationMs": 222000,
+      "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M0000018P9X93c1OaO.jpg",
+      "isOriginalSound": false,
       "isVip": false,
       "isAvailable": true,
       "status": "playable",
       "statusText": "正常",
-      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS"
+      "sourceUrl": "https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS",
+      "maxQuality": "320kbps",
+      "mvId": "c0032ccov8g",
+      "rawIds": {"qq_songmid": "0027fM2M3wD4gS"}
     }
   ]
 }
@@ -247,7 +260,7 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
 
 - **文件编码**：`UTF-8 with BOM`（首字节包含 `\uFEFF`，防止 Windows 系统下 Microsoft Excel 打开乱码）
 - **行换行符**：`\r\n` (CRLF)
-- **纯表格标准输出**：默认遵循标准 RFC 4180 规范输出干净纯表格（7 列数据），不添加额外的注释前缀行，以保证与各类现代表格解析器及音乐迁移工具的最大兼容性；
+- **纯表格标准输出**：默认遵循标准 RFC 4180 规范输出干净纯表格（9 列数据，包含最右侧的歌曲链接列），不添加额外的注释前缀行，以保证与各类现代表格解析器及音乐迁移工具的最大兼容性；
 - **元数据扩展模式**：在高级配置中启用元数据时，文件首部以 `# ` 输出歌单元信息与导出工具平台标识；
 - **防公式注入保护**：单元格若以 `=`, `+`, `-`, `@`, `\t`, `\r` 开头，自动添加 `'` 前缀进行安全转义，阻断电子表格宏代码执行风险；
 - **字段引用规则**：遵循 RFC 4180 规范，包含逗号或双引号的内容使用双引号包裹，内部双引号使用双重转义 `""`。
@@ -255,9 +268,9 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
 #### CSV 文件示例
 
 ```csv
-序号,歌曲标题,歌手,专辑,时长,VIP,歌曲状态
-1,晴天,周杰伦,叶惠美,04:29,—,正常
-2,说好不哭,"周杰伦, 阿信",说好不哭,03:42,—,正常
+序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态,歌曲链接
+1,晴天,周杰伦,叶惠美,04:29,歌曲,—,正常,https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc
+2,说好不哭,"周杰伦, 阿信",说好不哭,03:42,歌曲,—,正常,https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS
 ```
 
 ---
@@ -276,8 +289,8 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
      - 行 6：`['风格标签', tagsStr, '歌单链接', sourceUrl]`
      - 行 7（可选）：`['歌单简介', description, '', '']`（仅在有简介时生成）
   2. **空行分隔区（第 8 行）**：空白行作为卡片区与数据表格的天然分界线。
-  3. **表格列头（第 9 行）**：`序号`、`歌曲标题`、`歌手`、`专辑`、`时长`、`VIP`、`歌曲状态`（共 7 列）。
-  4. **歌曲数据行（第 10 行起）**：按序填入曲目数据，内置防公式注入防护，并预设自适应列宽（10 / 32 / 22 / 25 / 10 / 8 / 14）。
+  3. **表格列头（第 9 行）**：`序号`、`歌曲标题`、`歌手`、`专辑`、`时长`、`类型`、`VIP`、`歌曲状态`、`歌曲链接`（共 9 列）。
+  4. **歌曲数据行（第 10 行起）**：按序填入曲目数据，内置防公式注入防护，并预设自适应列宽（10 / 32 / 22 / 25 / 10 / 12 / 8 / 14 / 45）。
 
 ---
 
