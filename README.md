@@ -158,7 +158,9 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
 | `loadedTrackCount` | `number` | 可选 | 实际已加载曲目数（整型）。在部分预览或未登录模式下标识当前已解析条数 |
 | `isPartial` | `boolean` | 可选 | 是否为部分预览歌单（例如酷狗未登录预览仅展示前部分歌曲时为 true） |
 | `totalDuration` | `string \| null` | 可选 | 歌单曲目总时长格式化文本（如 `"3 小时 45 分钟"`），部分预览歌单时为 `null` |
-| `loadedDuration` | `string \| null` | 可选 | 实际已加载曲目的格式化总时长 |
+| `totalDurationMs` | `number \| null` | 可选 | 歌单曲目总时长（毫秒，纯数字），部分预览歌单时为 `null` |
+| `loadedDuration` | `string \| null` | 可选 | 实际已加载曲目的格式化总时长文本 |
+| `loadedDurationMs` | `number \| null` | 可选 | 实际已加载曲目的总时长（毫秒，纯数字） |
 | `playCount` | `number \| null` | 可选 | 歌单累计播放量总次数（整型） |
 | `tags` | `string[]` | 可选 | 歌单所属风格/分类标签数组（如 `["流行", "轻音乐"]`） |
 | `description` | `string` | 可选 | 歌单简介与背景文案描述 |
@@ -206,7 +208,9 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
   "loadedTrackCount": 2,
   "isPartial": false,
   "totalDuration": "8 分钟",
+  "totalDurationMs": 491000,
   "loadedDuration": "8 分钟",
+  "loadedDurationMs": 491000,
   "playCount": 128500,
   "tags": ["流行", "经典", "华语"],
   "description": "收录那些触动心灵的华语旋律，陪你度过安静时光。",

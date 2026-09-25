@@ -354,6 +354,7 @@ export function generateJSON(playlist: Playlist): string {
   const exportedStr = formatDateTime();
   const updatedStr = formatTimestamp(playlist.updateTime) || null;
   const durationStr = formatTotalDuration(playlist.tracks) || null;
+  const loadedDurationMs = playlist.tracks.reduce((acc, t) => acc + (t.durationMs || 0), 0);
   const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
   const exportPayload = {
@@ -371,7 +372,9 @@ export function generateJSON(playlist: Playlist): string {
     loadedTrackCount: playlist.tracks.length,
     isPartial,
     totalDuration: isPartial ? null : durationStr,
+    totalDurationMs: isPartial ? null : loadedDurationMs,
     loadedDuration: durationStr,
+    loadedDurationMs,
     playCount: playlist.playCount || null,
     tags: playlist.tags || [],
     description: playlist.description || '',
