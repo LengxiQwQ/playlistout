@@ -343,6 +343,7 @@ export function normalizeQishuiTrack(
       publishTime,
       maxQuality,
       mvId: rawTrack.vid ? String(rawTrack.vid) : undefined,
+      rawIds: id ? { qishui_track_id: id } : undefined,
     };
   }
 
@@ -419,6 +420,7 @@ export function normalizeQishuiTrack(
       status: isVip ? 'vip' : 'playable',
       statusText: isVip ? 'VIP专享' : '视频',
       mvId: vid,
+      rawIds: vid ? { qishui_vid: vid } : undefined,
     };
   }
 
@@ -524,6 +526,7 @@ export function normalizeAwemeMusicTrack(raw: RawAwemeMusic, index: number): Tra
     isOriginalSound,
     status,
     statusText,
+    rawIds: id ? { douyin_id: id } : undefined,
   };
 }
 
