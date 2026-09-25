@@ -12,7 +12,7 @@ export interface KugouRawSong {
   songname?: string;
   filename?: string;
   singername?: string;
-  singerinfo?: Array<{ name?: string }>;
+  singerinfo?: Array<{ name?: string; id?: number | string }>;
   albuminfo?: { name?: string; id?: number | string };
   album_name?: string;
   AlbumName?: string;
@@ -23,6 +23,7 @@ export interface KugouRawSong {
   trans_param?: { union_cover?: string };
   privilege?: number;
   Privilege?: number;
+  mvhash?: string;
 }
 
 export interface KugouRawListInfo {
@@ -106,14 +107,22 @@ function extractKugouTags(listInfo: KugouRawListInfo): string[] | undefined {
 /**
  * Normalizes artist name(s) and track title from raw Kugou song data.
  */
-function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: string[] } {
+function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: string[]; artistList?: import('../../models/playlist').TrackArtist[] } {
   const rawName = (item.name || item.songname || item.filename || '').trim();
 
   // 1. Try explicit singerinfo array
   if (item.singerinfo && Array.isArray(item.singerinfo) && item.singerinfo.length > 0) {
-    const artists = item.singerinfo
-      .map((s) => (s.name || '').trim())
-      .filter((n) => n.length > 0);
+    const artists: string[] = [];
+    const artistList: import('../../models/playlist').TrackArtist[] = [];
+    
+    for (const s of item.singerinfo) {
+      const name = (s.name || '').trim();
+      if (name) {
+        artists.push(name);
+        const aId = s.id !== undefined && s.id !== null ? String(s.id) : undefined;
+        artistList.push({ id: aId, name });
+      }
+    }
 
     if (artists.length > 0) {
       // If rawName starts with "Artist - ", strip it to get the clean title
@@ -125,6 +134,7 @@ function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: s
       return {
         title: title || rawName || '未知歌曲',
         artists,
+        artistList: artistList.length > 0 ? artistList : undefined,
       };
     }
   }
@@ -172,7 +182,7 @@ function normalizeCoverUrl(url?: string): string | undefined {
  * Normalizes a single raw Kugou song into a PlaylistOut Track.
  */
 export function normalizeKugouTrack(rawSong: KugouRawSong, index: number): Track {
-  const { title, artists } = extractTitleAndArtists(rawSong);
+  const { title, artists, artistList } = extractTitleAndArtists(rawSong);
 
   const hash = rawSong.hash || rawSong.FileHash || '';
   const album =
@@ -180,6 +190,12 @@ export function normalizeKugouTrack(rawSong: KugouRawSong, index: number): Track
     rawSong.album_name ||
     rawSong.AlbumName ||
     undefined;
+    
+  let albumObj: import('../../models/playlist').TrackAlbum | undefined;
+  if (rawSong.albuminfo && rawSong.albuminfo.name) {
+    const aId = rawSong.albuminfo.id !== undefined && rawSong.albuminfo.id !== null ? String(rawSong.albuminfo.id) : undefined;
+    albumObj = { id: aId, name: rawSong.albuminfo.name };
+  }
 
   // Duration in milliseconds (timelen is ms, duration is seconds)
   let durationMs: number | undefined;
@@ -196,19 +212,28 @@ export function normalizeKugouTrack(rawSong: KugouRawSong, index: number): Track
 
   const privilege = rawSong.privilege ?? rawSong.Privilege ?? 0;
   const isVip = privilege === 10;
+  
+  const mvId = rawSong.mvhash ? rawSong.mvhash.trim() : undefined;
+  
+  const rawIds: Record<string, string | number> = {};
+  if (hash) rawIds.kugou_hash = hash;
 
   return {
     index,
     id: hash || undefined,
     title,
     artists,
+    artistList,
     album: album || undefined,
+    albumObj,
     durationMs,
     sourceUrl: hash ? `https://www.kugou.com/song/#hash=${hash}` : undefined,
     coverUrl,
     isAvailable: true,
     isVip,
     status: isVip ? 'vip' : 'playable',
+    mvId,
+    rawIds: Object.keys(rawIds).length > 0 ? rawIds : undefined,
   };
 }
 

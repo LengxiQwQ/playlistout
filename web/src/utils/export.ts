@@ -244,7 +244,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
     `# 歌单链接: ${sourceUrl}`,
   ].filter((line): line is string => line !== null);
 
-  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态'];
+  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态', '歌曲链接'];
   const rows: string[][] = [header];
 
   for (const track of playlist.tracks) {
@@ -257,6 +257,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
       getTrackTypeText(track),
       getTrackIsVip(track) ? 'VIP' : '—',
       getTrackStatusText(track),
+      track.sourceUrl || '',
     ]);
   }
 
@@ -306,7 +307,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   // Blank separator row
   metaRows.push([]);
 
-  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态'];
+  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态', '歌曲链接'];
   const songRows = playlist.tracks.map((track) => [
     track.index,
     sanitizeSpreadsheetCell(track.title || ''),
@@ -316,6 +317,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
     getTrackTypeText(track),
     getTrackIsVip(track) ? 'VIP' : '—',
     sanitizeSpreadsheetCell(getTrackStatusText(track)),
+    track.sourceUrl || '',
   ]);
 
   const allRows = [...metaRows, tableHeader, ...songRows];
@@ -333,6 +335,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
     { wch: 12 }, // 类型
     { wch: 8 },  // VIP
     { wch: 14 }, // 歌曲状态
+    { wch: 45 }, // 歌曲链接
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, '歌单歌曲');
@@ -377,14 +380,21 @@ export function generateJSON(playlist: Playlist): string {
       id: t.id,
       title: t.title,
       artists: t.artists,
+      artistList: t.artistList,
       album: t.album || '',
+      albumObj: t.albumObj,
       durationMs: t.durationMs,
+      coverUrl: t.coverUrl,
       isOriginalSound: Boolean(t.isOriginalSound),
       isVip: Boolean(t.isVip || t.status === 'vip'),
       isAvailable: t.isAvailable ?? true,
       status: t.status || (t.isAvailable === false ? 'unplayable' : 'playable'),
       statusText: getTrackStatusText(t),
       sourceUrl: t.sourceUrl,
+      maxQuality: t.maxQuality,
+      publishTime: t.publishTime ? formatTimestamp(t.publishTime) : undefined,
+      mvId: t.mvId,
+      rawIds: t.rawIds,
     })),
   };
 

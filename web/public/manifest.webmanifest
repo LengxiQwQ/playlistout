@@ -1,0 +1,16 @@
+{
+  "name": "Playlist Out - 把你的歌单带走",
+  "short_name": "Playlist Out",
+  "description": "轻量、尊重隐私的在线歌单导出工具。粘贴公开歌单链接，一键解析并本地导出为 TXT、CSV、Excel、JSON。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5efe0",
+  "theme_color": "#f5efe0",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "/logo-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/logo-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/logo-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

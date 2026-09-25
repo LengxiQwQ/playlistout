@@ -115,22 +115,35 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     throw new ProviderError('PARSE_ERROR', `Missing mandatory track title for song at index ${index}.`, 502);
   }
 
-  // Extract artists array
+  // Extract artists array & object list
   let artists: string[] = [];
+  let artistList: import('../../models/playlist').TrackArtist[] = [];
   if (Array.isArray(rawSong.singer)) {
-    artists = rawSong.singer
-      .map((s) => (s && typeof s === 'object' ? (s.name || s.title || '').trim() : ''))
-      .filter((name) => name.length > 0);
+    for (const s of rawSong.singer) {
+      if (s && typeof s === 'object') {
+        const name = (s.name || s.title || '').trim();
+        if (name) {
+          artists.push(name);
+          const sMid = (s.mid || '').trim();
+          const sId = s.id !== undefined && s.id !== null ? String(s.id) : undefined;
+          artistList.push({ id: sMid || sId, name });
+        }
+      }
+    }
   }
 
-  // Extract album name
+  // Extract album name & object
   let album: string | undefined;
+  let albumObj: import('../../models/playlist').TrackAlbum | undefined;
   if (typeof rawSong.albumname === 'string' && rawSong.albumname.trim().length > 0) {
     album = rawSong.albumname.trim();
   } else if (rawSong.album && typeof rawSong.album === 'object') {
     const albumObjName = (rawSong.album.name || rawSong.album.title || '').trim();
     if (albumObjName.length > 0) {
       album = albumObjName;
+      const aMid = (rawSong.album.mid || '').trim();
+      const aId = rawSong.album.id !== undefined && rawSong.album.id !== null ? String(rawSong.album.id) : undefined;
+      albumObj = { id: aMid || aId, name: albumObjName };
     }
   }
 
@@ -138,6 +151,11 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   const trackMid = (rawSong.songmid || rawSong.mid || '').trim();
   const trackId = rawSong.songid ?? rawSong.id;
   const id = trackMid || (trackId !== undefined && trackId !== null ? String(trackId).trim() : undefined);
+
+  // Raw IDs for geeks
+  const rawIds: Record<string, string | number> = {};
+  if (trackMid) rawIds.qq_songmid = trackMid;
+  if (trackId !== undefined && trackId !== null) rawIds.qq_songid = trackId;
 
   // Duration in milliseconds
   const intervalSeconds = typeof rawSong.interval === 'number' && rawSong.interval >= 0 ? rawSong.interval : undefined;
@@ -202,12 +220,24 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     statusText = 'VIP专享';
   }
 
+  // Max Audio Quality
+  let maxQuality: string | undefined;
+  if (rawSong.sizeflac && rawSong.sizeflac > 0) {
+    maxQuality = 'FLAC';
+  } else if (rawSong.size320 && rawSong.size320 > 0) {
+    maxQuality = '320kbps';
+  } else if (rawSong.size128 && rawSong.size128 > 0) {
+    maxQuality = '128kbps';
+  }
+
   return {
     index,
     id,
     title,
     artists,
+    artistList: artistList.length > 0 ? artistList : undefined,
     album,
+    albumObj,
     durationMs,
     sourceUrl,
     coverUrl,
@@ -215,6 +245,8 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     isVip,
     status,
     statusText,
+    maxQuality,
+    rawIds: Object.keys(rawIds).length > 0 ? rawIds : undefined,
   };
 }
 

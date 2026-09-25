@@ -172,13 +172,21 @@ PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者�
 | `id` | `string` | 可选 | 来源平台的歌曲唯一 ID / MID（例如 `"0039MnYb0qxYAc"`） |
 | `title` | `string` | **必填** | 歌曲标题（保留完整版本名与副标题） |
 | `artists` | `string[]` | **必填** | 参与歌手名数组（多位歌手分别作为独立元素，如 `["周杰伦", "阿信"]`） |
+| `artistList` | `Array<{id?: string, name: string}>` | 可选 | (*极客增强*) 结构化的歌手对象数组，包含歌手在平台上的唯一 ID，提高匹配准确率 |
 | `album` | `string` | **必填** | 收录专辑名称 |
+| `albumObj` | `{id?: string, name: string}` | 可选 | (*极客增强*) 结构化的专辑对象，包含专辑唯一 ID |
 | `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒） |
+| `coverUrl` | `string` | 可选 | 单曲或所属专辑的高清封面图片直链 URL |
 | `isVip` | `boolean` | 可选 | 是否为 VIP 专享歌曲 |
 | `isAvailable` | `boolean` | 可选 | 歌曲在来源平台是否正常可播（下架/无版权变灰时为 `false`） |
 | `status` | `string` | 可选 | 歌曲状态枚举：`"playable"` (正常) / `"unplayable"` (下架/无版权) / `"vip"` (VIP专享) / `"paid"` (付费专辑) / `"geo_blocked"` (地区限制) |
 | `statusText` | `string` | 可选 | 歌曲状态用户友好文本（如 `"正常"`、`"下架/无版权"`、`"VIP专享"`、`"付费专辑"`） |
 | `sourceUrl` | `string` | 可选 | 该歌曲在来源平台上的网页详情直链 URL |
+| `isOriginalSound` | `boolean` | 可选 | 是否为平台短视频提取的“原声”音频（如汽水音乐特有属性） |
+| `maxQuality` | `string` | 可选 | (*极客增强*) 解析到的歌曲最高可用音质（例如 `"FLAC"`, `"320kbps"`, `"lossless"`），不同平台标准可能不同 |
+| `publishTime` | `number` | 可选 | (*极客增强*) 歌曲发布/发行的 Unix 时间戳（秒） |
+| `mvId` | `string` | 可选 | (*极客增强*) 关联的音乐视频（MV）的平台唯一 ID |
+| `rawIds` | `Record<string, string \| number>` | 可选 | (*极客增强*) 平台提供的所有原始标识字典集合（如 `{ "qq_songid": 1234, "qq_songmid": "..." }`），供自动化脚本提取备用 |
 
 #### 标准 JSON 示例
 

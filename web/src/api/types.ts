@@ -5,12 +5,24 @@
 
 export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
 
+export interface TrackArtist {
+  id?: string;
+  name: string;
+}
+
+export interface TrackAlbum {
+  id?: string;
+  name: string;
+}
+
 export interface Track {
   index: number;
   id?: string;
   title: string;
   artists: string[];
+  artistList?: TrackArtist[];
   album?: string;
+  albumObj?: TrackAlbum;
   durationMs?: number;
   sourceUrl?: string;
   coverUrl?: string;
@@ -19,6 +31,10 @@ export interface Track {
   status?: TrackAvailability;
   statusText?: string;
   isOriginalSound?: boolean;
+  maxQuality?: string;
+  publishTime?: number;
+  mvId?: string;
+  rawIds?: Record<string, string | number>;
 }
 
 export type PlaylistRetrievalMode = 'full' | 'preview';
