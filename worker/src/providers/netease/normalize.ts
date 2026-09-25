@@ -250,6 +250,7 @@ export function normalizeNeteaseTrack(
     statusText: statusInfo.statusText,
     mvId,
     maxQuality,
+    rawIds: trackId ? { netease_id: trackId } : undefined,
   };
 }
 
