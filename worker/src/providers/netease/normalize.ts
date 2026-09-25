@@ -32,6 +32,7 @@ export interface RawNeteaseSong {
   dt?: number;
   duration?: number;
   fee?: number;
+  mv?: number | string;
   noCopyrightRcmd?: unknown;
   privilege?: RawNeteasePrivilege;
 }
@@ -171,15 +172,28 @@ export function normalizeNeteaseTrack(
 
   // Artists
   const rawArtists = Array.isArray(rawSong.ar) ? rawSong.ar : Array.isArray(rawSong.artists) ? rawSong.artists : [];
-  const artists = rawArtists
-    .map((a) => (a && typeof a === 'object' ? (a.name || '').trim() : ''))
-    .filter((name) => name.length > 0);
+  let artists: string[] = [];
+  let artistList: import('../../models/playlist').TrackArtist[] = [];
+  
+  for (const a of rawArtists) {
+    if (a && typeof a === 'object') {
+      const name = (a.name || '').trim();
+      if (name) {
+        artists.push(name);
+        const aId = a.id !== undefined && a.id !== null ? String(a.id) : undefined;
+        artistList.push({ id: aId, name });
+      }
+    }
+  }
 
   // Album
   const rawAlbum = rawSong.al || rawSong.album;
   let album: string | undefined;
+  let albumObj: import('../../models/playlist').TrackAlbum | undefined;
   if (rawAlbum && typeof rawAlbum === 'object' && typeof rawAlbum.name === 'string' && rawAlbum.name.trim().length > 0) {
     album = rawAlbum.name.trim();
+    const aId = rawAlbum.id !== undefined && rawAlbum.id !== null ? String(rawAlbum.id) : undefined;
+    albumObj = { id: aId, name: album };
   }
 
   // Duration
@@ -193,6 +207,9 @@ export function normalizeNeteaseTrack(
   // Track ID and URLs
   const trackId = rawSong.id !== undefined && rawSong.id !== null ? String(rawSong.id).trim() : undefined;
   const sourceUrl = trackId ? `https://music.163.com/#/song?id=${trackId}` : undefined;
+  
+  // MV
+  const mvId = rawSong.mv !== undefined && rawSong.mv !== 0 && rawSong.mv !== null ? String(rawSong.mv).trim() : undefined;
 
   // Cover URL
   let coverUrl: string | undefined;
@@ -201,13 +218,29 @@ export function normalizeNeteaseTrack(
   }
 
   const statusInfo = determineNeteaseTrackStatus(rawSong, privilege);
+  
+  // Max Audio Quality
+  const priv = privilege || rawSong.privilege;
+  let maxQuality: string | undefined;
+  if (priv && typeof priv.dl === 'number') {
+    // NetEase maxbr / dl flags: 999000 is SQ/FLAC, 320000 is 320kbps
+    if (priv.dl >= 999000) {
+      maxQuality = 'FLAC';
+    } else if (priv.dl >= 320000) {
+      maxQuality = '320kbps';
+    } else if (priv.dl >= 128000) {
+      maxQuality = '128kbps';
+    }
+  }
 
   return {
     index,
     id: trackId,
     title,
     artists,
+    artistList: artistList.length > 0 ? artistList : undefined,
     album,
+    albumObj,
     durationMs,
     sourceUrl,
     coverUrl,
@@ -215,6 +248,8 @@ export function normalizeNeteaseTrack(
     isVip: statusInfo.isVip,
     status: statusInfo.status,
     statusText: statusInfo.statusText,
+    mvId,
+    maxQuality,
   };
 }
 

@@ -268,11 +268,14 @@ export function normalizeQishuiTrack(
 
     // Artists
     const artists: string[] = [];
+    const artistList: import('../../models/playlist').TrackArtist[] = [];
     if (Array.isArray(rawTrack.artists)) {
       for (const a of rawTrack.artists) {
         const name = (a.name || a.artist_name || a.simple_display_name || a.user?.nickname || '').trim();
         if (name) {
           artists.push(name);
+          const aId = a.id !== undefined && a.id !== null ? String(a.id) : a.user?.uid !== undefined && a.user?.uid !== null ? String(a.user?.uid) : undefined;
+          artistList.push({ id: aId, name });
         }
       }
     }
@@ -282,8 +285,16 @@ export function normalizeQishuiTrack(
 
     // Album
     let album: string | undefined;
+    let albumObj: import('../../models/playlist').TrackAlbum | undefined;
+    let publishTime: number | undefined;
     if (rawTrack.album?.name && rawTrack.album.name.trim().length > 0) {
       album = rawTrack.album.name.trim();
+      const aId = rawTrack.album.id !== undefined && rawTrack.album.id !== null ? String(rawTrack.album.id) : undefined;
+      albumObj = { id: aId, name: album };
+      
+      if (typeof rawTrack.album.release_date === 'number' && rawTrack.album.release_date > 0) {
+        publishTime = rawTrack.album.release_date > 1e11 ? Math.floor(rawTrack.album.release_date / 1000) : rawTrack.album.release_date;
+      }
     }
 
     // Duration
@@ -302,12 +313,25 @@ export function normalizeQishuiTrack(
     // Status
     const statusInfo = determineQishuiTrackStatus(rawTrack);
 
+    // Max Quality
+    let maxQuality: string | undefined;
+    if (rawTrack.label_info?.quality_only_vip_can_play?.includes('lossless') || rawTrack.label_info?.quality_map?.lossless) {
+      maxQuality = 'lossless';
+    } else if (rawTrack.label_info?.quality_map?.high) {
+      maxQuality = '320kbps';
+    } else if (Array.isArray(rawTrack.bit_rates)) {
+      if (rawTrack.bit_rates.some((b) => b.quality === 'lossless')) maxQuality = 'lossless';
+      else if (rawTrack.bit_rates.some((b) => b.quality === 'high')) maxQuality = '320kbps';
+    }
+
     return {
       index,
       id,
       title,
       artists,
+      artistList: artistList.length > 0 ? artistList : undefined,
       album,
+      albumObj,
       durationMs,
       coverUrl,
       sourceUrl: id ? `https://music.douyin.com/qishui/share/track?track_id=${id}` : undefined,
@@ -316,6 +340,9 @@ export function normalizeQishuiTrack(
       isOriginalSound: Boolean(rawTrack.label_info?.is_original),
       status: statusInfo.status,
       statusText: statusInfo.statusText,
+      publishTime,
+      maxQuality,
+      mvId: rawTrack.vid ? String(rawTrack.vid) : undefined,
     };
   }
 
@@ -342,6 +369,7 @@ export function normalizeQishuiTrack(
 
     // Artists / Creators
     const artists: string[] = [];
+    const artistList: import('../../models/playlist').TrackArtist[] = [];
     if (Array.isArray(rawVideo.artists)) {
       for (const a of rawVideo.artists) {
         const name = (
@@ -354,6 +382,8 @@ export function normalizeQishuiTrack(
         ).trim();
         if (name) {
           artists.push(name);
+          const aId = a.id !== undefined && a.id !== null ? String(a.id) : a.user?.uid !== undefined && a.user?.uid !== null ? String(a.user?.uid) : undefined;
+          artistList.push({ id: aId, name });
         }
       }
     }
@@ -380,6 +410,7 @@ export function normalizeQishuiTrack(
       id: vid,
       title,
       artists,
+      artistList: artistList.length > 0 ? artistList : undefined,
       durationMs,
       coverUrl,
       sourceUrl: vid ? `https://music.douyin.com/qishui/share/track?track_id=${vid}` : undefined,
@@ -387,6 +418,7 @@ export function normalizeQishuiTrack(
       isVip,
       status: isVip ? 'vip' : 'playable',
       statusText: isVip ? 'VIP专享' : '视频',
+      mvId: vid,
     };
   }
 
