@@ -113,22 +113,43 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
     throw new ProviderError('INVALID_INPUT', 'Playlist ID must not be empty.', 400);
   }
 
-  const detailUrl = `https://music.163.com/api/v6/playlist/detail?id=${encodeURIComponent(cleanId)}`;
-  const response = await fetchWithTimeout(detailUrl, {
-    method: 'GET',
-    headers: {
-      'User-Agent': UPSTREAM_USER_AGENT,
-      Referer: 'https://music.163.com/',
-      Origin: 'https://music.163.com',
-      Cookie: 'os=pc; appver=2.9.7',
-    },
-  });
+  const commonHeaders = {
+    'User-Agent': UPSTREAM_USER_AGENT,
+    Referer: 'https://music.163.com/',
+    Origin: 'https://music.163.com',
+    Cookie: 'os=pc; appver=2.9.7',
+  };
 
-  if (!response.ok) {
-    throw new ProviderError('UPSTREAM_ERROR', `NetEase playlist detail API returned HTTP ${response.status}`, 502);
+  let rawJson: RawNeteasePlaylistDetailResponse;
+
+  // Try v6 API first, fall back to legacy API on -462 (anti-bot) or missing playlist
+  const v6Url = `https://music.163.com/api/v6/playlist/detail?id=${encodeURIComponent(cleanId)}`;
+  const v6Response = await fetchWithTimeout(v6Url, { method: 'GET', headers: commonHeaders });
+
+  if (!v6Response.ok) {
+    throw new ProviderError('UPSTREAM_ERROR', `NetEase playlist detail API returned HTTP ${v6Response.status}`, 502);
   }
 
-  const rawJson: RawNeteasePlaylistDetailResponse = await response.json();
+  rawJson = await v6Response.json();
+
+  // Fallback to legacy API if v6 returns -462 (anti-bot captcha) or has no playlist data
+  if (rawJson.code === -462 || (!rawJson.playlist && rawJson.code !== 404)) {
+    const legacyUrl = `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(cleanId)}`;
+    const legacyResponse = await fetchWithTimeout(legacyUrl, { method: 'GET', headers: commonHeaders });
+
+    if (legacyResponse.ok) {
+      const legacyJson = await legacyResponse.json() as Record<string, any>;
+      if (legacyJson.code === 200 && legacyJson.result) {
+        // Legacy API uses "result" instead of "playlist" — normalize to our expected shape
+        rawJson = {
+          code: legacyJson.code,
+          playlist: legacyJson.result as RawNeteasePlaylistDetailResponse['playlist'],
+          privileges: legacyJson.privileges,
+        };
+      }
+    }
+  }
+
   if (rawJson.code === 404 || !rawJson.playlist) {
     throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${cleanId}" was not found or is private.`, 404);
   }
