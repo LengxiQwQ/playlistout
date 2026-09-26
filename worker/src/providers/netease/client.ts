@@ -200,7 +200,31 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       }
     }
 
-    const stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+    let stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+
+    // Fallback: Check if missing songs are available in the inline tracks from playlist detail
+    // (This handles Cloud Drive / Yunpan songs that are dropped by v3/song/detail but present inline)
+    if (stillMissingIds.length > 0 && Array.isArray(playlistDetail.tracks)) {
+      for (const inlineSong of playlistDetail.tracks) {
+        if (inlineSong && inlineSong.id !== undefined && inlineSong.id !== null) {
+          const idStr = String(inlineSong.id);
+          if (!songMap.has(idStr)) {
+            songMap.set(idStr, inlineSong);
+            
+            // Try to find corresponding privilege
+            if (Array.isArray(rawJson.privileges)) {
+              const inlinePriv = rawJson.privileges.find((p: any) => p && String(p.id) === idStr);
+              if (inlinePriv) {
+                privMap.set(idStr, inlinePriv);
+              }
+            }
+          }
+        }
+      }
+      // Re-evaluate missing ids
+      stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+    }
+
     if (stillMissingIds.length > 0) {
       throw new ProviderError(
         'INCOMPLETE_PLAYLIST',
