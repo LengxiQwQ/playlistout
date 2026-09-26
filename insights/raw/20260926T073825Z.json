@@ -1,0 +1,507 @@
+{
+  "fetched_at": "2026-09-26T07:38:25Z",
+  "data": {
+    "views": {
+      "count": 554,
+      "uniques": 141,
+      "views": [
+        {
+          "timestamp": "2026-09-10T00:00:00Z",
+          "count": 15,
+          "uniques": 10
+        },
+        {
+          "timestamp": "2026-09-11T00:00:00Z",
+          "count": 13,
+          "uniques": 7
+        },
+        {
+          "timestamp": "2026-09-12T00:00:00Z",
+          "count": 155,
+          "uniques": 7
+        },
+        {
+          "timestamp": "2026-09-13T00:00:00Z",
+          "count": 46,
+          "uniques": 11
+        },
+        {
+          "timestamp": "2026-09-14T00:00:00Z",
+          "count": 52,
+          "uniques": 12
+        },
+        {
+          "timestamp": "2026-09-15T00:00:00Z",
+          "count": 61,
+          "uniques": 7
+        },
+        {
+          "timestamp": "2026-09-16T00:00:00Z",
+          "count": 41,
+          "uniques": 11
+        },
+        {
+          "timestamp": "2026-09-17T00:00:00Z",
+          "count": 30,
+          "uniques": 15
+        },
+        {
+          "timestamp": "2026-09-18T00:00:00Z",
+          "count": 37,
+          "uniques": 16
+        },
+        {
+          "timestamp": "2026-09-19T00:00:00Z",
+          "count": 23,
+          "uniques": 18
+        },
+        {
+          "timestamp": "2026-09-20T00:00:00Z",
+          "count": 16,
+          "uniques": 15
+        },
+        {
+          "timestamp": "2026-09-21T00:00:00Z",
+          "count": 15,
+          "uniques": 6
+        },
+        {
+          "timestamp": "2026-09-22T00:00:00Z",
+          "count": 16,
+          "uniques": 12
+        },
+        {
+          "timestamp": "2026-09-23T00:00:00Z",
+          "count": 34,
+          "uniques": 11
+        }
+      ]
+    },
+    "clones": {
+      "count": 2193,
+      "uniques": 414,
+      "clones": [
+        {
+          "timestamp": "2026-09-10T00:00:00Z",
+          "count": 4,
+          "uniques": 4
+        },
+        {
+          "timestamp": "2026-09-11T00:00:00Z",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "timestamp": "2026-09-12T00:00:00Z",
+          "count": 487,
+          "uniques": 119
+        },
+        {
+          "timestamp": "2026-09-13T00:00:00Z",
+          "count": 78,
+          "uniques": 23
+        },
+        {
+          "timestamp": "2026-09-14T00:00:00Z",
+          "count": 170,
+          "uniques": 31
+        },
+        {
+          "timestamp": "2026-09-15T00:00:00Z",
+          "count": 137,
+          "uniques": 42
+        },
+        {
+          "timestamp": "2026-09-16T00:00:00Z",
+          "count": 228,
+          "uniques": 58
+        },
+        {
+          "timestamp": "2026-09-17T00:00:00Z",
+          "count": 331,
+          "uniques": 86
+        },
+        {
+          "timestamp": "2026-09-18T00:00:00Z",
+          "count": 402,
+          "uniques": 116
+        },
+        {
+          "timestamp": "2026-09-19T00:00:00Z",
+          "count": 149,
+          "uniques": 59
+        },
+        {
+          "timestamp": "2026-09-20T00:00:00Z",
+          "count": 22,
+          "uniques": 14
+        },
+        {
+          "timestamp": "2026-09-21T00:00:00Z",
+          "count": 62,
+          "uniques": 14
+        },
+        {
+          "timestamp": "2026-09-22T00:00:00Z",
+          "count": 15,
+          "uniques": 10
+        },
+        {
+          "timestamp": "2026-09-23T00:00:00Z",
+          "count": 107,
+          "uniques": 37
+        }
+      ]
+    },
+    "referrers": [
+      {
+        "referrer": "github.com",
+        "count": 171,
+        "uniques": 9
+      },
+      {
+        "referrer": "Google",
+        "count": 66,
+        "uniques": 39
+      },
+      {
+        "referrer": "Bing",
+        "count": 44,
+        "uniques": 37
+      },
+      {
+        "referrer": "Baidu",
+        "count": 9,
+        "uniques": 4
+      },
+      {
+        "referrer": "open.cd",
+        "count": 2,
+        "uniques": 2
+      },
+      {
+        "referrer": "Yahoo",
+        "count": 1,
+        "uniques": 1
+      },
+      {
+        "referrer": "chatgpt.com",
+        "count": 1,
+        "uniques": 1
+      },
+      {
+        "referrer": "lengxiqwq.com",
+        "count": 1,
+        "uniques": 1
+      }
+    ],
+    "paths": [
+      {
+        "path": "/LengxiQwQ/playlistout",
+        "title": "Overview",
+        "count": 348,
+        "uniques": 108
+      },
+      {
+        "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+        "title": "Overview",
+        "count": 23,
+        "uniques": 15
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/releases",
+        "title": "/releases",
+        "count": 23,
+        "uniques": 3
+      },
+      {
+        "path": "/LengxiQwQ/music-playlist-exporter",
+        "title": "Overview",
+        "count": 9,
+        "uniques": 3
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/commits/main",
+        "title": "/commits/main",
+        "count": 9,
+        "uniques": 2
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/issues",
+        "title": "/issues",
+        "count": 7,
+        "uniques": 7
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/deployments/github-pages",
+        "title": "/deployments/github-pages",
+        "count": 7,
+        "uniques": 1
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/releases/tag/v2.2.0",
+        "title": "/releases/tag/v2.2.0",
+        "count": 6,
+        "uniques": 4
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/pulse",
+        "title": "/pulse",
+        "count": 6,
+        "uniques": 1
+      },
+      {
+        "path": "/LengxiQwQ/playlistout/actions",
+        "title": "/actions",
+        "count": 5,
+        "uniques": 3
+      }
+    ],
+    "repo_meta": {
+      "id": 1079626080,
+      "node_id": "R_kgDOQFnJYA",
+      "name": "playlistout",
+      "full_name": "LengxiQwQ/playlistout",
+      "private": false,
+      "owner": {
+        "login": "LengxiQwQ",
+        "id": 97082679,
+        "node_id": "U_kgDOBcldNw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/97082679?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/LengxiQwQ",
+        "html_url": "https://github.com/LengxiQwQ",
+        "followers_url": "https://api.github.com/users/LengxiQwQ/followers",
+        "following_url": "https://api.github.com/users/LengxiQwQ/following{/other_user}",
+        "gists_url": "https://api.github.com/users/LengxiQwQ/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/LengxiQwQ/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/LengxiQwQ/subscriptions",
+        "organizations_url": "https://api.github.com/users/LengxiQwQ/orgs",
+        "repos_url": "https://api.github.com/users/LengxiQwQ/repos",
+        "events_url": "https://api.github.com/users/LengxiQwQ/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/LengxiQwQ/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/LengxiQwQ/playlistout",
+      "description": "Playlist Out（把你的歌单带走）— 主流音乐平台歌单解析与多格式导出工具，支持 TXT / CSV / Excel / JSON 等格式｜Playlist parser and multi-format exporter for major music platforms, supporting TXT, CSV, Excel, JSON, and more.",
+      "fork": false,
+      "url": "https://api.github.com/repos/LengxiQwQ/playlistout",
+      "forks_url": "https://api.github.com/repos/LengxiQwQ/playlistout/forks",
+      "keys_url": "https://api.github.com/repos/LengxiQwQ/playlistout/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/LengxiQwQ/playlistout/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/LengxiQwQ/playlistout/teams",
+      "hooks_url": "https://api.github.com/repos/LengxiQwQ/playlistout/hooks",
+      "issue_events_url": "https://api.github.com/repos/LengxiQwQ/playlistout/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/LengxiQwQ/playlistout/events",
+      "assignees_url": "https://api.github.com/repos/LengxiQwQ/playlistout/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/LengxiQwQ/playlistout/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/LengxiQwQ/playlistout/tags",
+      "blobs_url": "https://api.github.com/repos/LengxiQwQ/playlistout/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/LengxiQwQ/playlistout/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/LengxiQwQ/playlistout/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/LengxiQwQ/playlistout/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/LengxiQwQ/playlistout/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/LengxiQwQ/playlistout/languages",
+      "stargazers_url": "https://api.github.com/repos/LengxiQwQ/playlistout/stargazers",
+      "contributors_url": "https://api.github.com/repos/LengxiQwQ/playlistout/contributors",
+      "subscribers_url": "https://api.github.com/repos/LengxiQwQ/playlistout/subscribers",
+      "subscription_url": "https://api.github.com/repos/LengxiQwQ/playlistout/subscription",
+      "commits_url": "https://api.github.com/repos/LengxiQwQ/playlistout/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/LengxiQwQ/playlistout/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/LengxiQwQ/playlistout/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/LengxiQwQ/playlistout/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/LengxiQwQ/playlistout/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/LengxiQwQ/playlistout/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/LengxiQwQ/playlistout/merges",
+      "archive_url": "https://api.github.com/repos/LengxiQwQ/playlistout/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/LengxiQwQ/playlistout/downloads",
+      "issues_url": "https://api.github.com/repos/LengxiQwQ/playlistout/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/LengxiQwQ/playlistout/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/LengxiQwQ/playlistout/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/LengxiQwQ/playlistout/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/LengxiQwQ/playlistout/labels{/name}",
+      "releases_url": "https://api.github.com/repos/LengxiQwQ/playlistout/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/LengxiQwQ/playlistout/deployments",
+      "created_at": "2025-10-20T06:09:18Z",
+      "updated_at": "2026-09-25T15:39:30Z",
+      "pushed_at": "2026-09-25T15:39:26Z",
+      "git_url": "git://github.com/LengxiQwQ/playlistout.git",
+      "ssh_url": "git@github.com:LengxiQwQ/playlistout.git",
+      "clone_url": "https://github.com/LengxiQwQ/playlistout.git",
+      "svn_url": "https://github.com/LengxiQwQ/playlistout",
+      "homepage": "https://playlistout.com",
+      "size": 6523,
+      "stargazers_count": 32,
+      "watchers_count": 32,
+      "language": "TypeScript",
+      "has_issues": true,
+      "has_projects": true,
+      "has_downloads": false,
+      "has_wiki": true,
+      "has_pages": true,
+      "has_discussions": false,
+      "forks_count": 1,
+      "mirror_url": null,
+      "archived": false,
+      "disabled": false,
+      "open_issues_count": 0,
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "allow_forking": true,
+      "is_template": false,
+      "web_commit_signoff_required": false,
+      "has_pull_requests": true,
+      "pull_request_creation_policy": "all",
+      "topics": [
+        "cloudflare-workers",
+        "export",
+        "music",
+        "open-source",
+        "playlist",
+        "playlist-export",
+        "qqmusic",
+        "react",
+        "typescript"
+      ],
+      "visibility": "public",
+      "forks": 1,
+      "open_issues": 0,
+      "watchers": 32,
+      "default_branch": "main",
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      },
+      "temp_clone_token": "",
+      "allow_squash_merge": true,
+      "allow_merge_commit": true,
+      "allow_rebase_merge": true,
+      "allow_auto_merge": false,
+      "delete_branch_on_merge": false,
+      "allow_update_branch": false,
+      "use_squash_pr_title_as_default": false,
+      "squash_merge_commit_message": "COMMIT_MESSAGES",
+      "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+      "merge_commit_message": "PR_TITLE",
+      "merge_commit_title": "MERGE_MESSAGE",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "enabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "enabled"
+        },
+        "dependabot_security_updates": {
+          "status": "disabled"
+        },
+        "secret_scanning_non_provider_patterns": {
+          "status": "disabled"
+        },
+        "secret_scanning_validity_checks": {
+          "status": "disabled"
+        }
+      },
+      "network_count": 1,
+      "subscribers_count": 1
+    },
+    "website_stats": {
+      "launchedAt": "2026-09-12",
+      "cumulativeDailyVisitors": 163,
+      "totalVisitors": 163,
+      "visitorsToday": 5,
+      "totalPageViews": 363,
+      "pageViewsToday": 6,
+      "totalPlaylistsParsed": 353,
+      "playlistsParsedToday": 3,
+      "totalTracksProcessed": 74479,
+      "tracksProcessedToday": 2875,
+      "totalExports": 78,
+      "exportsToday": 0,
+      "exportFormatsBreakdown": {
+        "txt": 15,
+        "csv": 13,
+        "xlsx": 33,
+        "json": 17
+      },
+      "byPlatform": {
+        "qqmusic": {
+          "totalSuccess": 249,
+          "todaySuccess": 3
+        },
+        "netease": {
+          "totalSuccess": 53,
+          "todaySuccess": 0
+        },
+        "kugou": {
+          "totalSuccess": 44,
+          "todaySuccess": 0
+        },
+        "qishui": {
+          "totalSuccess": 7,
+          "todaySuccess": 0
+        }
+      },
+      "recentDays": [
+        {
+          "date": "2026-09-26",
+          "parses": 3,
+          "tracks": 2875,
+          "exports": 0
+        },
+        {
+          "date": "2026-09-25",
+          "parses": 22,
+          "tracks": 12938,
+          "exports": 1
+        },
+        {
+          "date": "2026-09-24",
+          "parses": 33,
+          "tracks": 6822,
+          "exports": 25
+        },
+        {
+          "date": "2026-09-23",
+          "parses": 34,
+          "tracks": 9062,
+          "exports": 16
+        },
+        {
+          "date": "2026-09-22",
+          "parses": 173,
+          "tracks": 18076,
+          "exports": 12
+        },
+        {
+          "date": "2026-09-21",
+          "parses": 33,
+          "tracks": 13648,
+          "exports": 11
+        },
+        {
+          "date": "2026-09-20",
+          "parses": 24,
+          "tracks": 2082,
+          "exports": 1
+        },
+        {
+          "date": "2026-09-19",
+          "parses": 31,
+          "tracks": 8976,
+          "exports": 12
+        }
+      ],
+      "generatedAt": "2026-09-26T07:38:25.027Z"
+    }
+  }
+}
