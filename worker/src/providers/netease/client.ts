@@ -135,7 +135,18 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
 
   const playlistDetail = rawJson.playlist;
   const expectedTotal = Number(playlistDetail.trackCount || 0);
-  const trackIdList = (playlistDetail.trackIds || []).map((t) => t.id);
+  let trackIdList = (playlistDetail.trackIds || []).map((t) => t.id);
+
+  // Augment trackIdList with any missing IDs found in inline tracks (e.g. Yunpan songs dropped from trackIds)
+  if (trackIdList.length > 0 && trackIdList.length < expectedTotal && Array.isArray(playlistDetail.tracks)) {
+    const existingIds = new Set(trackIdList.map(String));
+    for (const inlineSong of playlistDetail.tracks) {
+      if (inlineSong && inlineSong.id && !existingIds.has(String(inlineSong.id))) {
+        trackIdList.push(inlineSong.id);
+        existingIds.add(String(inlineSong.id));
+      }
+    }
+  }
 
   // Level 1: Metadata ↔ IDs Completeness Check
   if (expectedTotal > 0) {
