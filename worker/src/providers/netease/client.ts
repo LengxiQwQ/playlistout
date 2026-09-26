@@ -257,6 +257,30 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
     }
 
+    // Last-resort fallback: v6 inline tracks are often limited to ~10 previews.
+    // If songs are still missing, fetch the legacy API which returns ALL tracks inline.
+    if (stillMissingIds.length > 0) {
+      try {
+        const legacyUrl = `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(cleanId)}`;
+        const legacyRes = await fetchWithTimeout(legacyUrl, { method: 'GET', headers: commonHeaders });
+        if (legacyRes.ok) {
+          const legacyJson = await legacyRes.json() as Record<string, any>;
+          const legacyTracks: RawNeteaseSong[] = legacyJson.result?.tracks || [];
+          for (const lt of legacyTracks) {
+            if (lt && lt.id !== undefined && lt.id !== null) {
+              const idStr = String(lt.id);
+              if (!songMap.has(idStr)) {
+                songMap.set(idStr, lt);
+              }
+            }
+          }
+          stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+        }
+      } catch {
+        // Legacy fallback failed; will be caught by completeness check below
+      }
+    }
+
     if (stillMissingIds.length > 0) {
       throw new ProviderError(
         'INCOMPLETE_PLAYLIST',
