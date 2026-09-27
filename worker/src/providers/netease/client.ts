@@ -116,41 +116,95 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   const commonHeaders = {
     'User-Agent': UPSTREAM_USER_AGENT,
     Referer: 'https://music.163.com/',
-    Origin: 'https://music.163.com',
     Cookie: 'os=pc; appver=2.9.7',
   };
 
-  let rawJson: RawNeteasePlaylistDetailResponse;
+  const postHeaders = {
+    ...commonHeaders,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
 
-  // Try v6 API first, fall back to legacy API on -462 (anti-bot) or missing playlist
-  const v6Url = `https://music.163.com/api/v6/playlist/detail?id=${encodeURIComponent(cleanId)}`;
-  const v6Response = await fetchWithTimeout(v6Url, { method: 'GET', headers: commonHeaders });
+  const postBody = new URLSearchParams({ id: cleanId, n: '100000', s: '8' }).toString();
 
-  if (!v6Response.ok) {
-    throw new ProviderError('UPSTREAM_ERROR', `NetEase playlist detail API returned HTTP ${v6Response.status}`, 502);
+  let rawJson: RawNeteasePlaylistDetailResponse | undefined;
+
+  // 1. Primary: Try v6 API via POST (avoids datacenter GET -462 anti-bot blocks and provides up to 1000 inline tracks)
+  try {
+    const v6Response = await fetchWithTimeout('https://music.163.com/api/v6/playlist/detail', {
+      method: 'POST',
+      headers: postHeaders,
+      body: postBody,
+    });
+    if (v6Response.ok) {
+      const data = (await v6Response.json()) as RawNeteasePlaylistDetailResponse;
+      if (data && data.code === 200 && data.playlist) {
+        rawJson = data;
+      }
+    }
+  } catch {
+    // Fall through to v3
   }
 
-  rawJson = await v6Response.json();
-
-  // Fallback to legacy API if v6 returns -462 (anti-bot captcha) or has no playlist data
-  if (rawJson.code === -462 || (!rawJson.playlist && rawJson.code !== 404)) {
-    const legacyUrl = `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(cleanId)}`;
-    const legacyResponse = await fetchWithTimeout(legacyUrl, { method: 'GET', headers: commonHeaders });
-
-    if (legacyResponse.ok) {
-      const legacyJson = await legacyResponse.json() as Record<string, any>;
-      if (legacyJson.code === 200 && legacyJson.result) {
-        // Legacy API uses "result" instead of "playlist" — normalize to our expected shape
-        rawJson = {
-          code: legacyJson.code,
-          playlist: legacyJson.result as RawNeteasePlaylistDetailResponse['playlist'],
-          privileges: legacyJson.privileges,
-        };
+  // 2. Fallback: Try v3 API via POST (highly reliable for special/favorite playlists e.g. "我喜欢的音乐")
+  if (!rawJson || !rawJson.playlist) {
+    try {
+      const v3Response = await fetchWithTimeout('https://music.163.com/api/v3/playlist/detail', {
+        method: 'POST',
+        headers: postHeaders,
+        body: postBody,
+      });
+      if (v3Response.ok) {
+        const data = (await v3Response.json()) as RawNeteasePlaylistDetailResponse;
+        if (data && data.code === 200 && data.playlist) {
+          rawJson = data;
+        }
       }
+    } catch {
+      // Fall through to legacy
     }
   }
 
-  if (rawJson.code === 404 || !rawJson.playlist) {
+  // 3. Fallback: Try legacy GET /api/playlist/detail
+  if (!rawJson || !rawJson.playlist) {
+    try {
+      const legacyUrl = `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(cleanId)}`;
+      const legacyResponse = await fetchWithTimeout(legacyUrl, { method: 'GET', headers: commonHeaders });
+      if (legacyResponse.ok) {
+        const legacyJson = (await legacyResponse.json()) as Record<string, any>;
+        if (legacyJson && legacyJson.code === 200 && legacyJson.result) {
+          rawJson = {
+            code: legacyJson.code,
+            playlist: legacyJson.result as RawNeteasePlaylistDetailResponse['playlist'],
+            privileges: legacyJson.privileges,
+          };
+        } else if (legacyJson && legacyJson.code === 404) {
+          rawJson = { code: 404 };
+        }
+      }
+    } catch {
+      // Fall through to v6 GET
+    }
+  }
+
+  // 4. Fallback: Try v6 GET
+  if (!rawJson || !rawJson.playlist) {
+    try {
+      const v6GetUrl = `https://music.163.com/api/v6/playlist/detail?id=${encodeURIComponent(cleanId)}`;
+      const v6GetResponse = await fetchWithTimeout(v6GetUrl, { method: 'GET', headers: commonHeaders });
+      if (v6GetResponse.ok) {
+        const data = (await v6GetResponse.json()) as RawNeteasePlaylistDetailResponse;
+        if (data && data.playlist) {
+          rawJson = data;
+        } else if (data && data.code === 404) {
+          rawJson = { code: 404 };
+        }
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  if (!rawJson || rawJson.code === 404 || !rawJson.playlist) {
     throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${cleanId}" was not found or is private.`, 404);
   }
 
@@ -257,13 +311,38 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
     }
 
-    // Last-resort fallback: v6 inline tracks are often limited to ~10 previews.
-    // If songs are still missing, fetch the legacy API which returns ALL tracks inline.
+    // Fallback 2: NetEase v1 song detail API (GET /api/song/detail?ids=[...])
+    // Recovers metadata for tracks dropped by v3/song/detail due to copyright restrictions or regional licensing
+    if (stillMissingIds.length > 0) {
+      try {
+        const v1BatchSize = 100;
+        for (let i = 0; i < stillMissingIds.length; i += v1BatchSize) {
+          const chunk = stillMissingIds.slice(i, i + v1BatchSize);
+          const v1Url = `https://music.163.com/api/song/detail?ids=[${chunk.join(',')}]`;
+          const v1Res = await fetchWithTimeout(v1Url, { method: 'GET', headers: commonHeaders });
+          if (v1Res && v1Res.ok) {
+            const v1Json = (await v1Res.json()) as { songs?: RawNeteaseSong[] };
+            if (v1Json && Array.isArray(v1Json.songs)) {
+              for (const s of v1Json.songs) {
+                if (s && s.id !== undefined && s.id !== null) {
+                  songMap.set(String(s.id), s);
+                }
+              }
+            }
+          }
+        }
+        stillMissingIds = trackIdList.filter((id) => !songMap.has(String(id)));
+      } catch {
+        // v1 fallback failed; proceed to next fallback
+      }
+    }
+
+    // Fallback 3: Query legacy playlist detail API if inline tracks were missing
     if (stillMissingIds.length > 0) {
       try {
         const legacyUrl = `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(cleanId)}`;
         const legacyRes = await fetchWithTimeout(legacyUrl, { method: 'GET', headers: commonHeaders });
-        if (legacyRes.ok) {
+        if (legacyRes && legacyRes.ok) {
           const legacyJson = await legacyRes.json() as Record<string, any>;
           const legacyTracks: RawNeteaseSong[] = legacyJson.result?.tracks || [];
           for (const lt of legacyTracks) {
