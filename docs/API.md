@@ -694,7 +694,7 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
       "tracksProcessedToday": 1602,
       "totalExports": 641,
       "exportsToday": 36,
-      "exportFormatsBreakdown": { "xlsx": 412, "txt": 204, "csv": 15, "json": 10 },
+      "exportFormatsBreakdown": { "xlsx": 412, "txt": 204, "csv": 15, "json": 10, "m3u8": 8 },
       "byPlatform": {
         "qqmusic": { "totalSuccess": 134, "todaySuccess": 3 },
         "netease": { "totalSuccess": 20, "todaySuccess": 1 },

@@ -27,7 +27,7 @@ The current production baseline includes:
 - public QQ Music playlist parsing (with NetEase, KuGou, and QiShui providers in expansion/active testing)
 - normalized platform-independent playlist data
 - bounded pagination including 1000+ track playlists
-- TXT / CSV / XLSX / JSON browser-local export
+- TXT / CSV / XLSX / JSON / M3U8 browser-local export
 - clipboard copy modes
 - anonymous aggregate usage statistics & privacy-preserving dimensional metrics
 - abuse/security boundaries (in-memory + durable D1 rate limiting)
@@ -107,7 +107,7 @@ Useful dimensions include:
 - parse result and stable error category
 - playlist-size bucket (for example `1-50`, `51-200`, `201-500`, `501-1000`, `1000+`)
 - track count totals
-- export format (TXT / CSV / XLSX / JSON)
+- export format (TXT / CSV / XLSX / JSON / M3U8)
 - clipboard mode usage
 - coarse device class (desktop / mobile / tablet)
 - coarse browser family and OS family when practical

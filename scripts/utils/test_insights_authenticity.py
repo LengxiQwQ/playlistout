@@ -330,7 +330,7 @@ class TestInsightsAuthenticity(unittest.TestCase):
             "tracksProcessedToday": 4444,
             "totalExports": 505,
             "exportsToday": 55,
-            "exportFormatsBreakdown": {"txt": 11, "csv": 22, "xlsx": 33, "json": 44},
+            "exportFormatsBreakdown": {"txt": 11, "csv": 22, "xlsx": 33, "json": 44, "m3u8": 55},
             "byPlatform": {
                 "qqmusic": {"totalSuccess": 111, "todaySuccess": 1},
                 "netease": {"totalSuccess": 222, "todaySuccess": 2},
@@ -893,7 +893,7 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
             "tracksProcessedToday": 1602,
             "totalExports": 641,
             "exportsToday": 36,
-            "exportFormatsBreakdown": {"xlsx": 412, "txt": 204, "csv": 15, "json": 10},
+            "exportFormatsBreakdown": {"xlsx": 412, "txt": 204, "csv": 15, "json": 10, "m3u8": 8},
             "byPlatform": {
                 "qqmusic": {"totalSuccess": 134, "todaySuccess": 3},
                 "netease": {"totalSuccess": 20, "todaySuccess": 1},
@@ -915,8 +915,10 @@ class TestR6PublicPrivateSplit(unittest.TestCase):
         self.assertIn("64,893", md_zh)
         self.assertIn("QQ 音乐", md_zh)
         self.assertIn("Excel 表格 (.xlsx)", md_zh)
+        self.assertIn("M3U8 歌单", md_zh)
         self.assertIn("QQ Music", md_en)
         self.assertIn("Excel (.xlsx)", md_en)
+        self.assertIn("M3U8", md_en)
 
         # Must NOT include geographic or device distribution
         self.assertNotIn("访问地区分布", md_zh)

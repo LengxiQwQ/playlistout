@@ -47,7 +47,7 @@ describe('Web API Client & Types', () => {
       tracksProcessedToday: 300,
       totalExports: 40,
       exportsToday: 4,
-      exportFormatsBreakdown: { xlsx: 20, csv: 12, txt: 6, json: 2 },
+      exportFormatsBreakdown: { xlsx: 20, csv: 12, txt: 6, json: 2, m3u8: 0 },
       byPlatform: {
         qqmusic: {
           totalSuccess: 100,

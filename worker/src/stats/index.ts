@@ -184,7 +184,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     tracksProcessedToday: 0,
     totalExports: 0,
     exportsToday: 0,
-    exportFormatsBreakdown: { txt: 0, csv: 0, xlsx: 0, json: 0 },
+    exportFormatsBreakdown: { txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0 },
     byPlatform: {
       qqmusic: { totalSuccess: 0, todaySuccess: 0 },
       netease: { totalSuccess: 0, todaySuccess: 0 },

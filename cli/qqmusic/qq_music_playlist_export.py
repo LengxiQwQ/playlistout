@@ -294,7 +294,7 @@ def get_playlist_songs(playlist_id):
 
     return None
 
-# --- 导出函数（txt/csv/xlsx/json） ---
+# --- 导出函数（txt/csv/xlsx/json/m3u8） ---
 
 # 保存为 txt（每行 "Title - Artist - Album"）
 def export_to_txt(rows, output_path):

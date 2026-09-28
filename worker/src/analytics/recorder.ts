@@ -189,7 +189,7 @@ export async function recordParseEvent(
 }
 
 /**
- * Records a file export event (TXT, CSV, XLSX, JSON).
+ * Records a file export event (TXT, CSV, XLSX, JSON, M3U8).
  * Strictly isolated from clipboard copy metrics.
  */
 export async function recordExportEvent(
