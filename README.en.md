@@ -45,7 +45,7 @@ No installation required. Simply visit **[playlistout.lengxiqwq.com](https://pla
 1. **Paste a Playlist** — Supports links from QQ Music, NetEase Cloud Music, KuGou Music, and Soda Music (desktop URLs, mobile short links, raw IDs, or copied mobile share text). You can also paste user homepage links or user IDs to directly load all publicly created playlists.
 2. **Instant Parsing** — Edge workers parse playlist metadata, song titles, artists, albums, covers, and track availability/VIP statuses.
 3. **Full Preview** — Review the complete tracklist, total track count, and track availability directly in your browser before exporting.
-4. **Export or Copy** — Save locally as TXT / CSV / Excel (.xlsx) / JSON, or copy to clipboard with a single click; batch-package multiple playlists into multi-sheet Excel workbooks or ZIP archives.
+4. **Export or Copy** — Save locally as TXT / CSV / Excel (.xlsx) / JSON / M3U8, or copy to clipboard with a single click; batch-package multiple playlists into multi-sheet Excel workbooks or ZIP archives.
 
 ---
 
@@ -68,13 +68,13 @@ Native support for public playlists from **QQ Music**, **NetEase Cloud Music**, 
 
 
 ### 📚 User Playlist Collections & Batch Packaging
-Paste a user's QQ number, NetEase UID, or profile link to load their entire collection of publicly created playlists in one click. Select all or any subset of playlists, and batch-export them into a **Multi-Sheet Excel Workbook** (one sheet per playlist) or a **ZIP Archive** containing individual Excel / CSV / TXT / JSON files.
+Paste a user's QQ number, NetEase UID, or profile link to load their entire collection of publicly created playlists in one click. Select all or any subset of playlists, and batch-export them into a **Multi-Sheet Excel Workbook** (one sheet per playlist) or a **ZIP Archive** containing individual Excel / CSV / TXT / JSON / M3U8 files.
 
 ### 🐕 KuGou Mobile QR Safe Unlock
 KuGou only provides guest previews for unauthenticated requests. PlaylistOut provides **KuGou mobile App QR authorization** to unlock complete playlists without track limits. Session tokens are stored strictly within the user's local browser storage and never sent to or retained in any server database.
 
 ### 🏷️ Song VIP & Availability Status Detection
-Automatically detects and marks track playable statuses: **Playable**, **Unavailable / Uncopyrighted**, **VIP Only**, **Paid Album**, etc. Displayed prominently in both the web table and exported CSV / Excel / TXT / JSON files to prevent unexpected missing tracks during cross-platform migration.
+Automatically detects and marks track playable statuses: **Playable**, **Unavailable / Uncopyrighted**, **VIP Only**, **Paid Album**, etc. Displayed prominently in both the web table and exported CSV / Excel / TXT / JSON / M3U8 files to prevent unexpected missing tracks during cross-platform migration.
 
 ### 🔍 Cross-Platform Numeric ID Disambiguation
 When entering a raw numeric ID, the system concurrently probes single-playlist and user-profile targets across platforms, presenting an interactive journal dialog to let you choose your intended destination.
@@ -82,8 +82,9 @@ When entering a raw numeric ID, the system concurrently probes single-playlist a
 ### 🎵 Deep Pagination for Large Playlists
 Breaks free from common 100-track truncation or unauthenticated 10-track limits. PlaylistOut features an automated pagination and batch-hydration engine with seamless support for **1,000+ track** playlists, preserving the original track order and legitimate duplicate tracks without silent dropping.
 
-### 📦 4 File Formats Generated Locally
+### 📦 5 File Formats Generated Locally
 Export parsed playlists into multiple widely-used formats tailored for different use cases:
+- **M3U8** — Industry standard Extended M3U playlist file with accurate track durations and artist info, natively importable into **Navidrome, Jellyfin, Foobar2000, Salt Player, Poweramp, VLC**, and self-hosted music servers.
 - **TXT** — Clean plain text list with stationery card styling and status tags, ideal for inspection, notepad backups, or niche music players.
 - **CSV** — Standard comma-separated values (with UTF-8 BOM, including VIP and Status columns, preventing garbled text in Excel on Windows).
 - **Excel (.xlsx)** — Native formatted spreadsheet with metadata cards, custom column widths, VIP, and availability tags.
@@ -306,6 +307,30 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 
 Sunny Day - Jay Chou - Yeh Hui-Mei
 Won't Cry - Jay Chou, Ashin - Won't Cry
+```
+
+---
+
+### 5. M3U8 Playlist Format (`.m3u8`) —— Universal Open-Source & Self-Hosted Standard
+
+- **Encoding**: `UTF-8` (no BOM)
+- **Specification**: Extended M3U playlist protocol (RFC 8216 / De facto music player standard)
+- **Compatible Software**: **Navidrome**, **Jellyfin**, **Emby**, **Subsonic**, **Foobar2000**, **VLC**, **Salt Player (椒盐音乐)**, **Poweramp**, **AIMP**, and Hi-Fi hardware DAPs.
+- **How It Works**:
+  - The first line declares `#EXTM3U`, followed by `#PLAYLIST:Playlist Title`;
+  - Each track specifies `#EXTINF:durationSeconds,Artist - Track Title`;
+  - The next line specifies the relative audio locator `${Artist - Track Title}.mp3`;
+  - Local music players or NAS media servers (such as Navidrome/Jellyfin) scan the `.m3u8` file and automatically fuzzy-match tracks against your local audio files using the `#EXTINF` metadata and filename, instantly recreating your playlist!
+
+#### M3U8 File Example
+
+```m3u8
+#EXTM3U
+#PLAYLIST:Chinese Classic Pop Hits
+#EXTINF:269,Jay Chou - Sunny Day
+Jay Chou - Sunny Day.mp3
+#EXTINF:222,Jay Chou, Ashin - Won't Cry
+Jay Chou, Ashin - Won't Cry.mp3
 ```
 
 ---

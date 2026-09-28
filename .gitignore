@@ -10,6 +10,7 @@ venv/
 
 # Local generated files
 dashboard.html
+scratch/
 
 # Node / Web / Vite
 node_modules/

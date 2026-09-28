@@ -244,6 +244,26 @@ def export_txt(filename, playlist_title, tracks, author):
             tag = f" [{status}]" if status != '正常' else ""
             f.write(f"{name} - {singers} - {album}{tag}\n")
 
+def export_m3u8(filename, playlist_title, tracks, author):
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write("#EXTM3U\n")
+        f.write(f"#PLAYLIST:{playlist_title}\n")
+        for i, (name, singers, album, dur, status) in enumerate(tracks, 1):
+            sec = -1
+            if dur and ":" in str(dur):
+                parts = str(dur).split(":")
+                try:
+                    if len(parts) == 2:
+                        sec = int(parts[0]) * 60 + int(parts[1])
+                    elif len(parts) == 3:
+                        sec = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                except ValueError:
+                    sec = -1
+            disp = f"{singers} - {name}" if singers else name
+            fn = sanitize_filename(disp)
+            f.write(f"#EXTINF:{sec},{disp}\n")
+            f.write(f"{fn}.mp3\n")
+
 def open_folder(filepath):
     abs_path = os.path.abspath(filepath)
     if platform.system() == 'Windows':
@@ -307,8 +327,8 @@ def main():
             print(f"\n歌单：{title}（作者：{author}，共 {len(tracks)} 首）")
             print(f"状态统计：正常 {len(tracks)-unavail-vip_cnt} 首，下架/无版权 {unavail} 首，VIP专享 {vip_cnt} 首")
 
-            print("\n请选择导出格式：\n 1) .xlsx (默认)\n 2) .csv\n 3) .json\n 4) .txt")
-            choice = input("选择 (1-4): ").strip() or "1"
+            print("\n请选择导出格式：\n 1) .xlsx (默认)\n 2) .csv\n 3) .json\n 4) .txt\n 5) .m3u8 (通用歌单)")
+            choice = input("选择 (1-5): ").strip() or "1"
             base = f"{sanitize_filename(title)} - {sanitize_filename(author)}"
 
             if choice == "2":
@@ -320,6 +340,9 @@ def main():
             elif choice == "4":
                 fn = f"{base}.txt"
                 export_txt(fn, title, tracks, author)
+            elif choice == "5":
+                fn = f"{base}.m3u8"
+                export_m3u8(fn, title, tracks, author)
             else:
                 fn = f"{base}.xlsx"
                 export_xlsx(fn, title, tracks, author)

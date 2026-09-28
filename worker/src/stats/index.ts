@@ -285,13 +285,13 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     }
 
     // 2. Fetch export format breakdown
-    const exportFormatsBreakdown: Record<string, number> = { txt: 0, csv: 0, xlsx: 0, json: 0 };
+    const exportFormatsBreakdown: Record<string, number> = { txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0 };
     try {
       const formatRows = await db
         .prepare(`
           SELECT export_format, SUM(count) as total
           FROM daily_export_stats
-          WHERE date != 'TOTAL' AND export_format IN ('txt', 'csv', 'xlsx', 'json')
+          WHERE date != 'TOTAL' AND export_format IN ('txt', 'csv', 'xlsx', 'json', 'm3u8')
           GROUP BY export_format
         `)
         .all<{ export_format: string; total: number }>();

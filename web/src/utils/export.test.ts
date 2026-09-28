@@ -7,6 +7,8 @@ import {
   generateCSV,
   generateXLSX,
   generateJSON,
+  generateM3U8,
+  exportPlaylist,
 } from './export';
 
 import { formatTracksForClipboard, copyToClipboard } from './clipboard';
@@ -357,6 +359,39 @@ describe('Original Sound Export Handling', () => {
 
     const json = JSON.parse(generateJSON(ugcPlaylist));
     expect(json.tracks[0].isOriginalSound).toBe(true);
+  });
+});
+
+describe('M3U8 Generation', () => {
+  it('generates standard Extended M3U8 with playlist tag and track metadata', () => {
+    const m3u8 = generateM3U8(samplePlaylist);
+    const lines = m3u8.trim().split('\n');
+
+    expect(lines[0]).toBe('#EXTM3U');
+    expect(lines[1]).toBe('#PLAYLIST:多语言/特殊字符/重复歌单 🎵 <Test>');
+
+    // Track 1: 晴天 (269s)
+    expect(m3u8).toContain('#EXTINF:269,周杰伦 - 晴天');
+    expect(m3u8).toContain('周杰伦 - 晴天.mp3');
+
+    // Track 2: Shape of You (233s)
+    expect(m3u8).toContain('#EXTINF:233,Ed Sheeran - Shape of You');
+    expect(m3u8).toContain('Ed Sheeran - Shape of You.mp3');
+
+    // Track 7: No Album Song (missing durationMs -> -1)
+    expect(m3u8).toContain('#EXTINF:-1,Solo Artist - No Album Song');
+    expect(m3u8).toContain('Solo Artist - No Album Song.mp3');
+  });
+
+  it('triggers m3u8 download with correct mime type in exportPlaylist', () => {
+    const createObjectURLMock = vi.fn(() => 'blob:mock-url');
+    const revokeObjectURLMock = vi.fn();
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+
+    const res = exportPlaylist(samplePlaylist, 'm3u8');
+    expect(res.filename).toContain('.m3u8');
+    expect(createObjectURLMock).toHaveBeenCalled();
   });
 });
 

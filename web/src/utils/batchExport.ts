@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 import {
   generateCSV,
   generateJSON,
+  generateM3U8,
   generateTXT,
   generateXLSX,
   sanitizeFilename,
@@ -17,7 +18,7 @@ import {
 import { formatDuration } from './format';
 import { getPlatformName, getPlatformPlaylistUrl } from './platform';
 
-export type BatchExportFormat = 'multi_sheet_xlsx' | 'xlsx' | 'csv' | 'txt' | 'json';
+export type BatchExportFormat = 'multi_sheet_xlsx' | 'xlsx' | 'csv' | 'txt' | 'json' | 'm3u8';
 
 export interface BatchFetchProgress {
   current: number;
@@ -207,7 +208,7 @@ export function exportToMultiSheetExcel(
 export async function exportToZip(
   playlists: Playlist[],
   nickname: string,
-  format: 'xlsx' | 'csv' | 'txt' | 'json',
+  format: 'xlsx' | 'csv' | 'txt' | 'json' | 'm3u8',
   platform?: string,
 ): Promise<{ filename: string }> {
   const zip = new JSZip();
@@ -235,6 +236,11 @@ export async function exportToZip(
       case 'json': {
         const jsonContent = generateJSON(pl);
         zip.file(`${baseName}.json`, jsonContent);
+        break;
+      }
+      case 'm3u8': {
+        const m3u8Content = generateM3U8(pl);
+        zip.file(`${baseName}.m3u8`, m3u8Content);
         break;
       }
     }

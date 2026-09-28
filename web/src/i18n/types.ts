@@ -1,4 +1,4 @@
-﻿export type Language = 'zh-CN' | 'en-US';
+export type Language = 'zh-CN' | 'en-US';
 
 export interface Translations {
   header: {
@@ -257,6 +257,7 @@ export interface Translations {
     formatZipCsv: string;
     formatZipTxt: string;
     formatZipJson: string;
+    formatZipM3u8: string;
     batchExportBtn: string;
     exportingProgress: string;
     exportSuccess: string;

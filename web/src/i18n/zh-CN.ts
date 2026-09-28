@@ -1,4 +1,4 @@
-﻿import type { Translations } from './types';
+import type { Translations } from './types';
 
 export const zhCN: Translations = {
   header: {
@@ -257,6 +257,7 @@ export const zhCN: Translations = {
     formatZipCsv: 'ZIP 压缩包 (CSV)',
     formatZipTxt: 'ZIP 压缩包 (TXT 纯文本)',
     formatZipJson: 'ZIP 压缩包 (JSON)',
+    formatZipM3u8: 'ZIP 压缩包 (M3U8 通用歌单)',
     batchExportBtn: '📥 一键打包导出选中歌单 ({count})',
     exportingProgress: '正在翻阅整理 [{current}/{total}] 《{name}》...',
     exportSuccess: '批量导出成功！文件已保存。',

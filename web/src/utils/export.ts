@@ -405,6 +405,36 @@ export function generateJSON(playlist: Playlist): string {
 }
 
 /**
+ * Generates standard Extended M3U8 playlist content.
+ * Universally compatible with Navidrome, Jellyfin, Foobar2000, VLC,
+ * Salt Player (椒盐音乐), Poweramp, AIMP, etc.
+ */
+export function generateM3U8(playlist: Playlist): string {
+  const lines: string[] = ['#EXTM3U'];
+
+  if (playlist.name) {
+    lines.push(`#PLAYLIST:${cleanSingleLine(playlist.name)}`);
+  }
+
+  for (const track of playlist.tracks) {
+    const durationSec =
+      track.durationMs && track.durationMs > 0
+        ? Math.round(track.durationMs / 1000)
+        : -1;
+
+    const artistStr = cleanSingleLine(formatArtists(track.artists));
+    const titleStr = cleanSingleLine(track.title || '');
+    const displayName = artistStr ? `${artistStr} - ${titleStr}` : titleStr;
+
+    lines.push(`#EXTINF:${durationSec},${displayName}`);
+    const filename = sanitizeFilename(displayName, 'track');
+    lines.push(`${filename}.mp3`);
+  }
+
+  return lines.join('\n') + '\n';
+}
+
+/**
  * Triggers a browser file download without sending anything to a server.
  */
 export function triggerDownload(content: BlobPart, filename: string, mimeType: string): void {
@@ -434,7 +464,7 @@ export function triggerDownload(content: BlobPart, filename: string, mimeType: s
  */
 export function exportPlaylist(
   playlist: Playlist,
-  format: 'txt' | 'csv' | 'xlsx' | 'json',
+  format: 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8',
 ): { filename: string } {
   const baseName = sanitizeFilename(
     `${playlist.name || 'playlist'}${playlist.creator ? ' - ' + playlist.creator : ''}`,
@@ -463,11 +493,16 @@ export function exportPlaylist(
       );
       return { filename };
     }
-
     case 'json': {
       const filename = `${baseName}.json`;
       const json = generateJSON(playlist);
       triggerDownload(json, filename, 'application/json;charset=utf-8');
+      return { filename };
+    }
+    case 'm3u8': {
+      const filename = `${baseName}.m3u8`;
+      const m3u8 = generateM3U8(playlist);
+      triggerDownload(m3u8, filename, 'application/x-mpegurl;charset=utf-8');
       return { filename };
     }
   }

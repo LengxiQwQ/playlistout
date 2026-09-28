@@ -164,7 +164,7 @@ export interface MaintainerStatsResponse {
 export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui'] as const;
 export type SupportedPlatform = typeof SUPPORTED_PLATFORMS[number];
 
-export const VALID_EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json'] as const;
+export const VALID_EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'] as const;
 export type ExportFormat = typeof VALID_EXPORT_FORMATS[number];
 
 export const VALID_CLIPBOARD_MODES = [
