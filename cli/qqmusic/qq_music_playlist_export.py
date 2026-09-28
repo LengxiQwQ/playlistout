@@ -366,6 +366,26 @@ def export_to_json(rows, output_path):
     except Exception:
         raise
 
+# 保存为 m3u8（通用歌单），使用 utf-8 编码
+def export_to_m3u8(rows, output_path, playlist_title=""):
+    try:
+        with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("#EXTM3U\n")
+            if playlist_title:
+                clean_title = (playlist_title or "").replace("\r", " ").replace("\n", " ").strip()
+                f.write(f"#PLAYLIST:{clean_title}\n")
+            for item in rows:
+                name = item[0] if len(item) > 0 else ""
+                singers = item[1] if len(item) > 1 else ""
+                safe_name = (name or "").replace("\r", " ").replace("\n", " ").strip()
+                safe_singers = (singers or "").replace("\r", " ").replace("\n", " ").strip()
+                disp = f"{safe_singers} - {safe_name}" if safe_singers else safe_name
+                fn = sanitize_filename(disp)
+                f.write(f"#EXTINF:-1,{disp}\n")
+                f.write(f"{fn}.mp3\n")
+    except Exception:
+        raise
+
 # 打开并选中文件（Windows），或在其他平台打开文件所在目录
 def open_file_location(path):
     try:
@@ -413,8 +433,9 @@ def batch_export_songs(playlists, folder_name, nickname=""):
     print("  2) .csv   - 标准 CSV utf-8-sig")
     print("  3) .json  - JSON 文件")
     print("  4) .txt   - 纯文本格式")
-    fmt_choice = input("选择 (1-4)：").strip() or "1"
-    if fmt_choice not in ("1","2","3","4"):
+    print("  5) .m3u8  - 通用歌单 (M3U8)")
+    fmt_choice = input("选择 (1-5)：").strip() or "1"
+    if fmt_choice not in ("1","2","3","4","5"):
         print("选择无效，默认使用 xlsx")
         fmt_choice = "1"
     # 创建文件夹
@@ -448,6 +469,9 @@ def batch_export_songs(playlists, folder_name, nickname=""):
             elif fmt_choice == "4":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.txt")
                 export_to_txt(songs, out_path)
+            elif fmt_choice == "5":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.m3u8")
+                export_to_m3u8(songs, out_path, title or pname)
             print(f"    ✓ 已导出（{len(songs)} 首）：{os.path.basename(out_path)}")
             exported += 1
         except ImportError:
@@ -540,12 +564,13 @@ def main():
             print(" 2) .csv   - 标准 CSV utf-8-sig")
             print(" 3) .json  - JSON 文件，数组")
             print(" 4) .txt   - 纯文本格式")
+            print(" 5) .m3u8  - 通用歌单 (M3U8)")
             print("=" * 42)
-            choice = input("选择 (1-4，输入 0 退出程序)：").strip() or "1"
+            choice = input("选择 (1-5，输入 0 退出程序)：").strip() or "1"
             if choice == "0":
                 print("\n========== 程序已退出，感谢使用！===========")
                 break
-            if choice not in ("1","2","3","4"):
+            if choice not in ("1","2","3","4","5"):
                 print("选择无效，默认使用 xlsx")
                 choice = "1"
 
@@ -567,6 +592,9 @@ def main():
                 elif choice == "4":
                     out_name = f"{safe_title} - {safe_author}.txt"
                     export_to_txt(songs, out_name)
+                elif choice == "5":
+                    out_name = f"{safe_title} - {safe_author}.m3u8"
+                    export_to_m3u8(songs, out_name, playlist_title)
                 
                 if out_name:
                     print(f"\n已保存为: {out_name}")

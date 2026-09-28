@@ -30,12 +30,14 @@ describe('ExportToolbar Component (Phase 4)', () => {
     const csvBtn = screen.getByRole('button', { name: 'CSV' });
     const xlsxBtn = screen.getByRole('button', { name: 'Excel (.xlsx)' });
     const jsonBtn = screen.getByRole('button', { name: 'JSON' });
+    const m3u8Btn = screen.getByRole('button', { name: 'M3U8' });
     const copyTitleBtn = screen.getByRole('button', { name: '仅歌名' });
 
     expect(txtBtn).toBeDisabled();
     expect(csvBtn).toBeDisabled();
     expect(xlsxBtn).toBeDisabled();
     expect(jsonBtn).toBeDisabled();
+    expect(m3u8Btn).toBeDisabled();
     expect(copyTitleBtn).toBeDisabled();
   });
 

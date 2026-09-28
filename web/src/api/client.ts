@@ -753,10 +753,10 @@ export async function recordVisit(): Promise<void> {
 }
 
 /**
- * Fires an anonymous file export event (TXT, CSV, XLSX, JSON).
+ * Fires an anonymous file export event (TXT, CSV, XLSX, JSON, M3U8).
  */
 export async function recordExportEvent(
-  format: 'txt' | 'csv' | 'xlsx' | 'json',
+  format: 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8',
   trackCount?: number,
   platform: string = 'qqmusic',
 ): Promise<void> {

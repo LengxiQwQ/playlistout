@@ -1,4 +1,6 @@
-from qq_music_playlist_export import extract_playlist_id
+from qq_music_playlist_export import extract_playlist_id, export_to_m3u8
+import tempfile
+import os
 
 def test_extract_id_from_number():
     assert extract_playlist_id("123456789") == "123456789"
@@ -13,3 +15,24 @@ def test_extract_id_from_url():
 def test_extract_id_from_text():
     assert extract_playlist_id("歌单ID: 9044196528") == "9044196528"
     assert extract_playlist_id("分享歌单 https://y.qq.com/n/ryqq_v2/playlist/9044196528 欢迎收听") == "9044196528"
+
+def test_export_to_m3u8():
+    with tempfile.NamedTemporaryFile(suffix='.m3u8', delete=False) as f:
+        tmp_name = f.name
+    try:
+        sample_songs = [
+            ("晴天", "周杰伦", "叶惠美"),
+            ("七里香", "", "七里香"),
+        ]
+        export_to_m3u8(sample_songs, tmp_name, "Jay歌单")
+        with open(tmp_name, 'r', encoding='utf-8') as f:
+            content = f.read()
+        assert "#EXTM3U" in content
+        assert "#PLAYLIST:Jay歌单" in content
+        assert "#EXTINF:-1,周杰伦 - 晴天" in content
+        assert "周杰伦 - 晴天.mp3" in content
+        assert "#EXTINF:-1,七里香" in content
+        assert "七里香.mp3" in content
+    finally:
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)

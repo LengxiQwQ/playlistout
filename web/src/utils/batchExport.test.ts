@@ -74,6 +74,10 @@ describe('batchExport utilities', () => {
 
       const neteaseRes = await exportToZip(mockPlaylists, '网易云测试', 'csv', 'netease');
       expect(neteaseRes.filename).toContain('【网易云音乐歌单合集】网易云测试');
+
+      const m3u8Res = await exportToZip(mockPlaylists, 'M3U8用户', 'm3u8');
+      expect(m3u8Res.filename).toContain('(M3U8)');
+      expect(m3u8Res.filename).toContain('.zip');
     });
   });
 });

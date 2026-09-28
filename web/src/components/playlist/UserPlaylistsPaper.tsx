@@ -341,6 +341,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 { id: 'csv', label: t.userPlaylists.formatZipCsv, color: 'pink' },
                 { id: 'txt', label: t.userPlaylists.formatZipTxt, color: 'white' },
                 { id: 'json', label: t.userPlaylists.formatZipJson, color: 'blue' },
+                { id: 'm3u8', label: t.userPlaylists.formatZipM3u8, color: 'purple' },
               ].map((fmt) => {
                 const isSelected = batchFormat === fmt.id;
                 return (

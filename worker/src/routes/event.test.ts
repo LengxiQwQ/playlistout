@@ -92,7 +92,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
   }
 
   describe('Happy Path & Multi-Platform Support', () => {
-    it.each(['txt', 'csv', 'xlsx', 'json'])('accepts valid export format: %s', async (format) => {
+    it.each(['txt', 'csv', 'xlsx', 'json', 'm3u8'])('accepts valid export format: %s', async (format) => {
       const request = new Request(baseUrl, {
         method: 'POST',
         headers: {

@@ -120,15 +120,17 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const csv = raw.csv || 0;
     const txt = raw.txt || 0;
     const json = raw.json || 0;
-    const sum = xlsx + csv + txt + json;
+    const m3u8 = raw.m3u8 || 0;
+    const sum = xlsx + csv + txt + json + m3u8;
     if (sum === 0) {
-      return { xlsx: 0, csv: 0, txt: 0, json: 0, hasRealData: false };
+      return { xlsx: 0, csv: 0, txt: 0, json: 0, m3u8: 0, hasRealData: false };
     }
     return {
       xlsx: Math.round((xlsx / sum) * 100),
       csv: Math.round((csv / sum) * 100),
       txt: Math.round((txt / sum) * 100),
       json: Math.round((json / sum) * 100),
+      m3u8: Math.round((m3u8 / sum) * 100),
       hasRealData: true,
     };
   }, [stats?.exportFormatsBreakdown]);
@@ -522,6 +524,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 <div style={{ width: `${formatStats.csv}%`, backgroundColor: '#e67e22' }} title={`CSV: ${formatStats.csv}%`} />
                 <div style={{ width: `${formatStats.txt}%`, backgroundColor: '#2980b9' }} title={`TXT: ${formatStats.txt}%`} />
                 <div style={{ width: `${formatStats.json}%`, backgroundColor: '#8e44ad' }} title={`JSON: ${formatStats.json}%`} />
+                <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: '#6c5ce7' }} title={`M3U8: ${formatStats.m3u8}%`} />
               </div>
 
               {/* Format Legend Pills */}
@@ -550,6 +553,10 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#8e44ad' }} />
                   JSON ({formatStats.json}%)
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#6c5ce7' }} />
+                  M3U8 ({formatStats.m3u8}%)
                 </span>
               </div>
             </div>

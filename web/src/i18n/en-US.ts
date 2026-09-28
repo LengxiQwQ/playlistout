@@ -1,4 +1,4 @@
-﻿import type { Translations } from './types';
+import type { Translations } from './types';
 
 export const enUS: Translations = {
   header: {
@@ -257,6 +257,7 @@ export const enUS: Translations = {
     formatZipCsv: 'ZIP Archive (CSV)',
     formatZipTxt: 'ZIP Archive (TXT Plain Text)',
     formatZipJson: 'ZIP Archive (JSON)',
+    formatZipM3u8: 'ZIP Package (M3U8 Playlist)',
     batchExportBtn: '📥 Package & Export Selected ({count})',
     exportingProgress: 'Archiving [{current}/{total}] "{name}"...',
     exportSuccess: 'Batch export successful! File downloaded.',
