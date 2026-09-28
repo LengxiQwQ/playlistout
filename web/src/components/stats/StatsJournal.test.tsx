@@ -30,7 +30,7 @@ describe('StatsJournal Component (Phase 7)', () => {
         tracksProcessedToday: 8921,
         totalExports: 4200,
         exportsToday: 95,
-        exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20 },
+        exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20, m3u8: 30 },
         byPlatform: {
           qqmusic: { totalSuccess: 12842, todaySuccess: 326 },
         },
@@ -90,7 +90,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       tracksProcessedToday: 8921,
       totalExports: 4200,
       exportsToday: 95,
-      exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20 },
+      exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20, m3u8: 30 },
       byPlatform: {
         qqmusic: { totalSuccess: 12842, todaySuccess: 326 },
       },
@@ -266,7 +266,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       tracksProcessedToday: 8921,
       totalExports: 4200,
       exportsToday: 95,
-      exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20 },
+      exportFormatsBreakdown: { xlsx: 200, csv: 100, txt: 50, json: 20, m3u8: 30 },
       byPlatform: {
         qqmusic: { totalSuccess: 12842, todaySuccess: 326 },
       },

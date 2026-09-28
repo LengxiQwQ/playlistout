@@ -161,6 +161,7 @@ export.txt
 export.csv
 export.xlsx
 export.json
+export.m3u8
 stats.today
 stats.total
 ```
@@ -613,7 +614,7 @@ Avoid:
 Current export formats remain visually represented as small paper/sticker controls:
 
 ```text
-[ TXT ] [ CSV ] [ XLSX ] [ JSON ]
+[ TXT ] [ CSV ] [ XLSX ] [ JSON ] [ M3U8 ]
 ```
 
 The final primary export action may use a strong ink-black button:

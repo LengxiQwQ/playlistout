@@ -522,6 +522,7 @@ describe('Anonymous Aggregate Statistics (Phase 5 + Analytics Foundation + R6 Sp
       expect(stats.launchedAt).toBe('2026-09-12');
       expect(stats.cumulativeDailyVisitors).toBe(0);
       expect(stats.totalVisitors).toBe(0);
+      expect(stats.exportFormatsBreakdown).toEqual({ txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0 });
     });
   });
 

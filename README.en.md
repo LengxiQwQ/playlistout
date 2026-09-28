@@ -129,7 +129,7 @@ PlaylistOut officially provides a unified cross-platform public API for third-pa
 
 ## 📋 Data Export Format Specifications & Open Integration
 
-To facilitate seamless integration, ingestion, and automated parsing by third-party music platforms, developer tools, and data migration utilities, we formally define and standardize our 4 exported file formats.
+To facilitate seamless integration, ingestion, and automated parsing by third-party music platforms, developer tools, and data migration utilities, we formally define and standardize our 5 exported file formats.
 
 > 💡 **Third-Party Platform Recommendation**: We strongly recommend reading and parsing the **JSON format**. It contains the most comprehensive metadata schema, strict type definitions, and raw unescaped track details.
 
@@ -356,7 +356,7 @@ PlaylistOut operates with a transparent, privacy-first commitment:
 
 - **No Service Accounts**: PlaylistOut itself has no account registration, user logins, or profiling system. QQ Music and NetEase Cloud Music require zero credentials. When using mobile QR code authorization to unlock KuGou Music, the temporary token is stored solely within your local browser LocalStorage and never sent to or retained in any server database.
 - **Stateless Edge Proxy**: Tracklists are fetched on demand via Cloudflare Workers and returned immediately to the frontend. No playlist database exists, and no songs are retained on the server.
-- **100% Local Export**: TXT, CSV, XLSX, and JSON files are generated entirely within the client's browser. File contents are never transmitted to any server.
+- **100% Local Export**: TXT, CSV, XLSX, JSON, and M3U8 files are generated entirely within the client's browser. File contents are never transmitted to any server.
 - **Anonymous Aggregated Metrics**: Cloudflare D1 stores only anonymous aggregate counters (e.g., success/failure counts, export format distributions) for service health monitoring and capacity planning. No IP addresses, URLs, or track names are stored.
 - **Fail-Closed Principle**: If upstream data is truncated, incomplete, or fails validation, PlaylistOut explicitly reports an error rather than silently returning an incomplete tracklist.
 

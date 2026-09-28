@@ -642,13 +642,14 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
     # 导出格式偏好分布（区分纯中文与纯英文）
     breakdown = stats.get("exportFormatsBreakdown") or {}
     total_export_fmt = sum(breakdown.values()) or 1
-    fmt_order = ["xlsx", "txt", "csv", "json"]
+    fmt_order = ["xlsx", "txt", "csv", "json", "m3u8"]
     if lang == "zh":
         fmt_labels = {
             "xlsx": "Excel 表格 (.xlsx)",
             "txt": "TXT 纯文本",
             "csv": "CSV 表格",
             "json": "JSON 数据",
+            "m3u8": "M3U8 歌单",
         }
     else:
         fmt_labels = {
@@ -656,6 +657,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
             "txt": "TXT",
             "csv": "CSV",
             "json": "JSON",
+            "m3u8": "M3U8",
         }
 
     fmt_parts = []

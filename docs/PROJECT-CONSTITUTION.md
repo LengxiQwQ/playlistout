@@ -135,6 +135,7 @@ The frontend is responsible for:
 - CSV generation
 - XLSX generation
 - JSON generation
+- M3U8 generation
 - clipboard copy operations
 - downloads directly to the user's device
 
@@ -158,7 +159,7 @@ The Worker is responsible for:
 
 The Worker must **not**:
 
-- generate XLSX/CSV/TXT files
+- generate XLSX/CSV/TXT/JSON/M3U8 files
 - store exported files
 - store playlist contents
 - store song lists
