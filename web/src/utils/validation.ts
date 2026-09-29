@@ -101,15 +101,16 @@ export function extractUinFromProfileUrl(input: string): string | null {
 
     // NetEase Music profile
     if (parsed.hostname.includes('music.163.com')) {
-      if (parsed.pathname.includes('/user') || parsed.searchParams.has('id')) {
+      const isPlaylist = parsed.pathname.includes('/playlist') || parsed.pathname.includes('/song');
+      if (!isPlaylist && (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home'))) {
         const uid = parsed.searchParams.get('id');
         if (uid && /^\d{4,18}$/.test(uid.trim())) {
           return uid.trim();
         }
-      }
-      const match = parsed.pathname.match(/\/user\/(?:home\/)?(\d{4,18})/);
-      if (match) {
-        return match[1];
+        const match = parsed.pathname.match(/\/user\/(?:home\/)?(\d{4,18})/);
+        if (match) {
+          return match[1];
+        }
       }
     }
 

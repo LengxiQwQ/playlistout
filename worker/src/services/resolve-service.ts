@@ -357,9 +357,13 @@ async function resolveServiceCore(
     /(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed) &&
     (/(?:portal\/profile|\/profile)/i.test(trimmed) ||
       (/(?:[?&]uin=|[?&]hostuin=)/i.test(trimmed) && !isQQPlaylistCandidate));
+  const isNeteasePlaylistCandidate =
+    /(?:playlist|songlist)/i.test(trimmed);
+
   const isNeteaseProfile =
     /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed) &&
-    (/\/user\//i.test(trimmed) || (/[?&]id=\d+/i.test(trimmed) && /user/i.test(trimmed)));
+    !isNeteasePlaylistCandidate &&
+    (/(?:\/user\/|\/m\/user|\/user\?)/i.test(trimmed) || (/\/user(?:\/home)?\?.*[?&]id=\d+/i.test(trimmed)));
   const isKugouProfile =
     /kugou\.com/i.test(trimmed) &&
     !/(?:songlist|gcid_|special\/single)/i.test(trimmed) &&

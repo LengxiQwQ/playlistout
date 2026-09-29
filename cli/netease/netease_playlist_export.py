@@ -62,6 +62,8 @@ def extract_user_id(text):
     if not text:
         return None
     resolved = resolve_shortlink(text.strip())
+    if '/playlist' in resolved:
+        return None
     if '/user' in resolved or 'user/home' in resolved or 'user?id=' in resolved:
         m = re.search(r'(?:[?&]id=|\/user\/)(\d{4,18})', resolved)
         if m:
@@ -281,7 +283,7 @@ def main():
         user_id = extract_user_id(user_input)
         playlist_id = extract_playlist_id(user_input)
 
-        if user_id and ('user' in user_input or '163cn.tv' in user_input):
+        if user_id and ('user' in user_input or '163cn.tv' in user_input) and not playlist_id:
             # Check user playlists
             user_data = get_user_playlists(user_id)
             if user_data:
