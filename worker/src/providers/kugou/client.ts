@@ -423,7 +423,56 @@ export async function fetchKugouPlaylist(
     return fetchSpecialPlaylist(target.id, target.originalUrl);
   }
 
-  // 2. User created / shared songlist
+  // 2. Direct Cloudlist playlist (requires auth token & userid)
+  if (target.type === 'cloudlist') {
+    if (!auth?.token || !auth?.userid) {
+      throw new ProviderError(
+        'FORBIDDEN',
+        'Kugou cloudlist playlist requires connected user credentials',
+        401,
+        { authRequired: true, platform: 'kugou' },
+      );
+    }
+
+    let listName = `酷狗歌单_${target.id}`;
+    let listCover: string | undefined;
+    let expectedCount = -1;
+
+    try {
+      const userLists = await fetchKugouUserPlaylists(auth.token, auth.userid);
+      const matched = userLists.playlists.find((p) => String(p.id) === String(target.id));
+      if (matched) {
+        listName = matched.name;
+        listCover = matched.coverUrl;
+        expectedCount = matched.trackCount;
+      }
+    } catch {
+      // Non-fatal if user playlists lookup fails
+    }
+
+    const fullSongs = await fetchCloudlistAllTracks({
+      listid: target.id,
+      token: auth.token,
+      userid: auth.userid,
+      expectedCount: expectedCount > 0 ? expectedCount : undefined,
+    });
+
+    const tracks = fullSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
+    return normalizeKugouPlaylist({
+      id: target.id,
+      listInfo: {
+        name: listName,
+        pic: listCover,
+        count: fullSongs.length,
+      },
+      tracks,
+      sourceUrl: target.originalUrl,
+      isPartialPreview: false,
+      retrieval: { mode: 'full' },
+    });
+  }
+
+  // 3. User created / shared songlist (via public H5 preview + owner unlocking)
   const { listInfo, songs, encodeGic } = await fetchSonglistH5Output(target.id);
   const playlistId = encodeGic || target.id;
 
@@ -798,7 +847,7 @@ export async function fetchKugouUserPlaylists(
     name: item.name || '自建歌单',
     coverUrl: item.pic ? item.pic.replace('{size}', '400') : undefined,
     trackCount: Number(item.count || item.total || 0),
-    sourceUrl: `https://www.kugou.com/songlist/`,
+    sourceUrl: `https://m.kugou.com/songlist/?listid=${item.listid}`,
   }));
 
   return {

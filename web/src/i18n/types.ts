@@ -54,6 +54,7 @@ export interface Translations {
     sampleNetease: string;
     sampleQishui: string;
     sampleKugou: string;
+    sampleKugouBatch: string;
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;
@@ -120,6 +121,7 @@ export interface Translations {
     kugouReLoginBtn: string;
     kugouSwitchAccountBtn: string;
     kugouReparseBtn: string;
+    kugouViewAllPlaylistsBtn: string;
     reloadingHint: string;
     currentModeQishui: string;
     currentModeDouyin: string;

@@ -25,7 +25,10 @@ export const kugouProvider: KugouProvider = {
     if (gcidMatch) return gcidMatch[1];
     const specialMatch = trimmed.match(/special\/single\/(\d+)/i);
     if (specialMatch) return specialMatch[1];
+    const cloudlistMatch = trimmed.match(/(?:listid=|kugou_cloudlist_)(\d+)/i);
+    if (cloudlistMatch) return cloudlistMatch[1];
     if (/^gcid_[a-zA-Z0-9]+$/i.test(trimmed)) return trimmed;
+    if (/^\d{1,12}$/.test(trimmed)) return trimmed;
     return null;
   },
 

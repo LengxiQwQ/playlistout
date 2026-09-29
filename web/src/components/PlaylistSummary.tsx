@@ -20,6 +20,7 @@ export interface PlaylistSummaryProps {
   onReload?: () => void;
   onSwitchChannel?: (channel: 'qishui' | 'douyin') => void;
   isSwitchingChannel?: boolean;
+  onViewAllUserPlaylists?: () => void;
 }
 
 export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
@@ -29,6 +30,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
   onReload,
   onSwitchChannel,
   isSwitchingChannel,
+  onViewAllUserPlaylists,
 }) => {
   const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
@@ -400,6 +402,27 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 }}
               >
                 ← {t.userPlaylists.returnToCollection}
+              </Sticker>
+            )}
+
+            {playlist.platform === 'kugou' && isLoggedIn && onViewAllUserPlaylists && !onReturnToBatch && (
+              <Sticker
+                type="button"
+                color="blue"
+                rotateDeg={1.5}
+                onClick={onViewAllUserPlaylists}
+                className="font-handwriting"
+                style={{
+                  padding: '0.42rem 0.95rem',
+                  fontSize: '1.05rem',
+                  fontFamily: 'var(--font-handwriting, cursive)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  lineHeight: 1.2,
+                  color: 'var(--ink, #2d3436)',
+                }}
+              >
+                📂 {t.result.kugouViewAllPlaylistsBtn}
               </Sticker>
             )}
 

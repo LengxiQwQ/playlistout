@@ -94,7 +94,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
     setIsExporting(true);
 
     try {
-      const platform = userData.platform === 'netease' ? 'netease' : 'qqmusic';
+      const platform = userData.platform === 'netease' ? 'netease' : (userData.platform === 'kugou' ? 'kugou' : 'qqmusic');
       const { successfulPlaylists, failedCount } = await fetchMultiplePlaylists(
         targets,
         (p) => setProgress(p),
@@ -279,7 +279,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 onClick={() =>
                   onSelectSinglePlaylist(
                     userData.userId,
-                    userData.platform === 'netease' ? 'netease' : 'qqmusic',
+                    userData.platform === 'netease' ? 'netease' : (userData.platform === 'kugou' ? 'kugou' : 'qqmusic'),
                   )
                 }
                 style={{
@@ -580,7 +580,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                           onClick={() =>
                             onSelectSinglePlaylist(
                               playlist.sourceUrl || playlist.id,
-                              userData.platform === 'netease' ? 'netease' : 'qqmusic',
+                              userData.platform === 'netease' ? 'netease' : (userData.platform === 'kugou' ? 'kugou' : 'qqmusic'),
                             )
                           }
                           style={{

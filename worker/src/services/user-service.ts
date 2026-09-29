@@ -56,6 +56,7 @@ export async function fetchUserPlaylistsService(
         'INVALID_INPUT',
         'Kugou user playlists require both token and userid passed via Authorization / X-Kugou-* headers from QR login.',
         400,
+        { authRequired: true, platform: 'kugou' },
       );
     }
 

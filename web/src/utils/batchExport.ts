@@ -51,7 +51,7 @@ export async function fetchMultiplePlaylists(
   playlists: UserPlaylistSummary[],
   onProgress?: (progress: BatchFetchProgress) => void,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease',
+  platform?: 'qqmusic' | 'netease' | 'kugou',
 ): Promise<{ successfulPlaylists: Playlist[]; failedCount: number }> {
   const successfulPlaylists: Playlist[] = [];
   let failedCount = 0;

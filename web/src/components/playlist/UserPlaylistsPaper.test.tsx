@@ -136,4 +136,53 @@ describe('UserPlaylistsPaper Component', () => {
     expect(screen.getByText(/网易云 UID: 1825474783/)).toBeInTheDocument();
     expect(screen.getByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
   });
+
+  it('renders KuGou user header with KuGou UID and brand sticker, and drills down with kugou platform', () => {
+    const mockKugouUser: UserPlaylistsData = {
+      platform: 'kugou',
+      userId: '1425711902',
+      nickname: '冷汐',
+      total: 2,
+      playlists: [
+        {
+          id: '2',
+          name: '我喜欢',
+          trackCount: 124,
+          sourceUrl: 'https://m.kugou.com/songlist/?listid=2',
+        },
+        {
+          id: '4',
+          name: '戏愁的私密歌单',
+          trackCount: 42,
+          sourceUrl: 'https://m.kugou.com/songlist/?listid=4',
+        },
+      ],
+    };
+
+    const handleSelectSingle = vi.fn();
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <UserPlaylistsPaper
+          userData={mockKugouUser}
+          onReset={vi.fn()}
+          onSelectSinglePlaylist={handleSelectSingle}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText('酷狗音乐 · 歌单收藏册')).toBeInTheDocument();
+    expect(screen.getByText(/酷狗 ID: 1425711902/)).toBeInTheDocument();
+    expect(screen.getByText('冷汐 的音乐手账')).toBeInTheDocument();
+    expect(screen.getByText(/共 2 个公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText('戏愁的私密歌单')).toBeInTheDocument();
+
+    const drilldownButtons = screen.getAllByText(/查看歌曲/);
+    fireEvent.click(drilldownButtons[1]);
+    expect(handleSelectSingle).toHaveBeenCalledWith(
+      'https://m.kugou.com/songlist/?listid=4',
+      'kugou',
+    );
+  });
 });
+
