@@ -122,6 +122,39 @@ describe('Client-Side Input Validation', () => {
     const res3 = validatePlaylistInput('7087507348697186339');
     expect(res3.valid).toBe(true);
     expect(res3.kind).toBe('numeric');
+
+    // WeChat long share link with multiple tracking parameters
+    const wechatRes = validatePlaylistInput(
+      'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat',
+    );
+    expect(wechatRes.valid).toBe(true);
+    expect(wechatRes.kind).toBe('single_playlist_url');
+    expect(wechatRes.platform).toBe('qishui');
+
+    // qishui.com domain variants & short link
+    const resShortQishui = validatePlaylistInput('https://qishui.com/s/iXHhmCAW/');
+    expect(resShortQishui.valid).toBe(true);
+    expect(resShortQishui.kind).toBe('short_link');
+    expect(resShortQishui.platform).toBe('qishui');
+
+    const resRootQishui = validatePlaylistInput('https://qishui.com/share/playlist?playlist_id=7087507348697186339');
+    expect(resRootQishui.valid).toBe(true);
+    expect(resRootQishui.kind).toBe('single_playlist_url');
+    expect(resRootQishui.platform).toBe('qishui');
+
+    // Protocol-less www.qishui.com
+    const resProtocolLess = validatePlaylistInput('www.qishui.com/share/playlist?playlist_id=7087507348697186339');
+    expect(resProtocolLess.valid).toBe(true);
+    expect(resProtocolLess.kind).toBe('single_playlist_url');
+    expect(resProtocolLess.platform).toBe('qishui');
+
+    // WeChat text wrapper
+    const resWechatText = validatePlaylistInput(
+      '歌单｜钢琴流行曲999首 https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=xxx&share_platform=wechat @汽水音乐',
+    );
+    expect(resWechatText.valid).toBe(true);
+    expect(resWechatText.kind).toBe('single_playlist_url');
+    expect(resWechatText.platform).toBe('qishui');
   });
 
   it('rejects other platforms with friendly notification', () => {

@@ -45,10 +45,10 @@ export function extractCleanUrlOrInput(input: string): string {
     return url;
   }
 
-  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "i2.y.qq.com/..." or "163cn.tv/...")
+  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
   // Ensure it's not a subdomain like c.y.qq.com or preceded by word characters
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:y|i\d*\.y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:y|i\d*\.y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];
@@ -267,8 +267,8 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 8. Qishui short link (qishui.douyin.com/s/...)
-  if (/qishui\.douyin\.com\/s\//i.test(trimmed)) {
+  // 8. Qishui short link (qishui.douyin.com/s/... or qishui.com/s/...)
+  if (/(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed)) {
     return {
       valid: true,
       kind: 'short_link',
@@ -278,7 +278,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
   }
 
   // 9. Qishui / Douyin Music URL
-  const isQishuiUrl = /(?:qishui\.douyin\.com|music\.douyin\.com)/i.test(trimmed);
+  const isQishuiUrl = /(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(trimmed);
   if (isQishuiUrl) {
     return {
       valid: true,

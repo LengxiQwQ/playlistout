@@ -9,6 +9,12 @@ describe('Worker extractCleanUrlOrInput', () => {
 
     const input2 = '歌单｜抖音收藏的音乐 https://qishui.douyin.com/s/iXHhmCAW/ @汽水音乐';
     expect(extractCleanUrlOrInput(input2)).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
+
+    const inputWechat =
+      '歌单｜流行热歌 https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat @汽水音乐';
+    expect(extractCleanUrlOrInput(inputWechat)).toBe(
+      'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat',
+    );
   });
 
   it('extracts URL from Kugou share text with embedded parameters and annotations', () => {
@@ -53,6 +59,12 @@ describe('Worker extractCleanUrlOrInput', () => {
     expect(
       extractCleanUrlOrInput('i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528'),
     ).toBe('https://i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528');
+    expect(
+      extractCleanUrlOrInput('www.qishui.com/share/playlist?playlist_id=7087507348697186339'),
+    ).toBe('https://www.qishui.com/share/playlist?playlist_id=7087507348697186339');
+    expect(
+      extractCleanUrlOrInput('qishui.com/share/playlist?playlist_id=7087507348697186339'),
+    ).toBe('https://qishui.com/share/playlist?playlist_id=7087507348697186339');
   });
 
   it('extracts URL from WeChat QQ Music share text', () => {
