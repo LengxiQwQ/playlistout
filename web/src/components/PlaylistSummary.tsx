@@ -327,7 +327,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               </div>
             )}
 
-            {platformNotice && (
+            {platformNotice && !isLoggedIn && (
               <div
                 className="font-sans"
                 data-testid="kugou-platform-limit-notice"
@@ -608,13 +608,22 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
             )}
 
             {retrievalReason === 'upstream_unavailable' && (
-              <MarkerButton
-                variant="ink"
-                onClick={() => onReload?.()}
-                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
-              >
-                {t.errors.retry}
-              </MarkerButton>
+              <>
+                <MarkerButton
+                  variant="paper"
+                  onClick={() => onReload?.()}
+                  style={{ padding: '0.45rem 0.85rem' }}
+                >
+                  {t.errors.retry}
+                </MarkerButton>
+                <MarkerButton
+                  variant="ink"
+                  onClick={() => setIsKugouModalOpen(true)}
+                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+                >
+                  {t.result.kugouReLoginBtn}
+                </MarkerButton>
+              </>
             )}
 
             {!retrievalReason && !isLoggedIn && (

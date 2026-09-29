@@ -45,11 +45,13 @@ export function isKugouAuthError(json: {
 }): boolean {
   if (json.status === 1) return false;
   const code = Number(json.error_code ?? -1);
-  if ([10001, 10002, 20001, 20002, 20003, 20005, 20010, 20011, 20012, 30001, 30002].includes(code)) {
+  if (
+    [0, 100, 200, 401, 403, 1000, 1001, 1002, 2000, 2001, 2002, 2003, 2005, 2010, 2011, 2012, 10001, 10002, 20001, 20002, 20003, 20005, 20010, 20011, 20012, 30001, 30002].includes(code)
+  ) {
     return true;
   }
   const errorText = `${json.error || ''} ${json.msg || ''} ${json.message || ''}`.toLowerCase();
-  return (
+  if (
     errorText.includes('token') ||
     errorText.includes('auth') ||
     errorText.includes('登录') ||
@@ -57,8 +59,14 @@ export function isKugouAuthError(json: {
     errorText.includes('失效') ||
     errorText.includes('未登录') ||
     errorText.includes('凭证') ||
-    errorText.includes('login')
-  );
+    errorText.includes('login') ||
+    errorText.includes('param') ||
+    errorText.includes('fail')
+  ) {
+    return true;
+  }
+  // On authenticated user endpoints, any non-1 response from upstream gateway is treated as auth invalidation
+  return true;
 }
 
 /**
