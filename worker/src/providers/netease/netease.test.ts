@@ -47,27 +47,64 @@ describe('NetEase Provider Input & Matching', () => {
 
 describe('NetEase Song Status & Normalization', () => {
   it('correctly classifies greyed out / unplayable / copyright expired tracks', () => {
-    const unplayableSong: RawNeteaseSong = { id: 1, name: '下架歌曲', fee: 0 };
-    const unplayablePriv: RawNeteasePrivilege = { id: 1, st: -100, pl: 0 };
-    const status = determineNeteaseTrackStatus(unplayableSong, unplayablePriv);
-    expect(status.isAvailable).toBe(false);
-    expect(status.status).toBe('unplayable');
-    expect(status.statusText).toBe('下架/无版权');
+    // 1. With takedown recommendation
+    const takedownSong1: RawNeteaseSong = {
+      id: 1,
+      name: '我们的歌',
+      fee: 0,
+      noCopyrightRcmd: { type: 3, typeDesc: 'MV可播' },
+    };
+    const takedownPriv1: RawNeteasePrivilege = { id: 1, st: -100, pl: 0, cp: 0, subp: 0 };
+    const status1 = determineNeteaseTrackStatus(takedownSong1, takedownPriv1);
+    expect(status1.isAvailable).toBe(false);
+    expect(status1.status).toBe('unplayable');
+    expect(status1.statusText).toBe('下架/无版权');
+
+    // 2. With cp === 0 and subp === 0 (without recommendation)
+    const takedownSong2: RawNeteaseSong = { id: 2, name: '长安姑娘', fee: 0 };
+    const takedownPriv2: RawNeteasePrivilege = { id: 2, st: -200, pl: 0, cp: 0, subp: 0 };
+    const status2 = determineNeteaseTrackStatus(takedownSong2, takedownPriv2);
+    expect(status2.isAvailable).toBe(false);
+    expect(status2.status).toBe('unplayable');
+    expect(status2.statusText).toBe('下架/无版权');
+
+    // 3. With explicit st === -1
+    const takedownSong3: RawNeteaseSong = { id: 3, name: '删除歌曲', fee: 0 };
+    const takedownPriv3: RawNeteasePrivilege = { id: 3, st: -1, pl: 0 };
+    const status3 = determineNeteaseTrackStatus(takedownSong3, takedownPriv3);
+    expect(status3.isAvailable).toBe(false);
+    expect(status3.status).toBe('unplayable');
+    expect(status3.statusText).toBe('下架/无版权');
   });
 
   it('correctly classifies overseas geo-restricted tracks as normal playable domestically', () => {
+    // Even if overseas IP receives st: -100 / st: -200 and pl: 0, if cp: 1 or subp: 1 it is playable domestically
     const geoSong: RawNeteaseSong = { id: 10, name: '大陆限定歌曲', fee: 0 };
-    const geoPriv: RawNeteasePrivilege = { id: 10, st: -200, pl: 0 };
+    const geoPriv: RawNeteasePrivilege = { id: 10, st: -100, pl: 0, cp: 1, subp: 1 };
     const status = determineNeteaseTrackStatus(geoSong, geoPriv);
     expect(status.isAvailable).toBe(true);
     expect(status.isVip).toBe(false);
     expect(status.status).toBe('playable');
     expect(status.statusText).toBe('正常');
+
+    // Or explicit geo rcmd
+    const geoSong2: RawNeteaseSong = {
+      id: 11,
+      name: '地区限制歌曲',
+      fee: 0,
+      noCopyrightRcmd: { type: 1, typeDesc: '因国家或地区限制无法播放' },
+    };
+    const geoPriv2: RawNeteasePrivilege = { id: 11, st: -200, pl: 0 };
+    const status2 = determineNeteaseTrackStatus(geoSong2, geoPriv2);
+    expect(status2.isAvailable).toBe(true);
+    expect(status2.isVip).toBe(false);
+    expect(status2.status).toBe('playable');
+    expect(status2.statusText).toBe('正常');
   });
 
-  it('correctly classifies VIP tracks', () => {
-    const vipSong: RawNeteaseSong = { id: 2, name: 'VIP 歌曲', fee: 1 };
-    const vipPriv: RawNeteasePrivilege = { id: 2, st: 0, pl: 320000 };
+  it('correctly classifies VIP tracks even when queried unauthenticated (st: -100)', () => {
+    const vipSong: RawNeteaseSong = { id: 2, name: 'Skyfall', fee: 1 };
+    const vipPriv: RawNeteasePrivilege = { id: 2, st: -100, pl: 0, cp: 1, subp: 1 };
     const status = determineNeteaseTrackStatus(vipSong, vipPriv);
     expect(status.isAvailable).toBe(true);
     expect(status.isVip).toBe(true);
@@ -101,8 +138,9 @@ describe('NetEase Song Status & Normalization', () => {
       al: { id: 201, name: 'みなごろし', picUrl: 'http://p4.music.126.net/test.jpg' },
       dt: 125294,
       fee: 8,
+      noCopyrightRcmd: { type: 2, typeDesc: '其它版本可播' },
     };
-    const priv: RawNeteasePrivilege = { id: 2123827852, st: -100, pl: 0 };
+    const priv: RawNeteasePrivilege = { id: 2123827852, st: -100, pl: 0, cp: 0, subp: 0 };
 
     const track = normalizeNeteaseTrack(rawSong, 1, priv);
     expect(track.index).toBe(1);

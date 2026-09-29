@@ -20,6 +20,10 @@ export interface RawNeteasePrivilege {
   dl?: number;
   sp?: number;
   cp?: number;
+  subp?: number;
+  toast?: boolean;
+  flag?: number;
+  maxbr?: number;
 }
 
 export interface RawNeteaseSong {
@@ -69,6 +73,7 @@ export interface RawNeteaseSongDetailResponse {
 
 /**
  * Derives availability status from NetEase song and privilege records.
+ * Accurately differentiates overseas geo-restrictions from genuine copyright takedowns.
  */
 export function determineNeteaseTrackStatus(
   song: RawNeteaseSong,
@@ -77,50 +82,36 @@ export function determineNeteaseTrackStatus(
   const priv = privilege || song.privilege;
   const fee = typeof song.fee === 'number' ? song.fee : priv?.fee ?? 0;
   const st = priv?.st;
-  const pl = priv?.pl;
+  const cp = priv?.cp;
+  const subp = priv?.subp;
   const isVip = fee === 1;
 
-  // 1. Identify overseas-only geo-restriction:
-  // In NetEase, st = -200 or rcmd with type=1/regional message indicates region restriction for overseas IP,
-  // but the track is completely playable in Mainland China. As requested, treat it as normal/domestic without alerts.
+  // 1. Identify explicit overseas-only geo restriction:
+  // If noCopyrightRcmd specifically notes region/country/overseas restriction,
+  // it is only restricted for overseas IPs, but is completely playable domestically in Mainland China.
   const rcmd =
     song.noCopyrightRcmd && typeof song.noCopyrightRcmd === 'object'
       ? (song.noCopyrightRcmd as Record<string, any>)
       : undefined;
-  const isGeoRcmd = Boolean(
+
+  const isExplicitGeoRcmd = Boolean(
     rcmd &&
-      (rcmd.type === 1 ||
-        (typeof rcmd.typeDesc === 'string' &&
-          (rcmd.typeDesc.includes('地区') || rcmd.typeDesc.includes('国家')))),
+      typeof rcmd.typeDesc === 'string' &&
+      (rcmd.typeDesc.includes('地区') || rcmd.typeDesc.includes('国家') || rcmd.typeDesc.includes('海外'))
   );
-  const isGeoOnly = st === -200 || isGeoRcmd;
 
-  // 2. Truly unplayable / removed / copyright expired domestically:
-  // st < 0 (except st === -200 which is overseas-only)
-  if (typeof st === 'number' && st < 0 && !isGeoOnly) {
+  // 2. Identify true takedowns / copyright expired:
+  // - Explicit copyright takedown recommendation (e.g. "MV可播", "其它版本可播" when not geo-restricted)
+  // - Both cp === 0 and subp === 0 (no copyright & cannot subscribe/play), unless it is a paid digital album (fee === 4)
+  // - Explicit takedown status code st === -1
+  const isTakedownRcmd = Boolean(rcmd && !isExplicitGeoRcmd);
+  const isCopyrightExpired = typeof cp === 'number' && typeof subp === 'number' && cp === 0 && subp === 0 && fee !== 4;
+  const isExplicitTakedownSt = st === -1;
+
+  if (isTakedownRcmd || isCopyrightExpired || isExplicitTakedownSt) {
     return {
       isAvailable: false,
       isVip,
-      status: 'unplayable',
-      statusText: '下架/无版权',
-    };
-  }
-
-  // Explicit non-geo noCopyright recommendation
-  if (song.noCopyrightRcmd && !isGeoOnly) {
-    return {
-      isAvailable: false,
-      isVip,
-      status: 'unplayable',
-      statusText: '下架/无版权',
-    };
-  }
-
-  // pl === 0 with non-VIP/non-paid fee indicates playability is blocked
-  if (typeof pl === 'number' && pl === 0 && fee !== 1 && fee !== 4 && !isGeoOnly) {
-    return {
-      isAvailable: false,
-      isVip: false,
       status: 'unplayable',
       statusText: '下架/无版权',
     };
@@ -146,7 +137,7 @@ export function determineNeteaseTrackStatus(
     };
   }
 
-  // 5. Normal playable (including overseas-only geo-restriction which is normal domestically)
+  // 5. Normal playable (including fee === 8, fee === 0, and overseas geo-restricted tracks)
   return {
     isAvailable: true,
     isVip: false,

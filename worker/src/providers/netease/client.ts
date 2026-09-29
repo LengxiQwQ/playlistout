@@ -82,6 +82,8 @@ export async function fetchSongDetails(
           Referer: 'https://music.163.com/',
           Origin: 'https://music.163.com',
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Real-IP': '118.88.88.88',
+          'X-Forwarded-For': '118.88.88.88',
           Cookie: 'os=pc; appver=2.9.7',
         },
         body: postBody,
@@ -116,6 +118,8 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   const commonHeaders = {
     'User-Agent': UPSTREAM_USER_AGENT,
     Referer: 'https://music.163.com/',
+    'X-Real-IP': '118.88.88.88',
+    'X-Forwarded-For': '118.88.88.88',
     Cookie: 'os=pc; appver=2.9.7',
   };
 
