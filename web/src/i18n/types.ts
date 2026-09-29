@@ -119,6 +119,8 @@ export interface Translations {
     kugouSwitchAccountBtn: string;
     kugouReparseBtn: string;
     reloadingHint: string;
+    currentModeQishui: string;
+    currentModeDouyin: string;
     qishuiReloadBtn: string;
     switchToDouyinBtn: string;
     douyinReloadBtn: string;

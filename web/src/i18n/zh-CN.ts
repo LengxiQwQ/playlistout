@@ -119,6 +119,8 @@ export const zhCN: Translations = {
     kugouSwitchAccountBtn: '切换账号',
     kugouReparseBtn: '重新解析',
     reloadingHint: '正在为您重新解析并解锁完整歌单...',
+    currentModeQishui: '当前为汽水官方解析',
+    currentModeDouyin: '当前为抖音全量解析',
     qishuiReloadBtn: '↻ 重新以汽水解析',
     switchToDouyinBtn: '⚡ 切换到抖音全量解析 (含原声)',
     douyinReloadBtn: '↻ 重新以抖音全量解析',

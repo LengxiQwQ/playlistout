@@ -155,17 +155,17 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
     const switcher = screen.getByTestId('qishui-channel-switcher');
     expect(switcher).toBeInTheDocument();
 
-    // In Qishui mode: displays reload current and switch to Douyin
-    const reloadBtn = screen.getByRole('button', { name: '↻ 重新以汽水解析' });
+    // In Qishui mode: displays current mode label and switch to Douyin button
+    const currentMode = screen.getByTestId('qishui-current-mode');
+    expect(currentMode).toHaveTextContent('当前为汽水官方解析');
     const switchBtn = screen.getByRole('button', { name: '⚡ 切换到抖音全量解析 (含原声)' });
-    expect(reloadBtn).toBeInTheDocument();
     expect(switchBtn).toBeInTheDocument();
 
     fireEvent.click(switchBtn);
     expect(handleSwitchChannel).toHaveBeenCalledWith('douyin');
   });
 
-  it('renders switch to Qishui and reload Douyin when in douyin channel mode', () => {
+  it('renders switch to Qishui and current mode Douyin when in douyin channel mode', () => {
     const handleSwitchChannel = vi.fn();
     render(
       <PlaylistSummary
@@ -182,11 +182,11 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
     const switcher = screen.getByTestId('qishui-channel-switcher');
     expect(switcher).toBeInTheDocument();
 
-    // In Douyin mode: displays switch to Qishui and reload Douyin
+    // In Douyin mode: displays current mode label and switch to Qishui button
+    const currentMode = screen.getByTestId('qishui-current-mode');
+    expect(currentMode).toHaveTextContent('当前为抖音全量解析');
     const switchQishuiBtn = screen.getByRole('button', { name: '⚡ 切换到汽水官方解析 (真实歌名)' });
-    const reloadDouyinBtn = screen.getByRole('button', { name: '↻ 重新以抖音全量解析' });
     expect(switchQishuiBtn).toBeInTheDocument();
-    expect(reloadDouyinBtn).toBeInTheDocument();
 
     fireEvent.click(switchQishuiBtn);
     expect(handleSwitchChannel).toHaveBeenCalledWith('qishui');

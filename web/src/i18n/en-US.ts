@@ -119,6 +119,8 @@ export const enUS: Translations = {
     kugouSwitchAccountBtn: 'Switch Account',
     kugouReparseBtn: 'Retry Parse',
     reloadingHint: 'Reloading and unlocking full playlist...',
+    currentModeQishui: 'Current: Soda Music Official',
+    currentModeDouyin: 'Current: Douyin Full Audio',
     qishuiReloadBtn: '↻ Re-parse via Soda Music',
     switchToDouyinBtn: '⚡ Switch to Douyin Audio (All Tracks)',
     douyinReloadBtn: '↻ Re-parse via Douyin',
