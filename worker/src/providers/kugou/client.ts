@@ -246,6 +246,7 @@ async function fetchCloudlistAllTracks(options: {
   const allSongs: KugouRawSong[] = [];
   const seenPageFingerprints = new Set<string>();
   let expectedTotal = expectedCount && expectedCount > 0 ? expectedCount : -1;
+  let abortedPrematurely = false;
 
   while (page <= maxPages) {
     const clienttime = String(Math.floor(Date.now() / 1000));
@@ -300,6 +301,14 @@ async function fetchCloudlistAllTracks(options: {
     });
 
     if (!response.ok) {
+      if (page === 1) {
+        throw new ProviderError(
+          'UPSTREAM_ERROR',
+          `Kugou cloudlist gateway returned HTTP ${response.status}`,
+          502,
+        );
+      }
+      abortedPrematurely = true;
       break;
     }
 
@@ -313,11 +322,28 @@ async function fetchCloudlistAllTracks(options: {
     };
 
     if (json.status !== 1 || !Array.isArray(json.data?.info)) {
+      if (isKugouAuthError(json)) {
+        throw new ProviderError(
+          'FORBIDDEN',
+          'Kugou credentials invalid or expired',
+          401,
+          { authInvalid: true, errorCode: json.error_code },
+        );
+      }
+      if (page === 1) {
+        throw new ProviderError(
+          'UPSTREAM_ERROR',
+          `Kugou cloudlist gateway returned status=${json.status} error_code=${json.error_code}`,
+          502,
+          { errorCode: json.error_code },
+        );
+      }
+      abortedPrematurely = true;
       break;
     }
 
     // Only set from API if expectedTotal wasn't explicitly supplied by trusted caller
-    if (expectedTotal <= 0 && typeof json.data?.count === 'number') {
+    if (expectedTotal <= 0 && typeof json.data?.count === 'number' && json.data.count > 0) {
       expectedTotal = json.data.count;
     }
 
@@ -352,15 +378,22 @@ async function fetchCloudlistAllTracks(options: {
     page++;
   }
 
-  // Completeness check: fail-closed if actual retrieved songs do not match expected
+  // Completeness verification:
+  // - If aborted prematurely (HTTP or gateway error on page 2+), fail closed with INCOMPLETE_PLAYLIST.
+  // - If retrieved count is severely truncated compared to expected (e.g. 2 vs 100), fail closed with INCOMPLETE_PLAYLIST.
+  // - For natural completion where track count has minor differences due to delisted/unplayable copyright tracks, accept the retrieved songs.
   const requiredCount = expectedCount && expectedCount > 0 ? expectedCount : expectedTotal;
-  if (requiredCount > 0 && allSongs.length !== requiredCount) {
-    throw new ProviderError(
-      'INCOMPLETE_PLAYLIST',
-      `Incomplete cloudlist: Kugou reported ${requiredCount} songs, but only ${allSongs.length} could be retrieved.`,
-      502,
-      { expectedCount: requiredCount, actualCount: allSongs.length },
-    );
+  if (requiredCount > 0) {
+    const isSeverelyTruncated =
+      allSongs.length < Math.floor(requiredCount * 0.8) && requiredCount - allSongs.length > 5;
+    if (abortedPrematurely || isSeverelyTruncated) {
+      throw new ProviderError(
+        'INCOMPLETE_PLAYLIST',
+        `Incomplete cloudlist: Kugou reported ${requiredCount} songs, but only ${allSongs.length} could be retrieved.`,
+        502,
+        { expectedCount: requiredCount, actualCount: allSongs.length },
+      );
+    }
   }
 
   return allSongs;
@@ -526,7 +559,7 @@ export async function fetchKugouPlaylist(
           }
         }
 
-        if (matched && matched.id) {
+        if (matched && matched.id !== undefined && matched.id !== '') {
           const trustedExpected = Number(matched.trackCount || listInfo.count || 0);
           const fullSongs = await fetchCloudlistAllTracks({
             listid: matched.id,
@@ -534,15 +567,6 @@ export async function fetchKugouPlaylist(
             userid: auth.userid,
             expectedCount: trustedExpected,
           });
-
-          if (trustedExpected > 0 && fullSongs.length !== trustedExpected) {
-            throw new ProviderError(
-              'INCOMPLETE_PLAYLIST',
-              `Incomplete cloudlist: Kugou playlist expected ${trustedExpected} songs, but only ${fullSongs.length} were retrieved.`,
-              502,
-              { expectedCount: trustedExpected, actualCount: fullSongs.length },
-            );
-          }
 
           if (fullSongs.length > 0) {
             const tracks = fullSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
@@ -552,7 +576,7 @@ export async function fetchKugouPlaylist(
                 ...listInfo,
                 name: matched.name || listInfo.name,
                 pic: matched.coverUrl || listInfo.pic,
-                count: trustedExpected || fullSongs.length,
+                count: fullSongs.length >= trustedExpected ? fullSongs.length : (trustedExpected || fullSongs.length),
               },
               tracks,
               sourceUrl: target.originalUrl,
@@ -563,9 +587,17 @@ export async function fetchKugouPlaylist(
         }
       }
     } catch (err: unknown) {
-      // Re-throw INCOMPLETE_PLAYLIST: NEVER swallow completeness failure into a partial preview!
+      // Re-throw INCOMPLETE_PLAYLIST: NEVER swallow severe completeness failure into a partial preview!
       if (err instanceof ProviderError && err.code === 'INCOMPLETE_PLAYLIST') {
         throw err;
+      }
+      if (
+        err instanceof ProviderError &&
+        (err.code === 'FORBIDDEN' || (err.details as any)?.authInvalid)
+      ) {
+        retrievalReason = 'auth_invalid';
+      } else {
+        retrievalReason = 'upstream_unavailable';
       }
       // Fall through to preview mode with the established retrievalReason
     }
@@ -747,7 +779,7 @@ export async function fetchKugouUserPlaylists(
   }
 
   const playlists: UserPlaylistSummary[] = rawLists.map((item) => ({
-    id: String(item.listid || ''),
+    id: String(item.listid !== undefined && item.listid !== null ? item.listid : ''),
     name: item.name || '自建歌单',
     coverUrl: item.pic ? item.pic.replace('{size}', '400') : undefined,
     trackCount: Number(item.count || item.total || 0),

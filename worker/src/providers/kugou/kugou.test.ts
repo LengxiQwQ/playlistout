@@ -970,5 +970,109 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks[0].title).toBe('喜欢的歌曲1');
       expect(playlist.tracks[416].title).toBe('喜欢的歌曲417');
     });
+
+    it('succeeds in full mode when natural pagination finishes with minor copyright/catalog drift (415 songs vs 417 expected)', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_3zr52qfrz2z063","info":{"listinfo":{"name":"是冷汐呀喜欢的音乐","count":417,"list_create_userid":"1425711902"},"songs":[{"name":"预览歌曲"}]}};</script></html>`;
+      const songs415 = Array.from({ length: 415 }, (_, i) => ({
+        name: `歌曲_${i + 1}`,
+        FileHash: `hash_${i + 1}`,
+      }));
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 888, name: '我喜欢', count: 417 }],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks page 1 (300 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 415,
+              info: songs415.slice(0, 300),
+            },
+          }),
+        } as Response)
+        // 4. fetchCloudlistAllTracks page 2 (115 songs, < 300 so natural completion)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 415,
+              info: songs415.slice(300),
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_3zr52qfrz2z063',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?uid=1425711902',
+        },
+        { token: 'valid_token', userid: '1425711902' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('full');
+      expect(playlist.tracks).toHaveLength(415);
+      expect(playlist.tracks[0].title).toBe('歌曲_1');
+      expect(playlist.tracks[414].title).toBe('歌曲_415');
+    });
+
+    it('falls back safely to preview mode when cloudlist gateway returns error or is unavailable (never 502 crash)', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_3zr52qfrz2z063","info":{"listinfo":{"name":"是冷汐呀喜欢的音乐","count":417,"list_create_userid":"1425711902"},"songs":[{"name":"预览歌曲1"},{"name":"预览歌曲2"}]}};</script></html>`;
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 888, name: '我喜欢', count: 417 }],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks gateway fails with 500
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_3zr52qfrz2z063',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?uid=1425711902',
+        },
+        { token: 'valid_token', userid: '1425711902' },
+      );
+
+      // Must safely fall back to preview mode instead of throwing 502!
+      expect(playlist.retrieval?.mode).toBe('preview');
+      expect(playlist.retrieval?.reason).toBe('upstream_unavailable');
+      expect(playlist.tracks).toHaveLength(2);
+      expect(playlist.tracks[0].title).toBe('预览歌曲1');
+    });
   });
 });
