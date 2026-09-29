@@ -577,12 +577,23 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            const isBareSonglistUrl =
+                              playlist.sourceUrl &&
+                              (playlist.sourceUrl.endsWith('/songlist/') || playlist.sourceUrl.endsWith('/songlist'));
+                            const target =
+                              playlist.sourceUrl && !isBareSonglistUrl
+                                ? playlist.sourceUrl
+                                : playlist.id
+                                ? userData.platform === 'kugou'
+                                  ? `https://m.kugou.com/songlist/?listid=${playlist.id}`
+                                  : playlist.id
+                                : playlist.sourceUrl || playlist.id;
                             onSelectSinglePlaylist(
-                              playlist.sourceUrl || playlist.id,
+                              target,
                               userData.platform === 'netease' ? 'netease' : (userData.platform === 'kugou' ? 'kugou' : 'qqmusic'),
-                            )
-                          }
+                            );
+                          }}
                           style={{
                             padding: '0.35rem 0.75rem',
                             fontSize: '0.85rem',

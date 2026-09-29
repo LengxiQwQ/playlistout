@@ -135,7 +135,10 @@ export async function extractKugouTarget(input: string): Promise<KugouTarget | n
   }
 
   // 5. Cloudlist listid URL or format (e.g. https://m.kugou.com/songlist/?listid=4 or kugou_cloudlist_4)
-  const cloudlistUrlMatch = text.match(/[?&]listid=(\d+)/i) || text.match(/kugou_cloudlist_(\d+)/i);
+  const cloudlistUrlMatch =
+    text.match(/[?&]listid=(\d+)/i) ||
+    text.match(/kugou_cloudlist_(\d+)/i) ||
+    text.match(/songlist\/(\d+)\/?(?:[?#]|$)/i);
   if (cloudlistUrlMatch) {
     return {
       type: 'cloudlist',

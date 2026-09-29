@@ -96,12 +96,21 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
     playlistStickerEn: 'KuGou Playlist',
     viewActionZh: '在酷狗音乐中查看 ↗',
     viewActionEn: 'View on KuGou ↗',
-    getPlaylistUrl: (id, sourceUrl) =>
-      sourceUrl && /^https?:\/\//i.test(sourceUrl)
-        ? sourceUrl
-        : /^https?:\/\//i.test(id)
-        ? id
-        : `https://www.kugou.com/songlist/${id}/`,
+    getPlaylistUrl: (id, sourceUrl) => {
+      if (
+        sourceUrl &&
+        /^https?:\/\//i.test(sourceUrl) &&
+        !sourceUrl.endsWith('/songlist/') &&
+        !sourceUrl.endsWith('/songlist')
+      ) {
+        return sourceUrl;
+      }
+      if (/^https?:\/\//i.test(id)) return id;
+      if (/^\d+$/.test(id)) {
+        return `https://m.kugou.com/songlist/?listid=${id}`;
+      }
+      return `https://m.kugou.com/songlist/${id}/`;
+    },
   },
   kuwo: {
     id: 'kuwo',
@@ -172,8 +181,11 @@ export function getPlatformViewAction(platform?: string, lang: 'zh-CN' | 'en-US'
 }
 
 export function getPlatformPlaylistUrl(platform?: string, id?: string, sourceUrl?: string): string {
-  if (sourceUrl && /^https?:\/\//i.test(sourceUrl)) return sourceUrl;
-  if (id && /^https?:\/\//i.test(id)) return id;
+  const isBareSonglistUrl =
+    sourceUrl &&
+    (sourceUrl.endsWith('/songlist/') || sourceUrl.endsWith('/songlist'));
+  if (sourceUrl && /^https?:\/\//i.test(sourceUrl) && !isBareSonglistUrl) return sourceUrl;
+  if (id && /^https?:\/\//i.test(id) && !id.endsWith('/songlist/') && !id.endsWith('/songlist')) return id;
   const config = getPlatformConfig(platform);
   return config.getPlaylistUrl(id || '', sourceUrl);
 }

@@ -79,7 +79,15 @@ export async function fetchMultiplePlaylists(
     });
 
     try {
-      const targetUrl = summary.sourceUrl || summary.id;
+      const isBareSonglistUrl =
+        summary.sourceUrl &&
+        (summary.sourceUrl.endsWith('/songlist/') || summary.sourceUrl.endsWith('/songlist'));
+      const targetUrl =
+        summary.sourceUrl && !isBareSonglistUrl
+          ? summary.sourceUrl
+          : summary.id
+          ? (platform === 'kugou' ? `https://m.kugou.com/songlist/?listid=${summary.id}` : summary.id)
+          : summary.sourceUrl || summary.id;
       const res = await parsePlaylist(targetUrl, signal, platform);
       if (res.success && res.data) {
         successfulPlaylists.push(res.data);

@@ -20,6 +20,9 @@ describe('platform utilities and defensive URL resolution', () => {
   it('prefers sourceUrl when valid URL is supplied', () => {
     expect(getPlatformPlaylistUrl('qqmusic', '9044196528', 'https://y.qq.com/custom/url')).toBe('https://y.qq.com/custom/url');
     expect(getPlatformPlaylistUrl('netease', '2756674066', 'https://music.163.com/#/custom')).toBe('https://music.163.com/#/custom');
+    expect(getPlatformPlaylistUrl('kugou', '4', 'https://www.kugou.com/songlist/')).toBe('https://m.kugou.com/songlist/?listid=4');
+    expect(getPlatformPlaylistUrl('kugou', '4')).toBe('https://m.kugou.com/songlist/?listid=4');
+    expect(getPlatformPlaylistUrl('kugou', 'gcid_12345')).toBe('https://m.kugou.com/songlist/gcid_12345/');
   });
 
   it('provides correct brand colors and metadata for all supported platforms', () => {
