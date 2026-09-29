@@ -78,13 +78,79 @@
   justify-content: flex-end;
 }
 
-.qishui-channel-hint {
-  font-size: 0.82rem;
-  line-height: 1.4;
-  color: #636e72;
-  text-align: right;
-  max-width: 440px;
+/* Qishui Channel Sticky Note Banner (Scheme 2 + Scheme 3 Hybrid) */
+.qishui-channel-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 0.75rem 1.15rem;
+  background-color: rgba(254, 240, 138, 0.45);
+  border: 1.5px dashed #ca8a04;
+  border-radius: 8px;
+}
+
+.qishui-channel-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+  color: #4b5563;
+  line-height: 1.5;
+  font-family: var(--font-sans, sans-serif);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qishui-channel-banner-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.channel-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.95rem;
+  font-size: 1rem;
+  font-family: var(--font-handwriting, cursive);
+  border-radius: 6px;
+  line-height: 1.2;
+  transition: all 0.15s ease;
   user-select: none;
+}
+
+.channel-tab-btn.is-active {
+  background-color: #ffffff;
+  border: 2px solid var(--ink, #2d3436);
+  box-shadow: 2px 2px 0 var(--ink, #2d3436);
+  color: var(--ink, #2d3436);
+  font-weight: 700;
+  cursor: default;
+  transform: rotate(-0.5deg);
+}
+
+.channel-tab-btn:not(.is-active) {
+  background-color: rgba(255, 255, 255, 0.65);
+  border: 1.5px dashed rgba(45, 52, 54, 0.4);
+  box-shadow: none;
+  color: #4b5563;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.channel-tab-btn:not(.is-active):hover {
+  background-color: #ffffff;
+  border-color: var(--ink, #2d3436);
+  color: var(--ink, #2d3436);
+  box-shadow: 1.5px 1.5px 0 rgba(45, 52, 54, 0.2);
+}
+
+.channel-tab-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Tablet & Mobile Overrides */
@@ -248,15 +314,26 @@
     margin-top: 0.25rem !important;
   }
 
-  .playlist-summary-actions-row,
-  .playlist-summary-actions .qishui-channel-switcher {
+  .playlist-summary-actions-row {
     justify-content: flex-start !important;
     width: 100% !important;
   }
 
-  .playlist-summary-actions .qishui-channel-hint {
-    text-align: left !important;
-    max-width: 100% !important;
+  .qishui-channel-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+    padding: 0.85rem 1rem !important;
+  }
+
+  .qishui-channel-banner-tabs {
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+
+  .channel-tab-btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .hide-mobile {

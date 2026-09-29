@@ -128,6 +128,10 @@ export interface Translations {
     qishuiActiveBadge: string;
     douyinActiveBadge: string;
     qishuiChannelHint: string;
+    channelBannerTitle: string;
+    channelBannerTip: string;
+    channelOfficialTracks: string;
+    channelVideoSoundtracks: string;
   };
   table: {
     listTitle: string;
