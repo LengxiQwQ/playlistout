@@ -128,6 +128,10 @@ export const enUS: Translations = {
     qishuiActiveBadge: 'Soda Music (Clean)',
     douyinActiveBadge: 'Douyin Audio (With Video Sounds)',
     qishuiChannelHint: '💡 Note: Soda Music only parses official tracks (clean titles); Douyin also includes video soundtracks & BGM (full list).',
+    channelBannerTitle: 'Source Note',
+    channelBannerTip: 'Soda Music only includes official tracks (clean titles); Douyin includes video soundtracks & BGM (full list).',
+    channelOfficialTracks: 'Official Tracks',
+    channelVideoSoundtracks: 'With Video Sounds',
   },
   table: {
     listTitle: 'Song List ({count})',

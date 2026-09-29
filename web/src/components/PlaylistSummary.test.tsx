@@ -142,7 +142,7 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
     availableChannels: ['qishui', 'douyin'],
   };
 
-  it('renders channel switcher when availableChannels includes douyin', () => {
+  it('renders channel switcher banner when availableChannels includes douyin', () => {
     const handleSwitchChannel = vi.fn();
     render(
       <PlaylistSummary
@@ -152,25 +152,26 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
       />,
     );
 
-    const switcher = screen.getByTestId('qishui-channel-switcher');
-    expect(switcher).toBeInTheDocument();
+    const banner = screen.getByTestId('qishui-channel-banner');
+    expect(banner).toBeInTheDocument();
 
-    // In Qishui mode: displays top badge with 不包含抖音视频原声, current mode label, switch button and explanatory hint
-    expect(screen.getByText('汽水音乐歌单 (不包含抖音视频原声)')).toBeInTheDocument();
-    const currentMode = screen.getByTestId('qishui-current-mode');
-    expect(currentMode).toHaveTextContent('当前为汽水官方解析');
-    const switchBtn = screen.getByRole('button', { name: '⚡ 切换到抖音全量解析 (包含视频原声)' });
-    expect(switchBtn).toBeInTheDocument();
+    // In Qishui mode: displays top badge 汽水音乐 · 官方歌曲
+    expect(screen.getByText('汽水音乐 · 官方歌曲')).toBeInTheDocument();
 
-    const hint = screen.getByTestId('qishui-channel-hint');
-    expect(hint).toBeInTheDocument();
-    expect(hint).toHaveTextContent('汽水解析仅含正式歌曲');
+    // Official tab is active, Douyin tab is inactive
+    const officialTab = screen.getByTestId('qishui-tab-official');
+    const douyinTab = screen.getByTestId('qishui-tab-douyin');
+    expect(officialTab).toHaveClass('is-active');
+    expect(douyinTab).not.toHaveClass('is-active');
 
-    fireEvent.click(switchBtn);
+    // Explanatory note text is present in the banner
+    expect(banner).toHaveTextContent('汽水官方仅收录正式歌曲');
+
+    fireEvent.click(douyinTab);
     expect(handleSwitchChannel).toHaveBeenCalledWith('douyin');
   });
 
-  it('renders switch to Qishui and current mode Douyin when in douyin channel mode', () => {
+  it('renders switch to Qishui and active Douyin tab when in douyin channel mode', () => {
     const handleSwitchChannel = vi.fn();
     render(
       <PlaylistSummary
@@ -184,24 +185,23 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
       />,
     );
 
-    const switcher = screen.getByTestId('qishui-channel-switcher');
-    expect(switcher).toBeInTheDocument();
+    const banner = screen.getByTestId('qishui-channel-banner');
+    expect(banner).toBeInTheDocument();
 
-    // In Douyin mode: displays top badge with 包含视频原声, current mode label, switch to Qishui button and hint
-    expect(screen.getByText('汽水音乐 · 抖音全量收藏 (包含视频原声)')).toBeInTheDocument();
-    const currentMode = screen.getByTestId('qishui-current-mode');
-    expect(currentMode).toHaveTextContent('当前为抖音全量解析 (包含视频原声)');
-    const switchQishuiBtn = screen.getByRole('button', { name: '⚡ 切换到汽水官方解析 (真实歌名)' });
-    expect(switchQishuiBtn).toBeInTheDocument();
+    // In Douyin mode: displays top badge 汽水音乐 · 包含视频原声
+    expect(screen.getByText('汽水音乐 · 包含视频原声')).toBeInTheDocument();
 
-    const hint = screen.getByTestId('qishui-channel-hint');
-    expect(hint).toBeInTheDocument();
+    // Douyin tab is active, Official tab is inactive
+    const officialTab = screen.getByTestId('qishui-tab-official');
+    const douyinTab = screen.getByTestId('qishui-tab-douyin');
+    expect(douyinTab).toHaveClass('is-active');
+    expect(officialTab).not.toHaveClass('is-active');
 
-    fireEvent.click(switchQishuiBtn);
+    fireEvent.click(officialTab);
     expect(handleSwitchChannel).toHaveBeenCalledWith('qishui');
   });
 
-  it('does NOT render channel switcher or hint for standard non-synced Qishui playlists', () => {
+  it('does NOT render channel switcher banner for standard non-synced Qishui playlists', () => {
     render(
       <PlaylistSummary
         playlist={{
@@ -212,8 +212,7 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
       />,
     );
 
-    expect(screen.queryByTestId('qishui-channel-switcher')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('qishui-channel-hint')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('qishui-channel-banner')).not.toBeInTheDocument();
   });
 });
 

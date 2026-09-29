@@ -128,6 +128,10 @@ export const zhCN: Translations = {
     qishuiActiveBadge: '汽水纯净版',
     douyinActiveBadge: '抖音全量版 (包含视频原声)',
     qishuiChannelHint: '💡 提示：汽水解析仅含正式歌曲（歌名规范）；抖音解析额外包含视频原声与配乐（曲目更完整）。',
+    channelBannerTitle: '来源便签',
+    channelBannerTip: '汽水官方仅收录正式歌曲（歌名规范）；抖音解析额外包含短视频原声与配乐（曲目更完整）。',
+    channelOfficialTracks: '官方歌曲',
+    channelVideoSoundtracks: '包含视频原声',
   },
   table: {
     listTitle: '歌曲列表 ({count})',
