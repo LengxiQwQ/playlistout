@@ -339,6 +339,10 @@ async function fetchCloudlistAllTracks(options: {
         );
       }
       if (page === 1) {
+        if (json.status === 1 && (json.data?.count === 0 || !json.data?.info)) {
+          // Gracefully treat as empty playlist
+          break;
+        }
         throw new ProviderError(
           'UPSTREAM_ERROR',
           `Kugou cloudlist gateway returned status=${json.status} error_code=${json.error_code}`,
@@ -504,28 +508,31 @@ export async function fetchKugouPlaylist(
 
         // Priority 3: Favorite / default playlist matching
         if (!matched && isOwnerConfirmed) {
+          const isDef = Number((listInfo as any).is_def || 0);
           const isTargetFavorite =
-            Number((listInfo as any).is_def) > 0 ||
+            isDef > 0 ||
             targetName.includes('喜欢的音乐') ||
             targetName.includes('我喜欢') ||
             targetName.endsWith('喜欢的音乐') ||
             targetName.endsWith('的收藏');
 
           if (isTargetFavorite) {
-            const favPlaylists = userPlaylists.playlists.filter(
-              (p) =>
-                p.name.includes('喜欢') ||
-                p.name.includes('默认收藏') ||
-                p.name.includes('默认'),
-            );
-            if (favPlaylists.length === 1) {
-              matched = favPlaylists[0];
-            } else if (favPlaylists.length > 1 && expectedTrackCount > 0) {
+            if (isDef === 2 || targetName.includes('喜欢')) {
+              // Kugou default list 2 is "我喜欢"
               matched =
-                favPlaylists.find((p) => p.trackCount === expectedTrackCount) ||
-                favPlaylists[0];
-            } else if (favPlaylists.length > 1) {
-              matched = favPlaylists[0];
+                userPlaylists.playlists.find((p) => String(p.id) === '2') ||
+                userPlaylists.playlists.find((p) => p.name.includes('喜欢'));
+            } else if (isDef === 1 || targetName.includes('默认') || targetName.includes('收藏')) {
+              // Kugou default list 1 is "默认收藏"
+              matched =
+                userPlaylists.playlists.find((p) => String(p.id) === '1') ||
+                userPlaylists.playlists.find((p) => p.name.includes('默认') || p.name.includes('收藏'));
+            } else {
+              matched =
+                userPlaylists.playlists.find((p) => p.trackCount === expectedTrackCount) ||
+                userPlaylists.playlists.find((p) => String(p.id) === '2') ||
+                userPlaylists.playlists.find((p) => p.name.includes('喜欢')) ||
+                userPlaylists.playlists.find((p) => String(p.id) === '1');
             }
           }
         }
@@ -538,7 +545,7 @@ export async function fetchKugouPlaylist(
             if (creatorName && s.startsWith(creatorName)) {
               s = s.slice(creatorName.length);
             }
-            s = s.replace(/^我/, '').replace(/^的/, '').replace(/歌单$/, '');
+            s = s.replace(/^创建的歌单[:：]/, '').replace(/^我/, '').replace(/^的/, '').replace(/歌单$/, '');
             return s.trim();
           };
 

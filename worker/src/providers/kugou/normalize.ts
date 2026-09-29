@@ -104,6 +104,10 @@ function extractKugouTags(listInfo: KugouRawListInfo): string[] | undefined {
   return tags.length > 0 ? tags : undefined;
 }
 
+function cleanAudioExtension(str: string): string {
+  return str.replace(/\.(mp3|flac|wav|m4a|aac|ogg|ape)$/i, '').trim();
+}
+
 /**
  * Normalizes artist name(s) and track title from raw Kugou song data.
  */
@@ -132,7 +136,7 @@ function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: s
         title = rawName.substring(splitIdx + 3).trim();
       }
       return {
-        title: title || rawName || '未知歌曲',
+        title: cleanAudioExtension(title) || cleanAudioExtension(rawName) || '未知歌曲',
         artists,
         artistList: artistList.length > 0 ? artistList : undefined,
       };
@@ -148,7 +152,7 @@ function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: s
       title = rawName.substring(splitIdx + 3).trim();
     }
     return {
-      title: title || rawName || '未知歌曲',
+      title: cleanAudioExtension(title) || cleanAudioExtension(rawName) || '未知歌曲',
       artists: [artist],
     };
   }
@@ -159,13 +163,13 @@ function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: s
     const artist = parts[0].trim();
     const title = parts.slice(1).join(' - ').trim();
     return {
-      title: title || rawName,
+      title: cleanAudioExtension(title) || cleanAudioExtension(rawName),
       artists: artist ? [artist] : ['未知歌手'],
     };
   }
 
   return {
-    title: rawName || '未知歌曲',
+    title: cleanAudioExtension(rawName) || '未知歌曲',
     artists: ['未知歌手'],
   };
 }
