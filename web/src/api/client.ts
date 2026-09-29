@@ -215,8 +215,10 @@ export async function parsePlaylist(
   platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
   authOptions?: { token?: string; userid?: string },
   isSample?: boolean,
+  channel?: 'qishui' | 'douyin',
 ): Promise<ApiResponse<Playlist>> {
   const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
+  const channelParam = channel ? `&channel=${encodeURIComponent(channel)}` : '';
 
   let token = authOptions?.token;
   let userid = authOptions?.userid;
@@ -232,7 +234,7 @@ export async function parsePlaylist(
       }
     }
   }
-  const queryString = `url=${encodeURIComponent(urlOrId)}${platformParam}`;
+  const queryString = `url=${encodeURIComponent(urlOrId)}${platformParam}${channelParam}`;
   const requestHeaders: Record<string, string> = {
     Accept: 'application/json',
   };

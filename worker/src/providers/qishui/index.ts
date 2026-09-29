@@ -20,9 +20,9 @@ export const qishuiProvider: Provider = {
     return null;
   },
 
-  async parse(inputOrId: string): Promise<Playlist> {
+  async parse(inputOrId: string, options?: { channel?: 'qishui' | 'douyin' }): Promise<Playlist> {
     const playlistId = await extractQishuiPlaylistId(inputOrId);
-    return fetchQishuiPlaylist(playlistId);
+    return fetchQishuiPlaylist(playlistId, options);
   },
 };
 

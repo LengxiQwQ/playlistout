@@ -127,3 +127,83 @@ describe('PlaylistSummary Component — Kugou Retrieval Banners & Actions', () =
     expect(handleReload).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', () => {
+  const baseQishuiPlaylist: Playlist = {
+    platform: 'qishui',
+    id: '7087507348697186339',
+    name: '冷汐OωO在抖音收藏的音乐',
+    creator: '冷汐OωO',
+    trackCount: 136,
+    tracks: [
+      { index: 1, id: 't1', title: '我李逍遥可以对天发誓', artists: ['Watch with Caution'] },
+    ],
+    channel: 'qishui',
+    availableChannels: ['qishui', 'douyin'],
+  };
+
+  it('renders channel switcher when availableChannels includes douyin', () => {
+    const handleSwitchChannel = vi.fn();
+    render(
+      <PlaylistSummary
+        playlist={baseQishuiPlaylist}
+        onReset={vi.fn()}
+        onSwitchChannel={handleSwitchChannel}
+      />,
+    );
+
+    const switcher = screen.getByTestId('qishui-channel-switcher');
+    expect(switcher).toBeInTheDocument();
+
+    // In Qishui mode: displays reload current and switch to Douyin
+    const reloadBtn = screen.getByRole('button', { name: '↻ 重新以汽水解析' });
+    const switchBtn = screen.getByRole('button', { name: '⚡ 切换到抖音全量解析 (含原声)' });
+    expect(reloadBtn).toBeInTheDocument();
+    expect(switchBtn).toBeInTheDocument();
+
+    fireEvent.click(switchBtn);
+    expect(handleSwitchChannel).toHaveBeenCalledWith('douyin');
+  });
+
+  it('renders switch to Qishui and reload Douyin when in douyin channel mode', () => {
+    const handleSwitchChannel = vi.fn();
+    render(
+      <PlaylistSummary
+        playlist={{
+          ...baseQishuiPlaylist,
+          channel: 'douyin',
+          trackCount: 830,
+        }}
+        onReset={vi.fn()}
+        onSwitchChannel={handleSwitchChannel}
+      />,
+    );
+
+    const switcher = screen.getByTestId('qishui-channel-switcher');
+    expect(switcher).toBeInTheDocument();
+
+    // In Douyin mode: displays switch to Qishui and reload Douyin
+    const switchQishuiBtn = screen.getByRole('button', { name: '⚡ 切换到汽水官方解析 (真实歌名)' });
+    const reloadDouyinBtn = screen.getByRole('button', { name: '↻ 重新以抖音全量解析' });
+    expect(switchQishuiBtn).toBeInTheDocument();
+    expect(reloadDouyinBtn).toBeInTheDocument();
+
+    fireEvent.click(switchQishuiBtn);
+    expect(handleSwitchChannel).toHaveBeenCalledWith('qishui');
+  });
+
+  it('does NOT render channel switcher for standard non-synced Qishui playlists', () => {
+    render(
+      <PlaylistSummary
+        playlist={{
+          ...baseQishuiPlaylist,
+          availableChannels: ['qishui'],
+        }}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('qishui-channel-switcher')).not.toBeInTheDocument();
+  });
+});
+

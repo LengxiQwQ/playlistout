@@ -17,9 +17,18 @@ export interface PlaylistSummaryProps {
   onReset: () => void;
   onReturnToBatch?: () => void;
   onReload?: () => void;
+  onSwitchChannel?: (channel: 'qishui' | 'douyin') => void;
+  isSwitchingChannel?: boolean;
 }
 
-export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onReset, onReturnToBatch, onReload }) => {
+export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
+  playlist,
+  onReset,
+  onReturnToBatch,
+  onReload,
+  onSwitchChannel,
+  isSwitchingChannel,
+}) => {
   const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
   const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
@@ -110,7 +119,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           <div style={{ flex: '1 1 auto', minWidth: 0 }}>
             <Sticker
               as="span"
-              color={getPlatformConfig(playlist.platform).color}
+              color={playlist.channel === 'douyin' ? 'pink' : getPlatformConfig(playlist.platform).color}
               rotateDeg={-2}
               className="font-handwriting"
               style={{
@@ -124,7 +133,9 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 lineHeight: 1.2,
               }}
             >
-              {getPlatformPlaylistSticker(playlist.platform, language)}
+              {playlist.platform === 'qishui' && playlist.channel === 'douyin'
+                ? (language === 'zh-CN' ? '汽水音乐 · 抖音全量收藏' : 'Soda Music · Douyin Audio')
+                : getPlatformPlaylistSticker(playlist.platform, language)}
             </Sticker>
 
             <h2
@@ -310,41 +321,62 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
           </div>
         </div>
 
-        {/* Action Stickers */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
-          <Sticker
-            type="button"
-            onClick={() => {
-              const url = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
-              if (url && typeof window !== 'undefined') {
-                window.open(url, '_blank', 'noopener,noreferrer');
-              }
-            }}
-            color="white"
-            rotateDeg={-1}
-            className="font-handwriting"
-            aria-label={getPlatformViewAction(playlist.platform, language)}
-            style={{
-              padding: '0.42rem 0.95rem',
-              fontSize: '1.05rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: 'var(--ink, #2d3436)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              lineHeight: 1.2,
-            }}
-          >
-            {getPlatformViewAction(playlist.platform, language)}
-          </Sticker>
-
-          {onReturnToBatch && (
+        {/* Action Stickers & Channel Switcher Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center', justifyContent: 'flex-end' }}>
             <Sticker
               type="button"
-              color="pink"
-              rotateDeg={-1.5}
-              onClick={onReturnToBatch}
+              onClick={() => {
+                const url = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
+                if (url && typeof window !== 'undefined') {
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              color="white"
+              rotateDeg={-1}
+              className="font-handwriting"
+              aria-label={getPlatformViewAction(playlist.platform, language)}
+              style={{
+                padding: '0.42rem 0.95rem',
+                fontSize: '1.05rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                color: 'var(--ink, #2d3436)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                lineHeight: 1.2,
+              }}
+            >
+              {getPlatformViewAction(playlist.platform, language)}
+            </Sticker>
+
+            {onReturnToBatch && (
+              <Sticker
+                type="button"
+                color="pink"
+                rotateDeg={-1.5}
+                onClick={onReturnToBatch}
+                className="font-handwriting"
+                style={{
+                  padding: '0.42rem 0.95rem',
+                  fontSize: '1.05rem',
+                  fontFamily: 'var(--font-handwriting, cursive)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  lineHeight: 1.2,
+                  color: 'var(--ink, #2d3436)',
+                }}
+              >
+                ← {t.userPlaylists.returnToCollection}
+              </Sticker>
+            )}
+
+            <Sticker
+              type="button"
+              color="yellow"
+              rotateDeg={1}
+              onClick={onReset}
               className="font-handwriting"
               style={{
                 padding: '0.42rem 0.95rem',
@@ -353,30 +385,125 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({ playlist, onRe
                 fontWeight: 700,
                 cursor: 'pointer',
                 lineHeight: 1.2,
-                color: 'var(--ink, #2d3436)',
               }}
             >
-              ← {t.userPlaylists.returnToCollection}
+              {t.result.parseAnother}
             </Sticker>
-          )}
+          </div>
 
-          <Sticker
-            type="button"
-            color="yellow"
-            rotateDeg={1}
-            onClick={onReset}
-            className="font-handwriting"
-            style={{
-              padding: '0.42rem 0.95rem',
-              fontSize: '1.05rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-              cursor: 'pointer',
-              lineHeight: 1.2,
-            }}
-          >
-            {t.result.parseAnother}
-          </Sticker>
+          {/* Qishui / Douyin Channel Switcher (Directly beneath action buttons in red box area) */}
+          {playlist.platform === 'qishui' && playlist.availableChannels && playlist.availableChannels.includes('douyin') && (
+            <div
+              className="qishui-channel-switcher"
+              data-testid="qishui-channel-switcher"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                marginTop: '0.2rem',
+              }}
+            >
+              {playlist.channel === 'douyin' ? (
+                <>
+                  <Sticker
+                    type="button"
+                    color="cyan"
+                    rotateDeg={-1}
+                    disabled={isSwitchingChannel}
+                    onClick={() => onSwitchChannel?.('qishui')}
+                    className="font-handwriting"
+                    aria-label={t.result.switchToQishuiBtn}
+                    title={language === 'zh-CN' ? '切换至汽水音乐官方音源解析（纯净真实歌名）' : 'Switch to Soda Music official catalog (clean song titles)'}
+                    style={{
+                      padding: '0.38rem 0.85rem',
+                      fontSize: '0.98rem',
+                      fontFamily: 'var(--font-handwriting, cursive)',
+                      fontWeight: 700,
+                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                      color: 'var(--ink, #2d3436)',
+                      opacity: isSwitchingChannel ? 0.6 : 1,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {t.result.switchToQishuiBtn}
+                  </Sticker>
+                  <Sticker
+                    type="button"
+                    color="pink"
+                    rotateDeg={1}
+                    disabled={isSwitchingChannel}
+                    onClick={() => onSwitchChannel?.('douyin')}
+                    className="font-handwriting"
+                    aria-label={t.result.douyinReloadBtn}
+                    title={language === 'zh-CN' ? '当前为抖音全量收藏解析，点击可重新解析' : 'Currently using Douyin collection mode, click to re-parse'}
+                    style={{
+                      padding: '0.38rem 0.85rem',
+                      fontSize: '0.98rem',
+                      fontFamily: 'var(--font-handwriting, cursive)',
+                      fontWeight: 700,
+                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                      color: 'var(--ink, #2d3436)',
+                      border: '1.5px solid #db2777',
+                      opacity: isSwitchingChannel ? 0.6 : 1,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {t.result.douyinReloadBtn}
+                  </Sticker>
+                </>
+              ) : (
+                <>
+                  <Sticker
+                    type="button"
+                    color="cyan"
+                    rotateDeg={-1}
+                    disabled={isSwitchingChannel}
+                    onClick={() => onSwitchChannel?.('qishui')}
+                    className="font-handwriting"
+                    aria-label={t.result.qishuiReloadBtn}
+                    title={language === 'zh-CN' ? '当前为汽水官方解析，点击可重新解析' : 'Currently using Soda Music official mode, click to re-parse'}
+                    style={{
+                      padding: '0.38rem 0.85rem',
+                      fontSize: '0.98rem',
+                      fontFamily: 'var(--font-handwriting, cursive)',
+                      fontWeight: 700,
+                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                      color: 'var(--ink, #2d3436)',
+                      border: '1.5px solid #0891b2',
+                      opacity: isSwitchingChannel ? 0.6 : 1,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {t.result.qishuiReloadBtn}
+                  </Sticker>
+                  <Sticker
+                    type="button"
+                    color="pink"
+                    rotateDeg={1}
+                    disabled={isSwitchingChannel}
+                    onClick={() => onSwitchChannel?.('douyin')}
+                    className="font-handwriting"
+                    aria-label={t.result.switchToDouyinBtn}
+                    title={language === 'zh-CN' ? '切换至抖音全量原声解析（含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
+                    style={{
+                      padding: '0.38rem 0.85rem',
+                      fontSize: '0.98rem',
+                      fontFamily: 'var(--font-handwriting, cursive)',
+                      fontWeight: 700,
+                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                      color: 'var(--ink, #2d3436)',
+                      opacity: isSwitchingChannel ? 0.6 : 1,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {t.result.switchToDouyinBtn}
+                  </Sticker>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

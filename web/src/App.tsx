@@ -35,6 +35,7 @@ export const AppContent: React.FC = () => {
   const [disambiguationCandidates, setDisambiguationCandidates] = useState<DisambiguationItem[]>([]);
   const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
   const [disambiguationQueryId, setDisambiguationQueryId] = useState('');
+  const [channelCache, setChannelCache] = useState<Record<string, Playlist>>({});
 
   const { language } = useTranslation();
 
@@ -97,6 +98,8 @@ export const AppContent: React.FC = () => {
       platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
       modeHint?: 'user' | 'playlist',
       isSample?: boolean,
+      channelHint?: 'qishui' | 'douyin',
+      skipScroll?: boolean,
     ) => {
       const rawTarget = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
@@ -132,7 +135,7 @@ export const AppContent: React.FC = () => {
       setFeedbackSubmitted(false);
 
       // Smoothly bring user to top so loading animation in SearchNote is visible
-      if (typeof window !== 'undefined' && typeof window.scrollY === 'number' && window.scrollY > 80) {
+      if (!skipScroll && typeof window !== 'undefined' && typeof window.scrollY === 'number' && window.scrollY > 80) {
         scrollToTop();
       }
 
@@ -164,7 +167,7 @@ export const AppContent: React.FC = () => {
           return;
         }
 
-        // Fast path for explicit single playlist mode (e.g. from sample sticker)
+        // Fast path for explicit single playlist mode (e.g. from sample sticker or channel switch)
         if (modeHint === 'playlist') {
           const platform =
             platformHint === 'netease'
@@ -174,7 +177,9 @@ export const AppContent: React.FC = () => {
               : platformHint === 'qqmusic'
               ? 'qqmusic'
               : undefined;
-          const res = await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample);
+          const res = channelHint
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, channelHint)
+            : await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
@@ -182,10 +187,16 @@ export const AppContent: React.FC = () => {
               clearKugouAuth();
             }
             setPlaylist(res.data);
+            setChannelCache((prev) => ({
+              ...prev,
+              [`${res.data.id}:${res.data.channel || 'qishui'}`]: res.data,
+            }));
             setUserPlaylists(null);
             setViewMode('single');
             setState('success');
-            scrollToElement('result');
+            if (!skipScroll) {
+              scrollToElement('result');
+            }
             recordClarityParseSuccess(
               res.data.platform || platform || 'qqmusic',
               res.data.trackCount ?? res.data.tracks?.length,
@@ -233,7 +244,9 @@ export const AppContent: React.FC = () => {
               : validation.platform === 'kugou'
               ? 'kugou'
               : undefined;
-          const singleRes = await parsePlaylist(targetUrl, controller.signal, platform).catch(() => null);
+          const singleRes = channelHint
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint).catch(() => null)
+            : await parsePlaylist(targetUrl, controller.signal, platform).catch(() => null);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (singleRes && singleRes.success && singleRes.data) {
@@ -241,10 +254,16 @@ export const AppContent: React.FC = () => {
               clearKugouAuth();
             }
             setPlaylist(singleRes.data);
+            setChannelCache((prev) => ({
+              ...prev,
+              [`${singleRes.data.id}:${singleRes.data.channel || 'qishui'}`]: singleRes.data,
+            }));
             setUserPlaylists(null);
             setViewMode('single');
             setState('success');
-            scrollToElement('result');
+            if (!skipScroll) {
+              scrollToElement('result');
+            }
             recordClarityParseSuccess(
               singleRes.data.platform || platform || 'unknown',
               singleRes.data.trackCount ?? singleRes.data.tracks?.length,
@@ -286,7 +305,9 @@ export const AppContent: React.FC = () => {
               : validation.platform === 'kugou'
               ? 'kugou'
               : 'qqmusic';
-          const res = await parsePlaylist(targetUrl, controller.signal, platform);
+          const res = channelHint
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
+            : await parsePlaylist(targetUrl, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (res.success) {
@@ -294,10 +315,16 @@ export const AppContent: React.FC = () => {
               clearKugouAuth();
             }
             setPlaylist(res.data);
+            setChannelCache((prev) => ({
+              ...prev,
+              [`${res.data.id}:${res.data.channel || 'qishui'}`]: res.data,
+            }));
             setUserPlaylists(null);
             setViewMode('single');
             setState('success');
-            scrollToElement('result');
+            if (!skipScroll) {
+              scrollToElement('result');
+            }
             recordClarityParseSuccess(
               res.data.platform || platform || 'qqmusic',
               res.data.trackCount ?? res.data.tracks?.length,
@@ -439,6 +466,25 @@ export const AppContent: React.FC = () => {
     handleParse();
   }, [scrollToTop, handleParse]);
 
+  const handleSwitchChannel = useCallback(
+    async (targetChannel: 'qishui' | 'douyin') => {
+      if (!playlist) return;
+      const currentChannel = playlist.channel || 'qishui';
+      // If clicking the current channel, it is a re-parse request (bypass cache)
+      const isReparse = targetChannel === currentChannel;
+      const cacheKey = `${playlist.id}:${targetChannel}`;
+
+      if (!isReparse && channelCache[cacheKey]) {
+        setPlaylist(channelCache[cacheKey]);
+        return;
+      }
+
+      const targetUrl = playlist.sourceUrl || playlist.id;
+      await handleParse(targetUrl, 'qishui', 'playlist', false, targetChannel, true);
+    },
+    [playlist, channelCache, handleParse],
+  );
+
   const handleReset = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -446,6 +492,7 @@ export const AppContent: React.FC = () => {
     setInputUrl('');
     setPlaylist(null);
     setUserPlaylists(null);
+    setChannelCache({});
     setError(null);
     setHasCollision(false);
     setFeedbackSubmitted(false);
@@ -635,6 +682,7 @@ export const AppContent: React.FC = () => {
                 onReset={handleReset} 
                 onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
                 onReload={handleReload}
+                onSwitchChannel={handleSwitchChannel}
                 isReloading={state === 'loading'}
               />
             </div>

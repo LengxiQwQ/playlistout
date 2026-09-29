@@ -56,6 +56,8 @@ export interface PlaylistRetrievalInfo {
   message?: string;
 }
 
+export type PlaylistChannel = 'qishui' | 'douyin';
+
 export interface Playlist {
   platform: string;
   id: string;
@@ -72,6 +74,8 @@ export interface Playlist {
   playCount?: number;
   sourceUrl?: string;
   retrieval?: PlaylistRetrievalInfo;
+  channel?: PlaylistChannel;
+  availableChannels?: PlaylistChannel[];
 }
 
 export interface UserPlaylistSummary {

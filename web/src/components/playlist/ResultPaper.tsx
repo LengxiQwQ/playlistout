@@ -12,6 +12,7 @@ export interface ResultPaperProps {
   onReset: () => void;
   onReturnToBatch?: () => void;
   onReload?: () => void;
+  onSwitchChannel?: (channel: 'qishui' | 'douyin') => void;
   isReloading?: boolean;
 }
 
@@ -20,6 +21,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
   onReset,
   onReturnToBatch,
   onReload,
+  onSwitchChannel,
   isReloading,
 }) => {
   const { t } = useTranslation();
@@ -179,6 +181,8 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
               onReset={onReset}
               onReturnToBatch={onReturnToBatch}
               onReload={onReload}
+              onSwitchChannel={onSwitchChannel}
+              isSwitchingChannel={isReloading}
             />
             <TrackTable tracks={playlist.tracks} />
           </div>

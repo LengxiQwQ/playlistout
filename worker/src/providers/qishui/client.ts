@@ -3,8 +3,10 @@ import { ProviderError } from '../../models/playlist';
 import {
   type RawQishuiMediaResource,
   type RawQishuiPlaylist,
+  type RawAwemeMusic,
   normalizeQishuiPlaylist,
   normalizeQishuiTrack,
+  normalizeAwemeMusicTrack,
 } from './normalize';
 
 const UPSTREAM_USER_AGENT = 'Luna/19.1.0 Android';
@@ -12,6 +14,8 @@ const AWEME_USER_AGENT = 'com.ss.android.ugc.aweme/280001 (Linux; U; Android 13;
 const FETCH_TIMEOUT_MS = 15000;
 const MAX_PAGES = 50;
 const PAGE_COUNT = 200;
+const AWEME_PAGE_COUNT = 30;
+const MAX_AWEME_PAGES = 45;
 
 export const ALLOWED_QISHUI_HOSTS: ReadonlySet<string> = new Set([
   'qishui.douyin.com',
@@ -83,17 +87,144 @@ async function fetchWithTimeout(
   }
 }
 
-
 /**
- * Fetches a full Qishui playlist with pagination.
+ * Fetches a Qishui playlist with pagination.
+ * Supports dual-channel parsing for Douyin-synced playlists (type === 4):
+ * - 'qishui': Luna API (official clean tracks with genuine titles)
+ * - 'douyin': Douyin Aweme user music collect API (full collection including UGC video sounds)
  */
-export async function fetchQishuiPlaylist(playlistId: string): Promise<Playlist> {
+export async function fetchQishuiPlaylist(
+  playlistId: string,
+  options?: { channel?: 'qishui' | 'douyin' },
+): Promise<Playlist> {
   let cursor = '0';
   let page = 0;
   let playlistMeta: RawQishuiPlaylist | undefined;
   const allMediaResources: RawQishuiMediaResource[] = [];
 
-  while (page < MAX_PAGES) {
+  // 1. Fetch first page to inspect playlist metadata & channel capability
+  const firstPayload = {
+    playlist_id: playlistId,
+    cursor,
+    count: PAGE_COUNT,
+  };
+
+  const response = await fetchWithTimeout(
+    'https://beta-luna.douyin.com/luna/playlist/detail',
+    {
+      method: 'POST',
+      headers: {
+        'User-Agent': UPSTREAM_USER_AGENT,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(firstPayload),
+    },
+    FETCH_TIMEOUT_MS,
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new ProviderError(
+        'PLAYLIST_NOT_FOUND',
+        `Qishui playlist ${playlistId} was not found or is private.`,
+        404,
+      );
+    }
+    throw new ProviderError(
+      'UPSTREAM_ERROR',
+      `Qishui API returned HTTP ${response.status}`,
+      502,
+    );
+  }
+
+  let data: RawQishuiDetailResponse;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ProviderError('PARSE_ERROR', 'Failed to parse Qishui upstream JSON response.', 502);
+  }
+
+  if (!data.playlist) {
+    throw new ProviderError(
+      'PLAYLIST_NOT_FOUND',
+      `Qishui playlist ${playlistId} could not be retrieved.`,
+      404,
+    );
+  }
+
+  playlistMeta = data.playlist;
+
+  const isDouyinSync = Boolean(playlistMeta.type === 4 && playlistMeta.owner?.id);
+  const availableChannels: ('qishui' | 'douyin')[] = isDouyinSync ? ['qishui', 'douyin'] : ['qishui'];
+  const targetChannel = (options?.channel === 'douyin' && isDouyinSync) ? 'douyin' : 'qishui';
+
+  // 2. Channel: Douyin full user collection (including UGC original sounds)
+  if (targetChannel === 'douyin') {
+    const ownerId = String(playlistMeta.owner!.id).trim();
+    const allAwemeItems: RawAwemeMusic[] = [];
+    let awemeCursor = '0';
+    let awemePage = 0;
+
+    while (awemePage < MAX_AWEME_PAGES) {
+      awemePage++;
+      const awemeUrl = `https://aweme.snssdk.com/aweme/v1/user/music/collect/?user_id=${encodeURIComponent(ownerId)}&cursor=${encodeURIComponent(awemeCursor)}&count=${AWEME_PAGE_COUNT}`;
+      const awemeRes = await fetchWithTimeout(
+        awemeUrl,
+        {
+          method: 'GET',
+          headers: {
+            'User-Agent': AWEME_USER_AGENT,
+          },
+        },
+        FETCH_TIMEOUT_MS,
+      );
+
+      if (!awemeRes.ok) {
+        throw new ProviderError(
+          'UPSTREAM_ERROR',
+          `Douyin collection API returned HTTP ${awemeRes.status}`,
+          502,
+        );
+      }
+
+      let awemeData: any;
+      try {
+        awemeData = await awemeRes.json();
+      } catch {
+        throw new ProviderError('PARSE_ERROR', 'Failed to parse Douyin upstream JSON response.', 502);
+      }
+
+      const items: RawAwemeMusic[] = Array.isArray(awemeData.mc_list) ? awemeData.mc_list : [];
+      allAwemeItems.push(...items);
+
+      const hasMore = Boolean(awemeData.has_more);
+      const nextCursor = awemeData.cursor !== undefined && awemeData.cursor !== null ? String(awemeData.cursor) : '';
+
+      if (!hasMore || !nextCursor || nextCursor === awemeCursor || items.length === 0) {
+        break;
+      }
+      awemeCursor = nextCursor;
+    }
+
+    const tracks: Track[] = allAwemeItems.map((item, idx) => normalizeAwemeMusicTrack(item, idx));
+    const normalized = normalizeQishuiPlaylist(playlistMeta, tracks);
+    return {
+      ...normalized,
+      channel: 'douyin',
+      availableChannels,
+      trackCount: tracks.length,
+    };
+  }
+
+  // 3. Channel: Qishui official licensed tracks (pure clean titles)
+  const firstMedias = Array.isArray(data.media_resources) ? data.media_resources : [];
+  allMediaResources.push(...firstMedias);
+
+  let hasMore = Boolean(data.has_more);
+  let nextCursor = data.next_cursor !== undefined && data.next_cursor !== null ? String(data.next_cursor) : '';
+
+  while (hasMore && nextCursor && nextCursor !== cursor && page < MAX_PAGES) {
+    cursor = nextCursor;
     page++;
 
     const payload = {
@@ -102,7 +233,7 @@ export async function fetchQishuiPlaylist(playlistId: string): Promise<Playlist>
       count: PAGE_COUNT,
     };
 
-    const response = await fetchWithTimeout(
+    const nextResponse = await fetchWithTimeout(
       'https://beta-luna.douyin.com/luna/playlist/detail',
       {
         method: 'POST',
@@ -115,54 +246,33 @@ export async function fetchQishuiPlaylist(playlistId: string): Promise<Playlist>
       FETCH_TIMEOUT_MS,
     );
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new ProviderError(
-          'PLAYLIST_NOT_FOUND',
-          `Qishui playlist ${playlistId} was not found or is private.`,
-          404,
-        );
-      }
+    if (!nextResponse.ok) {
       throw new ProviderError(
         'UPSTREAM_ERROR',
-        `Qishui API returned HTTP ${response.status}`,
+        `Qishui API returned HTTP ${nextResponse.status}`,
         502,
       );
     }
 
-    let data: RawQishuiDetailResponse;
+    let nextData: RawQishuiDetailResponse;
     try {
-      data = await response.json();
+      nextData = await nextResponse.json();
     } catch {
       throw new ProviderError('PARSE_ERROR', 'Failed to parse Qishui upstream JSON response.', 502);
     }
 
-    if (!playlistMeta && data.playlist) {
-      playlistMeta = data.playlist;
-    }
-
-    const medias = Array.isArray(data.media_resources) ? data.media_resources : [];
+    const medias = Array.isArray(nextData.media_resources) ? nextData.media_resources : [];
     allMediaResources.push(...medias);
 
-    const hasMore = Boolean(data.has_more);
-    const nextCursor = data.next_cursor !== undefined && data.next_cursor !== null ? String(data.next_cursor) : '';
-
-    if (!hasMore || !nextCursor || nextCursor === cursor) {
-      break;
-    }
-
-    cursor = nextCursor;
-  }
-
-  if (!playlistMeta) {
-    throw new ProviderError(
-      'PLAYLIST_NOT_FOUND',
-      `Qishui playlist ${playlistId} could not be retrieved.`,
-      404,
-    );
+    hasMore = Boolean(nextData.has_more);
+    nextCursor = nextData.next_cursor !== undefined && nextData.next_cursor !== null ? String(nextData.next_cursor) : '';
   }
 
   const tracks: Track[] = allMediaResources.map((m, idx) => normalizeQishuiTrack(m, idx));
-
-  return normalizeQishuiPlaylist(playlistMeta, tracks);
+  const normalized = normalizeQishuiPlaylist(playlistMeta, tracks);
+  return {
+    ...normalized,
+    channel: 'qishui',
+    availableChannels,
+  };
 }
