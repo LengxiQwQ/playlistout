@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { StickyNote } from '../ui/StickyNote';
 import { PaperInput } from '../ui/PaperInput';
@@ -284,6 +284,24 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             }}
           >
             {t.search.sampleKugou}
+          </Sticker>
+          <Sticker
+            type="button"
+            color="white"
+            rotateDeg={-1}
+            onClick={() =>
+              onSelectSample('https://m.kugou.com/user?uid=1425711902', 'kugou', 'user')
+            }
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
+          >
+            {t.search.sampleKugouBatch}
           </Sticker>
         </div>
 

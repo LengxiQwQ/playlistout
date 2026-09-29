@@ -14,6 +14,7 @@ export interface ResultPaperProps {
   onReload?: () => void;
   onSwitchChannel?: (channel: 'qishui' | 'douyin') => void;
   isReloading?: boolean;
+  onViewAllUserPlaylists?: () => void;
 }
 
 export const ResultPaper: React.FC<ResultPaperProps> = ({
@@ -23,6 +24,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
   onReload,
   onSwitchChannel,
   isReloading,
+  onViewAllUserPlaylists,
 }) => {
   const { t } = useTranslation();
 
@@ -183,6 +185,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
               onReload={onReload}
               onSwitchChannel={onSwitchChannel}
               isSwitchingChannel={isReloading}
+              onViewAllUserPlaylists={onViewAllUserPlaylists}
             />
             <TrackTable tracks={playlist.tracks} />
           </div>

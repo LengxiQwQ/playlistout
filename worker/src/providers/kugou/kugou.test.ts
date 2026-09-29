@@ -70,6 +70,18 @@ describe('Kugou Provider Unit Tests', () => {
       expect(target?.id).toBe('546903');
     });
 
+    it('extracts target for cloudlist listid and internal alias', async () => {
+      const target1 = await extractKugouTarget('https://m.kugou.com/songlist/?listid=4');
+      expect(target1).not.toBeNull();
+      expect(target1?.type).toBe('cloudlist');
+      expect(target1?.id).toBe('4');
+
+      const target2 = await extractKugouTarget('kugou_cloudlist_10');
+      expect(target2).not.toBeNull();
+      expect(target2?.type).toBe('cloudlist');
+      expect(target2?.id).toBe('10');
+    });
+
     it('extracts ID via kugouProvider.extractId', () => {
       expect(kugouProvider.extractId('https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/')).toBe(
         'gcid_3zr52qfrzaz06a',
@@ -78,6 +90,8 @@ describe('Kugou Provider Unit Tests', () => {
       expect(kugouProvider.extractId('https://www.kugou.com/yy/special/single/546903.html')).toBe(
         '546903',
       );
+      expect(kugouProvider.extractId('https://m.kugou.com/songlist/?listid=4')).toBe('4');
+      expect(kugouProvider.extractId('kugou_cloudlist_10')).toBe('10');
     });
   });
 

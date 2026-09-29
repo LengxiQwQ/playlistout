@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Playlist, UserPlaylistsData, ApiError } from './api/types';
 import { parsePlaylist, fetchUserPlaylists, recordVisit, submitFeedback } from './api/client';
 import { validatePlaylistInput } from './utils/validation';
-import { clearKugouAuth } from './utils/kugouAuth';
+import { clearKugouAuth, getKugouAuth } from './utils/kugouAuth';
 import { LanguageProvider, useTranslation } from './i18n';
 import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from './analytics/clarity';
 import { Header } from './components/layout/Header';
@@ -622,6 +622,44 @@ export const AppContent: React.FC = () => {
     }
   }, [userPlaylists]);
 
+  const handleViewAllUserPlaylists = useCallback(async () => {
+    const auth = getKugouAuth();
+    if (!auth) return;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentRequestId = ++requestIdRef.current;
+
+    setState('loading');
+    setError(null);
+    scrollToTop();
+
+    try {
+      const res = await fetchUserPlaylists(auth.userid, controller.signal, 'kugou', auth);
+      if (requestIdRef.current !== currentRequestId) return;
+      if (res.success) {
+        setUserPlaylists(res.data);
+        setPlaylist(null);
+        setViewMode('batch');
+        setState('success');
+        scrollToElement('user-playlists');
+        recordClarityParseSuccess('kugou');
+      } else {
+        setError(res.error);
+        setState('error');
+        recordClarityParseFailure('kugou');
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      if (requestIdRef.current === currentRequestId) {
+        setError({ code: 'NETWORK_ERROR', message: '网络连接异常，请重试。' });
+        setState('error');
+      }
+    }
+  }, [scrollToTop]);
+
   const handleDrilldownToSingle = useCallback(
     async (playlistIdOrUrl: string, platformOverride?: 'qqmusic' | 'netease' | 'kugou') => {
       // Abort any ongoing request
@@ -729,6 +767,7 @@ export const AppContent: React.FC = () => {
                 onReload={handleReload}
                 onSwitchChannel={handleSwitchChannel}
                 isReloading={state === 'loading'}
+                onViewAllUserPlaylists={handleViewAllUserPlaylists}
               />
             </div>
           )}

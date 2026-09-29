@@ -3,7 +3,7 @@
  */
 
 export interface KugouTarget {
-  type: 'songlist' | 'special';
+  type: 'songlist' | 'special' | 'cloudlist';
   id: string;
   originalUrl: string;
 }
@@ -20,7 +20,9 @@ export function matchesKugouInput(input: string): boolean {
     /t\d?\.kugou\.com/i.test(trimmed) ||
     /gcid_[a-zA-Z0-9]+/i.test(trimmed) ||
     /src_cid=[a-zA-Z0-9]+/i.test(trimmed) ||
-    /special\/single\/\d+/i.test(trimmed)
+    /special\/single\/\d+/i.test(trimmed) ||
+    /kugou_cloudlist_\d+/i.test(trimmed) ||
+    /[?&]listid=\d+/i.test(trimmed)
   );
 }
 
@@ -129,6 +131,25 @@ export async function extractKugouTarget(input: string): Promise<KugouTarget | n
       type: 'songlist',
       id: text,
       originalUrl: text,
+    };
+  }
+
+  // 5. Cloudlist listid URL or format (e.g. https://m.kugou.com/songlist/?listid=4 or kugou_cloudlist_4)
+  const cloudlistUrlMatch = text.match(/[?&]listid=(\d+)/i) || text.match(/kugou_cloudlist_(\d+)/i);
+  if (cloudlistUrlMatch) {
+    return {
+      type: 'cloudlist',
+      id: cloudlistUrlMatch[1],
+      originalUrl: text,
+    };
+  }
+
+  // 6. Direct numeric ID for cloudlist (when input is pure digits 1-12 chars, e.g. 2, 4, 10, 1425711902)
+  if (/^\d{1,12}$/.test(text)) {
+    return {
+      type: 'cloudlist',
+      id: text,
+      originalUrl: `https://m.kugou.com/songlist/?listid=${text}`,
     };
   }
 

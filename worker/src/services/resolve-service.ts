@@ -368,7 +368,7 @@ async function resolveServiceCore(
   const isKugouProfile =
     /kugou\.com/i.test(trimmed) &&
     !/(?:songlist|gcid_|special\/single)/i.test(trimmed) &&
-    (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /\/home/i.test(trimmed));
+    (/\/user/i.test(trimmed) || /\/profile/i.test(trimmed) || /\/home/i.test(trimmed) || /[?&]uid=\d+/i.test(trimmed));
 
   const isExplicitProfile = isQQProfile || isNeteaseProfile || isKugouProfile;
 
