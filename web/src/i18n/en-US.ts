@@ -115,7 +115,7 @@ export const enUS: Translations = {
     kugouAuthInvalidNotice: 'Kugou session expired. Please sign in again.',
     kugouOwnerUnconfirmedNotice: 'You are connected to Kugou, but this shared link cannot safely be confirmed as owned by this account. Showing public preview to prevent incorrect export.',
     kugouOwnerMismatchNotice: 'Your connected Kugou account is not the creator of this shared playlist. Only public preview is available.',
-    kugouUpstreamUnavailableNotice: 'Session may still be valid, but Kugou upstream API is temporarily unavailable.',
+    kugouUpstreamUnavailableNotice: 'Kugou cloud API did not return full tracks (session may have expired or service fluctuates). Try signing in again to refresh access, or retry.',
     kugouConnectBtn: 'Connect Kugou Account',
     kugouReLoginBtn: 'Sign In Again',
     kugouSwitchAccountBtn: 'Switch Account',

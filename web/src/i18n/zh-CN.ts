@@ -115,7 +115,7 @@ export const zhCN: Translations = {
     kugouAuthInvalidNotice: '酷狗登录已过期，请重新登录。',
     kugouOwnerUnconfirmedNotice: '你已连接酷狗账号，但当前分享链接无法安全确认属于该账号。为避免导出错误歌单，目前只展示公开预览。',
     kugouOwnerMismatchNotice: '你当前连接的酷狗账号不是该分享歌单的创建账号，受官方限制仅自建歌单可解锁全量，因此仅提供前 {previewCount} 首公开预览（歌单实际共 {totalCount} 首）。',
-    kugouUpstreamUnavailableNotice: '登录状态可能仍然有效，但酷狗接口暂时无法完成全量读取。',
+    kugouUpstreamUnavailableNotice: '酷狗接口暂时无法完成全量读取。若多次重试无效，可能是授权已在服务端失效，建议点击右侧重新登录刷新授权。',
     kugouConnectBtn: '连接酷狗账号',
     kugouReLoginBtn: '重新登录',
     kugouSwitchAccountBtn: '切换账号',
