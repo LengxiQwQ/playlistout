@@ -408,6 +408,30 @@ async function fetchCloudlistAllTracks(options: {
     }
   }
 
+  // Preserve user's mobile app custom song order:
+  // Kugou gateway returns songs in chronological/storage order, but attaches `sort` (and `fsort`)
+  // where sort: 0 represents the first track in the playlist, sort: 1 the second, etc.
+  allSongs.sort((a, b) => {
+    const sortA =
+      a.sort !== undefined && a.sort !== null
+        ? Number(a.sort)
+        : a.fsort !== undefined && a.fsort !== null
+          ? Number(a.fsort)
+          : null;
+    const sortB =
+      b.sort !== undefined && b.sort !== null
+        ? Number(b.sort)
+        : b.fsort !== undefined && b.fsort !== null
+          ? Number(b.fsort)
+          : null;
+    if (sortA !== null && sortB !== null) {
+      return sortA - sortB;
+    }
+    if (sortA !== null) return -1;
+    if (sortB !== null) return 1;
+    return 0;
+  });
+
   return allSongs;
 }
 
@@ -757,6 +781,8 @@ export async function fetchKugouUserPlaylists(
         pic?: string;
         count?: number;
         total?: number;
+        type?: number;
+        list_create_userid?: number | string;
       }>;
       total?: number;
     };
@@ -841,7 +867,25 @@ export async function fetchKugouUserPlaylists(
     }
   }
 
-  const playlists: UserPlaylistSummary[] = rawLists.map((item) => ({
+  // Filter for self-created playlists only:
+  // In Kugou API, self-created playlists (including "我喜欢" and "默认收藏") have type === 0 and list_create_userid === userid.
+  // Third-party collected / subscribed playlists (收藏的歌单) have type === 1 and list_create_userid !== userid.
+  const createdLists = rawLists.filter((item) => {
+    if (item.type === 1) {
+      return false;
+    }
+    if (
+      item.list_create_userid !== undefined &&
+      item.list_create_userid !== null &&
+      String(item.list_create_userid) !== '' &&
+      String(item.list_create_userid) !== '0'
+    ) {
+      return String(item.list_create_userid) === String(userid);
+    }
+    return true;
+  });
+
+  const playlists: UserPlaylistSummary[] = createdLists.map((item) => ({
     id: String(item.listid !== undefined && item.listid !== null ? item.listid : ''),
     name: item.name || '自建歌单',
     coverUrl: item.pic ? item.pic.replace('{size}', '400') : undefined,

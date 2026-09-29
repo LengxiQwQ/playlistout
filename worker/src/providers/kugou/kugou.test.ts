@@ -1191,5 +1191,79 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks).toHaveLength(436);
       expect(playlist.tracks[0].title).toBe('歌曲_1');
     });
+
+    it('restores correct song ordering by sorting tracks ascending by sort property', async () => {
+      // Kugou returns songs in reverse/storage order, e.g. sort 2, then sort 0, then sort 1
+      const unorderedSongs = [
+        { hash: 'HASH_3', name: '歌手 - 第三首.mp3', sort: 2, fsort: 2 },
+        { hash: 'HASH_1', name: '歌手 - 第一首.mp3', sort: 0, fsort: 0 },
+        { hash: 'HASH_2', name: '歌手 - 第二首.mp3', sort: 1, fsort: 1 },
+      ];
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchKugouUserPlaylists (lookup name for listid 10)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 10, name: '测试歌单', count: 3, type: 0, list_create_userid: 1425711902 }],
+            },
+          }),
+        } as Response)
+        // 2. fetchCloudlistAllTracks
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 3,
+              info: unorderedSongs,
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'cloudlist',
+          id: '10',
+          originalUrl: 'https://m.kugou.com/songlist/?listid=10',
+        },
+        { token: 'valid_token', userid: '1425711902' },
+      );
+
+      expect(playlist.tracks).toHaveLength(3);
+      expect(playlist.tracks[0].title).toBe('第一首');
+      expect(playlist.tracks[0].index).toBe(1);
+      expect(playlist.tracks[1].title).toBe('第二首');
+      expect(playlist.tracks[1].index).toBe(2);
+      expect(playlist.tracks[2].title).toBe('第三首');
+      expect(playlist.tracks[2].index).toBe(3);
+    });
+
+    it('filters out collected playlists and returns only self-created playlists in fetchKugouUserPlaylists', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          data: {
+            total: 3,
+            info: [
+              { listid: 1, name: '默认收藏', count: 10, type: 0, list_create_userid: 1425711902 },
+              { listid: 2, name: '我喜欢', count: 50, type: 0, list_create_userid: 1425711902 },
+              { listid: 100, name: '某人收藏的精选集', count: 88, type: 1, list_create_userid: 987654321 },
+            ],
+          },
+        }),
+      } as Response);
+
+      const { fetchKugouUserPlaylists } = await import('./client');
+      const res = await fetchKugouUserPlaylists('valid_token', '1425711902');
+
+      expect(res.playlists).toHaveLength(2);
+      expect(res.playlists.map((p) => p.name)).toEqual(['默认收藏', '我喜欢']);
+      expect(res.total).toBe(2);
+    });
   });
 });

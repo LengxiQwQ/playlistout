@@ -24,6 +24,9 @@ export interface KugouRawSong {
   privilege?: number;
   Privilege?: number;
   mvhash?: string;
+  sort?: number;
+  fsort?: number;
+  collecttime?: number;
 }
 
 export interface KugouRawListInfo {
