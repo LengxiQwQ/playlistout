@@ -325,5 +325,89 @@ describe('QQ Music Upstream Error & Malformed Response Handling', () => {
     expect(zeroSizeTrack.statusText).toBe('下架/无版权');
     expect(zeroSizeTrack.isVip).toBe(false);
     expect(zeroSizeTrack.isAvailable).toBe(false);
+
+    // Modern VIP track: 30s preview audition cap (b_30s: 0, e_30s: 30000)
+    const vipAudition30sTrack = normalizeQQTrack(
+      {
+        songid: 107,
+        songmid: '0049i6VB00nf0f',
+        songname: '내가 사랑해도 괜찮을까요',
+        singer: [{ name: '재연' }],
+        pay: { pay_play: 0, pay_down: 0 },
+        file: {
+          b_30s: 0,
+          e_30s: 30000,
+          size_128mp3: 3717737,
+          size_320mp3: 9293730,
+          size_flac: 25379623,
+        },
+      },
+      8,
+    );
+    expect(vipAudition30sTrack.status).toBe('vip');
+    expect(vipAudition30sTrack.statusText).toBe('VIP专享');
+    expect(vipAudition30sTrack.isVip).toBe(true);
+    expect(vipAudition30sTrack.isAvailable).toBe(true);
+    expect(vipAudition30sTrack.maxQuality).toBe('FLAC');
+
+    // Modern VIP track: 60s preview audition cap (b_30s: 0, e_30s: 60000)
+    const vipAudition60sTrack = normalizeQQTrack(
+      {
+        songid: 108,
+        songmid: '003her012345',
+        songname: 'ヒロイン',
+        singer: [{ name: 'back number' }],
+        pay: { pay_play: 0, pay_down: 0 },
+        file: {
+          b_30s: 0,
+          e_30s: 60000,
+          size_128mp3: 3000000,
+          size_320mp3: 8000000,
+        },
+      },
+      9,
+    );
+    expect(vipAudition60sTrack.status).toBe('vip');
+    expect(vipAudition60sTrack.statusText).toBe('VIP专享');
+    expect(vipAudition60sTrack.isVip).toBe(true);
+    expect(vipAudition60sTrack.isAvailable).toBe(true);
+    expect(vipAudition60sTrack.maxQuality).toBe('320kbps');
+
+    // Free track with chorus audition clip (b_30s > 0)
+    const freeChorusClipTrack = normalizeQQTrack(
+      {
+        songid: 109,
+        songmid: '000FUFwQ2iOJPm',
+        songname: 'Y (Please Tell Me Why)',
+        singer: [{ name: 'Free Style' }],
+        pay: { pay_play: 0, pay_down: 0 },
+        file: {
+          b_30s: 100290,
+          e_30s: 160290,
+          size_128mp3: 4482448,
+          size_320mp3: 11205739,
+        },
+      },
+      10,
+    );
+    expect(freeChorusClipTrack.status).toBe('playable');
+    expect(freeChorusClipTrack.statusText).toBe('正常');
+    expect(freeChorusClipTrack.isVip).toBe(false);
+    expect(freeChorusClipTrack.isAvailable).toBe(true);
+
+    // Official Web VIP bit flag: (action.icons >> 18) & 1 === 1
+    const vipIconBitTrack = normalizeQQTrack(
+      {
+        songid: 110,
+        songname: 'VIP Icon Track',
+        singer: [{ name: '歌手' }],
+        action: { icons: 12992510 },
+      },
+      11,
+    );
+    expect(vipIconBitTrack.status).toBe('vip');
+    expect(vipIconBitTrack.statusText).toBe('VIP专享');
+    expect(vipIconBitTrack.isVip).toBe(true);
+    expect(vipIconBitTrack.isAvailable).toBe(true);
   });
 });
