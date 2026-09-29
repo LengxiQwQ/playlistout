@@ -286,6 +286,29 @@ describe('PlaylistOut Public API v1', () => {
       expect(body.data.kind).toBe('playlist');
       expect(body.data.platform).toBe('qishui');
     });
+
+    it('resolves Qishui Music WeChat long share link with channel parameters', async () => {
+      vi.spyOn(qishuiProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('qishui', '7087507348697186339', 'WeChat Shared Playlist'),
+      );
+
+      const wechatLongUrl =
+        'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat';
+      const request = new Request(
+        `https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=${encodeURIComponent(wechatLongUrl)}`,
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.kind).toBe('playlist');
+      expect(body.data.platform).toBe('qishui');
+      expect(body.data.result.name).toBe('WeChat Shared Playlist');
+      expect(qishuiProvider.parse).toHaveBeenCalledWith(
+        wechatLongUrl,
+        expect.objectContaining({ channel: 'qishui' }),
+      );
+    });
   });
 
   describe('GET /api/v1/resolve — User Profiles & Batch Playlists', () => {

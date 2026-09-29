@@ -14,9 +14,11 @@ export const qishuiProvider: Provider = {
   },
 
   extractId(input: string): string | null {
-    const directMatch = input.match(/(?:[?&]playlist_id=|\/playlist\/)(\d{4,20})/i);
+    const directMatch = input.match(/(?:[?&](?:playlist_id|playlistId|id)=|\/(?:share\/)?playlist\/)(\d{4,20})/i);
     if (directMatch) return directMatch[1];
     if (/^\d{4,20}$/.test(input.trim())) return input.trim();
+    const anyIdMatch = input.match(/\b\d{16,20}\b/);
+    if (anyIdMatch) return anyIdMatch[0];
     return null;
   },
 

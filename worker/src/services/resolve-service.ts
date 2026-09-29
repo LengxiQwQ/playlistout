@@ -327,7 +327,7 @@ async function resolveServiceCore(
     detectedPlatform = 'netease';
   } else if (/(?:kugou\.com)/i.test(trimmed)) {
     detectedPlatform = 'kugou';
-  } else if (/(?:qishui\.douyin\.com)/i.test(trimmed)) {
+  } else if (/(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(trimmed)) {
     detectedPlatform = 'qishui';
   }
 
@@ -546,7 +546,7 @@ async function resolveServiceCore(
       }
     }
 
-    if (/qishui\.douyin\.com\/s\//i.test(trimmed)) {
+    if (/(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed)) {
       tracking.stage = 'short_link_resolution';
       tracking.platform = 'qishui';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({

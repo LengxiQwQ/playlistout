@@ -17,9 +17,26 @@ import { ProviderError } from '../../models/playlist';
 describe('Qishui Provider Input & Matching', () => {
   it('identifies valid Qishui inputs', () => {
     expect(matchesQishuiInput('https://qishui.douyin.com/s/iXHhmCAW/')).toBe(true);
+    expect(matchesQishuiInput('https://qishui.com/s/iXHhmCAW/')).toBe(true);
+    expect(matchesQishuiInput('https://www.qishui.com/s/iXHhmCAW/')).toBe(true);
     expect(
       matchesQishuiInput(
         'https://music.douyin.com/qishui/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=xxx',
+      ),
+    ).toBe(true);
+    expect(
+      matchesQishuiInput(
+        'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat',
+      ),
+    ).toBe(true);
+    expect(
+      matchesQishuiInput(
+        'https://qishui.com/share/playlist?playlist_id=7087507348697186339',
+      ),
+    ).toBe(true);
+    expect(
+      matchesQishuiInput(
+        'www.qishui.com/share/playlist?playlist_id=7087507348697186339',
       ),
     ).toBe(true);
     expect(
@@ -39,6 +56,12 @@ describe('Qishui Provider Input & Matching', () => {
   it('extracts URL from share text', () => {
     const text = '「冷汐OωO在抖音收藏的音乐」https://qishui.douyin.com/s/iXHhmCAW/ 复制链接，打开【汽水音乐】直接收听！';
     expect(extractUrlFromText(text)).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
+
+    const wechatText =
+      '歌单｜钢琴流行曲999首 https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=xxx&share_platform=wechat @汽水音乐';
+    expect(extractUrlFromText(wechatText)).toBe(
+      'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=xxx&share_platform=wechat',
+    );
   });
 
   it('extracts playlist ID from direct URLs and numeric IDs', async () => {
@@ -47,6 +70,29 @@ describe('Qishui Provider Input & Matching', () => {
       await extractQishuiPlaylistId(
         'https://music.douyin.com/qishui/share/playlist?playlist_id=7087507348697186339',
       ),
+    ).toBe('7087507348697186339');
+
+    // WeChat long share link with multiple tracking parameters
+    const wechatLongUrl =
+      'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339&sec_sharer_id=MS4wLjABAAAAZYct8vc_JlP3pHw9TP6-DNJdQ8VUhUUf8mDZyM7bSNxFmcTp3OESS-USD_8hVK0T&hybrid_sdk_version=bullet&auto_play_bgm=1&share_platform=wechat';
+    expect(await extractQishuiPlaylistId(wechatLongUrl)).toBe('7087507348697186339');
+    expect(qishuiProvider.extractId(wechatLongUrl)).toBe('7087507348697186339');
+
+    // Qishui.com variants
+    expect(
+      await extractQishuiPlaylistId('https://qishui.com/share/playlist?playlist_id=7087507348697186339'),
+    ).toBe('7087507348697186339');
+    expect(
+      await extractQishuiPlaylistId('https://www.qishui.com/share/playlist?playlistId=7087507348697186339'),
+    ).toBe('7087507348697186339');
+    expect(
+      await extractQishuiPlaylistId('https://www.qishui.com/share/playlist?id=7087507348697186339'),
+    ).toBe('7087507348697186339');
+    expect(
+      await extractQishuiPlaylistId('https://www.qishui.com/share/playlist/7087507348697186339'),
+    ).toBe('7087507348697186339');
+    expect(
+      await extractQishuiPlaylistId('https://www.qishui.com/playlist/7087507348697186339'),
     ).toBe('7087507348697186339');
   });
 
