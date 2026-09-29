@@ -46,6 +46,37 @@
   transition: color 0.18s ease;
 }
 
+/* Playlist Summary Layout — Strict Left/Right Split on Desktop */
+.playlist-summary-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.playlist-summary-info {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.playlist-summary-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.playlist-summary-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: flex-end;
+}
 
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
@@ -193,6 +224,25 @@
   .search-input-row button[type="submit"] {
     width: 100% !important;
     justify-content: center;
+  }
+
+  /* Playlist Summary Mobile Adaptation */
+  .playlist-summary-main {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.25rem !important;
+  }
+
+  .playlist-summary-actions {
+    align-items: flex-start !important;
+    width: 100% !important;
+    margin-top: 0.25rem !important;
+  }
+
+  .playlist-summary-actions-row,
+  .playlist-summary-actions .qishui-channel-switcher {
+    justify-content: flex-start !important;
+    width: 100% !important;
   }
 
   .hide-mobile {
