@@ -902,5 +902,73 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.retrieval?.reason).toBe('owner_mismatch');
       expect(playlist.tracks).toHaveLength(1);
     });
+
+    it('matches favorite playlist "是冷汐呀喜欢的音乐" with user\'s "我喜欢" playlist and unlocks all songs', async () => {
+      const mockHtml = `<html><script>window.$output = {"encode_gic":"gcid_3zr52qfrz2z063","info":{"listinfo":{"name":"是冷汐呀喜欢的音乐","count":417,"list_create_userid":1425711902,"list_create_username":"是冷汐呀","is_def":2},"songs":[{"name":"预览歌曲1"}]}};</script></html>`;
+
+      const songs417 = Array.from({ length: 417 }, (_, i) => ({
+        name: `喜欢的歌曲${i + 1}`,
+        FileHash: `hash_${i + 1}`,
+      }));
+
+      globalThis.fetch = vi.fn()
+        // 1. fetchSonglistH5Output
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        } as Response)
+        // 2. fetchKugouUserPlaylists (returns "我喜欢" with 417 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              total: 2,
+              info: [
+                { listid: 888, name: '我喜欢', count: 417 },
+                { listid: 999, name: '其他自建歌单', count: 10 },
+              ],
+            },
+          }),
+        } as Response)
+        // 3. fetchCloudlistAllTracks page 1 (300 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 417,
+              info: songs417.slice(0, 300),
+            },
+          }),
+        } as Response)
+        // 4. fetchCloudlistAllTracks page 2 (117 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 417,
+              info: songs417.slice(300),
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        {
+          type: 'songlist',
+          id: 'gcid_3zr52qfrz2z063',
+          originalUrl: 'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?uid=1425711902',
+        },
+        { token: 'valid_token', userid: '1425711902' },
+      );
+
+      expect(playlist.retrieval?.mode).toBe('full');
+      expect(playlist.trackCount).toBe(417);
+      expect(playlist.tracks).toHaveLength(417);
+      expect(playlist.tracks[0].title).toBe('喜欢的歌曲1');
+      expect(playlist.tracks[416].title).toBe('喜欢的歌曲417');
+    });
   });
 });

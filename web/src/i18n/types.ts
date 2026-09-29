@@ -108,6 +108,8 @@ export interface Translations {
     tagsLabel: string;
     descriptionLabel: string;
     kugouPreviewNotice: string;
+    kugouLoggedInPreviewNotice: string;
+    kugouIdentityUnresolvedNotice: string;
     kugouUnlockAllBtn: string;
     kugouAuthRequiredNotice: string;
     kugouAuthInvalidNotice: string;

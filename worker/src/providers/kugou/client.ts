@@ -433,12 +433,12 @@ export async function fetchKugouPlaylist(
           throw userListErr;
         }
 
-        // High-confidence matching:
+        // Multi-stage high-confidence matching:
         // Priority 1: Match by direct listid if target.id matches a user list ID
-        // Priority 2: Match by exact playlist name AND exact trackCount ONLY IF owner is confirmed
-        // STRICT SAFETY:
-        // - NEVER guess nameMatches[0] if trackCount doesn't match or is ambiguous
-        // - If owner cannot be confirmed, NEVER match by name -> fall back safely to preview mode
+        // Priority 2: Match by exact playlist name
+        // Priority 3: Match by favorite/default collection (e.g. "是冷汐呀喜欢的音乐" <-> "我喜欢")
+        // Priority 4: Match by normalized name (stripping user prefix and common suffixes)
+        // Priority 5: Match by unique track count for confirmed owner
         const targetName = (listInfo.name || '').trim();
         const expectedTrackCount = Number(listInfo.count || 0);
         let matched = userPlaylists.playlists.find((p) => String(p.id) === target.id);
@@ -455,7 +455,74 @@ export async function fetchKugouPlaylist(
             );
             if (countMatches.length === 1) {
               matched = countMatches[0];
+            } else if (countMatches.length > 1) {
+              matched = countMatches[0];
             }
+          }
+        }
+
+        // Priority 3: Favorite / default playlist matching
+        if (!matched && isOwnerConfirmed) {
+          const isTargetFavorite =
+            Number((listInfo as any).is_def) > 0 ||
+            targetName.includes('喜欢的音乐') ||
+            targetName.includes('我喜欢') ||
+            targetName.endsWith('喜欢的音乐') ||
+            targetName.endsWith('的收藏');
+
+          if (isTargetFavorite) {
+            const favPlaylists = userPlaylists.playlists.filter(
+              (p) =>
+                p.name.includes('喜欢') ||
+                p.name.includes('默认收藏') ||
+                p.name.includes('默认'),
+            );
+            if (favPlaylists.length === 1) {
+              matched = favPlaylists[0];
+            } else if (favPlaylists.length > 1 && expectedTrackCount > 0) {
+              matched =
+                favPlaylists.find((p) => p.trackCount === expectedTrackCount) ||
+                favPlaylists[0];
+            } else if (favPlaylists.length > 1) {
+              matched = favPlaylists[0];
+            }
+          }
+        }
+
+        // Priority 4: Normalized title matching
+        if (!matched && isOwnerConfirmed && targetName) {
+          const creatorName = (listInfo.list_create_username || '').trim();
+          const normalizeTitle = (title: string) => {
+            let s = title.trim();
+            if (creatorName && s.startsWith(creatorName)) {
+              s = s.slice(creatorName.length);
+            }
+            s = s.replace(/^我/, '').replace(/^的/, '').replace(/歌单$/, '');
+            return s.trim();
+          };
+
+          const targetNorm = normalizeTitle(targetName);
+          if (targetNorm) {
+            const normMatches = userPlaylists.playlists.filter(
+              (p) => normalizeTitle(p.name) === targetNorm,
+            );
+            if (normMatches.length === 1) {
+              matched = normMatches[0];
+            } else if (normMatches.length > 1 && expectedTrackCount > 0) {
+              matched =
+                normMatches.find((p) => p.trackCount === expectedTrackCount) ||
+                normMatches[0];
+            }
+          }
+        }
+
+        // Priority 5: Unique track count matching for confirmed owner
+        if (!matched && isOwnerConfirmed && expectedTrackCount >= 5) {
+          const countMatches = userPlaylists.playlists.filter(
+            (p) => p.trackCount === expectedTrackCount,
+          );
+          if (countMatches.length === 1) {
+            matched = countMatches[0];
           }
         }
 
@@ -617,7 +684,68 @@ export async function fetchKugouUserPlaylists(
     );
   }
 
-  const rawLists = json.data?.info || [];
+  const rawLists = [...(json.data?.info || [])];
+  const totalReported = typeof json.data?.total === 'number' ? json.data.total : rawLists.length;
+
+  if (totalReported > rawLists.length && rawLists.length >= 100) {
+    let currentPage = 2;
+    const maxPage = Math.min(10, Math.ceil(totalReported / 100));
+    while (currentPage <= maxPage) {
+      try {
+        const pageClienttime = String(Math.floor(Date.now() / 1000));
+        const pageMid = md5(`userlist_${pageClienttime}_${userid}_${currentPage}`);
+        const pagePostData = {
+          userid: String(userid),
+          token,
+          total_ver: 979,
+          type: 2,
+          page: currentPage,
+          pagesize: 100,
+        };
+        const pageDataStr = JSON.stringify(pagePostData);
+        const pageQueryParams: Record<string, string> = {
+          dfid: '-',
+          mid: pageMid,
+          uuid: '-',
+          appid: KUGOU_LITE_APPID,
+          clientver: KUGOU_LITE_CLIENTVER,
+          clienttime: pageClienttime,
+          token,
+          userid: String(userid),
+          plat: '1',
+        };
+        pageQueryParams.signature = signKugouGatewayParams(pageQueryParams, pageDataStr, KUGOU_LITE_SALT);
+        const pageUrl = `https://gateway.kugou.com/v7/get_all_list?${new URLSearchParams(pageQueryParams).toString()}`;
+        const pageRes = await fetch(pageUrl, {
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi',
+            'Content-Type': 'application/json',
+            'x-router': 'cloudlist.service.kugou.com',
+            dfid: '-',
+            clienttime: pageClienttime,
+            mid: pageMid,
+            'kg-rc': '1',
+            'kg-thash': '5d816a0',
+            'kg-rec': '1',
+            'kg-rf': 'B9EDA08A64250DEFFBCADDEE00F8F25F',
+          },
+          body: pageDataStr,
+        });
+        if (!pageRes.ok) break;
+        const pageJson = (await pageRes.json()) as typeof json;
+        if (pageJson.status === 1 && Array.isArray(pageJson.data?.info) && pageJson.data.info.length > 0) {
+          rawLists.push(...pageJson.data.info);
+        } else {
+          break;
+        }
+      } catch {
+        break;
+      }
+      currentPage++;
+    }
+  }
+
   const playlists: UserPlaylistSummary[] = rawLists.map((item) => ({
     id: String(item.listid || ''),
     name: item.name || '自建歌单',

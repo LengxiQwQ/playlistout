@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Playlist } from '../api/types';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
 import { MarkerButton } from './ui/MarkerButton';
 import { KugouAuthModal } from './auth/KugouAuthModal';
+import { hasKugouAuth } from '../utils/kugouAuth';
 import {
   getPlatformConfig,
   getPlatformName,
@@ -38,6 +39,21 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
     (playlist.retrieval?.mode === 'preview' ||
       (!playlist.retrieval && playlist.tracks.length < playlist.trackCount));
   const retrievalReason = playlist.retrieval?.reason;
+  const isLoggedIn = hasKugouAuth();
+
+  const { mainDescription, platformNotice } = useMemo(() => {
+    if (!playlist.description) return { mainDescription: null, platformNotice: null };
+    const noticeIdx = playlist.description.indexOf('[平台限制提示]');
+    if (noticeIdx === -1) {
+      return { mainDescription: playlist.description.trim() || null, platformNotice: null };
+    }
+    const main = playlist.description.slice(0, noticeIdx).trim();
+    const notice = playlist.description.slice(noticeIdx).trim();
+    return {
+      mainDescription: main || null,
+      platformNotice: notice || null,
+    };
+  }, [playlist.description]);
 
   const tracksText = format(t.result.tracksCount, { count: playlist.trackCount });
   const createdDateStr = playlist.createTime
@@ -291,7 +307,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               </div>
             )}
 
-            {playlist.description && (
+            {mainDescription && (
               <div
                 className="font-note"
                 style={{
@@ -307,7 +323,30 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                   wordBreak: 'break-word',
                 }}
               >
-                “{playlist.description}”
+                “{mainDescription}”
+              </div>
+            )}
+
+            {platformNotice && (
+              <div
+                className="font-sans"
+                data-testid="kugou-platform-limit-notice"
+                style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.88rem',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  color: '#92400e',
+                  backgroundColor: 'rgba(254, 243, 199, 0.9)',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '4px',
+                  padding: '0.4rem 0.75rem',
+                  maxWidth: '650px',
+                  lineHeight: 1.45,
+                  fontWeight: 500,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {platformNotice}
               </div>
             )}
           </div>
@@ -462,6 +501,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
             <span
               className="font-sans"
               style={{
+                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                 fontSize: '0.92rem',
                 color: retrievalReason === 'auth_invalid' ? '#991b1b' : '#1e40af',
                 fontWeight: 500,
@@ -475,9 +515,22 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 : retrievalReason === 'owner_unconfirmed'
                 ? t.result.kugouOwnerUnconfirmedNotice
                 : retrievalReason === 'owner_mismatch'
-                ? t.result.kugouOwnerMismatchNotice
+                ? format(t.result.kugouOwnerMismatchNotice, {
+                    previewCount: playlist.tracks.length,
+                    totalCount: playlist.trackCount,
+                  })
+                : retrievalReason === 'identity_unresolved'
+                ? format(t.result.kugouIdentityUnresolvedNotice, {
+                    previewCount: playlist.tracks.length,
+                    totalCount: playlist.trackCount,
+                  })
                 : retrievalReason === 'upstream_unavailable'
                 ? t.result.kugouUpstreamUnavailableNotice
+                : isLoggedIn
+                ? format(t.result.kugouLoggedInPreviewNotice, {
+                    previewCount: playlist.tracks.length,
+                    totalCount: playlist.trackCount,
+                  })
                 : format(t.result.kugouPreviewNotice, {
                     previewCount: playlist.tracks.length,
                     totalCount: playlist.trackCount,
@@ -535,6 +588,25 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               </MarkerButton>
             )}
 
+            {retrievalReason === 'identity_unresolved' && (
+              <>
+                <MarkerButton
+                  variant="paper"
+                  onClick={() => onReload?.()}
+                  style={{ padding: '0.45rem 0.85rem' }}
+                >
+                  {t.result.kugouReparseBtn}
+                </MarkerButton>
+                <MarkerButton
+                  variant="ink"
+                  onClick={() => setIsKugouModalOpen(true)}
+                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+                >
+                  {t.result.kugouSwitchAccountBtn}
+                </MarkerButton>
+              </>
+            )}
+
             {retrievalReason === 'upstream_unavailable' && (
               <MarkerButton
                 variant="ink"
@@ -545,7 +617,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               </MarkerButton>
             )}
 
-            {!retrievalReason && (
+            {!retrievalReason && !isLoggedIn && (
               <MarkerButton
                 variant="ink"
                 onClick={() => setIsKugouModalOpen(true)}
@@ -555,14 +627,29 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               </MarkerButton>
             )}
 
-            {(retrievalReason === 'platform_preview' || retrievalReason === 'identity_unresolved') && (
-              <MarkerButton
-                variant="paper"
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{ padding: '0.45rem 0.85rem' }}
-              >
-                {t.result.kugouSwitchAccountBtn}
-              </MarkerButton>
+            {retrievalReason === 'platform_preview' && (
+              <>
+                {onReload && (
+                  <MarkerButton
+                    variant="paper"
+                    onClick={() => onReload?.()}
+                    style={{ padding: '0.45rem 0.85rem' }}
+                  >
+                    {t.result.kugouReparseBtn}
+                  </MarkerButton>
+                )}
+                <MarkerButton
+                  variant={isLoggedIn ? 'paper' : 'ink'}
+                  onClick={() => setIsKugouModalOpen(true)}
+                  style={{
+                    backgroundColor: isLoggedIn ? undefined : '#2563eb',
+                    color: isLoggedIn ? undefined : '#ffffff',
+                    padding: '0.45rem 0.85rem',
+                  }}
+                >
+                  {isLoggedIn ? t.result.kugouSwitchAccountBtn : t.result.kugouConnectBtn}
+                </MarkerButton>
+              </>
             )}
           </div>
         </div>

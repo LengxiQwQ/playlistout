@@ -108,6 +108,8 @@ export const enUS: Translations = {
     tagsLabel: 'Tags',
     descriptionLabel: 'Description',
     kugouPreviewNotice: 'Currently in guest preview mode, showing first {previewCount} tracks ({totalCount} tracks in total).',
+    kugouLoggedInPreviewNotice: 'Connected to Kugou, but due to official platform restrictions, non-owned public playlists only provide {previewCount} preview tracks ({totalCount} tracks in total).',
+    kugouIdentityUnresolvedNotice: 'You are connected to Kugou, but this playlist was not matched in your library ({totalCount} tracks). Showing first {previewCount} preview tracks.',
     kugouUnlockAllBtn: 'Scan QR to unlock all {totalCount} tracks',
     kugouAuthRequiredNotice: 'Currently in Kugou public preview. Connect your Kugou account to fetch all tracks.',
     kugouAuthInvalidNotice: 'Kugou session expired. Please sign in again.',
