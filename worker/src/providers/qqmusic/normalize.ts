@@ -44,6 +44,22 @@ export interface RawQQSong {
     switch?: number;
     msgid?: number;
     alert?: number;
+    icons?: number;
+  };
+  file?: {
+    b_30s?: number;
+    e_30s?: number;
+    size_try?: number;
+    try_begin?: number;
+    try_end?: number;
+    size_128mp3?: number;
+    size_320mp3?: number;
+    size_flac?: number;
+    size_128?: number;
+    size_320?: number;
+    size_ape?: number;
+    size_dts?: number;
+    size_hires?: number;
   };
   msgid?: number;
   alertid?: number;
@@ -180,20 +196,34 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   }
   const coverUrl = albumMid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${albumMid}.jpg` : undefined;
 
+  // Audio Stream Sizes (support both legacy root keys and modern file container keys)
+  const size128 = rawSong.size128 ?? rawSong.file?.size_128mp3 ?? rawSong.file?.size_128;
+  const size320 = rawSong.size320 ?? rawSong.file?.size_320mp3 ?? rawSong.file?.size_320;
+  const sizeflac = rawSong.sizeflac ?? rawSong.file?.size_flac;
+
   // Derive track availability & VIP status
   const payplay = rawSong.pay?.payplay ?? rawSong.pay?.pay_play;
   const payalbum = rawSong.pay?.payalbum ?? (rawSong.pay?.price_album && rawSong.pay.price_album > 0 ? 1 : 0);
   const alertid = rawSong.alertid ?? rawSong.action?.alert;
   const msgid = rawSong.msgid ?? rawSong.action?.msgid;
+  const icons = rawSong.action?.icons;
+  const isVipIcon = Boolean(icons && ((icons >> 18) & 1));
+  const isAuditionCapped = Boolean(
+    rawSong.file &&
+      rawSong.file.b_30s === 0 &&
+      rawSong.file.e_30s !== undefined &&
+      rawSong.file.e_30s > 0 &&
+      (rawSong.file.e_30s === 30000 || rawSong.file.e_30s === 60000),
+  );
 
   const isPaidAlbum = payalbum === 1;
-  const isVipStream = payplay === 1 || msgid === 13 || alertid === 41;
+  const isVipStream = payplay === 1 || msgid === 13 || alertid === 41 || isVipIcon || isAuditionCapped;
   const isGeoBlockedOnly = alertid === 2 || alertid === 21 || msgid === 14;
 
   const hasExplicitZeroAudio =
-    rawSong.size128 === 0 &&
-    rawSong.size320 === 0 &&
-    (rawSong.sizeflac === undefined || rawSong.sizeflac === 0);
+    size128 === 0 &&
+    size320 === 0 &&
+    (sizeflac === undefined || sizeflac === 0);
 
   // A song is truly unplayable if:
   // - It has explicit takedown alert (alertid === 11: "应版权方要求，该歌曲暂无法播放")
@@ -244,11 +274,11 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
 
   // Max Audio Quality
   let maxQuality: string | undefined;
-  if (rawSong.sizeflac && rawSong.sizeflac > 0) {
+  if (sizeflac && sizeflac > 0) {
     maxQuality = 'FLAC';
-  } else if (rawSong.size320 && rawSong.size320 > 0) {
+  } else if (size320 && size320 > 0) {
     maxQuality = '320kbps';
-  } else if (rawSong.size128 && rawSong.size128 > 0) {
+  } else if (size128 && size128 > 0) {
     maxQuality = '128kbps';
   }
 

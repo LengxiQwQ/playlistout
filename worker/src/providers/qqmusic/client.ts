@@ -145,6 +145,7 @@ async function fetchFromCYQQ(playlistId: string): Promise<Playlist> {
     json: '1',
     utf8: '1',
     onlysong: '0',
+    new_format: '1',
     format: 'json',
     song_begin: '0',
     song_num: String(PAGE_SIZE),
@@ -209,6 +210,7 @@ async function fetchFromCYQQ(playlistId: string): Promise<Playlist> {
         json: '1',
         utf8: '1',
         onlysong: '0',
+        new_format: '1',
         format: 'json',
         song_begin: String(songBegin),
         song_num: String(songNum),
@@ -274,7 +276,7 @@ async function fetchFromMusicU(playlistId: string): Promise<Playlist> {
   const initialPayload = {
     comm: { ct: 24, cv: 0 },
     playlist: {
-      module: 'srf_diss_info.DissInfoServer',
+      module: 'music.srfDissInfo.DissInfo',
       method: 'CgiGetDiss',
       param: {
         disstid: numericId,
@@ -304,10 +306,19 @@ async function fetchFromMusicU(playlistId: string): Promise<Playlist> {
 
   const pl = rawJson.playlist;
   if (!pl || pl.code !== 0 || !pl.data) {
+    if (pl && (pl.code === 10004 || pl.code === 10 || pl.code === -1)) {
+      throw new ProviderError('PLAYLIST_NOT_FOUND', `QQ Music playlist ${playlistId} does not exist or is private.`, 404);
+    }
     throw new ProviderError('UPSTREAM_ERROR', 'QQ Music musicu returned non-zero code or missing data.', 502);
   }
 
   const data = pl.data;
+  if (data.code !== undefined && data.code !== 0) {
+    if (data.code === -100006 || data.code === -100008 || data.code === 10 || data.code === -1) {
+      throw new ProviderError('PLAYLIST_NOT_FOUND', `QQ Music playlist ${playlistId} does not exist or is private.`, 404);
+    }
+  }
+
   const dirinfo = data.dirinfo || {};
   const totalExpected = extractTotalExpected(dirinfo);
   const allSongs: RawQQSong[] = Array.isArray(data.songlist) ? [...data.songlist] : [];
@@ -333,7 +344,7 @@ async function fetchFromMusicU(playlistId: string): Promise<Playlist> {
       const pagePayload = {
         comm: { ct: 24, cv: 0 },
         playlist: {
-          module: 'srf_diss_info.DissInfoServer',
+          module: 'music.srfDissInfo.DissInfo',
           method: 'CgiGetDiss',
           param: {
             disstid: numericId,
