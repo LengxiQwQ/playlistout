@@ -158,7 +158,7 @@ export async function extractNeteasePlaylistId(input: string): Promise<string> {
     // Fallback regex over string directly
   }
 
-  if (!/(?:user|\/m\/user|\/home)/i.test(resolved)) {
+  if (!/(?:\/user\/|\/m\/user|\/home)/i.test(resolved)) {
     const directMatch = resolved.match(/(?:[?&]id=|\/playlist\/|\/playlist\?id=)(\d{4,18})/i);
     if (directMatch) {
       return directMatch[1];
@@ -189,22 +189,26 @@ export async function extractNeteaseUserId(input: string): Promise<string | null
     const cleanUrl = resolved.replace(/#\//, '');
     const parsed = new URL(cleanUrl);
 
-    // Profile URLs usually have /user or /user/home and ?id=...
-    if (parsed.pathname.includes('/user') || parsed.searchParams.has('id')) {
+    // Playlist URLs should never be parsed as user profile
+    if (parsed.pathname.includes('/playlist')) {
+      return null;
+    }
+
+    // Profile URLs strictly have /user, /m/user, or /home in path
+    if (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home')) {
       const id = parsed.searchParams.get('id');
       if (id && /^\d{4,18}$/.test(id)) {
         return id;
       }
-    }
-
-    const match = parsed.pathname.match(/\/user\/(?:home\/)?(\d{4,18})/);
-    if (match) {
-      return match[1];
+      const match = parsed.pathname.match(/\/user\/(?:home\/)?(\d{4,18})/);
+      if (match) {
+        return match[1];
+      }
     }
   } catch {
     // Ignore URL parse errors
   }
 
-  const match = resolved.match(/(?:user(?:\/home)?\?id=|[?&]id=)(\d{4,18})/i);
+  const match = resolved.match(/(?:user(?:\/home)?\?id=)(\d{4,18})/i);
   return match ? match[1] : null;
 }
