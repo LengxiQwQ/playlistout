@@ -174,6 +174,8 @@ export const AppContent: React.FC = () => {
               ? 'netease'
               : platformHint === 'kugou'
               ? 'kugou'
+              : platformHint === 'qishui'
+              ? 'qishui'
               : platformHint === 'qqmusic'
               ? 'qqmusic'
               : undefined;
@@ -243,6 +245,8 @@ export const AppContent: React.FC = () => {
               ? 'netease'
               : validation.platform === 'kugou'
               ? 'kugou'
+              : validation.platform === 'qishui'
+              ? 'qishui'
               : undefined;
           const singleRes = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint).catch(() => null)
@@ -272,7 +276,8 @@ export const AppContent: React.FC = () => {
           }
 
           // Fallback to user playlists (e.g. user homepage short link)
-          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, platform || 'netease').catch(() => null);
+          const userPlatform = platform === 'netease' || platform === 'kugou' ? platform : 'netease';
+          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, userPlatform).catch(() => null);
           if (requestIdRef.current !== currentRequestId) return;
 
           if (userRes && userRes.success && userRes.data && userRes.data.playlists.length > 0) {
@@ -304,6 +309,8 @@ export const AppContent: React.FC = () => {
               ? 'netease'
               : validation.platform === 'kugou'
               ? 'kugou'
+              : validation.platform === 'qishui'
+              ? 'qishui'
               : 'qqmusic';
           const res = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
@@ -337,8 +344,41 @@ export const AppContent: React.FC = () => {
           return;
         }
 
-        // Case C: Numeric input -> Smart 4-way cross-platform & cross-type search
+        // Case D: Numeric input -> Smart cross-platform & cross-type search
         if (validation.kind === 'numeric') {
+          const isLikelyQishui = targetUrl.length >= 19;
+          if (isLikelyQishui) {
+            const qishuiRes = channelHint
+              ? await parsePlaylist(targetUrl, controller.signal, 'qishui', undefined, undefined, channelHint).catch(() => null)
+              : await parsePlaylist(targetUrl, controller.signal, 'qishui').catch(() => null);
+
+            if (requestIdRef.current !== currentRequestId) return;
+
+            if (qishuiRes && qishuiRes.success && qishuiRes.data && qishuiRes.data.name) {
+              setPlaylist(qishuiRes.data);
+              setChannelCache((prev) => ({
+                ...prev,
+                [`${qishuiRes.data.id}:${qishuiRes.data.channel || 'qishui'}`]: qishuiRes.data,
+              }));
+              setUserPlaylists(null);
+              setViewMode('single');
+              setState('success');
+              if (!skipScroll) {
+                scrollToElement('result');
+              }
+              recordClarityParseSuccess('qishui', qishuiRes.data.trackCount ?? qishuiRes.data.tracks?.length);
+              return;
+            }
+
+            setError({
+              code: 'PLAYLIST_NOT_FOUND',
+              message: `未找到 ID 为 “${targetUrl}” 的汽水音乐歌单，请检查输入是否正确。`,
+            });
+            setState('error');
+            recordClarityParseFailure('qishui');
+            return;
+          }
+
           const [qqSingleRes, qqUserRes, neteaseSingleRes, neteaseUserRes] = await Promise.all([
             parsePlaylist(targetUrl, controller.signal, 'qqmusic').catch(() => null),
             fetchUserPlaylists(targetUrl, controller.signal, 'qqmusic').catch(() => null),
@@ -420,7 +460,12 @@ export const AppContent: React.FC = () => {
             // Unambiguous! Directly load matched item
             const only = candidates[0];
             if (only.type === 'playlist') {
-              setPlaylist(only.data as Playlist);
+              const matchedPlaylist = only.data as Playlist;
+              setPlaylist(matchedPlaylist);
+              setChannelCache((prev) => ({
+                ...prev,
+                [`${matchedPlaylist.id}:${matchedPlaylist.channel || 'qishui'}`]: matchedPlaylist,
+              }));
               setUserPlaylists(null);
               setViewMode('single');
               setState('success');

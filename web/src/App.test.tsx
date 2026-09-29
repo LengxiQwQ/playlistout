@@ -526,7 +526,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     expect(parseSpy).toHaveBeenCalledWith(
       'https://qishui.douyin.com/s/iXHhKHhY/',
       expect.any(AbortSignal),
-      undefined,
+      'qishui',
       undefined,
       true,
     );
