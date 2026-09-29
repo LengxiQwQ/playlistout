@@ -158,7 +158,7 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
     // In Qishui mode: displays current mode label and switch to Douyin button
     const currentMode = screen.getByTestId('qishui-current-mode');
     expect(currentMode).toHaveTextContent('当前为汽水官方解析');
-    const switchBtn = screen.getByRole('button', { name: '⚡ 切换到抖音全量解析 (含原声)' });
+    const switchBtn = screen.getByRole('button', { name: '⚡ 切换到抖音全量解析 (包含视频原声)' });
     expect(switchBtn).toBeInTheDocument();
 
     fireEvent.click(switchBtn);
@@ -184,7 +184,7 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
 
     // In Douyin mode: displays current mode label and switch to Qishui button
     const currentMode = screen.getByTestId('qishui-current-mode');
-    expect(currentMode).toHaveTextContent('当前为抖音全量解析');
+    expect(currentMode).toHaveTextContent('当前为抖音全量解析 (包含视频原声)');
     const switchQishuiBtn = screen.getByRole('button', { name: '⚡ 切换到汽水官方解析 (真实歌名)' });
     expect(switchQishuiBtn).toBeInTheDocument();
 

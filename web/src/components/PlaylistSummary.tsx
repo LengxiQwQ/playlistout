@@ -126,7 +126,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               }}
             >
               {playlist.platform === 'qishui' && playlist.channel === 'douyin'
-                ? (language === 'zh-CN' ? '汽水音乐 · 抖音全量收藏' : 'Soda Music · Douyin Audio')
+                ? (language === 'zh-CN' ? '汽水音乐 · 抖音全量收藏 (包含视频原声)' : 'Soda Music · Douyin Audio (With Videos)')
                 : getPlatformPlaylistSticker(playlist.platform, language)}
             </Sticker>
 
@@ -474,7 +474,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                     onClick={() => onSwitchChannel?.('douyin')}
                     className="font-handwriting"
                     aria-label={t.result.switchToDouyinBtn}
-                    title={language === 'zh-CN' ? '切换至抖音全量原声解析（含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
+                    title={language === 'zh-CN' ? '切换至抖音全量原声解析（包含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
                     style={{
                       padding: '0.42rem 0.95rem',
                       fontSize: '1.02rem',
