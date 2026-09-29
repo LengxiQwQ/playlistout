@@ -242,18 +242,88 @@ describe('QQ Music Upstream Error & Malformed Response Handling', () => {
     );
     expect(vipTrack.status).toBe('vip');
     expect(vipTrack.isVip).toBe(true);
+    expect(vipTrack.isAvailable).toBe(true);
 
+    // alertid 41: VIP prompt ("开通绿钻会员即可收听完整版") must NOT be treated as unplayable
+    const vipAlert41Track = normalizeQQTrack(
+      {
+        songid: 103,
+        songname: '白鸽',
+        singer: [{ name: '羊羊' }],
+        pay: { payplay: 1, paydownload: 1, paytrackmouth: 1 },
+        alertid: 41,
+        msgid: 13,
+      },
+      3,
+    );
+    expect(vipAlert41Track.status).toBe('vip');
+    expect(vipAlert41Track.statusText).toBe('VIP专享');
+    expect(vipAlert41Track.isVip).toBe(true);
+    expect(vipAlert41Track.isAvailable).toBe(true);
+
+    // Paid digital album tracks require purchase, not VIP alone
+    const paidAlbumTrack = normalizeQQTrack(
+      {
+        songid: 104,
+        songname: '付费专辑单曲',
+        singer: [{ name: '歌手' }],
+        pay: { payalbum: 1, payplay: 1 },
+      },
+      4,
+    );
+    expect(paidAlbumTrack.status).toBe('paid');
+    expect(paidAlbumTrack.statusText).toBe('付费专辑');
+    expect(paidAlbumTrack.isVip).toBe(false);
+    expect(paidAlbumTrack.isAvailable).toBe(true);
+
+    // Free standard stream with VIP download (payplay: 0, paydownload: 1)
+    const freeStreamVipDownloadTrack = normalizeQQTrack(
+      {
+        songid: 105,
+        songname: '呼吸决定',
+        singer: [{ name: 'Fine乐团' }],
+        pay: { payplay: 0, paydownload: 1, paytrackmouth: 1 },
+        alertid: 2,
+        msgid: 14,
+      },
+      5,
+    );
+    expect(freeStreamVipDownloadTrack.status).toBe('playable');
+    expect(freeStreamVipDownloadTrack.statusText).toBe('正常');
+    expect(freeStreamVipDownloadTrack.isVip).toBe(false);
+    expect(freeStreamVipDownloadTrack.isAvailable).toBe(true);
+
+    // Truly unplayable: takedown alert 11 & msgid 0
     const unplayableTrack = normalizeQQTrack(
       {
         songid: 101,
         songname: '下架歌曲',
         singer: [{ name: '歌手' }],
-        alertid: 1,
+        alertid: 11,
+        msgid: 0,
       },
-      3,
+      6,
     );
     expect(unplayableTrack.status).toBe('unplayable');
     expect(unplayableTrack.statusText).toBe('下架/无版权');
+    expect(unplayableTrack.isVip).toBe(false);
     expect(unplayableTrack.isAvailable).toBe(false);
+
+    // Truly unplayable: zero audio sizes
+    const zeroSizeTrack = normalizeQQTrack(
+      {
+        songid: 106,
+        songname: '无音频文件歌曲',
+        singer: [{ name: '歌手' }],
+        size128: 0,
+        size320: 0,
+        sizeflac: 0,
+      },
+      7,
+    );
+    expect(zeroSizeTrack.status).toBe('unplayable');
+    expect(zeroSizeTrack.statusText).toBe('下架/无版权');
+    expect(zeroSizeTrack.isVip).toBe(false);
+    expect(zeroSizeTrack.isAvailable).toBe(false);
   });
 });
