@@ -54,6 +54,7 @@ export interface ResolveServiceOptions {
   q: string;
   type?: string | null;
   platform?: string | null;
+  channel?: string | null;
   auth?: {
     token?: string;
     userid?: string;
@@ -224,7 +225,7 @@ function recordResolveFailure(
 export async function resolveService(
   options: ResolveServiceOptions,
 ): Promise<ResolveData> {
-  const { q, type, platform, request, db, ctx } = options;
+  const { q, type, platform, channel, auth, request, db, ctx } = options;
   const startTime = Date.now();
 
   const tracking: ResolveTracking = {
@@ -256,7 +257,7 @@ async function resolveServiceCore(
   options: ResolveServiceOptions,
   tracking: ResolveTracking,
 ): Promise<ResolveData> {
-  const { q, type, platform, auth, request, db, ctx } = options;
+  const { q, type, platform, channel, auth, request, db, ctx } = options;
 
   if (!q || q.trim().length === 0) {
     throw new ProviderError('INVALID_INPUT', 'Missing or empty required query parameter: q', 400);
@@ -551,6 +552,7 @@ async function resolveServiceCore(
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: 'qishui',
+        channel,
         auth,
         request,
         db,
@@ -566,6 +568,7 @@ async function resolveServiceCore(
     const { playlist, platform: actualPlatform } = await parsePlaylistService({
       rawInput: trimmed,
       platformParam,
+      channel,
       auth,
       request,
       db,
@@ -585,6 +588,7 @@ async function resolveServiceCore(
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: normalizedPlatform,
+        channel,
         auth,
         request,
         db,
@@ -841,7 +845,7 @@ async function resolveServiceCore(
       if (trimmed.length >= 19) {
         probeTasks.push({
           platform: 'qishui',
-          task: parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', auth, request, db, ctx, skipAnalytics: true }),
+          task: parsePlaylistService({ rawInput: trimmed, platformParam: 'qishui', channel, auth, request, db, ctx, skipAnalytics: true }),
         });
       }
 
@@ -981,6 +985,7 @@ async function resolveServiceCore(
       const qishuiRes = await parsePlaylistService({
         rawInput: trimmed,
         platformParam: 'qishui',
+        channel,
         auth,
         request,
         db,

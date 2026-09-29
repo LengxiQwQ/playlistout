@@ -330,12 +330,14 @@ export default {
       const rawQ = url.searchParams.get('q');
       const rawType = url.searchParams.get('type');
       const rawPlatform = url.searchParams.get('platform');
+      const rawChannel = url.searchParams.get('channel') || url.searchParams.get('mode');
 
       try {
         const resolveData: ResolveData = await resolveService({
           q: rawQ || '',
           type: rawType,
           platform: rawPlatform,
+          channel: rawChannel,
           auth,
           request,
           db: _env.DB,
@@ -460,11 +462,13 @@ export default {
       }
 
       const platformParam = url.searchParams.get('platform');
+      const channelParam = url.searchParams.get('channel') || url.searchParams.get('mode');
 
       try {
         const { playlist } = await parsePlaylistService({
           rawInput: rawPlaylistParam,
           platformParam,
+          channel: channelParam,
           auth,
           request,
           db: _env.DB,

@@ -16,6 +16,7 @@ import { classifyInputType, classifyErrorCategory } from '../analytics/dimension
 export interface PlaylistServiceOptions {
   rawInput: string;
   platformParam?: string | null;
+  channel?: 'qishui' | 'douyin' | string | null;
   auth?: {
     token?: string;
     userid?: string;
@@ -131,6 +132,11 @@ export async function parsePlaylistService(
           userid: auth?.userid,
         });
         actualPlatform = 'kugou';
+      } else if (matchedProvider === qishuiProvider) {
+        playlist = await qishuiProvider.parse(playlistInput, {
+          channel: options.channel === 'douyin' ? 'douyin' : 'qishui',
+        });
+        actualPlatform = 'qishui';
       } else {
         playlist = await matchedProvider.parse(playlistInput);
         actualPlatform = (playlist.platform as 'qqmusic' | 'netease' | 'kugou' | 'qishui') || targetPlatform;

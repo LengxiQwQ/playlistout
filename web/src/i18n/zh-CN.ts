@@ -119,6 +119,12 @@ export const zhCN: Translations = {
     kugouSwitchAccountBtn: '切换账号',
     kugouReparseBtn: '重新解析',
     reloadingHint: '正在为您重新解析并解锁完整歌单...',
+    qishuiReloadBtn: '↻ 重新以汽水解析',
+    switchToDouyinBtn: '⚡ 切换到抖音全量解析 (含原声)',
+    douyinReloadBtn: '↻ 重新以抖音全量解析',
+    switchToQishuiBtn: '⚡ 切换到汽水官方解析 (真实歌名)',
+    qishuiActiveBadge: '汽水纯净版',
+    douyinActiveBadge: '抖音全量版',
   },
   table: {
     listTitle: '歌曲列表 ({count})',

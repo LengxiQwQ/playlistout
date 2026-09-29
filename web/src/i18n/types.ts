@@ -119,6 +119,12 @@ export interface Translations {
     kugouSwitchAccountBtn: string;
     kugouReparseBtn: string;
     reloadingHint: string;
+    qishuiReloadBtn: string;
+    switchToDouyinBtn: string;
+    douyinReloadBtn: string;
+    switchToQishuiBtn: string;
+    qishuiActiveBadge: string;
+    douyinActiveBadge: string;
   };
   table: {
     listTitle: string;

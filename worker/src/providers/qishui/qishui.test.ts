@@ -432,7 +432,22 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     // Verify none of the tracks have generic '@xxx创作的原声'
     const genericSoundTitles = playlist.tracks.filter((t) => /^@?.*创作的原声$/.test(t.title));
     expect(genericSoundTitles.length).toBe(0);
+    expect(playlist.channel).toBe('qishui');
+    expect(playlist.availableChannels).toEqual(['qishui', 'douyin']);
   }, 40000);
+
+  it('successfully extracts Douyin full collection channel when channel=douyin is requested', async () => {
+    const playlist = await qishuiProvider.parse('https://qishui.douyin.com/s/iXHhmCAW/', { channel: 'douyin' });
+    expect(playlist.name).toBe('冷汐OωO在抖音收藏的音乐');
+    expect(playlist.creator).toBe('冷汐OωO');
+    expect(playlist.channel).toBe('douyin');
+    expect(playlist.availableChannels).toEqual(['qishui', 'douyin']);
+    expect(playlist.tracks.length).toBeGreaterThanOrEqual(700);
+
+    // Verify presence of original sounds and normalized titles
+    const originalSounds = playlist.tracks.filter((t) => t.isOriginalSound);
+    expect(originalSounds.length).toBeGreaterThan(0);
+  }, 45000);
 });
 
 

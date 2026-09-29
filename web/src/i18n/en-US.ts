@@ -119,6 +119,12 @@ export const enUS: Translations = {
     kugouSwitchAccountBtn: 'Switch Account',
     kugouReparseBtn: 'Retry Parse',
     reloadingHint: 'Reloading and unlocking full playlist...',
+    qishuiReloadBtn: '↻ Re-parse via Soda Music',
+    switchToDouyinBtn: '⚡ Switch to Douyin Audio (All Tracks)',
+    douyinReloadBtn: '↻ Re-parse via Douyin',
+    switchToQishuiBtn: '⚡ Switch to Soda Music (Clean Titles)',
+    qishuiActiveBadge: 'Soda Music (Clean)',
+    douyinActiveBadge: 'Douyin Audio (Full)',
   },
   table: {
     listTitle: 'Song List ({count})',
