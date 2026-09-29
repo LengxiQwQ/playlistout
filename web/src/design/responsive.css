@@ -78,6 +78,15 @@
   justify-content: flex-end;
 }
 
+.qishui-channel-hint {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #636e72;
+  text-align: right;
+  max-width: 440px;
+  user-select: none;
+}
+
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
   /* Keep notebook paper baseline grid consistent on small screens */
@@ -243,6 +252,11 @@
   .playlist-summary-actions .qishui-channel-switcher {
     justify-content: flex-start !important;
     width: 100% !important;
+  }
+
+  .playlist-summary-actions .qishui-channel-hint {
+    text-align: left !important;
+    max-width: 100% !important;
   }
 
   .hide-mobile {

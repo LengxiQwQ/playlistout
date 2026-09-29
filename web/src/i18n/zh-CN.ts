@@ -127,6 +127,7 @@ export const zhCN: Translations = {
     switchToQishuiBtn: '⚡ 切换到汽水官方解析 (真实歌名)',
     qishuiActiveBadge: '汽水纯净版',
     douyinActiveBadge: '抖音全量版 (包含视频原声)',
+    qishuiChannelHint: '💡 提示：汽水解析仅含正式歌曲（歌名规范）；抖音解析额外包含视频原声与配乐（曲目更完整）。',
   },
   table: {
     listTitle: '歌曲列表 ({count})',

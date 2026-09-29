@@ -127,6 +127,7 @@ export const enUS: Translations = {
     switchToQishuiBtn: '⚡ Switch to Soda Music (Clean Titles)',
     qishuiActiveBadge: 'Soda Music (Clean)',
     douyinActiveBadge: 'Douyin Audio (With Video Sounds)',
+    qishuiChannelHint: '💡 Note: Soda Music only parses official tracks (clean titles); Douyin also includes video soundtracks & BGM (full list).',
   },
   table: {
     listTitle: 'Song List ({count})',

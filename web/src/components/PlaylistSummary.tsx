@@ -125,8 +125,10 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 lineHeight: 1.2,
               }}
             >
-              {playlist.platform === 'qishui' && playlist.channel === 'douyin'
-                ? (language === 'zh-CN' ? '汽水音乐 · 抖音全量收藏 (包含视频原声)' : 'Soda Music · Douyin Audio (With Videos)')
+              {playlist.platform === 'qishui'
+                ? playlist.channel === 'douyin'
+                  ? (language === 'zh-CN' ? '汽水音乐 · 抖音全量收藏 (包含视频原声)' : 'Soda Music · Douyin Audio (With Videos)')
+                  : (language === 'zh-CN' ? '汽水音乐歌单 (不包含抖音视频原声)' : 'Soda Music Playlist (No Douyin Video Sounds)')
                 : getPlatformPlaylistSticker(playlist.platform, language)}
             </Sticker>
 
@@ -383,114 +385,122 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
 
           {/* Qishui / Douyin Channel Switcher (Directly beneath action buttons in red box area) */}
           {playlist.platform === 'qishui' && playlist.availableChannels && playlist.availableChannels.includes('douyin') && (
-            <div
-              className="qishui-channel-switcher"
-              data-testid="qishui-channel-switcher"
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.6rem',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                marginTop: '0.35rem',
-              }}
-            >
-              {playlist.channel === 'douyin' ? (
-                <>
-                  <span
-                    data-testid="qishui-current-mode"
-                    className="font-handwriting"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.35rem 0.75rem',
-                      fontSize: '0.98rem',
-                      fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 600,
-                      color: 'var(--ink, #2d3436)',
-                      backgroundColor: 'rgba(251, 207, 232, 0.45)',
-                      border: '1.5px dashed #db2777',
-                      borderRadius: '6px',
-                      userSelect: 'none',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    <span style={{ color: '#db2777', fontSize: '0.8em' }}>●</span>
-                    {t.result.currentModeDouyin}
-                  </span>
-                  <Sticker
-                    type="button"
-                    color="cyan"
-                    rotateDeg={-1}
-                    disabled={isSwitchingChannel}
-                    onClick={() => onSwitchChannel?.('qishui')}
-                    className="font-handwriting"
-                    aria-label={t.result.switchToQishuiBtn}
-                    title={language === 'zh-CN' ? '切换至汽水音乐官方音源解析（纯净真实歌名）' : 'Switch to Soda Music official catalog (clean song titles)'}
-                    style={{
-                      padding: '0.42rem 0.95rem',
-                      fontSize: '1.02rem',
-                      fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 700,
-                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
-                      color: 'var(--ink, #2d3436)',
-                      opacity: isSwitchingChannel ? 0.6 : 1,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {t.result.switchToQishuiBtn}
-                  </Sticker>
-                </>
-              ) : (
-                <>
-                  <span
-                    data-testid="qishui-current-mode"
-                    className="font-handwriting"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.35rem 0.75rem',
-                      fontSize: '0.98rem',
-                      fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 600,
-                      color: 'var(--ink, #2d3436)',
-                      backgroundColor: 'rgba(129, 236, 236, 0.35)',
-                      border: '1.5px dashed #0891b2',
-                      borderRadius: '6px',
-                      userSelect: 'none',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    <span style={{ color: '#0891b2', fontSize: '0.8em' }}>●</span>
-                    {t.result.currentModeQishui}
-                  </span>
-                  <Sticker
-                    type="button"
-                    color="pink"
-                    rotateDeg={1}
-                    disabled={isSwitchingChannel}
-                    onClick={() => onSwitchChannel?.('douyin')}
-                    className="font-handwriting"
-                    aria-label={t.result.switchToDouyinBtn}
-                    title={language === 'zh-CN' ? '切换至抖音全量原声解析（包含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
-                    style={{
-                      padding: '0.42rem 0.95rem',
-                      fontSize: '1.02rem',
-                      fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 700,
-                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
-                      color: 'var(--ink, #2d3436)',
-                      opacity: isSwitchingChannel ? 0.6 : 1,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {t.result.switchToDouyinBtn}
-                  </Sticker>
-                </>
-              )}
-            </div>
+            <>
+              <div
+                className="qishui-channel-switcher"
+                data-testid="qishui-channel-switcher"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.6rem',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  marginTop: '0.35rem',
+                }}
+              >
+                {playlist.channel === 'douyin' ? (
+                  <>
+                    <span
+                      data-testid="qishui-current-mode"
+                      className="font-handwriting"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.75rem',
+                        fontSize: '0.98rem',
+                        fontFamily: 'var(--font-handwriting, cursive)',
+                        fontWeight: 600,
+                        color: 'var(--ink, #2d3436)',
+                        backgroundColor: 'rgba(251, 207, 232, 0.45)',
+                        border: '1.5px dashed #db2777',
+                        borderRadius: '6px',
+                        userSelect: 'none',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      <span style={{ color: '#db2777', fontSize: '0.8em' }}>●</span>
+                      {t.result.currentModeDouyin}
+                    </span>
+                    <Sticker
+                      type="button"
+                      color="cyan"
+                      rotateDeg={-1}
+                      disabled={isSwitchingChannel}
+                      onClick={() => onSwitchChannel?.('qishui')}
+                      className="font-handwriting"
+                      aria-label={t.result.switchToQishuiBtn}
+                      title={language === 'zh-CN' ? '切换至汽水音乐官方音源解析（纯净真实歌名）' : 'Switch to Soda Music official catalog (clean song titles)'}
+                      style={{
+                        padding: '0.42rem 0.95rem',
+                        fontSize: '1.02rem',
+                        fontFamily: 'var(--font-handwriting, cursive)',
+                        fontWeight: 700,
+                        cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                        color: 'var(--ink, #2d3436)',
+                        opacity: isSwitchingChannel ? 0.6 : 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {t.result.switchToQishuiBtn}
+                    </Sticker>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      data-testid="qishui-current-mode"
+                      className="font-handwriting"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.75rem',
+                        fontSize: '0.98rem',
+                        fontFamily: 'var(--font-handwriting, cursive)',
+                        fontWeight: 600,
+                        color: 'var(--ink, #2d3436)',
+                        backgroundColor: 'rgba(129, 236, 236, 0.35)',
+                        border: '1.5px dashed #0891b2',
+                        borderRadius: '6px',
+                        userSelect: 'none',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      <span style={{ color: '#0891b2', fontSize: '0.8em' }}>●</span>
+                      {t.result.currentModeQishui}
+                    </span>
+                    <Sticker
+                      type="button"
+                      color="pink"
+                      rotateDeg={1}
+                      disabled={isSwitchingChannel}
+                      onClick={() => onSwitchChannel?.('douyin')}
+                      className="font-handwriting"
+                      aria-label={t.result.switchToDouyinBtn}
+                      title={language === 'zh-CN' ? '切换至抖音全量原声解析（包含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
+                      style={{
+                        padding: '0.42rem 0.95rem',
+                        fontSize: '1.02rem',
+                        fontFamily: 'var(--font-handwriting, cursive)',
+                        fontWeight: 700,
+                        cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                        color: 'var(--ink, #2d3436)',
+                        opacity: isSwitchingChannel ? 0.6 : 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {t.result.switchToDouyinBtn}
+                    </Sticker>
+                  </>
+                )}
+              </div>
+              <div
+                className="qishui-channel-hint"
+                data-testid="qishui-channel-hint"
+              >
+                {t.result.qishuiChannelHint}
+              </div>
+            </>
           )}
         </div>
       </div>
