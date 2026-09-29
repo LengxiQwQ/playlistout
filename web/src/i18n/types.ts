@@ -127,6 +127,7 @@ export interface Translations {
     switchToQishuiBtn: string;
     qishuiActiveBadge: string;
     douyinActiveBadge: string;
+    qishuiChannelHint: string;
   };
   table: {
     listTitle: string;
