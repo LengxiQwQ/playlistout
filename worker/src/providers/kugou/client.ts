@@ -454,7 +454,6 @@ export async function fetchKugouPlaylist(
       listid: target.id,
       token: auth.token,
       userid: auth.userid,
-      expectedCount: expectedCount > 0 ? expectedCount : undefined,
     });
 
     const tracks = fullSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));

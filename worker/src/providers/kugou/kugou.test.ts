@@ -455,6 +455,44 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks[1].title).toBe('歌单B歌曲2');
     });
 
+    it('directly fetches and normalizes cloudlist playlist without requiring public share link', async () => {
+      globalThis.fetch = vi.fn()
+        // 1. fetchKugouUserPlaylists (lookup name for listid 4)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              info: [{ listid: 4, name: '戏愁的私密歌单', count: 34 }],
+            },
+          }),
+        } as Response)
+        // 2. fetchCloudlistAllTracks for listid 4 (returns actual 2 songs)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 1,
+            data: {
+              count: 2,
+              info: [
+                { name: '周杰伦 - 借口', FileHash: 'hash1' },
+                { name: '林俊杰 - 江南', FileHash: 'hash2' },
+              ],
+            },
+          }),
+        } as Response);
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist(
+        { type: 'cloudlist', id: '4', originalUrl: 'https://m.kugou.com/songlist/?listid=4' },
+        { token: 'mock_tok', userid: '12345' },
+      );
+
+      expect(playlist.name).toBe('戏愁的私密歌单');
+      expect(playlist.tracks).toHaveLength(2);
+      expect(playlist.retrieval?.mode).toBe('full');
+    });
+
     it('does NOT match user cloudlist by name when owner is unknown (owner unconfirmed -> Preview)', async () => {
       // H5 songlist has no creator userid in listinfo or URL.
       // Even though user has a playlist named "同名歌单" with 10 songs, it must NOT match!
