@@ -126,6 +126,77 @@ describe('PlaylistSummary Component — Kugou Retrieval Banners & Actions', () =
     fireEvent.click(retryBtn);
     expect(handleReload).toHaveBeenCalledTimes(1);
   });
+
+  it('renders [平台限制提示] in system font block, separated from main playlist description', () => {
+    render(
+      <PlaylistSummary
+        playlist={{
+          ...baseKugouPreviewPlaylist,
+          description: '我的私人歌单简介\n\n[平台限制提示] 受酷狗音乐官方限制，公开分享链接仅提供前 10 首预览（歌单实际共 417 首）。',
+        }}
+        onReset={vi.fn()}
+      />,
+    );
+
+    // Main description is rendered in quote block
+    expect(screen.getByText('“我的私人歌单简介”')).toBeInTheDocument();
+
+    // Platform restriction notice is rendered in its own system-font container
+    const noticeEl = screen.getByTestId('kugou-platform-limit-notice');
+    expect(noticeEl).toBeInTheDocument();
+    expect(noticeEl).toHaveTextContent('[平台限制提示] 受酷狗音乐官方限制，公开分享链接仅提供前 10 首预览（歌单实际共 417 首）。');
+    expect(noticeEl).toHaveClass('font-sans');
+    expect(noticeEl.style.fontFamily).toContain('system-ui');
+  });
+
+  it('renders identity_unresolved banner when user is logged in but playlist not matched', () => {
+    const handleReload = vi.fn();
+    render(
+      <PlaylistSummary
+        playlist={{
+          ...baseKugouPreviewPlaylist,
+          trackCount: 417,
+          tracks: new Array(10).fill({ index: 1, title: '测试', artists: ['测试'] }),
+          retrieval: { mode: 'preview', reason: 'identity_unresolved' },
+        }}
+        onReset={vi.fn()}
+        onReload={handleReload}
+      />,
+    );
+
+    expect(screen.getByTestId('kugou-preview-banner')).toBeInTheDocument();
+    expect(screen.getByText(/未匹配到该歌单/)).toBeInTheDocument();
+    expect(screen.queryByText(/免登录/)).not.toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: '重新解析' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '切换账号' })).toBeInTheDocument();
+  });
+
+  it('renders logged-in platform_preview banner without falsely claiming "免登录"', () => {
+    // Mock user being logged in
+    localStorage.setItem('kugou_token', 'test_token');
+    localStorage.setItem('kugou_userid', '1425711902');
+
+    render(
+      <PlaylistSummary
+        playlist={{
+          ...baseKugouPreviewPlaylist,
+          trackCount: 417,
+          tracks: new Array(10).fill({ index: 1, title: '测试', artists: ['测试'] }),
+          retrieval: { mode: 'preview', reason: 'platform_preview' },
+        }}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('kugou-preview-banner')).toBeInTheDocument();
+    // Must NOT say "当前为免登录公开预览模式"
+    expect(screen.queryByText(/当前为免登录/)).not.toBeInTheDocument();
+    // Must explain that it is connected but restricted by platform
+    expect(screen.getByText(/已连接酷狗账号/)).toBeInTheDocument();
+
+    localStorage.clear();
+  });
 });
 
 describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', () => {
