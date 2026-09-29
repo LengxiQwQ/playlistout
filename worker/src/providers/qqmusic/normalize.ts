@@ -32,6 +32,13 @@ export interface RawQQSong {
     payplay?: number;
     payalbum?: number;
     payinfo?: number;
+    pay_play?: number;
+    pay_down?: number;
+    pay_month?: number;
+    price_album?: number;
+    price_track?: number;
+    paydownload?: number;
+    paytrackmouth?: number;
   };
   action?: {
     switch?: number;
@@ -174,50 +181,65 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   const coverUrl = albumMid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${albumMid}.jpg` : undefined;
 
   // Derive track availability & VIP status
-  const isVip = rawSong.pay?.payplay === 1;
-  let isAvailable = true;
-  let status: import('../../models/playlist').TrackAvailability = isVip ? 'vip' : 'playable';
-  let statusText = isVip ? 'VIP专享' : '正常';
+  const payplay = rawSong.pay?.payplay ?? rawSong.pay?.pay_play;
+  const payalbum = rawSong.pay?.payalbum ?? (rawSong.pay?.price_album && rawSong.pay.price_album > 0 ? 1 : 0);
+  const alertid = rawSong.alertid ?? rawSong.action?.alert;
+  const msgid = rawSong.msgid ?? rawSong.action?.msgid;
 
-  const isGeoBlockedOnly =
-    rawSong.alertid === 2 ||
-    rawSong.alertid === 21 ||
-    rawSong.action?.msgid === 14 ||
-    rawSong.msgid === 14;
+  const isPaidAlbum = payalbum === 1;
+  const isVipStream = payplay === 1 || msgid === 13 || alertid === 41;
+  const isGeoBlockedOnly = alertid === 2 || alertid === 21 || msgid === 14;
 
-  if (isGeoBlockedOnly) {
-    // Overseas-only restriction: completely playable in Mainland China. Treat as normal without alerts.
-    isAvailable = true;
-    if (rawSong.pay?.payalbum === 1) {
-      status = 'paid';
-      statusText = '付费专辑';
-    } else if (isVip) {
-      status = 'vip';
-      statusText = 'VIP专享';
-    } else {
-      status = 'playable';
-      statusText = '正常';
-    }
-  } else if (rawSong.alertid !== undefined && rawSong.alertid !== 0) {
-    isAvailable = false;
-    status = 'unplayable';
-    statusText = '下架/无版权';
-  } else if (
+  const hasExplicitZeroAudio =
     rawSong.size128 === 0 &&
     rawSong.size320 === 0 &&
-    (rawSong.sizeflac === undefined || rawSong.sizeflac === 0)
-  ) {
-    isAvailable = false;
-    status = 'unplayable';
-    statusText = '下架/无版权';
-  } else if (rawSong.pay?.payalbum === 1) {
+    (rawSong.sizeflac === undefined || rawSong.sizeflac === 0);
+
+  // A song is truly unplayable if:
+  // - It has explicit takedown alert (alertid === 11: "应版权方要求，该歌曲暂无法播放")
+  // - It has non-VIP/non-geo alert code (e.g. alertid === 1: takedown/no copyright)
+  // - Or it has takedown msgid === 0 (and is not VIP or paid album)
+  // - Or all audio stream sizes are 0
+  const isTakedownAlert =
+    alertid === 11 ||
+    (alertid !== undefined &&
+      alertid !== 0 &&
+      !isGeoBlockedOnly &&
+      alertid !== 41 &&
+      !isVipStream &&
+      !isPaidAlbum);
+  const isTakedownMsg = msgid === 0 && !isVipStream && !isPaidAlbum;
+  const isTrulyUnplayable = isTakedownAlert || isTakedownMsg || hasExplicitZeroAudio;
+
+  let isAvailable = true;
+  let isVip = false;
+  let status: import('../../models/playlist').TrackAvailability = 'playable';
+  let statusText = '正常';
+
+  if (isPaidAlbum) {
+    // 1. Digital paid album / single purchase required (VIP subscription alone cannot play)
     isAvailable = true;
+    isVip = false;
     status = 'paid';
     statusText = '付费专辑';
-  } else if (isVip) {
+  } else if (isTrulyUnplayable) {
+    // 2. Truly unplayable domestically: takedown, copyright expired, or zero audio files
+    isAvailable = false;
+    isVip = false;
+    status = 'unplayable';
+    statusText = '下架/无版权';
+  } else if (isVipStream) {
+    // 3. VIP membership required to stream the full song
     isAvailable = true;
+    isVip = true;
     status = 'vip';
     statusText = 'VIP专享';
+  } else {
+    // 4. Normal playable track (including mainland-only geo-restrictions & free streams with VIP download)
+    isAvailable = true;
+    isVip = false;
+    status = 'playable';
+    statusText = '正常';
   }
 
   // Max Audio Quality
