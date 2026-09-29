@@ -1,10 +1,8 @@
 import type { Playlist, Track } from '../../models/playlist';
 import { ProviderError } from '../../models/playlist';
 import {
-  type RawAwemeMusic,
   type RawQishuiMediaResource,
   type RawQishuiPlaylist,
-  normalizeAwemeMusicTrack,
   normalizeQishuiPlaylist,
   normalizeQishuiTrack,
 } from './normalize';
@@ -85,66 +83,6 @@ async function fetchWithTimeout(
   }
 }
 
-interface RawAwemeMusicCollectResponse {
-  status_code?: number;
-  msg?: string;
-  has_more?: number;
-  cursor?: number;
-  mc_list?: RawAwemeMusic[];
-}
-
-/**
- * Fetches all user favorite sounds/tracks from Douyin's official collection endpoint.
- * Bypasses Luna's filter to retrieve 100% of collected music and video original soundtracks.
- */
-async function fetchAwemeUserMusicCollect(userId: string): Promise<Track[] | null> {
-  let cursor = 0;
-  let hasMore = 1;
-  let page = 0;
-  const maxAwemePages = 40;
-  const allTracks: Track[] = [];
-
-  while (hasMore === 1 && page < maxAwemePages) {
-    page++;
-    const url = `https://aweme.snssdk.com/aweme/v1/user/music/collect/?user_id=${userId}&cursor=${cursor}&count=30`;
-    try {
-      const response = await fetchWithTimeout(
-        url,
-        {
-          method: 'GET',
-          headers: {
-            'User-Agent': AWEME_USER_AGENT,
-          },
-        },
-        FETCH_TIMEOUT_MS,
-      );
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data: RawAwemeMusicCollectResponse = await response.json();
-      if (data.status_code !== 0 || !Array.isArray(data.mc_list)) {
-        return null;
-      }
-
-      const items = data.mc_list;
-      for (const item of items) {
-        allTracks.push(normalizeAwemeMusicTrack(item, allTracks.length));
-      }
-
-      if (items.length === 0 || data.has_more !== 1) {
-        break;
-      }
-
-      cursor = typeof data.cursor === 'number' ? data.cursor : 0;
-    } catch {
-      return null;
-    }
-  }
-
-  return allTracks.length > 0 ? allTracks : null;
-}
 
 /**
  * Fetches a full Qishui playlist with pagination.
@@ -201,15 +139,6 @@ export async function fetchQishuiPlaylist(playlistId: string): Promise<Playlist>
 
     if (!playlistMeta && data.playlist) {
       playlistMeta = data.playlist;
-
-      // If this is a Douyin-synced favorite playlist (type === 4), fetch the complete user music collection directly
-      if (playlistMeta.type === 4 && playlistMeta.owner?.id) {
-        const awemeTracks = await fetchAwemeUserMusicCollect(String(playlistMeta.owner.id));
-        if (awemeTracks && awemeTracks.length > 0) {
-          playlistMeta.count_tracks = awemeTracks.length;
-          return normalizeQishuiPlaylist(playlistMeta, awemeTracks);
-        }
-      }
     }
 
     const medias = Array.isArray(data.media_resources) ? data.media_resources : [];
@@ -218,7 +147,7 @@ export async function fetchQishuiPlaylist(playlistId: string): Promise<Playlist>
     const hasMore = Boolean(data.has_more);
     const nextCursor = data.next_cursor !== undefined && data.next_cursor !== null ? String(data.next_cursor) : '';
 
-    if (!hasMore || !nextCursor || nextCursor === cursor || medias.length === 0) {
+    if (!hasMore || !nextCursor || nextCursor === cursor) {
       break;
     }
 

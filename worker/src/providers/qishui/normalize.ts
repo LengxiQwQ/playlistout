@@ -134,6 +134,16 @@ export interface RawAwemeMusic {
   cover_medium?: { url_list?: string[] };
   cover_thumb?: { url_list?: string[] };
   play_url?: { url_list?: string[] };
+  song?: {
+    id?: string | number;
+    id_str?: string;
+    title?: string;
+  };
+  unified_music_group?: {
+    song_id?: string | number;
+    title?: string;
+    author?: string;
+  };
 }
 
 export interface RawQishuiPlaylist {
@@ -365,8 +375,9 @@ export function normalizeQishuiTrack(
               ? String(mediaResource.id).trim()
               : undefined;
 
-    const title =
-      (rawVideo.title || rawVideo.name || rawVideo.description || '').trim() || '视频片段';
+    const rawTitle = (rawVideo.title || rawVideo.name || rawVideo.description || '').trim();
+    const cleanedTitle = rawTitle.replace(/(?:\s*#[^\s#]+)+$/, '').trim();
+    const title = cleanedTitle || rawTitle || '视频片段';
 
     // Artists / Creators
     const artists: string[] = [];
@@ -496,8 +507,21 @@ export function normalizeAwemeMusicTrack(raw: RawAwemeMusic, index: number): Tra
   }
 
   const id = raw.id_str || raw.mid || (raw.id !== undefined && raw.id !== null ? String(raw.id) : undefined);
-  const title = (raw.title || '').trim() || '未知歌曲';
-  const author = (raw.author || '').trim();
+  
+  // Prioritize real song title from unified_music_group or song metadata over generic "@xxx创作的原声"
+  let title = (raw.unified_music_group?.title || raw.song?.title || raw.title || '').trim();
+  if (!title || /^@?.*创作的原声$/.test(title)) {
+    if (raw.unified_music_group?.title?.trim()) {
+      title = raw.unified_music_group.title.trim();
+    } else if (raw.song?.title?.trim()) {
+      title = raw.song.title.trim();
+    }
+  }
+  if (!title) {
+    title = (raw.title || '').trim() || '未知歌曲';
+  }
+
+  const author = (raw.unified_music_group?.author || raw.author || '').trim();
   const artists = author ? [author] : ['未知艺人'];
   const album = raw.album?.trim() ? raw.album.trim() : undefined;
   const durationMs = typeof raw.duration === 'number' && raw.duration > 0 ? raw.duration * 1000 : undefined;

@@ -375,6 +375,25 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(track.statusText).toBe('歌曲');
   });
 
+  it('prioritizes unified_music_group title over generic original sound title', () => {
+    const raw: RawAwemeMusic = {
+      id_str: '7646305796047636599',
+      title: '@某某创作的原声',
+      author: '原作者',
+      duration: 30,
+      is_original_sound: true,
+      status: 1,
+      unified_music_group: {
+        title: '真实的歌曲名字',
+        author: '真实歌手',
+      },
+    };
+
+    const track = normalizeAwemeMusicTrack(raw, 2);
+    expect(track.title).toBe('真实的歌曲名字');
+    expect(track.artists).toEqual(['真实歌手']);
+  });
+
   it('throws PARSE_ERROR when Aweme music item is null or non-object', () => {
     expect(() => normalizeAwemeMusicTrack(null as any, 0)).toThrowError(ProviderError);
   });
@@ -398,15 +417,21 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(videoTrack.durationMs).toBe(162367);
   }, 30000);
 
-  it('successfully extracts full Douyin sync favorites playlist with 800+ tracks and original sounds', async () => {
+  it('successfully extracts Douyin sync favorites playlist with genuine track titles without generic original sound names', async () => {
     const playlist = await qishuiProvider.parse('https://qishui.douyin.com/s/iXHhmCAW/');
     expect(playlist.name).toBe('冷汐OωO在抖音收藏的音乐');
     expect(playlist.creator).toBe('冷汐OωO');
-    expect(playlist.tracks.length).toBeGreaterThanOrEqual(800);
+    expect(playlist.tracks.length).toBeGreaterThanOrEqual(136);
 
-    const originalSoundTracks = playlist.tracks.filter((t) => t.isOriginalSound);
-    expect(originalSoundTracks.length).toBeGreaterThan(700);
-    expect(originalSoundTracks[0].statusText).toBe('原声');
+    // Verify track 0, 1, 2 have real titles and artists
+    expect(playlist.tracks[0].title).toBe('我李逍遥可以对天发誓');
+    expect(playlist.tracks[0].artists).toEqual(['Watch with Caution']);
+    expect(playlist.tracks[1].title).toBe("If I Ain't Got You");
+    expect(playlist.tracks[2].title).toBe('迷人的危险');
+
+    // Verify none of the tracks have generic '@xxx创作的原声'
+    const genericSoundTitles = playlist.tracks.filter((t) => /^@?.*创作的原声$/.test(t.title));
+    expect(genericSoundTitles.length).toBe(0);
   }, 40000);
 });
 
