@@ -184,5 +184,42 @@ describe('UserPlaylistsPaper Component', () => {
       'kugou',
     );
   });
+
+  it('safely recovers when sourceUrl is bare /songlist/ and builds cloudlist listid URL', () => {
+    const mockKugouUser: UserPlaylistsData = {
+      platform: 'kugou',
+      userId: '1425711902',
+      nickname: '冷汐',
+      total: 1,
+      playlists: [
+        {
+          id: '10',
+          name: '冷汐的私密歌单',
+          trackCount: 30,
+          sourceUrl: 'https://www.kugou.com/songlist/',
+        },
+      ],
+    };
+
+    const handleSelectSingle = vi.fn();
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <UserPlaylistsPaper
+          userData={mockKugouUser}
+          onReset={vi.fn()}
+          onSelectSinglePlaylist={handleSelectSingle}
+        />
+      </LanguageProvider>,
+    );
+
+    const drilldownButtons = screen.getAllByText(/查看歌曲/);
+    fireEvent.click(drilldownButtons[0]);
+    expect(handleSelectSingle).toHaveBeenCalledWith(
+      'https://m.kugou.com/songlist/?listid=10',
+      'kugou',
+    );
+  });
 });
+
 
