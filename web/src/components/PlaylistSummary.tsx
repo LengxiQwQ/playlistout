@@ -399,14 +399,36 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '0.5rem',
+                gap: '0.6rem',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                marginTop: '0.2rem',
+                marginTop: '0.35rem',
               }}
             >
               {playlist.channel === 'douyin' ? (
                 <>
+                  <span
+                    data-testid="qishui-current-mode"
+                    className="font-handwriting"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.98rem',
+                      fontFamily: 'var(--font-handwriting, cursive)',
+                      fontWeight: 600,
+                      color: 'var(--ink, #2d3436)',
+                      backgroundColor: 'rgba(251, 207, 232, 0.45)',
+                      border: '1.5px dashed #db2777',
+                      borderRadius: '6px',
+                      userSelect: 'none',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    <span style={{ color: '#db2777', fontSize: '0.8em' }}>●</span>
+                    {t.result.currentModeDouyin}
+                  </span>
                   <Sticker
                     type="button"
                     color="cyan"
@@ -417,8 +439,8 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                     aria-label={t.result.switchToQishuiBtn}
                     title={language === 'zh-CN' ? '切换至汽水音乐官方音源解析（纯净真实歌名）' : 'Switch to Soda Music official catalog (clean song titles)'}
                     style={{
-                      padding: '0.38rem 0.85rem',
-                      fontSize: '0.98rem',
+                      padding: '0.42rem 0.95rem',
+                      fontSize: '1.02rem',
                       fontFamily: 'var(--font-handwriting, cursive)',
                       fontWeight: 700,
                       cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
@@ -429,55 +451,31 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                   >
                     {t.result.switchToQishuiBtn}
                   </Sticker>
-                  <Sticker
-                    type="button"
-                    color="pink"
-                    rotateDeg={1}
-                    disabled={isSwitchingChannel}
-                    onClick={() => onSwitchChannel?.('douyin')}
-                    className="font-handwriting"
-                    aria-label={t.result.douyinReloadBtn}
-                    title={language === 'zh-CN' ? '当前为抖音全量收藏解析，点击可重新解析' : 'Currently using Douyin collection mode, click to re-parse'}
-                    style={{
-                      padding: '0.38rem 0.85rem',
-                      fontSize: '0.98rem',
-                      fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 700,
-                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
-                      color: 'var(--ink, #2d3436)',
-                      border: '1.5px solid #db2777',
-                      opacity: isSwitchingChannel ? 0.6 : 1,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {t.result.douyinReloadBtn}
-                  </Sticker>
                 </>
               ) : (
                 <>
-                  <Sticker
-                    type="button"
-                    color="cyan"
-                    rotateDeg={-1}
-                    disabled={isSwitchingChannel}
-                    onClick={() => onSwitchChannel?.('qishui')}
+                  <span
+                    data-testid="qishui-current-mode"
                     className="font-handwriting"
-                    aria-label={t.result.qishuiReloadBtn}
-                    title={language === 'zh-CN' ? '当前为汽水官方解析，点击可重新解析' : 'Currently using Soda Music official mode, click to re-parse'}
                     style={{
-                      padding: '0.38rem 0.85rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.35rem 0.75rem',
                       fontSize: '0.98rem',
                       fontFamily: 'var(--font-handwriting, cursive)',
-                      fontWeight: 700,
-                      cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
                       color: 'var(--ink, #2d3436)',
-                      border: '1.5px solid #0891b2',
-                      opacity: isSwitchingChannel ? 0.6 : 1,
+                      backgroundColor: 'rgba(129, 236, 236, 0.35)',
+                      border: '1.5px dashed #0891b2',
+                      borderRadius: '6px',
+                      userSelect: 'none',
                       lineHeight: 1.2,
                     }}
                   >
-                    {t.result.qishuiReloadBtn}
-                  </Sticker>
+                    <span style={{ color: '#0891b2', fontSize: '0.8em' }}>●</span>
+                    {t.result.currentModeQishui}
+                  </span>
                   <Sticker
                     type="button"
                     color="pink"
@@ -488,8 +486,8 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                     aria-label={t.result.switchToDouyinBtn}
                     title={language === 'zh-CN' ? '切换至抖音全量原声解析（含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
                     style={{
-                      padding: '0.38rem 0.85rem',
-                      fontSize: '0.98rem',
+                      padding: '0.42rem 0.95rem',
+                      fontSize: '1.02rem',
                       fontFamily: 'var(--font-handwriting, cursive)',
                       fontWeight: 700,
                       cursor: isSwitchingChannel ? 'not-allowed' : 'pointer',
