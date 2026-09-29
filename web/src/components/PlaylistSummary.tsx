@@ -66,16 +66,8 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
         borderBottom: '2px dashed var(--line, #dfe6e9)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: '1.25rem',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flex: '1 1 auto', minWidth: 0 }}>
+      <div className="playlist-summary-main">
+        <div className="playlist-summary-info">
           {/* Playlist Cover Art */}
           {playlist.coverUrl && !coverFailed ? (
             <img
@@ -149,6 +141,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 color: 'var(--ink, #2d3436)',
                 margin: '0.25rem 0',
                 wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             >
               {playlist.name}
@@ -163,12 +156,9 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 color: '#636e72',
                 display: 'flex',
                 alignItems: 'center',
-                flexWrap: 'nowrap',
-                gap: '0.5rem',
+                flexWrap: 'wrap',
+                gap: '0.25rem 0.5rem',
                 marginTop: '0.35rem',
-                whiteSpace: 'nowrap',
-                overflowX: 'auto',
-                maxWidth: '100%',
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
@@ -322,8 +312,8 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
         </div>
 
         {/* Action Stickers & Channel Switcher Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.65rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+        <div className="playlist-summary-actions">
+          <div className="playlist-summary-actions-row">
             <Sticker
               type="button"
               onClick={() => {
