@@ -326,17 +326,16 @@ describe('QQ Music Upstream Error & Malformed Response Handling', () => {
     expect(zeroSizeTrack.isVip).toBe(false);
     expect(zeroSizeTrack.isAvailable).toBe(false);
 
-    // Modern VIP track: 30s preview audition cap (b_30s: 0, e_30s: 30000)
-    const vipAudition30sTrack = normalizeQQTrack(
+    // Modern VIP track: bit 1 in action.icons is 1 (icons: 9060350)
+    const vipBit1Track = normalizeQQTrack(
       {
         songid: 107,
         songmid: '0049i6VB00nf0f',
         songname: '내가 사랑해도 괜찮을까요',
         singer: [{ name: '재연' }],
         pay: { pay_play: 0, pay_down: 0 },
+        action: { icons: 9060350 }, // (9060350 >> 1) & 1 === 1
         file: {
-          b_30s: 0,
-          e_30s: 30000,
           size_128mp3: 3717737,
           size_320mp3: 9293730,
           size_flac: 25379623,
@@ -344,70 +343,76 @@ describe('QQ Music Upstream Error & Malformed Response Handling', () => {
       },
       8,
     );
-    expect(vipAudition30sTrack.status).toBe('vip');
-    expect(vipAudition30sTrack.statusText).toBe('VIP专享');
-    expect(vipAudition30sTrack.isVip).toBe(true);
-    expect(vipAudition30sTrack.isAvailable).toBe(true);
-    expect(vipAudition30sTrack.maxQuality).toBe('FLAC');
+    expect(vipBit1Track.status).toBe('vip');
+    expect(vipBit1Track.statusText).toBe('VIP专享');
+    expect(vipBit1Track.isVip).toBe(true);
+    expect(vipBit1Track.isAvailable).toBe(true);
+    expect(vipBit1Track.maxQuality).toBe('FLAC');
 
-    // Modern VIP track: 60s preview audition cap (b_30s: 0, e_30s: 60000)
-    const vipAudition60sTrack = normalizeQQTrack(
+    // Modern VIP track: bit 18 in action.icons is 1 (icons: 12992510)
+    const vipBit18Track = normalizeQQTrack(
       {
         songid: 108,
         songmid: '003her012345',
-        songname: 'ヒロイン',
-        singer: [{ name: 'back number' }],
-        pay: { pay_play: 0, pay_down: 0 },
+        songname: 'Cry For Me',
+        singer: [{ name: 'Ami' }],
+        pay: { pay_play: 1, pay_down: 1 },
+        action: { icons: 12992510 }, // (12992510 >> 18) & 1 === 1
         file: {
-          b_30s: 0,
-          e_30s: 60000,
           size_128mp3: 3000000,
           size_320mp3: 8000000,
         },
       },
       9,
     );
-    expect(vipAudition60sTrack.status).toBe('vip');
-    expect(vipAudition60sTrack.statusText).toBe('VIP专享');
-    expect(vipAudition60sTrack.isVip).toBe(true);
-    expect(vipAudition60sTrack.isAvailable).toBe(true);
-    expect(vipAudition60sTrack.maxQuality).toBe('320kbps');
+    expect(vipBit18Track.status).toBe('vip');
+    expect(vipBit18Track.statusText).toBe('VIP专享');
+    expect(vipBit18Track.isVip).toBe(true);
+    expect(vipBit18Track.isAvailable).toBe(true);
+    expect(vipBit18Track.maxQuality).toBe('320kbps');
 
-    // Free track with chorus audition clip (b_30s > 0)
-    const freeChorusClipTrack = normalizeQQTrack(
+    // Non-VIP tracks with non-VIP icons (e.g. 9060220, 528968, 8535932)
+    const freeTrack9060220 = normalizeQQTrack(
       {
         songid: 109,
-        songmid: '000FUFwQ2iOJPm',
-        songname: 'Y (Please Tell Me Why)',
-        singer: [{ name: 'Free Style' }],
-        pay: { pay_play: 0, pay_down: 0 },
-        file: {
-          b_30s: 100290,
-          e_30s: 160290,
-          size_128mp3: 4482448,
-          size_320mp3: 11205739,
-        },
+        songname: '우리 얘기 좀 해',
+        singer: [{ name: '타코앤제이형' }],
+        action: { icons: 9060220 }, // bit 1 and bit 18 are 0
       },
       10,
     );
-    expect(freeChorusClipTrack.status).toBe('playable');
-    expect(freeChorusClipTrack.statusText).toBe('正常');
-    expect(freeChorusClipTrack.isVip).toBe(false);
-    expect(freeChorusClipTrack.isAvailable).toBe(true);
+    expect(freeTrack9060220.status).toBe('playable');
+    expect(freeTrack9060220.statusText).toBe('正常');
+    expect(freeTrack9060220.isVip).toBe(false);
+    expect(freeTrack9060220.isAvailable).toBe(true);
 
-    // Official Web VIP bit flag: (action.icons >> 18) & 1 === 1
-    const vipIconBitTrack = normalizeQQTrack(
+    const freeTrack528968 = normalizeQQTrack(
       {
         songid: 110,
-        songname: 'VIP Icon Track',
-        singer: [{ name: '歌手' }],
-        action: { icons: 12992510 },
+        songname: '한글송',
+        singer: [{ name: '群星' }],
+        action: { icons: 528968 }, // bit 1 and bit 18 are 0
       },
       11,
     );
-    expect(vipIconBitTrack.status).toBe('vip');
-    expect(vipIconBitTrack.statusText).toBe('VIP专享');
-    expect(vipIconBitTrack.isVip).toBe(true);
-    expect(vipIconBitTrack.isAvailable).toBe(true);
+    expect(freeTrack528968.status).toBe('playable');
+    expect(freeTrack528968.statusText).toBe('正常');
+    expect(freeTrack528968.isVip).toBe(false);
+    expect(freeTrack528968.isAvailable).toBe(true);
+
+    const freeTrack8535932 = normalizeQQTrack(
+      {
+        songid: 111,
+        songname: '耳わほう',
+        singer: [{ name: '群星' }],
+        action: { icons: 8535932, alert: 2 }, // bit 1 and bit 18 are 0
+        pay: { pay_play: 0, pay_down: 1 },
+      },
+      12,
+    );
+    expect(freeTrack8535932.status).toBe('playable');
+    expect(freeTrack8535932.statusText).toBe('正常');
+    expect(freeTrack8535932.isVip).toBe(false);
+    expect(freeTrack8535932.isAvailable).toBe(true);
   });
 });

@@ -207,17 +207,13 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   const alertid = rawSong.alertid ?? rawSong.action?.alert;
   const msgid = rawSong.msgid ?? rawSong.action?.msgid;
   const icons = rawSong.action?.icons;
-  const isVipIcon = Boolean(icons && ((icons >> 18) & 1));
-  const isAuditionCapped = Boolean(
-    rawSong.file &&
-      rawSong.file.b_30s === 0 &&
-      rawSong.file.e_30s !== undefined &&
-      rawSong.file.e_30s > 0 &&
-      (rawSong.file.e_30s === 30000 || rawSong.file.e_30s === 60000),
-  );
+  // In QQ Music upstream protocol, VIP stream permissions are designated by action.icons bit flags:
+  // - Bit 1 ((icons >> 1) & 1): VIP streaming permission flag (mobile & modern catalog)
+  // - Bit 18 ((icons >> 18) & 1): Web client VIP badge flag
+  const isVipIcon = Boolean(icons && (((icons >> 1) & 1) === 1 || ((icons >> 18) & 1) === 1));
 
   const isPaidAlbum = payalbum === 1;
-  const isVipStream = payplay === 1 || msgid === 13 || alertid === 41 || isVipIcon || isAuditionCapped;
+  const isVipStream = payplay === 1 || msgid === 13 || alertid === 41 || isVipIcon;
   const isGeoBlockedOnly = alertid === 2 || alertid === 21 || msgid === 14;
 
   const hasExplicitZeroAudio =
