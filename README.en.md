@@ -454,11 +454,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **202**<br><sub>Today unique +10</sub> | **426**<br><sub>Today +13</sub> | **437**<br><sub>Today +12</sub> | **109,618**<br><sub>Today +8,331</sub> | **95**<br><sub>Today +9</sub> | **17 Days**<br><sub>Since 2026-09-12</sub> |
+| **235**<br><sub>Today unique +18</sub> | **478**<br><sub>Today +28</sub> | **596**<br><sub>Today +98</sub> | **162,829**<br><sub>Today +45,909</sub> | **123**<br><sub>Today +10</sub> | **18 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **69%** (303 parses) ｜ NetEase Cloud Music **15%** (67 parses) ｜ KuGou Music **14%** (59 parses) ｜ QiShui Music **2%** (8 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **40%** ｜ TXT **26%** ｜ CSV **14%** ｜ JSON **20%**
+- **🎵 Platform Shares:** QQ Music **60%** (355 parses) ｜ NetEase Cloud Music **19%** (112 parses) ｜ KuGou Music **19%** (111 parses) ｜ QiShui Music **3%** (18 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **34%** ｜ TXT **25%** ｜ CSV **11%** ｜ JSON **24%** ｜ M3U8 **6%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -483,7 +483,7 @@ Views: **587** ｜ Uniques: **141** (14-day) ｜ Clones: **2,202** ｜ Cloners: 
 **Top referrers (14-day):** github.com · Google · Bing · Baidu · open.cd · Yahoo  
 **Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter · commits/main
 
-> Data since 2026-09-07 · Last updated: 2026-09-28
+> Data since 2026-09-07 · Last updated: 2026-09-29
 <!-- INSIGHTS:END -->
 
 ---
