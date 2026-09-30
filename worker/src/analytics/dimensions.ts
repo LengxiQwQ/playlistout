@@ -38,11 +38,12 @@ export function classifyInputType(input: string): InputType {
     /details\/playlist/i.test(trimmed) ||
     /taoge\.html/i.test(trimmed) ||
     /detail\/taoge/i.test(trimmed) ||
+    /fcgi-bin\/u/i.test(trimmed) ||
     /163cn\.tv/i.test(trimmed) ||
     /y\.music\.163\.com/i.test(trimmed) ||
     /m\.kugou\.com/i.test(trimmed) ||
     /t\d?\.kugou\.com/i.test(trimmed) ||
-    /qishui\.douyin\.com\/s\//i.test(trimmed)
+    /(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed)
   ) {
     return 'mobile_share_link';
   }

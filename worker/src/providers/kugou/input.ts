@@ -32,6 +32,8 @@ export function matchesKugouInput(input: string): boolean {
 async function resolveKugouShortLink(url: string): Promise<string> {
   try {
     let currentUrl = url;
+    const urlToParse = /^https?:\/\//i.test(currentUrl) ? currentUrl : `https://${currentUrl}`;
+    currentUrl = urlToParse;
     const maxHops = 3;
     for (let hop = 0; hop < maxHops; hop++) {
       const parsed = new URL(currentUrl);
@@ -40,7 +42,7 @@ async function resolveKugouShortLink(url: string): Promise<string> {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const resp = await fetch(currentUrl, {

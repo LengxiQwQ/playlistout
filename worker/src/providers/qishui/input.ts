@@ -53,7 +53,8 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
   const candidateUrl = extractUrlFromText(urlOrText);
   try {
     let currentUrl = candidateUrl;
-    const parsed = new URL(currentUrl);
+    const urlToParse = /^https?:\/\//i.test(currentUrl) ? currentUrl : `https://${currentUrl}`;
+    const parsed = new URL(urlToParse);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return candidateUrl;
     }
@@ -65,10 +66,11 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
       return candidateUrl;
     }
 
+    currentUrl = urlToParse;
     const maxHops = 3;
     for (let hop = 0; hop < maxHops; hop++) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const resp = await fetch(currentUrl, {

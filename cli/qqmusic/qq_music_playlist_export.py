@@ -17,6 +17,14 @@ import csv
 import platform
 import subprocess
 import requests
+import socket
+
+# 强制优先使用 IPv4 避免国内部分运营商 IPv6 握手超时 (如 c6.y.qq.com AAAA 解析挂起)
+try:
+    import urllib3.util.connection as urllib3_cn
+    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+except Exception:
+    pass
 
 # --- 辅助函数 ---
 
@@ -36,6 +44,38 @@ def sanitize_filename(name):
     name = re.sub(r'\s+', ' ', name).strip()
     return name or "playlist"
 
+# 解析 QQ音乐短链接
+def resolve_shortlink(text):
+    if not text:
+        return text
+    # Support http://, https://, or bare domain like c6.y.qq.com/base/fcgi-bin/u?__=...
+    m = re.search(r'https?://[a-zA-Z0-9-]+\.y\.qq\.com/base/fcgi-bin/u\S*', text)
+    if not m:
+        m2 = re.search(r'(?:^|[^\w.-])([a-zA-Z0-9-]+\.y\.qq\.com/base/fcgi-bin/u\S*)', text)
+        if m2:
+            url = f"https://{m2.group(1)}"
+        else:
+            url = None
+    else:
+        url = m.group(0)
+
+    if url:
+        try:
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) "
+                    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+                ),
+            }
+            resp = requests.get(url, headers=headers, allow_redirects=False, timeout=8)
+            if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
+                return resp.headers["Location"]
+            elif resp.status_code == 200:
+                return resp.url
+        except Exception:
+            pass
+    return text
+
 # 从用户输入中提取歌单ID
 def extract_playlist_id(text):
     if not text:
@@ -43,16 +83,32 @@ def extract_playlist_id(text):
     text = text.strip()
     if re.fullmatch(r'\d+', text):
         return text
+    resolved = resolve_shortlink(text)
     # 1. 优先从 URL 路径匹配: /playlist/<id>, /taoge/<id>, /playsquare/<id>
-    m = re.search(r'/(?:playlist|taoge|playsquare)(?:_v\d+)?/(\d{5,18})', text)
+    m = re.search(r'/(?:playlist|taoge|playsquare)(?:_v\d+)?/(\d{5,18})', resolved)
     if m:
         return m.group(1)
     # 2. 匹配 Query 参数: id=..., disstid=..., dissid=..., tid=..., playlist_id=...
-    m = re.search(r'[?&#](?:id|disstid|dissid|tid|playlist_id)=(\d{5,18})', text)
+    m = re.search(r'[?&#](?:id|disstid|dissid|tid|playlist_id)=(\d{5,18})', resolved)
     if m:
         return m.group(1)
     # 3. 兜底匹配任意 5-18 位连续数字
-    m = re.search(r'(\d{5,18})', text)
+    m = re.search(r'(\d{5,18})', resolved)
+    if m:
+        return m.group(1)
+    return None
+
+# 从用户输入中提取用户 QQ号 (uin)
+def extract_user_uin(text):
+    if not text:
+        return None
+    text = text.strip()
+    if re.fullmatch(r'\d{5,12}', text):
+        return text
+    resolved = resolve_shortlink(text)
+    if '/playlist' in resolved or '/taoge' in resolved or '/playsquare' in resolved:
+        return None
+    m = re.search(r'[?&#](?:uin|hostuin)=(\d{5,12})', resolved)
     if m:
         return m.group(1)
     return None
@@ -507,6 +563,7 @@ def main():
 
             is_just_digits = user_input.isdigit() and len(user_input) >= 4
             pid = extract_playlist_id(user_input)
+            uin = extract_user_uin(user_input)
 
             # 同时尝试歌单ID和QQ号
             playlist_info = None
@@ -517,6 +574,8 @@ def main():
             
             if is_just_digits:
                 qq_info = get_user_playlists(user_input)
+            elif uin and not playlist_info:
+                qq_info = get_user_playlists(uin)
 
             # ── 既是歌单又是QQ号，让用户选择 ──
             if playlist_info and playlist_info[1] and qq_info:

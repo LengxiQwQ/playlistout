@@ -74,4 +74,23 @@ describe('Worker extractCleanUrlOrInput', () => {
       'https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx',
     );
   });
+
+  it('extracts QQ Music shortlink and protocol-less variant', () => {
+    const rawUrl = 'https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI';
+    expect(extractCleanUrlOrInput(rawUrl)).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+
+    const shareText = '分享单曲/歌单 https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI @QQ音乐';
+    expect(extractCleanUrlOrInput(shareText)).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+
+    const protocolLess = 'c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI';
+    expect(extractCleanUrlOrInput(protocolLess)).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+  });
+
+  it('extracts NetEase short link and protocol-less variant', () => {
+    const rawUrl = 'https://163cn.tv/bhsHbRfW';
+    expect(extractCleanUrlOrInput(rawUrl)).toBe('https://163cn.tv/bhsHbRfW');
+
+    const protocolLess = '163cn.tv/bhsHbRfW';
+    expect(extractCleanUrlOrInput(protocolLess)).toBe('https://163cn.tv/bhsHbRfW');
+  });
 });

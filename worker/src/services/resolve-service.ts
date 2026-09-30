@@ -26,7 +26,7 @@ import {
 import { parsePlaylistService } from './playlist-service';
 import { fetchUserPlaylistsService } from './user-service';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
-import { qqMusicProvider } from '../providers/qqmusic';
+import { qqMusicProvider, isQQShortLink } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
@@ -321,7 +321,7 @@ async function resolveServiceCore(
 
   // ── Input platform & type contract validation ──
   let detectedPlatform: SupportedPlatform | null = null;
-  if (/(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed)) {
+  if (/(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(trimmed)) {
     detectedPlatform = 'qqmusic';
   } else if (/(?:music\.163\.com|163cn\.tv)/i.test(trimmed)) {
     detectedPlatform = 'netease';
@@ -442,6 +442,65 @@ async function resolveServiceCore(
     }
 
     // 2. Short links resolution
+    if (isQQShortLink(trimmed)) {
+      tracking.stage = 'short_link_resolution';
+      tracking.platform = 'qqmusic';
+      if (normalizedType === 'user') {
+        const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
+          rawInput: trimmed,
+          platformParam: 'qqmusic',
+          auth,
+        });
+        return { kind: 'user_playlists', platform: actualPlatform, result: userData };
+      }
+      if (normalizedType === 'playlist') {
+        const { playlist, platform: actualPlatform } = await parsePlaylistService({
+          rawInput: trimmed,
+          platformParam: 'qqmusic',
+          auth,
+          request,
+          db,
+          ctx,
+          skipAnalytics: true,
+        });
+        return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      }
+      // auto: try single playlist first, fallback to user playlists
+      try {
+        const { playlist, platform: actualPlatform } = await parsePlaylistService({
+          rawInput: trimmed,
+          platformParam: 'qqmusic',
+          auth,
+          request,
+          db,
+          ctx,
+          skipAnalytics: true,
+        });
+        return { kind: 'playlist', platform: actualPlatform, result: playlist };
+      } catch (playlistErr: unknown) {
+        if (!isNegativeProbeError(playlistErr)) {
+          throw playlistErr;
+        }
+        try {
+          const { userData, platform: actualPlatform } = await fetchUserPlaylistsService({
+            rawInput: trimmed,
+            platformParam: 'qqmusic',
+            auth,
+          });
+          return { kind: 'user_playlists', platform: actualPlatform, result: userData };
+        } catch (userErr: unknown) {
+          if (!isNegativeProbeError(userErr)) {
+            throw userErr;
+          }
+          throw new ProviderError(
+            'PLAYLIST_NOT_FOUND',
+            'Failed to resolve QQ Music short link as playlist or user profile.',
+            404,
+          );
+        }
+      }
+    }
+
     if (/163cn\.tv/i.test(trimmed)) {
       tracking.stage = 'short_link_resolution';
       tracking.platform = 'netease';

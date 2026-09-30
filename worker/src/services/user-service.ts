@@ -4,7 +4,7 @@
  */
 
 import { type UserPlaylistsData, ProviderError } from '../models/playlist';
-import { extractQQNumber, fetchQQUserPlaylists } from '../providers/qqmusic';
+import { extractQQNumberAsync, fetchQQUserPlaylists } from '../providers/qqmusic';
 import { extractNeteaseUserId, fetchNeteaseUserPlaylists, matchesNeteaseInput } from '../providers/netease';
 import { fetchKugouUserPlaylists, kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
@@ -80,7 +80,7 @@ export async function fetchUserPlaylistsService(
     return { userData, platform: 'netease' };
   }
 
-  const extractedUin = extractQQNumber(cleanInput);
+  const extractedUin = await extractQQNumberAsync(cleanInput);
   if (!extractedUin) {
     throw new ProviderError(
       'INVALID_INPUT',

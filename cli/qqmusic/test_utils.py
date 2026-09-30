@@ -1,4 +1,5 @@
-from qq_music_playlist_export import extract_playlist_id, export_to_m3u8
+from qq_music_playlist_export import extract_playlist_id, extract_user_uin, export_to_m3u8, resolve_shortlink
+from unittest.mock import patch, MagicMock
 import tempfile
 import os
 
@@ -11,6 +12,19 @@ def test_extract_id_from_url():
     assert extract_playlist_id("https://i2.y.qq.com/n3/other/pages/details/playlist.html?hosteuin=oi6q7iCi7Kci7c**&id=9044196528&appversion=200805&ADTAG=wxfshare&appshare=iphone_wx") == "9044196528"
     assert extract_playlist_id("https://i.y.qq.com/n2/m/share/details/taoge.html?id=9044196528") == "9044196528"
     assert extract_playlist_id("https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg?disstid=9044196528") == "9044196528"
+
+def test_resolve_shortlink():
+    with patch("requests.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 302
+        mock_resp.headers = {"Location": "https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540"}
+        mock_resp.url = "https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540"
+        mock_get.return_value = mock_resp
+
+        assert resolve_shortlink("https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI") == "https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540"
+        assert resolve_shortlink("c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI") == "https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540"
+        assert extract_playlist_id("https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI") == "9138517540"
+        assert extract_playlist_id("c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI") == "9138517540"
 
 def test_extract_id_from_text():
     assert extract_playlist_id("歌单ID: 9044196528") == "9044196528"

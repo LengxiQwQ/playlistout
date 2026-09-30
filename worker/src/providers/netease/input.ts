@@ -32,7 +32,8 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
   const candidateUrl = extractUrlFromText(urlOrText);
   try {
     let currentUrl = candidateUrl;
-    const parsed = new URL(currentUrl);
+    const urlToParse = /^https?:\/\//i.test(currentUrl) ? currentUrl : `https://${currentUrl}`;
+    const parsed = new URL(urlToParse);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return candidateUrl;
     }
@@ -40,10 +41,11 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
       return candidateUrl;
     }
 
+    currentUrl = urlToParse;
     const maxHops = 3;
     for (let hop = 0; hop < maxHops; hop++) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const resp = await fetch(currentUrl, {
@@ -77,9 +79,8 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
           const isHostAllowed =
             targetHost === '163cn.tv' ||
             targetHost.endsWith('.163cn.tv') ||
-            targetHost === 'music.163.com' ||
-            targetHost === 'y.music.163.com' ||
-            targetHost.endsWith('.music.163.com');
+            targetHost === '163.com' ||
+            targetHost.endsWith('.163.com');
 
           if (!isHostAllowed) {
             throw new ProviderError(
@@ -90,8 +91,8 @@ export async function resolveShortLinkIfNeeded(urlOrText: string): Promise<strin
           }
 
           currentUrl = resolvedLocation;
-          // If redirected to music.163.com or y.music.163.com, we reached the destination
-          if (targetHost.includes('163.com')) {
+          // If redirected to music.163.com, y.music.163.com, or any 163.com host, we reached the destination
+          if (targetHost.endsWith('163.com')) {
             return currentUrl;
           }
         } else {
@@ -131,7 +132,8 @@ export async function extractNeteasePlaylistId(input: string): Promise<string> {
   // e.g. ?id=2756674066 or /playlist/2756674066 or /playlist?id=2756674066
   try {
     const cleanUrl = resolved.replace(/#\//, ''); // Handle hash routing like #/playlist?id=...
-    const parsed = new URL(cleanUrl);
+    const urlToParse = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
+    const parsed = new URL(urlToParse);
 
     // If resolved URL is explicitly a user profile, reject immediately rather than treating UID as playlist ID
     if (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home')) {
@@ -187,7 +189,8 @@ export async function extractNeteaseUserId(input: string): Promise<string | null
 
   try {
     const cleanUrl = resolved.replace(/#\//, '');
-    const parsed = new URL(cleanUrl);
+    const urlToParse = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
+    const parsed = new URL(urlToParse);
 
     // Playlist URLs should never be parsed as user profile
     if (parsed.pathname.includes('/playlist')) {

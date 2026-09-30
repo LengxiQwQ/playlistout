@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { extractQQPlaylistId, matchesQQMusicInput } from './input';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import {
+  extractQQPlaylistId,
+  extractQQPlaylistIdAsync,
+  isQQShortLink,
+  matchesQQMusicInput,
+  resolveQQShortLinkIfNeeded,
+} from './input';
 import {
   normalizeCYQQResponse,
   normalizeMusicUResponse,
@@ -104,6 +110,72 @@ describe('QQ Music Input Validation & Parsing', () => {
     } catch (err) {
       expect((err as ProviderError).code).toBe('INVALID_INPUT');
     }
+  });
+});
+
+describe('QQ Music Short Link Resolution & Async Parsing', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('correctly identifies QQ Music short links', () => {
+    expect(isQQShortLink('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI')).toBe(true);
+    expect(isQQShortLink('c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI')).toBe(true);
+    expect(isQQShortLink('http://c.y.qq.com/base/fcgi-bin/u?__=xyz123')).toBe(true);
+    expect(isQQShortLink('https://y.qq.com/n/ryqq/playlist/9044196528')).toBe(false);
+    expect(isQQShortLink('https://163cn.tv/bhsHbRfW')).toBe(false);
+  });
+
+  it('resolves short link via HTTP redirect location', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      status: 302,
+      headers: new Headers({
+        location: 'https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540&hosteuin=test',
+      }),
+    });
+
+    const resolved = await resolveQQShortLinkIfNeeded('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+    expect(resolved).toContain('taoge.html?id=9138517540');
+  });
+
+  it('extracts playlist ID asynchronously from short link', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      status: 302,
+      headers: new Headers({
+        location: 'https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540&hosteuin=test',
+      }),
+    });
+
+    const id = await extractQQPlaylistIdAsync('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+    expect(id).toBe('9138517540');
+  });
+
+  it('extracts playlist ID asynchronously from share text with short link', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      status: 302,
+      headers: new Headers({
+        location: 'https://i.y.qq.com/n2/m/share/details/taoge.html?id=9138517540',
+      }),
+    });
+
+    const text = '【歌单】这首歌真的好听 https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI 来自QQ音乐';
+    const id = await extractQQPlaylistIdAsync(text);
+    expect(id).toBe('9138517540');
+  });
+
+  it('blocks SSRF redirects to unauthorized hosts', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      status: 302,
+      headers: new Headers({
+        location: 'https://malicious.evil.com/taoge.html?id=9138517540',
+      }),
+    });
+
+    await expect(
+      resolveQQShortLinkIfNeeded('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI')
+    ).rejects.toThrowError(ProviderError);
   });
 });
 

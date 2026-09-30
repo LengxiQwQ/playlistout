@@ -45,10 +45,9 @@ export function extractCleanUrlOrInput(input: string): string {
     return url;
   }
 
-  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
-  // Ensure it's not a subdomain like c.y.qq.com or preceded by word characters
+  // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "c6.y.qq.com/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:y|i\d*\.y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];
@@ -174,7 +173,19 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 2. NetEase short link (163cn.tv)
+  // 2. QQ Music short link (e.g. c6.y.qq.com/base/fcgi-bin/u?__=...)
+  const isQQShortLink =
+    /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)\/.*(?:fcgi-bin\/u|\b__=)/i.test(trimmed);
+  if (isQQShortLink) {
+    return {
+      valid: true,
+      kind: 'short_link',
+      platform: 'qqmusic',
+      cleanedInput: trimmed,
+    };
+  }
+
+  // 3. NetEase short link (163cn.tv)
   if (/163cn\.tv/i.test(trimmed)) {
     return {
       valid: true,
@@ -184,7 +195,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 3. Kugou short link (t.kugou.com or t1.kugou.com)
+  // 4. Kugou short link (t.kugou.com or t1.kugou.com)
   if (/t\d?\.kugou\.com/i.test(trimmed)) {
     return {
       valid: true,
@@ -194,7 +205,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 4. Kugou raw gcid ID (e.g. gcid_3zr52qfrzaz06a)
+  // 5. Kugou raw gcid ID (e.g. gcid_3zr52qfrzaz06a)
   if (/^gcid_[a-zA-Z0-9]+$/i.test(trimmed)) {
     return {
       valid: true,
@@ -204,7 +215,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 5. Kugou Music URL
+  // 6. Kugou Music URL
   const isKugouUrl = /kugou\.com/i.test(trimmed);
   if (isKugouUrl) {
     const kugouUid = extractUinFromProfileUrl(trimmed);
@@ -225,7 +236,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 6. NetEase Music URL
+  // 7. NetEase Music URL
   const isNeteaseUrl = /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed);
   if (isNeteaseUrl) {
     const neteaseUid = extractUinFromProfileUrl(trimmed);
@@ -246,8 +257,8 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 7. QQ Music URL
-  const isQQUrl = /(?:y\.qq\.com|music\.qq\.com)/i.test(trimmed);
+  // 8. QQ Music URL
+  const isQQUrl = /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(trimmed);
   if (isQQUrl) {
     const profileUin = extractUinFromProfileUrl(trimmed);
     if (profileUin) {
