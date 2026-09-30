@@ -454,11 +454,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **235**<br><sub>Today unique +18</sub> | **478**<br><sub>Today +28</sub> | **596**<br><sub>Today +98</sub> | **162,829**<br><sub>Today +45,909</sub> | **123**<br><sub>Today +10</sub> | **18 Days**<br><sub>Since 2026-09-12</sub> |
+| **268**<br><sub>Today unique +14</sub> | **549**<br><sub>Today +20</sub> | **684**<br><sub>Today +17</sub> | **189,941**<br><sub>Today +9,176</sub> | **149**<br><sub>Today +17</sub> | **19 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **60%** (355 parses) ｜ NetEase Cloud Music **19%** (112 parses) ｜ KuGou Music **19%** (111 parses) ｜ QiShui Music **3%** (18 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **34%** ｜ TXT **25%** ｜ CSV **11%** ｜ JSON **24%** ｜ M3U8 **6%**
+- **🎵 Platform Shares:** QQ Music **55%** (374 parses) ｜ NetEase Cloud Music **18%** (124 parses) ｜ KuGou Music **20%** (138 parses) ｜ QiShui Music **7%** (48 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **34%** ｜ TXT **28%** ｜ CSV **11%** ｜ JSON **22%** ｜ M3U8 **5%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -478,12 +478,12 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 <!-- INSIGHTS:START -->
 **📊 Repository Traffic**
 
-Views: **587** ｜ Uniques: **141** (14-day) ｜ Clones: **2,202** ｜ Cloners: **414** (14-day)
+Views: **737** ｜ Uniques: **176** (14-day) ｜ Clones: **2,983** ｜ Cloners: **475** (14-day)
 
-**Top referrers (14-day):** github.com · Google · Bing · Baidu · open.cd · Yahoo  
-**Top content (14-day):** LengxiQwQ/qqmusic-playlist-exporter · releases · LengxiQwQ/music-playlist-exporter · commits/main
+**Top referrers (14-day):** Bing · github.com · Google · open.cd · Baidu · chatgpt.com  
+**Top content (14-day):** releases/tag/v2.2.0 · tree/main · commits/main · issues
 
-> Data since 2026-09-07 · Last updated: 2026-09-29
+> Data since 2026-09-07 · Last updated: 2026-09-30
 <!-- INSIGHTS:END -->
 
 ---
