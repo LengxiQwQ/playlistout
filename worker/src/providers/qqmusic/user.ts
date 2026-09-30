@@ -21,6 +21,8 @@ export function isValidQQNumber(uin: string): boolean {
  * - "https://y.qq.com/portal/profile.html?uin=10001" -> "10001"
  * - "https://y.qq.com/n/ryqq/profile/like/song?uin=10001" -> "10001"
  */
+import { resolveQQShortLinkIfNeeded } from './input';
+
 export function extractQQNumber(input: string): string | null {
   if (!input || typeof input !== 'string') return null;
   const trimmed = input.trim();
@@ -40,6 +42,21 @@ export function extractQQNumber(input: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Asynchronously extracts QQ number/uin, resolving short links if necessary.
+ */
+export async function extractQQNumberAsync(input: string): Promise<string | null> {
+  const syncResult = extractQQNumber(input);
+  if (syncResult) return syncResult;
+
+  try {
+    const resolved = await resolveQQShortLinkIfNeeded(input);
+    return extractQQNumber(resolved);
+  } catch {
+    return null;
+  }
 }
 
 interface RawUserCreatedDissItem {

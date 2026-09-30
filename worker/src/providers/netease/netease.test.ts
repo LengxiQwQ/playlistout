@@ -31,6 +31,23 @@ describe('NetEase Provider Input & Matching', () => {
     expect(await extractNeteasePlaylistId('https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783')).toBe('2756674066');
   });
 
+  it('extracts playlist ID from shortlinks with and without protocol', async () => {
+    const originalFetch = globalThis.fetch;
+    try {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        status: 302,
+        headers: new Headers({
+          location: 'https://music.163.com/playlist?id=18429425523',
+        }),
+      });
+
+      expect(await extractNeteasePlaylistId('https://163cn.tv/bhsHbRfW')).toBe('18429425523');
+      expect(await extractNeteasePlaylistId('163cn.tv/bhsHbRfW')).toBe('18429425523');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('throws on invalid playlist inputs and user profile URLs', async () => {
     await expect(extractNeteasePlaylistId('not-a-link')).rejects.toThrow();
     await expect(extractNeteasePlaylistId('https://music.163.com/user?id=1825474783')).rejects.toThrow();

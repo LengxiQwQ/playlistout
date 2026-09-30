@@ -17,6 +17,14 @@ import csv
 import platform
 import subprocess
 import requests
+import socket
+
+# 强制优先使用 IPv4 避免国内部分运营商 IPv6 握手超时
+try:
+    import urllib3.util.connection as urllib3_cn
+    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+except Exception:
+    pass
 
 HEADERS = {
     'User-Agent': (
@@ -37,11 +45,25 @@ def sanitize_filename(name):
     return name or "playlist"
 
 def resolve_shortlink(text):
+    if not text:
+        return text
     m = re.search(r'https?://163cn\.tv/[a-zA-Z0-9]+', text)
-    if m:
+    if not m:
+        m2 = re.search(r'(?:^|[^\w.-])(163cn\.tv/[a-zA-Z0-9]+)', text)
+        if m2:
+            url = f"https://{m2.group(1)}"
+        else:
+            url = None
+    else:
+        url = m.group(0)
+
+    if url:
         try:
-            resp = requests.get(m.group(0), headers=HEADERS, allow_redirects=True, timeout=10)
-            return resp.url
+            resp = requests.get(url, headers=HEADERS, allow_redirects=False, timeout=8)
+            if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
+                return resp.headers["Location"]
+            elif resp.status_code == 200:
+                return resp.url
         except Exception:
             pass
     return text

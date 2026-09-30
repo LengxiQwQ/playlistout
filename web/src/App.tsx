@@ -247,6 +247,8 @@ export const AppContent: React.FC = () => {
               ? 'kugou'
               : validation.platform === 'qishui'
               ? 'qishui'
+              : validation.platform === 'qqmusic'
+              ? 'qqmusic'
               : undefined;
           const singleRes = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint).catch(() => null)
@@ -276,7 +278,10 @@ export const AppContent: React.FC = () => {
           }
 
           // Fallback to user playlists (e.g. user homepage short link)
-          const userPlatform = platform === 'netease' || platform === 'kugou' ? platform : 'netease';
+          const userPlatform =
+            platform === 'netease' || platform === 'kugou' || platform === 'qqmusic'
+              ? platform
+              : 'netease';
           const userRes = await fetchUserPlaylists(targetUrl, controller.signal, userPlatform).catch(() => null);
           if (requestIdRef.current !== currentRequestId) return;
 

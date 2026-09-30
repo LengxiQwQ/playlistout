@@ -281,7 +281,7 @@ export default {
     }
 
     // ── Public API v1: Universal Search / Auto Resolver ──
-    if (url.pathname === '/api/v1/resolve') {
+    if (url.pathname === '/api/resolve' || url.pathname === '/api/v1/resolve') {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({

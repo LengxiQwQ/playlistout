@@ -119,6 +119,129 @@ export function extractQQPlaylistId(rawInput: string): string {
   );
 }
 
+export function extractUrlFromText(text: string): string {
+  const match = text.match(/https?:\/\/[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+/i);
+  if (match) {
+    return match[0].replace(/[.,;:!?，。！？@]+$/, '');
+  }
+  return text.trim();
+}
+
+/**
+ * Checks whether the input is a QQ Music mobile share short link.
+ * e.g. https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI
+ */
+export function isQQShortLink(input: string): boolean {
+  if (!input || typeof input !== 'string') return false;
+  const trimmed = input.trim();
+  return (
+    /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(trimmed) &&
+    /(?:fcgi-bin\/u|\b__=)/i.test(trimmed)
+  );
+}
+
+/**
+ * Resolves short links like https://c6.y.qq.com/base/fcgi-bin/u?__=xxxx safely.
+ * Enforces redirect: 'manual', max 3 hops, 10000ms timeout, and strict host verification.
+ */
+export async function resolveQQShortLinkIfNeeded(urlOrText: string): Promise<string> {
+  const candidateUrl = extractUrlFromText(urlOrText);
+  try {
+    let currentUrl = candidateUrl;
+    const urlToParse = /^https?:\/\//i.test(currentUrl) ? currentUrl : `https://${currentUrl}`;
+    const parsed = new URL(urlToParse);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return candidateUrl;
+    }
+    const host = parsed.hostname.toLowerCase();
+    const isAllowedHost =
+      host === 'y.qq.com' ||
+      host.endsWith('.y.qq.com') ||
+      host === 'music.qq.com' ||
+      host.endsWith('.music.qq.com');
+
+    if (!isAllowedHost) {
+      return candidateUrl;
+    }
+    if (!/(?:fcgi-bin\/u|\b__=)/i.test(parsed.pathname + parsed.search)) {
+      return candidateUrl;
+    }
+
+    currentUrl = urlToParse;
+    const maxHops = 3;
+    for (let hop = 0; hop < maxHops; hop++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      try {
+        const resp = await fetch(currentUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+          },
+          redirect: 'manual',
+          signal: controller.signal,
+        });
+
+        if (resp.status >= 300 && resp.status < 400) {
+          const location = resp.headers.get('location');
+          if (!location) break;
+
+          const resolvedLocation = new URL(location, currentUrl).toString();
+          const targetParsed = new URL(resolvedLocation);
+
+          if (targetParsed.protocol !== 'http:' && targetParsed.protocol !== 'https:') {
+            throw new ProviderError(
+              'FORBIDDEN',
+              `Short link redirect to non-HTTP protocol ${targetParsed.protocol} is strictly prohibited.`,
+              403,
+            );
+          }
+
+          const targetHost = targetParsed.hostname.toLowerCase();
+          const isTargetAllowed =
+            targetHost === 'y.qq.com' ||
+            targetHost.endsWith('.y.qq.com') ||
+            targetHost === 'music.qq.com' ||
+            targetHost.endsWith('.music.qq.com') ||
+            targetHost === 'qq.com' ||
+            targetHost.endsWith('.qq.com');
+
+          if (!isTargetAllowed) {
+            throw new ProviderError(
+              'FORBIDDEN',
+              `Short link redirect to unauthorized host ${targetHost} is strictly prohibited.`,
+              403,
+            );
+          }
+
+          currentUrl = resolvedLocation;
+          if (!/(?:fcgi-bin\/u|\b__=)/i.test(targetParsed.pathname + targetParsed.search)) {
+            return currentUrl;
+          }
+        } else {
+          break;
+        }
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    return currentUrl;
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
+    return candidateUrl;
+  }
+}
+
+/**
+ * Asynchronously extracts a QQ Music Playlist ID, resolving short links if necessary.
+ */
+export async function extractQQPlaylistIdAsync(rawInput: string): Promise<string> {
+  const resolved = await resolveQQShortLinkIfNeeded(rawInput);
+  return extractQQPlaylistId(resolved);
+}
+
 /**
  * Returns true if the input looks like a QQ Music playlist URL or direct ID.
  */
@@ -128,12 +251,18 @@ export function matchesQQMusicInput(rawInput: string): boolean {
   if (input.length === 0 || input.length > MAX_INPUT_LENGTH) return false;
   if (/^\d{5,18}$/.test(input)) return true;
 
+  const qqDomainPattern = /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i;
+  if (qqDomainPattern.test(input)) {
+    return true;
+  }
+
   try {
-    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(input);
-    if (hasScheme && !/^https?:\/\//i.test(input)) {
+    const cleanUrl = extractUrlFromText(input);
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(cleanUrl);
+    if (hasScheme && !/^https?:\/\//i.test(cleanUrl)) {
       return false;
     }
-    const urlToParse = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+    const urlToParse = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
     const parsedUrl = new URL(urlToParse);
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       return false;

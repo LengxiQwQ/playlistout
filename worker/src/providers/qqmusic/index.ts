@@ -1,6 +1,6 @@
 import type { Provider } from '../types';
 import type { Playlist } from '../../models/playlist';
-import { extractQQPlaylistId, matchesQQMusicInput } from './input';
+import { extractQQPlaylistId, extractQQPlaylistIdAsync, matchesQQMusicInput } from './input';
 import { fetchQQPlaylist, fetchQQPlaylistWithMeta } from './client';
 
 /**
@@ -22,7 +22,7 @@ export const qqMusicProvider: Provider = {
   },
 
   async parse(inputOrId: string): Promise<Playlist> {
-    const playlistId = extractQQPlaylistId(inputOrId);
+    const playlistId = await extractQQPlaylistIdAsync(inputOrId);
     return fetchQQPlaylist(playlistId);
   },
 };

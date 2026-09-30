@@ -282,5 +282,38 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
       'https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783',
     );
   });
+
+  it('validates QQ Music shortlink and protocol-less variants', () => {
+    const res1 = validatePlaylistInput('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('short_link');
+    expect(res1.platform).toBe('qqmusic');
+    expect(res1.cleanedInput).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+
+    const res2 = validatePlaylistInput('c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('short_link');
+    expect(res2.platform).toBe('qqmusic');
+    expect(res2.cleanedInput).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+
+    const res3 = validatePlaylistInput('分享歌单 https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI 欢迎收听');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('short_link');
+    expect(res3.platform).toBe('qqmusic');
+    expect(res3.cleanedInput).toBe('https://c6.y.qq.com/base/fcgi-bin/u?__=AquwZhhuBYZI');
+  });
+
+  it('validates NetEase short link bhsHbRfW and protocol-less variants', () => {
+    const res1 = validatePlaylistInput('https://163cn.tv/bhsHbRfW');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('short_link');
+    expect(res1.platform).toBe('netease');
+
+    const res2 = validatePlaylistInput('163cn.tv/bhsHbRfW');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('short_link');
+    expect(res2.platform).toBe('netease');
+    expect(res2.cleanedInput).toBe('https://163cn.tv/bhsHbRfW');
+  });
 });
 

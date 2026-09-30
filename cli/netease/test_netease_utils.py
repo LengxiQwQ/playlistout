@@ -1,4 +1,5 @@
-from netease_playlist_export import extract_playlist_id, extract_user_id, determine_track_status, export_m3u8
+from netease_playlist_export import extract_playlist_id, extract_user_id, determine_track_status, export_m3u8, resolve_shortlink
+from unittest.mock import patch, MagicMock
 import tempfile
 import os
 
@@ -8,6 +9,19 @@ def test_extract_id_from_number():
 def test_extract_id_from_url():
     assert extract_playlist_id("https://music.163.com/playlist?id=2756674066") == "2756674066"
     assert extract_playlist_id("https://music.163.com/#/playlist?id=2756674066") == "2756674066"
+
+def test_resolve_shortlink():
+    with patch("requests.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 302
+        mock_resp.headers = {"Location": "https://music.163.com/playlist?id=18429425523"}
+        mock_resp.url = "https://music.163.com/playlist?id=18429425523"
+        mock_get.return_value = mock_resp
+
+        assert resolve_shortlink("https://163cn.tv/bhsHbRfW") == "https://music.163.com/playlist?id=18429425523"
+        assert resolve_shortlink("163cn.tv/bhsHbRfW") == "https://music.163.com/playlist?id=18429425523"
+        assert extract_playlist_id("https://163cn.tv/bhsHbRfW") == "18429425523"
+        assert extract_playlist_id("163cn.tv/bhsHbRfW") == "18429425523"
 
 def test_extract_user_id():
     assert extract_user_id("1825474783") == "1825474783"
