@@ -182,7 +182,9 @@ function extractTitleAndArtists(item: KugouRawSong): { title: string; artists: s
  */
 function normalizeCoverUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  return url.replace('{size}', '400').replace(/\\\//g, '/');
+  const clean = url.replace('{size}', '400').replace(/\\\//g, '/').trim();
+  if (!clean) return undefined;
+  return clean.replace(/^http:\/\//i, 'https://');
 }
 
 /**
