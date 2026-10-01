@@ -88,7 +88,7 @@ Export parsed playlists into multiple widely-used formats tailored for different
 - **TXT** — Clean plain text list with stationery card styling and status tags, ideal for inspection, notepad backups, or niche music players.
 - **CSV** — Standard comma-separated values (with UTF-8 BOM, including VIP and Status columns, preventing garbled text in Excel on Windows).
 - **Excel (.xlsx)** — Native formatted spreadsheet with metadata cards, custom column widths, VIP, and availability tags.
-- **JSON** — Complete structured data containing track IDs, artists, albums, VIP flags, availability statuses, and metadata for developers.
+- **JSON** — Complete structured data containing direct image cover URLs for both the playlist (`coverUrl`) and each individual track (`tracks[i].coverUrl`), track IDs, artists, albums, duration, VIP flags, and availability statuses, allowing third-party players and automated scripts to fetch and render cover art directly.
 
 > All files are assembled and downloaded directly within browser memory. Data never passes through intermediary third-party servers.
 
@@ -151,6 +151,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `generatorUrl` | `string` | Optional | **Official website URL**. Fixed to `"https://playlistout.lengxiqwq.com"`. |
 | `name` | `string` | **Required** | Full title of the playlist. |
 | `creator` | `string` | Optional | Nickname of the playlist creator / curator. |
+| `coverUrl` | `string` | Optional | Direct image URL of the playlist cover artwork. |
 | `updateTime` | `string \| null` | Optional | Last modified / updated timestamp in `YYYY-MM-DD HH:mm:ss` format. `null` if unavailable. |
 | `platform` | `string` | **Required** | Source music platform identifier (e.g., `"qqmusic"`, `"netease"`, `"kugou"`, `"qishui"`). |
 | `id` | `string` | **Required** | Native unique playlist identifier from the source platform (e.g., `"773829104"`). |
@@ -175,6 +176,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
 | `artists` | `string[]` | **Required** | Array of participating artist names (e.g., `["Jay Chou", "Ashin"]`). |
 | `album` | `string` | **Required** | Album name. |
 | `durationMs` | `number` | Optional | Total audio duration in milliseconds (e.g., `269000` = 4m 29s). |
+| `coverUrl` | `string` | Optional | Direct image URL of the track or album cover artwork. |
 | `isVip` | `boolean` | Optional | Whether this track is VIP exclusive. |
 | `isAvailable` | `boolean` | Optional | Whether track is playable on source platform (`false` when unavailable / uncopyrighted). |
 | `status` | `string` | Optional | Status enum: `"playable"`, `"unplayable"`, `"vip"`, `"paid"`, `"geo_blocked"`. |
@@ -191,6 +193,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
   "generatorUrl": "https://playlistout.lengxiqwq.com",
   "name": "Chinese Classic Pop Hits",
   "creator": "Music Cafe",
+  "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M000000J1p501A7I2d.jpg",
   "updateTime": "2024-03-01 09:15:20",
   "platform": "qqmusic",
   "id": "773829104",
@@ -211,6 +214,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
       "artists": ["Jay Chou"],
       "album": "Yeh Hui-Mei",
       "durationMs": 269000,
+      "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M000000J1p501A7I2d.jpg",
       "isVip": false,
       "isAvailable": true,
       "status": "playable",
@@ -224,6 +228,7 @@ To facilitate seamless integration, ingestion, and automated parsing by third-pa
       "artists": ["Jay Chou", "Ashin"],
       "album": "Won't Cry",
       "durationMs": 222000,
+      "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M0000018P9X93c1OaO.jpg",
       "isVip": false,
       "isAvailable": true,
       "status": "playable",

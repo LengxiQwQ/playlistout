@@ -170,6 +170,7 @@ The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side b
           "artists": ["马頔"],
           "album": "孤岛",
           "durationMs": 324000,
+          "coverUrl": "https://y.gtimg.cn/music/photo_new/...",
           "isAvailable": true,
           "isVip": false,
           "status": "playable"
