@@ -228,7 +228,9 @@ def try_c_y_qq(disstid):
         else:
             singers = s.get("singername") or s.get("singer_name") or s.get("lan") or s.get("singer") or ""
         album = s.get("albumname") or (s.get("album") or {}).get("name") or s.get("albumname_utf8") or ""
-        results.append((name, singers, album))
+        album_mid = s.get("albummid") or (s.get("album") or {}).get("mid") or ""
+        cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
+        results.append((name, singers, album, cover_url))
 
     return (title or "", results, author)
 
@@ -300,7 +302,9 @@ def try_u_y_qq_playlist_detail(playlist_id):
         else:
             singers = s.get("singername") or s.get("singer") or ""
         album = (s.get("album") or {}).get("name") or s.get("albumname") or ""
-        results.append((name, singers, album))
+        album_mid = (s.get("album") or {}).get("mid") or s.get("albummid") or ""
+        cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
+        results.append((name, singers, album, cover_url))
     return (title or "", results, author)
 
 def get_playlist_songs(playlist_id):
@@ -342,7 +346,9 @@ def get_playlist_songs(playlist_id):
                 name = s.get("name","")
                 singers = ", ".join([a.get("name","") for a in s.get("singer", [])]) if isinstance(s.get("singer"), list) else s.get("singer","")
                 album = (s.get("album") or {}).get("name","")
-                results.append((name, singers, album))
+                album_mid = (s.get("album") or {}).get("mid") or s.get("albummid") or ""
+                cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
+                results.append((name, singers, album, cover_url))
             author = data.get("data_signer") or data.get("nickname") or data.get("nick") or data.get("username") or ""
             return (title or "", results, author)
     except Exception:
@@ -358,7 +364,10 @@ def export_to_txt(rows, output_path):
     try:
         with open(output_path, "w", encoding="utf-8-sig", newline="\n") as f:
             f.write(header)
-            for name, singers, album in rows:
+            for item in rows:
+                name = item[0] if len(item) > 0 else ""
+                singers = item[1] if len(item) > 1 else ""
+                album = item[2] if len(item) > 2 else ""
                 safe_name = (name or "").replace("\r"," ").replace("\n"," ")
                 safe_singers = (singers or "").replace("\r"," ").replace("\n"," ")
                 safe_album = (album or "").replace("\r"," ").replace("\n"," ")
@@ -372,7 +381,10 @@ def export_to_csv(rows, output_path):
         with open(output_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["Title", "Artist", "Album"])
-            for name, singers, album in rows:
+            for item in rows:
+                name = item[0] if len(item) > 0 else ""
+                singers = item[1] if len(item) > 1 else ""
+                album = item[2] if len(item) > 2 else ""
                 safe_name = (name or "").replace("\r"," ").replace("\n"," ")
                 safe_singers = (singers or "").replace("\r"," ").replace("\n"," ")
                 safe_album = (album or "").replace("\r"," ").replace("\n"," ")
@@ -392,7 +404,10 @@ def export_to_xlsx(rows, output_path):
     ws = wb.active
     ws.title = "QQ音乐歌单"
     ws.append(["Title", "Artist", "Album"])
-    for name, singers, album in rows:
+    for item in rows:
+        name = item[0] if len(item) > 0 else ""
+        singers = item[1] if len(item) > 1 else ""
+        album = item[2] if len(item) > 2 else ""
         ws.append([name or "", singers or "", album or ""])
     for col_idx in range(1, 4):
         col = get_column_letter(col_idx)
@@ -410,12 +425,18 @@ def export_to_xlsx(rows, output_path):
 # 保存为 json（数组对象），使用 utf-8 编码
 def export_to_json(rows, output_path):
     data = []
-    for name, singers, album in rows:
-        data.append({
+    for item in rows:
+        name = item[0] if len(item) > 0 else ""
+        singers = item[1] if len(item) > 1 else ""
+        album = item[2] if len(item) > 2 else ""
+        entry = {
             "Title": name or "",
             "Artist": singers or "",
             "Album": album or ""
-        })
+        }
+        if len(item) > 3 and item[3]:
+            entry["coverUrl"] = item[3]
+        data.append(entry)
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)

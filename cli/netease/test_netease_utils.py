@@ -52,3 +52,25 @@ def test_export_m3u8():
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
+
+def test_export_json_cover_url():
+    import json
+    from netease_playlist_export import export_json
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        tmp_name = f.name
+    try:
+        sample_tracks = [
+            ("晴天", "周杰伦", "叶惠美", "04:29", "正常", "https://p3.music.126.net/sample_cover.jpg"),
+            ("七里香", "周杰伦", "七里香", "04:59", "正常", ""),
+        ]
+        export_json(tmp_name, "测试歌单", sample_tracks, "作者", "https://p1.music.126.net/playlist_cover.jpg")
+        with open(tmp_name, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        assert data["name"] == "测试歌单"
+        assert data["coverUrl"] == "https://p1.music.126.net/playlist_cover.jpg"
+        assert data["trackCount"] == 2
+        assert data["tracks"][0]["coverUrl"] == "https://p3.music.126.net/sample_cover.jpg"
+        assert data["tracks"][1]["coverUrl"] == ""
+    finally:
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
