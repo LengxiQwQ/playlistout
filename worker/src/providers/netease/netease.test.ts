@@ -248,25 +248,60 @@ describe('NetEase Song Status & Normalization', () => {
       }
     });
 
-    it('throws INCOMPLETE_PLAYLIST when trackIds length does not match trackCount (Level 1)', async () => {
+    it('gracefully handles NetEase cached trackCount discrepancy when all trackIds are retrieved', async () => {
       const originalFetch = globalThis.fetch;
       try {
-        globalThis.fetch = vi.fn().mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            code: 200,
-            playlist: {
-              id: 99999,
-              name: 'ID缺失歌单',
-              trackCount: 500,
-              trackIds: Array.from({ length: 499 }, (_, i) => ({ id: i + 1 })),
-            },
-          }),
-        } as Response);
+        globalThis.fetch = vi.fn()
+          // 1. Playlist detail returns 2 trackIds, but trackCount was 3 (1 purged song desync)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              playlist: {
+                id: 99999,
+                name: '计数不一致歌单',
+                trackCount: 3,
+                trackIds: [{ id: 101 }, { id: 102 }],
+              },
+            }),
+          } as Response)
+          // 2. Song detail returns both songs
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [
+                { id: 101, name: 'Song 101', ar: [{ name: 'Artist A' }] },
+                { id: 102, name: 'Song 102', ar: [{ name: 'Artist B' }] },
+              ],
+              privileges: [
+                { id: 101, fee: 0, st: 0, pl: 320000 },
+                { id: 102, fee: 0, st: 0, pl: 320000 },
+              ],
+            }),
+          } as Response);
 
         const { fetchNeteasePlaylist } = await import('./client');
-        await expect(fetchNeteasePlaylist('99999')).rejects.toThrowError(
-          /Incomplete playlist: NetEase metadata reported 500 tracks, but only 499 track IDs were provided/
+        const playlist = await fetchNeteasePlaylist('99999');
+        expect(playlist.trackCount).toBe(2);
+        expect(playlist.tracks).toHaveLength(2);
+        expect(playlist.tracks[0].title).toBe('Song 101');
+        expect(playlist.tracks[1].title).toBe('Song 102');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('throws UPSTREAM_TIMEOUT instead of false PLAYLIST_NOT_FOUND when upstream times out', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        const timeoutErr = new Error('Aborted');
+        timeoutErr.name = 'AbortError';
+        globalThis.fetch = vi.fn().mockRejectedValue(timeoutErr);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        await expect(fetchNeteasePlaylist('12345')).rejects.toThrowError(
+          /Request to NetEase Music timed out/,
         );
       } finally {
         globalThis.fetch = originalFetch;
