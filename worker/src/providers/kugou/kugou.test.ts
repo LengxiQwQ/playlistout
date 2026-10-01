@@ -116,7 +116,7 @@ describe('Kugou Provider Unit Tests', () => {
       expect(track.durationMs).toBe(265613);
       expect(track.isVip).toBe(true);
       expect(track.status).toBe('vip');
-      expect(track.coverUrl).toBe('http://imge.kugou.com/stdmusic/400/20170728/cover.jpg');
+      expect(track.coverUrl).toBe('https://imge.kugou.com/stdmusic/400/20170728/cover.jpg');
       expect(track.sourceUrl).toBe('https://www.kugou.com/song/#hash=B55FCC75168E0C8F3EB8AAD347911328');
     });
 

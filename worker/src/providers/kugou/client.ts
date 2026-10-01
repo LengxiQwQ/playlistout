@@ -888,7 +888,7 @@ export async function fetchKugouUserPlaylists(
   const playlists: UserPlaylistSummary[] = createdLists.map((item) => ({
     id: String(item.listid !== undefined && item.listid !== null ? item.listid : ''),
     name: item.name || '自建歌单',
-    coverUrl: item.pic ? item.pic.replace('{size}', '400') : undefined,
+    coverUrl: item.pic ? item.pic.replace('{size}', '400').replace(/^http:\/\//i, 'https://') : undefined,
     trackCount: Number(item.count || item.total || 0),
     sourceUrl: `https://m.kugou.com/songlist/?listid=${item.listid}`,
   }));
