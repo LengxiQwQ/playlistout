@@ -18,6 +18,7 @@
 | `generatorUrl` | `string` | 可选 | **平台官方网址**。固定为 `"https://playlistout.lengxiqwq.com"` |
 | `name` | `string` | **必填** | 歌单完整名称 |
 | `creator` | `string` | 可选 | 歌单创建者昵称 |
+| `coverUrl` | `string` | 可选 | 歌单封面高清图片直链 URL（第三方播放器或脚本可直接获取展示歌单封面） |
 | `updateTime` | `string \| null` | 可选 | 歌单最后修改/更新时间。格式：`YYYY-MM-DD HH:mm:ss` |
 | `platform` | `string` | **必填** | 来源平台标识（例如 `"qqmusic"`、`"netease"`、`"kugou"`、`"qishui"`） |
 | `id` | `string` | **必填** | 平台原始歌单唯一标识 ID（例如 `"773829104"`） |
@@ -46,7 +47,7 @@
 | `album` | `string` | **必填** | 收录专辑名称 |
 | `albumObj` | `{id?: string, name: string}` | 可选 | (*极客增强*) 结构化的专辑对象，包含专辑唯一 ID |
 | `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒） |
-| `coverUrl` | `string` | 可选 | 单曲或所属专辑的高清封面图片直链 URL |
+| `coverUrl` | `string` | 可选 | 单曲或所属专辑的高清封面图片直链 URL（第三方播放器或自动化脚本可直接请求展示单曲封面） |
 | `isVip` | `boolean` | 可选 | 是否为 VIP 专享歌曲 |
 | `isAvailable` | `boolean` | 可选 | 歌曲在来源平台是否正常可播（下架/无版权变灰时为 `false`） |
 | `status` | `string` | 可选 | 歌曲状态枚举：`"playable"` (正常) / `"unplayable"` (下架/无版权) / `"vip"` (VIP专享) / `"paid"` (付费专辑) / `"geo_blocked"` (地区限制) |
@@ -68,6 +69,7 @@
   "generatorUrl": "https://playlistout.lengxiqwq.com",
   "name": "华语经典流行精选集",
   "creator": "音乐咖啡馆",
+  "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M000000J1p501A7I2d.jpg",
   "updateTime": "2024-03-01 09:15:20",
   "platform": "qqmusic",
   "id": "773829104",
