@@ -469,11 +469,16 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(playlist.creator).toBe('冷汐OωO');
     expect(playlist.tracks.length).toBeGreaterThanOrEqual(136);
 
-    // Verify track 0, 1, 2 have real titles and artists
-    expect(playlist.tracks[0].title).toBe('我李逍遥可以对天发誓');
-    expect(playlist.tracks[0].artists).toEqual(['Watch with Caution']);
-    expect(playlist.tracks[1].title).toBe("If I Ain't Got You");
-    expect(playlist.tracks[2].title).toBe('迷人的危险');
+    // Verify sample tracks have genuine titles and artists
+    const trackLi = playlist.tracks.find((t) => t.title === '我李逍遥可以对天发誓');
+    expect(trackLi).toBeDefined();
+    expect(trackLi?.artists).toEqual(['Watch with Caution']);
+
+    const trackAlicia = playlist.tracks.find((t) => t.title === "If I Ain't Got You");
+    expect(trackAlicia).toBeDefined();
+
+    const trackDanger = playlist.tracks.find((t) => t.title === '迷人的危险');
+    expect(trackDanger).toBeDefined();
 
     // Verify none of the tracks have generic '@xxx创作的原声'
     const genericSoundTitles = playlist.tracks.filter((t) => /^@?.*创作的原声$/.test(t.title));

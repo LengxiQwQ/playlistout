@@ -54,8 +54,21 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
+async function mapConcurrent<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const cur = index++;
+      results[cur] = await fn(items[cur]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 /**
- * Batches song details from NetEase api/v3/song/detail
+ * Batches song details from NetEase api/v3/song/detail with concurrency
  */
 export async function fetchSongDetails(
   songIds: Array<number | string>,
@@ -65,11 +78,12 @@ export async function fetchSongDetails(
     return { songs: [], privileges: [] };
   }
 
-  const allSongs: RawNeteaseSong[] = [];
-  const allPrivileges: RawNeteasePrivilege[] = [];
-
+  const chunks: Array<Array<number | string>> = [];
   for (let i = 0; i < songIds.length; i += batchSize) {
-    const chunk = songIds.slice(i, i + batchSize);
+    chunks.push(songIds.slice(i, i + batchSize));
+  }
+
+  const chunkResults = await mapConcurrent(chunks, 4, async (chunk) => {
     const cParam = JSON.stringify(chunk.map((id) => ({ id: Number(id) })));
     const postBody = new URLSearchParams({ c: cParam }).toString();
 
@@ -95,12 +109,17 @@ export async function fetchSongDetails(
     }
 
     const data: RawNeteaseSongDetailResponse = await response.json();
-    if (Array.isArray(data.songs)) {
-      allSongs.push(...data.songs);
-    }
-    if (Array.isArray(data.privileges)) {
-      allPrivileges.push(...data.privileges);
-    }
+    return {
+      songs: Array.isArray(data.songs) ? data.songs : [],
+      privileges: Array.isArray(data.privileges) ? data.privileges : [],
+    };
+  });
+
+  const allSongs: RawNeteaseSong[] = [];
+  const allPrivileges: RawNeteasePrivilege[] = [];
+  for (const res of chunkResults) {
+    allSongs.push(...res.songs);
+    allPrivileges.push(...res.privileges);
   }
 
   return { songs: allSongs, privileges: allPrivileges };
@@ -131,6 +150,7 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   const postBody = new URLSearchParams({ id: cleanId, n: '100000', s: '8' }).toString();
 
   let rawJson: RawNeteasePlaylistDetailResponse | undefined;
+  let lastUpstreamError: unknown;
 
   // 1. Primary: Try v6 API via POST (avoids datacenter GET -462 anti-bot blocks and provides up to 1000 inline tracks)
   try {
@@ -143,9 +163,12 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       const data = (await v6Response.json()) as RawNeteasePlaylistDetailResponse;
       if (data && data.code === 200 && data.playlist) {
         rawJson = data;
+      } else if (data && data.code === 404) {
+        rawJson = { code: 404 };
       }
     }
-  } catch {
+  } catch (err) {
+    lastUpstreamError = err;
     // Fall through to v3
   }
 
@@ -161,9 +184,12 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
         const data = (await v3Response.json()) as RawNeteasePlaylistDetailResponse;
         if (data && data.code === 200 && data.playlist) {
           rawJson = data;
+        } else if (data && data.code === 404) {
+          rawJson = { code: 404 };
         }
       }
-    } catch {
+    } catch (err) {
+      lastUpstreamError = err;
       // Fall through to legacy
     }
   }
@@ -185,7 +211,8 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
           rawJson = { code: 404 };
         }
       }
-    } catch {
+    } catch (err) {
+      lastUpstreamError = err;
       // Fall through to v6 GET
     }
   }
@@ -203,12 +230,20 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
           rawJson = { code: 404 };
         }
       }
-    } catch {
+    } catch (err) {
+      lastUpstreamError = err;
       // Fall through
     }
   }
 
-  if (!rawJson || rawJson.code === 404 || !rawJson.playlist) {
+  if (rawJson?.code === 404) {
+    throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${cleanId}" was not found or is private.`, 404);
+  }
+
+  if (!rawJson || !rawJson.playlist) {
+    if (lastUpstreamError instanceof ProviderError) {
+      throw lastUpstreamError;
+    }
     throw new ProviderError('PLAYLIST_NOT_FOUND', `Playlist with ID "${cleanId}" was not found or is private.`, 404);
   }
 
@@ -228,23 +263,20 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   }
 
   // Level 1: Metadata ↔ IDs Completeness Check
+  // In NetEase, playlist.trackCount is a denormalized cached field that frequently lags behind deletions
+  // or regional purges (e.g., trackCount: 3120 while trackIds has 3113 valid songs).
+  // When trackIds is present, it serves as the authoritative source of existing tracks in the playlist.
   if (expectedTotal > 0) {
-    if (trackIdList.length > 0 && trackIdList.length !== expectedTotal) {
-      throw new ProviderError(
-        'INCOMPLETE_PLAYLIST',
-        `Incomplete playlist: NetEase metadata reported ${expectedTotal} tracks, but only ${trackIdList.length} track IDs were provided.`,
-        502,
-        { expectedCount: expectedTotal, actualCount: trackIdList.length },
-      );
-    }
-    if (trackIdList.length === 0 && (!Array.isArray(playlistDetail.tracks) || playlistDetail.tracks.length !== expectedTotal)) {
+    if (trackIdList.length === 0) {
       const inlineCount = Array.isArray(playlistDetail.tracks) ? playlistDetail.tracks.length : 0;
-      throw new ProviderError(
-        'INCOMPLETE_PLAYLIST',
-        `Incomplete playlist: NetEase metadata reported ${expectedTotal} tracks, but only ${inlineCount} inline tracks were provided.`,
-        502,
-        { expectedCount: expectedTotal, actualCount: inlineCount },
-      );
+      if (inlineCount === 0 || inlineCount < expectedTotal) {
+        throw new ProviderError(
+          'INCOMPLETE_PLAYLIST',
+          `Incomplete playlist: NetEase metadata reported ${expectedTotal} tracks, but only ${inlineCount} inline tracks were provided.`,
+          502,
+          { expectedCount: expectedTotal, actualCount: inlineCount },
+        );
+      }
     }
   }
 
@@ -393,14 +425,18 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   }
 
   // Level 3: Output ↔ Expected Count Verification
-  if (expectedTotal > 0 && tracks.length !== expectedTotal) {
+  const targetCount = trackIdList.length > 0 ? trackIdList.length : expectedTotal;
+  if (targetCount > 0 && tracks.length !== targetCount) {
     throw new ProviderError(
       'INCOMPLETE_PLAYLIST',
-      `Incomplete playlist: NetEase metadata expected ${expectedTotal} tracks, but final output has ${tracks.length} tracks.`,
+      `Incomplete playlist: NetEase expected ${targetCount} tracks, but final output has ${tracks.length} tracks.`,
       502,
-      { expectedCount: expectedTotal, actualCount: tracks.length },
+      { expectedCount: targetCount, actualCount: tracks.length },
     );
   }
+
+  // Synchronize playlist trackCount with the verified actual tracks count
+  playlistDetail.trackCount = tracks.length;
 
   return normalizeNeteasePlaylist(playlistDetail, tracks);
 }

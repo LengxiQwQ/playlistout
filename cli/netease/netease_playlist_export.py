@@ -116,35 +116,84 @@ def determine_track_status(song, priv):
     return '正常'
 
 def fetch_song_details(track_ids):
+    if not track_ids:
+        return [], []
     all_songs = []
     all_privileges = []
     batch_size = 500
+    chunks = [track_ids[i:i + batch_size] for i in range(0, len(track_ids), batch_size)]
 
-    for i in range(0, len(track_ids), batch_size):
-        chunk = track_ids[i:i + batch_size]
+    def fetch_batch(chunk):
         c_param = json.dumps([{"id": int(cid)} for cid in chunk])
         url = 'https://music.163.com/api/v3/song/detail'
         try:
-            resp = requests.post(url, headers=HEADERS, data={'c': c_param}, timeout=15)
+            resp = requests.post(
+                url,
+                headers={**HEADERS, 'Content-Type': 'application/x-www-form-urlencoded'},
+                data={'c': c_param},
+                timeout=15,
+            )
             if resp.status_code == 200:
                 data = resp.json()
-                all_songs.extend(data.get('songs', []))
-                all_privileges.extend(data.get('privileges', []))
+                return data.get('songs', []), data.get('privileges', [])
         except Exception as e:
             print(f"获取歌曲详情批次失败: {e}")
+        return [], []
+
+    from concurrent.futures import ThreadPoolExecutor
+    workers = min(5, max(1, len(chunks)))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(fetch_batch, chunks))
+
+    for songs, privs in results:
+        all_songs.extend(songs)
+        all_privileges.extend(privs)
 
     return all_songs, all_privileges
 
 def get_playlist_data(playlist_id):
-    url = f"https://music.163.com/api/v6/playlist/detail?id={playlist_id}"
+    post_headers = {**HEADERS, 'Content-Type': 'application/x-www-form-urlencoded'}
+    post_data = {'id': str(playlist_id), 'n': '100000', 's': '8'}
+    pl = None
+
+    # 1. Try v6 POST (avoids datacenter GET anti-bot and fetches full trackIds)
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
-        if resp.status_code != 200:
+        resp = requests.post('https://music.163.com/api/v6/playlist/detail', headers=post_headers, data=post_data, timeout=15)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('code') == 200 and data.get('playlist'):
+                pl = data['playlist']
+    except Exception:
+        pass
+
+    # 2. Try v3 POST fallback
+    if not pl:
+        try:
+            resp = requests.post('https://music.163.com/api/v3/playlist/detail', headers=post_headers, data=post_data, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get('code') == 200 and data.get('playlist'):
+                    pl = data['playlist']
+        except Exception:
+            pass
+
+    # 3. Try legacy / v6 GET fallback
+    if not pl:
+        url = f"https://music.163.com/api/v6/playlist/detail?id={playlist_id}"
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get('code') == 200 and data.get('playlist'):
+                    pl = data['playlist']
+        except Exception as e:
+            print(f"抓取歌单异常: {e}")
             return None
-        data = resp.json()
-        if data.get('code') != 200 or not data.get('playlist'):
-            return None
-        pl = data['playlist']
+
+    if not pl:
+        return None
+
+    try:
         title = pl.get('name', '未命名歌单')
         author = pl.get('creator', {}).get('nickname', '未知作者')
 
@@ -171,7 +220,7 @@ def get_playlist_data(playlist_id):
 
         return title, tracks, author
     except Exception as e:
-        print(f"抓取歌单异常: {e}")
+        print(f"解析歌单异常: {e}")
         return None
 
 def get_user_playlists(uid):
