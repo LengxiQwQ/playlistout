@@ -41,6 +41,9 @@ export interface FeedbackEntry {
   first_reported_at: string;
   last_reported_at: string;
   resolved_at: string | null;
+  country?: string;
+  region?: string;
+  city?: string;
 }
 
 export interface SubmitFeedbackResult {
@@ -64,6 +67,7 @@ export async function submitFeedback(
   url: string,
   errorCode: ApiErrorCode,
   platform?: string | null,
+  requestOrGeo?: Request | { country?: string; region?: string; city?: string },
 ): Promise<SubmitFeedbackResult> {
   if (!db) {
     return { alreadyReported: false, reportCount: 1 };
@@ -75,6 +79,24 @@ export async function submitFeedback(
       ? platform.toLowerCase()
       : null;
   const timestamp = nowIso();
+
+  let country = 'UNKNOWN';
+  let region = 'UNKNOWN';
+  let city = 'UNKNOWN';
+
+  if (requestOrGeo) {
+    if ('cf' in (requestOrGeo as any)) {
+      const cf = (requestOrGeo as any).cf;
+      country = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+      region = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+      city = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
+    } else {
+      const geo = requestOrGeo as { country?: string; region?: string; city?: string };
+      if (geo.country) country = String(geo.country).toUpperCase().slice(0, 2);
+      if (geo.region) region = String(geo.region).slice(0, 50);
+      if (geo.city) city = String(geo.city).slice(0, 50);
+    }
+  }
 
   // Try to find existing row first
   const existing = await db
@@ -89,20 +111,20 @@ export async function submitFeedback(
     await db
       .prepare(
         `UPDATE parse_feedback
-         SET report_count = ?1, last_reported_at = ?2
+         SET report_count = ?1, last_reported_at = ?2, country = ?4, region = ?5, city = ?6
          WHERE id = ?3`,
       )
-      .bind(newCount, timestamp, existing.id)
+      .bind(newCount, timestamp, existing.id, country, region, city)
       .run();
     return { alreadyReported: true, reportCount: newCount };
   }
 
   await db
     .prepare(
-      `INSERT INTO parse_feedback (url, error_code, platform, status, report_count, first_reported_at, last_reported_at)
-       VALUES (?1, ?2, ?3, 'pending', 1, ?4, ?4)`,
+      `INSERT INTO parse_feedback (url, error_code, platform, status, report_count, first_reported_at, last_reported_at, country, region, city)
+       VALUES (?1, ?2, ?3, 'pending', 1, ?4, ?4, ?5, ?6, ?7)`,
     )
-    .bind(cleanUrl, errorCode, cleanPlatform, timestamp)
+    .bind(cleanUrl, errorCode, cleanPlatform, timestamp, country, region, city)
     .run();
 
   return { alreadyReported: false, reportCount: 1 };

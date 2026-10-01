@@ -199,7 +199,7 @@ export const zhCN: Translations = {
     todayParsed: '今日已解析歌单',
     todayTracks: '今日已记下歌曲',
     todayExports: '份文件被带走',
-    todayWarmNote: '☀️ 今天也是充满美妙音乐的一天 :)',
+    todayWarmNote: '今天也是充满美妙音乐的一天 :)',
     allTimeTitle: '累计手账',
     allTimeVisitors: '累计日独立访问人次',
     allTimeVisitorsTip: '每天匿名去重后累加；同一访客不同日期可能再次计入，不进行跨日追踪。',

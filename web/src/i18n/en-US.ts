@@ -199,7 +199,7 @@ export const enUS: Translations = {
     todayParsed: 'playlists parsed today',
     todayTracks: 'tracks written down',
     todayExports: 'playlists exported',
-    todayWarmNote: '☀️ A wonderful day filled with music :)',
+    todayWarmNote: 'A wonderful day filled with music :)',
     allTimeTitle: 'ALL TIME JOURNEY',
     allTimeVisitors: 'Cumulative Daily Unique Visits',
     allTimeVisitorsTip: 'Sum of daily unique visitors. The same visitor may be counted again on another day; no cross-day tracking is performed.',

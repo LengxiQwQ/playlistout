@@ -34,12 +34,12 @@ export const REQUIRED_TABLES = [
 
 export const REQUIRED_COLUMNS = {
   aggregate_stats: ['date', 'platform', 'metric', 'count'],
-  daily_export_stats: ['date', 'platform', 'export_format', 'count'],
+  daily_export_stats: ['date', 'platform', 'export_format', 'country', 'region', 'city', 'count'],
   hourly_stats: ['date', 'hour', 'platform', 'metric', 'count'],
   daily_geo_stats: ['date', 'platform', 'country', 'region', 'city', 'count'],
   daily_client_stats: ['date', 'platform', 'device_class', 'browser_family', 'os_family', 'count'],
   daily_performance_stats: ['date', 'platform', 'dimension', 'value', 'count'],
-  daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'count'],
+  daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'country', 'region', 'city', 'count'],
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
   d1_migrations: ['id', 'name', 'applied_at'],
@@ -48,12 +48,14 @@ export const REQUIRED_COLUMNS = {
 export const REQUIRED_INDEXES = [
   'idx_stats_date_platform',
   'idx_export_stats_date',
+  'idx_export_stats_country',
   'idx_hourly_stats_date',
   'idx_geo_stats_date',
   'idx_geo_stats_country',
   'idx_client_stats_date',
   'idx_perf_stats_date',
   'idx_clipboard_stats_date',
+  'idx_clipboard_stats_country',
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
 ];
