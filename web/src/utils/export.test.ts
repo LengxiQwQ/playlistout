@@ -22,6 +22,7 @@ const sampleTracks: Track[] = [
     artists: ['周杰伦'],
     album: '叶惠美',
     durationMs: 269000,
+    coverUrl: 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg',
   },
   {
     index: 2,
@@ -85,6 +86,7 @@ const samplePlaylist: Playlist = {
   id: '9044196528',
   name: '多语言/特殊字符/重复歌单 🎵 <Test>',
   creator: 'MusicMaster / 音乐家',
+  coverUrl: 'https://qpic.y.qq.com/music_cover/test/300?n=1',
   trackCount: 8,
   tracks: sampleTracks,
   createTime: 1696904605,
@@ -317,6 +319,9 @@ describe('JSON Export', () => {
     // Raw source text preserved faithfully without formula quote prefix
     expect(parsed.tracks[5].title).toBe('=SUM(A1:B1)');
     expect(parsed.tracks[5].album).toBe('=1+1');
+
+    expect(parsed.coverUrl).toBe('https://qpic.y.qq.com/music_cover/test/300?n=1');
+    expect(parsed.tracks[0].coverUrl).toBe('https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg');
 
     // Both copies of duplicate track survive
     expect(parsed.tracks[0].title).toBe('晴天');

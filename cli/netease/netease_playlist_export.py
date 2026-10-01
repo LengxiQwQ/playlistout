@@ -216,9 +216,16 @@ def get_playlist_data(playlist_id):
             duration_s = song.get('dt', 0) // 1000
             duration_str = f"{duration_s // 60:02d}:{duration_s % 60:02d}"
             status_text = determine_track_status(song, priv)
-            tracks.append((name, singers, album, duration_str, status_text))
+            cover_url = (song.get('al') or {}).get('picUrl') or (song.get('album') or {}).get('picUrl') or ''
+            if cover_url and cover_url.startswith('http://'):
+                cover_url = 'https://' + cover_url[7:]
+            tracks.append((name, singers, album, duration_str, status_text, cover_url))
 
-        return title, tracks, author
+        playlist_cover = pl.get('coverImgUrl') or ''
+        if playlist_cover and playlist_cover.startswith('http://'):
+            playlist_cover = 'https://' + playlist_cover[7:]
+
+        return title, tracks, author, playlist_cover
     except Exception as e:
         print(f"解析歌单异常: {e}")
         return None
@@ -266,8 +273,8 @@ def export_xlsx(filename, playlist_title, tracks, author):
     headers = ["序号", "歌曲标题", "歌手", "专辑", "时长", "歌曲状态"]
     ws.append(headers)
 
-    for i, (name, singers, album, dur, status) in enumerate(tracks, 1):
-        ws.append([i, name, singers, album, dur, status])
+    for i, t in enumerate(tracks, 1):
+        ws.append([i, t[0], t[1], t[2], t[3], t[4]])
 
     ws.column_dimensions['A'].width = 8
     ws.column_dimensions['B'].width = 30
@@ -282,25 +289,27 @@ def export_csv(filename, tracks):
     with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
         writer = csv.writer(f)
         writer.writerow(["序号", "歌曲标题", "歌手", "专辑", "时长", "歌曲状态"])
-        for i, (name, singers, album, dur, status) in enumerate(tracks, 1):
-            writer.writerow([i, name, singers, album, dur, status])
+        for i, t in enumerate(tracks, 1):
+            writer.writerow([i, t[0], t[1], t[2], t[3], t[4]])
 
-def export_json(filename, playlist_title, tracks, author):
+def export_json(filename, playlist_title, tracks, author, playlist_cover=""):
     payload = {
         "name": playlist_title,
         "author": author,
+        "coverUrl": playlist_cover,
         "trackCount": len(tracks),
         "tracks": [
             {
                 "index": i,
-                "title": name,
-                "artists": singers,
-                "album": album,
-                "duration": dur,
-                "status": status,
-                "isAvailable": status != '下架/无版权',
+                "title": t[0],
+                "artists": t[1],
+                "album": t[2],
+                "duration": t[3],
+                "status": t[4],
+                "isAvailable": t[4] != '下架/无版权',
+                "coverUrl": t[5] if len(t) > 5 else "",
             }
-            for i, (name, singers, album, dur, status) in enumerate(tracks, 1)
+            for i, t in enumerate(tracks, 1)
         ],
     }
     with open(filename, 'w', encoding='utf-8') as f:
@@ -313,7 +322,8 @@ def export_txt(filename, playlist_title, tracks, author):
         f.write(f"  歌单作者: {author}\n")
         f.write(f"  歌曲总数: {len(tracks)} 首\n")
         f.write("==================================================\n\n")
-        for i, (name, singers, album, dur, status) in enumerate(tracks, 1):
+        for i, t in enumerate(tracks, 1):
+            name, singers, album, dur, status = t[:5]
             tag = f" [{status}]" if status != '正常' else ""
             f.write(f"{name} - {singers} - {album}{tag}\n")
 
@@ -321,7 +331,8 @@ def export_m3u8(filename, playlist_title, tracks, author):
     with open(filename, 'w', encoding='utf-8') as f:
         f.write("#EXTM3U\n")
         f.write(f"#PLAYLIST:{playlist_title}\n")
-        for i, (name, singers, album, dur, status) in enumerate(tracks, 1):
+        for i, t in enumerate(tracks, 1):
+            name, singers, album, dur, status = t[:5]
             sec = -1
             if dur and ":" in str(dur):
                 parts = str(dur).split(":")
@@ -382,7 +393,7 @@ def main():
                 for pl in to_export:
                     data = get_playlist_data(pl['id'])
                     if data:
-                        t, trks, a = data
+                        t, trks, a = data[:3]
                         fname = f"{sanitize_filename(t)} - {sanitize_filename(a)}.xlsx"
                         export_xlsx(fname, t, trks, a)
                         print(f"✓ 已导出: {fname}")
@@ -394,7 +405,8 @@ def main():
             if not data:
                 print("❌ 获取歌单失败，请检查是否公开或 ID 是否正确。")
                 continue
-            title, tracks, author = data
+            title, tracks, author = data[:3]
+            playlist_cover = data[3] if len(data) > 3 else ''
             unavail = sum(1 for t in tracks if t[4] == '下架/无版权')
             vip_cnt = sum(1 for t in tracks if t[4] == 'VIP专享')
             print(f"\n歌单：{title}（作者：{author}，共 {len(tracks)} 首）")
@@ -409,7 +421,7 @@ def main():
                 export_csv(fn, tracks)
             elif choice == "3":
                 fn = f"{base}.json"
-                export_json(fn, title, tracks, author)
+                export_json(fn, title, tracks, author, playlist_cover)
             elif choice == "4":
                 fn = f"{base}.txt"
                 export_txt(fn, title, tracks, author)

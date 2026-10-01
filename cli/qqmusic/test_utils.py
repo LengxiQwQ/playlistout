@@ -50,3 +50,24 @@ def test_export_to_m3u8():
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
+
+def test_export_to_json_cover_url():
+    import json
+    from qq_music_playlist_export import export_to_json
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        tmp_name = f.name
+    try:
+        sample_songs = [
+            ("晴天", "周杰伦", "叶惠美", "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"),
+            ("七里香", "周杰伦", "七里香"),
+        ]
+        export_to_json(sample_songs, tmp_name)
+        with open(tmp_name, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        assert len(data) == 2
+        assert data[0]["Title"] == "晴天"
+        assert data[0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
+        assert "coverUrl" not in data[1] or data[1].get("coverUrl") == ""
+    finally:
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
