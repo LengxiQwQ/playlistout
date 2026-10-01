@@ -191,6 +191,7 @@ export async function handleFeedback(
       obj.url,
       obj.errorCode as ApiErrorCode,
       platform,
+      request,
     );
     return jsonResponse(
       { success: true, alreadyReported: result.alreadyReported, reportCount: result.reportCount },

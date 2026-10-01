@@ -409,5 +409,6 @@ export interface ResolveAnalyticsContext {
   failureClass?: ResolveFailureClass;
   failureStage?: ResolveFailureStage;
   providerFailurePath?: ProviderFailurePath;
+  country?: string;
 }
 

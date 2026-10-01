@@ -205,6 +205,11 @@ export async function recordExportEvent(
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
 
+    const cf = (request as any).cf;
+    const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+    const region: string = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+    const city: string = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
+
     const upsertAggregateSql = `
       INSERT INTO aggregate_stats (date, platform, metric, count)
       VALUES (?1, ?2, ?3, 1)
@@ -213,9 +218,9 @@ export async function recordExportEvent(
     `;
 
     const upsertExportSql = `
-      INSERT INTO daily_export_stats (date, platform, export_format, count)
-      VALUES (?1, ?2, ?3, 1)
-      ON CONFLICT (date, platform, export_format)
+      INSERT INTO daily_export_stats (date, platform, export_format, country, region, city, count)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)
+      ON CONFLICT (date, platform, export_format, country, region, city)
       DO UPDATE SET count = count + 1;
     `;
 
@@ -238,10 +243,14 @@ export async function recordExportEvent(
       db.prepare(upsertAggregateSql).bind('TOTAL', platform, 'exports_total'),
       db.prepare(upsertAggregateSql).bind(date, 'all', 'exports_total'),
       db.prepare(upsertAggregateSql).bind('TOTAL', 'all', 'exports_total'),
-      db.prepare(upsertExportSql).bind(date, platform, exportFormat),
-      db.prepare(upsertExportSql).bind('TOTAL', platform, exportFormat),
+      db.prepare(upsertExportSql).bind(date, platform, exportFormat, country, region, city),
+      db.prepare(upsertExportSql).bind('TOTAL', platform, exportFormat, country, region, city),
+      db.prepare(upsertExportSql).bind(date, 'all', exportFormat, country, region, city),
+      db.prepare(upsertExportSql).bind('TOTAL', 'all', exportFormat, country, region, city),
       db.prepare(upsertHourlySql).bind(date, hour, platform, 'export'),
       db.prepare(upsertPerfSql).bind(date, platform, 'export_format', exportFormat),
+      db.prepare(upsertPerfSql).bind(date, platform, 'export_country', country),
+      db.prepare(upsertPerfSql).bind('TOTAL', platform, 'export_country', country),
     ];
 
     if (trackCount !== undefined && trackCount >= 0) {
@@ -276,6 +285,11 @@ export async function recordClipboardEvent(
     const hour = new Date().getUTCHours();
     const canonicalMode = normalizeClipboardMode(mode);
 
+    const cf = (request as any).cf;
+    const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+    const region: string = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+    const city: string = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
+
     const upsertAggregateSql = `
       INSERT INTO aggregate_stats (date, platform, metric, count)
       VALUES (?1, ?2, ?3, 1)
@@ -284,9 +298,9 @@ export async function recordClipboardEvent(
     `;
 
     const upsertClipboardSql = `
-      INSERT INTO daily_clipboard_stats (date, platform, clipboard_mode, count)
-      VALUES (?1, ?2, ?3, 1)
-      ON CONFLICT (date, platform, clipboard_mode)
+      INSERT INTO daily_clipboard_stats (date, platform, clipboard_mode, country, region, city, count)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)
+      ON CONFLICT (date, platform, clipboard_mode, country, region, city)
       DO UPDATE SET count = count + 1;
     `;
 
@@ -309,10 +323,14 @@ export async function recordClipboardEvent(
       db.prepare(upsertAggregateSql).bind('TOTAL', platform, 'clipboards_total'),
       db.prepare(upsertAggregateSql).bind(date, 'all', 'clipboards_total'),
       db.prepare(upsertAggregateSql).bind('TOTAL', 'all', 'clipboards_total'),
-      db.prepare(upsertClipboardSql).bind(date, platform, canonicalMode),
-      db.prepare(upsertClipboardSql).bind('TOTAL', platform, canonicalMode),
+      db.prepare(upsertClipboardSql).bind(date, platform, canonicalMode, country, region, city),
+      db.prepare(upsertClipboardSql).bind('TOTAL', platform, canonicalMode, country, region, city),
+      db.prepare(upsertClipboardSql).bind(date, 'all', canonicalMode, country, region, city),
+      db.prepare(upsertClipboardSql).bind('TOTAL', 'all', canonicalMode, country, region, city),
       db.prepare(upsertHourlySql).bind(date, hour, platform, 'clipboard'),
       db.prepare(upsertPerfSql).bind(date, platform, 'clipboard_mode', canonicalMode),
+      db.prepare(upsertPerfSql).bind(date, platform, 'clipboard_country', country),
+      db.prepare(upsertPerfSql).bind('TOTAL', platform, 'clipboard_country', country),
     ];
 
     if (trackCount !== undefined && trackCount >= 0) {
@@ -336,12 +354,20 @@ export async function recordRateLimitEvent(
   db: D1Database | undefined,
   endpoint: string,
   platform: string = 'all',
+  requestOrCountry?: Request | string,
 ): Promise<void> {
   if (!db) return;
 
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
+    let country = 'UNKNOWN';
+    if (typeof requestOrCountry === 'string') {
+      country = requestOrCountry.slice(0, 2).toUpperCase();
+    } else if (requestOrCountry && typeof requestOrCountry === 'object') {
+      const cf = (requestOrCountry as any).cf;
+      country = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+    }
 
     const upsertAggregateSql = `
       INSERT INTO aggregate_stats (date, platform, metric, count)
@@ -369,6 +395,8 @@ export async function recordRateLimitEvent(
       db.prepare(upsertAggregateSql).bind('TOTAL', platform, 'rate_limited'),
       db.prepare(upsertHourlySql).bind(date, hour, platform, 'rate_limited'),
       db.prepare(upsertPerfSql).bind(date, platform, 'rate_limit_endpoint', endpoint),
+      db.prepare(upsertPerfSql).bind(date, platform, 'rate_limit_country', country),
+      db.prepare(upsertPerfSql).bind('TOTAL', platform, 'rate_limit_country', country),
     ];
 
     await db.batch(statements);
@@ -590,6 +618,17 @@ export async function recordResolveOutcome(
         statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'provider_failure_path', safePath));
       }
     }
+
+    // 6. Geographic attribution (resolve_country)
+    const cf = (ctx.request as any)?.cf;
+    const country: string = ctx.country
+      ? ctx.country.toUpperCase().slice(0, 2)
+      : cf?.country
+      ? String(cf.country).toUpperCase().slice(0, 2)
+      : 'UNKNOWN';
+
+    statements.push(db.prepare(upsertPerfSql).bind(date, platform, 'resolve_country', country));
+    statements.push(db.prepare(upsertPerfSql).bind('TOTAL', platform, 'resolve_country', country));
 
     await db.batch(statements);
   } catch (err: unknown) {
