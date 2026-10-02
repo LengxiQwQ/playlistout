@@ -246,6 +246,8 @@ export interface ParseAnalyticsContext {
   errorCategory?: string;
   latencyMs?: number;
   providerPath?: 'primary' | 'fallback';
+  isDirectApi?: boolean;
+  isBot?: boolean;
 }
 
 // ── Dimension Constants ──

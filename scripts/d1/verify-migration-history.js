@@ -41,8 +41,9 @@ export async function executeD1Query(sql, options = {}) {
   const persistTo = options.persistTo ? `--persist-to "${options.persistTo}"` : '';
   const flag = isRemote ? '--remote' : `--local ${persistTo}`.trim();
 
-  // Escape SQL quotes for shell execution
-  const escapedSql = sql.replace(/"/g, '\\"');
+  // Normalize whitespace to prevent Windows cmd.exe multiline break and escape quotes
+  const normalizedSql = sql.replace(/\s+/g, ' ').trim();
+  const escapedSql = normalizedSql.replace(/"/g, '\\"');
   const cmd = `npx wrangler d1 execute ${dbName} ${flag} --command "${escapedSql}" --json`;
 
   try {

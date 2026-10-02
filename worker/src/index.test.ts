@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import worker from './index';
 import { qqMusicProvider } from './providers/qqmusic';
 import { neteaseProvider } from './providers/netease';
 import { ProviderError } from './models/playlist';
+import { resetRateLimits } from './security/rate-limit';
 
 interface HealthResponseBody {
   status: string;
@@ -27,6 +28,9 @@ function createMockCtx(): ExecutionContext {
 }
 
 describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
+  beforeEach(() => {
+    resetRateLimits();
+  });
   it('responds with ok to /health and returns minimal payload', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/health');
     const response = await worker.fetch(request, {}, createMockCtx());
