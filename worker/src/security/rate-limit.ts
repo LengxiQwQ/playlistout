@@ -19,6 +19,14 @@ interface RateLimitRecord {
 // In-memory sliding window cache (per worker isolate)
 const ipStore = new Map<string, RateLimitRecord>();
 
+/**
+ * Resets the in-memory rate limit store. Primarily used in automated testing
+ * and graceful isolate cycling.
+ */
+export function resetRateLimits(): void {
+  ipStore.clear();
+}
+
 // Clean up stale entries periodically to prevent unbounded memory growth
 const CLEANUP_INTERVAL_MS = 60000;
 let lastCleanup = Date.now();
@@ -41,6 +49,129 @@ export interface RateLimitResult {
   remaining: number;
   resetSeconds: number;
   limiterFailed?: boolean;
+}
+
+import { isOriginAllowed } from '../cors';
+import { verifySessionToken } from './session';
+
+export type ClientCategory = 'web' | 'direct_api' | 'bot';
+
+export interface OriginClassification {
+  clientCategory: ClientCategory;
+  isWebFront: boolean;
+  isDirectApi: boolean;
+  isBot: boolean;
+  rateLimit: number;
+}
+
+/**
+ * Classifies an incoming request origin into web front, direct API, or bot/crawler.
+ * Used for dual-track rate limiting and real-time telemetry auto-quarantine.
+ */
+export async function classifyRequestOrigin(
+  request: Request,
+  sessionSecret: string = '',
+): Promise<OriginClassification> {
+  const ua = request.headers.get('user-agent')?.trim() || '';
+  const origin = request.headers.get('origin')?.trim() || '';
+  const referer = request.headers.get('referer')?.trim() || '';
+  const secFetchSite = request.headers.get('sec-fetch-site')?.trim() || '';
+  const sessionHeader = request.headers.get('x-playlistout-session')?.trim();
+
+  // 1. Check session token attestation (highest trust level)
+  if (sessionHeader) {
+    const isSessionValid = await verifySessionToken(sessionHeader, sessionSecret);
+    if (isSessionValid) {
+      return {
+        clientCategory: 'web',
+        isWebFront: true,
+        isDirectApi: false,
+        isBot: false,
+        rateLimit: 30, // Official Web Front: 30 req / min
+      };
+    }
+  }
+
+  // 2. Detect explicit automated scraping tools and bots from User-Agent
+  const isExplicitBot =
+    ua &&
+    /bot|spider|crawl|slurp|curl|python|wget|postman|apidog|go-http-client|uptime|headless|github-camo|uptimerobot|lighthouse|insights/i.test(
+      ua,
+    );
+
+  if (isExplicitBot) {
+    return {
+      clientCategory: 'bot',
+      isWebFront: false,
+      isDirectApi: true,
+      isBot: true,
+      rateLimit: 6, // Automated bots / tools: 6 req / min
+    };
+  }
+
+  // 3. Check if request originates from official web front (Origin / Referer + browser fetch context)
+  let hasValidOrigin = false;
+  if (origin && isOriginAllowed(origin)) {
+    hasValidOrigin = true;
+  } else if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      if (isOriginAllowed(refUrl.origin)) {
+        hasValidOrigin = true;
+      }
+    } catch {
+      hasValidOrigin = false;
+    }
+  }
+
+  const isBrowserFetch =
+    secFetchSite === 'same-origin' ||
+    secFetchSite === 'same-site' ||
+    secFetchSite === 'cross-site' ||
+    Boolean(request.headers.get('accept-language'));
+
+  if (hasValidOrigin && (isBrowserFetch || !ua)) {
+    return {
+      clientCategory: 'web',
+      isWebFront: true,
+      isDirectApi: false,
+      isBot: false,
+      rateLimit: 30, // Official Web Front: 30 req / min
+    };
+  }
+
+  // 4. Fallback: Untrusted / Direct API script (missing web credentials or direct programmatic callers)
+  return {
+    clientCategory: 'direct_api',
+    isWebFront: false,
+    isDirectApi: true,
+    isBot: false,
+    rateLimit: 6, // Direct API: 6 req / min (average 1 req / 10s)
+  };
+}
+
+export interface DualTrackRateLimitResult extends RateLimitResult {
+  classification: OriginClassification;
+}
+
+/**
+ * Checks rate limit using dual-track boundaries:
+ * - Official Web Frontend: 30 requests / minute
+ * - Direct API / Bot Script: 6 requests / minute
+ */
+export async function checkDualTrackRateLimit(
+  request: Request,
+  clientIp: string,
+  scope: string = 'playlist',
+  sessionSecret: string = '',
+): Promise<DualTrackRateLimitResult> {
+  const classification = await classifyRequestOrigin(request, sessionSecret);
+  const maxRequests = classification.rateLimit;
+  const result = checkRateLimit(clientIp, maxRequests, 60, scope);
+  return {
+    ...result,
+    classification,
+  };
 }
 
 const RATE_LIMIT_SALT = 'playlistout_rl_salt_2026';

@@ -356,6 +356,9 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
 
     const request = new Request(
       'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/playlist/9044196528',
+      {
+        headers: { Origin: 'https://playlistout.com', 'Sec-Fetch-Site': 'same-site' },
+      },
     );
     const response = await worker.fetch(request, { DB: mockDb }, ctx);
     await Promise.all(ctx._promises);
@@ -408,7 +411,9 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     const mockDb = createTelemetryMockD1();
     const today = getUtcDateString();
 
-    const req = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test');
+    const req = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
+      headers: { Origin: 'https://playlistout.com', 'Sec-Fetch-Site': 'same-site' },
+    });
     await recordParseEvent(mockDb, {
       request: req,
       platform: 'kugou',

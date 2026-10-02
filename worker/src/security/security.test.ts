@@ -16,7 +16,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     vi.restoreAllMocks();
   });
 
-  it('enforces rate limits (30 req/min for /api/playlist) and returns 429 with Retry-After', async () => {
+  it('enforces rate limits (30 req/min for web frontend) and returns 429 with Retry-After', async () => {
     vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
       platform: 'qqmusic',
       id: '123',
@@ -27,8 +27,49 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
 
     const clientIp = '203.0.113.195';
 
-    // First 30 requests succeed
+    // First 30 requests succeed with web origin credentials
     for (let i = 0; i < 30; i++) {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+        headers: {
+          'cf-connecting-ip': clientIp,
+          Origin: 'https://playlistout.com',
+          'Sec-Fetch-Site': 'same-site',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+    }
+
+    // 31st request must be rate limited with 429
+    const limitedRequest = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      headers: {
+        'cf-connecting-ip': clientIp,
+        Origin: 'https://playlistout.com',
+        'Sec-Fetch-Site': 'same-site',
+      },
+    });
+    const limitedResponse = await worker.fetch(limitedRequest, {}, createMockCtx());
+
+    expect(limitedResponse.status).toBe(429);
+    expect(limitedResponse.headers.get('Retry-After')).toBeTruthy();
+    const body: any = await limitedResponse.json();
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('RATE_LIMITED');
+  });
+
+  it('enforces strict dual-track rate limits (6 req/min) for direct API / script access without web credentials', async () => {
+    vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
+      platform: 'qqmusic',
+      id: '123',
+      name: 'Rate Limit Direct API Test',
+      trackCount: 1,
+      tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
+    });
+
+    const clientIp = '198.51.100.42';
+
+    // First 6 requests succeed
+    for (let i = 0; i < 6; i++) {
       const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
         headers: { 'cf-connecting-ip': clientIp },
       });
@@ -36,7 +77,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       expect(response.status).toBe(200);
     }
 
-    // 31st request must be rate limited with 429
+    // 7th request must be rate limited with 429
     const limitedRequest = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       headers: { 'cf-connecting-ip': clientIp },
     });
@@ -106,7 +147,9 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     ];
 
     for (const target of ssrfTargets) {
-      const request = new Request(`https://playlistout-api.lengxiqwq.com/api/playlist?url=${encodeURIComponent(target)}`);
+      const request = new Request(`https://playlistout-api.lengxiqwq.com/api/playlist?url=${encodeURIComponent(target)}`, {
+        headers: { Origin: 'https://playlistout.com', 'Sec-Fetch-Site': 'same-site' },
+      });
       const response = await worker.fetch(request, {}, createMockCtx());
 
       expect(response.status).toBe(400);

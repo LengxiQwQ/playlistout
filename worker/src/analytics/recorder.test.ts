@@ -108,6 +108,10 @@ function createMockD1() {
           const [date, platform, mode] = params;
           const key = `clipboard::${date}::${platform}::${mode}`;
           store.set(key, (store.get(key) || 0) + 1);
+        } else if (sql.includes('quarantined_stats')) {
+          const [incidentDate, batchId, reason, platform, metric] = params;
+          const key = `quarantine::${incidentDate}::${platform}::${metric}::${reason}`;
+          store.set(key, (store.get(key) || 0) + 1);
         } else if (sql.includes('daily_visitor_hashes') && sql.includes('DELETE')) {
           const cutoff = params[0];
           for (const key of Array.from(insertedHashes)) {
@@ -129,6 +133,8 @@ function createMockRequest(headers: Record<string, string> = {}, cf?: any): Requ
   const req = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+      'Origin': 'https://playlistout.com',
+      'Sec-Fetch-Site': 'same-site',
       ...headers,
     },
   });
@@ -232,6 +238,63 @@ describe('Analytics Recorder (Pure Aggregate Architecture)', () => {
           latencyMs: 100,
         }),
       ).resolves.not.toThrow();
+    });
+
+    it('auto-quarantines direct API request without web credentials directly into quarantined_stats without touching aggregate_stats', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      // Direct API script request (no Origin, no Session token)
+      const directReq = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
+        headers: {
+          'User-Agent': 'python-requests/2.31.0',
+        },
+      });
+
+      await recordParseEvent(mockDb, {
+        request: directReq,
+        platform: 'netease',
+        inputType: 'web_url',
+        success: true,
+        trackCount: 50,
+        latencyMs: 120,
+      });
+
+      // Must NOT touch business aggregate stats
+      expect(mockDb._store.get(`agg::${today}::netease::parse_success`)).toBeUndefined();
+      expect(mockDb._store.get(`agg::TOTAL::netease::parse_success`)).toBeUndefined();
+      expect(mockDb._store.get(`agg::${today}::all::tracks_processed`)).toBeUndefined();
+
+      // Must be safely stored in quarantined_stats
+      expect(mockDb._store.get(`quarantine::${today}::netease::parse_success::auto_quarantined_bot_ua`)).toBe(1);
+      expect(mockDb._store.get(`quarantine::${today}::netease::tracks_processed::auto_quarantined_bot_ua`)).toBe(1);
+    });
+
+    it('auto-quarantines untrusted programmatic caller without origin or session into quarantined_stats', async () => {
+      const mockDb = createMockD1();
+      const today = getUtcDateString();
+
+      // Caller without Origin and without session
+      const apiReq = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
+        headers: {
+          'User-Agent': 'CustomScraperBot/1.0',
+        },
+      });
+
+      await recordParseEvent(mockDb, {
+        request: apiReq,
+        platform: 'qqmusic',
+        inputType: 'id',
+        success: false,
+        errorCategory: 'NOT_FOUND',
+        latencyMs: 80,
+      });
+
+      // Zero business aggregate contamination
+      expect(mockDb._store.get(`agg::${today}::qqmusic::parse_failure`)).toBeUndefined();
+
+      // Quarantined
+      expect(mockDb._store.get(`quarantine::${today}::qqmusic::parse_failure::auto_quarantined_bot_ua`)).toBe(1);
     });
   });
 

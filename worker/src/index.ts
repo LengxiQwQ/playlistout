@@ -6,8 +6,10 @@ import { recordRateLimitEvent } from './analytics/recorder';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
+import { handleInternalQuarantine } from './routes/quarantine';
 import { applySecurityHeaders } from './security/headers';
-import { checkRateLimit } from './security/rate-limit';
+import { checkRateLimit, checkDualTrackRateLimit } from './security/rate-limit';
+import { generateSessionToken } from './security/session';
 import { parsePlaylistService } from './services/playlist-service';
 import { fetchUserPlaylistsService } from './services/user-service';
 import { resolveService } from './services/resolve-service';
@@ -81,6 +83,28 @@ export default {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
+            ...responseHeaders,
+          },
+        },
+      );
+    }
+
+    // ── Client Session Attestation Token (GET /api/session/token) ──
+    if (url.pathname === '/api/session/token') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' } }),
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
+        );
+      }
+      const sessionToken = await generateSessionToken(_env.INSIGHTS_ADMIN_TOKEN || '');
+      return new Response(
+        JSON.stringify({ success: true, data: { token: sessionToken } }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
             ...responseHeaders,
           },
         },
@@ -302,8 +326,8 @@ export default {
         );
       }
 
-      // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60, 'resolve');
+      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all'));
@@ -413,8 +437,8 @@ export default {
         );
       }
 
-      // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60, 'playlist');
+      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist');
       if (!rateCheck.allowed) {
         const rawUrlParam = url.searchParams.get('url') || url.searchParams.get('id') || '';
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
@@ -544,8 +568,8 @@ export default {
         );
       }
 
-      // Rate limit check: max 30 requests / minute per client IP
-      const rateCheck = checkRateLimit(clientIp, 30, 60, 'user_playlists');
+      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists');
       if (!rateCheck.allowed) {
         const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {
@@ -837,6 +861,11 @@ export default {
     // ── Maintainer Feedback Management (GET/PUT /api/internal/feedback) ──
     if (url.pathname === '/api/internal/feedback') {
       return handleInternalFeedback(request, _env, responseHeaders, constantTimeCompare);
+    }
+
+    // ── Maintainer Quarantined Crawler Analytics (GET /api/internal/quarantine) ──
+    if (url.pathname === '/api/internal/quarantine') {
+      return handleInternalQuarantine(request, _env, responseHeaders, constantTimeCompare);
     }
 
     // Default 404

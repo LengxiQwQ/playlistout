@@ -12,7 +12,7 @@
  * - Best-effort guarantee: failures never interrupt playlist parsing, exporting, or responses.
  */
 
-import { getClientIp } from '../security/rate-limit';
+import { getClientIp, classifyRequestOrigin } from '../security/rate-limit';
 import { parseUserAgent } from './ua-parser';
 import {
   classifyPlaylistSize,
@@ -72,6 +72,84 @@ export async function recordParseEvent(
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
     const metric = ctx.success ? 'parse_success' : 'parse_failure';
+
+    // Real-time Traffic Isolation:
+    // If request originates from automated bot or direct API script without official web credentials,
+    // isolate telemetry directly into quarantined_stats and bypass production business aggregates.
+    const originClass = await classifyRequestOrigin(ctx.request);
+    const isDirectApi = ctx.isDirectApi ?? originClass.isDirectApi;
+    const isBot = ctx.isBot ?? originClass.isBot;
+
+    if (isDirectApi || isBot) {
+      const reason = isBot ? 'auto_quarantined_bot_ua' : 'auto_quarantined_direct_api';
+      const quarantineMetric = ctx.success ? 'parse_success' : 'parse_failure';
+      const cf = (ctx.request as any)?.cf;
+      const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
+      const region: string = cf?.region ? String(cf.region).slice(0, 50) : 'UNKNOWN';
+      const city: string = cf?.city ? String(cf.city).slice(0, 50) : 'UNKNOWN';
+      const ua = parseUserAgent(ctx.request.headers.get('User-Agent'));
+      const clientInfo = `${ua.deviceClass}/${ua.browserFamily}/${ua.osFamily}`;
+      const batchId = `inline_auto_${date.replace(/-/g, '')}`;
+
+      const details = {
+        date,
+        platform: ctx.platform,
+        metric: quarantineMetric,
+        clientCategory: originClass.clientCategory,
+        trackCount: ctx.trackCount,
+        latencyMs: ctx.latencyMs,
+        providerPath: ctx.providerPath,
+        errorCategory: ctx.errorCategory,
+      };
+
+      const quarantineInsertSql = `
+        INSERT INTO quarantined_stats (
+          incident_date, batch_id, reason, source_table, platform,
+          metric_or_dimension, country, region, city, client_info, count, details_json
+        ) VALUES (?1, ?2, ?3, 'inline_traffic_filter', ?4, ?5, ?6, ?7, ?8, ?9, 1, ?10);
+      `;
+
+      const quarantineStatements: D1PreparedStatement[] = [
+        db.prepare(quarantineInsertSql).bind(
+          date,
+          batchId,
+          reason,
+          ctx.platform,
+          quarantineMetric,
+          country,
+          region,
+          city,
+          clientInfo,
+          JSON.stringify(details),
+        ),
+      ];
+
+      if (ctx.success && ctx.trackCount !== undefined && ctx.trackCount > 0) {
+        const trackDetails = {
+          date,
+          platform: ctx.platform,
+          metric: 'tracks_processed',
+          trackCount: ctx.trackCount,
+        };
+        quarantineStatements.push(
+          db.prepare(quarantineInsertSql).bind(
+            date,
+            batchId,
+            reason,
+            ctx.platform,
+            'tracks_processed',
+            country,
+            region,
+            city,
+            clientInfo,
+            JSON.stringify(trackDetails),
+          ),
+        );
+      }
+
+      await db.batch(quarantineStatements);
+      return;
+    }
 
     const upsertAggregateSql = `
       INSERT INTO aggregate_stats (date, platform, metric, count)

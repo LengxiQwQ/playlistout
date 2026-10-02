@@ -73,6 +73,7 @@ export function isPublicEndpoint(pathname: string): boolean {
     pathname === '/api/user/playlists' ||
     pathname === '/api/v1/resolve' ||
     pathname === '/api/v1/playlist' ||
+    pathname === '/api/session/token' ||
     pathname === '/api/v1/user/playlists' ||
     pathname === '/api/v1/stats' ||
     pathname === '/api/v1/health'
@@ -93,7 +94,7 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request',
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session',
       'Access-Control-Max-Age': '86400',
     };
   }
@@ -105,8 +106,8 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     };
   }
 
-  // Internal feedback endpoint: token-protected, used by local dashboard (file:// origin = "null")
-  if (path === '/api/internal/feedback') {
+  // Internal feedback & quarantine endpoints: token-protected, used by local dashboard (file:// origin = "null")
+  if (path === '/api/internal/feedback' || path === '/api/internal/quarantine') {
     const origin = request.headers.get('Origin');
     return {
       Vary: 'Origin',
@@ -166,8 +167,8 @@ export function handleOptions(request: Request, pathname?: string): Response {
     });
   }
 
-  // Internal feedback endpoint: allow preflight (token-protected, local dashboard use)
-  if (path === '/api/internal/feedback') {
+  // Internal feedback & quarantine endpoints: allow preflight (token-protected, local dashboard use)
+  if (path === '/api/internal/feedback' || path === '/api/internal/quarantine') {
     return new Response(null, {
       status: 204,
       headers: getCorsHeaders(request, path),
