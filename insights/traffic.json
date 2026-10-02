@@ -1175,6 +1175,51 @@
           "uniques": 1
         }
       ]
+    },
+    {
+      "fetched_at": "2026-10-02T08:29:27Z",
+      "referrers": [
+        {
+          "referrer": "Bing",
+          "count": 80,
+          "uniques": 68
+        },
+        {
+          "referrer": "github.com",
+          "count": 58,
+          "uniques": 12
+        },
+        {
+          "referrer": "Google",
+          "count": 54,
+          "uniques": 45
+        },
+        {
+          "referrer": "open.cd",
+          "count": 2,
+          "uniques": 2
+        },
+        {
+          "referrer": "Baidu",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "referrer": "lengxiqwq.com",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "referrer": "sogou.com",
+          "count": 1,
+          "uniques": 1
+        }
+      ]
     }
   ],
   "path_snapshots": [
@@ -2737,6 +2782,71 @@
           "uniques": 1
         }
       ]
+    },
+    {
+      "fetched_at": "2026-10-02T08:29:27Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 268,
+          "uniques": 160
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.2.0",
+          "title": "/releases/tag/v2.2.0",
+          "count": 13,
+          "uniques": 11
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/tree/main",
+          "title": "/tree/main",
+          "count": 13,
+          "uniques": 10
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/commits/main",
+          "title": "/commits/main",
+          "count": 6,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/issues",
+          "title": "/issues",
+          "count": 5,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/blob/main/docs/API.md",
+          "title": "/blob/main/docs/API.md",
+          "count": 4,
+          "uniques": 4
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 4,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/blob/main/README.md",
+          "title": "/blob/main/README.md",
+          "count": 3,
+          "uniques": 3
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md",
+          "title": "/blob/main/docs/JSON-SCHEMA.md",
+          "count": 3,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/qqmusic-playlist-exporter",
+          "title": "Overview",
+          "count": 3,
+          "uniques": 1
+        }
+      ]
     }
   ],
   "repo_meta_snapshots": [
@@ -2955,6 +3065,15 @@
       "open_issues": 0,
       "network": 1,
       "pushed_at": "2026-09-30T08:31:30Z"
+    },
+    {
+      "fetched_at": "2026-10-02T08:29:27Z",
+      "stars": 36,
+      "forks": 1,
+      "watchers": 1,
+      "open_issues": 0,
+      "network": 1,
+      "pushed_at": "2026-10-01T14:17:47Z"
     }
   ],
   "website_snapshots": [
@@ -3354,53 +3473,80 @@
         "json": 39,
         "m3u8": 12
       }
+    },
+    {
+      "fetched_at": "2026-10-02T08:29:27Z",
+      "cumulative_daily_visitors": 334,
+      "total_visitors": 334,
+      "visitors_today": 14,
+      "total_page_views": 651,
+      "page_views_today": 21,
+      "total_playlists_parsed": 2138,
+      "playlists_parsed_today": 1267,
+      "total_tracks_processed": 466624,
+      "tracks_processed_today": 170852,
+      "total_exports": 701,
+      "exports_today": 491,
+      "export_formats_breakdown": {
+        "txt": 59,
+        "csv": 27,
+        "xlsx": 1046,
+        "json": 53,
+        "m3u8": 18
+      }
     }
   ],
-  "updated_at": "2026-10-01T08:53:24Z",
+  "updated_at": "2026-10-02T08:29:27Z",
   "website_latest": {
     "launchedAt": "2026-09-12",
-    "cumulativeDailyVisitors": 290,
-    "totalVisitors": 290,
-    "visitorsToday": 12,
-    "totalPageViews": 581,
-    "pageViewsToday": 17,
-    "totalPlaylistsParsed": 803,
-    "playlistsParsedToday": 104,
-    "totalTracksProcessed": 236133,
-    "tracksProcessedToday": 37262,
-    "totalExports": 173,
-    "exportsToday": 7,
+    "cumulativeDailyVisitors": 334,
+    "totalVisitors": 334,
+    "visitorsToday": 14,
+    "totalPageViews": 651,
+    "pageViewsToday": 21,
+    "totalPlaylistsParsed": 2138,
+    "playlistsParsedToday": 1267,
+    "totalTracksProcessed": 466624,
+    "tracksProcessedToday": 170852,
+    "totalExports": 701,
+    "exportsToday": 491,
     "exportFormatsBreakdown": {
-      "txt": 44,
-      "csv": 19,
-      "xlsx": 59,
-      "json": 39,
-      "m3u8": 12
+      "txt": 59,
+      "csv": 27,
+      "xlsx": 1046,
+      "json": 53,
+      "m3u8": 18
     },
     "byPlatform": {
       "qqmusic": {
-        "totalSuccess": 410,
-        "todaySuccess": 28
+        "totalSuccess": 879,
+        "todaySuccess": 433
       },
       "netease": {
-        "totalSuccess": 192,
-        "todaySuccess": 64
+        "totalSuccess": 1047,
+        "todaySuccess": 834
       },
       "kugou": {
-        "totalSuccess": 149,
-        "todaySuccess": 11
+        "totalSuccess": 151,
+        "todaySuccess": 0
       },
       "qishui": {
-        "totalSuccess": 52,
-        "todaySuccess": 1
+        "totalSuccess": 61,
+        "todaySuccess": 0
       }
     },
     "recentDays": [
       {
+        "date": "2026-10-02",
+        "parses": 1267,
+        "tracks": 170852,
+        "exports": 982
+      },
+      {
         "date": "2026-10-01",
-        "parses": 104,
-        "tracks": 37262,
-        "exports": 7
+        "parses": 172,
+        "tracks": 96901,
+        "exports": 55
       },
       {
         "date": "2026-09-30",
@@ -3475,6 +3621,6 @@
         "exports": 12
       }
     ],
-    "generatedAt": "2026-10-01T08:53:24.696Z"
+    "generatedAt": "2026-10-02T08:29:27.210Z"
   }
 }
