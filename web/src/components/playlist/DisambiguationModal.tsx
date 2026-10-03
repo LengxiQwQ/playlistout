@@ -199,7 +199,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
             cursor: 'pointer',
             pointerEvents: 'none',
           }}
-          className="shadow-cutout-sm"
+          className="shadow-cutout-sm disambiguation-card-action"
         >
           {isPlaylist ? t.disambiguation.selectPlaylistAction : t.disambiguation.selectUserAction} →
         </button>
@@ -236,7 +236,11 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
       footer={footer}
       testId="disambiguation-modal"
     >
-      <div data-clarity-mask="true" style={{ position: 'relative', minWidth: '320px', maxWidth: '580px', width: '100%' }}>
+      <div
+        className="disambiguation-content"
+        data-clarity-mask="true"
+        style={{ position: 'relative', minWidth: '320px', maxWidth: '580px', width: '100%' }}
+      >
         {/* Top prompt */}
         <p
           style={{

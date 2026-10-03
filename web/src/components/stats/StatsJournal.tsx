@@ -192,9 +192,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 'calc(var(--ruled-line-height, 38px) * 1.5)' }}>
+      <div
+        className="stats-journal-header"
+        style={{ textAlign: 'center', marginBottom: 'calc(var(--ruled-line-height, 38px) * 1.5)' }}
+      >
         <div
-          className="font-note"
+          className="font-note stats-journal-subtitle"
           style={{
             fontSize: '1.65rem',
             color: '#636e72',
@@ -205,7 +208,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           {t.stats.subtitle}
         </div>
         <div
-          className="font-marker"
+          className="font-marker stats-journal-title"
           style={{
             fontSize: 'clamp(2rem, 4vw, 2.75rem)',
             color: 'var(--ink, #2d3436)',
@@ -220,6 +223,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
 
       {/* 3 Main Stationery Notes */}
       <div
+        className="stats-main-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',

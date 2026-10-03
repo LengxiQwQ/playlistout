@@ -22,13 +22,29 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
         sec.style.marginBottom = '0px';
       });
 
-      // 2. Adjust margin-bottom so next sibling lands on an exact multiple of 38px
+      const isMobile =
+        typeof window.matchMedia === 'function'
+          ? window.matchMedia('(max-width: 768px)').matches
+          : window.innerWidth <= 768;
+
+      // Mobile uses a compact visual rhythm rather than forcing every section
+      // onto the desktop notebook baseline. The cards still keep the ruled-paper
+      // aesthetic, but large 76px inter-section gaps make a narrow viewport feel sparse.
+      if (isMobile) {
+        sections.forEach((sec, idx) => {
+          sec.style.marginBottom = idx === sections.length - 1 ? '0px' : '24px';
+        });
+        return;
+      }
+
+      // Desktop: adjust margin-bottom so the next sibling lands on an exact
+      // multiple of the 38px ruled-paper baseline.
       sections.forEach((sec, idx) => {
         const rect = sec.getBoundingClientRect();
         const currentBottom = sec.offsetTop + rect.height;
         const rem = currentBottom % H;
         const pad = rem === 0 ? 0 : H - rem;
-        // Keep 2 grid rows (76px) base margin between sections for relaxed spacing, 0 after last
+        // Keep 2 grid rows (76px) base margin between sections for relaxed spacing, 0 after last.
         const baseMargin = idx === sections.length - 1 ? 0 : H * 2;
         sec.style.marginBottom = `${pad + baseMargin}px`;
       });
