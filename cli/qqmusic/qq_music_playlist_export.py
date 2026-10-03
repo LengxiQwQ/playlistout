@@ -507,9 +507,9 @@ def batch_export_songs(playlists, folder_name, nickname=""):
     """批量导出歌单列表"""
     print("\n请选择导出格式（将应用于所有歌单）：")
     print("  1) .xlsx  - Excel 文件")
-    print("  2) .csv   - 标准 CSV utf-8-sig")
-    print("  3) .json  - JSON 文件")
-    print("  4) .txt   - 纯文本格式")
+    print("  2) .json  - JSON 文件")
+    print("  3) .txt   - 纯文本格式")
+    print("  4) .csv   - 标准 CSV utf-8-sig")
     print("  5) .m3u8  - 通用歌单 (M3U8)")
     fmt_choice = input("选择 (1-5)：").strip() or "1"
     if fmt_choice not in ("1","2","3","4","5"):
@@ -538,14 +538,14 @@ def batch_export_songs(playlists, folder_name, nickname=""):
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.xlsx")
                 export_to_xlsx(songs, out_path)
             elif fmt_choice == "2":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.csv")
-                export_to_csv(songs, out_path)
-            elif fmt_choice == "3":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.json")
                 export_to_json(songs, out_path)
-            elif fmt_choice == "4":
+            elif fmt_choice == "3":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.txt")
                 export_to_txt(songs, out_path)
+            elif fmt_choice == "4":
+                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.csv")
+                export_to_csv(songs, out_path)
             elif fmt_choice == "5":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.m3u8")
                 export_to_m3u8(songs, out_path, title or pname)
@@ -641,9 +641,9 @@ def main():
             print("=" * 42)
             print("请选择导出格式：")
             print(" 1) .xlsx  - (默认) Excel 文件")
-            print(" 2) .csv   - 标准 CSV utf-8-sig")
-            print(" 3) .json  - JSON 文件，数组")
-            print(" 4) .txt   - 纯文本格式")
+            print(" 2) .json  - JSON 文件，数组")
+            print(" 3) .txt   - 纯文本格式")
+            print(" 4) .csv   - 标准 CSV utf-8-sig")
             print(" 5) .m3u8  - 通用歌单 (M3U8)")
             print("=" * 42)
             choice = input("选择 (1-5，输入 0 退出程序)：").strip() or "1"
@@ -664,14 +664,14 @@ def main():
                         print("导出 xlsx 失败：缺少 openpyxl 库，请运行：pip install openpyxl")
                         out_name = None
                 elif choice == "2":
-                    out_name = f"{safe_title} - {safe_author}.csv"
-                    export_to_csv(songs, out_name)
-                elif choice == "3":
                     out_name = f"{safe_title} - {safe_author}.json"
                     export_to_json(songs, out_name)
-                elif choice == "4":
+                elif choice == "3":
                     out_name = f"{safe_title} - {safe_author}.txt"
                     export_to_txt(songs, out_name)
+                elif choice == "4":
+                    out_name = f"{safe_title} - {safe_author}.csv"
+                    export_to_csv(songs, out_name)
                 elif choice == "5":
                     out_name = f"{safe_title} - {safe_author}.m3u8"
                     export_to_m3u8(songs, out_name, playlist_title)

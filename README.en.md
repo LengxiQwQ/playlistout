@@ -23,7 +23,7 @@ Parse, export, and carry your playlists into supported open-source players.
 
 ## What is Playlist Out?
 
-**Playlist Out** is an open-source tool for playlist backup, export, and migration. It turns public playlists from supported platforms into a normalized data structure: regular users can inspect, organize, and export playlists as `TXT`, `CSV`, `Excel`, `JSON`, or `M3U8`, then continue using them in supported open-source players; developers can integrate the same parsing capabilities through the Public API or the standard JSON data contract.
+**Playlist Out** is an open-source tool for playlist backup, export, and migration. It turns public playlists from supported platforms into a normalized data structure: regular users can inspect, organize, and export playlists as `Excel`, `JSON`, `TXT`, `CSV`, or `M3U8`, then continue using them in supported open-source players; developers can integrate the same parsing capabilities through the Public API or the standard JSON data contract.
 
 Playlist Out is **not a music player** and does not provide, store, or proxy audio files. It only handles playlist and track metadata, with the goal of making playlists easier to back up, migrate, and reuse.
 
@@ -34,7 +34,7 @@ Playlist Out is **not a music player** and does not provide, store, or proxy aud
 No desktop client is required. Open [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/) and get started:
 
 1. **Parse** — paste a playlist link, share text, or supported ID and let Playlist Out resolve it.
-2. **Review & export** — confirm the track list, then choose TXT, CSV, Excel, JSON, or M3U8.
+2. **Review & export** — confirm the track list, then choose Excel, JSON, TXT, CSV, or M3U8.
 3. **Keep moving** — if you use a supported open-source player, import the parsed playlist through the available plugin or adapter.
 
 ---
@@ -43,7 +43,7 @@ No desktop client is required. Open [playlistout.lengxiqwq.com](https://playlist
 
 | Capability | Description | Capability | Description |
 |---|---|---|---|
-| **Cross-platform parsing** | Normalize public playlists from multiple major music services | **Multiple export formats** | TXT / CSV / Excel / JSON / M3U8 |
+| **Cross-platform parsing** | Normalize public playlists from multiple major music services | **Multiple export formats** | Excel / JSON / TXT / CSV / M3U8 |
 | **Flexible input** | Web links, short links, share text, and selected numeric IDs | **Structured metadata** | Tracks, artists, albums, artwork, source, and availability state |
 | **Public user playlists** | Supported on selected platforms | **Player ecosystem** | Plugins, JSON compatibility, and lightweight upstream adapters |
 | **Public API** | Unified parsing for third-party apps, scripts, and migration tools | **Local export** | Files are generated in the browser without being uploaded to the server |
@@ -106,10 +106,10 @@ Different players expose different extension and import capabilities, so Playlis
 
 | Format | Best For |
 |---|---|
+| **Excel (.xlsx)** | Organization, archiving, and manual analysis |
+| **JSON** | Developers, scripts, third-party apps, and player integrations |
 | **TXT** | Reading, simple backup, and text processing |
 | **CSV** | Spreadsheet and generic data workflows |
-| **Excel (.xlsx)** | Organization, archiving, and manual analysis |
-| **JSON** | Developers, scripts, and third-party integrations |
 | **M3U8** | Local players and media libraries |
 
 Export files are generated locally in the browser and do not need to be uploaded to the server.
