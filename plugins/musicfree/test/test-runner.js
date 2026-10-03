@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.6)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.2.7)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走 (PlaylistOut)', 'Platform must be 把你的歌单带走 (PlaylistOut)');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.6', 'Version must be 1.2.6');
+    assert.strictEqual(plugin.version, '1.2.7', 'Version must be 1.2.7');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -106,7 +106,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走 (PlaylistOut)');
-      assert.strictEqual(distPlugin.version, '1.2.6');
+      assert.strictEqual(distPlugin.version, '1.2.7');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -152,7 +152,9 @@ async function runAllTests() {
   const v124Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.4.js');
   const v125Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.5.js');
   const v125Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.5.js');
-  await test('Verifies v1.2.0 through v1.2.5 historical archives exist', () => {
+  const v126Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.6.js');
+  const v126Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.6.js');
+  await test('Verifies v1.2.0 through v1.2.6 historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -165,6 +167,8 @@ async function runAllTests() {
     assert(fs.existsSync(v124Web), 'web/public/plugins/musicfree-v1.2.4.js must exist');
     assert(fs.existsSync(v125Dist), 'dist/musicfree-v1.2.5.js must exist');
     assert(fs.existsSync(v125Web), 'web/public/plugins/musicfree-v1.2.5.js must exist');
+    assert(fs.existsSync(v126Dist), 'dist/musicfree-v1.2.6.js must exist');
+    assert(fs.existsSync(v126Web), 'web/public/plugins/musicfree-v1.2.6.js must exist');
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────

@@ -211,8 +211,75 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  if (window.__playlistoutFilePickerV126) return;
-  window.__playlistoutFilePickerV126 = true;
+  var SCRIPT_VER = 'v127';
+  if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
+  window.__playlistoutFilePickerVer = SCRIPT_VER;
+
+  function ensureUserVariablesStyle() {
+    var styleId = 'playlistout-user-variables-style';
+    var style = document.getElementById(styleId);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      (document.head || document.documentElement).appendChild(style);
+    }
+    style.textContent = [
+      '.panel--user-variables-container .panel--user-variable-item {',
+      '  height: auto !important;',
+      '  min-height: 48px !important;',
+      '  display: flex !important;',
+      '  flex-direction: column !important;',
+      '  align-items: stretch !important;',
+      '  justify-content: flex-start !important;',
+      '  padding: 14px 16px 18px 16px !important;',
+      '  margin-bottom: 10px !important;',
+      '  box-sizing: border-box !important;',
+      '  border-bottom: 1px dashed rgba(128, 128, 128, 0.25) !important;',
+      '}',
+      '.panel--user-variables-container .panel--user-variable-item > span {',
+      '  width: 100% !important;',
+      '  max-width: 100% !important;',
+      '  margin-right: 0 !important;',
+      '  margin-bottom: 8px !important;',
+      '  white-space: normal !important;',
+      '  overflow: visible !important;',
+      '  text-overflow: unset !important;',
+      '  font-size: 14px !important;',
+      '  font-weight: 600 !important;',
+      '  line-height: 1.4 !important;',
+      '  flex-shrink: 0 !important;',
+      '  color: inherit !important;',
+      '}',
+      '.panel--user-variables-container .panel--user-variable-item > input {',
+      '  width: 100% !important;',
+      '  box-sizing: border-box !important;',
+      '  height: 36px !important;',
+      '  line-height: 36px !important;',
+      '  padding: 0 10px !important;',
+      '  border-radius: 6px !important;',
+      '  margin-bottom: 10px !important;',
+      '  flex: none !important;',
+      '}',
+      '.playlistout-var-pills {',
+      '  display: flex !important;',
+      '  flex-wrap: wrap !important;',
+      '  gap: 8px !important;',
+      '  width: 100% !important;',
+      '  box-sizing: border-box !important;',
+      '}',
+      '.playlistout-var-pills div[data-val] {',
+      '  padding: 6px 12px !important;',
+      '  border-radius: 6px !important;',
+      '  font-size: 12.5px !important;',
+      '  line-height: 1.3 !important;',
+      '  cursor: pointer !important;',
+      '  user-select: none !important;',
+      '  transition: all 0.15s ease !important;',
+      '  box-sizing: border-box !important;',
+      '}'
+    ].join('\\n');
+    (document.head || document.documentElement).appendChild(style);
+  }
 
   function openOfficialWebsite() {
     var url = 'https://playlistout.lengxiqwq.com';
@@ -373,18 +440,16 @@ const RENDERER_FILE_PICKER_SCRIPT = `
   }
 
   function injectOptionPillsForItem(itemEl, options, defaultVal) {
-    if (!itemEl || itemEl.querySelector('.playlistout-var-pills')) return;
+    if (!itemEl) return;
+    var existingPills = itemEl.querySelector('.playlistout-var-pills');
+    if (existingPills) {
+      existingPills.remove();
+    }
     var inputEl = itemEl.querySelector('input');
     if (!inputEl) return;
 
-    itemEl.style.flexDirection = 'column';
-    itemEl.style.alignItems = 'stretch';
-    itemEl.style.gap = '8px';
-    itemEl.style.marginBottom = '14px';
-
     var pillRow = document.createElement('div');
     pillRow.className = 'playlistout-var-pills';
-    pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;';
 
     function refreshActiveState() {
       var cur = (inputEl.value || '').trim() || defaultVal;
@@ -405,7 +470,6 @@ const RENDERER_FILE_PICKER_SCRIPT = `
         pill.setAttribute('role', 'button');
         pill.setAttribute('data-val', opt.value);
         pill.innerText = opt.label;
-        pill.style.cssText = 'padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;user-select:none;transition:all 0.15s ease;';
         pill.onclick = function() {
           setInputValueAndNotify(inputEl, opt.value);
           refreshActiveState();
@@ -424,33 +488,49 @@ const RENDERER_FILE_PICKER_SCRIPT = `
 
   function enhanceUserVariablesPanel() {
     var containers = document.querySelectorAll('.panel--user-variables-container');
+    if (!containers || containers.length === 0) return;
+
     for (var i = 0; i < containers.length; i++) {
       var container = containers[i];
       var items = container.querySelectorAll('.panel--user-variable-item');
+      var isOurPanel = false;
+
+      for (var j = 0; j < items.length; j++) {
+        var s = items[j].querySelector('span');
+        var t = s ? (s.innerText || s.textContent || '') : '';
+        if (t.indexOf('无原版音源') !== -1 || t.indexOf('音源路由') !== -1 || t.indexOf('无音源') !== -1) {
+          isOurPanel = true;
+          break;
+        }
+      }
+
+      if (!isOurPanel) continue;
+      ensureUserVariablesStyle();
+
       for (var k = 0; k < items.length; k++) {
         var itemEl = items[k];
         var labelSpan = itemEl.querySelector('span');
-        var labelText = labelSpan ? (labelSpan.innerText || '') : '';
+        var labelText = labelSpan ? (labelSpan.innerText || labelSpan.textContent || '') : '';
         if (labelText.indexOf('无原版音源') !== -1 || labelText.indexOf('无音源') !== -1) {
           injectOptionPillsForItem(
             itemEl,
             [
-              { value: 'strict', label: '🎯 仅播原版，无源提示跳过 (默认)' },
-              { value: 'similar', label: '🔍 找最相似音源播放 (含翻唱/Live)' },
-              { value: 'silent_skip', label: '🔇 仅播原版，静默跳过不弹窗' }
+              { value: 'strict', label: '🎯 仅播原版 (提示跳过·默认)' },
+              { value: 'similar', label: '🔍 允许相似音源 (含翻唱/Live)' },
+              { value: 'silent_skip', label: '🔇 仅播原版 (静默跳过)' }
             ],
             'strict'
           );
-        } else if (labelText.indexOf('音源路由通道') !== -1) {
+        } else if (labelText.indexOf('音源路由') !== -1) {
           injectOptionPillsForItem(
             itemEl,
             [
-              { value: 'auto', label: '⚡ 自动按歌单原平台路由 (默认)' },
+              { value: 'auto', label: '⚡ 自动按原平台 (默认)' },
               { value: 'qq', label: 'QQ音乐 (qq)' },
               { value: 'netease', label: '网易云 (netease)' },
-              { value: 'kugou', label: '酷狗 (kugou)' },
-              { value: 'kuwo', label: '酷我 (kuwo)' },
-              { value: 'qishui', label: '汽水 (qishui)' }
+              { value: 'kugou', label: '酷狗音乐 (kugou)' },
+              { value: 'kuwo', label: '酷我音乐 (kuwo)' },
+              { value: 'qishui', label: '汽水音乐 (qishui)' }
             ],
             'auto'
           );
@@ -1707,7 +1787,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.6',
+  version: '1.2.7',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -1720,12 +1800,12 @@ module.exports = {
   userVariables: [
     {
       key: 'fallbackMode',
-      name: '无原版音源时的处理方式 (默认 strict 仅播原版)',
+      name: '无原版音源时的处理方式',
       hint: 'strict=仅播原版，无源弹窗提示并跳过(默认)；similar=无原版时找最相似音源(含翻唱/Live)播放并提示；silent_skip=仅播原版，静默跳过不弹窗',
     },
     {
       key: 'targetPlatform',
-      name: '音源路由通道 (默认 auto 自动映射原平台)',
+      name: '优先音源路由通道',
       hint: 'auto=自动按歌单原平台路由(网易云->netease, QQ->qq, 酷狗->kugou, 汽水->qishui, 酷我->kuwo); 亦可指定任意音源插件 ID',
     },
   ],
