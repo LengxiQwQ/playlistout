@@ -27,12 +27,12 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
           ? window.matchMedia('(max-width: 768px)').matches
           : window.innerWidth <= 768;
 
-      // Mobile uses a compact visual rhythm rather than forcing every section
-      // onto the desktop notebook baseline. The cards still keep the ruled-paper
-      // aesthetic, but large 76px inter-section gaps make a narrow viewport feel sparse.
+      // Mobile keeps a relaxed visual rhythm without forcing every section
+      // onto the desktop notebook baseline. A 32px gap leaves enough breathing room
+      // while avoiding the oversized 76px desktop spacing.
       if (isMobile) {
         sections.forEach((sec, idx) => {
-          sec.style.marginBottom = idx === sections.length - 1 ? '0px' : '24px';
+          sec.style.marginBottom = idx === sections.length - 1 ? '0px' : '32px';
         });
         return;
       }
