@@ -72,7 +72,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByText('PlaylistOut 手账统计')).toBeInTheDocument();
+    expect(screen.getByText('Playlist Out 手账统计')).toBeInTheDocument();
     expect(screen.getByText('今日记录')).toBeInTheDocument();
   });
 
