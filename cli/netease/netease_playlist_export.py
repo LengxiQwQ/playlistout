@@ -412,19 +412,19 @@ def main():
             print(f"\n歌单：{title}（作者：{author}，共 {len(tracks)} 首）")
             print(f"状态统计：正常 {len(tracks)-unavail-vip_cnt} 首，下架/无版权 {unavail} 首，VIP专享 {vip_cnt} 首")
 
-            print("\n请选择导出格式：\n 1) .xlsx (默认)\n 2) .csv\n 3) .json\n 4) .txt\n 5) .m3u8 (通用歌单)")
+            print("\n请选择导出格式：\n 1) .xlsx (默认)\n 2) .json\n 3) .txt\n 4) .csv\n 5) .m3u8 (通用歌单)")
             choice = input("选择 (1-5): ").strip() or "1"
             base = f"{sanitize_filename(title)} - {sanitize_filename(author)}"
 
             if choice == "2":
-                fn = f"{base}.csv"
-                export_csv(fn, tracks)
-            elif choice == "3":
                 fn = f"{base}.json"
                 export_json(fn, title, tracks, author, playlist_cover)
-            elif choice == "4":
+            elif choice == "3":
                 fn = f"{base}.txt"
                 export_txt(fn, title, tracks, author)
+            elif choice == "4":
+                fn = f"{base}.csv"
+                export_csv(fn, tracks)
             elif choice == "5":
                 fn = f"{base}.m3u8"
                 export_m3u8(fn, title, tracks, author)

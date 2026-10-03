@@ -46,7 +46,8 @@ No desktop client is required. Open [playlistout.lengxiqwq.com](https://playlist
 | **Cross-platform parsing** | Normalize public playlists from multiple major music services | **Multiple export formats** | Excel / JSON / TXT / CSV / M3U8 |
 | **Flexible input** | Web links, short links, share text, and selected numeric IDs | **Structured metadata** | Tracks, artists, albums, artwork, source, and availability state |
 | **Public user playlists** | Supported on selected platforms | **Player ecosystem** | Plugins, JSON compatibility, and lightweight upstream adapters |
-| **Public API** | Unified parsing for third-party apps, scripts, and migration tools | **Local export** | Files are generated in the browser without being uploaded to the server |
+| **Python CLI** | Ready-to-run command-line exporters for QQ Music and NetEase Cloud Music | **Local export** | Files are generated in the browser without being uploaded to the server |
+| **Public API** | Unified parsing for third-party apps, scripts, and migration tools | **Open integration** | Web, CLI, plugins, and third-party apps can use the same normalized playlist data |
 
 ---
 
@@ -60,6 +61,43 @@ No desktop client is required. Open [playlistout.lengxiqwq.com](https://playlist
 | **KuGou Music** | ✅ | ✅ | Public content can be previewed without login; full playlists or user collections may require QR authorization |
 
 > Capabilities depend on upstream public pages and APIs and may change when upstream behavior changes.
+
+---
+
+## Python CLI
+
+Playlist Out also keeps standalone Python command-line tools for users who prefer local terminal workflows, batch exports, or a non-Web interface.
+
+The repository currently includes two independent CLIs:
+
+| Platform | Script | Supports |
+|---|---|---|
+| **QQ Music** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | Playlist URL / ID, QQ user playlists, batch export |
+| **NetEase Cloud Music** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | Playlist URL / short link / ID, public user playlists |
+
+Both CLIs support **Excel → JSON → TXT → CSV → M3U8** exports.
+
+### QQ Music CLI
+
+```bash
+cd cli/qqmusic
+pip install -r requirements.txt
+python qq_music_playlist_export.py
+```
+
+👉 [QQ Music CLI documentation](cli/qqmusic/README.md)
+
+### NetEase Cloud Music CLI
+
+```bash
+cd cli/netease
+pip install -r requirements.txt
+python netease_playlist_export.py
+```
+
+👉 [NetEase CLI documentation](cli/netease/README.md)
+
+> The standalone Python CLIs currently cover QQ Music and NetEase Cloud Music. KuGou Music and Soda Music are currently available through the Web app / Public API.
 
 ---
 
@@ -191,6 +229,9 @@ Playlist Out uses a monorepo for the web app, Worker API, and plugins.
 playlistout/
 ├── web/                  # React / Vite frontend
 ├── worker/               # Cloudflare Worker API
+├── cli/                  # Python command-line exporters
+│   ├── qqmusic/
+│   └── netease/
 ├── plugins/
 │   └── musicfree/        # MusicFree plugin
 ├── docs/                 # API, data contract, and project docs
@@ -231,6 +272,8 @@ The main README intentionally stays focused. Detailed protocols, APIs, and archi
 |---|---|---|
 | [Public API](docs/API.md) | Third-party developers | Endpoints, parameters, authentication, CORS, rate limits, response contracts, and errors |
 | [JSON Schema](docs/JSON-SCHEMA.md) | Player / tool developers | Playlist Out normalized JSON data contract and field definitions |
+| [QQ Music CLI](cli/qqmusic/README.md) | Command-line users | QQ Music playlist / user-playlist export, setup, and usage |
+| [NetEase CLI](cli/netease/README.md) | Command-line users | NetEase playlist / user-playlist export, setup, and usage |
 | [MusicFree Plugin](plugins/musicfree/README.md) | MusicFree users and plugin developers | Installation, usage, configuration, build, and tests |
 | [Ecosystem Integration](docs/ECOSYSTEM-INTEGRATION.md) | Open-source player maintainers | Player research, field mappings, Issue / PR integration plans |
 | [Project Constitution](docs/PROJECT-CONSTITUTION.md) | Contributors / maintainers | Architecture, security, privacy, product boundaries, and long-term principles |
