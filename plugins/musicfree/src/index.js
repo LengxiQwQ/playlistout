@@ -211,7 +211,7 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v127';
+  var SCRIPT_VER = 'v128';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
@@ -801,11 +801,6 @@ function getUserFallbackMode() {
  * - 未知或未识别      → 'PlaylistOut'
  */
 function resolveMusicPlatform(sourcePlatform) {
-  const forced = getUserTargetPlatform();
-  if (forced && forced.toLowerCase() !== 'auto') {
-    return forced;
-  }
-
   if (!sourcePlatform || typeof sourcePlatform !== 'string') {
     return 'PlaylistOut';
   }
@@ -928,34 +923,6 @@ function attachNativeSourceMetadata(item, track, targetPlatform) {
 }
 
 /**
- * 保护 IMusicItem.platform 属性不被 MusicFree 宿主 resetMediaItem(item, this.plugin.name) 覆盖
- */
-function defineProtectedPlatform(item, initialPlatform) {
-  let currentPlatform = initialPlatform || 'PlaylistOut';
-  Object.defineProperty(item, 'platform', {
-    enumerable: true,
-    configurable: true,
-    get() {
-      return currentPlatform;
-    },
-    set(val) {
-      if (!val) return;
-      if (isSelfPlatform(val) && !isSelfPlatform(currentPlatform)) {
-        Object.defineProperty(item, 'platform', {
-          value: currentPlatform,
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
-        return;
-      }
-      currentPlatform = val;
-    },
-  });
-  return item;
-}
-
-/**
  * 将 PlaylistOut 歌曲对象映射为 MusicFree 标准 IMusicItem
  * @param {object} track 歌曲元数据对象
  * @param {number} defaultIndex 序号兜底
@@ -1031,14 +998,17 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     id = `${title}_${artist}_${defaultIndex}`;
   }
 
-  // 7. 原生音源平台桥接 (优先使用 track 自身的 platform，否则继承歌单级 platform)
+  // 7. 识别曲目原平台 (用于内部音源路由与 _src 取链字段封装)
   let rawPlatform = track.platform;
   if (!rawPlatform || rawPlatform === 'PlaylistOut') {
     rawPlatform = defaultPlatform;
   }
-  const platform = resolveMusicPlatform(rawPlatform);
+  let naturalPlatform = resolveMusicPlatform(rawPlatform);
+  if (naturalPlatform === 'PlaylistOut') {
+    naturalPlatform = resolveMusicPlatformFromTrackFields(track, { id, title, artwork });
+  }
 
-  // 8. 构建 IMusicItem
+  // 8. 构建 IMusicItem：对外来源 (platform) 始终为本插件品牌名称「把你的歌单带走 (PlaylistOut)」
   const item = {
     id,
     title,
@@ -1046,14 +1016,13 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     album,
     artwork,
     duration,
+    platform: PLUGIN_PLATFORM,
   };
+  if (naturalPlatform && naturalPlatform !== 'PlaylistOut') {
+    item._originPlatform = naturalPlatform;
+  }
 
-  // 9. 注入受保护的 platform 属性（防止宿主 resetMediaItem 强行改回 PlaylistOut）
-  defineProtectedPlatform(item, platform);
-
-  // 10. 注入原生插件所需的 _src / _srcOrder / songmid 等取链字段
-  const naturalPlatform =
-    platform !== 'PlaylistOut' ? platform : resolveMusicPlatformFromTrackFields(track, item);
+  // 9. 注入原生插件所需的 _src / _srcOrder / songmid / hash 等取链字段
   if (naturalPlatform && naturalPlatform !== 'PlaylistOut') {
     attachNativeSourceMetadata(item, track, naturalPlatform);
   }
@@ -1065,6 +1034,15 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
  * 从曲目 URL / 封面 / ID 特征推断原始音乐平台
  */
 function resolveMusicPlatformFromTrackFields(track, item) {
+  const explicitPlat =
+    track?._originPlatform ||
+    item?._originPlatform ||
+    track?.originPlatform ||
+    item?.originPlatform;
+  if (explicitPlat && !isSelfPlatform(explicitPlat)) {
+    return explicitPlat;
+  }
+
   const sourceUrl = String(track?.sourceUrl || item?.sourceUrl || '');
   const artwork = String(track?.coverUrl || track?.artwork || item?.artwork || '');
   const id = String(track?.id || item?.id || '').trim();
@@ -1650,17 +1628,24 @@ async function getMediaSource(musicItem, quality = 'standard') {
     return null;
   }
 
-  // 1. 推断该曲目的原生平台并直接通过精确 ID 取链
+  // 1. 推断原平台及用户配置的首选路由通道
   const inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-  if (inferredPlatform && !isSelfPlatform(inferredPlatform) && plugins.has(inferredPlatform)) {
-    const targetPlugin = plugins.get(inferredPlatform);
+  const userTarget = getUserTargetPlatform();
+  const prioritizedPlatform =
+    userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)
+      ? userTarget.toLowerCase()
+      : (inferredPlatform && !isSelfPlatform(inferredPlatform) ? inferredPlatform : null);
+
+  // 优先通过精确 ID / 原生字段从首选平台取链
+  if (prioritizedPlatform && plugins.has(prioritizedPlatform)) {
+    const targetPlugin = plugins.get(prioritizedPlatform);
     if (targetPlugin && typeof targetPlugin.getMediaSource === 'function') {
       try {
         const cloned = Object.assign({}, musicItem, {
-          platform: inferredPlatform,
+          platform: prioritizedPlatform,
           artist: primaryArtist || musicItem.artist,
         });
-        attachNativeSourceMetadata(cloned, musicItem, inferredPlatform);
+        attachNativeSourceMetadata(cloned, musicItem, prioritizedPlatform);
         const res = await targetPlugin.getMediaSource(cloned, quality);
         if (res && res.url && !isFakeQingtianUrl(res.url, title)) {
           return res;
@@ -1669,7 +1654,7 @@ async function getMediaSource(musicItem, quality = 'standard') {
     }
   }
 
-  // 2. 若原平台精确 ID 取链失败（如原平台无版权灰歌），跨平台优先搜索【100% 同名 + 同歌手 + 同版本】原曲
+  // 2. 若首选平台取链失败（如原平台无版权灰歌），跨各大平台优先搜索【100% 同名 + 同歌手 + 同版本】原曲
   if (!title) {
     _noSourceCache.set(cacheKey, Date.now());
     if (fallbackMode !== 'silent_skip') {
@@ -1679,9 +1664,19 @@ async function getMediaSource(musicItem, quality = 'standard') {
   }
 
   const keyword = primaryArtist ? `${title} ${primaryArtist}` : title;
-  const fallbackOrder = ['qq', 'netease', 'kugou', 'qishui', 'migu'].filter(
-    (plat) => plat !== inferredPlatform
-  );
+  const allPlatforms = ['qq', 'netease', 'kugou', 'kuwo', 'qishui', 'migu'];
+  const fallbackOrder = [];
+  if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
+    fallbackOrder.push(userTarget.toLowerCase());
+  }
+  if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !fallbackOrder.includes(inferredPlatform)) {
+    fallbackOrder.push(inferredPlatform);
+  }
+  for (const plat of allPlatforms) {
+    if (!fallbackOrder.includes(plat)) {
+      fallbackOrder.push(plat);
+    }
+  }
   const cachedCandidatesByPlat = new Map();
 
   for (const plat of fallbackOrder) {
@@ -1767,17 +1762,34 @@ async function getLyric(musicItem) {
 
   try {
     const plugins = await loadInstalledSiblingPlugins();
+    if (!plugins || plugins.size === 0) return emptyLyric;
+
+    const userTarget = getUserTargetPlatform();
     const inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-    if (inferredPlatform && !isSelfPlatform(inferredPlatform) && plugins.has(inferredPlatform)) {
-      const targetPlugin = plugins.get(inferredPlatform);
-      if (targetPlugin && typeof targetPlugin.getLyric === 'function') {
-        const cloned = Object.assign({}, musicItem, { platform: inferredPlatform });
-        attachNativeSourceMetadata(cloned, musicItem, inferredPlatform);
+    const candidatePlatforms = [];
+    if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
+      candidatePlatforms.push(userTarget.toLowerCase());
+    }
+    if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !candidatePlatforms.includes(inferredPlatform)) {
+      candidatePlatforms.push(inferredPlatform);
+    }
+    const allPlatforms = ['qq', 'netease', 'kugou', 'kuwo', 'migu'];
+    for (const p of allPlatforms) {
+      if (!candidatePlatforms.includes(p)) candidatePlatforms.push(p);
+    }
+
+    for (const plat of candidatePlatforms) {
+      if (!plugins.has(plat)) continue;
+      const targetPlugin = plugins.get(plat);
+      if (!targetPlugin || typeof targetPlugin.getLyric !== 'function') continue;
+      try {
+        const cloned = Object.assign({}, musicItem, { platform: plat });
+        attachNativeSourceMetadata(cloned, musicItem, plat);
         const lrc = await targetPlugin.getLyric(cloned);
-        if (lrc && typeof lrc.rawLrc === 'string') {
+        if (lrc && typeof lrc.rawLrc === 'string' && lrc.rawLrc.trim()) {
           return lrc;
         }
-      }
+      } catch (_) {}
     }
   } catch (_) {}
 
@@ -1787,7 +1799,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.7',
+  version: '1.2.8',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
