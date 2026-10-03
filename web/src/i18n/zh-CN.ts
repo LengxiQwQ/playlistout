@@ -192,7 +192,7 @@ export const zhCN: Translations = {
   },
   ecosystem: {
     title: '把歌单带进更多地方 ♪',
-    subtitle: '导出不是终点，把歌单继续带进下面这些开源播放器，接着听 ♪',
+    subtitle: 'Playlist Out 不只帮你把歌单导出来，也能把它继续带进支持的开源播放器。',
     supportedCount: '已接入 {count} 款开源应用',
     supportedShort: '款已支持',
     statusAvailable: '已支持',
