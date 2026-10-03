@@ -18,7 +18,7 @@ export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
     id: 'musicfree',
     name: 'MusicFree',
     status: 'available',
-    version: '1.2.11',
+    version: '1.2.12',
     pluginUrl: MUSICFREE_PLUGIN_URL,
     guideUrl: 'https://github.com/LengxiQwQ/playlistout/tree/main/plugins/musicfree',
   },
