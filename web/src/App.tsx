@@ -11,6 +11,7 @@ import { SearchNote } from './components/playlist/SearchNote';
 import { ResultPaper } from './components/playlist/ResultPaper';
 import { UserPlaylistsPaper } from './components/playlist/UserPlaylistsPaper';
 import { InfoNotes } from './components/layout/InfoNotes';
+import { PluginEcosystem } from './components/ecosystem/PluginEcosystem';
 import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
@@ -760,6 +761,11 @@ export const AppContent: React.FC = () => {
               feedbackSubmitted={feedbackSubmitted}
               onSelectSample={handleQuickSample}
             />
+          </div>
+
+          {/* Open-source player plugin ecosystem */}
+          <div className="baseline-grid-snap">
+            <PluginEcosystem />
           </div>
 
           {/* Result Paper (Single Playlist) */}

@@ -190,6 +190,30 @@ export interface Translations {
     noteContent: string;
     noteSubtext: string;
   };
+  ecosystem: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    supportedCount: string;
+    supportedCaption: string;
+    flowAria: string;
+    statusAvailable: string;
+    statusProposed: string;
+    statusPlanned: string;
+    officialPlugin: string;
+    musicFreeDescription: string;
+    platformsLabel: string;
+    copyInstallUrl: string;
+    copiedInstallUrl: string;
+    copyFailed: string;
+    guideLink: string;
+    installHint: string;
+    nextTitle: string;
+    nextSubtitle: string;
+    boundaryTitle: string;
+    boundaryText: string;
+    requestSupport: string;
+  };
   stats: {
     subtitle: string;
     title: string;
