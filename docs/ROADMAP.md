@@ -208,7 +208,8 @@ A provider is not considered supported merely because one sample playlist works.
 
 These are possible future improvements, not current commitments:
 
-- M3U / M3U8 export
+- M3U / M3U8 export ✅ (Completed in v2.2.0)
+- open-source music player ecosystem integration (MusicFree, LX Music, BBPlayer, Listen 1, Moosync; see [`docs/ECOSYSTEM-INTEGRATION.md`](./ECOSYSTEM-INTEGRATION.md))
 - selectable export fields
 - client-side search/filter for parsed tracks
 - batch playlist parsing

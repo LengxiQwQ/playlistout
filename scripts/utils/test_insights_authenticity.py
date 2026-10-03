@@ -311,8 +311,8 @@ class TestInsightsAuthenticity(unittest.TestCase):
         self.assertIn("const GEO_DATA = [];", html)
         self.assertIn("renderGeoChart();", html)
         self.assertIn("createHBar('chartChina', [], [],", html)
-        self.assertIn("createDonut('chartBrowser', [], [], []);", html)
-        self.assertIn("createDonut('chartDevice', [], [], []);", html)
+        self.assertIn("createHBar('chartBrowser', [], [],", html)
+        self.assertIn("createHBar('chartDevice', [], [],", html)
         self.assertIn("createDonut('chartPlatform', [], []);", html)
 
     def test_dashboard_full_contract_fixture_consumes_every_current_field(self):
@@ -1143,7 +1143,7 @@ class TestR7ResolveFailureTelemetry(unittest.TestCase):
         ]
         for canvas_id in expected_canvases:
             self.assertIn(f'id="{canvas_id}"', html)
-            self.assertIn(f"createDonut('{canvas_id}'", html)
+            self.assertIn(f"createHBar('{canvas_id}'", html)
 
     def test_r7_dashboard_html_empty_r7_data(self):
         """build_html handles empty/missing R7 data gracefully without exceptions."""
