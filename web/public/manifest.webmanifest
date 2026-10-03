@@ -1,7 +1,7 @@
 {
   "name": "Playlist Out - 把你的歌单带走",
   "short_name": "Playlist Out",
-  "description": "轻量、尊重隐私的在线歌单导出工具。粘贴公开歌单链接，一键解析并本地导出为 TXT、CSV、Excel、JSON。",
+  "description": "轻量、尊重隐私的在线歌单导出工具。粘贴公开歌单链接，一键解析并本地导出为 Excel、JSON、TXT、CSV。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5efe0",
