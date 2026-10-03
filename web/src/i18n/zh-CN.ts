@@ -200,6 +200,7 @@ export const zhCN: Translations = {
     statusProposed: '已向上游提案',
     statusPlanned: '计划中',
     officialPlugin: 'PlaylistOut 官方插件',
+    musicFreeSummary: '在 MusicFree 中使用 PlaylistOut 插件导入外部歌单。',
     copyInstallUrl: '复制插件地址',
     copiedInstallUrl: '✓ 已复制',
     copyFailed: '复制失败',
