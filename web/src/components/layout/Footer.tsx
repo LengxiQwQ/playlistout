@@ -161,8 +161,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
 
         {/* Tagline (Row height: 38px) */}
         <div
+          className="footer-tagline-row"
           style={{
-            height: 'var(--ruled-line-height, 38px)',
+            minHeight: 'var(--ruled-line-height, 38px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -171,11 +172,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           }}
         >
           <p
-            className="font-handwriting"
+            className="font-handwriting footer-tagline-text"
             style={{
               fontSize: '1.3rem',
               color: 'var(--ink-light, #636e72)',
-              lineHeight: 'var(--ruled-line-height, 38px)',
+              lineHeight: 1.45,
               margin: 0,
             }}
           >
@@ -338,6 +339,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               flexWrap: 'wrap',
               width: '100%',
               padding: '0.3rem 0.5rem',
+              gap: '0.25rem',
             }}
           >
             <span>{t.footer.copyrightPrefix}</span>

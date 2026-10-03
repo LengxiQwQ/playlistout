@@ -649,6 +649,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
 
       {/* Soft & gentle running days badge right above footer */}
       <div
+        className="running-days-stamp-wrap"
         style={{
           display: 'flex',
           justifyContent: 'center',

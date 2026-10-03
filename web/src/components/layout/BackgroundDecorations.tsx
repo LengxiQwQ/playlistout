@@ -100,7 +100,7 @@ export const BackgroundDecorations: React.FC = () => {
         <Tape color="cyan" rotateDeg={8} style={{ width: '4rem', height: '1rem', opacity: 0.5 }} />
       </div>
 
-      <div style={{ position: 'absolute', bottom: '10%', right: 'max(5%, calc(50% - 680px))' }}>
+      <div className="background-decoration-playlistout" style={{ position: 'absolute', bottom: '10%', right: 'max(5%, calc(50% - 680px))' }}>
         <Sticker color="white" rotateDeg={-5} style={{ opacity: 0.8, fontSize: '0.85rem', padding: '0.2rem 0.5rem', border: '1px solid #e2e8f0' }}>
           PLAYLIST OUT
         </Sticker>
