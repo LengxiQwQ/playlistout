@@ -4,400 +4,278 @@
 
 # Playlist Out（把你的歌单带走）
 
-*你的歌单，不应该只困在一个音乐平台里。*
+**你的歌单，不应该只困在一个音乐平台里。**
+
+解析、导出，并把歌单继续带进支持的开源播放器。
 
 [![Website](https://img.shields.io/badge/Website-playlistout.lengxiqwq.com-EAA008?style=flat-square)](https://playlistout.lengxiqwq.com)
 [![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github&color=D97706)](https://github.com/LengxiQwQ/playlistout/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/LengxiQwQ/playlistout/ci.yml?style=flat-square&label=CI)](https://github.com/LengxiQwQ/playlistout/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=fff)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vite.dev/)
 
-**🌐 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)**
+### [🌐 在线使用 Playlist Out](https://playlistout.lengxiqwq.com)
+
+简体中文 · [English](README.en.md)
 
 </div>
 
-<p align="center">
-  📖 README Language：<strong>简体中文</strong> · <a href="README.en.md">English</a>
-</p>
+---
+
+## Playlist Out 是什么？
+
+**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。
+
+它可以把支持平台中的公开歌单解析为统一的结构化数据，让你：
+
+- 在网页中查看和整理歌单；
+- 导出为 `TXT`、`CSV`、`Excel`、`JSON`、`M3U8`；
+- 通过插件或适配，把歌单继续带进支持的开源音乐播放器；
+- 通过 Public API 将歌单解析能力接入第三方应用。
+
+Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文件。项目只处理歌单及曲目元数据。
 
 ---
 
-## 💡 为什么做 Playlist Out？
+## 快速开始
 
-我们在各大音乐平台上花了很多时间和心血整理歌单，但往往遇到这样的尴尬：
-想换平台听歌时，旧平台的歌单无法直接迁移；想备份自己的心血时，没有一个地方能把歌曲列表以干净的格式导出来；或者只是想把歌曲整理成表格打印、做统计分析，却只能手动一首首复制粘贴。
+不需要安装客户端，直接使用网页即可：
 
-主流音乐平台的封闭生态把用户的歌单牢牢锁在单一 App 里。
-
-**Playlist Out 的目标很简单：把公开歌单解析成结构化数据，交还到你的手中。**
-
-- **纯客户端导出**：所有导出文件 100% 在用户浏览器本地内存中生成并触发下载，不回传服务器。
-- **零门槛与安全授权**：QQ 音乐与网易云音乐公开歌单 100% 免登录直接导出全部歌曲；酷狗音乐支持免登录公开预览，亦可使用手机 App 扫码安全授权解锁完整歌单（授权凭据仅保存在浏览器本地，服务器零存储）。无需安装任何扩展或客户端软件。
-- **专注且纯粹**：它不是播放器，不下载音频文件，也不做冗余的云端同步；只专一、稳定、完整地解决“歌单数据导出备份与迁移”这一件事。
+1. 打开 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)
+2. 粘贴歌单链接、分享内容或支持的 ID
+3. 等待 Playlist Out 解析歌单
+4. 查看歌曲列表并导出需要的格式
+5. 如果使用受支持的开源播放器，也可以继续把歌单导入播放器
 
 ---
 
-## 🚀 在线使用
+## 主要能力
 
-无需安装任何软件，直接打开 **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)** 即可开始：
-
-1. **粘贴歌单** — 支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐等平台链接（网页链接、手机短链、纯歌单 ID 或带有文字的 App 分享内容，系统自动提取）。输入用户主页链接或数字 ID 亦可直接加载该用户的所有公开歌单合集。
-2. **实时解析** — 边缘 Worker 自动解析歌单元数据、歌曲名、歌手、专辑、封面以及 VIP/下架可用性状态。
-3. **完整预览** — 在导出前直接在网页中核对完整歌曲列表、曲目总数与歌曲状态。
-4. **一键导出 / 复制** — 本地保存为 TXT / CSV / Excel (.xlsx) / JSON / M3U8，或直接一键复制到剪贴板；支持多歌单批量打包为多 Sheet 工作簿或 ZIP 压缩包。
-
----
-
-## ✨ 主要功能
-
-### 🔗 跨平台公开歌单极速解析与导出
-原生支持 **QQ 音乐**、**网易云音乐**、**酷狗音乐** 与 **汽水音乐** 公开歌单：
-- **QQ 音乐 / 网易云音乐**：纯网页免登录直解，无需输入 Cookie 或授权 Token，即可一键解析并无损全量导出整张歌单。
-- **汽水音乐 (Soda Music)**：免登录直解分享短链与播放列表，完整解析抖音同步收藏与官方原声原唱。
-- **酷狗音乐**：受上游 H5 防爬拉活机制限制，未登录状态下网页端仅提供前 10 首歌曲公开预览；支持在网页端一键扫码或在 API 请求头中直接附带 Token 凭证，无限制解锁整张歌单 100% 全量曲目。
-
-#### 📊 平台支持与上游机制限制对照表
-
-| 平台名称 | 平台代号 | 单歌单能力 | 用户主页歌单能力 | 上游机制与限制说明 |
-| :--- | :--- | :--- | :--- | :--- |
-| **QQ 音乐** | `qqmusic` | 🟢 **免登录全量解析** (无曲目上限) | 🟢 **免登录全量获取** (支持 QQ 号/直链) | 无需任何 Token 或 Cookie，纯网页公开协议直通。 |
-| **网易云音乐** | `netease` | 🟢 **免登录全量解析** (智能分页拉取 1000+ 首) | 🟢 **免登录全量获取** (支持 UID/直链) | 解决第三方工具未登录仅截取 10 首的痛点，免登录全量解析。 |
-| **汽水音乐** | `qishui` | 🟢 **免登录全量解析** (支持抖音同步原声) | ⚪ *平台暂无公开用户主页* | 无需 Token，完整提取分享短链内全部歌曲。 |
-| **酷狗音乐** | `kugou` | 🟡 **免登录仅前 10 首预览**<br/>🟢 **附带 Token 解锁 100% 全量** | 🟡 **必须提供 Token 与 Userid** | **官方机制限制**：酷狗分享页对未登录用户仅在 HTML 嵌入前 10 首，其余强行引导前往 App。若需导出 10 首以上的完整歌单或批量导出用户个人歌单，需附带歌单创建者凭证：<br/>• **网页端**：点击「连接酷狗账号」一键扫码解锁；<br/>• **API 端**：在请求头中附带 `Authorization` 与 `X-Kugou-Userid`。 |
-
-
-### 📚 用户公开歌单合集与批量打包
-输入用户 QQ 号、网易云 UID 或用户主页链接，一键加载该用户公开创建的所有歌单合集。支持多选与全选，可一键批量打包导出为 **多 Sheet Excel 工作簿**（各歌单独占一页）或 **ZIP 压缩包**（内含各歌单独立的 Excel / CSV / TXT / JSON / M3U8 文件）。
-
-### 🐕 酷狗音乐扫码安全解锁
-酷狗官方未登录状态仅提供前部分歌曲公开预览。PlaylistOut 创新支持**酷狗手机 App 扫码安全授权**，零存储无感换取官方临时凭据，无限制解锁完整超长歌单。所有凭证严格保存在用户本地浏览器，绝不上报或存储在服务器端。
-
-### 🏷️ 歌曲 VIP 与可用性状态识别
-自动探测并标注歌曲状态：**正常可播**、**下架/无版权变灰**、**VIP 专享**、**付费专辑**等，在网页预览表格与导出的 CSV / Excel / TXT / JSON / M3U8 文件中清晰呈现，避免导入其他平台时出现“盲盒式失效”。
-
-### 🔍 跨平台纯数字 ID 智能消歧义
-当用户直接输入纯数字时，系统并发探测 QQ 音乐与网易云音乐的单歌单及用户主页，自动辨析或弹出手账风格的消歧义选择窗口，供用户精准挑选目标。
-
-### 🎵 大歌单深度翻页支持
-彻底打破许多第三方工具“只能抓前 100 首”或“网易云未登录截断 10 首”的限制。PlaylistOut 内置智能分页与分批详情引擎，无缝支持 **1000+ 首**的超大歌单，严格保留原始添加顺序与合法的重复歌曲，绝不静默丢歌或截断。
-
-### 📦 5 种文件格式本地导出
-解析出的歌单可直接导出为多种主流格式，满足不同场景需求：
-- **M3U8** — 工业级通用扩展歌单文件（Extended M3U），含精准时长与歌手信息，可直接无缝导入至 **Navidrome、Jellyfin、Foobar2000、椒盐音乐、Poweramp、VLC** 等本地与自建家庭音乐服务器。
-- **TXT** — 简洁易读的纯文本清单，带信纸卡片排版与状态标注，适合快速查看、记事本备份或导入部分小众播放器。
-- **CSV** — 国际标准的逗号分隔文本（默认带 UTF-8 BOM，包含 VIP 与状态列，解决 Windows Excel 打开乱码问题）。
-- **Excel (.xlsx)** — 原生带样式的电子表格，包含完整元信息卡片、自适应列宽、VIP 与状态标注，适合用 Microsoft Excel、WPS 等软件进行归档、排序与批量整理。
-- **JSON** — 结构化完整数据，完整收录**歌单封面直链 (`coverUrl`)** 与 **单曲封面图片直链 (`tracks[i].coverUrl`)**、歌曲 ID、歌手、专辑、时长、VIP、可用性状态等丰富元数据，第三方音乐播放器与自动化脚本可直接请求并渲染封面图片。
-
-> 所有文件均由前端直接在浏览器内存中组装并生成下载链接，数据不经过任何第三方服务器中转。
-
-### 📋 3 种剪贴板快速复制
-如果不需要下载文件，可直接复制格式化内容：
-- **仅歌名**：每行一首歌曲名，干净整洁。
-- **歌名 - 歌手**：最通用的文本格式，便于直接粘贴到其他音乐软件的搜索框或导入框。
-- **歌名 - 歌手 - 专辑**：完整的制表符分隔格式（TSV），可直接 Ctrl+V 粘贴进任意电子表格。
-
-### 🛡️ 严格安全与防公式注入
-导出 CSV / Excel 时，对首字符为 `=`、`+`、`-`、`@` 等特殊符号的内容自动添加安全转义，防止导出的表格在 Microsoft Excel / WPS 打开时触发恶意的公式注入执行（CSV Injection / DDE）。同时，全链路 API 配备速率限制与安全防护标头。
+- **跨平台解析**：统一解析多个主流音乐平台的公开歌单
+- **多种输入方式**：支持网页链接、短链、分享文本和部分数字 ID
+- **公开用户歌单**：支持部分平台的用户公开歌单合集
+- **多格式导出**：TXT / CSV / Excel / JSON / M3U8
+- **结构化数据**：保留歌曲、歌手、专辑、封面、来源及可用状态等信息
+- **播放器生态**：通过插件、JSON 兼容或轻量适配连接开源音乐播放器
+- **Public API**：为第三方应用、脚本和迁移工具提供统一解析能力
 
 ---
 
-## 🌐 Public API v1 (开放接口)
+## 支持的音乐平台
 
-PlaylistOut 正式开放统一的跨平台公共 API，支持第三方开发者、自动化脚本及自建客户端直接调用。
+| 平台 | 公开歌单 | 用户公开歌单 | 说明 |
+|---|:---:|:---:|---|
+| **QQ 音乐** | ✅ | ✅ | 无需登录 |
+| **网易云音乐** | ✅ | ✅ | 无需登录 |
+| **汽水音乐** | ✅ | — | 支持公开分享歌单 |
+| **酷狗音乐** | ✅ | ✅ | 公开内容可免登录预览；完整歌单或用户合集可能需要扫码授权 |
 
-- **生产 API 基础地址**：`https://playlistout-api.lengxiqwq.com`
-- **核心万能解析接口**：`GET /api/v1/resolve?q=<用户输入>`
-  - 模拟网站大搜索框的完整识别与清洗逻辑（支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐四家平台歌单、用户主页、短链与分享文本）。
-  - 支持 `&type=auto|playlist|user` 与 `&platform=auto|qqmusic|netease|kugou|qishui` 显式消歧参数。
-  - 公开 GET 接口全面开放跨域（`Access-Control-Allow-Origin: *`），支持在浏览器端直接 `fetch` 调用。
-- **单歌单稳定接口**：`GET /api/v1/playlist?url=<歌单链接或ID>`
-- **用户合集稳定接口**：`GET /api/v1/user/playlists?uid=<UID或QQ号>`
-- **酷狗 Token 凭证获取与传递**：
-  - **获取方式**：在网页端「连接酷狗账号」弹窗中，支持桌面端**二维码扫码**与手机端**一键跳转酷狗 App 登录**；连接后可直接在弹窗的「开发者 API 凭证」卡片中**一键复制包含凭据的 cURL 命令、Token 与 UserID**。
-  - **安全规范**：严格遵循安全规范，**禁止**在 Query 参数中传递凭证（如 `?token=...` 会被直接拦截拒绝），须通过标准 HTTP 请求头传递：
-  ```bash
-  # 携带 Token 与 Userid 完整拉取酷狗 400+ 首全量歌单
-  curl -s "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://m.kugou.com/songlist/gcid_xxx/" \
-    -H "Authorization: Bearer <kugou_token>" \
-    -H "X-Kugou-Userid: <kugou_userid>"
-  ```
-- **完整接口文档与接入示例（cURL / JavaScript / Python）**：请参阅 [`docs/API.md`](docs/API.md)。
+> 平台能力依赖上游公开页面与接口，可能随着上游机制变化而调整。
 
 ---
 
-## 📋 数据导出格式规范与开放集成
+## 把歌单带进更多地方
 
-为方便第三方音乐平台、开发者工具及外部自动化流水线无缝接入与识别从 PlaylistOut 导出的歌单，我们正式确立并标准化了以下 5 种文件格式的存储结构与数据规范。
+**Playlist Out 不只帮你把歌单导出来，也能把它继续带进支持的开源播放器。**
 
-> 💡 **第三方平台接入建议**：推荐优先读取并解析 **JSON 格式**。JSON 格式包含了最完备的元信息字段、精准类型约束以及未转义的原始曲目数据。关于对接主流开源音乐播放器（MusicFree、洛雪音乐、BBPlayer、Listen 1、Moosync）的战略规划与插件开发指南，请参阅：**[《开源生态接入与第三方播放器集成战略规划》](./docs/ECOSYSTEM-INTEGRATION.md)**。
+### 已支持
 
----
+| 应用 | 状态 | 接入方式 |
+|---|---|---|
+| **MusicFree** | ✅ 已支持 | Playlist Out 插件 |
 
-### 1. JSON 格式 (`.json`) —— 推荐平台接入规范
+### MusicFree
 
-- **编码标准**：`UTF-8`（无 BOM）
-- **MIME 类型**：`application/json`
-- **设计目标**：跨平台导入导出、第三方音乐播放器歌单互通、自动化批处理。
-- **图片直链支持**：根对象包含歌单高清封面图片直链 (`coverUrl`)，每个曲目条目均包含单曲/专辑高清封面图片直链 (`tracks[i].coverUrl`)，第三方播放器、媒体中心或自动化脚本可直接读取并展示封面图，无需二次请求或反查。
+Playlist Out 提供 MusicFree 歌单导入插件，可直接把外部歌单带进 MusicFree。
 
-> 💡 **完整数据字典与格式规范说明**：为了保持自述文件简洁，JSON 格式所有的富文本字段（如 `coverUrl`, `artistList`, `rawIds`, `totalDurationMs` 等 30+ 维度的底层元数据）的具体解释与类型定义，请查阅专用的详细解释文档：**[《JSON 数据格式规范 (Schema Document)》](./docs/JSON-SCHEMA.md)**。
-
----
-
-### 2. CSV 格式 (`.csv`)
-
-- **文件编码**：`UTF-8 with BOM`（首字节包含 `\uFEFF`，防止 Windows 系统下 Microsoft Excel 打开乱码）
-- **行换行符**：`\r\n` (CRLF)
-- **纯表格标准输出**：默认遵循标准 RFC 4180 规范输出干净纯表格（9 列数据，包含最右侧的歌曲链接列），不添加额外的注释前缀行，以保证与各类现代表格解析器及音乐迁移工具的最大兼容性；
-- **元数据扩展模式**：在高级配置中启用元数据时，文件首部以 `# ` 输出歌单元信息与导出工具平台标识；
-- **防公式注入保护**：单元格若以 `=`, `+`, `-`, `@`, `\t`, `\r` 开头，自动添加 `'` 前缀进行安全转义，阻断电子表格宏代码执行风险；
-- **字段引用规则**：遵循 RFC 4180 规范，包含逗号或双引号的内容使用双引号包裹，内部双引号使用双重转义 `""`。
-
-#### CSV 文件示例
-
-```csv
-序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态,歌曲链接
-1,晴天,周杰伦,叶惠美,04:29,歌曲,—,正常,https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc
-2,说好不哭,"周杰伦, 阿信",说好不哭,03:42,歌曲,—,正常,https://y.qq.com/n/ryqq/songDetail/0027fM2M3wD4gS
-```
-
----
-
-### 3. Excel 格式 (`.xlsx`)
-
-- **文件规格**：原生 Microsoft Excel OpenXML 工作簿 (`.xlsx`)
-- **工作表名称**：`歌单歌曲`
-- **布局结构**：
-  1. **元数据卡片区（第 1-6/7 行，双列键值对布局）**：
-     - 行 1：`['歌单名称', playlist.name, '', '']`
-     - 行 2：`['创建时间', createTime, '导出时间', exportedAt]`（*创建时间第 1 位，导出时间第 2 位并列紧邻*）
-     - 行 3：`['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.lengxiqwq.com']`
-     - 行 4：`['歌单作者', creator, '歌曲总数', trackCountStr]`
-     - 行 5：`['最后更新', updateTime, '总播放量', playCountStr]`
-     - 行 6：`['风格标签', tagsStr, '歌单链接', sourceUrl]`
-     - 行 7（可选）：`['歌单简介', description, '', '']`（仅在有简介时生成）
-  2. **空行分隔区（第 8 行）**：空白行作为卡片区与数据表格的天然分界线。
-  3. **表格列头（第 9 行）**：`序号`、`歌曲标题`、`歌手`、`专辑`、`时长`、`类型`、`VIP`、`歌曲状态`、`歌曲链接`（共 9 列）。
-  4. **歌曲数据行（第 10 行起）**：按序填入曲目数据，内置防公式注入防护，并预设自适应列宽（10 / 32 / 22 / 25 / 10 / 12 / 8 / 14 / 45）。
-
----
-
-### 4. TXT 纯文本格式 (`.txt`)
-
-- **文件编码**：`UTF-8`
-- **排版风格**：信纸手账式排版（Stationery Format），兼顾人眼直观阅读与简单脚本行读取；
-- **排版结构**：
-  - 顶部以 `==================================================` 分界线封装元数据卡片；
-  - 头部首行固定为 `创建时间:`，次行固定为 `导出时间:`，第三行为 `导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)`；
-  - 依次展示歌单名、作者、最后更新、曲目数与总时长、标签、播放量、链接及歌单简介（部分预览歌单时会清晰注明已解析曲目数及对应时长）；
-  - 分界线下方为曲目清单，逐行输出：`${歌曲标题} - ${歌手} - ${专辑}`（若无专辑则输出 `${歌曲标题} - ${歌手}`）；
-  - 若歌曲为下架、VIP、付费等非默认状态，行末自动附带状态标签（如 `[下架/无版权]`、`[VIP专享]`）；
-  - 保留纯净原始文本，不添加表格转义符号。
-
-#### TXT 文件示例
+**插件安装地址**
 
 ```text
-==================================================
-  创建时间: 2021-06-18 14:30:00
-  导出时间: 2026-09-14 23:30:00
-  导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)
-  歌单名称: 华语经典流行精选集
-  歌单作者: 音乐咖啡馆
-  最后更新: 2024-03-01 09:15:20
-  歌曲总数: 2 首 (总时长 8 分钟)
-  风格标签: 流行 · 经典 · 华语
-  总播放量: 128,500 次
-  歌单链接: https://y.qq.com/n/ryqq/playlist/773829104
---------------------------------------------------
-  歌单简介:
-  收录那些触动心灵的华语旋律，陪你度过安静时光。
-==================================================
-
-晴天 - 周杰伦 - 叶惠美
-说好不哭 - 周杰伦, 阿信 - 说好不哭
+https://playlistout.lengxiqwq.com/plugins/musicfree.js
 ```
 
----
+- [MusicFree 官网](https://musicfree.catcat.work/) — 下载和了解 MusicFree
+- [MusicFree GitHub](https://github.com/maotoumao/MusicFree) — 查看播放器源码
+- [Playlist Out · MusicFree 插件文档](plugins/musicfree/README.md) — 安装、使用、配置与插件开发说明
 
-### 5. M3U8 格式 (`.m3u8`) —— 开源播放器与 NAS 自建库通用标准
+### 正在推进
 
-- **文件编码**：`UTF-8`（无 BOM）
-- **规范标准**：标准 Extended M3U 播放列表协议（RFC 8216 / 行业 De Facto 歌单标准）
-- **兼容应用**：**Navidrome**、**Jellyfin**、**Emby**、**Subsonic**、**Foobar2000**、**VLC**、**椒盐音乐 (Salt Player)**、**Poweramp**、**AIMP** 等
-- **工作机制**：
-  - 首行输出 `#EXTM3U` 协议头，次行输出 `#PLAYLIST:歌单名`；
-  - 逐曲写入 `#EXTINF:时长秒数,歌手 - 歌曲标题`；
-  - 下一行写入 `${歌手 - 歌曲标题}.mp3` 关联文件名；
-  - 本地播放器或家庭私有云音乐服务器（如 Navidrome/Jellyfin）在扫描该 `.m3u8` 时，可根据文件名及 `#EXTINF` 标签自动在本地媒体库中匹配歌曲并一键点亮恢复完整歌单。
-
-#### M3U8 文件示例
-
-```m3u8
-#EXTM3U
-#PLAYLIST:华语经典流行精选集
-#EXTINF:269,周杰伦 - 晴天
-周杰伦 - 晴天.mp3
-#EXTINF:222,周杰伦, 阿信 - 说好不哭
-周杰伦, 阿信 - 说好不哭.mp3
-```
-
----
-
-## 🎧 支持平台
-
-| 平台 | 网页版支持 | 备注 |
+| 应用 | 当前状态 | 进展 |
 |---|---|---|
-| **QQ 音乐** | ✅ 已支持 | 歌单分享链接 / ID / App 分享文本 / QQ 号公开自建歌单批量导出（免登录） |
-| **网易云音乐** | ✅ 已支持 | 歌单链接 / 短链 / 纯 ID / 用户 UID 公开自建歌单批量 / VIP与版权状态识别（免登录） |
-| **酷狗音乐** | ✅ 已支持 | 网页及 App 分享链接 / 纯 ID（免登录支持公开前排预览；完整全量歌单需手机 App 扫码授权） |
-| 酷我音乐 | 计划中 | 路线图规划中 |
-| 咪咕音乐 | 计划中 | 路线图规划中 |
-| 汽水音乐 | 计划中 | 路线图规划中 |
+| **LX Music** | 💬 已向上游提案 | [Issue #3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) |
+| **BBPlayer** | 💬 已向上游提案 | [Issue #340](https://github.com/bbplayer-app/BBPlayer/issues/340) |
+| **Listen 1** | 💬 已向上游提案 | [Issue #1413](https://github.com/listen1/listen1_desktop/issues/1413) |
+| **Moosync** | 🗓️ 计划中 | Extension 适配 |
 
-每个音乐平台都作为独立的 Provider 模块接入，前端始终保持统一的数据结构与导出体验。
+不同播放器的架构并不相同，因此 Playlist Out 会根据目标应用选择插件、通用 JSON 导入或轻量 PR 适配，而不是要求所有播放器使用同一种接入方式。
 
----
-
-## 🔒 隐私与数据
-
-PlaylistOut 坚持极简与透明的隐私承诺：
-
-- **无网站账号体系**：PlaylistOut 本身不设任何注册、登录或账户系统。QQ 音乐与网易云音乐解析完全免登录；使用酷狗音乐扫码解锁完整歌单时，换取的官方临时 Token 仅严格保存在用户本地浏览器 LocalStorage 中，绝不上报或留存在任何服务器数据库。
-- **无状态边缘代理**：歌曲列表仅在请求时由边缘 Cloudflare Worker 代理抓取并实时返回前端，服务器不设歌单数据库，不留存歌曲条目。
-- **全本地导出**：TXT、CSV、XLSX、JSON 和 M3U8 文件全部在用户本地浏览器生成，文件内容绝不上传到服务器。
-- **匿名聚合指标**：仅在 Cloudflare D1 中记录匿名聚合计数（如请求成功/失败数、导出格式分布），用于服务健康监控与容量评估，绝不记录用户 IP、歌单 URL 或具体曲目。
-- **完整性熔断原则**：向上游抓取歌单时，若遇到数据残缺或网络异常，系统会直接报错提示，绝不为了“伪装成功”而生成缺斤少两的残缺导出。
+> 具体的播放器调研、数据映射与接入计划见 [开源播放器生态接入文档](docs/ECOSYSTEM-INTEGRATION.md)。
 
 ---
 
-## ⌨️ 命令行工具 (CLI)
+## 导出格式
 
-除了网页版外，仓库在 `cli/` 目录下还提供了独立的 Python 命令行脚本，适合开发者进行定时备份、自动化流水线或脚本集成：
-- **支持平台**：现已支持 **QQ 音乐** (`cli/qqmusic/`) 与 **网易云音乐** (`cli/netease/`)。
-- **核心能力**：支持单歌单链接/ID 快速导出，以及通过 QQ 号或网易云 UID 批量导出名下所有公开自建歌单；网易云 CLI 独家支持歌曲可用性与 VIP 状态识别。
+| 格式 | 适合的场景 |
+|---|---|
+| **TXT** | 阅读、简单备份与文本处理 |
+| **CSV** | 表格软件和通用数据处理 |
+| **Excel (.xlsx)** | 整理、归档与人工分析 |
+| **JSON** | 开发者、脚本及第三方应用接入 |
+| **M3U8** | 本地播放器和媒体库 |
 
-进入对应目录安装依赖即可运行（更详尽的说明请查阅各目录下的 `README.md`）：
+导出文件由浏览器本地生成，不需要把导出文件上传到服务器。
 
-```bash
-# QQ 音乐 CLI
-cd cli/qqmusic && pip install -r requirements.txt && python qq_music_playlist_export.py
+如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。
 
-# 网易云音乐 CLI
-cd cli/netease && pip install -r requirements.txt && python netease_playlist_export.py
+---
+
+## 隐私与项目边界
+
+Playlist Out 尽量保持简单、透明：
+
+- 不提供网站账号体系
+- 不建立用户歌单数据库
+- 导出文件在浏览器本地生成
+- 不存储用户导出的歌曲列表或文件
+- 酷狗授权信息仅保存在用户本地浏览器
+- 服务端仅保留不包含具体歌单内容的匿名聚合统计
+- 不提供、不存储、也不代理任何音频流
+
+网站中的「隐私政策」提供更完整的数据处理说明。
+
+---
+
+## 开发者接入
+
+Playlist Out 同时提供面向开发者的 **Public API** 和稳定的 **JSON 数据结构**，可用于开源播放器、歌单迁移工具、自动化脚本以及其他第三方客户端。
+
+### Public API
+
+生产环境 API：
+
+```text
+https://playlistout-api.lengxiqwq.com
 ```
 
+最简单的统一解析入口：
+
+```http
+GET /api/v1/resolve?q=<歌单链接或分享内容>
+```
+
+Public API 文档包含：
+
+- 支持的 endpoint 与请求参数
+- CORS 与认证规则
+- 酷狗授权 Header 传递方式
+- 限流规则
+- 标准响应结构与错误码
+- JavaScript / Python / cURL 接入说明
+
+👉 [查看完整 Public API 文档](docs/API.md)
+
+### 数据协议 / JSON Schema
+
+如果你的应用不想依赖在线 API，也可以直接读取 Playlist Out 导出的 JSON 文件。
+
+JSON Schema 文档定义了 Playlist Out 的标准歌单数据结构，包括歌单信息、歌曲字段、平台来源、封面、时长和可用状态等，是第三方播放器做本地导入兼容时最重要的协议文档。
+
+👉 [查看 JSON 数据格式规范](docs/JSON-SCHEMA.md)
+
+### 播放器与插件接入
+
+如果你正在维护开源音乐播放器，并希望接入 Playlist Out：
+
+- 有扩展系统的播放器，可以开发独立插件 / Extension；
+- 支持本地文件导入的播放器，可以兼容 Playlist Out JSON；
+- 也可以直接调用 Public API 获取统一结构的歌单数据。
+
+👉 [查看开源播放器生态接入与适配计划](docs/ECOSYSTEM-INTEGRATION.md)
+
 ---
 
-## 💻 开发者
+## 本地开发
 
-PlaylistOut 是一个轻量级 Monorepo 仓库：
+Playlist Out 使用 monorepo 管理网页、Worker 与插件代码。
 
-| 模块 | 说明 |
-|---|---|
-| `web/` | 前端应用，基于 React 18 + TypeScript + Vite |
-| `worker/` | 边缘 API 服务，基于 Cloudflare Workers + TypeScript + D1 |
-| `cli/qqmusic/` | 原始 Python QQ 音乐 CLI 工具 |
-| `cli/netease/` | 独立 Python 网易云音乐 CLI 工具 |
-| `docs/` | 项目路线图、架构规范、API 文档与运维手册 |
+```text
+playlistout/
+├── web/                  # React / Vite 前端
+├── worker/               # Cloudflare Worker API
+├── plugins/
+│   └── musicfree/        # MusicFree 插件
+├── docs/                 # API、数据协议与项目文档
+└── scripts/              # 开发、检查与维护脚本
+```
 
-### 本地运行
+安装依赖：
 
 ```bash
-git clone https://github.com/LengxiQwQ/playlistout.git
-cd playlistout
 npm install
+```
+
+启动本地开发环境：
+
+```bash
 npm run dev
 ```
 
-### 质量检查与构建
+运行完整项目检查：
 
 ```bash
-# TypeScript 类型检查
-npm run typecheck
+npm run check
+```
 
-# 单元测试与组件测试（Web & Worker）
-npm run test
+构建：
 
-# 验证真实公开歌单解析与翻页（QQ 音乐 / 网易云 / 酷狗）
-npm --prefix worker run test:live
-
-# 全栈生产构建
+```bash
 npm run build
 ```
 
 ---
 
-## 📚 文档
+## 文档导航
 
-- [`ROADMAP.md`](./docs/ROADMAP.md) — 路线图与后续支持计划
-- [`PROJECT-CONSTITUTION.md`](./docs/PROJECT-CONSTITUTION.md) — 产品定位、架构约束与安全边界
-- [`API.md`](./docs/API.md) — 边缘 API 接口规范与错误码约定
-- [`MANUAL-SETUP.md`](./docs/MANUAL-SETUP.md) — 生产环境配置与运维手册
-- [`CHANGELOG.md`](./CHANGELOG.md) — 版本变更历史
+README 只保留使用项目所需的核心信息，更详细的协议、接口与架构说明分别放在专门文档中。
 
----
-
-## 🤝 Contributing
-
-欢迎提交 Issue 与 Pull Request！
-
-在添加新的音乐平台 Provider 时，请确保将平台专有解析逻辑封装在独立 Provider 模块内，并转换为通用的标准化歌单数据模型，以确保全平台导出与复制功能的一致性。
+| 文档 | 适合谁看 | 内容 |
+|---|---|---|
+| [Public API](docs/API.md) | 第三方开发者 | API endpoint、参数、认证、CORS、限流、响应结构与错误码 |
+| [JSON Schema](docs/JSON-SCHEMA.md) | 播放器 / 工具开发者 | Playlist Out 标准 JSON 数据协议与字段定义 |
+| [MusicFree 插件](plugins/musicfree/README.md) | MusicFree 用户与插件开发者 | 插件安装、使用、配置、构建与测试 |
+| [生态接入计划](docs/ECOSYSTEM-INTEGRATION.md) | 开源播放器维护者 | 第三方播放器调研、字段映射、Issue / PR 接入规划 |
+| [项目规范](docs/PROJECT-CONSTITUTION.md) | 贡献者 / 维护者 | 项目架构、安全、隐私、产品边界和长期原则 |
+| [Roadmap](docs/ROADMAP.md) | 用户与贡献者 | 当前进度与后续开发方向 |
 
 ---
 
-## 📄 License
+## 贡献
 
-PlaylistOut 基于 **MIT License** 开源。详情参见 [LICENSE](./LICENSE)。
+Issue、功能建议和 Pull Request 都欢迎。
 
----
+如果你正在开发或维护开源音乐播放器，并希望支持 Playlist Out，可以直接创建 Issue 讨论最适合的接入方式：
 
-<!-- WEBSITE_STATS:START -->
-### 🌐 网站运营与活跃数据看板
-
-> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。
-
-#### 📌 核心流量与使用规模
-
-> 💡 👥 累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。
-
-| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| **369**<br><sub>今日独立 +8</sub> | **699**<br><sub>今日 +10</sub> | **943**<br><sub>今日 +8</sub> | **332,549**<br><sub>今日 +4,295</sub> | **247**<br><sub>今日 +6</sub> | **22 天**<br><sub>上线于 2026-09-12</sub> |
-
-#### 📊 业务转化与平台偏好
-- **🎵 平台解析份额：** QQ 音乐 **50%** (473 次) ｜ 网易云音乐 **25%** (236 次) ｜ 酷狗音乐 **18%** (173 次) ｜ 汽水音乐 **6%** (61 次)
-- **📦 导出格式偏好：** Excel 表格 (.xlsx) **36%** ｜ TXT 纯文本 **28%** ｜ CSV 表格 **11%** ｜ JSON 数据 **19%** ｜ M3U8 歌单 **6%**
-
-> 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
-<!-- WEBSITE_STATS:END -->
+👉 [提交 Issue](https://github.com/LengxiQwQ/playlistout/issues)
 
 ---
 
-## ⭐ Star 历史
+## 开源许可
 
-<a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&theme=dark&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
- </picture>
-</a>
+Playlist Out 使用 [MIT License](LICENSE) 开源。
 
-<!-- INSIGHTS:START -->
-**📊 仓库流量**
-
-访问次数：**817** ｜ 不重复访客：**198**（近 14 天） ｜ 仓库克隆：**3,123** ｜ 不重复克隆：**348**（近 14 天）
-
-**热门来源（近 14 天）：** Bing · Google · github.com · Baidu · lengxiqwq.com · sogou.com  
-**热门内容（近 14 天）：** releases/tag/v2.2.0 · tree/main · commits/main · README.md
-
-> 数据开始：2026-09-07 · 最后更新：2026-10-03
-<!-- INSIGHTS:END -->
+MIT License 允许你在保留原始版权与许可声明的前提下自由使用、复制、修改和分发代码，包括用于商业项目。具体条款以仓库中的 [`LICENSE`](LICENSE) 文件为准。
 
 ---
 
-<p align="center">
-  <sub>Made with ❤️ by <a href="https://github.com/LengxiQwQ">LengxiQwQ</a></sub>
-</p>
+<div align="center">
+
+### Playlist Out · 把你的歌单带走
+
+做 Playlist Out 的初衷一直很简单：**让歌单属于用户自己，而不是困在某一个平台里。**
+
+希望它能把你认真整理的歌单带出来，也能继续带到你真正想去的地方。
+
+**Built & maintained by [LengxiQwQ](https://github.com/LengxiQwQ)**
+
+[Website](https://playlistout.lengxiqwq.com) · [GitHub](https://github.com/LengxiQwQ/playlistout) · [Issues](https://github.com/LengxiQwQ/playlistout/issues)
+
+</div>
