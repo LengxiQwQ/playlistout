@@ -206,77 +206,23 @@ function isSelfPlatform(plat) {
 
 /**
  * 在 MusicFree Desktop 渲染进程弹窗中自动注入：
- * 1. 导入歌单弹窗：「📂 选择本地 JSON」与「🌐 去官网解析歌单」并排虚线按钮 + 拖拽支持
- * 2. 插件设置面板 (userVariables)：可视化单选胶囊按钮（一键切换「无原版音源处理方式」与「音源通道」，免手打字符）
+ * 导入歌单弹窗：「📂 选择本地 JSON」与「🌐 去官网解析歌单」并排虚线按钮 + 拖拽支持
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v129';
+  var SCRIPT_VER = 'v130';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
-  function ensureUserVariablesStyle() {
-    var styleId = 'playlistout-user-variables-style';
-    if (document.getElementById(styleId)) return;
-    var style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = [
-      '.panel--user-variables-container .panel--user-variable-item {',
-      '  height: auto !important;',
-      '  min-height: 48px !important;',
-      '  display: flex !important;',
-      '  flex-direction: column !important;',
-      '  align-items: stretch !important;',
-      '  justify-content: flex-start !important;',
-      '  padding: 14px 16px 18px 16px !important;',
-      '  margin-bottom: 10px !important;',
-      '  box-sizing: border-box !important;',
-      '  border-bottom: 1px dashed rgba(128, 128, 128, 0.25) !important;',
-      '}',
-      '.panel--user-variables-container .panel--user-variable-item > span {',
-      '  width: 100% !important;',
-      '  max-width: 100% !important;',
-      '  margin-right: 0 !important;',
-      '  margin-bottom: 8px !important;',
-      '  white-space: normal !important;',
-      '  overflow: visible !important;',
-      '  text-overflow: unset !important;',
-      '  font-size: 14px !important;',
-      '  font-weight: 600 !important;',
-      '  line-height: 1.4 !important;',
-      '  flex-shrink: 0 !important;',
-      '  color: inherit !important;',
-      '}',
-      '.panel--user-variables-container .panel--user-variable-item > input {',
-      '  width: 100% !important;',
-      '  box-sizing: border-box !important;',
-      '  height: 36px !important;',
-      '  line-height: 36px !important;',
-      '  padding: 0 10px !important;',
-      '  border-radius: 6px !important;',
-      '  margin-bottom: 10px !important;',
-      '  flex: none !important;',
-      '}',
-      '.playlistout-var-pills {',
-      '  display: flex !important;',
-      '  flex-wrap: wrap !important;',
-      '  gap: 8px !important;',
-      '  width: 100% !important;',
-      '  box-sizing: border-box !important;',
-      '}',
-      '.playlistout-var-pills div[data-val] {',
-      '  padding: 6px 12px !important;',
-      '  border-radius: 6px !important;',
-      '  font-size: 12.5px !important;',
-      '  line-height: 1.3 !important;',
-      '  cursor: pointer !important;',
-      '  user-select: none !important;',
-      '  transition: all 0.15s ease !important;',
-      '  box-sizing: border-box !important;',
-      '}'
-    ].join('\\n');
-    (document.head || document.documentElement).appendChild(style);
-  }
+  // 清理历史旧版本残留的药丸与自定义样式，确保面板与弹窗纯净稳定
+  try {
+    var oldStyle = document.getElementById('playlistout-user-variables-style');
+    if (oldStyle && oldStyle.parentNode) oldStyle.parentNode.removeChild(oldStyle);
+    var oldPills = document.querySelectorAll('.playlistout-var-pills');
+    for (var p = 0; p < oldPills.length; p++) {
+      if (oldPills[p].parentNode) oldPills[p].parentNode.removeChild(oldPills[p]);
+    }
+  } catch (_) {}
 
   function openOfficialWebsite() {
     var url = 'https://playlistout.lengxiqwq.com';
@@ -436,117 +382,13 @@ const RENDERER_FILE_PICKER_SCRIPT = `
     }
   }
 
-  function injectOptionPillsForItem(itemEl, options, defaultVal) {
-    if (!itemEl) return;
-    if (itemEl.querySelector('.playlistout-var-pills')) return;
-    var inputEl = itemEl.querySelector('input');
-    if (!inputEl) return;
-
-    var pillRow = document.createElement('div');
-    pillRow.className = 'playlistout-var-pills';
-
-    function refreshActiveState() {
-      var cur = (inputEl.value || '').trim() || defaultVal;
-      var btns = pillRow.querySelectorAll('div[data-val]');
-      for (var j = 0; j < btns.length; j++) {
-        var b = btns[j];
-        var isHit = b.getAttribute('data-val') === cur;
-        b.style.border = isHit ? '1.5px solid #0A95C8' : '1px dashed rgba(128,128,128,0.45)';
-        b.style.background = isHit ? 'rgba(10, 149, 200, 0.16)' : 'rgba(128,128,128,0.06)';
-        b.style.color = isHit ? '#0A95C8' : 'inherit';
-        b.style.fontWeight = isHit ? '600' : '400';
-      }
-    }
-
-    for (var i = 0; i < options.length; i++) {
-      (function(opt) {
-        var pill = document.createElement('div');
-        pill.setAttribute('role', 'button');
-        pill.setAttribute('data-val', opt.value);
-        pill.innerText = opt.label;
-        pill.onclick = function() {
-          setInputValueAndNotify(inputEl, opt.value);
-          refreshActiveState();
-        };
-        pillRow.appendChild(pill);
-      })(options[i]);
-    }
-
-    inputEl.addEventListener('input', refreshActiveState);
-    refreshActiveState();
-    itemEl.appendChild(pillRow);
-  }
-
-  function enhanceUserVariablesPanel() {
-    var containers = document.querySelectorAll('.panel--user-variables-container');
-    if (!containers || containers.length === 0) return;
-
-    for (var i = 0; i < containers.length; i++) {
-      var container = containers[i];
-      if (container.getAttribute('data-playlistout-panel-done') === 'true') {
-        continue;
-      }
-
-      var items = container.querySelectorAll('.panel--user-variable-item');
-      if (!items || items.length === 0) continue;
-
-      var isOurPanel = false;
-      for (var j = 0; j < items.length; j++) {
-        var s = items[j].querySelector('span');
-        var t = s ? (s.innerText || s.textContent || '') : '';
-        if (t.indexOf('无原版音源') !== -1 || t.indexOf('音源路由') !== -1 || t.indexOf('无音源') !== -1) {
-          isOurPanel = true;
-          break;
-        }
-      }
-
-      if (!isOurPanel) continue;
-      container.setAttribute('data-playlistout-panel-done', 'true');
-      ensureUserVariablesStyle();
-
-      for (var k = 0; k < items.length; k++) {
-        var itemEl = items[k];
-        if (itemEl.getAttribute('data-playlistout-item-done') === 'true') continue;
-        itemEl.setAttribute('data-playlistout-item-done', 'true');
-
-        var labelSpan = itemEl.querySelector('span');
-        var labelText = labelSpan ? (labelSpan.innerText || labelSpan.textContent || '') : '';
-        if (labelText.indexOf('无原版音源') !== -1 || labelText.indexOf('无音源') !== -1) {
-          injectOptionPillsForItem(
-            itemEl,
-            [
-              { value: 'strict', label: '🎯 仅播原版 (提示跳过·默认)' },
-              { value: 'similar', label: '🔍 允许相似音源 (含翻唱/Live)' },
-              { value: 'silent_skip', label: '🔇 仅播原版 (静默跳过)' }
-            ],
-            'strict'
-          );
-        } else if (labelText.indexOf('音源路由') !== -1) {
-          injectOptionPillsForItem(
-            itemEl,
-            [
-              { value: 'auto', label: '⚡ 自动按原平台 (默认)' },
-              { value: 'qq', label: 'QQ音乐 (qq)' },
-              { value: 'netease', label: '网易云 (netease)' },
-              { value: 'kugou', label: '酷狗音乐 (kugou)' },
-              { value: 'kuwo', label: '酷我音乐 (kuwo)' },
-              { value: 'qishui', label: '汽水音乐 (qishui)' }
-            ],
-            'auto'
-          );
-        }
-      }
-    }
-  }
-
   var _enhanceTimer = null;
   function triggerEnhanceDebounced() {
     if (_enhanceTimer) return;
     _enhanceTimer = setTimeout(function() {
       _enhanceTimer = null;
       enhancePlaylistOutModal();
-      enhanceUserVariablesPanel();
-    }, 60);
+    }, 100);
   }
 
   triggerEnhanceDebounced();
@@ -1805,7 +1647,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.9',
+  version: '1.2.10',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -1818,13 +1660,13 @@ module.exports = {
   userVariables: [
     {
       key: 'fallbackMode',
-      name: '无原版音源时的处理方式',
-      hint: 'strict=仅播原版，无源弹窗提示并跳过(默认)；similar=无原版时找最相似音源(含翻唱/Live)播放并提示；silent_skip=仅播原版，静默跳过不弹窗',
+      name: '换源策略',
+      hint: 'strict(默认:仅原版) / similar(含相似翻唱) / silent_skip(静默跳过)',
     },
     {
       key: 'targetPlatform',
-      name: '优先音源路由通道',
-      hint: 'auto=自动按歌单原平台路由(网易云->netease, QQ->qq, 酷狗->kugou, 汽水->qishui, 酷我->kuwo); 亦可指定任意音源插件 ID',
+      name: '音源通道',
+      hint: 'auto(默认:原平台) / qq / netease / kugou / kuwo / qishui',
     },
   ],
   supportedSearchType: ['sheet'],
