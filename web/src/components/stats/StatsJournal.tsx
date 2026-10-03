@@ -140,7 +140,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const recent = stats?.recentDays || [];
     if (recent.length > 0) {
       const maxVal = Math.max(...recent.map((d) => d.parses + d.exports), 1);
-      return recent.slice(0, 24).reverse().map((d) => ({
+      return recent.slice(0, 30).reverse().map((d) => ({
         date: d.date.slice(5),
         height: Math.max(15, Math.min(100, Math.round(((d.parses + d.exports) / maxVal) * 100))),
         count: d.parses + d.exports,
@@ -571,12 +571,16 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
         shadow="paper-sm"
         rotateDeg={0.4}
         tiltFactor={0.25}
+        className="stats-recent-paper"
         style={{
           padding: '1.75rem 2rem',
           margin: '0 auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <div
+          className="stats-recent-header"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}
+        >
           <div className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--ink, #2d3436)' }}>
             {t.stats.recentDaysTitle}
           </div>
@@ -587,6 +591,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
 
         {/* Mini Hand-drawn Style Bar Chart */}
         <div
+          className="stats-trend-chart"
           style={{
             display: 'flex',
             alignItems: 'flex-end',
@@ -599,6 +604,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           {trendBars.map((bar, idx) => (
             <div
               key={idx}
+              className="stats-trend-bar"
               style={{
                 flex: 1,
                 display: 'flex',
@@ -620,7 +626,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 }}
               />
               <span
-                className="font-note"
+                className="font-note stats-trend-date"
                 style={{
                   fontSize: '0.85rem',
                   color: '#8a8f92',
@@ -633,6 +639,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             </div>
           ))}
         </div>
+        {trendBars.length > 0 && (
+          <div className="mobile-only stats-trend-mobile-axis font-note" aria-hidden="true">
+            <span>{trendBars[0].date}</span>
+            <span>{trendBars[trendBars.length - 1].date}</span>
+          </div>
+        )}
       </Paper>
 
       {/* Soft & gentle running days badge right above footer */}
