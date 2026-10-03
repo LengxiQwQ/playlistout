@@ -1,7 +1,7 @@
 {
   "name": "musicfree-plugin-playlistout",
-  "version": "1.2.8",
-  "description": "Official MusicFree plugin for 把你的歌单带走 (PlaylistOut) - Universal multi-platform playlist parser",
+  "version": "1.2.9",
+  "description": "Official MusicFree plugin for 把你的歌单带走 - Universal multi-platform playlist parser",
   "main": "src/index.js",
   "scripts": {
     "build": "node scripts/build.js",

@@ -192,15 +192,15 @@ async function readLocalFileText(targetPath) {
   throw new Error(`无法读取本地歌单文件: ${targetPath}`);
 }
 
-const PLUGIN_PLATFORM = '把你的歌单带走 (PlaylistOut)';
+const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
 
 function isSelfPlatform(plat) {
   return (
     !plat ||
     plat === PLUGIN_PLATFORM ||
-    plat === LEGACY_PLATFORM ||
-    plat === '把你的歌单带走'
+    plat === '把你的歌单带走 (PlaylistOut)' ||
+    plat === LEGACY_PLATFORM
   );
 }
 
@@ -211,18 +211,15 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v128';
+  var SCRIPT_VER = 'v129';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
   function ensureUserVariablesStyle() {
     var styleId = 'playlistout-user-variables-style';
-    var style = document.getElementById(styleId);
-    if (!style) {
-      style = document.createElement('style');
-      style.id = styleId;
-      (document.head || document.documentElement).appendChild(style);
-    }
+    if (document.getElementById(styleId)) return;
+    var style = document.createElement('style');
+    style.id = styleId;
     style.textContent = [
       '.panel--user-variables-container .panel--user-variable-item {',
       '  height: auto !important;',
@@ -441,10 +438,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
 
   function injectOptionPillsForItem(itemEl, options, defaultVal) {
     if (!itemEl) return;
-    var existingPills = itemEl.querySelector('.playlistout-var-pills');
-    if (existingPills) {
-      existingPills.remove();
-    }
+    if (itemEl.querySelector('.playlistout-var-pills')) return;
     var inputEl = itemEl.querySelector('input');
     if (!inputEl) return;
 
@@ -479,9 +473,6 @@ const RENDERER_FILE_PICKER_SCRIPT = `
     }
 
     inputEl.addEventListener('input', refreshActiveState);
-    if (!inputEl.value) {
-      setInputValueAndNotify(inputEl, defaultVal);
-    }
     refreshActiveState();
     itemEl.appendChild(pillRow);
   }
@@ -492,9 +483,14 @@ const RENDERER_FILE_PICKER_SCRIPT = `
 
     for (var i = 0; i < containers.length; i++) {
       var container = containers[i];
-      var items = container.querySelectorAll('.panel--user-variable-item');
-      var isOurPanel = false;
+      if (container.getAttribute('data-playlistout-panel-done') === 'true') {
+        continue;
+      }
 
+      var items = container.querySelectorAll('.panel--user-variable-item');
+      if (!items || items.length === 0) continue;
+
+      var isOurPanel = false;
       for (var j = 0; j < items.length; j++) {
         var s = items[j].querySelector('span');
         var t = s ? (s.innerText || s.textContent || '') : '';
@@ -505,10 +501,14 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       }
 
       if (!isOurPanel) continue;
+      container.setAttribute('data-playlistout-panel-done', 'true');
       ensureUserVariablesStyle();
 
       for (var k = 0; k < items.length; k++) {
         var itemEl = items[k];
+        if (itemEl.getAttribute('data-playlistout-item-done') === 'true') continue;
+        itemEl.setAttribute('data-playlistout-item-done', 'true');
+
         var labelSpan = itemEl.querySelector('span');
         var labelText = labelSpan ? (labelSpan.innerText || labelSpan.textContent || '') : '';
         if (labelText.indexOf('无原版音源') !== -1 || labelText.indexOf('无音源') !== -1) {
@@ -539,12 +539,18 @@ const RENDERER_FILE_PICKER_SCRIPT = `
     }
   }
 
-  enhancePlaylistOutModal();
-  enhanceUserVariablesPanel();
-  var obs = new MutationObserver(function() {
-    enhancePlaylistOutModal();
-    enhanceUserVariablesPanel();
-  });
+  var _enhanceTimer = null;
+  function triggerEnhanceDebounced() {
+    if (_enhanceTimer) return;
+    _enhanceTimer = setTimeout(function() {
+      _enhanceTimer = null;
+      enhancePlaylistOutModal();
+      enhanceUserVariablesPanel();
+    }, 60);
+  }
+
+  triggerEnhanceDebounced();
+  var obs = new MutationObserver(triggerEnhanceDebounced);
   obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
 })();
 `;
@@ -1799,7 +1805,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.8',
+  version: '1.2.9',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
