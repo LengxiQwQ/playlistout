@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.10)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.2.11)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.10', 'Version must be 1.2.10');
+    assert.strictEqual(plugin.version, '1.2.11', 'Version must be 1.2.11');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -79,6 +79,10 @@ async function runAllTests() {
       'hints must list supported platforms'
     );
     assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗限制')),
+      'hints must provide KuGou limitation guidance'
+    );
+    assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('playlistout.lengxiqwq.com')),
       'hints must include official website'
     );
@@ -90,6 +94,14 @@ async function runAllTests() {
     assert(
       plugin.userVariables.some((v) => v.key === 'fallbackMode'),
       'userVariables must include fallbackMode option'
+    );
+    assert(
+      plugin.userVariables.some((v) => v.key === 'kugouToken'),
+      'userVariables must include kugouToken option'
+    );
+    assert(
+      plugin.userVariables.some((v) => v.key === 'kugouUserid'),
+      'userVariables must include kugouUserid option'
     );
     assert.strictEqual(typeof plugin.importMusicSheet, 'function', 'importMusicSheet must be a function');
     assert.strictEqual(typeof plugin.getMediaSource, 'function', 'getMediaSource must be a function');
@@ -106,7 +118,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.2.10');
+      assert.strictEqual(distPlugin.version, '1.2.11');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -160,7 +172,9 @@ async function runAllTests() {
   const v128Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.8.js');
   const v129Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.9.js');
   const v129Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.9.js');
-  await test('Verifies v1.2.0 through v1.2.9 historical archives exist', () => {
+  const v1210Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.10.js');
+  const v1210Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.10.js');
+  await test('Verifies v1.2.0 through v1.2.10 historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -181,6 +195,8 @@ async function runAllTests() {
     assert(fs.existsSync(v128Web), 'web/public/plugins/musicfree-v1.2.8.js must exist');
     assert(fs.existsSync(v129Dist), 'dist/musicfree-v1.2.9.js must exist');
     assert(fs.existsSync(v129Web), 'web/public/plugins/musicfree-v1.2.9.js must exist');
+    assert(fs.existsSync(v1210Dist), 'dist/musicfree-v1.2.10.js must exist');
+    assert(fs.existsSync(v1210Web), 'web/public/plugins/musicfree-v1.2.10.js must exist');
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────
@@ -514,6 +530,49 @@ async function runAllTests() {
     globalThis.env = { getUserVariables: () => ({ fallbackMode: 'silent_skip' }) };
     const resSilent = await plugin.getMediaSource({ id: 'test_3', title: '不存在的歌_test', artist: '未知' });
     assert.strictEqual(resSilent, null);
+
+    delete globalThis.env;
+  });
+
+  await test('Correctly parses kugouToken & kugouUserid userVariables formats', async () => {
+    // 1. Composite "token:userid" in kugouToken
+    globalThis.env = {
+      getUserVariables: () => ({ kugouToken: 'mock_token_abc:1425711902' }),
+    };
+    const c1 = plugin._getKugouCredentials();
+    assert.deepStrictEqual(c1, { token: 'mock_token_abc', userid: '1425711902' });
+
+    // 2. Inverted "userid:token" in kugouToken
+    globalThis.env = {
+      getUserVariables: () => ({ kugouToken: '1425711902:mock_token_abc' }),
+    };
+    const c2 = plugin._getKugouCredentials();
+    assert.deepStrictEqual(c2, { token: 'mock_token_abc', userid: '1425711902' });
+
+    // 3. JSON format in kugouToken
+    globalThis.env = {
+      getUserVariables: () => ({ kugouToken: JSON.stringify({ token: 'tok_json', userid: 'uid_json' }) }),
+    };
+    const c3 = plugin._getKugouCredentials();
+    assert.deepStrictEqual(c3, { token: 'tok_json', userid: 'uid_json' });
+
+    // 4. Separate kugouToken and kugouUserid
+    globalThis.env = {
+      getUserVariables: () => ({ kugouToken: 'sep_token', kugouUserid: 'sep_userid' }),
+    };
+    const c4 = plugin._getKugouCredentials();
+    assert.deepStrictEqual(c4, { token: 'sep_token', userid: 'sep_userid' });
+
+    // 5. Pure token
+    globalThis.env = {
+      getUserVariables: () => ({ kugouToken: 'only_token' }),
+    };
+    const c5 = plugin._getKugouCredentials();
+    assert.deepStrictEqual(c5, { token: 'only_token', userid: '' });
+
+    // 6. Unset
+    globalThis.env = { getUserVariables: () => ({}) };
+    assert.strictEqual(plugin._getKugouCredentials(), null);
 
     delete globalThis.env;
   });
