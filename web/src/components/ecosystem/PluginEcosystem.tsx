@@ -98,6 +98,7 @@ export const PluginEcosystem: React.FC = () => {
             shadow="paper-sm"
             rotateDeg={-0.3}
             tiltFactor={0.2}
+            interactive={false}
             className="plugin-app-card"
           >
             <div className="plugin-app-row">
@@ -132,10 +133,6 @@ export const PluginEcosystem: React.FC = () => {
                     >
                       ✓ {t.ecosystem.statusAvailable}
                     </Sticker>
-                  </div>
-                  <div className="font-note plugin-app-meta">
-                    {t.ecosystem.officialPlugin}
-                    {integration.version ? ' · v' + integration.version : ''}
                   </div>
                   <p className="font-handwriting plugin-app-summary">
                     {integration.id === 'musicfree' ? t.ecosystem.musicFreeSummary : ''}
