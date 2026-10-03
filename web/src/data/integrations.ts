@@ -4,7 +4,6 @@ export interface OpenSourceIntegration {
   id: 'musicfree' | 'lx-music' | 'bbplayer' | 'listen1' | 'moosync';
   name: string;
   status: IntegrationStatus;
-  version?: string;
   pluginUrl?: string;
   guideUrl?: string;
   issueUrl?: string;
@@ -21,7 +20,6 @@ export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
     id: 'musicfree',
     name: 'MusicFree',
     status: 'available',
-    version: '1.2.12',
     pluginUrl: MUSICFREE_PLUGIN_URL,
     guideUrl: 'https://github.com/LengxiQwQ/playlistout/tree/main/plugins/musicfree',
     homepageUrl: 'https://musicfree.catcat.work/',
