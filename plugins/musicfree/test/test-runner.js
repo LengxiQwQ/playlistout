@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.9)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.2.10)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.9', 'Version must be 1.2.9');
+    assert.strictEqual(plugin.version, '1.2.10', 'Version must be 1.2.10');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -106,7 +106,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.2.9');
+      assert.strictEqual(distPlugin.version, '1.2.10');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -158,7 +158,9 @@ async function runAllTests() {
   const v127Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.7.js');
   const v128Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.8.js');
   const v128Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.8.js');
-  await test('Verifies v1.2.0 through v1.2.8 historical archives exist', () => {
+  const v129Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.9.js');
+  const v129Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.9.js');
+  await test('Verifies v1.2.0 through v1.2.9 historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -177,6 +179,8 @@ async function runAllTests() {
     assert(fs.existsSync(v127Web), 'web/public/plugins/musicfree-v1.2.7.js must exist');
     assert(fs.existsSync(v128Dist), 'dist/musicfree-v1.2.8.js must exist');
     assert(fs.existsSync(v128Web), 'web/public/plugins/musicfree-v1.2.8.js must exist');
+    assert(fs.existsSync(v129Dist), 'dist/musicfree-v1.2.9.js must exist');
+    assert(fs.existsSync(v129Web), 'web/public/plugins/musicfree-v1.2.9.js must exist');
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────
