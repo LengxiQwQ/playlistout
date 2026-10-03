@@ -534,17 +534,6 @@
     display: none !important;
   }
 
-  /* Compact the hero without losing the handwritten scrapbook identity. */
-  .journal-hero {
-    padding-bottom: 1.5rem !important;
-  }
-
-  .journal-hero-title {
-    font-size: clamp(1.9rem, 8.8vw, 2.45rem) !important;
-    line-height: 1.24 !important;
-    padding: 0.45rem 0 0.25rem;
-  }
-
   /* Search note: samples read better as a compact chip group on narrow screens. */
   .search-sample-row {
     gap: 0.6rem !important;
