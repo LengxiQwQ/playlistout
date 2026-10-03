@@ -191,9 +191,8 @@ export const enUS: Translations = {
     noteSubtext: 'simple is enough ✦',
   },
   ecosystem: {
-    eyebrow: 'PlaylistOut Open-Source Music Ecosystem',
     title: 'Take your playlists even further ♪',
-    subtitle: 'Supported open-source music apps live here.',
+    subtitle: 'Export is not the end — bring your playlists into the open-source players below and keep listening ♪',
     supportedCount: '{count} open-source app integrated',
     supportedShort: 'supported',
     statusAvailable: 'Available',

@@ -191,7 +191,6 @@ export interface Translations {
     noteSubtext: string;
   };
   ecosystem: {
-    eyebrow: string;
     title: string;
     subtitle: string;
     supportedCount: string;

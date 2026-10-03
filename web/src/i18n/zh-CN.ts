@@ -191,9 +191,8 @@ export const zhCN: Translations = {
     noteSubtext: '简单就很好 ✦',
   },
   ecosystem: {
-    eyebrow: 'PlaylistOut 开源音乐生态',
     title: '把歌单带进更多地方 ♪',
-    subtitle: '已经适配的开源音乐应用，都放在这里。',
+    subtitle: '导出不是终点，把歌单继续带进下面这些开源播放器，接着听 ♪',
     supportedCount: '已接入 {count} 款开源应用',
     supportedShort: '款已支持',
     statusAvailable: '已支持',

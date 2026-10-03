@@ -64,15 +64,6 @@ export const PluginEcosystem: React.FC = () => {
     >
       <div className="plugin-ecosystem-heading-row">
         <div className="plugin-ecosystem-heading-copy">
-          <Sticker
-            as="span"
-            color="yellow"
-            rotateDeg={-2}
-            className="font-note plugin-ecosystem-kicker"
-          >
-            OPEN SOURCE ♪
-          </Sticker>
-          <div className="font-note plugin-ecosystem-eyebrow">{t.ecosystem.eyebrow}</div>
           <h2 id="ecosystem-title" className="font-marker plugin-ecosystem-title">
             {t.ecosystem.title}
           </h2>
@@ -124,7 +115,7 @@ export const PluginEcosystem: React.FC = () => {
 
                 <div className="plugin-app-card-title">
                   <div className="plugin-app-name-row">
-                    <h3 className="font-marker plugin-app-name">{integration.name}</h3>
+                    <h3 className="plugin-app-name">{integration.name}</h3>
                     <Sticker
                       as="span"
                       color="green"
@@ -203,7 +194,7 @@ export const PluginEcosystem: React.FC = () => {
           {upcoming.map((integration, index) => {
             const inner = (
               <>
-                <span className="font-handwriting plugin-upcoming-name">{integration.name}</span>
+                <span className="plugin-upcoming-name">{integration.name}</span>
                 <Sticker
                   as="span"
                   color={statusColor[integration.status]}
