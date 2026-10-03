@@ -18,7 +18,7 @@ import {
 import { formatDuration } from './format';
 import { getPlatformName, getPlatformPlaylistUrl } from './platform';
 
-export type BatchExportFormat = 'multi_sheet_xlsx' | 'xlsx' | 'csv' | 'txt' | 'json' | 'm3u8';
+export type BatchExportFormat = 'multi_sheet_xlsx' | 'json' | 'xlsx' | 'txt' | 'csv' | 'm3u8';
 
 export interface BatchFetchProgress {
   current: number;

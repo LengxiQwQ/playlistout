@@ -642,7 +642,7 @@ def render_website_section(stats: dict, updated_at: str, lang: str) -> str:
     # 导出格式偏好分布（区分纯中文与纯英文）
     breakdown = stats.get("exportFormatsBreakdown") or {}
     total_export_fmt = sum(breakdown.values()) or 1
-    fmt_order = ["xlsx", "txt", "csv", "json", "m3u8"]
+    fmt_order = ["xlsx", "json", "txt", "csv", "m3u8"]
     if lang == "zh":
         fmt_labels = {
             "xlsx": "Excel 表格 (.xlsx)",
