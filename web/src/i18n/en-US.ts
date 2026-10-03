@@ -174,6 +174,8 @@ export const enUS: Translations = {
     selectFormatHint: 'Please select at least one format to export',
     toastCopySuccess: 'Copied {count} tracks ({mode}) to clipboard!',
     toastCopyFailed: 'Copy failed. Please check browser clipboard permissions.',
+    musicFreePluginBtn: '🎧 Copy MusicFree Plugin Link',
+    toastMusicFreeCopied: 'Copied official MusicFree plugin link! Paste into MusicFree "Plugins → Install from Network" to use.',
   },
   infoNotes: {
     whyTitle: 'Why this exists',

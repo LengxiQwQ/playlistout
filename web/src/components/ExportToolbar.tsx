@@ -137,6 +137,17 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
     }
   };
 
+  const handleCopyMusicFreePlugin = async () => {
+    const pluginUrl = 'https://playlistout.lengxiqwq.com/plugins/musicfree.js';
+    const ok = await copyToClipboard(pluginUrl);
+    if (ok) {
+      showToast(t.export.toastMusicFreeCopied);
+      trackClarityEvent('clipboard_copy');
+    } else {
+      showToast(t.export.toastCopyFailed);
+    }
+  };
+
   return (
     <div
       className="export-toolbar-container"
@@ -318,6 +329,26 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               style={{ padding: '0.35rem 0.75rem', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
             >
               {t.export.copyTitleArtistAlbum}
+            </Sticker>
+
+            <Sticker
+              type="button"
+              color="blue"
+              rotateDeg={0.5}
+              onClick={handleCopyMusicFreePlugin}
+              className="font-handwriting"
+              style={{
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                cursor: 'pointer',
+                border: '1.5px dashed #0A95C8',
+                color: '#0A95C8',
+                backgroundColor: 'rgba(10, 149, 200, 0.08)',
+                fontWeight: 600,
+              }}
+              title="https://playlistout.lengxiqwq.com/plugins/musicfree.js"
+            >
+              {t.export.musicFreePluginBtn}
             </Sticker>
           </div>
         </div>

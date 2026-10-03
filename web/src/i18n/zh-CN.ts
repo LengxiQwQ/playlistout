@@ -174,6 +174,8 @@ export const zhCN: Translations = {
     selectFormatHint: '请至少勾选一种导出格式',
     toastCopySuccess: '已复制 {count} 首歌曲（{mode}）到剪贴板！',
     toastCopyFailed: '复制失败，请检查浏览器剪贴板权限。',
+    musicFreePluginBtn: '🎧 一键复制 MusicFree 官方插件链接',
+    toastMusicFreeCopied: '已复制官方插件链接！在 MusicFree「插件设置 → 从网络安装」直接粘贴即可导入。',
   },
   infoNotes: {
     whyTitle: '为什么做这个',
