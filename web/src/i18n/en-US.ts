@@ -192,7 +192,7 @@ export const enUS: Translations = {
   },
   ecosystem: {
     title: 'Take your playlists even further ♪',
-    subtitle: 'Export is not the end — bring your playlists into the open-source players below and keep listening ♪',
+    subtitle: 'Playlist Out does more than export your playlists — it can also bring them into supported open-source players.',
     supportedCount: '{count} open-source app integrated',
     supportedShort: 'supported',
     statusAvailable: 'Available',

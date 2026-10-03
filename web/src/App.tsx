@@ -763,11 +763,6 @@ export const AppContent: React.FC = () => {
             />
           </div>
 
-          {/* Open-source player plugin ecosystem */}
-          <div className="baseline-grid-snap">
-            <PluginEcosystem />
-          </div>
-
           {/* Result Paper (Single Playlist) */}
           {(state === 'success' || (state === 'loading' && Boolean(playlist))) && viewMode === 'single' && playlist && (
             <div className="baseline-grid-snap">
@@ -794,6 +789,11 @@ export const AppContent: React.FC = () => {
               />
             </div>
           )}
+
+          {/* Open-source player plugin ecosystem — after parsed playlist results */}
+          <div className="baseline-grid-snap">
+            <PluginEcosystem />
+          </div>
 
           {/* Educational Stationery Notes */}
           <div className="baseline-grid-snap">
