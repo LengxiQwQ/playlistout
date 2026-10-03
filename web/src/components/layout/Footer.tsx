@@ -326,11 +326,18 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           }}
         >
           <div
+            className="footer-legal-line"
             style={{
-              height: 'var(--ruled-line-height, 38px)',
-              lineHeight: 'var(--ruled-line-height, 38px)',
+              minHeight: 'var(--ruled-line-height, 38px)',
+              lineHeight: 1.5,
               fontSize: '0.85rem',
               color: '#8a8f92',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              width: '100%',
+              padding: '0.3rem 0.5rem',
             }}
           >
             <span>{t.footer.copyrightPrefix}</span>
@@ -344,11 +351,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             </a>
           </div>
           <div
+            className="footer-disclaimer-line"
             style={{
-              height: 'var(--ruled-line-height, 38px)',
-              lineHeight: 'var(--ruled-line-height, 38px)',
+              minHeight: 'var(--ruled-line-height, 38px)',
+              lineHeight: 1.5,
               fontSize: '0.8rem',
               color: '#a0a5a8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              padding: '0.3rem 0.5rem',
             }}
           >
             {t.footer.disclaimer}
