@@ -19,22 +19,6 @@
   flex: 1;
 }
 
-.plugin-ecosystem-kicker {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.65rem;
-  margin-bottom: 0.65rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--ink, #2d3436);
-}
-
-.plugin-ecosystem-eyebrow {
-  font-size: 1.05rem;
-  color: #8a8f92;
-  margin-bottom: 0.1rem;
-}
-
 .plugin-ecosystem-title {
   margin: 0;
   color: var(--ink, #2d3436);
@@ -141,8 +125,10 @@
 
 .plugin-app-name {
   margin: 0;
-  font-size: 1.45rem;
-  line-height: 1.15;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.2;
   color: var(--ink, #2d3436);
   white-space: nowrap;
 }
@@ -178,8 +164,17 @@
 }
 
 .plugin-copy-button {
+  width: 8.6rem;
+  height: 2.65rem;
+  min-width: 8.6rem;
+  min-height: 2.65rem;
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   font-size: 0.92rem !important;
-  padding: 0.48rem 0.95rem !important;
+  line-height: 1 !important;
+  padding: 0 !important;
   white-space: nowrap;
 }
 
@@ -250,8 +245,10 @@
 }
 
 .plugin-upcoming-name {
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
