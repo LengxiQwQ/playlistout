@@ -18,7 +18,7 @@ export function getFriendlyErrorMessage(code?: ApiErrorCode | string, fallbackMe
     case 'PLAYLIST_NOT_FOUND':
       return '未找到该歌单，可能已被作者删除、设置为私密或当前不可访问。';
     case 'INCOMPLETE_PLAYLIST':
-      return '歌单数据获取不完整。PlaylistOut 遵循严格完整性保障，已中止解析，避免导出不全。';
+      return '歌单数据获取不完整。Playlist Out 遵循严格完整性保障，已中止解析，避免导出不全。';
     case 'UPSTREAM_TIMEOUT':
       return '连接音乐平台服务器超时，请检查网络或稍后重试。';
     case 'UPSTREAM_ERROR':
