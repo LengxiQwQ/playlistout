@@ -459,11 +459,11 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 
 | 👥 Cumulative Daily Unique Visits | 📄 Page Views (PV) | 🎵 Playlists Parsed | 💿 Tracks Processed | 📦 Exports | ⏱️ Uptime |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **334**<br><sub>Today unique +14</sub> | **651**<br><sub>Today +21</sub> | **2,138**<br><sub>Today +1,267</sub> | **466,624**<br><sub>Today +170,852</sub> | **701**<br><sub>Today +491</sub> | **21 Days**<br><sub>Since 2026-09-12</sub> |
+| **369**<br><sub>Today unique +8</sub> | **699**<br><sub>Today +10</sub> | **943**<br><sub>Today +8</sub> | **332,549**<br><sub>Today +4,295</sub> | **247**<br><sub>Today +6</sub> | **22 Days**<br><sub>Since 2026-09-12</sub> |
 
 #### 📊 Feature Usage & Platform Breakdown
-- **🎵 Platform Shares:** QQ Music **41%** (879 parses) ｜ NetEase Cloud Music **49%** (1,047 parses) ｜ KuGou Music **7%** (151 parses) ｜ QiShui Music **3%** (61 parses)
-- **📦 Export Format Distribution:** Excel (.xlsx) **87%** ｜ TXT **5%** ｜ CSV **2%** ｜ JSON **4%** ｜ M3U8 **1%**
+- **🎵 Platform Shares:** QQ Music **50%** (473 parses) ｜ NetEase Cloud Music **25%** (236 parses) ｜ KuGou Music **18%** (173 parses) ｜ QiShui Music **6%** (61 parses)
+- **📦 Export Format Distribution:** Excel (.xlsx) **36%** ｜ TXT **28%** ｜ CSV **11%** ｜ JSON **19%** ｜ M3U8 **6%**
 
 > 🛡️ **Privacy Guarantee**: All metrics are stored as discrete, coarse-grained anonymous aggregate counters in accordance with Project Constitution. **No raw IP addresses, private playlist contents, or personal credentials are ever stored.**
 <!-- WEBSITE_STATS:END -->
@@ -483,12 +483,12 @@ PlaylistOut is open-source software licensed under the **MIT License**. See [LIC
 <!-- INSIGHTS:START -->
 **📊 Repository Traffic**
 
-Views: **763** ｜ Uniques: **188** (14-day) ｜ Clones: **3,041** ｜ Cloners: **469** (14-day)
+Views: **817** ｜ Uniques: **198** (14-day) ｜ Clones: **3,123** ｜ Cloners: **348** (14-day)
 
-**Top referrers (14-day):** Bing · github.com · Google · open.cd · Baidu · chatgpt.com  
-**Top content (14-day):** releases/tag/v2.2.0 · tree/main · commits/main · issues
+**Top referrers (14-day):** Bing · Google · github.com · Baidu · lengxiqwq.com · sogou.com  
+**Top content (14-day):** releases/tag/v2.2.0 · tree/main · commits/main · README.md
 
-> Data since 2026-09-07 · Last updated: 2026-10-02
+> Data since 2026-09-07 · Last updated: 2026-10-03
 <!-- INSIGHTS:END -->
 
 ---
