@@ -13,7 +13,7 @@ Parse, export, and carry your playlists into supported open-source players.
 [![CI](https://img.shields.io/github/actions/workflow/status/LengxiQwQ/playlistout/ci.yml?style=flat-square&label=CI)](https://github.com/LengxiQwQ/playlistout/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
 
-### [🌐 Use Playlist Out Online](https://playlistout.lengxiqwq.com)
+🌐 Online: [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/)
 
 [简体中文](README.md) · English
 
@@ -23,40 +23,30 @@ Parse, export, and carry your playlists into supported open-source players.
 
 ## What is Playlist Out?
 
-**Playlist Out** is an open-source tool for playlist backup, export, and migration.
+**Playlist Out** is an open-source tool for playlist backup, export, and migration. It turns public playlists from supported platforms into a normalized data structure: regular users can inspect, organize, and export playlists as `TXT`, `CSV`, `Excel`, `JSON`, or `M3U8`, then continue using them in supported open-source players; developers can integrate the same parsing capabilities through the Public API or the standard JSON data contract.
 
-It parses public playlists from supported platforms into a normalized data structure so you can:
-
-- inspect and organize playlists in the browser;
-- export them as `TXT`, `CSV`, `Excel`, `JSON`, or `M3U8`;
-- carry playlists into supported open-source music players through plugins or adapters;
-- integrate playlist parsing into third-party applications through the Public API.
-
-Playlist Out is **not a music player** and does not provide, store, or proxy audio files. It only handles playlist and track metadata.
+Playlist Out is **not a music player** and does not provide, store, or proxy audio files. It only handles playlist and track metadata, with the goal of making playlists easier to back up, migrate, and reuse.
 
 ---
 
 ## Quick Start
 
-No desktop client is required.
+No desktop client is required. Open [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/) and get started:
 
-1. Open [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)
-2. Paste a playlist link, share text, or supported ID
-3. Let Playlist Out parse the playlist
-4. Review the tracks and export the format you need
-5. Or import the playlist into a supported open-source player
+1. **Parse** — paste a playlist link, share text, or supported ID and let Playlist Out resolve it.
+2. **Review & export** — confirm the track list, then choose TXT, CSV, Excel, JSON, or M3U8.
+3. **Keep moving** — if you use a supported open-source player, import the parsed playlist through the available plugin or adapter.
 
 ---
 
 ## Key Features
 
-- **Cross-platform parsing** — normalize public playlists from multiple major music services
-- **Flexible input** — web links, short links, share text, and selected numeric IDs
-- **Public user playlists** — supported on selected platforms
-- **Multiple export formats** — TXT / CSV / Excel / JSON / M3U8
-- **Structured metadata** — tracks, artists, albums, artwork, source, and availability state
-- **Player ecosystem** — plugins, JSON compatibility, and lightweight upstream adapters
-- **Public API** — a unified parser for third-party apps, scripts, and migration tools
+| Capability | Description | Capability | Description |
+|---|---|---|---|
+| **Cross-platform parsing** | Normalize public playlists from multiple major music services | **Multiple export formats** | TXT / CSV / Excel / JSON / M3U8 |
+| **Flexible input** | Web links, short links, share text, and selected numeric IDs | **Structured metadata** | Tracks, artists, albums, artwork, source, and availability state |
+| **Public user playlists** | Supported on selected platforms | **Player ecosystem** | Plugins, JSON compatibility, and lightweight upstream adapters |
+| **Public API** | Unified parsing for third-party apps, scripts, and migration tools | **Local export** | Files are generated in the browser without being uploaded to the server |
 
 ---
 
@@ -274,7 +264,7 @@ The idea behind Playlist Out has always been simple: **your playlists should bel
 
 I hope it helps you take the playlists you carefully built out of one service and continue using them wherever you actually want to listen.
 
-**Built & maintained by [LengxiQwQ](https://github.com/LengxiQwQ)**
+**Made with ❤️ by [LengxiQwQ](https://github.com/LengxiQwQ)**
 
 [Website](https://playlistout.lengxiqwq.com) · [GitHub](https://github.com/LengxiQwQ/playlistout) · [Issues](https://github.com/LengxiQwQ/playlistout/issues)
 

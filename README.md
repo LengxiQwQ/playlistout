@@ -13,7 +13,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/LengxiQwQ/playlistout/ci.yml?style=flat-square&label=CI)](https://github.com/LengxiQwQ/playlistout/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
 
-### [🌐 在线使用 Playlist Out](https://playlistout.lengxiqwq.com)
+🌐 在线使用：[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/)
 
 简体中文 · [English](README.en.md)
 
@@ -23,40 +23,30 @@
 
 ## Playlist Out 是什么？
 
-**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。
+**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。它会把支持平台中的公开歌单解析成统一的结构化数据：普通用户可以直接在网页里查看、整理并导出为 `TXT`、`CSV`、`Excel`、`JSON`、`M3U8`，也可以通过插件或适配把歌单继续带进支持的开源音乐播放器；开发者则可以通过 Public API 或标准 JSON 数据结构，把这套解析能力接入自己的应用、脚本或迁移工具。
 
-它可以把支持平台中的公开歌单解析为统一的结构化数据，让你：
-
-- 在网页中查看和整理歌单；
-- 导出为 `TXT`、`CSV`、`Excel`、`JSON`、`M3U8`；
-- 通过插件或适配，把歌单继续带进支持的开源音乐播放器；
-- 通过 Public API 将歌单解析能力接入第三方应用。
-
-Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文件。项目只处理歌单及曲目元数据。
+Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文件。项目只处理歌单与曲目元数据，目标是让歌单更容易备份、迁移和继续使用。
 
 ---
 
 ## 快速开始
 
-不需要安装客户端，直接使用网页即可：
+不需要安装客户端，直接打开 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/) 即可开始：
 
-1. 打开 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)
-2. 粘贴歌单链接、分享内容或支持的 ID
-3. 等待 Playlist Out 解析歌单
-4. 查看歌曲列表并导出需要的格式
-5. 如果使用受支持的开源播放器，也可以继续把歌单导入播放器
+1. **解析歌单**：粘贴歌单链接、分享内容或支持的 ID，等待 Playlist Out 完成解析。
+2. **查看与导出**：确认歌曲列表后，选择需要的 TXT、CSV、Excel、JSON 或 M3U8 格式。
+3. **继续带走**：如果你使用受支持的开源播放器，还可以通过插件或适配把解析后的歌单继续导入播放器。
 
 ---
 
 ## 主要能力
 
-- **跨平台解析**：统一解析多个主流音乐平台的公开歌单
-- **多种输入方式**：支持网页链接、短链、分享文本和部分数字 ID
-- **公开用户歌单**：支持部分平台的用户公开歌单合集
-- **多格式导出**：TXT / CSV / Excel / JSON / M3U8
-- **结构化数据**：保留歌曲、歌手、专辑、封面、来源及可用状态等信息
-- **播放器生态**：通过插件、JSON 兼容或轻量适配连接开源音乐播放器
-- **Public API**：为第三方应用、脚本和迁移工具提供统一解析能力
+| 能力 | 说明 | 能力 | 说明 |
+|---|---|---|---|
+| **跨平台解析** | 统一解析多个主流音乐平台的公开歌单 | **多格式导出** | TXT / CSV / Excel / JSON / M3U8 |
+| **多种输入方式** | 网页链接、短链、分享文本和部分数字 ID | **结构化数据** | 保留歌曲、歌手、专辑、封面、来源及可用状态 |
+| **公开用户歌单** | 支持部分平台的用户公开歌单合集 | **播放器生态** | 通过插件、JSON 兼容或轻量适配连接开源播放器 |
+| **Public API** | 为第三方应用、脚本和迁移工具提供统一解析能力 | **本地导出** | 文件由浏览器本地生成，不需要上传到服务器 |
 
 ---
 
@@ -274,7 +264,7 @@ MIT License 允许你在保留原始版权与许可声明的前提下自由使�
 
 希望它能把你认真整理的歌单带出来，也能继续带到你真正想去的地方。
 
-**Built & maintained by [LengxiQwQ](https://github.com/LengxiQwQ)**
+**Made with ❤️ by [LengxiQwQ](https://github.com/LengxiQwQ)**
 
 [Website](https://playlistout.lengxiqwq.com) · [GitHub](https://github.com/LengxiQwQ/playlistout) · [Issues](https://github.com/LengxiQwQ/playlistout/issues)
 
