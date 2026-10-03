@@ -505,6 +505,80 @@ def format_provider_failure_path_label(name: str) -> str:
     return PROVIDER_FAILURE_PATH_MAP.get(name.strip().lower(), name)
 
 
+CHINA_PROVINCE_MAP = {
+    "guangdong": "广东 (Guangdong)",
+    "shanghai": "上海 (Shanghai)",
+    "beijing": "北京 (Beijing)",
+    "zhejiang": "浙江 (Zhejiang)",
+    "jiangsu": "江苏 (Jiangsu)",
+    "shandong": "山东 (Shandong)",
+    "sichuan": "四川 (Sichuan)",
+    "hubei": "湖北 (Hubei)",
+    "henan": "河南 (Henan)",
+    "fujian": "福建 (Fujian)",
+    "hunan": "湖南 (Hunan)",
+    "anhui": "安徽 (Anhui)",
+    "hebei": "河北 (Hebei)",
+    "shaanxi": "陕西 (Shaanxi)",
+    "shanxi": "山西 (Shanxi)",
+    "jiangxi": "江西 (Jiangxi)",
+    "chongqing": "重庆 (Chongqing)",
+    "liaoning": "辽宁 (Liaoning)",
+    "yunnan": "云南 (Yunnan)",
+    "guangxi": "广西 (Guangxi)",
+    "guizhou": "贵州 (Guizhou)",
+    "tianjin": "天津 (Tianjin)",
+    "jilin": "吉林 (Jilin)",
+    "heilongjiang": "黑龙江 (Heilongjiang)",
+    "xinjiang": "新疆 (Xinjiang)",
+    "gansu": "甘肃 (Gansu)",
+    "hainan": "海南 (Hainan)",
+    "ningxia": "宁夏 (Ningxia)",
+    "qinghai": "青海 (Qinghai)",
+    "xizang": "西藏 (Tibet)",
+    "inner mongolia": "内蒙古 (Inner Mongolia)",
+    "hong kong": "中国香港 (Hong Kong)",
+    "macau": "中国澳门 (Macau)",
+    "taiwan": "中国台湾 (Taiwan)",
+}
+
+def format_province_label(name: str) -> str:
+    if not name:
+        return "未知省份 (Unknown)"
+    return CHINA_PROVINCE_MAP.get(name.strip().lower(), name)
+
+ENDPOINT_MAP = {
+    "playlist": "/api/playlist (歌单解析)",
+    "resolve": "/api/v1/resolve (统一解析)",
+    "user": "/api/user/playlists (用户歌单)",
+    "session": "/api/session/token (会话凭证)",
+    "event": "/api/event (遥测打点)",
+    "stats": "/api/stats (公开统计)",
+}
+
+def format_endpoint_label(name: str) -> str:
+    if not name:
+        return "未知端点 (Unknown)"
+    clean = name.strip().lower().replace("/api/", "")
+    return ENDPOINT_MAP.get(clean, f"/api/{name}")
+
+SIZE_BUCKET_ORDER = ["1-50", "51-200", "201-500", "501-1000", "1000+"]
+
+def sort_size_distribution(lst):
+    if not lst or not isinstance(lst, list):
+        return []
+    lookup = {x.get("name"): x for x in lst if isinstance(x, dict)}
+    sorted_list = []
+    for bucket in SIZE_BUCKET_ORDER:
+        if bucket in lookup:
+            sorted_list.append(lookup[bucket])
+    for x in lst:
+        if isinstance(x, dict) and x.get("name") not in SIZE_BUCKET_ORDER:
+            sorted_list.append(x)
+    return sorted_list
+
+
+
 
 
 # ── 4. HTML 构建 (Modern White Bilingual Dashboard) ───────────────────
@@ -623,6 +697,17 @@ def build_html(
         for x in q_entries
         if x.get("metric_or_dimension") == "tracks_processed"
     )
+    q_fake_parses = sum(
+        x.get("count", 0)
+        for x in q_entries
+        if x.get("metric_or_dimension") in ["playlists_parsed", "parse_success"]
+    )
+    total_parses_combined = s(stats.get("playlistsParsedToday")) + q_fake_parses
+    if total_parses_combined > 0:
+        q_purity_pct = round((1.0 - (q_fake_parses / total_parses_combined)) * 100, 1)
+        q_purity_pct_str = f"{q_purity_pct}%"
+    else:
+        q_purity_pct_str = "100%"
 
     # 基础指标与 Uptime (严格以 UTC+8 日期基准计算)
     raw_launched = stats.get("launchedAt")
@@ -728,7 +813,7 @@ def build_html(
     ])
 
     cn_raw = stats.get("chinaProvinces") or []
-    cn_labels = j([c.get("province", "?") for c in cn_raw])
+    cn_labels = j([format_province_label(c.get("province", "?")) for c in cn_raw])
     cn_counts = j([s(c.get("count")) for c in cn_raw])
     cn_pcts = dist_pcts(cn_raw)
 
@@ -754,11 +839,16 @@ def build_html(
 
     # 导出格式与剪贴板
     fmt_raw = stats.get("exportFormatsBreakdown") or {}
-    fmt_labels, fmt_counts = j(list(fmt_raw.keys())), j(list(fmt_raw.values()))
+    fmt_labels = j(list(fmt_raw.keys()))
+    fmt_counts = j(list(fmt_raw.values()))
+    fmt_total = sum(fmt_raw.values()) if fmt_raw else 0
+    fmt_pcts = j([round(v / fmt_total * 100, 1) if fmt_total else 0 for v in fmt_raw.values()])
 
     cb_raw = stats.get("clipboardFormatsBreakdown") or {}
     cb_labels = j([format_clipboard_label(k) for k in cb_raw.keys()])
     cb_counts = j(list(cb_raw.values()))
+    cb_total = sum(cb_raw.values()) if cb_raw else 0
+    cb_pcts = j([round(v / cb_total * 100, 1) if cb_total else 0 for v in cb_raw.values()])
 
     # 平台解析
     plat_raw = stats.get("byPlatform") or {}
@@ -792,24 +882,27 @@ def build_html(
     err_counts = dist_counts(stats.get("errorCategoryDistribution"))
     err_pcts = dist_pcts(stats.get("errorCategoryDistribution"))
 
-    # 运维工程维度 (R6 纳入的数据库已记录维度)
-    pl_size_labels = dist_names(stats.get("playlistSizeDistribution"))
-    pl_size_counts = dist_counts(stats.get("playlistSizeDistribution"))
-    pl_size_pcts = dist_pcts(stats.get("playlistSizeDistribution"))
+    # 运维工程维度 (有序分箱 & 端点双语映射)
+    pl_size_sorted = sort_size_distribution(stats.get("playlistSizeDistribution"))
+    pl_size_labels = dist_names_mapped(pl_size_sorted, lambda x: f"{x} 首" if not x.endswith("首") else x)
+    pl_size_counts = dist_counts(pl_size_sorted)
+    pl_size_pcts = dist_pcts(pl_size_sorted)
 
-    prov_path_labels = dist_names(stats.get("providerPathDistribution"))
+    prov_path_labels = dist_names_mapped(stats.get("providerPathDistribution"), format_provider_failure_path_label)
     prov_path_counts = dist_counts(stats.get("providerPathDistribution"))
     prov_path_pcts = dist_pcts(stats.get("providerPathDistribution"))
 
-    exp_size_labels = dist_names(stats.get("exportPlaylistSizeDistribution"))
-    exp_size_counts = dist_counts(stats.get("exportPlaylistSizeDistribution"))
-    exp_size_pcts = dist_pcts(stats.get("exportPlaylistSizeDistribution"))
+    exp_size_sorted = sort_size_distribution(stats.get("exportPlaylistSizeDistribution"))
+    exp_size_labels = dist_names_mapped(exp_size_sorted, lambda x: f"{x} 首" if not x.endswith("首") else x)
+    exp_size_counts = dist_counts(exp_size_sorted)
+    exp_size_pcts = dist_pcts(exp_size_sorted)
 
-    cb_size_labels = dist_names(stats.get("clipboardPlaylistSizeDistribution"))
-    cb_size_counts = dist_counts(stats.get("clipboardPlaylistSizeDistribution"))
-    cb_size_pcts = dist_pcts(stats.get("clipboardPlaylistSizeDistribution"))
+    cb_size_sorted = sort_size_distribution(stats.get("clipboardPlaylistSizeDistribution"))
+    cb_size_labels = dist_names_mapped(cb_size_sorted, lambda x: f"{x} 首" if not x.endswith("首") else x)
+    cb_size_counts = dist_counts(cb_size_sorted)
+    cb_size_pcts = dist_pcts(cb_size_sorted)
 
-    rl_labels = dist_names(stats.get("rateLimitEndpointDistribution"))
+    rl_labels = dist_names_mapped(stats.get("rateLimitEndpointDistribution"), format_endpoint_label)
     rl_counts = dist_counts(stats.get("rateLimitEndpointDistribution"))
     rl_pcts = dist_pcts(stats.get("rateLimitEndpointDistribution"))
 
@@ -857,9 +950,10 @@ def build_html(
     res_plat_fail_counts = dist_counts(stats.get("resolveFailuresByPlatform"))
     res_plat_fail_pcts = dist_pcts(stats.get("resolveFailuresByPlatform"))
 
-    prov_fail_path_labels = dist_names_mapped(stats.get("providerFailurePathDistribution"), format_provider_failure_path_label)
-    prov_fail_path_counts = dist_counts(stats.get("providerFailurePathDistribution"))
-    prov_fail_path_pcts = dist_pcts(stats.get("providerFailurePathDistribution"))
+    prov_fail_raw = stats.get("providerFailurePathDistribution") or stats.get("providerFailurePaths") or []
+    prov_fail_path_labels = dist_names_mapped(prov_fail_raw, format_provider_failure_path_label)
+    prov_fail_path_counts = dist_counts(prov_fail_raw)
+    prov_fail_path_pcts = dist_pcts(prov_fail_raw)
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1215,6 +1309,35 @@ def build_html(
     footer a {{
       color: var(--brand);
       text-decoration: none;
+    }}
+
+    /* 诊断与效能通用指标卡片 (Metrics Grid & Card) */
+    .metrics-grid {{
+      display: grid;
+      gap: 14px;
+    }}
+    .metric-card {{
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }}
+    .metric-label {{
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }}
+    .metric-val {{
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.1;
+    }}
+    .metric-sub {{
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
     }}
 
 
@@ -2094,17 +2217,17 @@ def build_html(
       <div class="q-kpi-card rose">
         <div class="q-kpi-title">隔离异常事件总量 / Quarantined Events</div>
         <div class="q-kpi-val" style="color:var(--rose);">{n(q_total_events)}</div>
-        <div class="q-kpi-sub">含 {n(q_protected_tracks)} 首歌曲 / 1,276 虚假解析 / {n(q_429_blocks)} 频控拦截</div>
+        <div class="q-kpi-sub">含 {n(q_protected_tracks)} 首歌曲 / {n(q_fake_parses)} 虚假解析 / {n(q_429_blocks)} 频控拦截</div>
       </div>
       <div class="q-kpi-card emerald">
         <div class="q-kpi-title">数据净化清洗率 / Clean Data Purity</div>
-        <div class="q-kpi-val" style="color:var(--emerald);">97.3%</div>
-        <div class="q-kpi-sub">剥离虚假请求 97.3% · 保留 35 次真实解析 / 22 次导出</div>
+        <div class="q-kpi-val" style="color:var(--emerald);">{q_purity_pct_str}</div>
+        <div class="q-kpi-sub">剥离虚假请求 · 保留 {n(parses_today)} 次真实解析 / {n(exports_today)} 次导出</div>
       </div>
       <div class="q-kpi-card amber">
         <div class="q-kpi-title">429 频控防护拦截 / Rate-Limit Blocks</div>
         <div class="q-kpi-val" style="color:var(--amber);">{n(q_429_blocks)} 次</div>
-        <div class="q-kpi-sub">QQ音乐: 343 次 · 网易云: 310 次 (单IP &gt; 30 req/min)</div>
+        <div class="q-kpi-sub">主动防护拦截 · 保护上游源站高可用</div>
       </div>
       <div class="q-kpi-card brand">
         <div class="q-kpi-title">隔离归档证据记录 / Forensic Records</div>
@@ -2285,6 +2408,53 @@ def build_html(
       return total > 0 ? Math.round((value / total) * 100) : 0;
     }}
 
+    const barLabelsPlugin = {{
+      id: 'barLabelsPlugin',
+      afterDatasetsDraw(chart) {{
+        const {{ ctx }} = chart;
+        const isHorizontal = chart.config.options?.indexAxis === 'y';
+
+        chart.data.datasets.forEach((dataset, datasetIndex) => {{
+          const meta = chart.getDatasetMeta(datasetIndex);
+          if (meta.hidden) return;
+
+          const percentages = dataset._percentages || null;
+          const total = dataset._total || (Array.isArray(dataset.data) ? dataset.data.reduce((a, b) => a + Number(b || 0), 0) : 0);
+
+          meta.data.forEach((element, index) => {{
+            const rawVal = dataset.data[index];
+            const val = Number(rawVal ?? 0);
+            if (val <= 0 && !dataset._showZero) return;
+
+            let text = val.toLocaleString();
+            const pct = resolvePercentage(percentages, index, val, total);
+            if (pct !== null && pct !== undefined && pct !== '' && Number(pct) >= 0) {{
+              text += ` (${{pct}}%)`;
+            }}
+
+            ctx.save();
+            ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillStyle = '#475569';
+
+            if (isHorizontal) {{
+              const x = element.x + 6;
+              const y = element.y;
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(text, x, y);
+            }} else {{
+              const x = element.x;
+              const y = element.y - 5;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(text, x, y);
+            }}
+            ctx.restore();
+          }});
+        }});
+      }}
+    }};
+
     // 甜甜圈图构造函数：优先显示 API 提供的真实 percentage，缺失时才由完整数据集计算。
     function createDonut(elementId, labels, data, percentages = null) {{
       const el = document.getElementById(elementId);
@@ -2309,7 +2479,29 @@ def build_html(
           plugins: {{
             legend: {{
               position: 'right',
-              labels: {{ boxWidth: 10, padding: 8, font: {{ size: 10 }} }}
+              labels: {{
+                boxWidth: 10,
+                padding: 8,
+                font: {{ size: 10 }},
+                generateLabels: function(chart) {{
+                  const d = chart.data;
+                  if (d.labels.length && d.datasets.length) {{
+                    const dataset = d.datasets[0];
+                    return d.labels.map((label, i) => {{
+                      const val = Number(dataset.data[i] || 0);
+                      const pct = resolvePercentage(percentages, i, val, total);
+                      const text = hasData ? `${{label}}: ${{val.toLocaleString()}} (${{pct}}%)` : label;
+                      return {{
+                        text: text,
+                        fillStyle: dataset.backgroundColor[i] || '#cbd5e1',
+                        hidden: false,
+                        index: i
+                      }};
+                    }});
+                  }}
+                  return [];
+                }}
+              }}
             }},
             tooltip: {{
               enabled: hasData,
@@ -2326,20 +2518,57 @@ def build_html(
       }});
     }}
 
-    // 横向柱状图：同样保留 API percentage，避免用 Top-N 子集重新归一化。
-    function createHBar(elementId, labels, data, color, percentages = null) {{
+    // 横向柱状图 (排行榜)：同样保留 API percentage，避免用 Top-N 子集重新归一化。
+    // 支持可选的 maxBars 尾部聚合：超出部分自动归入“其他”，鼠标悬停即可查看完整的明细子项！
+    function createHBar(elementId, labels, data, color, percentages = null, maxBars = 0, otherLabel = '其他 (Other)') {{
       const el = document.getElementById(elementId);
       if (!el) return;
       const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
       const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
+      const barColor = Array.isArray(color) ? color : (color || '#2563eb');
+
+      let renderLabels = labels;
+      let renderData = data;
+      let renderPercentages = percentages;
+      let tailDetails = null;
+
+      if (hasData && maxBars > 0 && Array.isArray(labels) && labels.length > maxBars) {{
+        const keepCount = maxBars - 1;
+        const headLabels = labels.slice(0, keepCount);
+        const headData = data.slice(0, keepCount);
+        const headPcts = Array.isArray(percentages) ? percentages.slice(0, keepCount) : null;
+
+        const tailLabels = labels.slice(keepCount);
+        const tailData = data.slice(keepCount);
+        const tailPcts = Array.isArray(percentages) ? percentages.slice(keepCount) : null;
+
+        const tailSum = tailData.reduce((a, b) => a + Number(b || 0), 0);
+        const tailPctSum = tailPcts
+          ? tailPcts.reduce((a, b) => a + Number(b || 0), 0)
+          : (total > 0 ? Math.round((tailSum / total) * 100) : 0);
+
+        tailDetails = tailLabels.map((l, i) => ({{
+          label: l,
+          count: Number(tailData[i] || 0),
+          pct: tailPcts ? Number(tailPcts[i] || 0) : (total > 0 ? Math.round((Number(tailData[i] || 0) / total) * 100) : 0)
+        }})).filter(x => x.count > 0);
+
+        renderLabels = [...headLabels, otherLabel];
+        renderData = [...headData, tailSum];
+        renderPercentages = headPcts ? [...headPcts, tailPctSum] : null;
+      }}
+
       return new Chart(el, {{
         type: 'bar',
         data: {{
-          labels: hasData ? labels : ['暂无数据 / No Data'],
+          labels: hasData ? renderLabels : ['暂无数据 / No Data'],
           datasets: [{{
-            data: hasData ? data : [0],
-            backgroundColor: color || '#2563eb',
-            borderRadius: 4
+            data: hasData ? renderData : [0],
+            backgroundColor: barColor,
+            borderRadius: 4,
+            _percentages: renderPercentages,
+            _total: total,
+            _tailDetails: tailDetails
           }}]
         }},
         options: {{
@@ -2351,7 +2580,62 @@ def build_html(
               enabled: hasData,
               callbacks: {{
                 label: function(ctx) {{
+                  const dataset = ctx.dataset;
+                  const idx = ctx.dataIndex;
                   const val = Number(ctx.parsed?.x ?? ctx.raw ?? 0);
+                  const pcts = dataset._percentages;
+                  const pct = resolvePercentage(pcts, idx, val, dataset._total || total);
+
+                  if (dataset._tailDetails && idx === dataset.data.length - 1) {{
+                    const lines = [` ${{ctx.label}}: ${{val.toLocaleString()}} · ${{pct}}%`];
+                    lines.push(' ────────────────────────');
+                    dataset._tailDetails.forEach(item => {{
+                      lines.push(` • ${{item.label}}: ${{item.count.toLocaleString()}} (${{item.pct}}%)`);
+                    }});
+                    return lines;
+                  }}
+                  return ` ${{val.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
+          scales: {{
+            x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true, grace: '28%' }},
+            y: {{ grid: {{ display: false }} }}
+          }}
+        }},
+        plugins: hasData ? [barLabelsPlugin] : []
+      }});
+    }}
+
+    // 纵向柱状分布图 (直方图)：用于有序区间分箱 (如歌单规模、歌曲数分布)，展示数值正态分布趋势
+    function createVBar(elementId, labels, data, color, percentages = null) {{
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const hasData = Array.isArray(data) && data.length > 0 && data.some(v => v > 0);
+      const total = hasData ? data.reduce((a, b) => a + Number(b || 0), 0) : 0;
+      const barColor = Array.isArray(color) ? color : (color || '#0891b2');
+      return new Chart(el, {{
+        type: 'bar',
+        data: {{
+          labels: hasData ? labels : ['暂无数据 / No Data'],
+          datasets: [{{
+            data: hasData ? data : [0],
+            backgroundColor: barColor,
+            borderRadius: 4,
+            _percentages: percentages,
+            _total: total
+          }}]
+        }},
+        options: {{
+          responsive: true,
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              enabled: hasData,
+              callbacks: {{
+                label: function(ctx) {{
+                  const val = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
                   const pct = resolvePercentage(percentages, ctx.dataIndex, val, total);
                   return ` ${{val.toLocaleString()}} · ${{pct}}%`;
                 }}
@@ -2359,10 +2643,14 @@ def build_html(
             }}
           }},
           scales: {{
-            x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true }},
-            y: {{ grid: {{ display: false }} }}
+            x: BASE_SCALES.x,
+            y: {{
+              ...BASE_SCALES.y,
+              grace: '18%'
+            }}
           }}
-        }}
+        }},
+        plugins: hasData ? [barLabelsPlugin] : []
       }});
     }}
 
@@ -2408,24 +2696,39 @@ def build_html(
 
       const labels = HOURLY_DATA.map(x => formatHourLabel(x.timestamp));
       const mode = trafficMetricSelect?.value || 'both';
+      const isBoth = mode === 'both';
+      const isUvOnly = mode === 'uv';
+      const isPvOnly = mode === 'pv';
+
       hourlyChart = new Chart(el, {{
         type: 'bar',
         data: {{
           labels,
           datasets: [
             {{
+              type: isBoth ? 'line' : 'bar',
+              label: 'UV 当日首次访问 / Daily-unique first visits',
+              data: HOURLY_DATA.map(x => Number(x.visitors || 0)),
+              borderColor: '#0284c7',
+              backgroundColor: isBoth ? '#0284c7' : '#38bdf8',
+              borderWidth: 2,
+              pointRadius: isBoth ? 3 : 0,
+              pointHoverRadius: isBoth ? 5 : 0,
+              pointBackgroundColor: '#0284c7',
+              tension: 0.3,
+              fill: false,
+              borderRadius: 4,
+              hidden: isPvOnly,
+              order: isBoth ? 1 : 2
+            }},
+            {{
+              type: 'bar',
               label: 'PV 页面浏览 / Page Views',
               data: HOURLY_DATA.map(x => Number(x.pageViews || 0)),
               backgroundColor: '#2563eb',
               borderRadius: 4,
-              hidden: mode === 'uv'
-            }},
-            {{
-              label: 'UV 当日首次访问 / Daily-unique first visits',
-              data: HOURLY_DATA.map(x => Number(x.visitors || 0)),
-              backgroundColor: '#38bdf8',
-              borderRadius: 4,
-              hidden: mode === 'pv'
+              hidden: isUvOnly,
+              order: 2
             }}
           ]
         }},
@@ -2625,11 +2928,12 @@ def build_html(
     // 5. 地理分布：全球图由可交互的 MY 过滤器管理；中国省份图保持原始真实计数。
     createHBar('chartChina', {cn_labels}, {cn_counts}, '#0891b2', {cn_pcts});
 
-    // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统)
-    createDonut('chartBrowser', {br_labels}, {br_counts}, {br_pcts});
-    createDonut('chartBrand', {brand_labels}, {brand_counts}, {brand_pcts});
-    createDonut('chartDevice', {dv_labels}, {dv_counts}, {dv_pcts});
-    createDonut('chartOS', {os_labels}, {os_counts}, {os_pcts});
+    // 6. 客户端 (浏览器 / 硬件品牌 / 设备 / 操作系统) -> 排行榜横向柱状图 (避免饼图过密)
+    // 对于长尾型号（如份额 < 1% 的微小长尾），自动归入“其他”，鼠标悬停即可查看完整子项明细！
+    createHBar('chartBrowser', {br_labels}, {br_counts}, '#2563eb', {br_pcts}, 8, '其他浏览器 (Other Browsers)');
+    createHBar('chartBrand', {brand_labels}, {brand_counts}, '#7c3aed', {brand_pcts}, 8, '其他品牌与型号 (Other Brands)');
+    createHBar('chartDevice', {dv_labels}, {dv_counts}, '#0891b2', {dv_pcts});
+    createHBar('chartOS', {os_labels}, {os_counts}, '#4f46e5', {os_pcts});
 
     // 7. 导出格式 & 剪贴板 & 输入类型
     const elExport = document.getElementById('chartExportFmt');
@@ -2642,19 +2946,40 @@ def build_html(
             label: '导出数 / Exports',
             data: {fmt_counts},
             backgroundColor: '#059669',
-            borderRadius: 4
+            borderRadius: 4,
+            _percentages: {fmt_pcts},
+            _total: {fmt_total}
           }}]
         }},
         options: {{
           responsive: true,
-          plugins: {{ legend: {{ display: false }} }},
-          scales: BASE_SCALES
-        }}
+          plugins: {{
+            legend: {{ display: false }},
+            tooltip: {{
+              callbacks: {{
+                label: function(ctx) {{
+                  const val = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                  const pcts = {fmt_pcts};
+                  const pct = pcts?.[ctx.dataIndex] ?? (({fmt_total} > 0) ? Math.round((val / {fmt_total}) * 100) : 0);
+                  return ` ${{val.toLocaleString()}} · ${{pct}}%`;
+                }}
+              }}
+            }}
+          }},
+          scales: {{
+            x: BASE_SCALES.x,
+            y: {{
+              ...BASE_SCALES.y,
+              grace: '18%'
+            }}
+          }}
+        }},
+        plugins: [barLabelsPlugin]
       }});
     }}
 
-    createDonut('chartClipboard', {cb_labels}, {cb_counts});
-    createDonut('chartInputType', {inp_labels}, {inp_counts}, {inp_pcts});
+    createHBar('chartClipboard', {cb_labels}, {cb_counts}, '#059669', {cb_pcts});
+    createHBar('chartInputType', {inp_labels}, {inp_counts}, '#d97706', {inp_pcts});
 
     // 8. 来源、延迟与错误
     createHBar('chartReferrer', {ref_labels}, {ref_counts}, '#4f46e5', {ref_pcts});
@@ -2669,7 +2994,9 @@ def build_html(
             label: '请求数 / Requests',
             data: {lat_counts},
             backgroundColor: '#0284c7',
-            borderRadius: 4
+            borderRadius: 4,
+            _percentages: {lat_pcts},
+            _total: {lat_counts}.reduce((a, b) => a + Number(b || 0), 0)
           }}]
         }},
         options: {{
@@ -2687,30 +3014,38 @@ def build_html(
               }}
             }}
           }},
-          scales: BASE_SCALES
-        }}
+          scales: {{
+            x: BASE_SCALES.x,
+            y: {{
+              ...BASE_SCALES.y,
+              grace: '18%'
+            }}
+          }}
+        }},
+        plugins: [barLabelsPlugin]
       }});
     }}
 
-    createDonut('chartError', {err_labels}, {err_counts}, {err_pcts});
+    createHBar('chartError', {err_labels}, {err_counts}, '#e11d48', {err_pcts});
 
     // 9. 运维与工程洞察 (R6)
-    createDonut('chartPlSize', {pl_size_labels}, {pl_size_counts}, {pl_size_pcts});
-    createDonut('chartProvPath', {prov_path_labels}, {prov_path_counts}, {prov_path_pcts});
-    createDonut('chartRateLimit', {rl_labels}, {rl_counts}, {rl_pcts});
-    createDonut('chartExpSize', {exp_size_labels}, {exp_size_counts}, {exp_size_pcts});
-    createDonut('chartCbSize', {cb_size_labels}, {cb_size_counts}, {cb_size_pcts});
+    // 歌单规模为有序分箱，采用纵向柱状直方图；链路路径与限流端点采用水平条形图
+    createVBar('chartPlSize', {pl_size_labels}, {pl_size_counts}, '#0891b2', {pl_size_pcts});
+    createHBar('chartProvPath', {prov_path_labels}, {prov_path_counts}, '#059669', {prov_path_pcts});
+    createHBar('chartRateLimit', {rl_labels}, {rl_counts}, '#d97706', {rl_pcts});
+    createVBar('chartExpSize', {exp_size_labels}, {exp_size_counts}, '#2563eb', {exp_size_pcts});
+    createVBar('chartCbSize', {cb_size_labels}, {cb_size_counts}, '#7c3aed', {cb_size_pcts});
 
-    // 10. 解析失败诊断与可靠性 (R7)
-    createDonut('chartResOutcome', {res_outcome_labels}, {res_outcome_counts}, {res_outcome_pcts});
-    createDonut('chartResFailClass', {res_fail_class_labels}, {res_fail_class_counts}, {res_fail_class_pcts});
-    createDonut('chartResFailCode', {res_fail_code_labels}, {res_fail_code_counts}, {res_fail_code_pcts});
-    createDonut('chartResFailStage', {res_fail_stage_labels}, {res_fail_stage_counts}, {res_fail_stage_pcts});
-    createDonut('chartResPlatFail', {res_plat_fail_labels}, {res_plat_fail_counts}, {res_plat_fail_pcts});
-    createDonut('chartProvFailPath', {prov_fail_path_labels}, {prov_fail_path_counts}, {prov_fail_path_pcts});
-    createDonut('chartResReqType', {res_req_type_labels}, {res_req_type_counts}, {res_req_type_pcts});
-    createDonut('chartResReqPlat', {res_req_plat_labels}, {res_req_plat_counts}, {res_req_plat_pcts});
-    createDonut('chartResInputType', {res_input_type_labels}, {res_input_type_counts}, {res_input_type_pcts});
+    // 10. 解析失败诊断与可靠性 (R7) -> 9 个维度全面升级为水平条形排行榜，终结 3x3 圈圈矩阵！
+    createHBar('chartResOutcome', {res_outcome_labels}, {res_outcome_counts}, '#059669', {res_outcome_pcts});
+    createHBar('chartResFailClass', {res_fail_class_labels}, {res_fail_class_counts}, '#e11d48', {res_fail_class_pcts});
+    createHBar('chartResFailCode', {res_fail_code_labels}, {res_fail_code_counts}, '#d97706', {res_fail_code_pcts});
+    createHBar('chartResFailStage', {res_fail_stage_labels}, {res_fail_stage_counts}, '#4f46e5', {res_fail_stage_pcts});
+    createHBar('chartResPlatFail', {res_plat_fail_labels}, {res_plat_fail_counts}, '#ea580c', {res_plat_fail_pcts});
+    createHBar('chartProvFailPath', {prov_fail_path_labels}, {prov_fail_path_counts}, '#0891b2', {prov_fail_path_pcts});
+    createHBar('chartResReqType', {res_req_type_labels}, {res_req_type_counts}, '#2563eb', {res_req_type_pcts});
+    createHBar('chartResReqPlat', {res_req_plat_labels}, {res_req_plat_counts}, '#7c3aed', {res_req_plat_pcts});
+    createHBar('chartResInputType', {res_input_type_labels}, {res_input_type_counts}, '#059669', {res_input_type_pcts});
 
     // ── Feedback Management Panel ──
     (function() {{
@@ -2876,8 +3211,7 @@ def build_html(
       }}
       const rawEntries = qData.quarantine || [];
 
-      // 1. 初始化 3 个 Chart.js 图表
-      // A. 威胁类型与行为分类 Donut
+      // A. 威胁类型与行为分类 (排行榜水平柱状图，标签清晰展示，长文本无截断)
       const threatLabels = [
         '南京/上海批量抓取 (Bulk Scrape)',
         '成都脚本接口滥用 (Direct API Burst)',
@@ -2887,43 +3221,46 @@ def build_html(
       ];
       const threatCounts = [3704, 2611, 1306, 3262, 1276];
       const threatColors = ['#d97706', '#e11d48', '#ea580c', '#4f46e5', '#7c3aed'];
+      const threatTotal = threatCounts.reduce((a, b) => a + Number(b || 0), 0);
 
       const elThreat = document.getElementById('chartQuarantineThreat');
       if (elThreat) {{
         new Chart(elThreat, {{
-          type: 'doughnut',
+          type: 'bar',
           data: {{
             labels: threatLabels,
             datasets: [{{
               data: threatCounts,
               backgroundColor: threatColors,
-              borderColor: '#ffffff',
-              borderWidth: 2,
-              hoverOffset: 4
+              borderRadius: 4,
+              _total: threatTotal
             }}]
           }},
           options: {{
+            indexAxis: 'y',
             responsive: true,
-            cutout: '68%',
             plugins: {{
-              legend: {{
-                position: 'right',
-                labels: {{ boxWidth: 10, padding: 8, font: {{ size: 10 }} }}
-              }},
+              legend: {{ display: false }},
               tooltip: {{
                 callbacks: {{
                   label: function(ctx) {{
-                    const val = Number(ctx.parsed || 0);
-                    return ' ' + ctx.label + ': ' + val.toLocaleString() + ' 事件';
+                    const val = Number(ctx.parsed?.x ?? ctx.raw ?? 0);
+                    const pct = threatTotal > 0 ? Math.round((val / threatTotal) * 100) : 0;
+                    return ' ' + val.toLocaleString() + ' 事件 · ' + pct + '%';
                   }}
                 }}
               }}
+            }},
+            scales: {{
+              x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true, grace: '28%' }},
+              y: {{ grid: {{ display: false }} }}
             }}
-          }}
+          }},
+          plugins: [barLabelsPlugin]
         }});
       }}
 
-      // B. 爬虫流量时序波峰与拦截分布 Bar
+      // B. 爬虫流量时序波峰与拦截分布 Stacked Bar (确保每个时间节点只有一根柱子)
       const hourlyLabels = ['06:00', '09:00', '10:00', '11:00', '其他时段 (正常)'];
       const hourlyParses = [772, 311, 311, 18, 5];
       const hourlyExports = [0, 312, 312, 18, 2];
@@ -2941,24 +3278,37 @@ def build_html(
                 data: hourlyParses,
                 backgroundColor: '#e11d48',
                 borderRadius: 4,
+                stack: 'quarantine'
               }},
               {{
                 label: '爬虫批量导出 (Exports)',
                 data: hourlyExports,
                 backgroundColor: '#d97706',
                 borderRadius: 4,
+                stack: 'quarantine'
               }},
               {{
                 label: '429 频控拦截 (Blocks)',
                 data: hourlyBlocks,
                 backgroundColor: '#64748b',
                 borderRadius: 4,
+                stack: 'quarantine'
               }}
             ]
           }},
           options: {{
             responsive: true,
-            scales: BASE_SCALES,
+            scales: {{
+              x: {{
+                stacked: true,
+                grid: {{ color: '#f1f5f9' }}
+              }},
+              y: {{
+                stacked: true,
+                grid: {{ color: '#f1f5f9' }},
+                beginAtZero: true
+              }}
+            }},
             plugins: {{
               legend: {{
                 position: 'top',
@@ -2978,6 +3328,7 @@ def build_html(
       ];
       const fpCounts = [929, 765, 2829, 1189];
       const fpColors = ['#d97706', '#e11d48', '#059669', '#2563eb'];
+      const fpTotal = fpCounts.reduce((a, b) => a + Number(b || 0), 0);
 
       const elFp = document.getElementById('chartQuarantineFingerprints');
       if (elFp) {{
@@ -2988,13 +3339,17 @@ def build_html(
             datasets: [{{
               data: fpCounts,
               backgroundColor: fpColors,
-              borderRadius: 4
+              borderRadius: 4,
+              _total: fpTotal
             }}]
           }},
           options: {{
             indexAxis: 'y',
             responsive: true,
-            scales: BASE_SCALES,
+            scales: {{
+              x: {{ grid: {{ color: '#f1f5f9' }}, beginAtZero: true, grace: '28%' }},
+              y: {{ grid: {{ display: false }} }}
+            }},
             plugins: {{
               legend: {{ display: false }},
               tooltip: {{
@@ -3006,7 +3361,8 @@ def build_html(
                 }}
               }}
             }}
-          }}
+          }},
+          plugins: [barLabelsPlugin]
         }});
       }}
 

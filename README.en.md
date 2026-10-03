@@ -131,7 +131,7 @@ PlaylistOut officially provides a unified cross-platform public API for third-pa
 
 To facilitate seamless integration, ingestion, and automated parsing by third-party music platforms, developer tools, and data migration utilities, we formally define and standardize our 5 exported file formats.
 
-> 💡 **Third-Party Platform Recommendation**: We strongly recommend reading and parsing the **JSON format**. It contains the most comprehensive metadata schema, strict type definitions, and raw unescaped track details.
+> 💡 **Third-Party Platform Recommendation**: We strongly recommend reading and parsing the **JSON format**. It contains the most comprehensive metadata schema, strict type definitions, and raw unescaped track details. For comprehensive integration strategies and plugin specifications for open-source music players (MusicFree, LX Music, BBPlayer, Listen 1, Moosync), see: **[《Open-Source Ecosystem Integration Plan》](./docs/ECOSYSTEM-INTEGRATION.md)**.
 
 ---
 
