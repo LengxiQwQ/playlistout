@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.11)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.2.12)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.11', 'Version must be 1.2.11');
+    assert.strictEqual(plugin.version, '1.2.12', 'Version must be 1.2.12');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -81,6 +81,14 @@ async function runAllTests() {
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('酷狗限制')),
       'hints must provide KuGou limitation guidance'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗完整')),
+      'hints must provide KuGou full export guidance'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('解析失败')),
+      'hints must provide failure guidance'
     );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('playlistout.lengxiqwq.com')),
@@ -118,7 +126,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.2.11');
+      assert.strictEqual(distPlugin.version, '1.2.12');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -174,7 +182,9 @@ async function runAllTests() {
   const v129Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.9.js');
   const v1210Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.10.js');
   const v1210Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.10.js');
-  await test('Verifies v1.2.0 through v1.2.10 historical archives exist', () => {
+  const v1211Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.11.js');
+  const v1211Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.11.js');
+  await test('Verifies v1.2.0 through v1.2.11 historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -197,6 +207,17 @@ async function runAllTests() {
     assert(fs.existsSync(v129Web), 'web/public/plugins/musicfree-v1.2.9.js must exist');
     assert(fs.existsSync(v1210Dist), 'dist/musicfree-v1.2.10.js must exist');
     assert(fs.existsSync(v1210Web), 'web/public/plugins/musicfree-v1.2.10.js must exist');
+    assert(fs.existsSync(v1211Dist), 'dist/musicfree-v1.2.11.js must exist');
+    assert(fs.existsSync(v1211Web), 'web/public/plugins/musicfree-v1.2.11.js must exist');
+  });
+
+  await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
+    const srcCode = fs.readFileSync(pluginPath, 'utf-8');
+    assert(!srcCode.includes('分享口令'), 'Source must not contain "分享口令"');
+    assert(
+      srcCode.includes("var targetPlaceholder = '粘贴歌单链接，用「把你的歌单带走」解析';"),
+      'Placeholder must match clean prompt'
+    );
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────
