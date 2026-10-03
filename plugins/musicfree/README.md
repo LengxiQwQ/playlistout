@@ -76,7 +76,33 @@ A：部分音乐平台会动态调整接口或增加风控。如遇解析失败�
 
 ---
 
+## 💻 技术架构与实现原理（开发者参考）
+
+本插件遵循 MusicFree 插件开发标准，针对歌单迁移场景进行了多项底层优化与架构设计：
+
+### 1. 原生音源委托机制 (Native Platform Delegation)
+- **定位分离**：PlaylistOut 专注于歌单结构解析与元数据标准化，**不提供或硬编码任何盗版音频直链**。
+- **元数据注入**：在 `importMusicSheet` 解析歌曲时，自动识别源平台并在导出的 `IMusicItem` 中注入 `_originPlatform` 与精准的原生标识（如 QQ 音乐 `songmid`、网易云音乐 `track.id`、酷狗音乐 `hash` 等）。
+- **动态桥接**：在 `getMediaSource` 与 `getLyric` 中，插件会动态加载设备上已安装的同级原生插件（如 `qq`、`netease`、`kugou`、`kuwo` 等），按原平台将曲目无缝委托给对应原生插件播放，直接复用原生插件的高品质音源与逐字歌词。
+- **宿主属性保护**：通过属性拦截保护曲目的 `platform` 属性，避免被 MusicFree 宿主内置的 `resetMediaItem` 重置为当前插件名导致换源失效。
+
+### 2. 沙箱穿透与桌面端 UI 增强 (Host Bridge)
+- **环境适配**：MusicFree 桌面端（Electron 环境）将插件运行于隔离沙箱中，常规 `require('fs')` 会返回 `null` 且 `process.mainModule` 为 `undefined`。
+- **底层穿透**：插件利用原生 ESM dynamic `import('module')` 拿到 Node 底层 `Module._load`，安全按需加载真实的 `fs`、`path` 与 `electron` 模块。
+- **桌面端交互增强**：
+  - 支持直接唤起操作系统原生文件选择器，秒级导入本地 `.json` 歌单文件；
+  - 自动向主窗口 WebContents 注入轻量交互脚本，在导入弹窗中添加「📂 选择本地 JSON」与「🌐 去官网解析」虚线按钮，并支持直接拖拽 `.json` 文件导入；
+  - 在客户端顶部提供轻量状态通知（Toast），遇到受限或无源情况时友好引导。
+
+### 3. 多档位智能寻源与防错播算法
+- **严格原版校验 (`strict`)**：跨平台寻源时进行**核心歌名归一化匹配 + 歌手精准对齐 + 版本标签过滤 + 时长容差校验 (≤12s)**，严格剔除 Live、DJ、翻唱、伴奏等衍生版本，宁缺毋滥。
+- **假音频拦截**：主动识别并过滤部分第三方音源接口在无版权时默认回退的假《晴天》测试音频。
+- **短期负缓存**：当某首曲目走完候选插件均确认无可用音源时，建立 6 秒短期负缓存，防止 MusicFree 宿主连续轮询不同音质档位引起界面卡顿与冗余请求。
+
+---
+
 ## 📄 开源与协议
 
 - 官方网站：[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)
 - 开源协议：[MIT License](../../LICENSE)
+
