@@ -54,7 +54,7 @@ PlaylistOut 定位于纯粹的「歌单迁移与导出基础设施」，专注�
    ```text
    https://playlistout.lengxiqwq.com/plugins/musicfree.js
    ```
-5. 点击确认，等待安装完成。安装成功后，插件列表将显示 **把你的歌单带走 (PlaylistOut)** (版本: `1.2.6`)。
+5. 点击确认，等待安装完成。安装成功后，插件列表将显示 **把你的歌单带走 (PlaylistOut)** (版本: `1.2.12`)。
 
 ### 方式二：通过插件订阅源安装（支持一键检查更新）
 
@@ -66,7 +66,13 @@ https://playlistout.lengxiqwq.com/plugins/plugins.json
 ### 历史版本归档链接
 
 如果您的设备或特定场景需要使用旧版本，可随时按需订阅：
-- **v1.2.6 (当前推荐，把你的歌单带走 + 三档音源策略 + 桌面端可视化设置)**：`https://playlistout.lengxiqwq.com/plugins/musicfree.js`
+- **v1.2.12 (当前推荐，把你的歌单带走 + 三档音源策略 + 桌面端可视化设置 + 酷狗优化)**：`https://playlistout.lengxiqwq.com/plugins/musicfree.js`
+- **v1.2.11 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.11.js`
+- **v1.2.10 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.10.js`
+- **v1.2.9 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.9.js`
+- **v1.2.8 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.8.js`
+- **v1.2.7 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.7.js`
+- **v1.2.6 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.6.js`
 - **v1.2.5 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.5.js`
 - **v1.2.4 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.4.js`
 - **v1.2.3 (历史归档)**：`https://playlistout.lengxiqwq.com/plugins/musicfree-v1.2.3.js`
@@ -88,16 +94,18 @@ https://playlistout.lengxiqwq.com/plugins/plugins.json
 - **音源路由通道 (`targetPlatform`)**：
   - 默认值：`auto`（自动按歌单原平台路由：网易云->netease，QQ->qq，酷狗->kugou，汽水->qishui，酷我->kuwo 等）。
   - 自定义：可填入您本地最信赖的音源插件平台名（例如输入 `kuwo` 或 `netease`），则导入的所有歌曲均强制由该插件接管播放与检索。
+- **酷狗凭证配置 (`kugouToken`, `kugouUserid`)**：
+  - 可选：填入从官网登录后复制的 Token，可免本地导出 JSON 直接在客户端内解析完整酷狗歌单。
 
 桌面端点击进入该设置面板时，系统会自动呈现点选胶囊按钮，点击即可直接切换！
 
 ## 🎵 使用指南
 
 ### 1. 在线导入外部歌单
-1. 在各大音乐 App（网易云、QQ音乐、酷狗、汽水）中点击「分享歌单」，复制分享链接或整段分享口令文本。
+1. 在各大音乐 App（网易云、QQ音乐、酷狗、汽水）中点击「分享歌单」，复制分享链接。
 2. 进入 MusicFree 侧边栏，点击 **「导入外部歌单」**。
-3. 选择 **PlaylistOut** 作为解析插件。
-4. 粘贴复制的链接或口令文本，点击 **「解析/导入」**。
+3. 选择 **把你的歌单带走** 作为解析插件。
+4. 粘贴复制的歌单链接，点击 **「解析/导入」**。
 5. 解析完成后勾选想要导入的歌曲，即可生成 MusicFree 本地歌单。
 
 ### 2. 本地 JSON 歌单文件路径导入

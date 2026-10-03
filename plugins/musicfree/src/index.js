@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.2.11)
+ * PlaylistOut 官方 MusicFree 插件 (v1.2.12)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双模驱动：
@@ -315,7 +315,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       }
 
       // 修正预输入占位符文字：用中文品牌名「把你的歌单带走」
-      var targetPlaceholder = '粘贴歌单链接或分享口令，用「把你的歌单带走」解析';
+      var targetPlaceholder = '粘贴歌单链接，用「把你的歌单带走」解析';
       if (placeholder !== targetPlaceholder) {
         textInput.setAttribute('placeholder', targetPlaceholder);
       }
@@ -332,7 +332,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
             tip.style.cssText =
               'margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.5);color:#d97706;font-size:12px;line-height:1.45;text-align:left;';
             tip.innerHTML =
-              '💡 <b>酷狗官方限制提示：</b>免登录仅可解析前 10 首。<br>完整歌单：①官网 (playlistout.lengxiqwq.com) 登录后导出 JSON 离线导入；②在插件设置填入官网复制的酷狗 Token。';
+              '💡 <b>酷狗限制提示：</b>因平台登录限制，免登录仅可解析前 10 首。<br>完整歌单推荐前往官网 (<b>playlistout.lengxiqwq.com</b>) 登录解析，导出 JSON 离线导入。';
             inputArea.appendChild(tip);
           }
         } else if (tip) {
@@ -1237,7 +1237,7 @@ async function importMusicSheet(urlLike) {
     (!creds?.token || result?.retrieval?.mode === 'preview' || result?.isPartialPreview)
   ) {
     showPlaybackToast(
-      `💡【酷狗限制提示】受官方登录限制仅解析前 ${items.length} 首歌曲。若需完整歌单：①官网登录后导出JSON离线导入；②插件设置填入官网复制的酷狗Token`,
+      `💡【酷狗限制提示】受官方限制仅解析前 ${items.length} 首。推荐前往官网登录解析导出JSON离线导入。`,
       'warn',
       8000
     );
@@ -1746,15 +1746,16 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.11',
+  version: '1.2.12',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
   hints: {
     importMusicSheet: [
       '支持平台：QQ音乐、网易云音乐、酷狗音乐、汽水音乐',
-      '【酷狗限制】酷狗官方限制免登录仅解析前10首',
-      '【完整解析】①官网登录后导出JSON文件导入；②设置中填入酷狗Token',
+      '【酷狗限制】受官方限制免登录仅前10首',
+      '【酷狗完整】推荐去官网登录解析，导出JSON离线导入',
+      '【解析失败】若遇到解析异常，请前往官网解析或反馈',
       '官方网站：playlistout.lengxiqwq.com',
     ],
   },
