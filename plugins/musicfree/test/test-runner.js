@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.7)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.2.8)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走 (PlaylistOut)', 'Platform must be 把你的歌单带走 (PlaylistOut)');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.7', 'Version must be 1.2.7');
+    assert.strictEqual(plugin.version, '1.2.8', 'Version must be 1.2.8');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -106,7 +106,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走 (PlaylistOut)');
-      assert.strictEqual(distPlugin.version, '1.2.7');
+      assert.strictEqual(distPlugin.version, '1.2.8');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -154,7 +154,9 @@ async function runAllTests() {
   const v125Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.5.js');
   const v126Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.6.js');
   const v126Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.6.js');
-  await test('Verifies v1.2.0 through v1.2.6 historical archives exist', () => {
+  const v127Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.7.js');
+  const v127Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.7.js');
+  await test('Verifies v1.2.0 through v1.2.7 historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -169,6 +171,8 @@ async function runAllTests() {
     assert(fs.existsSync(v125Web), 'web/public/plugins/musicfree-v1.2.5.js must exist');
     assert(fs.existsSync(v126Dist), 'dist/musicfree-v1.2.6.js must exist');
     assert(fs.existsSync(v126Web), 'web/public/plugins/musicfree-v1.2.6.js must exist');
+    assert(fs.existsSync(v127Dist), 'dist/musicfree-v1.2.7.js must exist');
+    assert(fs.existsSync(v127Web), 'web/public/plugins/musicfree-v1.2.7.js must exist');
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────
@@ -324,7 +328,7 @@ async function runAllTests() {
   fs.writeFileSync(tempEmptyJsonPath, JSON.stringify({ tracks: [] }), 'utf-8');
 
   try {
-    await test('Parses generic local .json into compliant IMusicItem[] with PlaylistOut fallback platform', async () => {
+    await test('Parses generic local .json into compliant IMusicItem[] with PlaylistOut platform', async () => {
       const items = await plugin.importMusicSheet(tempGenericPath);
       assert(Array.isArray(items), 'Output must be an array');
       assert.strictEqual(items.length, 2, 'Should map exactly 2 tracks');
@@ -337,7 +341,7 @@ async function runAllTests() {
       assert.strictEqual(item1.album, '叶惠美');
       assert.strictEqual(item1.artwork, 'https://p1.music.126.net/jay-cover.jpg');
       assert.strictEqual(item1.duration, 269, 'Duration should be converted to seconds');
-      assert.strictEqual(item1.platform, 'PlaylistOut');
+      assert.strictEqual(item1.platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(item1.url, undefined, 'Must not inject pirate audio URL');
 
       // Second track verification (multi-artist comma joining)
@@ -347,70 +351,67 @@ async function runAllTests() {
       assert.strictEqual(item2.artist, '五月天, 阿信', 'Multi-artists must be joined by comma');
       assert.strictEqual(item2.album, '人生无限公司');
       assert.strictEqual(item2.duration, 275, 'Duration rounded to 275s');
-      assert.strictEqual(item2.platform, 'PlaylistOut');
+      assert.strictEqual(item2.platform, '把你的歌单带走 (PlaylistOut)');
     });
 
-    await test('Correctly bridges NetEase playlist to platform "netease" with _src and official song ID', async () => {
+    await test('Correctly bridges NetEase playlist preserving brand platform and attaching _src', async () => {
       const items = await plugin.importMusicSheet(tempNeteasePath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'netease');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'netease');
       assert.strictEqual(items[0].id, '1973665667');
       assert.strictEqual(items[0]._src?.netease?.id, '1973665667');
       assert.deepStrictEqual(items[0]._srcOrder, ['netease']);
     });
 
-    await test('Correctly bridges QQ Music playlist to native plugin platform "qq" with _src & songmid', async () => {
+    await test('Correctly bridges QQ Music playlist preserving brand platform with _src & songmid', async () => {
       const items = await plugin.importMusicSheet(tempQqPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'qq');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'qq');
       assert.strictEqual(items[0].id, '0039MnYb0qxYAc');
       assert.strictEqual(items[0].songmid, '0039MnYb0qxYAc');
       assert.strictEqual(items[0]._src?.qq?.mid, '0039MnYb0qxYAc');
       assert.deepStrictEqual(items[0]._srcOrder, ['qq']);
-
-      // Simulate MusicFree host resetMediaItem(item, 'PlaylistOut') overwrite attempt
-      items[0].platform = 'PlaylistOut';
-      assert.strictEqual(
-        items[0].platform,
-        'qq',
-        'Protected platform getter/setter must resist host resetMediaItem overwrite'
-      );
-      const cloned = JSON.parse(JSON.stringify(items[0]));
-      assert.strictEqual(cloned.platform, 'qq');
     });
 
-    await test('Correctly bridges KuGou playlist to native plugin platform "kugou" with _src.kugou.hash', async () => {
+    await test('Correctly bridges KuGou playlist preserving brand platform with _src.kugou.hash', async () => {
       const items = await plugin.importMusicSheet(tempKugouPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'kugou');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'kugou');
       assert.strictEqual(items[0]._src?.kugou?.hash, 'hash12345');
       assert.deepStrictEqual(items[0]._srcOrder, ['kugou']);
     });
 
-    await test('Correctly bridges KuWo playlist to platform "kuwo"', async () => {
+    await test('Correctly bridges KuWo playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempKuwoPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'kuwo');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'kuwo');
       assert.strictEqual(items[0]._src?.kuwo?.id, '123456');
     });
 
-    await test('Correctly bridges QiShui playlist to platform "qishui"', async () => {
+    await test('Correctly bridges QiShui playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempQishuiPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'qishui');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'qishui');
       assert.strictEqual(items[0]._src?.qishui?.trackId, '7100000000');
     });
 
-    await test('Correctly bridges Bilibili playlist to platform "bilibili"', async () => {
+    await test('Correctly bridges Bilibili playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempBilibiliPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'bilibili');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'bilibili');
     });
 
-    await test('Correctly bridges Migu playlist to platform "migu"', async () => {
+    await test('Correctly bridges Migu playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempMiguPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'migu');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items[0]._originPlatform, 'migu');
       assert.strictEqual(items[0]._src?.migu?.contentId, 'migu600001');
     });
 
@@ -461,7 +462,7 @@ async function runAllTests() {
   // ── 4. userVariables Configuration Override ───────────────────────
   logSection('4. userVariables Configuration Override');
 
-  await test('Respects userVariables to force a specific audio routing platform', async () => {
+  await test('Respects userVariables to prioritize audio routing while preserving brand platform', async () => {
     // 1. Mock MusicFree environment env.getUserVariables() returning targetPlatform='kuwo'
     globalThis.env = {
       getUserVariables: () => ({ targetPlatform: 'kuwo' }),
@@ -472,21 +473,16 @@ async function runAllTests() {
       fs.writeFileSync(tempTestPath, sampleNeteaseJson, 'utf-8');
       const items = await plugin.importMusicSheet(tempTestPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'kuwo', 'Should force platform to kuwo despite being netease playlist');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)', 'Platform displayed to user must always be plugin brand');
+      assert.strictEqual(items[0]._originPlatform, 'netease', 'Track origin platform preserved');
 
-      // 2. Mock targetPlatform='PlaylistOut'
-      globalThis.env = {
-        getUserVariables: () => ({ targetPlatform: 'PlaylistOut' }),
-      };
-      const items2 = await plugin.importMusicSheet(tempTestPath);
-      assert.strictEqual(items2[0].platform, 'PlaylistOut', 'Should force platform to PlaylistOut');
-
-      // 3. Reset to auto
+      // 2. Reset to auto
       globalThis.env = {
         getUserVariables: () => ({ targetPlatform: 'auto' }),
       };
-      const items3 = await plugin.importMusicSheet(tempTestPath);
-      assert.strictEqual(items3[0].platform, 'netease', 'auto mode should restore original platform');
+      const items2 = await plugin.importMusicSheet(tempTestPath);
+      assert.strictEqual(items2[0].platform, '把你的歌单带走 (PlaylistOut)');
+      assert.strictEqual(items2[0]._originPlatform, 'netease');
     } finally {
       delete globalThis.env;
       try {
@@ -553,7 +549,7 @@ async function runAllTests() {
     }
   }
 
-  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "netease"`, async () => {
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走 (PlaylistOut)"`, async () => {
     const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
 
     assert(Array.isArray(items), 'Items must be an array');
@@ -571,7 +567,8 @@ async function runAllTests() {
         typeof it.duration === 'number' && it.duration >= 0,
         `Track ${i + 1} duration must be non-negative number`
       );
-      assert.strictEqual(it.platform, 'netease', `Track ${i + 1} platform must bridge to netease`);
+      assert.strictEqual(it.platform, '把你的歌单带走 (PlaylistOut)', `Track ${i + 1} platform must be 把你的歌单带走 (PlaylistOut)`);
+      assert.strictEqual(it._originPlatform, 'netease', `Track ${i + 1} _originPlatform must bridge to netease`);
       assert(Boolean(it._src?.netease?.id), `Track ${i + 1} must include _src.netease.id`);
       assert.strictEqual(it.url, undefined, 'Must not inject pirate audio URL');
     }
