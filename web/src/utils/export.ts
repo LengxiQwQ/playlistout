@@ -147,7 +147,7 @@ export function generateTXT(playlist: Playlist): string {
   lines.push('==================================================');
   lines.push(`  创建时间: ${createdStr}`);
   lines.push(`  导出时间: ${exportedStr}`);
-  lines.push('  导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)');
+  lines.push('  导出工具: Playlist Out (https://playlistout.lengxiqwq.com)');
   lines.push(`  歌单名称: ${playlist.name}`);
   if (playlist.creator) {
     lines.push(`  歌单作者: ${playlist.creator}`);
@@ -233,7 +233,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
   const headerComments: string[] = [
     `# 创建时间: ${createdStr}`,
     `# 导出时间: ${exportedStr}`,
-    '# 导出工具: PlaylistOut (https://playlistout.lengxiqwq.com)',
+    '# 导出工具: Playlist Out (https://playlistout.lengxiqwq.com)',
     `# 歌单名称: ${cleanSingleLine(playlist.name)}`,
     playlist.creator ? `# 歌单作者: ${cleanSingleLine(playlist.creator)}` : null,
     isPartial
@@ -294,7 +294,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   const metaRows: (string | number)[][] = [
     ['歌单名称', playlist.name, '', ''],
     ['创建时间', createdStr, '导出时间', exportedStr],
-    ['导出工具', 'PlaylistOut', '平台网址', 'https://playlistout.lengxiqwq.com'],
+    ['导出工具', 'Playlist Out', '平台网址', 'https://playlistout.lengxiqwq.com'],
     ['歌单作者', playlist.creator || '未知', '歌曲总数', countLabel],
     ['最后更新', updatedStr, '总播放量', playlist.playCount ? `${playlist.playCount.toLocaleString()} 次` : '-'],
     ['风格标签', (playlist.tags || []).join(', ') || '-', '歌单链接', sourceUrl],
@@ -360,7 +360,7 @@ export function generateJSON(playlist: Playlist): string {
   const exportPayload = {
     createTime: createdStr,
     exportedAt: exportedStr,
-    generator: 'PlaylistOut',
+    generator: 'Playlist Out',
     generatorUrl: 'https://playlistout.lengxiqwq.com',
     name: playlist.name,
     creator: playlist.creator || '',
