@@ -310,7 +310,7 @@
   }
 
   .running-days-stamp-wrap {
-    margin-top: calc(var(--ruled-line-height, 38px) * 0.7) !important;
+    margin-top: calc(var(--ruled-line-height, 38px) * 0.85) !important;
     margin-bottom: 0 !important;
   }
 
@@ -550,30 +550,34 @@
      stack instead of desktop cards separated by oversized gaps. */
   .info-notes-section {
     grid-template-columns: minmax(0, 1fr) !important;
-    gap: 1.5rem !important;
+    gap: 1.75rem !important;
   }
 
   .stats-journal-header {
-    margin-bottom: 1.5rem !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.85rem !important;
+    padding: 0 0.75rem;
   }
 
   .stats-journal-subtitle {
     height: auto !important;
-    line-height: 1.4 !important;
+    line-height: 1.45 !important;
     font-size: 1.15rem !important;
   }
 
   .stats-journal-title {
     height: auto !important;
-    line-height: 1.2 !important;
+    line-height: 1.25 !important;
     font-size: 1.7rem !important;
-    margin-top: 0.3rem !important;
+    margin-top: 0 !important;
   }
 
   .stats-main-grid {
     grid-template-columns: minmax(0, 1fr) !important;
-    gap: 1.5rem !important;
-    margin-bottom: 1.5rem !important;
+    gap: 1.75rem !important;
+    margin-bottom: 1.75rem !important;
   }
 
   /* Result / collection transition hints previously used a fixed 38px row.

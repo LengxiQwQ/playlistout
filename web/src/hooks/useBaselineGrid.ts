@@ -28,11 +28,11 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
           : window.innerWidth <= 768;
 
       // Mobile keeps a relaxed visual rhythm without forcing every section
-      // onto the desktop notebook baseline. A 32px gap leaves enough breathing room
+      // onto the desktop notebook baseline. A 36px gap leaves a little more breathing room
       // while avoiding the oversized 76px desktop spacing.
       if (isMobile) {
         sections.forEach((sec, idx) => {
-          sec.style.marginBottom = idx === sections.length - 1 ? '0px' : '32px';
+          sec.style.marginBottom = idx === sections.length - 1 ? '0px' : '36px';
         });
         return;
       }
