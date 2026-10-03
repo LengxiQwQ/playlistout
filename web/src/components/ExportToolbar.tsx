@@ -12,7 +12,7 @@ export interface ExportToolbarProps {
   playlist: Playlist | null;
 }
 
-export type ExportFormat = 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8';
+export type ExportFormat = 'xlsx' | 'json' | 'txt' | 'csv' | 'm3u8';
 
 const HandDrawnCheck: React.FC<{ size?: number; color?: string }> = ({
   size = 14,
@@ -44,9 +44,9 @@ const FORMAT_CONFIG: {
   rotateDeg: number;
 }[] = [
   { id: 'xlsx', label: 'Excel (.xlsx)', color: 'green', rotateDeg: -1 },
-  { id: 'csv', label: 'CSV', color: 'pink', rotateDeg: 1 },
-  { id: 'txt', label: 'TXT', color: 'yellow', rotateDeg: -2 },
   { id: 'json', label: 'JSON', color: 'blue', rotateDeg: 2 },
+  { id: 'txt', label: 'TXT', color: 'yellow', rotateDeg: -2 },
+  { id: 'csv', label: 'CSV', color: 'pink', rotateDeg: 1 },
   { id: 'm3u8', label: 'M3U8', color: 'purple', rotateDeg: -1 },
 ];
 

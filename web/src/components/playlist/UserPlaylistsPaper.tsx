@@ -338,10 +338,10 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             >
               {[
                 { id: 'multi_sheet_xlsx', label: t.userPlaylists.formatMultiSheet, color: 'green' },
-                { id: 'xlsx', label: t.userPlaylists.formatZipXlsx, color: 'yellow' },
-                { id: 'csv', label: t.userPlaylists.formatZipCsv, color: 'pink' },
-                { id: 'txt', label: t.userPlaylists.formatZipTxt, color: 'white' },
                 { id: 'json', label: t.userPlaylists.formatZipJson, color: 'blue' },
+                { id: 'xlsx', label: t.userPlaylists.formatZipXlsx, color: 'yellow' },
+                { id: 'txt', label: t.userPlaylists.formatZipTxt, color: 'white' },
+                { id: 'csv', label: t.userPlaylists.formatZipCsv, color: 'pink' },
                 { id: 'm3u8', label: t.userPlaylists.formatZipM3u8, color: 'purple' },
               ].map((fmt) => {
                 const isSelected = batchFormat === fmt.id;

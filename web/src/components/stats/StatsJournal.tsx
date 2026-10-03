@@ -525,9 +525,9 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 }}
               >
                 <div style={{ width: `${formatStats.xlsx}%`, backgroundColor: '#27ae60' }} title={`Excel: ${formatStats.xlsx}%`} />
-                <div style={{ width: `${formatStats.csv}%`, backgroundColor: '#e67e22' }} title={`CSV: ${formatStats.csv}%`} />
-                <div style={{ width: `${formatStats.txt}%`, backgroundColor: '#2980b9' }} title={`TXT: ${formatStats.txt}%`} />
                 <div style={{ width: `${formatStats.json}%`, backgroundColor: '#8e44ad' }} title={`JSON: ${formatStats.json}%`} />
+                <div style={{ width: `${formatStats.txt}%`, backgroundColor: '#2980b9' }} title={`TXT: ${formatStats.txt}%`} />
+                <div style={{ width: `${formatStats.csv}%`, backgroundColor: '#e67e22' }} title={`CSV: ${formatStats.csv}%`} />
                 <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: '#6c5ce7' }} title={`M3U8: ${formatStats.m3u8}%`} />
               </div>
 
@@ -547,16 +547,16 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                   Excel ({formatStats.xlsx}%)
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e67e22' }} />
-                  CSV ({formatStats.csv}%)
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#8e44ad' }} />
+                  JSON ({formatStats.json}%)
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#2980b9' }} />
                   TXT ({formatStats.txt}%)
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#8e44ad' }} />
-                  JSON ({formatStats.json}%)
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e67e22' }} />
+                  CSV ({formatStats.csv}%)
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#6c5ce7' }} />
