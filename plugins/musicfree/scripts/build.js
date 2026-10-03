@@ -55,10 +55,10 @@ function build() {
   // Generate MusicFree standard subscription descriptor (plugins.json)
   const subscriptionDescriptor = JSON.stringify(
     {
-      desc: '把你的歌单带走 (PlaylistOut) 官方 MusicFree 歌单导入与原版音源桥接插件订阅源',
+      desc: '把你的歌单带走 官方 MusicFree 歌单导入与原版音源桥接插件订阅源',
       plugins: [
         {
-          name: '把你的歌单带走 (PlaylistOut)',
+          name: '把你的歌单带走',
           url: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
           version: pkg.version,
         },
