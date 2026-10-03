@@ -32,7 +32,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
     <div>
       {/* Transitional journal hint or Back button */}
       <div
-        className="font-note"
+        className="font-note result-transition-hint"
         style={{
           maxWidth: 'var(--search-note-width, 820px)',
           margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
@@ -102,7 +102,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
         </div>
 
         {/* Decorative green washi tape */}
-        <div style={{ position: 'absolute', top: '2rem', left: '-1rem', zIndex: 20 }}>
+        <div className="result-corner-tape" style={{ position: 'absolute', top: '2rem', left: '-1rem', zIndex: 20 }}>
           <Tape
             color="green"
             rotateDeg={-6}

@@ -132,7 +132,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
     <div>
       {/* Transitional journal hint */}
       <div
-        className="font-note"
+        className="font-note result-transition-hint"
         style={{
           maxWidth: 'var(--search-note-width, 820px)',
           margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
@@ -160,6 +160,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       >
         {/* Decorative yellow sparkle */}
         <div
+          className="user-playlists-sparkle"
           style={{
             position: 'absolute',
             right: '-2rem',
@@ -175,7 +176,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
         </div>
 
         {/* Decorative Tape (stuck on the corner) */}
-        <div style={{ position: 'absolute', top: '-1rem', left: '-2.5rem', zIndex: 20 }}>
+        <div className="user-playlists-corner-tape" style={{ position: 'absolute', top: '-1rem', left: '-2.5rem', zIndex: 20 }}>
           <Tape
             color="pink"
             rotateDeg={-12}
@@ -620,6 +621,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       {/* Floating Toast */}
       {toastMessage && (
         <div
+          className="user-playlists-toast"
           style={{
             position: 'fixed',
             bottom: '2rem',

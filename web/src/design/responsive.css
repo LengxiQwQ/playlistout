@@ -515,13 +515,188 @@
   .track-table-container.is-expanded-mobile .hide-mobile {
     display: table-cell !important;
   }
+
+  /* =========================
+     Mobile visual polish pass
+     ========================= */
+
+  /* Desktop background stickers rely on side gutters. On phones they compete
+     with real content, so keep the notebook paper but remove the floating layer. */
+  .background-decorations {
+    display: none !important;
+  }
+
+  /* Compact the hero without losing the handwritten scrapbook identity. */
+  .journal-hero {
+    padding-bottom: 1.25rem !important;
+  }
+
+  .journal-hero-title {
+    font-size: clamp(2.05rem, 10.5vw, 3rem) !important;
+    line-height: 1.22 !important;
+    padding: 0.45rem 0 0.2rem;
+  }
+
+  /* Search note: samples read better as a compact chip group on narrow screens. */
+  .search-sample-row {
+    gap: 0.6rem !important;
+    margin-top: 1rem !important;
+    font-size: 1.05rem !important;
+  }
+
+  .search-sample-row > span:first-child {
+    flex-basis: 100%;
+    margin-right: 0 !important;
+  }
+
+  /* Educational cards and stats cards should feel like one vertical notebook
+     stack instead of desktop cards separated by oversized gaps. */
+  .info-notes-section {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1.25rem !important;
+  }
+
+  .stats-journal-header {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .stats-journal-subtitle {
+    height: auto !important;
+    line-height: 1.35 !important;
+    font-size: 1.3rem !important;
+  }
+
+  .stats-journal-title {
+    height: auto !important;
+    line-height: 1.15 !important;
+    font-size: 2rem !important;
+    margin-top: 0.2rem !important;
+  }
+
+  .stats-main-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* Result / collection transition hints previously used a fixed 38px row.
+     Let translations and the back action wrap naturally. */
+  .result-transition-hint {
+    height: auto !important;
+    min-height: 0 !important;
+    line-height: 1.35 !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 1rem !important;
+    flex-wrap: wrap;
+  }
+
+  .result-transition-hint button {
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  /* Large corner doodles look clipped on narrow screens. Keep the washi tape,
+     but make it behave like an edge accent instead of a desktop overhang. */
+  .result-doodle,
+  .user-playlists-sparkle {
+    display: none !important;
+  }
+
+  .result-corner-tape {
+    left: -0.35rem !important;
+    top: 1rem !important;
+  }
+
+  .user-playlists-corner-tape {
+    left: -0.35rem !important;
+    top: -0.55rem !important;
+  }
+
+  /* Playlist summary: reclaim horizontal space while keeping artwork visible. */
+  .playlist-summary-info {
+    gap: 0.85rem !important;
+  }
+
+  .playlist-summary-info .playlist-cover,
+  .playlist-summary-info .cover-placeholder {
+    width: 72px !important;
+    height: 72px !important;
+    min-width: 72px !important;
+  }
+
+  .playlist-title {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .playlist-meta-row {
+    font-size: 0.85rem !important;
+    gap: 0.2rem 0.4rem !important;
+  }
+
+  .playlist-creator {
+    white-space: normal !important;
+    flex-shrink: 1 !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Toolbars and feedback should wrap within the viewport instead of behaving
+     like desktop pills. */
+  .export-toolbar-container {
+    margin-top: 1.25rem !important;
+    padding-top: 1.25rem !important;
+  }
+
+  .export-toast,
+  .user-playlists-toast {
+    max-width: calc(100vw - 2rem) !important;
+    white-space: normal !important;
+    text-align: center !important;
+    line-height: 1.35 !important;
+    border-radius: 16px !important;
+    padding: 0.65rem 1rem !important;
+    font-size: 1rem !important;
+    bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .status-alert {
+    padding: 0.85rem 1rem !important;
+  }
+
+  /* A 320px hard minimum can overflow small phones after modal padding. */
+  .disambiguation-content {
+    min-width: 0 !important;
+  }
+
+  .disambiguation-card-action {
+    display: none !important;
+  }
+
+  /* Keep brand text from fighting the settings controls on the narrowest header. */
+  .header-brand-container {
+    overflow: hidden;
+  }
+
+  .header-brand-title,
+  .header-brand-tagline {
+    max-width: 48vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
 }
 
 @media (max-width: 480px) {
   .journal-container {
-    padding: 0.75rem 1.35rem 1.75rem !important;
-    padding-left: max(1.35rem, env(safe-area-inset-left)) !important;
-    padding-right: max(1.35rem, env(safe-area-inset-right)) !important;
+    padding: 0.75rem 1.05rem 1.5rem !important;
+    padding-left: max(1.05rem, env(safe-area-inset-left)) !important;
+    padding-right: max(1.05rem, env(safe-area-inset-right)) !important;
+  }
+
+  .stats-journal-title {
+    font-size: 1.85rem !important;
   }
 
   .header-brand-title {
