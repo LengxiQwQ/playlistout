@@ -34,12 +34,12 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authState, setAuthState] = useState<KugouAuthState>('none');
-  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | 'curl' | null>(null);
+  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | 'curl' | 'plugin' | null>(null);
 
   const pollTimerRef = useRef<any>(null);
   const consecutiveErrorsRef = useRef<number>(0);
 
-  const handleCopy = async (key: 'token' | 'userid' | 'curl', text: string) => {
+  const handleCopy = async (key: 'token' | 'userid' | 'curl' | 'plugin', text: string) => {
     try {
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -540,6 +540,40 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                       {copiedKey === 'token' ? t.kugouAuth.copied : t.kugouAuth.copyToken}
                     </button>
                   </div>
+
+                  {/* Copy Plugin Credentials Button (for MusicFree / 把你的歌单带走 plugin) */}
+                  <button
+                    type="button"
+                    data-testid="copy-kugou-plugin-btn"
+                    onClick={() =>
+                      handleCopy(
+                        'plugin',
+                        `${currentAuth.token}:${currentAuth.userid}`,
+                      )
+                    }
+                    style={{
+                      width: '100%',
+                      fontSize: '0.8rem',
+                      padding: '0.42rem 0.5rem',
+                      borderRadius: '4px',
+                      border: '1.5px solid #2563eb',
+                      backgroundColor: copiedKey === 'plugin' ? '#dcfce7' : '#eff6ff',
+                      color: copiedKey === 'plugin' ? '#166534' : '#1d4ed8',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      fontWeight: 600,
+                      marginBottom: '0.35rem',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {copiedKey === 'plugin' ? '已复制插件凭证 ✓' : '📋 复制插件凭证 (Token:UserID)'}
+                  </button>
+                  <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 0.55rem 0', textAlign: 'center' }}>
+                    可直接粘贴至「把你的歌单带走」MusicFree 插件的【酷狗凭证】设置中
+                  </p>
 
                   {/* Copy cURL Button */}
                   <button

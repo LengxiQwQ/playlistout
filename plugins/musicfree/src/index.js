@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.2.2)
+ * PlaylistOut 官方 MusicFree 插件 (v1.2.11)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双模驱动：
@@ -320,6 +320,29 @@ const RENDERER_FILE_PICKER_SCRIPT = `
         textInput.setAttribute('placeholder', targetPlaceholder);
       }
 
+      // 动态监听输入：若用户粘贴酷狗音乐链接，动态展示免登录仅解析前 10 首的温馨提示
+      function updateKugouModalTip() {
+        var val = (textInput.value || '').trim();
+        var tip = inputArea.querySelector('#playlistout-kugou-modal-tip');
+        var isKugou = /kugou\.com|酷狗/i.test(val);
+        if (isKugou) {
+          if (!tip) {
+            tip = document.createElement('div');
+            tip.id = 'playlistout-kugou-modal-tip';
+            tip.style.cssText =
+              'margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.5);color:#d97706;font-size:12px;line-height:1.45;text-align:left;';
+            tip.innerHTML =
+              '💡 <b>酷狗官方限制提示：</b>免登录仅可解析前 10 首。<br>完整歌单：①官网 (playlistout.lengxiqwq.com) 登录后导出 JSON 离线导入；②在插件设置填入官网复制的酷狗 Token。';
+            inputArea.appendChild(tip);
+          }
+        } else if (tip) {
+          tip.remove();
+        }
+      }
+      textInput.removeEventListener('input', updateKugouModalTip);
+      textInput.addEventListener('input', updateKugouModalTip);
+      updateKugouModalTip();
+
       if (modal.querySelector('#playlistout-file-picker-btn')) continue;
 
       opeArea.style.gap = '10px';
@@ -632,6 +655,60 @@ function getUserFallbackMode() {
     }
   } catch (_) {}
   return 'strict';
+}
+
+/**
+ * 获取用户配置的酷狗登录凭证 (kugouToken / kugouUserid)
+ * 支持格式：
+ * 1. kugouToken 填 token，kugouUserid 填 userid
+ * 2. kugouToken 填 token:userid 或 userid:token (冒号、逗号或竖线分隔)
+ * 3. kugouToken 填 JSON { token, userid }
+ * 4. 纯 token (无 userid)
+ */
+function getKugouCredentials() {
+  try {
+    const userVars = getRawUserVariables();
+    let rawToken = String(userVars?.kugouToken || userVars?.kugou_token || '').trim();
+    let rawUserid = String(userVars?.kugouUserid || userVars?.kugou_userid || '').trim();
+
+    if (!rawToken && !rawUserid) {
+      return null;
+    }
+
+    // JSON 格式解析
+    if (rawToken.startsWith('{') && rawToken.endsWith('}')) {
+      try {
+        const obj = JSON.parse(rawToken);
+        if (obj && typeof obj === 'object') {
+          return {
+            token: String(obj.token || obj.kugou_token || '').trim(),
+            userid: String(obj.userid || obj.kugou_userid || rawUserid || '').trim(),
+          };
+        }
+      } catch (_) {}
+    }
+
+    // 复合字符串解析 (以冒号、逗号、竖线分隔)
+    if (rawToken.includes(':') || rawToken.includes(',') || rawToken.includes('|')) {
+      const parts = rawToken.split(/[:|,]/).map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        // 判断哪个是纯数字 userid，哪个是 token
+        if (/^\d{5,12}$/.test(parts[0]) && !/^\d{5,12}$/.test(parts[1])) {
+          return { userid: parts[0], token: parts[1] };
+        } else if (/^\d{5,12}$/.test(parts[1]) && !/^\d{5,12}$/.test(parts[0])) {
+          return { token: parts[0], userid: parts[1] };
+        } else {
+          return { token: parts[0], userid: parts[1] };
+        }
+      }
+    }
+
+    return {
+      token: rawToken,
+      userid: rawUserid,
+    };
+  } catch (_) {}
+  return null;
 }
 
 /**
@@ -1097,9 +1174,19 @@ async function importMusicSheet(urlLike) {
     trimmed
   )}&type=playlist`;
 
+  const creds = getKugouCredentials();
+  const requestHeaders = {};
+  if (creds && creds.token) {
+    requestHeaders['Authorization'] = `Bearer ${creds.token}`;
+    requestHeaders['X-Kugou-Token'] = creds.token;
+    if (creds.userid) {
+      requestHeaders['X-Kugou-Userid'] = creds.userid;
+    }
+  }
+
   let res;
   try {
-    res = await httpGet(apiUrl, { timeout: 15000 });
+    res = await httpGet(apiUrl, { timeout: 15000, headers: requestHeaders });
   } catch (err) {
     throw new Error(`请求 PlaylistOut API 超时或网络失败: ${err.message}`);
   }
@@ -1142,6 +1229,18 @@ async function importMusicSheet(urlLike) {
 
   if (items.length === 0) {
     throw new Error('未解析到有效的歌曲数据');
+  }
+
+  // 若为酷狗歌单且未配置 Token 或仅解析出前 10 首预览歌曲，明确弹出长效提示指导用户
+  if (
+    detectedPlatform === 'kugou' &&
+    (!creds?.token || result?.retrieval?.mode === 'preview' || result?.isPartialPreview)
+  ) {
+    showPlaybackToast(
+      `💡【酷狗限制提示】受官方登录限制仅解析前 ${items.length} 首歌曲。若需完整歌单：①官网登录后导出JSON离线导入；②插件设置填入官网复制的酷狗Token`,
+      'warn',
+      8000
+    );
   }
 
   return items;
@@ -1380,7 +1479,7 @@ function isCandidateSimilarMatched(candidate, wantTitle) {
  * - kind === 'warn': 暖橙警示（暂无原版音源，已自动跳过）
  * - kind === 'info': 翠绿提示（原平台灰歌/无源，已自动匹配同歌手原曲或相似音源）
  */
-async function showPlaybackToast(message, kind = 'warn') {
+async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
   try {
     const { electron } = await ensureHostModulesAsync();
     const BrowserWindow = electron?.BrowserWindow;
@@ -1389,7 +1488,7 @@ async function showPlaybackToast(message, kind = 'warn') {
     const win = BrowserWindow.getFocusedWindow?.() || wins.find((w) => !w.isDestroyed()) || wins[0];
     if (!win || !win.webContents) return;
 
-    const payload = JSON.stringify({ message: String(message || ''), kind });
+    const payload = JSON.stringify({ message: String(message || ''), kind, duration: durationMs || 3600 });
     const script = `
       (function(data) {
         try {
@@ -1647,13 +1746,15 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.10',
+  version: '1.2.11',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
   hints: {
     importMusicSheet: [
       '支持平台：QQ音乐、网易云音乐、酷狗音乐、汽水音乐',
+      '【酷狗限制】酷狗官方限制免登录仅解析前10首',
+      '【完整解析】①官网登录后导出JSON文件导入；②设置中填入酷狗Token',
       '官方网站：playlistout.lengxiqwq.com',
     ],
   },
@@ -1668,9 +1769,20 @@ module.exports = {
       name: '音源通道',
       hint: 'auto(默认:原平台) / qq / netease / kugou / kuwo / qishui',
     },
+    {
+      key: 'kugouToken',
+      name: '酷狗Token/凭证',
+      hint: '官网复制Token(免登录仅前10首)；支持token或token:userid',
+    },
+    {
+      key: 'kugouUserid',
+      name: '酷狗UserID(可选)',
+      hint: '官网复制UserID(若在Token中已写token:userid则无需填写)',
+    },
   ],
   supportedSearchType: ['sheet'],
   importMusicSheet,
   getMediaSource,
   getLyric,
+  _getKugouCredentials: getKugouCredentials,
 };
