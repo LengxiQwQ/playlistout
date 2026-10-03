@@ -24,7 +24,7 @@ export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
     version: '1.2.12',
     pluginUrl: MUSICFREE_PLUGIN_URL,
     guideUrl: 'https://github.com/LengxiQwQ/playlistout/tree/main/plugins/musicfree',
-    homepageUrl: 'https://musicfree.upup.fun/',
+    homepageUrl: 'https://musicfree.catcat.work/',
     repositoryUrl: 'https://github.com/maotoumao/MusicFree',
     logoUrl: 'https://raw.githubusercontent.com/maotoumao/MusicFreeDesktop/master/res/logo.png',
   },

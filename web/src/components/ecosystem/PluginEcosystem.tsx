@@ -100,103 +100,101 @@ export const PluginEcosystem: React.FC = () => {
             tiltFactor={0.2}
             className="plugin-app-card"
           >
-            <div className="plugin-app-card-header">
-              <div className="plugin-app-logo-wrap">
-                {integration.logoUrl && !logoFailed[integration.id] ? (
-                  <img
-                    src={integration.logoUrl}
-                    alt=""
-                    className="plugin-app-logo"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    onError={() =>
-                      setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
-                    }
-                  />
-                ) : (
-                  <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                    {integration.name.slice(0, 2)}
-                  </span>
-                )}
+            <div className="plugin-app-row">
+              <div className="plugin-app-card-header">
+                <div className="plugin-app-logo-wrap">
+                  {integration.logoUrl && !logoFailed[integration.id] ? (
+                    <img
+                      src={integration.logoUrl}
+                      alt=""
+                      className="plugin-app-logo"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={() =>
+                        setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
+                      }
+                    />
+                  ) : (
+                    <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                      {integration.name.slice(0, 2)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="plugin-app-card-title">
+                  <div className="plugin-app-name-row">
+                    <h3 className="font-marker plugin-app-name">{integration.name}</h3>
+                    <Sticker
+                      as="span"
+                      color="green"
+                      rotateDeg={0.7}
+                      className="font-handwriting plugin-status-sticker"
+                    >
+                      ✓ {t.ecosystem.statusAvailable}
+                    </Sticker>
+                  </div>
+                  <div className="font-note plugin-app-meta">
+                    {t.ecosystem.officialPlugin}
+                    {integration.version ? ' · v' + integration.version : ''}
+                  </div>
+                  <p className="font-handwriting plugin-app-summary">
+                    {integration.id === 'musicfree' ? t.ecosystem.musicFreeSummary : ''}
+                  </p>
+                </div>
               </div>
 
-              <div className="plugin-app-card-title">
-                <div className="plugin-app-name-row">
-                  <h3 className="font-marker plugin-app-name">{integration.name}</h3>
-                  <Sticker
-                    as="span"
-                    color="green"
-                    rotateDeg={0.7}
-                    className="font-handwriting plugin-status-sticker"
+              <div className="plugin-app-actions">
+                {integration.pluginUrl ? (
+                  <MarkerButton
+                    type="button"
+                    variant="ink"
+                    rotateDeg={-0.3}
+                    onClick={handleCopyPluginUrl}
+                    className="plugin-copy-button"
                   >
-                    ✓ {t.ecosystem.statusAvailable}
-                  </Sticker>
-                </div>
-                <div className="font-note plugin-app-meta">
-                  {t.ecosystem.officialPlugin}
-                  {integration.version ? ' · v' + integration.version : ''}
+                    {copyState === 'copied'
+                      ? t.ecosystem.copiedInstallUrl
+                      : copyState === 'failed'
+                        ? t.ecosystem.copyFailed
+                        : t.ecosystem.copyInstallUrl}
+                  </MarkerButton>
+                ) : null}
+
+                <div className="plugin-app-links">
+                  {integration.homepageUrl ? (
+                    <a
+                      href={integration.homepageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      {t.ecosystem.websiteLink} ↗
+                    </a>
+                  ) : null}
+
+                  {integration.repositoryUrl ? (
+                    <a
+                      href={integration.repositoryUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      GitHub ↗
+                    </a>
+                  ) : null}
+
+                  {integration.guideUrl ? (
+                    <a
+                      href={integration.guideUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      {t.ecosystem.guideLink} ↗
+                    </a>
+                  ) : null}
                 </div>
               </div>
-            </div>
-
-            <div className="plugin-app-actions">
-              {integration.pluginUrl ? (
-                <MarkerButton
-                  type="button"
-                  variant="ink"
-                  rotateDeg={-0.3}
-                  onClick={handleCopyPluginUrl}
-                  className="plugin-copy-button"
-                >
-                  {copyState === 'copied'
-                    ? t.ecosystem.copiedInstallUrl
-                    : copyState === 'failed'
-                      ? t.ecosystem.copyFailed
-                      : t.ecosystem.copyInstallUrl}
-                </MarkerButton>
-              ) : null}
-
-              {integration.homepageUrl ? (
-                <Sticker
-                  as="a"
-                  href={integration.homepageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="white"
-                  rotateDeg={0.4}
-                  className="font-handwriting plugin-app-link"
-                >
-                  {t.ecosystem.websiteLink} ↗
-                </Sticker>
-              ) : null}
-
-              {integration.repositoryUrl ? (
-                <Sticker
-                  as="a"
-                  href={integration.repositoryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="white"
-                  rotateDeg={-0.4}
-                  className="font-handwriting plugin-app-link"
-                >
-                  GitHub ↗
-                </Sticker>
-              ) : null}
-
-              {integration.guideUrl ? (
-                <Sticker
-                  as="a"
-                  href={integration.guideUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="white"
-                  rotateDeg={0.5}
-                  className="font-handwriting plugin-app-link"
-                >
-                  {t.ecosystem.guideLink} ↗
-                </Sticker>
-              ) : null}
             </div>
           </Paper>
         ))}
