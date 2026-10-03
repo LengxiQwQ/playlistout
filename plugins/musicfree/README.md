@@ -20,21 +20,12 @@
 
 ## 📥 安装指南
 
-### 方式一：单插件安装（推荐）
-
 1. 打开 **MusicFree**，进入左侧抽屉菜单 **「插件设置」**。
 2. 点击顶部的 **「从网络安装插件」**。
-3. 复制并粘贴以下插件地址，点击确认：
+3. 复制并粘贴以下插件地址，点击确认安装：
    ```text
    https://playlistout.lengxiqwq.com/plugins/musicfree.js
    ```
-
-### 方式二：通过插件订阅源安装（支持一键更新）
-
-在 MusicFree **「插件订阅设置」** 中添加官方订阅源地址：
-```text
-https://playlistout.lengxiqwq.com/plugins/plugins.json
-```
 
 ---
 
