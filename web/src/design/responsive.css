@@ -247,8 +247,8 @@
   .footer-nav {
     height: auto !important;
     min-height: calc(var(--ruled-line-height, 38px) * 2) !important;
-    padding: 0.75rem 0 !important;
-    gap: 0.65rem !important;
+    padding: 1rem 0 !important;
+    gap: 0.75rem !important;
   }
 
   /* Keep the 30-day activity chart inside its paper on narrow screens. */
@@ -299,8 +299,8 @@
   /* Footer page boundary and legal copy need extra room when text wraps. */
   .footer-page-boundary {
     gap: 0.5rem !important;
-    height: calc(var(--ruled-line-height, 38px) * 1.35) !important;
-    margin-bottom: 0.35rem !important;
+    height: calc(var(--ruled-line-height, 38px) * 1.45) !important;
+    margin-bottom: 0.65rem !important;
   }
 
   .footer-end-badge {
@@ -318,14 +318,20 @@
     display: none !important;
   }
 
+  .footer-brand-title {
+    font-size: 1.45rem !important;
+    line-height: 1.25 !important;
+  }
+
   .footer-tagline-row {
     height: auto !important;
     min-height: var(--ruled-line-height, 38px) !important;
-    padding: 0.15rem 0.35rem !important;
+    padding: 0.3rem 0.35rem !important;
   }
 
   .footer-tagline-text {
-    line-height: 1.4 !important;
+    font-size: 1.15rem !important;
+    line-height: 1.5 !important;
     max-width: 100%;
     text-align: center;
   }
@@ -337,6 +343,8 @@
   .footer-legal-line,
   .footer-disclaimer-line {
     height: auto !important;
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
     overflow-wrap: anywhere;
   }
 
@@ -528,13 +536,13 @@
 
   /* Compact the hero without losing the handwritten scrapbook identity. */
   .journal-hero {
-    padding-bottom: 1.25rem !important;
+    padding-bottom: 1.5rem !important;
   }
 
   .journal-hero-title {
-    font-size: clamp(2.05rem, 10.5vw, 3rem) !important;
-    line-height: 1.22 !important;
-    padding: 0.45rem 0 0.2rem;
+    font-size: clamp(1.9rem, 8.8vw, 2.45rem) !important;
+    line-height: 1.24 !important;
+    padding: 0.45rem 0 0.25rem;
   }
 
   /* Search note: samples read better as a compact chip group on narrow screens. */
@@ -553,30 +561,30 @@
      stack instead of desktop cards separated by oversized gaps. */
   .info-notes-section {
     grid-template-columns: minmax(0, 1fr) !important;
-    gap: 1.25rem !important;
+    gap: 1.5rem !important;
   }
 
   .stats-journal-header {
-    margin-bottom: 1.25rem !important;
+    margin-bottom: 1.5rem !important;
   }
 
   .stats-journal-subtitle {
     height: auto !important;
-    line-height: 1.35 !important;
-    font-size: 1.3rem !important;
+    line-height: 1.4 !important;
+    font-size: 1.15rem !important;
   }
 
   .stats-journal-title {
     height: auto !important;
-    line-height: 1.15 !important;
-    font-size: 2rem !important;
-    margin-top: 0.2rem !important;
+    line-height: 1.2 !important;
+    font-size: 1.7rem !important;
+    margin-top: 0.3rem !important;
   }
 
   .stats-main-grid {
     grid-template-columns: minmax(0, 1fr) !important;
-    gap: 1.25rem !important;
-    margin-bottom: 1.25rem !important;
+    gap: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
   }
 
   /* Result / collection transition hints previously used a fixed 38px row.
@@ -696,7 +704,7 @@
   }
 
   .stats-journal-title {
-    font-size: 1.85rem !important;
+    font-size: 1.6rem !important;
   }
 
   .header-brand-title {

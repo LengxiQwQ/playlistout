@@ -147,7 +147,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               }}
             />
             <span
-              className="font-marker"
+              className="font-marker footer-brand-title"
               style={{
                 fontSize: '1.65rem',
                 lineHeight: 'var(--ruled-line-height, 38px)',
