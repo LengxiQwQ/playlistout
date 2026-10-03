@@ -46,7 +46,8 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 | **跨平台解析** | 统一解析多个主流音乐平台的公开歌单 | **多格式导出** | Excel / JSON / TXT / CSV / M3U8 |
 | **多种输入方式** | 网页链接、短链、分享文本和部分数字 ID | **结构化数据** | 保留歌曲、歌手、专辑、封面、来源及可用状态 |
 | **公开用户歌单** | 支持部分平台的用户公开歌单合集 | **播放器生态** | 通过插件、JSON 兼容或轻量适配连接开源播放器 |
-| **Public API** | 为第三方应用、脚本和迁移工具提供统一解析能力 | **本地导出** | 文件由浏览器本地生成，不需要上传到服务器 |
+| **Python CLI** | 提供可直接运行的 QQ 音乐与网易云音乐命令行导出脚本 | **本地导出** | 文件由浏览器本地生成，不需要上传到服务器 |
+| **Public API** | 为第三方应用、脚本和迁移工具提供统一解析能力 | **开放接入** | Web、CLI、插件与第三方应用可按不同方式使用同一套歌单数据 |
 
 ---
 
@@ -60,6 +61,43 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 | **酷狗音乐** | ✅ | ✅ | 公开内容可免登录预览；完整歌单或用户合集可能需要扫码授权 |
 
 > 平台能力依赖上游公开页面与接口，可能随着上游机制变化而调整。
+
+---
+
+## Python CLI / 命令行
+
+除了网页，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
+
+当前仓库内置两套独立 CLI：
+
+| 平台 | 脚本 | 支持内容 |
+|---|---|---|
+| **QQ 音乐** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | 歌单链接 / ID、QQ 号用户歌单、批量导出 |
+| **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 |
+
+两套 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
+
+### QQ 音乐 CLI
+
+```bash
+cd cli/qqmusic
+pip install -r requirements.txt
+python qq_music_playlist_export.py
+```
+
+👉 [QQ 音乐 CLI 完整说明](cli/qqmusic/README.md)
+
+### 网易云音乐 CLI
+
+```bash
+cd cli/netease
+pip install -r requirements.txt
+python netease_playlist_export.py
+```
+
+👉 [网易云音乐 CLI 完整说明](cli/netease/README.md)
+
+> 当前仓库中的独立 Python CLI 主要覆盖 QQ 音乐与网易云音乐；酷狗音乐和汽水音乐目前通过 Web / Public API 提供解析能力。
 
 ---
 
@@ -191,6 +229,9 @@ Playlist Out 使用 monorepo 管理网页、Worker 与插件代码。
 playlistout/
 ├── web/                  # React / Vite 前端
 ├── worker/               # Cloudflare Worker API
+├── cli/                  # Python 命令行导出工具
+│   ├── qqmusic/
+│   └── netease/
 ├── plugins/
 │   └── musicfree/        # MusicFree 插件
 ├── docs/                 # API、数据协议与项目文档
@@ -231,6 +272,8 @@ README 只保留使用项目所需的核心信息，更详细的协议、接口�
 |---|---|---|
 | [Public API](docs/API.md) | 第三方开发者 | API endpoint、参数、认证、CORS、限流、响应结构与错误码 |
 | [JSON Schema](docs/JSON-SCHEMA.md) | 播放器 / 工具开发者 | Playlist Out 标准 JSON 数据协议与字段定义 |
+| [QQ 音乐 CLI](cli/qqmusic/README.md) | 命令行用户 | QQ 音乐歌单 / 用户歌单导出、安装与使用说明 |
+| [网易云音乐 CLI](cli/netease/README.md) | 命令行用户 | 网易云歌单 / 用户歌单导出、安装与使用说明 |
 | [MusicFree 插件](plugins/musicfree/README.md) | MusicFree 用户与插件开发者 | 插件安装、使用、配置、构建与测试 |
 | [生态接入计划](docs/ECOSYSTEM-INTEGRATION.md) | 开源播放器维护者 | 第三方播放器调研、字段映射、Issue / PR 接入规划 |
 | [项目规范](docs/PROJECT-CONSTITUTION.md) | 贡献者 / 维护者 | 项目架构、安全、隐私、产品边界和长期原则 |
