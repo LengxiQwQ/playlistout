@@ -299,12 +299,35 @@
   /* Footer page boundary and legal copy need extra room when text wraps. */
   .footer-page-boundary {
     gap: 0.5rem !important;
+    height: calc(var(--ruled-line-height, 38px) * 1.35) !important;
+    margin-bottom: 0.35rem !important;
   }
 
   .footer-end-badge {
     padding: 0 0.25rem !important;
     font-size: 1rem !important;
     letter-spacing: 0.06em !important;
+  }
+
+  .running-days-stamp-wrap {
+    margin-top: calc(var(--ruled-line-height, 38px) * 0.7) !important;
+    margin-bottom: 0 !important;
+  }
+
+  .background-decoration-playlistout {
+    display: none !important;
+  }
+
+  .footer-tagline-row {
+    height: auto !important;
+    min-height: var(--ruled-line-height, 38px) !important;
+    padding: 0.15rem 0.35rem !important;
+  }
+
+  .footer-tagline-text {
+    line-height: 1.4 !important;
+    max-width: 100%;
+    text-align: center;
   }
 
   .footer-legal {
