@@ -154,15 +154,17 @@ flowchart TD
 
 ## 6. 实施路线图与执行排期 (Action Plan)
 
-- [ ] **Phase 1: MusicFree 独立插件交付（极速见效）**
-  - 编写 `MusicFree-Plugin-PlaylistOut` 插件源码（包含 `importMusicSheet` 支持与双入口体验）。
-  - 在移动端和桌面端完成实测，打包发布在独立 GitHub 仓库供用户直接订阅。
-- [ ] **Phase 2: 洛雪音乐 (LX Music) 与 BBPlayer 官方 Issue 发起**
-  - 按照标准开源礼仪在 GitHub Issues 提交 Feature Request，阐述痛点与方案。
-  - 明确承诺：“若方案可行，PR 代码由我们全权编写提交”。
-- [ ] **Phase 3: 编写并交付轻量 PR**
-  - 根据作者反馈，提交 20~40 行极简、零侵入的 JSON 导入兼容 PR。
-- [ ] **Phase 4: Listen 1 与 Moosync 扩展接入**
-  - 针对 Listen 1 提交备份兼容适配；为 Moosync 开发独立 Extension。
+- [x] **Phase 1: MusicFree 官方插件研发与交付（已完成）**
+  - 在 [`plugins/musicfree`](../plugins/musicfree/README.md) 中完整实现 `musicfree-plugin-playlistout`，通过 12 项全绿自动化测试套件。
+  - 聚焦**双核心入口**（云端 API 在线万能解析 + 本地 .json 文件路径直接极速导入），彻底移除单曲冗余逻辑并拦截直接粘贴长文本，专注歌单迁移基础设施。
+  - 构建产物同步托管至官方分发节点：`https://playlistout.lengxiqwq.com/plugins/musicfree.js`，国内用户一键极速安装。
+- [x] **Phase 2: 洛雪音乐 (LX Music)、BBPlayer 与 Listen 1 官方 Issue 正式发起（已完成）**
+  - **洛雪音乐 (LX Music)**: 已提交 [#3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) - 建议在“导入列表”中支持自动兼容通用歌单 JSON 结构（附轻量 PR 方案）。
+  - **BBPlayer**: 已提交 [#340](https://github.com/bbplayer-app/BBPlayer/issues/340) - 建议支持通过本地 JSON 文件直接导入歌单进行 B 站音源匹配（附 PR 意向）。
+  - **Listen 1**: 已提交 [#1413](https://github.com/listen1/listen1_desktop/issues/1413) - 建议在歌单导入/恢复功能中向下兼容通用歌单 JSON 格式（附 PR 意向）。
+- [ ] **Phase 3: 静待作者反馈并提交轻量 PR**
+  - 根据各平台维护者反馈，提交 20~40 行极简、零侵入的本地 JSON 导入兼容 PR。
+- [ ] **Phase 4: Moosync 扩展接入**
+  - 为 Moosync 基于官方 Extension SDK 编写并上架导入扩展。
 - [ ] **Phase 5: 建立跨生态兼容性持续集成验证**
   - 在 CI 流程中建立对标准 JSON 格式向前兼容的自动化断言，确保导出的 JSON 永远满足生态导入规范。
