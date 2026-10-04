@@ -138,17 +138,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
     }
   };
 
-  const handleCopyMusicFreePlugin = async () => {
-    const pluginUrl = 'https://playlistout.lengxiqwq.com/plugins/musicfree.js';
-    const ok = await copyToClipboard(pluginUrl);
-    if (ok) {
-      showToast(t.export.toastMusicFreeCopied);
-      trackClarityEvent('clipboard_copy');
-    } else {
-      showToast(t.export.toastCopyFailed);
-    }
-  };
-
   return (
     <div
       className="export-toolbar-container"
@@ -175,6 +164,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1.25rem',
+            paddingBottom: '1.25rem',
           }}
         >
           <div>
@@ -183,7 +173,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               style={{
                 fontSize: '1.5rem',
                 fontWeight: 700,
-                marginBottom: '0.6rem',
+                marginBottom: '0.65rem',
                 color: 'var(--ink, #2d3436)',
               }}
             >
@@ -285,16 +275,19 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         {/* Clipboard Copy Actions */}
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.85rem',
-            paddingTop: '1rem',
-            borderTop: '1px dashed rgba(45, 52, 54, 0.15)',
+            paddingTop: '1.25rem',
+            borderTop: '1px dashed rgba(45, 52, 54, 0.18)',
           }}
         >
-          <div className="font-handwriting" style={{ fontSize: '1.25rem', color: '#636e72', fontWeight: 600 }}>
+          <div
+            className="font-handwriting"
+            style={{
+              fontSize: '1.5rem',
+              color: 'var(--ink, #2d3436)',
+              fontWeight: 700,
+              marginBottom: '0.65rem',
+            }}
+          >
             {t.export.quickCopyTitle}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -334,25 +327,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               {t.export.copyTitleArtistAlbum}
             </Sticker>
 
-            <Sticker
-              type="button"
-              color="blue"
-              rotateDeg={0.5}
-              onClick={handleCopyMusicFreePlugin}
-              className="font-handwriting"
-              style={{
-                padding: '0.35rem 0.85rem',
-                fontSize: '1.05rem',
-                cursor: 'pointer',
-                border: '1.5px dashed #0A95C8',
-                color: '#0A95C8',
-                backgroundColor: 'rgba(10, 149, 200, 0.08)',
-                fontWeight: 600,
-              }}
-              title="https://playlistout.lengxiqwq.com/plugins/musicfree.js"
-            >
-              {t.export.musicFreePluginBtn}
-            </Sticker>
           </div>
         </div>
       </div>
