@@ -202,6 +202,9 @@ describe('Microsoft Clarity Adapter', () => {
 
       setClarityTag('playlist_size_bucket', '51-200');
       expect(Clarity.setTag).toHaveBeenCalledWith('playlist_size_bucket', '51-200');
+
+      setClarityTag('clipboard_mode', 'json');
+      expect(Clarity.setTag).toHaveBeenCalledWith('clipboard_mode', 'json');
     });
   });
 

@@ -1,12 +1,16 @@
 import type { Playlist } from '../api/types';
-import { formatArtists, cleanSingleLine } from './export';
+import { formatArtists, cleanSingleLine, generateJSON } from './export';
 
-export type ClipboardMode = 'title' | 'title-artist' | 'title-artist-album';
+export type ClipboardMode = 'title' | 'title-artist' | 'title-artist-album' | 'json';
 
 /**
  * Formats playlist tracks for clipboard copying according to specified mode.
  */
 export function formatTracksForClipboard(playlist: Playlist, mode: ClipboardMode): string {
+  if (mode === 'json') {
+    return generateJSON(playlist);
+  }
+
   const lines: string[] = [];
 
   for (const track of playlist.tracks) {

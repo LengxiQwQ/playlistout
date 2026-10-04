@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.4)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.5)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.4', 'Version must be 1.3.4');
+    assert.strictEqual(plugin.version, '1.3.5', 'Version must be 1.3.5');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -91,8 +91,8 @@ async function runAllTests() {
       'hints must explain mobile audio delegation'
     );
     assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗提示')),
-      'hints must provide KuGou limitation guidance'
+      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗')),
+      'hints must provide KuGou guidance'
     );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('playlistout.lengxiqwq.com')),
@@ -130,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.4');
+      assert.strictEqual(distPlugin.version, '1.3.5');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -200,7 +200,9 @@ async function runAllTests() {
   const v133Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.3.js');
   const v134Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.4.js');
   const v134Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.4.js');
-  await test('Verifies v1.2.0 through v1.3.4 release & historical archives exist', () => {
+  const v135Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.5.js');
+  const v135Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.5.js');
+  await test('Verifies v1.2.0 through v1.3.5 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -237,13 +239,15 @@ async function runAllTests() {
     assert(fs.existsSync(v133Web), 'web/public/plugins/musicfree-v1.3.3.js must exist');
     assert(fs.existsSync(v134Dist), 'dist/musicfree-v1.3.4.js must exist');
     assert(fs.existsSync(v134Web), 'web/public/plugins/musicfree-v1.3.4.js must exist');
+    assert(fs.existsSync(v135Dist), 'dist/musicfree-v1.3.5.js must exist');
+    assert(fs.existsSync(v135Web), 'web/public/plugins/musicfree-v1.3.5.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
     const srcCode = fs.readFileSync(pluginPath, 'utf-8');
     assert(!srcCode.includes('分享口令'), 'Source must not contain "分享口令"');
     assert(
-      srcCode.includes("var targetPlaceholder = '粘贴歌单链接，用「把你的歌单带走」解析';"),
+      srcCode.includes("var targetPlaceholder = '粘贴歌单链接或官网复制的 JSON，用「把你的歌单带走」解析';"),
       'Placeholder must match clean prompt'
     );
   });
@@ -753,6 +757,50 @@ async function runAllTests() {
       async () => await plugin.importMusicSheet('{ invalid json: tracks '),
       /JSON 解析失败/
     );
+  });
+
+  await test('Seamlessly parses large JSON string (500+ tracks from website clipboard) on Desktop and Mobile', async () => {
+    const largeTracks = [];
+    for (let i = 1; i <= 500; i++) {
+      largeTracks.push({
+        index: i,
+        id: `song_${i}`,
+        title: `酷狗金曲_${i}`,
+        artists: ['歌手A'],
+        album: '经典专辑',
+        sourceUrl: 'https://www.kugou.com/song/abc',
+      });
+    }
+    const largeJsonStr = JSON.stringify({
+      generator: 'Playlist Out',
+      generatorUrl: 'https://playlistout.lengxiqwq.com',
+      platform: 'kugou',
+      name: '酷狗500首大歌单',
+      trackCount: 500,
+      tracks: largeTracks,
+    });
+
+    // Test Desktop mode
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
+    try {
+      const desktopItems = await plugin.importMusicSheet(largeJsonStr);
+      assert.strictEqual(desktopItems.length, 500);
+      assert.strictEqual(desktopItems[0].title, '酷狗金曲_1');
+      assert.strictEqual(desktopItems[499].title, '酷狗金曲_500');
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+    }
+
+    // Test Mobile mode (native delegation)
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+    try {
+      const mobileItems = await plugin.importMusicSheet(largeJsonStr);
+      assert.strictEqual(mobileItems.length, 500);
+      assert.strictEqual(mobileItems[0].platform, 'kugou');
+      assert.strictEqual(mobileItems[499].platform, 'kugou');
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+    }
   });
 
   // ── 6. Real Online Live Resolution ────────────────────────────────

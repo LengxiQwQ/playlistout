@@ -168,11 +168,13 @@ export const enUS: Translations = {
     copyTitleOnly: 'Title only',
     copyTitleArtist: 'Title - Artist',
     copyTitleArtistAlbum: 'Title - Artist - Album',
+    copyJson: 'Copy JSON (for MusicFree)',
     toastExportSuccess: 'Successfully exported {filename}',
     toastExportMultipleSuccess: 'Successfully exported {count} files ({formats})',
     toastExportFailed: 'Failed to generate export file, please retry.',
     selectFormatHint: 'Please select at least one format to export',
     toastCopySuccess: 'Copied {count} tracks ({mode}) to clipboard!',
+    toastCopyJsonSuccess: 'Copied full JSON playlist! Paste directly into MusicFree to import.',
     toastCopyFailed: 'Copy failed. Please check browser clipboard permissions.',
   },
   migration: {

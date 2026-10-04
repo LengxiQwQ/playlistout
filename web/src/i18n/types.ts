@@ -168,11 +168,13 @@ export interface Translations {
     copyTitleOnly: string;
     copyTitleArtist: string;
     copyTitleArtistAlbum: string;
+    copyJson: string;
     toastExportSuccess: string;
     toastExportMultipleSuccess: string;
     toastExportFailed: string;
     selectFormatHint: string;
     toastCopySuccess: string;
+    toastCopyJsonSuccess: string;
     toastCopyFailed: string;
   };
   migration: {

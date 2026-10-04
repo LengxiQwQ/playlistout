@@ -124,12 +124,16 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
     const text = formatTracksForClipboard(playlist, mode);
     const ok = await copyToClipboard(text);
     if (ok) {
-      showToast(
-        formatString(t.export.toastCopySuccess, {
-          count: playlist.tracks.length,
-          mode: label,
-        }),
-      );
+      if (mode === 'json') {
+        showToast(t.export.toastCopyJsonSuccess);
+      } else {
+        showToast(
+          formatString(t.export.toastCopySuccess, {
+            count: playlist.tracks.length,
+            mode: label,
+          }),
+        );
+      }
       recordClipboardEvent(mode, playlist.tracks.length, playlist.platform || 'qqmusic');
       setClarityTag('clipboard_mode', mode);
       trackClarityEvent('clipboard_copy');
@@ -327,6 +331,23 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               {t.export.copyTitleArtistAlbum}
             </Sticker>
 
+            <Sticker
+              type="button"
+              color="blue"
+              rotateDeg={1}
+              disabled={isDisabled}
+              onClick={() => handleCopy('json', t.export.copyJson)}
+              className="font-handwriting"
+              style={{
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                fontWeight: 700,
+                border: '1.5px solid var(--ink, #2d3436)',
+              }}
+            >
+              📋 {t.export.copyJson}
+            </Sticker>
           </div>
         </div>
       </div>

@@ -34,7 +34,8 @@ export interface ClarityTagMap {
     | 'title-artist'
     | 'title-artist-album'
     | 'title_artist'
-    | 'title_artist_album';
+    | 'title_artist_album'
+    | 'json';
   playlist_size_bucket: '1-50' | '51-200' | '201-500' | '501-1000' | '1000+';
   language: 'zh-CN' | 'en-US';
 }
@@ -63,6 +64,7 @@ export const CLARITY_TAG_VALUE_WHITELIST: {
     'title-artist-album',
     'title_artist',
     'title_artist_album',
+    'json',
   ],
   playlist_size_bucket: ['1-50', '51-200', '201-500', '501-1000', '1000+'],
   language: ['zh-CN', 'en-US'],

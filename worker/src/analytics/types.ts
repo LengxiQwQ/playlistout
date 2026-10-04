@@ -173,6 +173,7 @@ export const VALID_CLIPBOARD_MODES = [
   'title-artist-album',
   'title_artist',
   'title_artist_album',
+  'json',
 ] as const;
 export type ClipboardMode = typeof VALID_CLIPBOARD_MODES[number];
 
@@ -180,6 +181,7 @@ export const CANONICAL_CLIPBOARD_MODES = [
   'title',
   'title_artist',
   'title_artist_album',
+  'json',
 ] as const;
 export type CanonicalClipboardMode = typeof CANONICAL_CLIPBOARD_MODES[number];
 

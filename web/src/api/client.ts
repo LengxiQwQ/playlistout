@@ -863,7 +863,7 @@ export async function recordExportEvent(
  * Fires an anonymous clipboard copy event.
  */
 export async function recordClipboardEvent(
-  format: 'title' | 'title-artist' | 'title-artist-album',
+  format: 'title' | 'title-artist' | 'title-artist-album' | 'json',
   trackCount?: number,
   platform: string = 'qqmusic',
 ): Promise<void> {

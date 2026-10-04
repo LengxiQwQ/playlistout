@@ -142,6 +142,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       'title-artist-album',
       'title_artist',
       'title_artist_album',
+      'json',
     ])('accepts valid clipboard mode: %s', async (format) => {
       const request = new Request(baseUrl, {
         method: 'POST',

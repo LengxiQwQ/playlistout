@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.4)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.5)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -333,7 +333,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       }
 
       // 修正预输入占位符文字：用中文品牌名「把你的歌单带走」
-      var targetPlaceholder = '粘贴歌单链接，用「把你的歌单带走」解析';
+      var targetPlaceholder = '粘贴歌单链接或官网复制的 JSON，用「把你的歌单带走」解析';
       if (placeholder !== targetPlaceholder) {
         textInput.setAttribute('placeholder', targetPlaceholder);
       }
@@ -350,7 +350,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
             tip.style.cssText =
               'margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.5);color:#d97706;font-size:12px;line-height:1.45;text-align:left;';
             tip.innerHTML =
-              '💡 <b>酷狗限制提示：</b>因平台登录限制，免登录仅可解析前 10 首。<br>完整歌单推荐前往官网 (<b>playlistout.lengxiqwq.com</b>) 登录解析，导出 JSON 离线导入。';
+              '💡 <b>酷狗限制提示：</b>因平台登录限制，免登录仅可解析前 10 首。<br>完整歌单推荐前往官网 (<b>playlistout.lengxiqwq.com</b>) 登录解析，点击【复制 JSON】后直接在此粘贴全量导入。';
             inputArea.appendChild(tip);
           }
         } else if (tip) {
@@ -2264,7 +2264,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.4',
+  version: '1.3.5',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -2272,9 +2272,9 @@ module.exports = {
     importMusicSheet: [
       '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
       '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
-      '【离线导入】电脑端支持文件选择弹窗；手机端支持直接粘贴导出JSON文本',
+      '【酷狗全量导入】酷狗完整歌单请在官网 (playlistout.lengxiqwq.com) 扫码解析后点击「复制 JSON」，回到此处直接粘贴即可全量导入！',
+      '【离线导入】电脑端支持文件选择弹窗；电脑与手机均支持直接粘贴官网复制的完整 JSON 文本',
       '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致，纯净无广无语音干扰',
-      '【酷狗提示】酷狗免登录仅前10首，可配置Token或官网登录后导出JSON导入',
       '官网地址：playlistout.lengxiqwq.com',
     ],
   },
