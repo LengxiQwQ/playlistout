@@ -80,7 +80,9 @@ describe('MigrationPanel', () => {
     render(<MigrationPanel playlist={largePlaylist} />);
 
     expect(screen.getByRole('button', { name: '一键迁移' })).toBeDisabled();
-    expect(screen.getAllByText(/前往迁移/)).toHaveLength(3);
+    expect(screen.getByRole('button', { name: '前往 Soundiiz 迁移' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '前往 TuneMyMusic 迁移' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '前往 FreeYourMusic 迁移' })).toBeEnabled();
     expect(screen.getByText(/超过 Soundiiz 一键迁移的 200 首限制/)).toBeInTheDocument();
   });
 
