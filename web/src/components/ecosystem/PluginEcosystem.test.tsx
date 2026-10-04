@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../../i18n';
@@ -133,9 +133,7 @@ describe('PluginEcosystem', () => {
       vi.advanceTimersByTime(2700);
     });
 
-    await waitFor(() => {
-      expect(buttons[0]).toHaveTextContent('复制插件地址');
-      expect(buttons[1]).toHaveTextContent('复制插件地址');
-    });
+    expect(buttons[0]).toHaveTextContent('复制插件地址');
+    expect(buttons[1]).toHaveTextContent('复制插件地址');
   });
 });
