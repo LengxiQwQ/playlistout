@@ -64,7 +64,7 @@ export const enUS: Translations = {
     platformKugouDesc: 'Public playlists supported',
     platformQishui: 'Soda Music',
     platformQishuiDesc: 'Public playlists supported without login',
-    kugouLoggedIn: 'KuGou Music (Log out)',
+    kugouLoggedIn: 'KuGou Music (Logged in)',
     kugouNotLoggedIn: 'KuGou Music (Login required)',
     kugouLoginBadge: 'Scan to Login',
     kugouLoggedInBadge: 'KuGou Connected',
@@ -358,7 +358,6 @@ export const enUS: Translations = {
     apiCredentialsTitle: '🔑 Developer / API Credentials',
     copyToken: 'Copy Token',
     copyUserId: 'Copy User ID',
-    copyCurl: '📋 Copy cURL Command',
     copied: 'Copied ✓',
   },
 };

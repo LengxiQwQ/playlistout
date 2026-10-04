@@ -34,12 +34,12 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authState, setAuthState] = useState<KugouAuthState>('none');
-  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | 'curl' | 'plugin' | null>(null);
+  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | null>(null);
 
   const pollTimerRef = useRef<any>(null);
   const consecutiveErrorsRef = useRef<number>(0);
 
-  const handleCopy = async (key: 'token' | 'userid' | 'curl' | 'plugin', text: string) => {
+  const handleCopy = async (key: 'token' | 'userid', text: string) => {
     try {
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -400,21 +400,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               }}
             >
               <MarkerButton
-                variant="ink"
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 1rem',
-                  fontSize: '1.05rem',
-                  justifyContent: 'center',
-                }}
-                onClick={() => {
-                  onSuccess?.();
-                  onClose();
-                }}
-              >
-                使用当前登录状态重新解析
-              </MarkerButton>
-              <MarkerButton
                 variant="paper"
                 style={{
                   width: '100%',
@@ -460,42 +445,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                     {t.kugouAuth.apiCredentialsTitle}
                   </div>
 
-                  {/* User ID row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '0.8rem',
-                      marginBottom: '0.45rem',
-                      backgroundColor: '#f8fafc',
-                      padding: '0.35rem 0.5rem',
-                      borderRadius: '4px',
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    <span style={{ color: '#475569' }}>
-                      User ID: <strong style={{ color: '#0f172a' }}>{currentAuth.userid}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      data-testid="copy-kugou-userid-btn"
-                      onClick={() => handleCopy('userid', currentAuth.userid)}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '0.2rem 0.55rem',
-                        borderRadius: '4px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: copiedKey === 'userid' ? '#dcfce7' : '#ffffff',
-                        color: copiedKey === 'userid' ? '#166534' : '#1e293b',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {copiedKey === 'userid' ? t.kugouAuth.copied : t.kugouAuth.copyUserId}
-                    </button>
-                  </div>
-
                   {/* Token row */}
                   <div
                     style={{
@@ -503,7 +452,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       fontSize: '0.8rem',
-                      marginBottom: '0.6rem',
+                      marginBottom: '0.45rem',
                       backgroundColor: '#f8fafc',
                       padding: '0.35rem 0.5rem',
                       borderRadius: '4px',
@@ -541,68 +490,42 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Copy Kugou credentials for any compatible player integration */}
-                  <button
-                    type="button"
-                    data-testid="copy-kugou-plugin-btn"
-                    onClick={() =>
-                      handleCopy(
-                        'plugin',
-                        `${currentAuth.token}:${currentAuth.userid}`,
-                      )
-                    }
+                  {/* User ID row */}
+                  <div
                     style={{
-                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       fontSize: '0.8rem',
-                      padding: '0.42rem 0.5rem',
+                      marginBottom: 0,
+                      backgroundColor: '#f8fafc',
+                      padding: '0.35rem 0.5rem',
                       borderRadius: '4px',
-                      border: '1.5px solid #2563eb',
-                      backgroundColor: copiedKey === 'plugin' ? '#dcfce7' : '#eff6ff',
-                      color: copiedKey === 'plugin' ? '#166534' : '#1d4ed8',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      fontWeight: 600,
-                      marginBottom: '0.35rem',
-                      transition: 'all 0.15s ease',
+                      border: '1px solid #e2e8f0',
                     }}
                   >
-                    {copiedKey === 'plugin' ? '已复制酷狗凭证 ✓' : '📋 复制酷狗凭证 (Token:UserID)'}
-                  </button>
-                  <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 0.55rem 0', textAlign: 'center' }}>
-                    可粘贴到支持 Token:UserID 酷狗凭证格式的播放器插件中
-                  </p>
+                    <span style={{ color: '#475569' }}>
+                      User ID: <strong style={{ color: '#0f172a' }}>{currentAuth.userid}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      data-testid="copy-kugou-userid-btn"
+                      onClick={() => handleCopy('userid', currentAuth.userid)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '4px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: copiedKey === 'userid' ? '#dcfce7' : '#ffffff',
+                        color: copiedKey === 'userid' ? '#166534' : '#1e293b',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {copiedKey === 'userid' ? t.kugouAuth.copied : t.kugouAuth.copyUserId}
+                    </button>
+                  </div>
 
-                  {/* Copy cURL Button */}
-                  <button
-                    type="button"
-                    data-testid="copy-kugou-curl-btn"
-                    onClick={() =>
-                      handleCopy(
-                        'curl',
-                        `curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=${currentAuth.userid}&platform=kugou" \\\n  -H "Authorization: Bearer ${currentAuth.token}" \\\n  -H "X-Kugou-Userid: ${currentAuth.userid}"`,
-                      )
-                    }
-                    style={{
-                      width: '100%',
-                      fontSize: '0.78rem',
-                      padding: '0.4rem 0.5rem',
-                      borderRadius: '4px',
-                      border: '1px dashed #94a3b8',
-                      backgroundColor: copiedKey === 'curl' ? '#dcfce7' : '#f8fafc',
-                      color: copiedKey === 'curl' ? '#166534' : '#334155',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {copiedKey === 'curl' ? t.kugouAuth.copied : t.kugouAuth.copyCurl}
-                  </button>
                 </div>
               );
             })()}

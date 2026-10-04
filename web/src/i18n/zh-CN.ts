@@ -64,7 +64,7 @@ export const zhCN: Translations = {
     platformKugouDesc: '公开歌单现已支持',
     platformQishui: '汽水音乐',
     platformQishuiDesc: '公开歌单免登录全量支持',
-    kugouLoggedIn: '酷狗音乐（退出登录）',
+    kugouLoggedIn: '酷狗音乐（已登录）',
     kugouNotLoggedIn: '酷狗音乐（需要登录）',
     kugouLoginBadge: '扫码登录',
     kugouLoggedInBadge: '酷狗已登录',
@@ -358,7 +358,6 @@ export const zhCN: Translations = {
     apiCredentialsTitle: '🔑 开发者 / API 调用凭据',
     copyToken: '复制 Token',
     copyUserId: '复制 User ID',
-    copyCurl: '📋 复制 cURL 命令',
     copied: '已复制 ✓',
   },
 };

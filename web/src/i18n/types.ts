@@ -358,7 +358,6 @@ export interface Translations {
     apiCredentialsTitle: string;
     copyToken: string;
     copyUserId: string;
-    copyCurl: string;
     copied: string;
   };
 }

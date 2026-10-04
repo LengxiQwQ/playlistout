@@ -63,17 +63,16 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
       data: { status: 'valid', userid: 'mock_uid' },
     });
 
-    const handleSuccess = vi.fn();
     const handleClose = vi.fn();
 
-    render(<KugouAuthModal isOpen={true} onClose={handleClose} onSuccess={handleSuccess} />);
+    render(<KugouAuthModal isOpen={true} onClose={handleClose} />);
 
     await waitFor(() => {
       expect(screen.getByTestId('kugou-auth-valid')).toBeInTheDocument();
     });
 
     expect(screen.getByText('PlaylistOut 已连接酷狗账号')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '使用当前登录状态重新解析' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '使用当前登录状态重新解析' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '退出' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '完成' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '取消' })).not.toBeInTheDocument();
@@ -82,11 +81,6 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     // Clicking top-right "✕" close button calls onClose
     fireEvent.click(screen.getByTestId('kugou-modal-close-btn'));
     expect(handleClose).toHaveBeenCalledTimes(1);
-
-    // Clicking "使用当前登录状态重新解析" triggers onSuccess and onClose
-    fireEvent.click(screen.getByRole('button', { name: '使用当前登录状态重新解析' }));
-    expect(handleSuccess).toHaveBeenCalledTimes(1);
-    expect(handleClose).toHaveBeenCalledTimes(2);
   });
 
   it('shows unknown state when validation encounters network error and retains credentials', async () => {
@@ -257,24 +251,23 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     expect(screen.getByText('1425711902')).toBeInTheDocument();
     expect(screen.getByText(/test_token/)).toBeInTheDocument();
 
-    // Copy User ID
-    const copyUserIdBtn = screen.getByTestId('copy-kugou-userid-btn');
-    fireEvent.click(copyUserIdBtn);
-    expect(writeTextMock).toHaveBeenCalledWith('1425711902');
+    const credentials = screen.getByTestId('kugou-api-credentials');
+    const copyButtons = Array.from(credentials.querySelectorAll('button'));
+    expect(copyButtons.map((button) => button.getAttribute('data-testid'))).toEqual([
+      'copy-kugou-token-btn',
+      'copy-kugou-userid-btn',
+    ]);
+    expect(screen.queryByTestId('copy-kugou-plugin-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('copy-kugou-curl-btn')).not.toBeInTheDocument();
 
-    // Copy Token
+    // Copy Token first
     const copyTokenBtn = screen.getByTestId('copy-kugou-token-btn');
     fireEvent.click(copyTokenBtn);
     expect(writeTextMock).toHaveBeenCalledWith('test_token_1234567890abcdef');
 
-    // Copy cURL command
-    const copyCurlBtn = screen.getByTestId('copy-kugou-curl-btn');
-    fireEvent.click(copyCurlBtn);
-    expect(writeTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('curl -s "https://playlistout-api.lengxiqwq.com/api/v1/user/playlists?uid=1425711902&platform=kugou"'),
-    );
-    expect(writeTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Bearer test_token_1234567890abcdef'),
-    );
+    // Copy User ID second
+    const copyUserIdBtn = screen.getByTestId('copy-kugou-userid-btn');
+    fireEvent.click(copyUserIdBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('1425711902');
   });
 });
