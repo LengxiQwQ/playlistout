@@ -1,6 +1,6 @@
 # PlaylistOut JSON 数据格式规范 (Schema Document)
 
-本文档详细描述了 PlaylistOut 导出的核心 JSON 结构，用于指导第三方开发者、音乐迁移工具、播放器等进行标准化解析。
+本文档详细描述了 PlaylistOut Web 导出的核心 JSON 结构，用于指导第三方开发者、音乐迁移工具、播放器等进行标准化解析。CSV、XLSX、M3U8、TXT 的结构与兼容性约定见 [Web 导出格式规范](EXPORT-FORMATS.md)。
 
 ### 1. JSON 格式 (`.json`) —— 推荐平台接入规范
 
