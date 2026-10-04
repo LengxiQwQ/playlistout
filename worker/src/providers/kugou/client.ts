@@ -23,6 +23,7 @@ import {
   KUGOU_LITE_APPID,
   KUGOU_LITE_CLIENTVER,
   KUGOU_LITE_SALT,
+  encryptKugouLiteRsaRaw,
 } from './crypto';
 
 const MOBILE_UA =
@@ -67,6 +68,148 @@ export function isKugouAuthError(json: {
   }
   // On authenticated user endpoints, any non-1 response from upstream gateway is treated as auth invalidation
   return true;
+}
+
+export interface KugouUserProfile {
+  userId: string;
+  nickname: string;
+  avatarUrl?: string;
+  signature?: string;
+}
+
+function pickKugouString(source: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return undefined;
+}
+
+function normalizeKugouAvatar(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim();
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) {
+    return value.replace(/^http:\/\//i, 'https://').replace('{size}', '240');
+  }
+  if (value.startsWith('//')) {
+    return `https:${value}`.replace('{size}', '240');
+  }
+  const clean = value.replace(/^\/+/, '');
+  return `https://c1.kgimg.com/v2/kugouicon/${clean}`;
+}
+
+/**
+ * Fetches the currently authenticated Kugou user's lightweight public profile.
+ * This is intentionally independent from playlist retrieval: profile failure
+ * must never invalidate a working login session.
+ */
+export async function fetchKugouUserProfile(
+  token: string,
+  userid: string,
+): Promise<KugouUserProfile> {
+  const clienttime = String(Math.floor(Date.now() / 1000));
+  const mid = md5(`profile_${clienttime}_${userid}`);
+  const rsaPayload = { token, clienttime: Number(clienttime) };
+  const postData = {
+    visit_time: Number(clienttime),
+    usertype: 1,
+    p: encryptKugouLiteRsaRaw(rsaPayload).toUpperCase(),
+    userid: Number(userid),
+  };
+  const dataStr = JSON.stringify(postData);
+
+  const queryParams: Record<string, string> = {
+    dfid: '-',
+    mid,
+    uuid: '-',
+    appid: KUGOU_LITE_APPID,
+    clientver: KUGOU_LITE_CLIENTVER,
+    clienttime,
+    token,
+    userid,
+    plat: '1',
+  };
+  queryParams.signature = signKugouGatewayParams(queryParams, dataStr, KUGOU_LITE_SALT);
+
+  const response = await fetch(
+    `https://gateway.kugou.com/v3/get_my_info?${new URLSearchParams(queryParams).toString()}`,
+    {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi',
+        'Content-Type': 'application/json',
+        'x-router': 'usercenter.kugou.com',
+        dfid: '-',
+        clienttime,
+        mid,
+        'kg-rc': '1',
+        'kg-thash': '5d816a0',
+        'kg-rec': '1',
+        'kg-rf': 'B9EDA08A64250DEFFBCADDEE00F8F25F',
+      },
+      body: dataStr,
+    },
+  );
+
+  if (!response.ok) {
+    throw new ProviderError(
+      'UPSTREAM_ERROR',
+      `Kugou user profile upstream error: ${response.status}`,
+      502,
+    );
+  }
+
+  const json = (await response.json()) as {
+    status?: number;
+    error_code?: number;
+    error?: string;
+    msg?: string;
+    message?: string;
+    data?: Record<string, unknown> & { info?: Record<string, unknown> };
+  };
+
+  if (json.status !== 1) {
+    if (isKugouAuthError(json)) {
+      throw new ProviderError(
+        'FORBIDDEN',
+        'Kugou credentials invalid or expired',
+        401,
+        { authInvalid: true, errorCode: json.error_code },
+      );
+    }
+    throw new ProviderError(
+      'UPSTREAM_ERROR',
+      `Kugou user profile upstream error: status=${json.status} error_code=${json.error_code}`,
+      502,
+      { errorCode: json.error_code },
+    );
+  }
+
+  const data = json.data || {};
+  const info = data.info && typeof data.info === 'object' ? data.info : {};
+  const source: Record<string, unknown> = { ...data, ...info };
+
+  const nickname =
+    pickKugouString(source, ['nickname', 'nick_name', 'username', 'user_name', 'name']) ||
+    `酷狗用户_${userid.slice(-4)}`;
+  const signature = pickKugouString(source, ['signature', 'memo', 'intro', 'description']);
+  const avatarRaw = pickKugouString(source, [
+    'pic',
+    'photo',
+    'avatar',
+    'avatar_url',
+    'headimgurl',
+    'head_img',
+  ]);
+
+  return {
+    userId: userid,
+    nickname,
+    avatarUrl: normalizeKugouAvatar(avatarRaw),
+    signature,
+  };
 }
 
 /**
