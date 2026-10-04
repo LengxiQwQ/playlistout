@@ -7,7 +7,9 @@ import { Sticker } from '../ui/Sticker';
 import {
   fetchKugouQrCode,
   checkKugouQrCode,
+  fetchKugouProfile,
   type KugouQrSession,
+  type KugouUserProfile,
 } from '../../api/client';
 import {
   setKugouAuth,
@@ -34,6 +36,8 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authState, setAuthState] = useState<KugouAuthState>('none');
+  const [profile, setProfile] = useState<KugouUserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState<boolean>(false);
   const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | null>(null);
 
   const pollTimerRef = useRef<any>(null);
@@ -119,6 +123,47 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
       };
     }
   }, [isOpen]);
+
+  // Load a lightweight account profile only after the login session is validated.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isOpen || authState !== 'valid') {
+      if (!isOpen) {
+        setProfile(null);
+        setProfileLoading(false);
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const auth = getKugouAuth();
+    if (!auth) {
+      setProfile(null);
+      setProfileLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setProfileLoading(true);
+    fetchKugouProfile(auth.token, auth.userid)
+      .then((res) => {
+        if (cancelled) return;
+        setProfile(res.success ? res.data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, authState]);
 
   // Polling logic when qrSession is active and user is not validated
   useEffect(() => {
@@ -354,6 +399,8 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                 variant="paper"
                 onClick={() => {
                   clearKugouAuth();
+                  setProfile(null);
+                  setProfileLoading(false);
                   setAuthState('none');
                   loadQrCode();
                 }}
@@ -379,13 +426,121 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               marginBottom: '1.5rem',
             }}
           >
-            <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem', color: '#2563eb' }}>✓</div>
             <div
-              className="font-sans"
-              style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1d4ed8', marginBottom: '0.5rem' }}
+              data-testid="kugou-profile-card"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.9rem',
+                padding: '0.9rem 1rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '10px',
+                textAlign: 'left',
+                marginBottom: '1rem',
+              }}
             >
-              PlaylistOut 已连接酷狗账号
+              <div
+                style={{
+                  position: 'relative',
+                  width: '64px',
+                  height: '64px',
+                  flex: '0 0 64px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  display: 'grid',
+                  placeItems: 'center',
+                  backgroundColor: '#dbeafe',
+                  color: '#2563eb',
+                  fontSize: '1.55rem',
+                  fontWeight: 700,
+                  border: '2px solid #93c5fd',
+                }}
+                aria-label={profile?.nickname || t.kugouAuth.profileFallbackName}
+              >
+                ♪
+                {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={profile.nickname}
+                    referrerPolicy="no-referrer"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : null}
+              </div>
+
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap',
+                    marginBottom: profile?.signature ? '0.3rem' : '0.15rem',
+                  }}
+                >
+                  <strong
+                    className="font-sans"
+                    style={{
+                      color: '#1e3a8a',
+                      fontSize: '1rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '210px',
+                    }}
+                    title={profile?.nickname}
+                  >
+                    {profileLoading
+                      ? t.kugouAuth.profileLoading
+                      : profile?.nickname || t.kugouAuth.profileFallbackName}
+                  </strong>
+                  <span
+                    className="font-sans"
+                    style={{
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '999px',
+                      backgroundColor: '#dcfce7',
+                      color: '#166534',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    ✓ {t.kugouAuth.profileConnected}
+                  </span>
+                </div>
+
+                {profile?.signature ? (
+                  <div
+                    className="font-sans"
+                    style={{
+                      color: '#64748b',
+                      fontSize: '0.8rem',
+                      lineHeight: 1.4,
+                      marginBottom: '0.25rem',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {profile.signature}
+                  </div>
+                ) : null}
+
+                <div className="font-sans" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                  {t.kugouAuth.profileUserIdLabel}：{profile?.userId || getKugouAuth()?.userid || '—'}
+                </div>
+              </div>
             </div>
+
             <p className="font-sans" style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '1.25rem' }}>
               已安全保存本地登录凭证，可直接读取当前账号的完整云歌单。
             </p>
