@@ -331,23 +331,46 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               {t.export.copyTitleArtistAlbum}
             </Sticker>
 
-            <Sticker
-              type="button"
-              color="blue"
-              rotateDeg={1}
-              disabled={isDisabled}
-              onClick={() => handleCopy('json', t.export.copyJson)}
-              className="font-handwriting"
+            <div
               style={{
-                padding: '0.35rem 0.85rem',
-                fontSize: '1.05rem',
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                fontWeight: 700,
-                border: '1.5px solid var(--ink, #2d3436)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '0.35rem',
+                flexBasis: '100%',
+                marginTop: '0.2rem',
               }}
             >
-              📋 {t.export.copyJson}
-            </Sticker>
+              <Sticker
+                type="button"
+                color="blue"
+                rotateDeg={1}
+                disabled={isDisabled}
+                onClick={() => handleCopy('json', t.export.copyJson)}
+                className="font-handwriting"
+                style={{
+                  padding: '0.35rem 0.85rem',
+                  fontSize: '1.05rem',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  fontWeight: 700,
+                  border: '1.5px solid var(--ink, #2d3436)',
+                }}
+              >
+                📋 {t.export.copyJson}
+              </Sticker>
+              <div
+                style={{
+                  maxWidth: '34rem',
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+                  fontSize: '0.83rem',
+                  lineHeight: 1.45,
+                  color: '#747c80',
+                }}
+              >
+                {t.export.copyJsonHint}
+              </div>
+            </div>
           </div>
         </div>
       </div>
