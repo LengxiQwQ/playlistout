@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { Playlist } from '../../api/types';
 import { useTranslation } from '../../i18n';
-import { trackClarityEvent, setClarityTag } from '../../analytics/clarity';
 import { MarkerButton } from '../ui/MarkerButton';
 import {
   createSoundiizMigration,
@@ -56,10 +55,6 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
     }
 
     try {
-      setClarityTag('migration_provider', 'soundiiz');
-      setClarityTag('migration_destination', loadingKey);
-      trackClarityEvent('playlist_migration');
-
       const result = await createSoundiizMigration(playlist, destination);
 
       if (targetWindow && !targetWindow.closed) {
