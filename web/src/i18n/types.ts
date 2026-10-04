@@ -220,7 +220,6 @@ export interface Translations {
     statusProposed: string;
     statusPlanned: string;
     officialPlugin: string;
-    musicFreeSummary: string;
     copyInstallUrl: string;
     copiedInstallUrl: string;
     copyFailed: string;

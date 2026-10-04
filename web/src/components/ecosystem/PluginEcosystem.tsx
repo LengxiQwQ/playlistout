@@ -2,39 +2,64 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import {
-  OPEN_SOURCE_INTEGRATIONS,
-  SUPPORTED_INTEGRATION_COUNT,
+  PLUGIN_MANIFEST_URL,
+  UPCOMING_INTEGRATIONS,
+  getPluginSummary,
+  isPluginEcosystemManifest,
   type IntegrationStatus,
+  type PublishedPlugin,
 } from '../../data/integrations';
 import { Paper } from '../ui/Paper';
 import { Sticker } from '../ui/Sticker';
 import { MarkerButton } from '../ui/MarkerButton';
 
-const statusColor: Record<IntegrationStatus, 'green' | 'yellow' | 'blue'> = {
-  available: 'green',
+const statusColor: Record<IntegrationStatus, 'yellow' | 'blue'> = {
   proposed: 'yellow',
   planned: 'blue',
 };
 
 export const PluginEcosystem: React.FC = () => {
-  const { t, format } = useTranslation();
+  const { t, format, language } = useTranslation();
+  const [available, setAvailable] = useState<PublishedPlugin[]>([]);
   const [copyState, setCopyState] = useState<Record<string, 'copied' | 'failed'>>({});
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
-  const resetTimerRef = useRef<number | null>(null);
-
-  const available = OPEN_SOURCE_INTEGRATIONS.filter((item) => item.status === 'available');
-  const upcoming = OPEN_SOURCE_INTEGRATIONS.filter((item) => item.status !== 'available');
+  const resetTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
+    const controller = new AbortController();
+
+    const loadManifest = async () => {
+      try {
+        const response = await fetch(PLUGIN_MANIFEST_URL, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+
+        const payload: unknown = await response.json();
+        if (isPluginEcosystemManifest(payload)) {
+          setAvailable(payload.platforms);
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          // The ecosystem panel is optional content. A missing/stale manifest should
+          // never break the rest of the site.
+        }
       }
+    };
+
+    void loadManifest();
+
+    return () => {
+      controller.abort();
+      for (const timer of Object.values(resetTimersRef.current)) {
+        window.clearTimeout(timer);
+      }
+      resetTimersRef.current = {};
     };
   }, []);
 
   const getStatusLabel = (status: IntegrationStatus) => {
-    if (status === 'available') return t.ecosystem.statusAvailable;
     if (status === 'proposed') return t.ecosystem.statusProposed;
     return t.ecosystem.statusPlanned;
   };
@@ -43,15 +68,18 @@ export const PluginEcosystem: React.FC = () => {
     const ok = await copyToClipboard(url);
     setCopyState((prev) => ({ ...prev, [id]: ok ? 'copied' : 'failed' }));
 
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
+    const existingTimer = resetTimersRef.current[id];
+    if (existingTimer !== undefined) {
+      window.clearTimeout(existingTimer);
     }
-    resetTimerRef.current = window.setTimeout(() => {
+
+    resetTimersRef.current[id] = window.setTimeout(() => {
       setCopyState((prev) => {
         const next = { ...prev };
         delete next[id];
         return next;
       });
+      delete resetTimersRef.current[id];
     }, 2600);
   };
 
@@ -77,8 +105,11 @@ export const PluginEcosystem: React.FC = () => {
           </p>
         </div>
 
-        <div className="plugin-supported-count" aria-label={format(t.ecosystem.supportedCount, { count: SUPPORTED_INTEGRATION_COUNT })}>
-          <span className="font-marker plugin-supported-number">{SUPPORTED_INTEGRATION_COUNT}</span>
+        <div
+          className="plugin-supported-count"
+          aria-label={format(t.ecosystem.supportedCount, { count: available.length })}
+        >
+          <span className="font-marker plugin-supported-number">{available.length}</span>
           <span className="font-handwriting plugin-supported-label">
             {t.ecosystem.supportedShort}
           </span>
@@ -86,9 +117,9 @@ export const PluginEcosystem: React.FC = () => {
       </div>
 
       <div className="plugin-app-grid">
-        {available.map((integration) => (
+        {available.map((plugin) => (
           <Paper
-            key={integration.id}
+            key={plugin.id}
             color="blue"
             borderVariant="alt"
             shadow="paper-sm"
@@ -100,27 +131,27 @@ export const PluginEcosystem: React.FC = () => {
             <div className="plugin-app-row">
               <div className="plugin-app-card-header">
                 <div className="plugin-app-logo-wrap">
-                  {integration.logoUrl && !logoFailed[integration.id] ? (
+                  {plugin.logoUrl && !logoFailed[plugin.id] ? (
                     <img
-                      src={integration.logoUrl}
+                      src={plugin.logoUrl}
                       alt=""
                       className="plugin-app-logo"
                       loading="lazy"
                       referrerPolicy="no-referrer"
                       onError={() =>
-                        setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
+                        setLogoFailed((prev) => ({ ...prev, [plugin.id]: true }))
                       }
                     />
                   ) : (
                     <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                      {integration.name.slice(0, 2)}
+                      {plugin.name.slice(0, 2)}
                     </span>
                   )}
                 </div>
 
                 <div className="plugin-app-card-title">
                   <div className="plugin-app-name-row">
-                    <h3 className="plugin-app-name">{integration.name}</h3>
+                    <h3 className="plugin-app-name">{plugin.name}</h3>
                     <Sticker
                       as="span"
                       color="green"
@@ -131,32 +162,32 @@ export const PluginEcosystem: React.FC = () => {
                     </Sticker>
                   </div>
                   <p className="font-handwriting plugin-app-summary">
-                    {integration.id === 'musicfree' ? t.ecosystem.musicFreeSummary : ''}
+                    {getPluginSummary(plugin, language)}
                   </p>
                 </div>
               </div>
 
               <div className="plugin-app-actions">
-                {integration.pluginUrl ? (
+                {plugin.entrypoint ? (
                   <MarkerButton
                     type="button"
                     variant="ink"
                     rotateDeg={-0.3}
-                    onClick={() => handleCopyPluginUrl(integration.id, integration.pluginUrl!)}
+                    onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
                     className="plugin-copy-button"
                   >
-                    {copyState[integration.id] === 'copied'
+                    {copyState[plugin.id] === 'copied'
                       ? t.ecosystem.copiedInstallUrl
-                      : copyState[integration.id] === 'failed'
+                      : copyState[plugin.id] === 'failed'
                         ? t.ecosystem.copyFailed
                         : t.ecosystem.copyInstallUrl}
                   </MarkerButton>
                 ) : null}
 
                 <div className="plugin-app-links">
-                  {integration.homepageUrl ? (
+                  {plugin.homepageUrl ? (
                     <a
-                      href={integration.homepageUrl}
+                      href={plugin.homepageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-handwriting plugin-app-link"
@@ -165,9 +196,9 @@ export const PluginEcosystem: React.FC = () => {
                     </a>
                   ) : null}
 
-                  {integration.repositoryUrl ? (
+                  {plugin.repositoryUrl ? (
                     <a
-                      href={integration.repositoryUrl}
+                      href={plugin.repositoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-handwriting plugin-app-link"
@@ -176,9 +207,9 @@ export const PluginEcosystem: React.FC = () => {
                     </a>
                   ) : null}
 
-                  {integration.guideUrl ? (
+                  {plugin.guideUrl ? (
                     <a
-                      href={integration.guideUrl}
+                      href={plugin.guideUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-handwriting plugin-app-link"
@@ -196,7 +227,7 @@ export const PluginEcosystem: React.FC = () => {
       <div className="plugin-upcoming-strip">
         <span className="font-marker plugin-upcoming-label">{t.ecosystem.nextTitle}</span>
         <div className="plugin-upcoming-list">
-          {upcoming.map((integration, index) => {
+          {UPCOMING_INTEGRATIONS.map((integration, index) => {
             const inner = (
               <>
                 <span className="plugin-upcoming-name">{integration.name}</span>

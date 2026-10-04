@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "musicfree",
+  "displayName": "MusicFree",
+  "distribution": {
+    "artifacts": [
+      {
+        "role": "entrypoint",
+        "source": "dist/把你的歌单带走-PlaylistOut.js",
+        "publicPath": "把你的歌单带走-PlaylistOut.js"
+      },
+      {
+        "role": "subscription",
+        "source": "dist/plugins.json",
+        "publicPath": "plugins.json"
+      }
+    ]
+  },
+  "web": {
+    "summary": {
+      "zh-CN": "在 MusicFree 中使用 Playlist Out 插件导入外部歌单。",
+      "en-US": "Import external playlists in MusicFree with the Playlist Out plugin."
+    },
+    "homepageUrl": "https://musicfree.catcat.work/",
+    "repositoryUrl": "https://github.com/maotoumao/MusicFree",
+    "guideUrl": "https://github.com/LengxiQwQ/playlistout/tree/main/plugins/musicfree",
+    "logoUrl": "https://raw.githubusercontent.com/maotoumao/MusicFreeDesktop/master/res/logo.png"
+  }
+}

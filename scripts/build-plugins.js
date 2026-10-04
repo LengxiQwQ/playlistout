@@ -1,72 +1,133 @@
 #!/usr/bin/env node
 /**
- * Universal Multi-Player Plugin Build Runner for PlaylistOut
+ * Builds every self-described player plugin and publishes only declared artifacts.
  *
- * Discovers and builds all player plugins located under plugins/* (e.g. plugins/musicfree, plugins/lx-music, plugins/moosync).
- * Also generates the global ecosystem manifest (web/public/plugins/index.json).
+ * Plugin build scripts are isolated: they may write inside their own plugin directory,
+ * but MUST NOT write to web/public/plugins. This root publisher owns that namespace.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join, resolve, relative } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import {
+  PUBLIC_PLUGIN_BASE_URL,
+  REPO_ROOT,
+  WEB_PUBLIC_PLUGINS,
+  discoverPlugins,
+  ensurePluginDependencies,
+  publicPluginUrl,
+  resolvePluginPath,
+  runPluginScript,
+} from './plugin-utils.js';
 
-const REPO_ROOT = resolve(import.meta.dirname, '..');
-const PLUGINS_DIR = join(REPO_ROOT, 'plugins');
-const WEB_PUBLIC_PLUGINS = join(REPO_ROOT, 'web', 'public', 'plugins');
+function buildAllPlugins() {
+  console.log('🌐 [Ecosystem] Building all player plugins...');
 
-function main() {
-  console.log('🌐 [Ecosystem] Building all player plugins across PlaylistOut...');
+  const plugins = discoverPlugins();
 
-  if (!existsSync(PLUGINS_DIR)) {
-    console.log('ℹ No plugins directory found.');
-    return;
+  // Generated public output is never source-of-truth. Start from a clean namespace
+  // so removed/renamed plugins cannot leave stale deployable files behind.
+  rmSync(WEB_PUBLIC_PLUGINS, { recursive: true, force: true });
+
+  for (const plugin of plugins) {
+    ensurePluginDependencies(plugin);
+
+    console.log(`\n🔨 [${plugin.id}] Running plugin build...`);
+    runPluginScript(plugin, 'build', {
+      PLAYLISTOUT_PLUGIN_PUBLIC_BASE_URL: `${PUBLIC_PLUGIN_BASE_URL}/${plugin.id}`,
+    });
   }
 
-  const entries = readdirSync(PLUGINS_DIR, { withFileTypes: true });
-  const pluginDirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+  // A plugin-specific build writing here would be able to overwrite another plugin.
+  // Treat that as an architecture violation instead of silently accepting it.
+  if (existsSync(WEB_PUBLIC_PLUGINS)) {
+    const unexpectedEntries = readdirSync(WEB_PUBLIC_PLUGINS);
+    if (unexpectedEntries.length > 0) {
+      throw new Error(
+        'Plugin build scripts must not write to web/public/plugins. ' +
+        `Unexpected entries: ${unexpectedEntries.join(', ')}`,
+      );
+    }
+  }
+
+  mkdirSync(WEB_PUBLIC_PLUGINS, { recursive: true });
 
   const manifest = {
+    schemaVersion: 1,
     name: 'PlaylistOut Multi-Platform Plugin Ecosystem',
     homepage: 'https://playlistout.lengxiqwq.com',
     updatedAt: new Date().toISOString(),
     platforms: [],
   };
 
-  for (const dirName of pluginDirs) {
-    const pluginPath = join(PLUGINS_DIR, dirName);
-    const buildScript = join(pluginPath, 'scripts', 'build.js');
+  for (const plugin of plugins) {
+    const publicDir = join(WEB_PUBLIC_PLUGINS, plugin.id);
+    mkdirSync(publicDir, { recursive: true });
 
-    if (existsSync(buildScript)) {
-      console.log(`\n🔨 [${dirName}] Executing plugin build pipeline: ${relative(REPO_ROOT, buildScript)}`);
-      execFileSync(process.execPath, [buildScript], {
-        cwd: pluginPath,
-        stdio: 'inherit',
+    const publishedArtifacts = [];
+    let entrypoint;
+    let subscriptionUrl;
+
+    for (const artifact of plugin.config.distribution.artifacts) {
+      const sourcePath = resolvePluginPath(plugin, artifact.source);
+      if (!existsSync(sourcePath) || !statSync(sourcePath).isFile()) {
+        throw new Error(
+          `[${plugin.id}] Declared artifact was not produced by its build: ${artifact.source}`,
+        );
+      }
+
+      const destinationPath = join(publicDir, ...artifact.publicPath.split('/'));
+      mkdirSync(dirname(destinationPath), { recursive: true });
+      copyFileSync(sourcePath, destinationPath);
+
+      const url = publicPluginUrl(plugin.id, artifact.publicPath);
+      publishedArtifacts.push({
+        role: artifact.role,
+        publicPath: artifact.publicPath,
+        url,
       });
 
-      // Gather metadata from plugin package.json if present
-      const pkgPath = join(pluginPath, 'package.json');
-      if (existsSync(pkgPath)) {
-        try {
-          const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-          manifest.platforms.push({
-            id: dirName,
-            name: pkg.displayName || dirName,
-            version: pkg.version || '1.0.0',
-            description: pkg.description || '',
-            entrypoint: `https://playlistout.lengxiqwq.com/plugins/${dirName}/把你的歌单带走-PlaylistOut.js`,
-            subscriptionUrl: `https://playlistout.lengxiqwq.com/plugins/${dirName}/plugins.json`,
-          });
-        } catch (_) {}
-      }
+      if (artifact.role === 'entrypoint') entrypoint = url;
+      if (artifact.role === 'subscription') subscriptionUrl = url;
+
+      console.log(
+        `✔ [${plugin.id}] ${relative(REPO_ROOT, sourcePath)} -> ` +
+        `${relative(REPO_ROOT, destinationPath)}`,
+      );
     }
+
+    const web = plugin.config.web || {};
+    manifest.platforms.push({
+      id: plugin.id,
+      name: plugin.config.displayName,
+      status: 'available',
+      version: plugin.pkg.version,
+      description: plugin.pkg.description || '',
+      summary: web.summary || {},
+      entrypoint,
+      subscriptionUrl,
+      homepageUrl: web.homepageUrl,
+      repositoryUrl: web.repositoryUrl,
+      guideUrl: web.guideUrl,
+      logoUrl: web.logoUrl,
+      artifacts: publishedArtifacts,
+    });
   }
 
-  // Write universal ecosystem manifest
-  mkdirSync(WEB_PUBLIC_PLUGINS, { recursive: true });
   const manifestPath = join(WEB_PUBLIC_PLUGINS, 'index.json');
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf-8');
-  console.log(`\n✔ Universal ecosystem manifest generated: ${relative(REPO_ROOT, manifestPath)}`);
-  console.log('🎉 All ecosystem player plugins built successfully!\n');
+
+  console.log(
+    `\n✔ Ecosystem manifest generated: ${relative(REPO_ROOT, manifestPath)}`,
+  );
+  console.log(`🎉 Published ${plugins.length} player plugin(s).\n`);
 }
 
-main();
+buildAllPlugins();

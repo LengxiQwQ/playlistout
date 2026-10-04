@@ -172,9 +172,9 @@ function validateTypecheck() {
 
 // ── 5. Web Frontend Tests & Build ──────────────────────────────────────
 function validateWeb() {
-  logStep(5, 7, 'Validating Web Frontend & Player Plugins (Tests & Build)');
-  runCommand('npm', ['run', 'test:plugins']);
-  logPass('Ecosystem player plugin tests passed');
+  logStep(5, 7, 'Validating Web Frontend & Player Plugins (Build & Tests)');
+  runCommand('npm', ['run', 'validate:plugins']);
+  logPass('Ecosystem player plugins built, published, and tested');
 
   runCommand('npm', ['--prefix', 'web', 'test']);
   logPass('Web unit tests passed');

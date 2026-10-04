@@ -1,31 +1,47 @@
-export type IntegrationStatus = 'available' | 'proposed' | 'planned';
+import type { Language } from '../i18n';
 
-export interface OpenSourceIntegration {
-  id: 'musicfree' | 'lx-music' | 'bbplayer' | 'listen1' | 'moosync';
+export type IntegrationStatus = 'proposed' | 'planned';
+
+export interface UpcomingIntegration {
+  id: string;
   name: string;
   status: IntegrationStatus;
-  pluginUrl?: string;
-  guideUrl?: string;
   issueUrl?: string;
-  homepageUrl?: string;
-  repositoryUrl?: string;
-  logoUrl?: string;
 }
 
-export const MUSICFREE_PLUGIN_URL =
-  'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js';
+export interface PublishedPluginArtifact {
+  role: 'entrypoint' | 'subscription' | 'asset';
+  publicPath: string;
+  url: string;
+}
 
-export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
-  {
-    id: 'musicfree',
-    name: 'MusicFree',
-    status: 'available',
-    pluginUrl: MUSICFREE_PLUGIN_URL,
-    guideUrl: 'https://github.com/LengxiQwQ/playlistout/tree/main/plugins/musicfree',
-    homepageUrl: 'https://musicfree.catcat.work/',
-    repositoryUrl: 'https://github.com/maotoumao/MusicFree',
-    logoUrl: 'https://raw.githubusercontent.com/maotoumao/MusicFreeDesktop/master/res/logo.png',
-  },
+export interface PublishedPlugin {
+  id: string;
+  name: string;
+  status: 'available';
+  version: string;
+  description: string;
+  summary?: Partial<Record<Language, string>> & { default?: string };
+  entrypoint?: string;
+  subscriptionUrl?: string;
+  homepageUrl?: string;
+  repositoryUrl?: string;
+  guideUrl?: string;
+  logoUrl?: string;
+  artifacts: PublishedPluginArtifact[];
+}
+
+export interface PluginEcosystemManifest {
+  schemaVersion: 1;
+  name: string;
+  homepage: string;
+  updatedAt: string;
+  platforms: PublishedPlugin[];
+}
+
+export const PLUGIN_MANIFEST_URL = '/plugins/index.json';
+
+export const UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
   {
     id: 'lx-music',
     name: 'LX Music',
@@ -51,6 +67,48 @@ export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
   },
 ];
 
-export const SUPPORTED_INTEGRATION_COUNT = OPEN_SOURCE_INTEGRATIONS.filter(
-  (integration) => integration.status === 'available',
-).length;
+function optionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === 'string';
+}
+
+function isPublishedPlugin(value: unknown): value is PublishedPlugin {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const plugin = value as Record<string, unknown>;
+
+  return (
+    typeof plugin.id === 'string' &&
+    typeof plugin.name === 'string' &&
+    plugin.status === 'available' &&
+    typeof plugin.version === 'string' &&
+    typeof plugin.description === 'string' &&
+    optionalString(plugin.entrypoint) &&
+    optionalString(plugin.subscriptionUrl) &&
+    optionalString(plugin.homepageUrl) &&
+    optionalString(plugin.repositoryUrl) &&
+    optionalString(plugin.guideUrl) &&
+    optionalString(plugin.logoUrl) &&
+    Array.isArray(plugin.artifacts)
+  );
+}
+
+export function isPluginEcosystemManifest(value: unknown): value is PluginEcosystemManifest {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const manifest = value as Record<string, unknown>;
+
+  return (
+    manifest.schemaVersion === 1 &&
+    typeof manifest.name === 'string' &&
+    typeof manifest.homepage === 'string' &&
+    typeof manifest.updatedAt === 'string' &&
+    Array.isArray(manifest.platforms) &&
+    manifest.platforms.every(isPublishedPlugin)
+  );
+}
+
+export function getPluginSummary(plugin: PublishedPlugin, language: Language): string {
+  return (
+    plugin.summary?.[language] ||
+    plugin.summary?.default ||
+    plugin.description
+  );
+}

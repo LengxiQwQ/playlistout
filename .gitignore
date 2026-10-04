@@ -13,6 +13,8 @@ dashboard.html
 scratch/
 
 # Node / Web / Vite
+# Generated player-plugin distribution (rebuilt by scripts/build-plugins.js)
+/web/public/plugins/
 node_modules/
 dist/
 dist-ssr/

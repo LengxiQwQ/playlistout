@@ -5,17 +5,23 @@ Before running or proposing any `git push` command, the agent MUST run:
 ```bash
 npm run gate
 ```
-All 7 automated checks (Workflow syntax, Secret leak detection, Python compilation & pytest, TypeScript typecheck, Web tests & build, Worker tests & build including player plugins, D1 migration safety) must pass locally (100% green). Never push if `npm run gate` fails.
+All 7 automated checks must pass locally. Never push if `npm run gate` fails.
 
-## 2. Multi-Player Plugin Architecture & Naming Standards
-- **Namespace Isolation**: Each music player plugin integration must reside in `plugins/<player-id>/` with its own `src/`, `test/`, and `scripts/build.js`.
-- **URL & File Naming Safety**: Plugin filenames MUST use hyphens (`把你的歌单带走-PlaylistOut.js`). NEVER use parentheses in filenames or URLs, as parentheses break Markdown link syntax and cause mobile clipboard truncation.
-- **Platform Display Name**: The runtime metadata display name is `把你的歌单带走 (PlaylistOut)`. Backward compatibility in `isSelfPlatform()` must be preserved.
-- **Universal Discovery**: All player plugins are automatically discovered and built via `npm run build:plugins` and tested via `npm run test:plugins`. Never hardcode player artifacts in root configurations.
-- **Frontend Decoupling**: Player links in `web/src/components/ecosystem/PluginEcosystem.tsx` must be dynamic, data-driven from integration configs.
+## 2. Multi-Player Plugin Architecture
+- **Namespace Isolation**: Every player integration lives in `plugins/<player-id>/` and is self-described by `plugin.config.json` plus `package.json`.
+- **Player IDs**: Use lowercase kebab-case. The directory name and `plugin.config.json#id` must match exactly.
+- **Player-Specific Layouts Are Allowed**: Different player SDKs may require different filenames, module formats, subscription formats, source layouts, or test frameworks. Do not impose MusicFree's artifact name or `plugins.json` on other players.
+- **Build Ownership**: Plugin build scripts may write only inside their own plugin directory (normally `dist/`). They MUST NOT write to `web/public/plugins`.
+- **Single Publisher**: `scripts/build-plugins.js` is the only owner of `web/public/plugins`. It discovers plugins, validates declared artifacts, publishes each plugin under `/plugins/<player-id>/`, and generates `/plugins/index.json`.
+- **Generated Output**: Never hand-edit or commit `web/public/plugins`; it is generated during build/deploy.
+- **Testing**: Root commands discover each plugin's `package.json` `build`/`test` scripts. Use `npm run validate:plugins` before web production builds.
+- **Dependencies**: A plugin with npm dependencies must keep a plugin-local lockfile. Root runners install those dependencies deterministically on clean machines.
+- **Frontend Decoupling**: Available plugin cards come from `/plugins/index.json`. Do not add player-specific conditions, constants, summaries, URLs, or counters to `PluginEcosystem.tsx`.
+- **Roadmap Separation**: Proposed/planned integrations may remain in the static roadmap list until a real plugin directory exists.
+
+Detailed plugin procedures are maintained in `.agents/skills/player-plugins/SKILL.md` and `plugins/README.md`.
 
 ## 3. Communication, PR Submission & Mobile Clipboard Invariants
 - **No "Zero Copyright Risk" Fluff**: Never claim zero copyright risk or lecture developers. Maintain an objective, factual, and modest technical tone.
-- **Technical Strengths**: Highlight genuine achievements: Kugou login-free sheet parsing, NetEase large sheet paging, and standard dual-mode parsing.
-- **Mobile Clipboard Limitation**: Mobile React Native clipboards truncate text around ~2000 characters. NEVER advise or advertise pasting raw JSON text on mobile devices (mobile should use URL or subscription import; desktop supports raw JSON pasting).
-- **Skills Reference**: Detailed procedures and runbooks are maintained in `.agents/skills/player-plugins/SKILL.md`.
+- **Technical Strengths**: Describe only capabilities verified by the current implementation.
+- **Mobile Clipboard Limitation**: Do not advise mobile users to paste large raw playlist JSON strings. Use the target integration's supported online/import mechanism instead.

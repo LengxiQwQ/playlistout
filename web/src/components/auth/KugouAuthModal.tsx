@@ -541,7 +541,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Copy Plugin Credentials Button (for MusicFree / 把你的歌单带走 plugin) */}
+                  {/* Copy Kugou credentials for any compatible player integration */}
                   <button
                     type="button"
                     data-testid="copy-kugou-plugin-btn"
@@ -569,10 +569,10 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    {copiedKey === 'plugin' ? '已复制插件凭证 ✓' : '📋 复制插件凭证 (Token:UserID)'}
+                    {copiedKey === 'plugin' ? '已复制酷狗凭证 ✓' : '📋 复制酷狗凭证 (Token:UserID)'}
                   </button>
                   <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 0.55rem 0', textAlign: 'center' }}>
-                    可直接粘贴至「把你的歌单带走」MusicFree 插件的【酷狗凭证】设置中
+                    可粘贴到支持 Token:UserID 酷狗凭证格式的播放器插件中
                   </p>
 
                   {/* Copy cURL Button */}

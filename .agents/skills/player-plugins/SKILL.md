@@ -1,29 +1,68 @@
 ---
 name: player-plugins
-description: SOP for developing, building, testing, and submitting player plugins (MusicFree, LX Music, etc.).
+description: SOP for developing, building, testing, publishing, and submitting player integrations.
 ---
 
-# Music Player Plugins SOP
+# Player Plugins SOP
 
-## 1. Architecture & Invariants
-- **Directory**: `plugins/<player-id>/` (isolated, containing `package.json`, `src/index.js`, `plugins.json`, `scripts/build.js`, `test/test-runner.js`).
-- **File Naming**: `把你的歌单带走-PlaylistOut.js` (hyphens only; **never** use parentheses in filenames or URLs).
-- **Platform Name**: `platform: "把你的歌单带走 (PlaylistOut)"` in runtime metadata (`isSelfPlatform()` accepts both legacy and bilingual names).
-- **URLs**:
-  - Plugin file: `https://playlistout.lengxiqwq.com/plugins/<player-id>/把你的歌单带走-PlaylistOut.js`
-  - Subscription: `https://playlistout.lengxiqwq.com/plugins/<player-id>/plugins.json`
-  - Catalog: `https://playlistout.lengxiqwq.com/plugins/index.json`
-- **Frontend**: Update `web/src/components/ecosystem/PluginEcosystem.tsx` dynamically via `INTEGRATIONS`; never hardcode URLs.
+## 1. Add a player integration
 
-## 2. Commands & Workflow
-```bash
-npm run build:plugins   # Discovers and builds all plugins to web/public/plugins/<player-id>/ and generates index.json
-npm run test:plugins    # Runs test suites for all plugins under plugins/*/test/test-runner.js
-npm run gate            # Local 7-check CI gate (mandatory 100% green before any git push)
+Create one isolated directory:
+
+```text
+plugins/<player-id>/
+├── plugin.config.json
+├── package.json
+├── src/...
+├── test/...
+├── scripts/...
+└── dist/            # generated; ignored by Git
 ```
 
-## 3. Copywriting & PR Rules
-- **No "Zero Copyright Risk" Fluff**: Focus objectively on playlist parsing; never lecture developers or claim zero risk.
-- **Genuine Strengths**: Highlight Kugou login-free sheet parsing, NetEase 1000+ track paging, QQ/Qishui redirect washing, and dual online/offline modes.
-- **Mobile Clipboard Limitation**: Mobile React Native clipboards truncate at ~2000 characters. **Never** advise pasting raw JSON on mobile; recommend URLs/subscriptions on mobile, and JSON pasting on desktop.
-- **PR Template**: See [community-pr-guide.md](./references/community-pr-guide.md).
+Requirements:
+
+- `<player-id>` is lowercase kebab-case.
+- `plugin.config.json#id` matches the directory exactly.
+- `package.json` exposes `build` and `test` scripts.
+- The plugin's build writes only plugin-local output under `dist/`.
+- `plugin.config.json` declares every public artifact with:
+  - `role`: `entrypoint`, optional `subscription`, or `asset`;
+  - `source`: a path under `dist/`;
+  - `publicPath`: the path inside `/plugins/<player-id>/`.
+- Exactly one artifact is the `entrypoint`.
+- Do not copy MusicFree-specific filenames or subscription formats unless the target player actually requires them.
+
+If the plugin needs npm packages, keep a plugin-local lockfile. The root runner installs those dependencies with `npm ci` on clean machines.
+
+## 2. Web metadata
+
+Put available-plugin presentation data in `plugin.config.json#web`:
+
+- localized `summary`;
+- homepage;
+- repository;
+- guide;
+- logo.
+
+Do **not** edit `PluginEcosystem.tsx` for each new available player. The root build generates `/plugins/index.json`, and the web UI discovers published plugins from that manifest automatically.
+
+Only integrations that are still proposed/planned belong in the static roadmap list in `web/src/data/integrations.ts`.
+
+## 3. Commands
+
+```bash
+npm run build:plugins
+npm run test:plugins
+npm run validate:plugins
+npm run gate
+```
+
+`validate:plugins` is the normal pre-release plugin command because it builds first and then tests the current outputs.
+
+Never hand-edit or commit `web/public/plugins/`.
+
+## 4. External communication
+
+When preparing an upstream Issue/PR, read the current target plugin's config and actual generated manifest before quoting install URLs or supported install methods. Never assume every player has a subscription file.
+
+See `references/community-pr-guide.md`.
