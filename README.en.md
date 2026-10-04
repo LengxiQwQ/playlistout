@@ -118,7 +118,7 @@ Playlist Out provides a MusicFree import plugin for bringing external playlists 
 **Plugin URL**
 
 ```text
-https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js
+https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js
 ```
 
 - [MusicFree Website](https://musicfree.catcat.work/) — download and learn about MusicFree

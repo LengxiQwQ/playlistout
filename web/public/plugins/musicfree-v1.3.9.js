@@ -2,7 +2,7 @@
  * PlaylistOut Official MusicFree Plugin
  * Version: 1.3.9
  * Author: LengxiQwQ
- * Built: 2026-10-04T14:48:23.291Z
+ * Built: 2026-10-04T14:55:31.411Z
  * Homepage: https://playlistout.lengxiqwq.com
  * Source: https://github.com/LengxiQwQ/playlistout
  */
@@ -2353,7 +2353,7 @@ module.exports = {
   author: 'LengxiQwQ',
   version: '1.3.9',
   appVersion: '>0.1.0-alpha.0',
-  srcUrl: 'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js',
+  srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js',
   cacheControl: 'no-store',
   description: [
     '## 把你的歌单带走 (PlaylistOut) 官方插件',

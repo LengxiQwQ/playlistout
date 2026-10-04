@@ -67,7 +67,7 @@ async function runAllTests() {
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
-      'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js',
+      'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js',
       'srcUrl must point to official production URL'
     );
     assert.strictEqual(plugin.cacheControl, 'no-store', 'cacheControl must be no-store');
