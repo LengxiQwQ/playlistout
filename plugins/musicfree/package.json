@@ -1,6 +1,6 @@
 {
   "name": "musicfree-plugin-playlistout",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Official MusicFree plugin for 把你的歌单带走 - Universal multi-platform playlist parser",
   "main": "src/index.js",
   "scripts": {
