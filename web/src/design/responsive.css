@@ -650,6 +650,43 @@
     padding-top: 1.25rem !important;
   }
 
+  /* Migration tools: keep each provider name on its own row, then place
+     that provider's actions together on the next row. */
+  .migration-service-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.55rem !important;
+    padding: 0.7rem 0.75rem !important;
+  }
+
+  .migration-service-name {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .migration-service-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Clipboard copy: labels become their own rows and every copy action gets
+     a dedicated row instead of competing for horizontal space. */
+  .clipboard-text-row,
+  .clipboard-json-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    flex-wrap: nowrap !important;
+    gap: 0.55rem !important;
+    width: 100% !important;
+  }
+
+  .clipboard-copy-button {
+    width: fit-content !important;
+    max-width: 100% !important;
+  }
+
   .export-toast,
   .user-playlists-toast {
     max-width: calc(100vw - 2rem) !important;
