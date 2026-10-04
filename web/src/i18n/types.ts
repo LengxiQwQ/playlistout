@@ -177,6 +177,23 @@ export interface Translations {
     musicFreePluginBtn: string;
     toastMusicFreeCopied: string;
   };
+  migration: {
+    title: string;
+    subtitle: string;
+    poweredBy: string;
+    spotify: string;
+    appleMusic: string;
+    youtubeMusic: string;
+    deezer: string;
+    tidal: string;
+    other: string;
+    preparing: string;
+    trackLimit: string;
+    partialNotice: string;
+    privacyNotice: string;
+    failed: string;
+    invalidLink: string;
+  };
   infoNotes: {
     whyTitle: string;
     whyContent: string;
