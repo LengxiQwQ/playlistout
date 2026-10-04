@@ -93,6 +93,20 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(copySpy).toHaveBeenCalled();
     expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制 2 首歌曲（歌名 - 歌手）到剪贴板！');
   });
+
+  it('triggers copy JSON and displays dedicated MusicFree import toast feedback', async () => {
+    const copySpy = vi.spyOn(clipboardUtils, 'copyToClipboard').mockResolvedValue(true);
+
+    render(<ExportToolbar playlist={mockPlaylist} />);
+
+    const copyJsonBtn = screen.getByRole('button', { name: /复制 JSON/ });
+    expect(copyJsonBtn).not.toBeDisabled();
+
+    fireEvent.click(copyJsonBtn);
+
+    expect(copySpy).toHaveBeenCalled();
+    expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制完整 JSON 歌单');
+  });
   it('uses three equally prominent export section titles and removes the legacy MusicFree copy action', () => {
     render(<ExportToolbar playlist={mockPlaylist} />);
 

@@ -168,11 +168,13 @@ export const zhCN: Translations = {
     copyTitleOnly: '仅歌名',
     copyTitleArtist: '歌名 - 歌手',
     copyTitleArtistAlbum: '歌名 - 歌手 - 专辑',
+    copyJson: '复制 JSON (MusicFree 导入)',
     toastExportSuccess: '已成功导出 {filename}',
     toastExportMultipleSuccess: '已成功导出 {count} 份文件（{formats}）',
     toastExportFailed: '导出文件生成失败，请重试。',
     selectFormatHint: '请至少勾选一种导出格式',
     toastCopySuccess: '已复制 {count} 首歌曲（{mode}）到剪贴板！',
+    toastCopyJsonSuccess: '已复制完整 JSON 歌单，在 MusicFree 导入框直接粘贴即可全量导入！',
     toastCopyFailed: '复制失败，请检查浏览器剪贴板权限。',
   },
   migration: {
