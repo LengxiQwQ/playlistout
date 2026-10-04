@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.7)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.8)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -228,7 +228,7 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v137';
+  var SCRIPT_VER = 'v138';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
@@ -335,7 +335,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       }
 
       // 修正预输入占位符文字与长度限制
-      var targetPlaceholder = '粘贴歌单分享链接（QQ/网易/酷狗/汽水等）';
+      var targetPlaceholder = '粘贴歌单分享链接（QQ/网易/酷狗/汽水）';
       if (placeholder !== targetPlaceholder) {
         textInput.setAttribute('placeholder', targetPlaceholder);
       }
@@ -2295,7 +2295,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.7',
+  version: '1.3.8',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -2315,11 +2315,10 @@ module.exports = {
   ].join('\n'),
   hints: {
     importMusicSheet: [
-      '【导入方式】直接粘贴各平台歌单分享链接即可全量导入',
-      '【酷狗全量导入】免登录仅解析前10首，请在官网登录获取Token填入插件设置',
-      '【多平台支持】支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等',
-      '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致',
-      '【官方网站】https://playlistout.lengxiqwq.com',
+      '【支持平台】QQ音乐、网易云音乐、酷狗音乐、汽水音乐',
+      '【酷狗限制】酷狗官方限制免登录仅解析前10首',
+      '【完整解析】在官网登录复制Token填入插件设置即可全量导入',
+      '【官方网站】playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
