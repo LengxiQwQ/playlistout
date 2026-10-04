@@ -157,7 +157,7 @@ flowchart TD
 - [x] **Phase 1: MusicFree 官方插件研发与交付（已完成）**
   - 在 [`plugins/musicfree`](../plugins/musicfree/README.md) 中完整实现 `musicfree-plugin-playlistout`，通过 12 项全绿自动化测试套件。
   - 聚焦**双核心入口**（云端 API 在线万能解析 + 本地 .json 文件路径直接极速导入），彻底移除单曲冗余逻辑并拦截直接粘贴长文本，专注歌单迁移基础设施。
-  - 构建产物同步托管至官方分发节点：`https://playlistout.lengxiqwq.com/plugins/musicfree.js`，国内用户一键极速安装。
+  - 构建产物同步托管至官方分发节点：`https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js`，国内用户一键极速安装。
 - [x] **Phase 2: 洛雪音乐 (LX Music)、BBPlayer 与 Listen 1 官方 Issue 正式发起（已完成）**
   - **洛雪音乐 (LX Music)**: 已提交 [#3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) - 建议在“导入列表”中支持自动兼容通用歌单 JSON 结构（附轻量 PR 方案）。
   - **BBPlayer**: 已提交 [#340](https://github.com/bbplayer-app/BBPlayer/issues/340) - 建议支持通过本地 JSON 文件直接导入歌单进行 B 站音源匹配（附 PR 意向）。

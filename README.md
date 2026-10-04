@@ -118,7 +118,7 @@ Playlist Out 提供 MusicFree 歌单导入插件，可直接把外部歌单带�
 **插件安装地址**
 
 ```text
-https://playlistout.lengxiqwq.com/plugins/musicfree.js
+https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js
 ```
 
 - [MusicFree 官网](https://musicfree.catcat.work/) — 下载和了解 MusicFree

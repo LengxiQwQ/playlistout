@@ -3,8 +3,8 @@
  * PlaylistOut MusicFree Plugin Build & Distribution Script
  * 
  * Copies and bundles the plugin into:
- * - plugins/musicfree/dist/musicfree.js (local release artifact)
- * - web/public/plugins/musicfree.js (production static distribution)
+ * - plugins/musicfree/dist/把你的歌单带走-PlaylistOut.js (local release artifact)
+ * - web/public/plugins/把你的歌单带走-PlaylistOut.js (production static distribution)
  */
 
 const fs = require('fs');
@@ -15,9 +15,9 @@ const REPO_ROOT = path.resolve(PLUGIN_ROOT, '../..');
 
 const SRC_FILE = path.join(PLUGIN_ROOT, 'src', 'index.js');
 const DIST_DIR = path.join(PLUGIN_ROOT, 'dist');
-const DIST_FILE = path.join(DIST_DIR, 'musicfree.js');
+const DIST_FILE = path.join(DIST_DIR, '把你的歌单带走-PlaylistOut.js');
 const WEB_PUBLIC_DIR = path.join(REPO_ROOT, 'web', 'public', 'plugins');
-const WEB_PUBLIC_FILE = path.join(WEB_PUBLIC_DIR, 'musicfree.js');
+const WEB_PUBLIC_FILE = path.join(WEB_PUBLIC_DIR, '把你的歌单带走-PlaylistOut.js');
 
 function build() {
   console.log('📦 Building PlaylistOut MusicFree Plugin...');
@@ -58,8 +58,8 @@ function build() {
       desc: '把你的歌单带走 官方 MusicFree 歌单导入与原版音源桥接插件订阅源',
       plugins: [
         {
-          name: '把你的歌单带走',
-          url: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
+          name: '把你的歌单带走 (PlaylistOut)',
+          url: 'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js',
           version: pkg.version,
         },
       ],

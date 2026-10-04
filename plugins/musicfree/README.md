@@ -27,7 +27,7 @@
 2. 点击 **「从网络安装插件」**（或右下角加号）。
 3. 复制并粘贴以下插件官方地址，点击确认安装：
    ```text
-   https://playlistout.lengxiqwq.com/plugins/musicfree.js
+   https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js
    ```
 
 ---

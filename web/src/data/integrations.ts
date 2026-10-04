@@ -13,7 +13,7 @@ export interface OpenSourceIntegration {
 }
 
 export const MUSICFREE_PLUGIN_URL =
-  'https://playlistout.lengxiqwq.com/plugins/musicfree.js';
+  'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js';
 
 export const OPEN_SOURCE_INTEGRATIONS: readonly OpenSourceIntegration[] = [
   {

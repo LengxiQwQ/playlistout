@@ -210,14 +210,14 @@ async function readLocalFileText(targetPath) {
   throw new Error(`无法读取本地歌单文件: ${targetPath}`);
 }
 
-const PLUGIN_PLATFORM = '把你的歌单带走';
+const PLUGIN_PLATFORM = '把你的歌单带走 (PlaylistOut)';
 const LEGACY_PLATFORM = 'PlaylistOut';
 
 function isSelfPlatform(plat) {
   return (
     !plat ||
     plat === PLUGIN_PLATFORM ||
-    plat === '把你的歌单带走 (PlaylistOut)' ||
+    plat === '把你的歌单带走' ||
     plat === LEGACY_PLATFORM
   );
 }
@@ -2344,7 +2344,7 @@ module.exports = {
   author: 'LengxiQwQ',
   version: '1.3.9',
   appVersion: '>0.1.0-alpha.0',
-  srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
+  srcUrl: 'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js',
   cacheControl: 'no-store',
   description: [
     '## 把你的歌单带走 (PlaylistOut) 官方插件',

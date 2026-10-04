@@ -2,8 +2,8 @@
   "desc": "把你的歌单带走 官方 MusicFree 歌单导入与原版音源桥接插件订阅源",
   "plugins": [
     {
-      "name": "把你的歌单带走",
-      "url": "https://playlistout.lengxiqwq.com/plugins/musicfree.js",
+      "name": "把你的歌单带走 (PlaylistOut)",
+      "url": "https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js",
       "version": "1.3.9"
     }
   ]

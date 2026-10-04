@@ -61,13 +61,13 @@ async function runAllTests() {
   logSection('1. Plugin Contract & Specification');
 
   await test('Exports valid metadata conforming to MusicFree standards (v1.3.9)', () => {
-    assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
+    assert.strictEqual(plugin.platform, '把你的歌单带走 (PlaylistOut)', 'Platform must be 把你的歌单带走 (PlaylistOut)');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
     assert.strictEqual(plugin.version, '1.3.9', 'Version must be 1.3.9');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
-      'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
+      'https://playlistout.lengxiqwq.com/plugins/把你的歌单带走-PlaylistOut.js',
       'srcUrl must point to official production URL'
     );
     assert.strictEqual(plugin.cacheControl, 'no-store', 'cacheControl must be no-store');
@@ -121,11 +121,11 @@ async function runAllTests() {
     );
   });
 
-  const distPath = path.resolve(__dirname, '../dist/musicfree.js');
+  const distPath = path.resolve(__dirname, '../dist/把你的歌单带走-PlaylistOut.js');
   if (fs.existsSync(distPath)) {
-    await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
+    await test('Distribution artifact (dist/把你的歌单带走-PlaylistOut.js) is valid and executable', () => {
       const distPlugin = require(distPath);
-      assert.strictEqual(distPlugin.platform, '把你的歌单带走');
+      assert.strictEqual(distPlugin.platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(distPlugin.version, '1.3.9');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
@@ -439,7 +439,7 @@ async function runAllTests() {
       assert.strictEqual(item1.album, '叶惠美');
       assert.strictEqual(item1.artwork, 'https://p1.music.126.net/jay-cover.jpg');
       assert.strictEqual(item1.duration, 269, 'Duration should be converted to seconds');
-      assert.strictEqual(item1.platform, '把你的歌单带走');
+      assert.strictEqual(item1.platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(item1.url, undefined, 'Must not inject pirate audio URL');
 
       // Second track verification (multi-artist comma joining)
@@ -449,13 +449,13 @@ async function runAllTests() {
       assert.strictEqual(item2.artist, '五月天, 阿信', 'Multi-artists must be joined by comma');
       assert.strictEqual(item2.album, '人生无限公司');
       assert.strictEqual(item2.duration, 275, 'Duration rounded to 275s');
-      assert.strictEqual(item2.platform, '把你的歌单带走');
+      assert.strictEqual(item2.platform, '把你的歌单带走 (PlaylistOut)');
     });
 
     await test('Correctly bridges NetEase playlist preserving brand platform and attaching _src', async () => {
       const items = await plugin.importMusicSheet(tempNeteasePath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'netease');
       assert.strictEqual(items[0].id, '1973665667');
       assert.strictEqual(items[0]._src?.netease?.id, '1973665667');
@@ -465,7 +465,7 @@ async function runAllTests() {
     await test('Correctly bridges QQ Music playlist preserving brand platform with _src & songmid', async () => {
       const items = await plugin.importMusicSheet(tempQqPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'qq');
       assert.strictEqual(items[0].id, '0039MnYb0qxYAc');
       assert.strictEqual(items[0].songmid, '0039MnYb0qxYAc');
@@ -476,7 +476,7 @@ async function runAllTests() {
     await test('Correctly bridges KuGou playlist preserving brand platform with _src.kugou.hash', async () => {
       const items = await plugin.importMusicSheet(tempKugouPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'kugou');
       assert.strictEqual(items[0]._src?.kugou?.hash, 'hash12345');
       assert.deepStrictEqual(items[0]._srcOrder, ['kugou']);
@@ -485,7 +485,7 @@ async function runAllTests() {
     await test('Correctly bridges KuWo playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempKuwoPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'kuwo');
       assert.strictEqual(items[0]._src?.kuwo?.id, '123456');
     });
@@ -493,7 +493,7 @@ async function runAllTests() {
     await test('Correctly bridges QiShui playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempQishuiPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'qishui');
       assert.strictEqual(items[0]._src?.qishui?.trackId, '7100000000');
     });
@@ -501,14 +501,14 @@ async function runAllTests() {
     await test('Correctly bridges Bilibili playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempBilibiliPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'bilibili');
     });
 
     await test('Correctly bridges Migu playlist preserving brand platform', async () => {
       const items = await plugin.importMusicSheet(tempMiguPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)');
       assert.strictEqual(items[0]._originPlatform, 'migu');
       assert.strictEqual(items[0]._src?.migu?.contentId, 'migu600001');
     });
@@ -593,17 +593,17 @@ async function runAllTests() {
       assert.strictEqual(miguItems[0].platform, 'migu');
     });
 
-    await test('Mobile mode: targetPlatform="auto" maintains unified platform contract "把你的歌单带走"', async () => {
+    await test('Mobile mode: targetPlatform="auto" maintains unified platform contract "把你的歌单带走 (PlaylistOut)"', async () => {
       globalThis.env = {
         getUserVariables: () => ({ targetPlatform: 'auto' }),
       };
       try {
         const neteaseItems = await plugin.importMusicSheet(sampleNeteaseJson);
-        assert.strictEqual(neteaseItems[0].platform, '把你的歌单带走');
+        assert.strictEqual(neteaseItems[0].platform, '把你的歌单带走 (PlaylistOut)');
         assert.strictEqual(neteaseItems[0]._originPlatform, 'netease');
 
         const qqItems = await plugin.importMusicSheet(sampleQqJson);
-        assert.strictEqual(qqItems[0].platform, '把你的歌单带走');
+        assert.strictEqual(qqItems[0].platform, '把你的歌单带走 (PlaylistOut)');
         assert.strictEqual(qqItems[0]._originPlatform, 'qq');
       } finally {
         delete globalThis.env;
@@ -661,7 +661,7 @@ async function runAllTests() {
         fs.writeFileSync(tempTestPath, sampleNeteaseJson, 'utf-8');
         const items = await plugin.importMusicSheet(tempTestPath);
         assert.strictEqual(items.length, 1);
-        assert.strictEqual(items[0].platform, '把你的歌单带走', 'Platform displayed to user must always be plugin brand');
+        assert.strictEqual(items[0].platform, '把你的歌单带走 (PlaylistOut)', 'Platform displayed to user must always be plugin brand');
         assert.strictEqual(items[0]._originPlatform, 'netease', 'Track origin platform preserved');
 
         // 2. Reset to auto
@@ -669,7 +669,7 @@ async function runAllTests() {
           getUserVariables: () => ({ targetPlatform: 'auto' }),
         };
         const items2 = await plugin.importMusicSheet(tempTestPath);
-        assert.strictEqual(items2[0].platform, '把你的歌单带走');
+        assert.strictEqual(items2[0].platform, '把你的歌单带走 (PlaylistOut)');
         assert.strictEqual(items2[0]._originPlatform, 'netease');
       } finally {
         delete globalThis.env;
@@ -844,7 +844,7 @@ async function runAllTests() {
     }
   }
 
-  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走" in Desktop mode`, async () => {
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走 (PlaylistOut)" in Desktop mode`, async () => {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
     try {
       const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
@@ -864,7 +864,7 @@ async function runAllTests() {
           typeof it.duration === 'number' && it.duration >= 0,
           `Track ${i + 1} duration must be non-negative number`
         );
-        assert.strictEqual(it.platform, '把你的歌单带走', `Track ${i + 1} platform must be 把你的歌单带走`);
+        assert.strictEqual(it.platform, '把你的歌单带走 (PlaylistOut)', `Track ${i + 1} platform must be 把你的歌单带走 (PlaylistOut)`);
         assert.strictEqual(it._originPlatform, 'netease', `Track ${i + 1} _originPlatform must bridge to netease`);
         assert(Boolean(it._src?.netease?.id), `Track ${i + 1} must include _src.netease.id`);
         assert.strictEqual(it.url, undefined, 'Must not inject pirate audio URL');
@@ -994,7 +994,7 @@ async function runAllTests() {
         id: 'qq_0039MnYb0qxYhV',
         title: '晴天',
         artist: '周杰伦',
-        platform: '把你的歌单带走',
+        platform: '把你的歌单带走 (PlaylistOut)',
         _originPlatform: 'qq',
         _src: { qq: { mid: '0039MnYb0qxYhV' } },
       };
@@ -1009,7 +1009,7 @@ async function runAllTests() {
         id: 'netease_1357375695',
         title: '海阔天空',
         artist: 'Beyond',
-        platform: '把你的歌单带走',
+        platform: '把你的歌单带走 (PlaylistOut)',
         _originPlatform: 'netease',
         _src: { netease: { id: '1357375695' } },
       };
@@ -1023,7 +1023,7 @@ async function runAllTests() {
         id: 'fake_nonexistent_track_999999',
         title: '完全不存在的随机歌曲标题_xyz',
         artist: '未知无名',
-        platform: '把你的歌单带走',
+        platform: '把你的歌单带走 (PlaylistOut)',
       };
       const fakeRes = await plugin.getMediaSource(fakeItem, 'standard');
       assert.strictEqual(fakeRes, null, 'Non-existent song must return null');
@@ -1039,7 +1039,7 @@ async function runAllTests() {
         id: 'qq_0039MnYb0qxYhV',
         title: '晴天',
         artist: '周杰伦',
-        platform: '把你的歌单带走',
+        platform: '把你的歌单带走 (PlaylistOut)',
         _originPlatform: 'qq',
         _src: { qq: { mid: '0039MnYb0qxYhV' } },
       };
