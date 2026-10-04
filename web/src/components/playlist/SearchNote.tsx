@@ -11,6 +11,7 @@ import { getFriendlyErrorMessage } from '../../utils/errors';
 import { KugouAuthModal } from '../auth/KugouAuthModal';
 import { hasKugouAuth } from '../../utils/kugouAuth';
 import { extractCleanUrlOrInput } from '../../utils/validation';
+import { getPlatformConfig } from '../../utils/platform';
 
 export interface SearchNoteProps {
   inputUrl: string;
@@ -389,7 +390,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             {/* Kugou: single unified sticker showing login state — placed last */}
             <Sticker
               type="button"
-              color={hasKugou ? 'green' : 'blue'}
+              color={getPlatformConfig('kugou').color}
               rotateDeg={1}
               onClick={() => setIsKugouModalOpen(true)}
               style={{

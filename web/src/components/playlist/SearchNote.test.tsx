@@ -108,7 +108,9 @@ describe('SearchNote Component (Phase 4)', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByText('酷狗音乐（退出登录）')).toBeInTheDocument();
+    const kugouBadge = screen.getByText('酷狗音乐（退出登录）');
+    expect(kugouBadge).toBeInTheDocument();
+    expect(kugouBadge).toHaveStyle({ backgroundColor: '#bfdbfe' });
     localStorage.clear();
   });
 });
