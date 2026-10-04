@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.2)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.3)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.2', 'Version must be 1.3.2');
+    assert.strictEqual(plugin.version, '1.3.3', 'Version must be 1.3.3');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -130,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.2');
+      assert.strictEqual(distPlugin.version, '1.3.3');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -196,7 +196,9 @@ async function runAllTests() {
   const v131Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.1.js');
   const v132Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.2.js');
   const v132Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.2.js');
-  await test('Verifies v1.2.0 through v1.3.2 release & historical archives exist', () => {
+  const v133Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.3.js');
+  const v133Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.3.js');
+  await test('Verifies v1.2.0 through v1.3.3 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -229,6 +231,8 @@ async function runAllTests() {
     assert(fs.existsSync(v131Web), 'web/public/plugins/musicfree-v1.3.1.js must exist');
     assert(fs.existsSync(v132Dist), 'dist/musicfree-v1.3.2.js must exist');
     assert(fs.existsSync(v132Web), 'web/public/plugins/musicfree-v1.3.2.js must exist');
+    assert(fs.existsSync(v133Dist), 'dist/musicfree-v1.3.3.js must exist');
+    assert(fs.existsSync(v133Web), 'web/public/plugins/musicfree-v1.3.3.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
@@ -959,6 +963,14 @@ async function runAllTests() {
     } finally {
       delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     }
+  });
+
+  await test('Guarantees KuWo source is completely excised from mobile online ladder and blocklisted', () => {
+    const code = fs.readFileSync(pluginPath, 'utf-8');
+    assert(!code.includes('resolveKuwoStream'), 'Must not define resolveKuwoStream');
+    assert(!code.includes("standardOrder = ['qq', 'kuwo'"), 'standardOrder must not contain kuwo');
+    assert(code.includes("u.includes('kuwo.cn')"), 'isValidCleanMediaUrl must explicitly block kuwo.cn');
+    assert(code.includes("u.includes('antiserver')"), 'isValidCleanMediaUrl must explicitly block antiserver');
   });
 
   // ── Test Summary ──────────────────────────────────────────────────
