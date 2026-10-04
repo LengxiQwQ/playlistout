@@ -380,6 +380,67 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     });
   });
 
+  describe('/api/kugou/profile', () => {
+    it('rejects missing credentials with 400 INVALID_INPUT', async () => {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/profile', {
+        headers: { Origin: 'https://playlistout.lengxiqwq.com' },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('returns a no-store profile response for valid credentials', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          data: {
+            nickname: '冷汐OωO',
+            photo: 'avatar.jpg',
+            signature: '音乐会跟着我走',
+          },
+        }),
+      } as Response);
+
+      try {
+        const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/profile', {
+          headers: {
+            Origin: 'https://playlistout.lengxiqwq.com',
+            Authorization: 'Bearer valid_tok',
+            'X-Kugou-Userid': '1425711902',
+          },
+        });
+        const response = await worker.fetch(request, {}, createMockCtx());
+        expect(response.status).toBe(200);
+        expect(response.headers.get('Cache-Control')).toBe('no-store');
+
+        const body = (await response.json()) as any;
+        expect(body.success).toBe(true);
+        expect(body.data).toEqual({
+          userId: '1425711902',
+          nickname: '冷汐OωO',
+          avatarUrl: 'https://c1.kgimg.com/v2/kugouicon/avatar.jpg',
+          signature: '音乐会跟着我走',
+        });
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('rejects browser preflight from an unauthorized origin', async () => {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/kugou/profile', {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://malicious-domain.com' },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(403);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    });
+  });
+
   describe('GET /api/playlist - Qishui Provider Support', () => {
     it('dispatches Qishui URL and successfully returns normalized playlist', async () => {
       const originalFetch = globalThis.fetch;
