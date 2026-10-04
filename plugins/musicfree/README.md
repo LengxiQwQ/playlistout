@@ -1,4 +1,4 @@
-# 把你的歌单带走 (PlaylistOut) — MusicFree 插件使用手册
+# 把你的歌单带走 — MusicFree 插件使用手册
 
 > **一键跨平台歌单导入与原生音源桥接插件（电脑版 & 手机版通用）**  
 > 官方网站：[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com)

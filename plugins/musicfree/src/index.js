@@ -210,14 +210,13 @@ async function readLocalFileText(targetPath) {
   throw new Error(`无法读取本地歌单文件: ${targetPath}`);
 }
 
-const PLUGIN_PLATFORM = '把你的歌单带走 (PlaylistOut)';
+const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
 
 function isSelfPlatform(plat) {
   return (
     !plat ||
     plat === PLUGIN_PLATFORM ||
-    plat === '把你的歌单带走' ||
     plat === LEGACY_PLATFORM
   );
 }
@@ -2347,7 +2346,7 @@ module.exports = {
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js',
   cacheControl: 'no-store',
   description: [
-    '## 把你的歌单带走 (PlaylistOut) 官方插件',
+    '## 把你的歌单带走 官方插件',
     '',
     '支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等主流平台歌单在线解析与导入。',
     '',

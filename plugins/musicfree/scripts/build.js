@@ -73,7 +73,7 @@ function build() {
       desc: `把你的歌单带走 官方 ${config.displayName} 歌单导入与原版音源桥接插件订阅源`,
       plugins: [
         {
-          name: '把你的歌单带走 (PlaylistOut)',
+          name: '把你的歌单带走',
           url: entryUrl,
           version: pkg.version,
         },
