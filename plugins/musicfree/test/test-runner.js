@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.1)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.2)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.1', 'Version must be 1.3.1');
+    assert.strictEqual(plugin.version, '1.3.2', 'Version must be 1.3.2');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -130,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.1');
+      assert.strictEqual(distPlugin.version, '1.3.2');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -194,7 +194,9 @@ async function runAllTests() {
   const v130Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.0.js');
   const v131Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.1.js');
   const v131Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.1.js');
-  await test('Verifies v1.2.0 through v1.3.1 release & historical archives exist', () => {
+  const v132Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.2.js');
+  const v132Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.2.js');
+  await test('Verifies v1.2.0 through v1.3.2 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -225,6 +227,8 @@ async function runAllTests() {
     assert(fs.existsSync(v130Web), 'web/public/plugins/musicfree-v1.3.0.js must exist');
     assert(fs.existsSync(v131Dist), 'dist/musicfree-v1.3.1.js must exist');
     assert(fs.existsSync(v131Web), 'web/public/plugins/musicfree-v1.3.1.js must exist');
+    assert(fs.existsSync(v132Dist), 'dist/musicfree-v1.3.2.js must exist');
+    assert(fs.existsSync(v132Web), 'web/public/plugins/musicfree-v1.3.2.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
@@ -529,48 +533,48 @@ async function runAllTests() {
   try {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
 
-    await test('Mobile mode: NetEase playlist directly maps platform to "netease"', async () => {
-      const items = await plugin.importMusicSheet(sampleNeteaseJson);
-      assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'netease', 'Mobile platform must delegate to native netease plugin');
-      assert.strictEqual(items[0]._originPlatform, 'netease');
-      assert.strictEqual(items[0].id, '1973665667');
-      assert.strictEqual(items[0]._src?.netease?.id, '1973665667');
-      assert.deepStrictEqual(items[0]._srcOrder, ['netease']);
+    await test('Mobile mode: Default preserves unified platform contract "把你的歌单带走" with full _originPlatform & _src metadata for multi-platform ladder', async () => {
+      const neteaseItems = await plugin.importMusicSheet(sampleNeteaseJson);
+      assert.strictEqual(neteaseItems[0].platform, '把你的歌单带走');
+      assert.strictEqual(neteaseItems[0]._originPlatform, 'netease');
+      assert.strictEqual(neteaseItems[0]._src?.netease?.id, '1973665667');
+
+      const qqItems = await plugin.importMusicSheet(sampleQqJson);
+      assert.strictEqual(qqItems[0].platform, '把你的歌单带走');
+      assert.strictEqual(qqItems[0]._originPlatform, 'qq');
+      assert.strictEqual(qqItems[0].songmid, '0039MnYb0qxYAc');
+
+      const kugouItems = await plugin.importMusicSheet(sampleKugouJson);
+      assert.strictEqual(kugouItems[0].platform, '把你的歌单带走');
+      assert.strictEqual(kugouItems[0]._originPlatform, 'kugou');
+      assert.strictEqual(kugouItems[0]._src?.kugou?.hash, 'hash12345');
     });
 
-    await test('Mobile mode: QQ Music playlist directly maps platform to "qq" with songmid', async () => {
-      const items = await plugin.importMusicSheet(sampleQqJson);
-      assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'qq', 'Mobile platform must delegate to native qq plugin');
-      assert.strictEqual(items[0]._originPlatform, 'qq');
-      assert.strictEqual(items[0].id, '0039MnYb0qxYAc');
-      assert.strictEqual(items[0].songmid, '0039MnYb0qxYAc');
-      assert.strictEqual(items[0]._src?.qq?.mid, '0039MnYb0qxYAc');
-      assert.deepStrictEqual(items[0]._srcOrder, ['qq']);
-    });
+    await test('Mobile mode: targetPlatform="native" delegates tracks to respective native platforms', async () => {
+      globalThis.env = {
+        getUserVariables: () => ({ targetPlatform: 'native' }),
+      };
+      try {
+        const neteaseItems = await plugin.importMusicSheet(sampleNeteaseJson);
+        assert.strictEqual(neteaseItems[0].platform, 'netease');
 
-    await test('Mobile mode: KuGou playlist directly maps platform to "kugou" with hash', async () => {
-      const items = await plugin.importMusicSheet(sampleKugouJson);
-      assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, 'kugou', 'Mobile platform must delegate to native kugou plugin');
-      assert.strictEqual(items[0]._originPlatform, 'kugou');
-      assert.strictEqual(items[0]._src?.kugou?.hash, 'hash12345');
-      assert.deepStrictEqual(items[0]._srcOrder, ['kugou']);
-    });
+        const qqItems = await plugin.importMusicSheet(sampleQqJson);
+        assert.strictEqual(qqItems[0].platform, 'qq');
 
-    await test('Mobile mode: KuWo, QiShui, Bilibili, and Migu map to their respective native platforms', async () => {
-      const kuwoItems = await plugin.importMusicSheet(sampleKuwoJson);
-      assert.strictEqual(kuwoItems[0].platform, 'kuwo');
+        const kuwoItems = await plugin.importMusicSheet(sampleKuwoJson);
+        assert.strictEqual(kuwoItems[0].platform, 'kuwo');
 
-      const qishuiItems = await plugin.importMusicSheet(sampleQishuiJson);
-      assert.strictEqual(qishuiItems[0].platform, 'qishui');
+        const qishuiItems = await plugin.importMusicSheet(sampleQishuiJson);
+        assert.strictEqual(qishuiItems[0].platform, 'qishui');
 
-      const biliItems = await plugin.importMusicSheet(sampleBilibiliJson);
-      assert.strictEqual(biliItems[0].platform, 'bilibili');
+        const biliItems = await plugin.importMusicSheet(sampleBilibiliJson);
+        assert.strictEqual(biliItems[0].platform, 'bilibili');
 
-      const miguItems = await plugin.importMusicSheet(sampleMiguJson);
-      assert.strictEqual(miguItems[0].platform, 'migu');
+        const miguItems = await plugin.importMusicSheet(sampleMiguJson);
+        assert.strictEqual(miguItems[0].platform, 'migu');
+      } finally {
+        delete globalThis.env;
+      }
     });
 
     await test('Mobile mode: userVariables targetPlatform overrides track platform on mobile', async () => {
@@ -793,13 +797,13 @@ async function runAllTests() {
     }
   });
 
-  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and delegates platform to "netease" in Mobile mode`, async () => {
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) in Mobile mode (unified platform or native delegate)`, async () => {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
     try {
       const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
       assert(Array.isArray(items), 'Items must be an array');
       assert(items.length > 0, `Should resolve at least 1 track, got ${items.length}`);
-      assert.strictEqual(items[0].platform, 'netease', 'Mobile mode must delegate to native netease platform');
+      assert.strictEqual(items[0].platform, '把你的歌单带走', 'Default mobile mode maintains unified platform');
       assert.strictEqual(items[0]._originPlatform, 'netease');
       assert(Boolean(items[0]._src?.netease?.id));
     } finally {
