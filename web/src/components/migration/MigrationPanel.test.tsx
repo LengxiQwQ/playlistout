@@ -96,4 +96,23 @@ describe('MigrationPanel', () => {
       screen.getByText(/推荐先从 Playlist Out 导出 M3U8 或 CSV/),
     ).toBeInTheDocument();
   });
+  it('uses the system font for provider names and question-mark guidance', () => {
+    render(<MigrationPanel playlist={playlist} />);
+
+    const providerName = screen.getByText('Soundiiz');
+    expect(providerName).toHaveStyle({
+      fontFamily:
+        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    });
+
+    const help = screen.getByRole('button', { name: '查看 Soundiiz 使用说明' });
+    fireEvent.mouseEnter(help);
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip).toHaveStyle({
+      fontFamily:
+        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    });
+  });
+
 });

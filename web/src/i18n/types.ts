@@ -174,8 +174,6 @@ export interface Translations {
     selectFormatHint: string;
     toastCopySuccess: string;
     toastCopyFailed: string;
-    musicFreePluginBtn: string;
-    toastMusicFreeCopied: string;
   };
   migration: {
     title: string;

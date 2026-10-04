@@ -50,6 +50,9 @@ interface HelpTooltipProps {
   text: string;
 }
 
+const SYSTEM_FONT =
+  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+
 const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
   const [open, setOpen] = useState(false);
   const tooltipId = useId();
@@ -79,7 +82,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
           border: '1.5px dashed rgba(45, 52, 54, 0.45)',
           background: 'rgba(255,255,255,0.72)',
           color: 'var(--ink, #2d3436)',
-          fontFamily: 'inherit',
+          fontFamily: SYSTEM_FONT,
           fontWeight: 700,
           cursor: 'help',
           lineHeight: 1,
@@ -93,7 +96,6 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
         <div
           id={tooltipId}
           role="tooltip"
-          className="font-note"
           style={{
             position: 'absolute',
             right: 0,
@@ -106,6 +108,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
             background: 'var(--paper, #fdfbf7)',
             boxShadow: '0 8px 24px rgba(45, 52, 54, 0.14)',
             color: '#4b5356',
+            fontFamily: SYSTEM_FONT,
             fontSize: '0.92rem',
             lineHeight: 1.5,
             textAlign: 'left',
@@ -182,7 +185,8 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
     <div
       data-testid="migration-panel"
       style={{
-        paddingTop: '1.05rem',
+        paddingTop: '1.25rem',
+        paddingBottom: '1.25rem',
         borderTop: '1px dashed rgba(45, 52, 54, 0.18)',
       }}
     >
@@ -190,7 +194,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
         <div
           className="font-handwriting"
           style={{
-            fontSize: '1.3rem',
+            fontSize: '1.5rem',
             fontWeight: 700,
             color: 'var(--ink, #2d3436)',
           }}
@@ -232,10 +236,10 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
             }}
           >
             <div
-              className="font-handwriting"
               style={{
                 minWidth: '8rem',
-                fontSize: '1.08rem',
+                fontFamily: SYSTEM_FONT,
+                fontSize: '1.02rem',
                 fontWeight: 700,
                 color: 'var(--ink, #2d3436)',
               }}
@@ -243,9 +247,9 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
               {service.name}
               {service.supportsOneClick ? (
                 <span
-                  className="font-note"
                   style={{
                     marginLeft: '0.45rem',
+                    fontFamily: SYSTEM_FONT,
                     fontSize: '0.72rem',
                     fontWeight: 500,
                     color: '#6b7280',
