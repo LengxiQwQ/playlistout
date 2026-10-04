@@ -180,17 +180,19 @@ export interface Translations {
   migration: {
     title: string;
     subtitle: string;
-    poweredBy: string;
-    spotify: string;
-    appleMusic: string;
-    youtubeMusic: string;
-    deezer: string;
-    tidal: string;
-    other: string;
+    directBadge: string;
+    oneClick: string;
+    oneClickTitle: string;
+    oneClickDisabledTitle: string;
+    visit: string;
+    visitAria: string;
+    helpAria: string;
+    soundiizHelp: string;
+    tuneMyMusicHelp: string;
+    freeYourMusicHelp: string;
     preparing: string;
     trackLimit: string;
     partialNotice: string;
-    privacyNotice: string;
     failed: string;
     invalidLink: string;
   };
