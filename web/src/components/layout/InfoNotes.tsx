@@ -91,8 +91,8 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
           aria-hidden="true"
           style={{
             position: 'absolute',
-            right: '-2.6rem',
-            bottom: '-2.1rem',
+            right: '-7rem',
+            bottom: '-6rem',
             pointerEvents: 'none',
             zIndex: 2,
           }}
