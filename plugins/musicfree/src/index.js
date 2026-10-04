@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.6)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.7)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -228,12 +228,14 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v136';
+  var SCRIPT_VER = 'v137';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
-  // 清理历史旧版本残留的药丸与自定义样式，确保面板与弹窗纯净稳定
+  // 清理历史旧版本残留的文件选择按钮与自定义样式，确保面板与弹窗纯净稳定
   try {
+    var oldPickBtn = document.getElementById('playlistout-file-picker-btn');
+    if (oldPickBtn && oldPickBtn.parentNode) oldPickBtn.parentNode.removeChild(oldPickBtn);
     var oldStyle = document.getElementById('playlistout-user-variables-style');
     if (oldStyle && oldStyle.parentNode) oldStyle.parentNode.removeChild(oldStyle);
     var oldPills = document.querySelectorAll('.playlistout-var-pills');
@@ -332,10 +334,13 @@ const RENDERER_FILE_PICKER_SCRIPT = `
         continue;
       }
 
-      // 修正预输入占位符文字：用中文品牌名「把你的歌单带走」
-      var targetPlaceholder = '粘贴歌单链接或Json文本（官网获取）';
+      // 修正预输入占位符文字与长度限制
+      var targetPlaceholder = '粘贴歌单分享链接（QQ/网易/酷狗/汽水等）';
       if (placeholder !== targetPlaceholder) {
         textInput.setAttribute('placeholder', targetPlaceholder);
+      }
+      if (textInput.hasAttribute('maxlength')) {
+        textInput.removeAttribute('maxlength');
       }
 
       // 动态监听输入：若用户粘贴酷狗音乐链接，动态展示免登录仅解析前 10 首的温馨提示
@@ -350,7 +355,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
             tip.style.cssText =
               'margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.5);color:#d97706;font-size:12px;line-height:1.45;text-align:left;';
             tip.innerHTML =
-              '💡 <b>酷狗限制提示：</b>因平台登录限制，免登录仅可解析前 10 首。<br>完整歌单推荐前往官网 (<b>playlistout.lengxiqwq.com</b>) 登录解析，点击【复制 JSON】后直接在此粘贴全量导入。';
+              '💡 <b>酷狗全量导入提示：</b>未配置 Token 仅可解析前 10 首。<br>前往官网 (<b>playlistout.lengxiqwq.com</b>) 扫码登录，复制 Token 填入「插件设置」即可全量导入。';
             inputArea.appendChild(tip);
           }
         } else if (tip) {
@@ -361,65 +366,23 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       textInput.addEventListener('input', updateKugouModalTip);
       updateKugouModalTip();
 
-      if (modal.querySelector('#playlistout-file-picker-btn')) continue;
+      if (modal.querySelector('#playlistout-open-web-btn')) continue;
 
       opeArea.style.gap = '10px';
       opeArea.style.flexWrap = 'wrap';
 
-      var fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = '.json,application/json';
-      fileInput.style.display = 'none';
-
-      var pickBtn = createDashedButton('playlistout-file-picker-btn', '📂 选择本地 JSON', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        fileInput.value = '';
-        fileInput.click();
-      });
-
-      var webBtn = createDashedButton('playlistout-open-web-btn', '🌐 去官网解析歌单', function(e) {
+      var webBtn = createDashedButton('playlistout-open-web-btn', '🌐 官网获取酷狗Token', function(e) {
         e.preventDefault();
         e.stopPropagation();
         openOfficialWebsite();
       });
 
-      fileInput.onchange = function() {
-        var f = fileInput.files && fileInput.files[0];
-        if (!f) return;
-        var fullPath = f.path || '__PICK_FILE__';
-        applyChosenFile(modal, fullPath);
-      };
-
       var confirmBtn = opeArea.querySelector('div[data-type="primaryButton"]');
       if (confirmBtn) {
-        opeArea.insertBefore(fileInput, confirmBtn);
-        opeArea.insertBefore(pickBtn, confirmBtn);
         opeArea.insertBefore(webBtn, confirmBtn);
       } else {
-        opeArea.appendChild(fileInput);
-        opeArea.appendChild(pickBtn);
         opeArea.appendChild(webBtn);
       }
-
-      // 支持直接把 .json 文件拖拽到弹窗内导入
-      modal.ondragover = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        pickBtn.style.background = 'rgba(10, 149, 200, 0.18)';
-      };
-      modal.ondragleave = function() {
-        pickBtn.style.background = 'rgba(10, 149, 200, 0.06)';
-      };
-      modal.ondrop = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        pickBtn.style.background = 'rgba(10, 149, 200, 0.06)';
-        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (f && f.path) {
-          applyChosenFile(modal, f.path);
-        }
-      };
     }
   }
 
@@ -1338,7 +1301,7 @@ async function importMusicSheet(urlLike) {
   injectRendererFilePicker();
 
   if (!urlLike || typeof urlLike !== 'string') {
-    throw new Error('请输入有效的歌单链接、分享文本或点击浏览选择本地 .json 文件');
+    throw new Error('请输入有效的歌单链接或分享文本');
   }
 
   const trimmed = urlLike.trim();
@@ -2332,7 +2295,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.6',
+  version: '1.3.7',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -2342,23 +2305,21 @@ module.exports = {
     '支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等主流平台歌单在线解析与导入。',
     '',
     '### 🌐 官方网站（点击可直接在浏览器打开）',
-    '- [👉 点击一键前往官网解析 (playlistout.lengxiqwq.com)](https://playlistout.lengxiqwq.com)',
+    '- [👉 点击一键前往官网 (playlistout.lengxiqwq.com)](https://playlistout.lengxiqwq.com)',
     '',
-    '### 📱 手机端导入歌单指南',
-    '1. 在官网 (playlistout.lengxiqwq.com) 解析歌单，点击「复制 JSON (MusicFree 导入)」。',
-    '2. 打开 MusicFree「导入歌单」直接粘贴完整 JSON 文本即可全量导入。',
-    '3. 支持在「导入歌单」输入框中输入「官网」并点击确定，自动尝试唤起浏览器打开官网。',
+    '### 💡 酷狗音乐全量导入说明',
+    '因酷狗官方限制，未登录仅可解析前 10 首预览歌曲。',
+    '1. 前往官网 (playlistout.lengxiqwq.com) 扫码登录酷狗。',
+    '2. 复制 Token 与 UserID（或直接复制插件凭据）。',
+    '3. 在本插件「插件设置」填入「酷狗Token」与「酷狗UID」，即可直接粘贴歌单链接全量导入！',
   ].join('\n'),
   hints: {
     importMusicSheet: [
-      '【输入指南】粘贴歌单链接或Json文本（官网获取）',
-      '【一键去官网】输入「官网」点确定，或在「插件设置-?」直接点击跳转',
-      '【酷狗全量导入】酷狗完整歌单请在官网扫码解析后点「复制 JSON」直接粘贴',
-      '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
-      '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
-      '【离线导入】电脑端支持文件选择弹窗；电脑与手机均支持直接粘贴官网复制的完整 JSON 文本',
-      '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致，纯净无广无语音干扰',
-      '官网地址：https://playlistout.lengxiqwq.com',
+      '【导入方式】直接粘贴各平台歌单分享链接即可全量导入',
+      '【酷狗全量导入】免登录仅解析前10首，请在官网登录获取Token填入插件设置',
+      '【多平台支持】支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等',
+      '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致',
+      '【官方网站】https://playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
@@ -2375,12 +2336,12 @@ module.exports = {
     {
       key: 'kugouToken',
       name: '酷狗Token',
-      hint: '官网Token(可选)',
+      hint: '官网登录获取(可填token:uid)',
     },
     {
       key: 'kugouUserid',
       name: '酷狗UID',
-      hint: '官网UserID(可选)',
+      hint: '官网登录获取(可选)',
     },
   ],
   supportedSearchType: ['sheet'],
