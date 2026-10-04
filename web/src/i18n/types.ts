@@ -355,6 +355,10 @@ export interface Translations {
     cancel: string;
     jumpToAppBtn: string;
     jumpToAppTip: string;
+    profileConnected: string;
+    profileLoading: string;
+    profileFallbackName: string;
+    profileUserIdLabel: string;
     apiCredentialsTitle: string;
     copyToken: string;
     copyUserId: string;
