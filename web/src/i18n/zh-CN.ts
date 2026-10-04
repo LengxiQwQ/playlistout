@@ -165,6 +165,8 @@ export const zhCN: Translations = {
     exportAction: '导出 ↓',
     takeListWithYou: '把歌单带走 →',
     quickCopyTitle: '快捷复制到剪贴板',
+    clipboardTextLabel: '纯文本：',
+    clipboardJsonLabel: 'JSON 数据：',
     copyTitleOnly: '仅歌名',
     copyTitleArtist: '歌名 - 歌手',
     copyTitleArtistAlbum: '歌名 - 歌手 - 专辑',
