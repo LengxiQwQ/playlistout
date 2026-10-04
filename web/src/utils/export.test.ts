@@ -23,6 +23,8 @@ const sampleTracks: Track[] = [
     album: '叶惠美',
     durationMs: 269000,
     coverUrl: 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg',
+    sourceUrl: 'https://y.qq.com/n/ryqq/songDetail/001',
+    rawIds: { isrc: 'TWUM72300001', qq_songmid: '001' },
   },
   {
     index: 2,
@@ -184,8 +186,10 @@ describe('CSV Export', () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
 
     const content = csv.slice(1);
-    // Standard RFC 4180: Starts directly with header row, zero comment lines
-    expect(content.startsWith('序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态')).toBe(true);
+    // Standard RFC 4180: starts directly with language-neutral interoperability headers.
+    expect(
+      content.startsWith('title,artist,album,isrc,duration,url,index,type,vip,status'),
+    ).toBe(true);
     expect(content).not.toContain('# 创建时间');
     expect(content).not.toContain('# 导出工具');
 
@@ -200,8 +204,9 @@ describe('CSV Export', () => {
     expect(content).toContain('사랑을 했다 (LOVE SCENARIO)');
     expect(content).toContain('米津玄師');
 
-    // Check duplicate track preserved
-    expect(content).toContain('8,晴天,周杰伦,叶惠美');
+    // Core migration metadata is normalized and duplicates are preserved.
+    expect(content).toContain('晴天,周杰伦,叶惠美,TWUM72300001,269,https://y.qq.com/n/ryqq/songDetail/001,1,track,false,playable');
+    expect(content).toContain('晴天,周杰伦,叶惠美,,,,8,track,false,playable');
   });
 
   it('includes metadata comments when options.includeMetadata is true', () => {
@@ -214,7 +219,7 @@ describe('CSV Export', () => {
     expect(content).toContain('# 导出工具: Playlist Out (https://playlistout.lengxiqwq.com)');
     expect(content).toContain('# 歌单名称: 多语言/特殊字符/重复歌单 🎵 <Test>');
     expect(content).toContain('# 歌单作者: MusicMaster / 音乐家');
-    expect(content).toContain('序号,歌曲标题,歌手,专辑,时长,类型,VIP,歌曲状态');
+    expect(content).toContain('title,artist,album,isrc,duration,url,index,type,vip,status');
   });
 });
 
@@ -271,29 +276,43 @@ describe('Cross-Platform Compatibility: NetEase Millisecond Timestamps & Partial
 });
 
 describe('XLSX Export', () => {
-  it('generates valid XLSX workbook with metadata card and song table', () => {
+  it('generates an importer-friendly Tracks sheet plus separate playlist metadata', () => {
     const bytes = generateXLSX(samplePlaylist);
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(0);
 
-    // Read back workbook to verify integrity
     const wb = XLSX.read(bytes, { type: 'array' });
-    expect(wb.SheetNames).toContain('歌单歌曲');
-    const ws = wb.Sheets['歌单歌曲'];
-    const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 });
+    expect(wb.SheetNames).toEqual(['Tracks', 'Playlist Info']);
 
-    // Verify metadata rows
-    expect(rows[0][0]).toBe('歌单名称');
-    expect(rows[0][1]).toBe('多语言/特殊字符/重复歌单 🎵 <Test>');
-    expect(rows[1][0]).toBe('创建时间');
-    expect(rows[1][1]).toContain('2023-10-10');
-    expect(rows[1][2]).toBe('导出时间');
-    expect(rows[2][0]).toBe('导出工具');
-    expect(rows[2][1]).toBe('Playlist Out');
-    expect(rows[2][2]).toBe('平台网址');
-    expect(rows[2][3]).toBe('https://playlistout.lengxiqwq.com');
-    expect(rows[3][0]).toBe('歌单作者');
-    expect(rows[3][1]).toBe('MusicMaster / 音乐家');
+    const tracksRows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets['Tracks'], { header: 1 });
+    expect(tracksRows[0]).toEqual([
+      'title',
+      'artist',
+      'album',
+      'isrc',
+      'duration',
+      'url',
+      'index',
+      'type',
+      'vip',
+      'status',
+    ]);
+    expect(tracksRows[1][0]).toBe('晴天');
+    expect(tracksRows[1][1]).toBe('周杰伦');
+    expect(tracksRows[1][2]).toBe('叶惠美');
+    expect(tracksRows[1][3]).toBe('TWUM72300001');
+    expect(tracksRows[1][4]).toBe('269');
+    expect(tracksRows[1][6]).toBe(1);
+    expect(tracksRows[1][7]).toBe('track');
+    expect(tracksRows[1][8]).toBe(false);
+    expect(tracksRows[1][9]).toBe('playable');
+
+    const infoRows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets['Playlist Info'], { header: 1 });
+    expect(infoRows[0]).toEqual(['field', 'value']);
+    expect(infoRows).toContainEqual(['name', '多语言/特殊字符/重复歌单 🎵 <Test>']);
+    expect(infoRows).toContainEqual(['creator', 'MusicMaster / 音乐家']);
+    expect(infoRows).toContainEqual(['platform', 'qqmusic']);
+    expect(infoRows).toContainEqual(['generator', 'Playlist Out']);
   });
 });
 
@@ -315,6 +334,10 @@ describe('JSON Export', () => {
     expect(parsed.id).toBe('9044196528');
     expect(parsed.trackCount).toBe(8);
     expect(parsed.tracks).toHaveLength(8);
+    expect(parsed.tracks[0].artist).toBe('周杰伦');
+    expect(parsed.tracks[0].artists).toEqual(['周杰伦']);
+    expect(parsed.tracks[0].isrc).toBe('TWUM72300001');
+    expect(parsed.tracks[0].rawIds.qq_songmid).toBe('001');
 
     // Raw source text preserved faithfully without formula quote prefix
     expect(parsed.tracks[5].title).toBe('=SUM(A1:B1)');
@@ -352,15 +375,14 @@ describe('Original Sound Export Handling', () => {
     expect(txt).toContain('@创作者创作的原声 - 创作者 [视频原声]');
 
     const csv = generateCSV(ugcPlaylist);
-    expect(csv).toContain("1,'@创作者创作的原声,创作者,,—,视频原声,—,正常");
+    expect(csv).toContain("title,artist,album,isrc,duration,url,index,type,vip,status");
+    expect(csv).toContain("'@创作者创作的原声,创作者,,,,,1,original_sound,false,playable");
 
     const bytes = generateXLSX(ugcPlaylist);
     const wb = XLSX.read(bytes, { type: 'array' });
-    const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets['歌单歌曲'], { header: 1 });
-    const headerRow = rows.find((r) => r[0] === '序号')!;
-    expect(headerRow).toContain('类型');
-    const songRow = rows[rows.indexOf(headerRow) + 1];
-    expect(songRow).toContain('视频原声');
+    const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets['Tracks'], { header: 1 });
+    expect(rows[0]).toContain('type');
+    expect(rows[1]).toContain('original_sound');
 
     const json = JSON.parse(generateJSON(ugcPlaylist));
     expect(json.tracks[0].isOriginalSound).toBe(true);
