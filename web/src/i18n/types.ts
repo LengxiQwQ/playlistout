@@ -169,6 +169,7 @@ export interface Translations {
     copyTitleArtist: string;
     copyTitleArtistAlbum: string;
     copyJson: string;
+    copyJsonHint: string;
     toastExportSuccess: string;
     toastExportMultipleSuccess: string;
     toastExportFailed: string;
