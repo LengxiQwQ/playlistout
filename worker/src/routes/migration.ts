@@ -243,11 +243,9 @@ export async function handleSoundiizMigration(
     );
   }
 
-  const tracklist = (body.tracks as MigrationTrackInput[]).map((track, index) => {
+  const normalizedTracks = (body.tracks as MigrationTrackInput[]).map((track) => {
     const trackTitle = cleanString(track?.title, 300);
-    if (!trackTitle) {
-      throw new Error(`MISSING_TRACK_TITLE:${index}`);
-    }
+    if (!trackTitle) return null;
 
     const artists = cleanArtists(track?.artists);
     const album = cleanString(track?.album, 300);
@@ -260,6 +258,25 @@ export async function handleSoundiizMigration(
       ...(isrc ? { isrc } : {}),
     };
   });
+
+  const missingTitleIndex = normalizedTracks.findIndex((track) => track === null);
+  if (missingTitleIndex >= 0) {
+    return jsonResponse(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: `Missing track title at index ${missingTitleIndex}.`,
+        },
+      },
+      400,
+      responseHeaders,
+    );
+  }
+
+  const tracklist = normalizedTracks.filter(
+    (track): track is NonNullable<typeof track> => track !== null,
+  );
 
   try {
     const upstreamResponse = await fetch(SOUNDIIZ_ENDPOINT, {
@@ -333,18 +350,6 @@ export async function handleSoundiizMigration(
       responseHeaders,
     );
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith('MISSING_TRACK_TITLE:')) {
-      const index = error.message.split(':')[1] || '?';
-      return jsonResponse(
-        {
-          success: false,
-          error: { code: 'INVALID_INPUT', message: `Missing track title at index ${index}.` },
-        },
-        400,
-        responseHeaders,
-      );
-    }
-
     console.error('Soundiiz migration request failed:', error);
     return jsonResponse(
       {
