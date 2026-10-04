@@ -7,6 +7,7 @@ import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/t
 import { handleEvent } from './routes/event';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
 import { handleInternalQuarantine } from './routes/quarantine';
+import { handleSoundiizMigration } from './routes/migration';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit, checkDualTrackRateLimit } from './security/rate-limit';
 import { generateSessionToken } from './security/session';
@@ -129,6 +130,11 @@ export default {
           },
         },
       );
+    }
+
+    // ── One-click playlist migration handoff (Soundiiz) ──
+    if (url.pathname === '/api/migrate/soundiiz') {
+      return handleSoundiizMigration(request, _env, responseHeaders, _ctx);
     }
 
     const clientIp =
