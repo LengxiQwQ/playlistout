@@ -1,6 +1,5 @@
 import type { Playlist } from '../api/types';
 import * as XLSX from 'xlsx';
-import { formatDuration } from './format';
 import { getPlatformPlaylistUrl } from './platform';
 
 
