@@ -253,6 +253,11 @@
   }
 
   /* Keep the 30-day activity chart inside its paper on narrow screens. */
+  .stats-chill-vibes {
+    left: 0.75rem !important;
+    top: -2.15rem !important;
+  }
+
   .stats-recent-paper {
     max-width: 100%;
     overflow: hidden;
