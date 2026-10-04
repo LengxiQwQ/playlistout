@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { fetchStats, type StatsResponse } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
+import { Sticker } from '../ui/Sticker';
 import { getPlatformName } from '../../utils/platform';
 import { calculateRunningDays } from '../../utils/uptime';
 
@@ -230,8 +231,34 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           gap: '2.5rem',
           alignItems: 'stretch',
           marginBottom: '2.5rem',
+          position: 'relative',
         }}
       >
+        <div
+          className="stats-chill-vibes"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '1.25rem',
+            top: '-2.5rem',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        >
+          <Sticker
+            as="div"
+            color="yellow"
+            rotateDeg={-12}
+            style={{
+              opacity: 0.8,
+              fontSize: '0.85rem',
+              padding: '0.2rem 0.5rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            chill vibes
+          </Sticker>
+        </div>
         {/* Card 1: Today's Note (Warm Butter Yellow Paper) */}
         <Paper
           color="yellow"

@@ -71,11 +71,6 @@ export const BackgroundDecorations: React.FC = () => {
       </div>
 
       {/* Bottom Left Area */}
-      <div style={{ position: 'absolute', top: '75%', left: 'max(18%, calc(50% - 450px))' }}>
-        <Sticker color="yellow" rotateDeg={-12} style={{ opacity: 0.8, fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}>
-          chill vibes
-        </Sticker>
-      </div>
 
       <div style={{ position: 'absolute', bottom: '15%', left: 'max(6%, calc(50% - 650px))' }}>
         <Tape color="pink" rotateDeg={12} style={{ width: '5rem', height: '1.5rem', opacity: 0.7 }} />
