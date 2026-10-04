@@ -295,7 +295,10 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             {t.export.quickCopyTitle}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+            <div
+              className="clipboard-text-row"
+              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}
+            >
               <span
                 style={{
                   fontFamily:
@@ -314,7 +317,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               rotateDeg={-0.5}
               disabled={isDisabled}
               onClick={() => handleCopy('title', t.export.copyTitleOnly)}
-              className="font-handwriting"
+              className="font-handwriting clipboard-copy-button"
               style={{ padding: '0.35rem 0.75rem', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
             >
               {t.export.copyTitleOnly}
@@ -326,7 +329,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               rotateDeg={1}
               disabled={isDisabled}
               onClick={() => handleCopy('title-artist', t.export.copyTitleArtist)}
-              className="font-handwriting"
+              className="font-handwriting clipboard-copy-button"
               style={{ padding: '0.35rem 0.75rem', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
             >
               {t.export.copyTitleArtist}
@@ -338,7 +341,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               rotateDeg={-1}
               disabled={isDisabled}
               onClick={() => handleCopy('title-artist-album', t.export.copyTitleArtistAlbum)}
-              className="font-handwriting"
+              className="font-handwriting clipboard-copy-button"
               style={{ padding: '0.35rem 0.75rem', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
             >
               {t.export.copyTitleArtistAlbum}
@@ -353,7 +356,10 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                 gap: '0.35rem',
               }}
             >
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+              <div
+                className="clipboard-json-row"
+                style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}
+              >
                 <span
                   style={{
                     fontFamily:
@@ -372,7 +378,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                 rotateDeg={1}
                 disabled={isDisabled}
                 onClick={() => handleCopy('json', t.export.copyJson)}
-                className="font-handwriting"
+                className="font-handwriting clipboard-copy-button clipboard-json-copy-button"
                 style={{
                   padding: '0.35rem 0.85rem',
                   fontSize: '1.05rem',
