@@ -4,7 +4,7 @@
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (v1.2.0, userVariables, hints)
- * 2. Historical archive version integrity (v1.0.0 pure import, v1.1.0 archive)
+ * 2. Current UI/import guidance contract
  * 3. Local JSON file path import & native platform bridge dispatching (netease, 20, WebFilter, kuwo, qishui, bilibili, migu)
  * 4. UserVariables configuration override (auto vs forced platform)
  * 5. Interception & friendly guidance when pasting direct JSON strings
@@ -56,14 +56,15 @@ async function runAllTests() {
 
   const pluginPath = path.resolve(__dirname, '../src/index.js');
   const plugin = require(pluginPath);
+  const pkg = require(path.resolve(__dirname, '../package.json'));
 
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.9)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走 (PlaylistOut)', 'Platform must be 把你的歌单带走 (PlaylistOut)');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.9', 'Version must be 1.3.9');
+    assert.strictEqual(plugin.version, pkg.version, 'Runtime version must match package.json');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -126,7 +127,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/把你的歌单带走-PlaylistOut.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走 (PlaylistOut)');
-      assert.strictEqual(distPlugin.version, '1.3.9');
+      assert.strictEqual(distPlugin.version, pkg.version);
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -135,125 +136,8 @@ async function runAllTests() {
     });
   }
 
-  // ── 2. Historical Version Integrity & Archiving ───────────────────
-  logSection('2. Historical Version Integrity & Archiving');
-
-  const v100Dist = path.resolve(__dirname, '../dist/musicfree-v1.0.0.js');
-  const v100Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.0.0.js');
-  await test('Verifies v1.0.0 pure-import archive exists and conforms to spec', () => {
-    assert(fs.existsSync(v100Dist), 'dist/musicfree-v1.0.0.js must exist');
-    assert(fs.existsSync(v100Web), 'web/public/plugins/musicfree-v1.0.0.js must exist');
-    const v100Plugin = require(v100Dist);
-    assert.strictEqual(v100Plugin.version, '1.0.0');
-    assert.strictEqual(typeof v100Plugin.importMusicSheet, 'function');
-    assert.strictEqual(v100Plugin.getMediaSource, undefined, 'v1.0.0 must not export getMediaSource');
-  });
-
-  const v110Dist = path.resolve(__dirname, '../dist/musicfree-v1.1.0.js');
-  const v110Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.1.0.js');
-  await test('Verifies v1.1.0 archive exists and conforms to spec', () => {
-    assert(fs.existsSync(v110Dist), 'dist/musicfree-v1.1.0.js must exist');
-    assert(fs.existsSync(v110Web), 'web/public/plugins/musicfree-v1.1.0.js must exist');
-    const v110Plugin = require(v110Dist);
-    assert.strictEqual(v110Plugin.version, '1.1.0');
-    assert.strictEqual(typeof v110Plugin.importMusicSheet, 'function');
-    assert.strictEqual(typeof v110Plugin.getMediaSource, 'function');
-  });
-
-  const v120Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.0.js');
-  const v120Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.0.js');
-  const v121Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.1.js');
-  const v121Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.1.js');
-  const v122Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.2.js');
-  const v122Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.2.js');
-  const v123Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.3.js');
-  const v123Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.3.js');
-  const v124Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.4.js');
-  const v124Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.4.js');
-  const v125Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.5.js');
-  const v125Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.5.js');
-  const v126Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.6.js');
-  const v126Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.6.js');
-  const v127Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.7.js');
-  const v127Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.7.js');
-  const v128Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.8.js');
-  const v128Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.8.js');
-  const v129Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.9.js');
-  const v129Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.9.js');
-  const v1210Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.10.js');
-  const v1210Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.10.js');
-  const v1211Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.11.js');
-  const v1211Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.11.js');
-  const v1212Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.12.js');
-  const v1212Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.12.js');
-  const v130Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.0.js');
-  const v130Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.0.js');
-  const v131Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.1.js');
-  const v131Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.1.js');
-  const v132Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.2.js');
-  const v132Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.2.js');
-  const v133Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.3.js');
-  const v133Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.3.js');
-  const v134Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.4.js');
-  const v134Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.4.js');
-  const v135Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.5.js');
-  const v135Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.5.js');
-  const v136Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.6.js');
-  const v136Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.6.js');
-  const v137Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.7.js');
-  const v137Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.7.js');
-  const v138Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.8.js');
-  const v138Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.8.js');
-  const v139Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.9.js');
-  const v139Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.9.js');
-  await test('Verifies v1.2.0 through v1.3.9 release & historical archives exist', () => {
-    assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
-    assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
-    assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
-    assert(fs.existsSync(v121Web), 'web/public/plugins/musicfree-v1.2.1.js must exist');
-    assert(fs.existsSync(v122Dist), 'dist/musicfree-v1.2.2.js must exist');
-    assert(fs.existsSync(v122Web), 'web/public/plugins/musicfree-v1.2.2.js must exist');
-    assert(fs.existsSync(v123Dist), 'dist/musicfree-v1.2.3.js must exist');
-    assert(fs.existsSync(v123Web), 'web/public/plugins/musicfree-v1.2.3.js must exist');
-    assert(fs.existsSync(v124Dist), 'dist/musicfree-v1.2.4.js must exist');
-    assert(fs.existsSync(v124Web), 'web/public/plugins/musicfree-v1.2.4.js must exist');
-    assert(fs.existsSync(v125Dist), 'dist/musicfree-v1.2.5.js must exist');
-    assert(fs.existsSync(v125Web), 'web/public/plugins/musicfree-v1.2.5.js must exist');
-    assert(fs.existsSync(v126Dist), 'dist/musicfree-v1.2.6.js must exist');
-    assert(fs.existsSync(v126Web), 'web/public/plugins/musicfree-v1.2.6.js must exist');
-    assert(fs.existsSync(v127Dist), 'dist/musicfree-v1.2.7.js must exist');
-    assert(fs.existsSync(v127Web), 'web/public/plugins/musicfree-v1.2.7.js must exist');
-    assert(fs.existsSync(v128Dist), 'dist/musicfree-v1.2.8.js must exist');
-    assert(fs.existsSync(v128Web), 'web/public/plugins/musicfree-v1.2.8.js must exist');
-    assert(fs.existsSync(v129Dist), 'dist/musicfree-v1.2.9.js must exist');
-    assert(fs.existsSync(v129Web), 'web/public/plugins/musicfree-v1.2.9.js must exist');
-    assert(fs.existsSync(v1210Dist), 'dist/musicfree-v1.2.10.js must exist');
-    assert(fs.existsSync(v1210Web), 'web/public/plugins/musicfree-v1.2.10.js must exist');
-    assert(fs.existsSync(v1211Dist), 'dist/musicfree-v1.2.11.js must exist');
-    assert(fs.existsSync(v1211Web), 'web/public/plugins/musicfree-v1.2.11.js must exist');
-    assert(fs.existsSync(v1212Dist), 'dist/musicfree-v1.2.12.js must exist');
-    assert(fs.existsSync(v1212Web), 'web/public/plugins/musicfree-v1.2.12.js must exist');
-    assert(fs.existsSync(v130Dist), 'dist/musicfree-v1.3.0.js must exist');
-    assert(fs.existsSync(v130Web), 'web/public/plugins/musicfree-v1.3.0.js must exist');
-    assert(fs.existsSync(v131Dist), 'dist/musicfree-v1.3.1.js must exist');
-    assert(fs.existsSync(v131Web), 'web/public/plugins/musicfree-v1.3.1.js must exist');
-    assert(fs.existsSync(v132Dist), 'dist/musicfree-v1.3.2.js must exist');
-    assert(fs.existsSync(v132Web), 'web/public/plugins/musicfree-v1.3.2.js must exist');
-    assert(fs.existsSync(v133Dist), 'dist/musicfree-v1.3.3.js must exist');
-    assert(fs.existsSync(v133Web), 'web/public/plugins/musicfree-v1.3.3.js must exist');
-    assert(fs.existsSync(v134Dist), 'dist/musicfree-v1.3.4.js must exist');
-    assert(fs.existsSync(v134Web), 'web/public/plugins/musicfree-v1.3.4.js must exist');
-    assert(fs.existsSync(v135Dist), 'dist/musicfree-v1.3.5.js must exist');
-    assert(fs.existsSync(v135Web), 'web/public/plugins/musicfree-v1.3.5.js must exist');
-    assert(fs.existsSync(v136Dist), 'dist/musicfree-v1.3.6.js must exist');
-    assert(fs.existsSync(v136Web), 'web/public/plugins/musicfree-v1.3.6.js must exist');
-    assert(fs.existsSync(v137Dist), 'dist/musicfree-v1.3.7.js must exist');
-    assert(fs.existsSync(v137Web), 'web/public/plugins/musicfree-v1.3.7.js must exist');
-    assert(fs.existsSync(v138Dist), 'dist/musicfree-v1.3.8.js must exist');
-    assert(fs.existsSync(v138Web), 'web/public/plugins/musicfree-v1.3.8.js must exist');
-    assert(fs.existsSync(v139Dist), 'dist/musicfree-v1.3.9.js must exist');
-    assert(fs.existsSync(v139Web), 'web/public/plugins/musicfree-v1.3.9.js must exist');
-  });
+  // ── 2. Current UI & Import Guidance Contract ─────────────────────
+  logSection('2. Current UI & Import Guidance Contract');
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
     const srcCode = fs.readFileSync(pluginPath, 'utf-8');

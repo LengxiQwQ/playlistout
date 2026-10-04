@@ -1,38 +1,59 @@
 #!/usr/bin/env node
 /**
- * PlaylistOut MusicFree Plugin Build & Distribution Script
- * 
- * Copies and bundles the plugin into:
- * - plugins/musicfree/dist/把你的歌单带走-PlaylistOut.js (local release artifact)
- * - web/public/plugins/把你的歌单带走-PlaylistOut.js (production static distribution)
+ * MusicFree-specific build.
+ *
+ * This script owns only plugins/musicfree/dist. Publishing into web/public/plugins
+ * is intentionally handled by the repository-level scripts/build-plugins.js.
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
-const REPO_ROOT = path.resolve(PLUGIN_ROOT, '../..');
+const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, 'package.json'), 'utf-8'));
+const config = JSON.parse(
+  fs.readFileSync(path.join(PLUGIN_ROOT, 'plugin.config.json'), 'utf-8'),
+);
 
-const SRC_FILE = path.join(PLUGIN_ROOT, 'src', 'index.js');
-const DIST_DIR = path.join(PLUGIN_ROOT, 'dist');
-const DIST_FILE = path.join(DIST_DIR, '把你的歌单带走-PlaylistOut.js');
-const WEB_PLUGINS_ROOT = path.join(REPO_ROOT, 'web', 'public', 'plugins');
-const WEB_MUSICFREE_DIR = path.join(WEB_PLUGINS_ROOT, 'musicfree');
-const WEB_PUBLIC_FILE = path.join(WEB_MUSICFREE_DIR, '把你的歌单带走-PlaylistOut.js');
+const sourceFile = path.resolve(PLUGIN_ROOT, pkg.main || 'src/index.js');
+const distDir = path.join(PLUGIN_ROOT, 'dist');
+const entryArtifact = config.distribution.artifacts.find((item) => item.role === 'entrypoint');
+const subscriptionArtifact = config.distribution.artifacts.find(
+  (item) => item.role === 'subscription',
+);
+
+if (!entryArtifact) {
+  throw new Error('plugin.config.json must declare an entrypoint artifact');
+}
+
+const publicBaseUrl = (
+  process.env.PLAYLISTOUT_PLUGIN_PUBLIC_BASE_URL ||
+  `https://playlistout.lengxiqwq.com/plugins/${config.id}`
+).replace(/\/+$/, '');
+
+function resolveDistArtifact(artifact) {
+  const resolved = path.resolve(PLUGIN_ROOT, artifact.source);
+  const expectedPrefix = distDir.endsWith(path.sep) ? distDir : `${distDir}${path.sep}`;
+  if (!resolved.startsWith(expectedPrefix)) {
+    throw new Error(`Artifact source must live under dist/: ${artifact.source}`);
+  }
+  return resolved;
+}
 
 function build() {
-  console.log('📦 Building PlaylistOut MusicFree Plugin...');
+  console.log(`📦 Building PlaylistOut ${config.displayName} plugin...`);
 
-  if (!fs.existsSync(SRC_FILE)) {
-    console.error(`❌ Source file not found: ${SRC_FILE}`);
-    process.exit(1);
+  if (!fs.existsSync(sourceFile)) {
+    throw new Error(`Source file not found: ${sourceFile}`);
   }
 
-  const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, 'package.json'), 'utf-8'));
-  const rawCode = fs.readFileSync(SRC_FILE, 'utf-8');
+  // A clean dist prevents old versions or renamed artifacts from leaking into releases.
+  fs.rmSync(distDir, { recursive: true, force: true });
+  fs.mkdirSync(distDir, { recursive: true });
 
+  const rawCode = fs.readFileSync(sourceFile, 'utf-8');
   const banner = `/**
- * PlaylistOut Official MusicFree Plugin
+ * PlaylistOut Official ${config.displayName} Plugin
  * Version: ${pkg.version}
  * Author: ${pkg.author}
  * Built: ${new Date().toISOString()}
@@ -41,56 +62,40 @@ function build() {
  */
 `;
 
-  const finalCode = banner + '\n' + rawCode.trim() + '\n';
+  const entryPath = resolveDistArtifact(entryArtifact);
+  fs.mkdirSync(path.dirname(entryPath), { recursive: true });
+  fs.writeFileSync(entryPath, banner + '\n' + rawCode.trim() + '\n', 'utf-8');
 
-  // Ensure directories exist
-  fs.mkdirSync(DIST_DIR, { recursive: true });
-  fs.mkdirSync(WEB_PLUGINS_ROOT, { recursive: true });
-  fs.mkdirSync(WEB_MUSICFREE_DIR, { recursive: true });
-
-  // Write targets
-  fs.writeFileSync(DIST_FILE, finalCode, 'utf-8');
-  fs.writeFileSync(WEB_PUBLIC_FILE, finalCode, 'utf-8');
-  const versionedArchive = path.join(DIST_DIR, `musicfree-v${pkg.version}.js`);
-  fs.writeFileSync(versionedArchive, finalCode, 'utf-8');
-
-  // Generate MusicFree standard subscription descriptor (plugins.json)
-  const subscriptionDescriptor = JSON.stringify(
-    {
-      desc: '把你的歌单带走 官方 MusicFree 歌单导入与原版音源桥接插件订阅源',
+  if (subscriptionArtifact) {
+    const subscriptionPath = resolveDistArtifact(subscriptionArtifact);
+    const entryUrl = `${publicBaseUrl}/${entryArtifact.publicPath}`;
+    const descriptor = {
+      desc: `把你的歌单带走 官方 ${config.displayName} 歌单导入与原版音源桥接插件订阅源`,
       plugins: [
         {
           name: '把你的歌单带走 (PlaylistOut)',
-          url: 'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js',
+          url: entryUrl,
           version: pkg.version,
         },
       ],
-    },
-    null,
-    2
-  ) + '\n';
-  fs.writeFileSync(path.join(DIST_DIR, 'plugins.json'), subscriptionDescriptor, 'utf-8');
-  fs.writeFileSync(path.join(WEB_MUSICFREE_DIR, 'plugins.json'), subscriptionDescriptor, 'utf-8');
-  fs.writeFileSync(path.join(WEB_PLUGINS_ROOT, 'plugins.json'), subscriptionDescriptor, 'utf-8');
+    };
 
-  // Sync historical archives (e.g. musicfree-v1.0.0.js, musicfree-v1.1.0.js)
-  const distFiles = fs.readdirSync(DIST_DIR);
-  for (const file of distFiles) {
-    if (file.startsWith('musicfree-v') && file.endsWith('.js')) {
-      const srcArchive = path.join(DIST_DIR, file);
-      const destArchive = path.join(WEB_PLUGINS_ROOT, file);
-      fs.copyFileSync(srcArchive, destArchive);
-      console.log(`✔ Synced archive:    ${file} -> ${path.relative(REPO_ROOT, destArchive)}`);
-    }
+    fs.mkdirSync(path.dirname(subscriptionPath), { recursive: true });
+    fs.writeFileSync(
+      subscriptionPath,
+      JSON.stringify(descriptor, null, 2) + '\n',
+      'utf-8',
+    );
   }
 
-  const distStat = fs.statSync(DIST_FILE);
-  const webStat = fs.statSync(WEB_PUBLIC_FILE);
-
-  console.log(`✔ Dist build created: ${path.relative(REPO_ROOT, DIST_FILE)} (${distStat.size} bytes)`);
-  console.log(`✔ Web public sync:   ${path.relative(REPO_ROOT, WEB_PUBLIC_FILE)} (${webStat.size} bytes)`);
-  console.log(`✔ Subscription JSON: ${path.relative(REPO_ROOT, path.join(WEB_MUSICFREE_DIR, 'plugins.json'))}`);
-  console.log('🎉 MusicFree plugin built and deployed to web public directory successfully!\n');
+  const stat = fs.statSync(entryPath);
+  console.log(
+    `✔ Build artifact: ${path.relative(PLUGIN_ROOT, entryPath)} (${stat.size} bytes)`,
+  );
+  if (subscriptionArtifact) {
+    console.log(`✔ Subscription:   ${subscriptionArtifact.source}`);
+  }
+  console.log('🎉 MusicFree plugin build completed.\n');
 }
 
 build();

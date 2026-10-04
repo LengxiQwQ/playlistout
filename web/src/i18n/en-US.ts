@@ -220,7 +220,6 @@ export const enUS: Translations = {
     statusProposed: 'Proposed upstream',
     statusPlanned: 'Planned',
     officialPlugin: 'Official Playlist Out plugin',
-    musicFreeSummary: 'Import external playlists in MusicFree with the Playlist Out plugin.',
     copyInstallUrl: 'Copy plugin URL',
     copiedInstallUrl: '✓ Copied',
     copyFailed: 'Copy failed',

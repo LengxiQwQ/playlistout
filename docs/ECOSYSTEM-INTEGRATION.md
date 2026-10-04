@@ -40,37 +40,53 @@ flowchart TD
 
 ### 2.2 多播放器插件工程目录与分发规范 (Multi-Player Architecture)
 
-为保障后续向多家开源播放器（MusicFree、洛雪、Moosync 等）横向扩展，项目采用**播放器目录隔离、全自动扫描构建、动态清单生成**的工业级架构：
+插件体系采用**播放器目录隔离 + 插件自描述 + 根层统一发布**。核心原则不是让所有播放器强行使用同一种文件，而是让每个插件声明自己真正需要发布什么。
 
 ```text
 playlistout/
-  ├── plugins/                             # 播放器插件源码（按播放器 ID 严格隔离）
-  │   ├── musicfree/                       # MusicFree 插件
-  │   │   ├── src/index.js                 # 核心逻辑
-  │   │   ├── dist/                        # 本地打包产物
-  │   │   ├── scripts/build.js             # 插件独立构建管道
-  │   │   └── test/test-runner.js          # 插件自动化测试套件
-  │   ├── lx-music/                        # 洛雪音乐 (LX Music) 脚本/扩展
-  │   ├── moosync/                         # Moosync 扩展插件
-  │   └── ...                              # 后续横向扩展新播放器
+  ├── plugins/
+  │   ├── README.md                    # 通用插件契约
+  │   ├── musicfree/
+  │   │   ├── plugin.config.json       # ID、展示信息、实际发布产物
+  │   │   ├── package.json             # 插件自己的 build / test
+  │   │   ├── src/...
+  │   │   ├── scripts/...
+  │   │   ├── test/...
+  │   │   └── dist/                    # 本地生成，不提交 Git
+  │   └── <other-player>/
+  │       └── ...                       # 可以使用完全不同的 SDK / 文件格式
   │
   ├── scripts/
-  │   ├── build-plugins.js                 # 全局插件构建器（自动发现 plugins/* 并构建）
-  │   └── test-plugins.js                  # 全局插件测试器（自动发现 plugins/* 并运行测试）
+  │   ├── plugin-utils.js              # 自动发现、校验、依赖安装
+  │   ├── build-plugins.js             # 唯一公共发布器
+  │   └── test-plugins.js              # 调用各插件自己的测试脚本
   │
-  └── web/public/plugins/                  # 静态分发节点 (Cloudflare Pages CDN)
-      ├── index.json                       # 🌐 全生态播放器插件索引清单 (Ecosystem Manifest)
-      ├── musicfree/                       # MusicFree 专属分发目录
-      │   ├── 把你的歌单带走-PlaylistOut.js  # 插件主入口
-      │   └── plugins.json                 # 播放器规范订阅源
-      ├── lx-music/                        # 洛雪音乐专属分发目录
-      └── ...
+  └── web/public/plugins/              # 构建时生成，不提交 Git
+      ├── index.json                   # 全生态清单
+      ├── musicfree/
+      │   ├── <MusicFree 实际入口文件>
+      │   └── <MusicFree 专属订阅文件>
+      └── <other-player>/
+          └── <该播放器实际需要的产物>
 ```
 
-**统一 URL 寻址与自更新标准**：
-* **插件直链**：`https://playlistout.lengxiqwq.com/plugins/<player-id>/<artifact>`
-* **播放器订阅源**：`https://playlistout.lengxiqwq.com/plugins/<player-id>/plugins.json`
-* **全生态清单**：`https://playlistout.lengxiqwq.com/plugins/index.json`
+**关键约束**：
+
+- 每个插件只能构建自己的 `dist/`，不能直接写 `web/public/plugins/`。
+- `scripts/build-plugins.js` 是唯一公共发布器，只复制 `plugin.config.json` 明确声明的文件。
+- 所有产物严格落在 `/plugins/<player-id>/` 命名空间，插件之间无法覆盖彼此。
+- 不再规定所有播放器都必须叫 `把你的歌单带走-PlaylistOut.js`，也不再规定所有播放器都必须有 `plugins.json`；这些属于播放器自身规范。
+- 有 npm 依赖的插件使用插件自己的 lockfile，干净 CI 环境会自动执行确定性的 `npm ci`。
+- `web/public/plugins/index.json` 自动生成；网页“已支持播放器”卡片直接读取该清单，因此新增一个真实插件不需要再给前端写播放器专属分支。
+- “已提案 / 计划中”但还没有插件实现的播放器，才继续保留在前端静态 Roadmap 列表中。
+
+**统一寻址只约束命名空间，不约束文件格式**：
+
+- 插件命名空间：`https://playlistout.lengxiqwq.com/plugins/<player-id>/...`
+- 全生态清单：`https://playlistout.lengxiqwq.com/plugins/index.json`
+- 具体入口、订阅源或其他资产，以该插件 `plugin.config.json` 声明为准。
+
+发布与 CI 统一执行 `npm run validate:plugins`（先构建/发布，再运行各插件测试），Pages 部署也使用同一条链路，避免本地构建与线上产物漂移。
 
 ---
 

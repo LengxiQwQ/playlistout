@@ -10,14 +10,15 @@
     "worker"
   ],
   "scripts": {
-    "dev": "node scripts/start-dev.js",
+    "dev": "npm run build:plugins && node scripts/start-dev.js",
     "start": "start-dev.bat",
     "stop": "node scripts/stop-dev.js",
     "build:plugins": "node scripts/build-plugins.js",
     "test:plugins": "node scripts/test-plugins.js",
+    "validate:plugins": "npm run build:plugins && npm run test:plugins",
     "build": "npm run build:plugins && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run validate:plugins && npm run test --workspaces --if-present",
     "gate": "node scripts/ci-gate.js",
     "check": "npm run gate",
     "prepare": "node scripts/setup-hooks.js"
