@@ -351,7 +351,7 @@ def export_m3u8(filename, playlist_title, tracks, author):
 def open_folder(filepath):
     abs_path = os.path.abspath(filepath)
     if platform.system() == 'Windows':
-        subprocess.run(f'explorer /select,"{abs_path}"', shell=True)
+        subprocess.run(['explorer', f'/select,{abs_path}'], shell=False)
 
 def main():
     print("============ 网易云音乐歌单导出工具 ============")
