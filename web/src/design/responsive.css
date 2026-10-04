@@ -375,9 +375,13 @@
     padding: 1.25rem !important;
   }
 
+  .info-notes-section {
+    padding-bottom: 3.5rem !important;
+  }
+
   .info-notes-favorited {
-    right: 0.35rem !important;
-    bottom: -2.35rem !important;
+    right: 0.75rem !important;
+    bottom: 0.45rem !important;
   }
 
   .journal-container {
