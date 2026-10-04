@@ -93,7 +93,7 @@ describe('MigrationPanel', () => {
     fireEvent.mouseEnter(help);
 
     expect(
-      screen.getByText(/推荐先从 Playlist Out 导出 M3U8 或 CSV/),
+      screen.getByText(/推荐导出 M3U8 或 CSV/),
     ).toBeInTheDocument();
   });
   it('uses the system font for provider names and question-mark guidance', () => {

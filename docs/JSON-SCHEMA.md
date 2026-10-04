@@ -14,7 +14,7 @@
 |---|---|---|---|
 | `createTime` | `string \| null` | 可选 | **歌单创建时间**（首位字段）。标准时间字符串 `YYYY-MM-DD HH:mm:ss`，若上游平台未提供则返回 `null` |
 | `exportedAt` | `string` | 可选 | **数据导出时间**。客户端生成文件的本地时间 `YYYY-MM-DD HH:mm:ss` |
-| `generator` | `string` | 可选 | **导出工具平台标识**。固定为 `"PlaylistOut"` |
+| `generator` | `string` | 可选 | **导出工具平台标识**。固定为 `"Playlist Out"` |
 | `generatorUrl` | `string` | 可选 | **平台官方网址**。固定为 `"https://playlistout.lengxiqwq.com"` |
 | `name` | `string` | **必填** | 歌单完整名称 |
 | `creator` | `string` | 可选 | 歌单创建者昵称 |
@@ -42,9 +42,11 @@
 | `index` | `number` | 可选 | 歌曲在歌单中的显示序号（从 1 起始自增） |
 | `id` | `string` | 可选 | 来源平台的歌曲唯一 ID / MID（例如 `"0039MnYb0qxYAc"`） |
 | `title` | `string` | **必填** | 歌曲标题（保留完整版本名与副标题） |
+| `artist` | `string` | 可选 | 便于通用导入器直接读取的扁平歌手字段；多位歌手以 `, ` 连接。与 `artists` 同时保留 |
 | `artists` | `string[]` | **必填** | 参与歌手名数组（多位歌手分别作为独立元素，如 `["周杰伦", "阿信"]`） |
 | `artistList` | `Array<{id?: string, name: string}>` | 可选 | (*极客增强*) 结构化的歌手对象数组，包含歌手在平台上的唯一 ID，提高匹配准确率 |
 | `album` | `string` | **必填** | 收录专辑名称 |
+| `isrc` | `string` | 可选 | 国际标准录音制品编码（ISRC）。若来源平台提供，会提升到一级字段，便于迁移工具进行精确匹配；原始值仍可同时保留在 `rawIds` |
 | `albumObj` | `{id?: string, name: string}` | 可选 | (*极客增强*) 结构化的专辑对象，包含专辑唯一 ID |
 | `durationMs` | `number` | 可选 | 歌曲音频总时长（毫秒，如 `269000` 表示 4分29秒） |
 | `coverUrl` | `string` | 可选 | 单曲或所属专辑的高清封面图片直链 URL（第三方播放器或自动化脚本可直接请求展示单曲封面） |
@@ -89,9 +91,11 @@
       "index": 1,
       "id": "0039MnYb0qxYAc",
       "title": "晴天",
+      "artist": "周杰伦",
       "artists": ["周杰伦"],
       "artistList": [{"id": "0025NhlN2yWrP4", "name": "周杰伦"}],
       "album": "叶惠美",
+      "isrc": "TWUM72300001",
       "albumObj": {"id": "000J1p501A7I2d", "name": "叶惠美"},
       "durationMs": 269000,
       "coverUrl": "https://y.gtimg.cn/music/photo_new/T002R300x300M000000J1p501A7I2d.jpg",
@@ -108,6 +112,7 @@
       "index": 2,
       "id": "0027fM2M3wD4gS",
       "title": "说好不哭",
+      "artist": "周杰伦, 阿信",
       "artists": ["周杰伦", "阿信"],
       "artistList": [{"id": "0025NhlN2yWrP4", "name": "周杰伦"}, {"id": "000aHmbL2aPxVD", "name": "阿信"}],
       "album": "说好不哭",

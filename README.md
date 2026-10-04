@@ -144,15 +144,15 @@ https://playlistout.lengxiqwq.com/plugins/musicfree.js
 
 | 格式 | 适合的场景 |
 |---|---|
-| **Excel (.xlsx)** | 整理、归档与人工分析 |
-| **JSON** | 开发者、脚本、第三方应用和播放器接入 |
+| **Excel (.xlsx)** | 通用表格交换、FreeYourMusic / Soundiiz 等文件导入、整理归档；首个 `Tracks` Sheet 为干净的一歌一行结构 |
+| **JSON** | 开发者、脚本、第三方应用和播放器接入；保留完整结构化数据并直接暴露常用 `artist` / `isrc` 字段 |
 | **TXT** | 阅读、简单备份与文本处理 |
-| **CSV** | 表格软件和通用数据处理 |
-| **M3U8** | 本地播放器和媒体库 |
+| **CSV** | 通用歌单迁移与数据交换；使用 `title / artist / album / isrc` 等语言无关标准列名 |
+| **M3U8** | 本地播放器、媒体库以及支持 Extended M3U/M3U8 的迁移工具 |
 
 导出文件由浏览器本地生成，不需要把导出文件上传到服务器。
 
-如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。
+如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。
 
 ---
 
