@@ -42,6 +42,16 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
 
   const pollTimerRef = useRef<any>(null);
   const consecutiveErrorsRef = useRef<number>(0);
+  const pendingSuccessRef = useRef<boolean>(false);
+
+  const handleModalClose = () => {
+    const shouldNotifySuccess = pendingSuccessRef.current;
+    pendingSuccessRef.current = false;
+    onClose();
+    if (shouldNotifySuccess) {
+      onSuccess?.();
+    }
+  };
 
   const handleCopy = async (key: 'token' | 'userid', text: string) => {
     try {
@@ -97,6 +107,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   // Sync login status and validate session on open
   useEffect(() => {
     if (isOpen) {
+      pendingSuccessRef.current = false;
       const existing = getKugouAuth();
       if (existing) {
         runValidation();
@@ -107,7 +118,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
-          onClose();
+          handleModalClose();
         }
       };
       document.addEventListener('keydown', handleKeyDown);
@@ -206,8 +217,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               clearInterval(pollTimerRef.current);
               pollTimerRef.current = null;
             }
-            onSuccess?.();
-            onClose();
+            pendingSuccessRef.current = true;
           } else if (nextStatus === 'expired') {
             if (pollTimerRef.current) {
               clearInterval(pollTimerRef.current);
@@ -245,7 +255,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const modalContent = (
     <div
       className="modal-backdrop"
-      onClick={onClose}
+      onClick={handleModalClose}
       data-testid="kugou-auth-modal-backdrop"
       style={{
         position: 'fixed',
@@ -296,7 +306,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
         {/* Top-Right "✕" Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleModalClose}
           aria-label="关闭"
           data-testid="kugou-modal-close-btn"
           style={{
@@ -398,6 +408,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               <MarkerButton
                 variant="paper"
                 onClick={() => {
+                  pendingSuccessRef.current = false;
                   clearKugouAuth();
                   setProfile(null);
                   setProfileLoading(false);
@@ -407,7 +418,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               >
                 重新登录
               </MarkerButton>
-              <MarkerButton variant="paper" onClick={onClose}>
+              <MarkerButton variant="paper" onClick={handleModalClose}>
                 关闭
               </MarkerButton>
             </div>
@@ -504,20 +515,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                       ? t.kugouAuth.profileLoading
                       : profile?.nickname || t.kugouAuth.profileFallbackName}
                   </strong>
-                  <span
-                    className="font-sans"
-                    style={{
-                      padding: '0.12rem 0.45rem',
-                      borderRadius: '999px',
-                      backgroundColor: '#dcfce7',
-                      color: '#166534',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    ✓ {t.kugouAuth.profileConnected}
-                  </span>
                 </div>
 
                 {profile?.signature ? (
@@ -901,7 +898,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MarkerButton
               variant="paper"
-              onClick={onClose}
+              onClick={handleModalClose}
             >
               {t.kugouAuth.cancel}
             </MarkerButton>
