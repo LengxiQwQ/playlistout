@@ -2,7 +2,7 @@
  * PlaylistOut Official MusicFree Plugin
  * Version: 1.2.12
  * Author: LengxiQwQ
- * Built: 2026-10-03T20:05:07.558Z
+ * Built: 2026-10-04T07:03:57.450Z
  * Homepage: https://playlistout.lengxiqwq.com
  * Source: https://github.com/LengxiQwQ/playlistout
  */
