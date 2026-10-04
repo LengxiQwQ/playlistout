@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { kugouProvider } from './index';
 import { matchesKugouInput, extractKugouTarget } from './input';
-import { md5, signKugouLoginParams, signKugouGatewayParams } from './crypto';
+import { md5, signKugouLoginParams, signKugouGatewayParams, encryptKugouLiteRsaRaw } from './crypto';
 import { normalizeKugouTrack, normalizeKugouPlaylist } from './normalize';
 import { createKugouQrCode, checkKugouQrCode } from './auth';
+import { fetchKugouUserProfile } from './client';
 
 describe('Kugou Provider Unit Tests', () => {
   describe('Crypto & Signatures', () => {
@@ -34,6 +35,16 @@ describe('Kugou Provider Unit Tests', () => {
       };
       const sig = signKugouGatewayParams(params, '{"listid":"123"}');
       expect(sig).toMatch(/^[a-f0-9]{32}$/);
+    });
+
+    it('matches the raw RSA block expected by Kugou Lite user-center APIs', () => {
+      const encrypted = encryptKugouLiteRsaRaw({
+        token: 'test_token',
+        clienttime: 1700000000,
+      });
+      expect(encrypted).toBe(
+        '7a7a91b32326824eb0da551ebb49e0b857911556eb1a4a639b1d2d704c934f949ac134797894ab26a5c9f0a72e6b5628cd2a7b72af999a083112b361c7065c43f6c1d41c45632a3a6cdaf1542cb8c09796b424e6da2f95ed9cecd660e90d781e2211cd4f62ebd30b4efe276b4602b6c7d838abba40181a79d41445b5b6aabe4f',
+      );
     });
   });
 
@@ -308,6 +319,71 @@ describe('Kugou Provider Unit Tests', () => {
       expect(res3.status).toBe('success');
       expect(res3.token).toBe('mock_token_abc');
       expect(res3.userid).toBe('1425711902');
+    });
+  });
+
+  describe('Authenticated User Profile', () => {
+    const originalFetch = globalThis.fetch;
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('fetches and normalizes nickname, avatar, signature and user id', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          data: {
+            nickname: '冷汐OωO',
+            photo: '20261004/avatar.jpg',
+            signature: '把喜欢的歌带走',
+          },
+        }),
+      } as Response);
+      globalThis.fetch = fetchMock;
+
+      const profile = await fetchKugouUserProfile('test_token', '1425711902');
+
+      expect(profile).toEqual({
+        userId: '1425711902',
+        nickname: '冷汐OωO',
+        avatarUrl: 'https://c1.kgimg.com/v2/kugouicon/20261004/avatar.jpg',
+        signature: '把喜欢的歌带走',
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain('https://gateway.kugou.com/v3/get_my_info?');
+      expect(url).toContain('appid=3116');
+      expect(url).toContain('userid=1425711902');
+      expect((init.headers as Record<string, string>)['x-router']).toBe('usercenter.kugou.com');
+
+      const body = JSON.parse(String(init.body));
+      expect(body.userid).toBe(1425711902);
+      expect(body.usertype).toBe(1);
+      expect(body.p).toMatch(/^[A-F0-9]{256}$/);
+    });
+
+    it('accepts profile data nested under data.info and normalizes http avatar URLs', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          data: {
+            info: {
+              nickname: 'Nested User',
+              pic: 'http://img.example.com/{size}/avatar.jpg',
+              memo: '签名来自 info',
+            },
+          },
+        }),
+      } as Response);
+
+      const profile = await fetchKugouUserProfile('test_token', '90001');
+      expect(profile.nickname).toBe('Nested User');
+      expect(profile.avatarUrl).toBe('https://img.example.com/240/avatar.jpg');
+      expect(profile.signature).toBe('签名来自 info');
     });
   });
 
