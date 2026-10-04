@@ -222,6 +222,35 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
         </div>
       </div>
 
+      {/* Small journal decoration kept inside the stats content column. */}
+      <div
+        className="stats-chill-vibes-row"
+        aria-hidden="true"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: '1.9rem',
+          paddingLeft: 'clamp(0.5rem, 2vw, 1.25rem)',
+          marginTop: '-1.2rem',
+          marginBottom: '0.45rem',
+          pointerEvents: 'none',
+        }}
+      >
+        <Sticker
+          as="div"
+          color="yellow"
+          rotateDeg={-12}
+          style={{
+            opacity: 0.8,
+            fontSize: '0.85rem',
+            padding: '0.2rem 0.5rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          chill vibes
+        </Sticker>
+      </div>
+
       {/* 3 Main Stationery Notes */}
       <div
         className="stats-main-grid"
@@ -231,34 +260,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           gap: '2.5rem',
           alignItems: 'stretch',
           marginBottom: '2.5rem',
-          position: 'relative',
         }}
       >
-        <div
-          className="stats-chill-vibes"
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: '1.25rem',
-            top: '-2.5rem',
-            pointerEvents: 'none',
-            zIndex: 2,
-          }}
-        >
-          <Sticker
-            as="div"
-            color="yellow"
-            rotateDeg={-12}
-            style={{
-              opacity: 0.8,
-              fontSize: '0.85rem',
-              padding: '0.2rem 0.5rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            chill vibes
-          </Sticker>
-        </div>
         {/* Card 1: Today's Note (Warm Butter Yellow Paper) */}
         <Paper
           color="yellow"
