@@ -59,6 +59,38 @@ export function formatArtists(artists?: string[]): string {
   return artists.join(', ');
 }
 
+function getTrackIsrc(rawIds?: Record<string, string | number>): string {
+  if (!rawIds) return '';
+  for (const [key, value] of Object.entries(rawIds)) {
+    if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
+      return value.trim().toUpperCase();
+    }
+  }
+  return '';
+}
+
+function getTrackDurationSeconds(durationMs?: number): string {
+  if (!durationMs || durationMs <= 0) return '';
+  return String(Math.round(durationMs / 1000));
+}
+
+function getTrackTypeCode(track: { isOriginalSound?: boolean; statusText?: string }): string {
+  if (track.isOriginalSound) return 'original_sound';
+  if (track.statusText === '视频') return 'video';
+  return 'track';
+}
+
+function getTrackStatusCode(track: {
+  status?: string;
+  isAvailable?: boolean;
+  isVip?: boolean;
+}): string {
+  if (track.status) return track.status;
+  if (track.isAvailable === false) return 'unplayable';
+  if (track.isVip) return 'vip';
+  return 'playable';
+}
+
 export function cleanSingleLine(str: string): string {
   return (str || '').replace(/[\r\n]+/g, ' ').trim();
 }
@@ -244,20 +276,23 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
     `# 歌单链接: ${sourceUrl}`,
   ].filter((line): line is string => line !== null);
 
-  const header = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态', '歌曲链接'];
+  // Keep the first columns intentionally aligned with common playlist migration/import tools.
+  // Extra Playlist Out fields follow afterwards and can be safely ignored by importers.
+  const header = ['title', 'artist', 'album', 'isrc', 'duration', 'url', 'index', 'type', 'vip', 'status'];
   const rows: string[][] = [header];
 
   for (const track of playlist.tracks) {
     rows.push([
-      String(track.index),
       track.title || '',
       formatArtists(track.artists),
       track.album || '',
-      formatDuration(track.durationMs),
-      getTrackTypeText(track),
-      getTrackIsVip(track) ? 'VIP' : '—',
-      getTrackStatusText(track),
+      getTrackIsrc(track.rawIds),
+      getTrackDurationSeconds(track.durationMs),
       track.sourceUrl || '',
+      String(track.index),
+      getTrackTypeCode(track),
+      getTrackIsVip(track) ? 'true' : 'false',
+      getTrackStatusCode(track),
     ]);
   }
 
@@ -275,70 +310,78 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
 }
 
 /**
- * Generates XLSX binary buffer using SheetJS.
- * Metadata card at top (Creation time first, Export time second), blank line, then song data table.
+ * Generates an interoperability-oriented XLSX workbook.
+ * The first sheet is a clean one-track-per-row table for migration/import tools.
+ * Playlist metadata is kept on a separate second sheet so human-readable context is preserved
+ * without confusing importers that expect headers on row 1.
  * Formula injection protected.
  */
 export function generateXLSX(playlist: Playlist): Uint8Array {
   const isPartial = playlist.tracks.length < playlist.trackCount;
-  const createdStr = formatTimestamp(playlist.createTime) || '未知';
+  const createdStr = formatTimestamp(playlist.createTime) || '';
   const exportedStr = formatDateTime();
-  const updatedStr = formatTimestamp(playlist.updateTime) || '-';
+  const updatedStr = formatTimestamp(playlist.updateTime) || '';
   const durationStr = formatTotalDuration(playlist.tracks);
   const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
-  const countLabel = isPartial
-    ? `已解析 ${playlist.tracks.length} / ${playlist.trackCount} 首${durationStr ? ` (已解析时长: ${durationStr})` : ''}`
-    : `${playlist.trackCount} 首${durationStr ? ` (${durationStr})` : ''}`;
-
-  const metaRows: (string | number)[][] = [
-    ['歌单名称', playlist.name, '', ''],
-    ['创建时间', createdStr, '导出时间', exportedStr],
-    ['导出工具', 'Playlist Out', '平台网址', 'https://playlistout.lengxiqwq.com'],
-    ['歌单作者', playlist.creator || '未知', '歌曲总数', countLabel],
-    ['最后更新', updatedStr, '总播放量', playlist.playCount ? `${playlist.playCount.toLocaleString()} 次` : '-'],
-    ['风格标签', (playlist.tags || []).join(', ') || '-', '歌单链接', sourceUrl],
-  ];
-
-  if (playlist.description) {
-    metaRows.push(['歌单简介', cleanSingleLine(playlist.description), '', '']);
-  }
-
-  // Blank separator row
-  metaRows.push([]);
-
-  const tableHeader = ['序号', '歌曲标题', '歌手', '专辑', '时长', '类型', 'VIP', '歌曲状态', '歌曲链接'];
-  const songRows = playlist.tracks.map((track) => [
-    track.index,
+  const trackHeader = ['title', 'artist', 'album', 'isrc', 'duration', 'url', 'index', 'type', 'vip', 'status'];
+  const trackRows = playlist.tracks.map((track) => [
     sanitizeSpreadsheetCell(track.title || ''),
     sanitizeSpreadsheetCell(formatArtists(track.artists)),
     sanitizeSpreadsheetCell(track.album || ''),
-    formatDuration(track.durationMs),
-    getTrackTypeText(track),
-    getTrackIsVip(track) ? 'VIP' : '—',
-    sanitizeSpreadsheetCell(getTrackStatusText(track)),
-    track.sourceUrl || '',
+    sanitizeSpreadsheetCell(getTrackIsrc(track.rawIds)),
+    getTrackDurationSeconds(track.durationMs),
+    sanitizeSpreadsheetCell(track.sourceUrl || ''),
+    track.index,
+    getTrackTypeCode(track),
+    getTrackIsVip(track),
+    getTrackStatusCode(track),
   ]);
 
-  const allRows = [...metaRows, tableHeader, ...songRows];
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(allRows);
-
-  // Set reasonable column widths
-  ws['!cols'] = [
-    { wch: 10 }, // 序号 / 属性名
-    { wch: 32 }, // 歌曲标题 / 属性值
-    { wch: 22 }, // 歌手 / 辅助属性名
-    { wch: 25 }, // 专辑 / 辅助属性值
-    { wch: 10 }, // 时长
-    { wch: 12 }, // 类型
-    { wch: 8 },  // VIP
-    { wch: 14 }, // 歌曲状态
-    { wch: 45 }, // 歌曲链接
+  const metadataRows: (string | number | boolean)[][] = [
+    ['field', 'value'],
+    ['name', sanitizeSpreadsheetCell(playlist.name)],
+    ['creator', sanitizeSpreadsheetCell(playlist.creator || '')],
+    ['platform', playlist.platform],
+    ['id', sanitizeSpreadsheetCell(playlist.id)],
+    ['sourceUrl', sanitizeSpreadsheetCell(sourceUrl)],
+    ['trackCount', playlist.trackCount],
+    ['loadedTrackCount', playlist.tracks.length],
+    ['isPartial', isPartial],
+    ['createTime', createdStr],
+    ['updateTime', updatedStr],
+    ['exportedAt', exportedStr],
+    ['totalDuration', durationStr],
+    ['playCount', playlist.playCount || ''],
+    ['tags', sanitizeSpreadsheetCell((playlist.tags || []).join(', '))],
+    ['description', sanitizeSpreadsheetCell(cleanSingleLine(playlist.description || ''))],
+    ['generator', 'Playlist Out'],
+    ['generatorUrl', 'https://playlistout.lengxiqwq.com'],
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, '歌单歌曲');
+  const wb = XLSX.utils.book_new();
+
+  const tracksWs = XLSX.utils.aoa_to_sheet([trackHeader, ...trackRows]);
+  tracksWs['!cols'] = [
+    { wch: 34 }, // title
+    { wch: 26 }, // artist
+    { wch: 28 }, // album
+    { wch: 16 }, // isrc
+    { wch: 10 }, // duration (seconds)
+    { wch: 48 }, // url
+    { wch: 8 },  // index
+    { wch: 16 }, // type
+    { wch: 8 },  // vip
+    { wch: 14 }, // status
+  ];
+
+  const infoWs = XLSX.utils.aoa_to_sheet(metadataRows);
+  infoWs['!cols'] = [{ wch: 20 }, { wch: 72 }];
+
+  // Keep Tracks first: many importers inspect only the first worksheet.
+  XLSX.utils.book_append_sheet(wb, tracksWs, 'Tracks');
+  XLSX.utils.book_append_sheet(wb, infoWs, 'Playlist Info');
+
   const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
   return new Uint8Array(buffer);
 }
@@ -383,9 +426,11 @@ export function generateJSON(playlist: Playlist): string {
       index: t.index,
       id: t.id,
       title: t.title,
+      artist: formatArtists(t.artists),
       artists: t.artists,
       artistList: t.artistList,
       album: t.album || '',
+      isrc: getTrackIsrc(t.rawIds) || undefined,
       albumObj: t.albumObj,
       durationMs: t.durationMs,
       coverUrl: t.coverUrl || '',
