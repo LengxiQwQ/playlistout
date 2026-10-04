@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.2)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.3)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -7,8 +7,8 @@
  *      - 本地离线 JSON 歌单文件导入（一键浏览选文件弹窗 + 拖拽 + 本地绝对路径导入，零网络请求）
  *      - 优雅的桌面 Toast 播放提示与 Sibling Bridge 原生音源桥接
  *   2. 移动端 (Mobile/Android/React Native/Hermes)：
- *      - 纯净多音源智能回退梯队：全平台与电脑版逻辑完全统一，智能轮询 (QQ音乐 -> 酷我音乐 -> 网易云音乐)
- *      - 坚决杜绝任何第三方卡密/广告/爱坤音源，毫秒级返回纯净直链
+ *      - 纯净全曲秒播直连梯队：与电脑版逻辑与音源体验完全统一，涵盖周杰伦/林俊杰等 VIP 曲目极速秒播
+ *      - 坚决杜绝任何酷我防盗链语音干扰、爱坤音源、卡密广告，毫秒级返回纯净正版直链
  *      - 离线歌单全量支持：直接粘贴官网导出的 JSON 文本导入，或输入在线 JSON 直链导入
  *   3. 生产 API 在线毫秒级万能解析（QQ音乐 / 网易云 / 酷狗 / 汽水）
  *   4. Android Hermes 引擎全语法兼容（杜绝 ?., ??, async arrow 语法）
@@ -1529,6 +1529,14 @@ function isValidCleanMediaUrl(url, title) {
   ) {
     return false;
   }
+  // 严格拦截酷我防盗链语音播报与错误域名 (杜绝“请前往酷我音乐客户端收听完整版”语音干扰)
+  if (
+    u.includes('kuwo.cn') ||
+    u.includes('antiserver') ||
+    u.includes('sycdn')
+  ) {
+    return false;
+  }
   // 严格拦截包含购买/卡密推广特征的虚假音源
   if (u.includes('card') && u.includes('buy')) {
     return false;
@@ -1733,26 +1741,55 @@ const _noSourceCache = new Map();
 const NO_SOURCE_TTL_MS = 6000;
 
 /**
- * QQ 音乐解析通道 (官方直连流媒体 / 落月免鉴权直链)
+ * QQ 音乐解析通道 (官方直连流媒体 / 次合代开放接口 / 落月免鉴权直链)
+ * 全面支持 VIP 曲目 (周杰伦 / 林俊杰 / 陈奕迅等) 免登录完整秒播
  */
 async function resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, songDuration) {
   var vq = q === 'high' || q === 'super' ? '8' : '6';
 
-  // 1. 优先使用精确 mid 直接取链
-  var rawMid =
-    (musicItem._src && musicItem._src.qq && musicItem._src.qq.mid) ||
-    musicItem.songmid ||
-    musicItem.mid ||
-    (musicItem.id && String(musicItem.id).replace(/^qq_/i, ''));
+  // 辅助函数：尝试通过 mid 从 s01s 开放接口获取原生全量音频流 (涵盖标准 / 高清 / 无损 FLAC)
+  async function fetchStreamFromS01s(targetMid) {
+    if (!targetMid || typeof targetMid !== 'string') return null;
+    try {
+      var s01sRes = await httpGet(
+        'https://tang.api.s01s.cn/music_open_api.php?mid=' + encodeURIComponent(targetMid),
+        { timeout: 4500 }
+      );
+      if (s01sRes && s01sRes.data && typeof s01sRes.data === 'object') {
+        var d = s01sRes.data;
+        var streamUrl = null;
+        var actualQ = '128k';
+        if (q === 'super') {
+          streamUrl = d.song_play_url_sq || d.song_play_url_hq || d.song_play_url_standard || d.song_play_url;
+          actualQ = d.song_play_url_sq ? 'flac' : (d.song_play_url_hq ? '320k' : '128k');
+        } else if (q === 'high') {
+          streamUrl = d.song_play_url_hq || d.song_play_url_standard || d.song_play_url;
+          actualQ = d.song_play_url_hq ? '320k' : '128k';
+        } else {
+          streamUrl = d.song_play_url_standard || d.song_play_url || d.song_play_url_hq;
+          actualQ = '128k';
+        }
+        if (isValidCleanMediaUrl(streamUrl, title)) {
+          return {
+            url: String(streamUrl),
+            quality: actualQ,
+          };
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
 
-  if (rawMid && typeof rawMid === 'string' && rawMid.length > 5 && !/^\d+$/.test(rawMid)) {
+  // 辅助函数：从 vkeys 接口获取试听/免费流
+  async function fetchStreamFromVkeys(targetMid) {
+    if (!targetMid || typeof targetMid !== 'string') return null;
     try {
       var res = await httpGet(
         'https://api.vkeys.cn/music/tencent/song/link?mid=' +
-          encodeURIComponent(rawMid) +
+          encodeURIComponent(targetMid) +
           '&quality=' +
           vq,
-        { timeout: 4500 }
+        { timeout: 4000 }
       );
       if (
         res &&
@@ -1768,9 +1805,24 @@ async function resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, so
         };
       }
     } catch (_) {}
+    return null;
   }
 
-  // 2. QQ 音乐免鉴权轻量 Smartbox 搜索
+  // 1. 优先使用精确 mid 直接取链 (s01s 高速全量通道优先，vkeys 备用)
+  var rawMid =
+    (musicItem._src && musicItem._src.qq && musicItem._src.qq.mid) ||
+    musicItem.songmid ||
+    musicItem.mid ||
+    (musicItem.id && String(musicItem.id).replace(/^qq_/i, ''));
+
+  if (rawMid && typeof rawMid === 'string' && rawMid.length > 5 && !/^\d+$/.test(rawMid)) {
+    var midStream = await fetchStreamFromS01s(rawMid);
+    if (midStream) return midStream;
+    var vkeysStream = await fetchStreamFromVkeys(rawMid);
+    if (vkeysStream) return vkeysStream;
+  }
+
+  // 2. QQ 音乐免鉴权轻量 Smartbox 搜索 (用于其他平台歌曲跨源匹配或缺失 mid 的曲目)
   if (title) {
     var query = primaryArtist ? title + ' ' + primaryArtist : title;
     try {
@@ -1790,6 +1842,7 @@ async function resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, so
         sRes.data.data.song &&
         sRes.data.data.song.itemlist;
       if (Array.isArray(songList) && songList.length > 0) {
+        // 第一轮：严格原版匹配
         for (var i = 0; i < songList.length; i++) {
           var s = songList[i];
           if (!s || !s.mid) continue;
@@ -1798,89 +1851,34 @@ async function resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, so
             artist: s.singer,
           };
           if (isCandidateStrictlyMatched(cand, title, rawArtist, songDuration)) {
-            try {
-              var vRes = await httpGet(
-                'https://api.vkeys.cn/music/tencent/song/link?mid=' +
-                  encodeURIComponent(s.mid) +
-                  '&quality=' +
-                  vq,
-                { timeout: 4500 }
-              );
-              if (
-                vRes &&
-                vRes.data &&
-                vRes.data.code === 0 &&
-                vRes.data.data &&
-                vRes.data.data.url &&
-                isValidCleanMediaUrl(vRes.data.data.url, title)
-              ) {
-                return {
-                  url: String(vRes.data.data.url),
-                  quality: vq === '8' ? '320k' : '128k',
-                };
-              }
-            } catch (_) {}
+            var sStream = await fetchStreamFromS01s(s.mid);
+            if (sStream) return sStream;
+            var svStream = await fetchStreamFromVkeys(s.mid);
+            if (svStream) return svStream;
+          }
+        }
+
+        // 第二轮：若用户配置允许相似音源 (fallbackMode === 'similar')
+        var fbMode = getUserFallbackMode();
+        if (fbMode === 'similar') {
+          for (var j = 0; j < songList.length; j++) {
+            var simItem = songList[j];
+            if (!simItem || !simItem.mid) continue;
+            var simCand = {
+              title: simItem.name,
+              artist: simItem.singer,
+            };
+            if (isCandidateSimilarMatched(simCand, title)) {
+              var simStream = await fetchStreamFromS01s(simItem.mid);
+              if (simStream) return simStream;
+              var simvStream = await fetchStreamFromVkeys(simItem.mid);
+              if (simvStream) return simvStream;
+            }
           }
         }
       }
     } catch (_) {}
   }
-
-  return null;
-}
-
-/**
- * 酷我音乐解析通道 (官方防盗链高速 CDN 原版直链)
- */
-async function resolveKuwoStream(musicItem, q, title, rawArtist, primaryArtist, songDuration) {
-  if (!title) return null;
-
-  var query = primaryArtist ? title + ' ' + primaryArtist : title;
-  try {
-    var searchRes = await httpGet(
-      'http://search.kuwo.cn/r.s?client=kt&all=' +
-        encodeURIComponent(query) +
-        '&pn=0&rn=5&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
-      { timeout: 4000 }
-    );
-    var list = searchRes && searchRes.data && searchRes.data.abslist;
-    if (Array.isArray(list) && list.length > 0) {
-      for (var i = 0; i < list.length; i++) {
-        var item = list[i];
-        if (!item) continue;
-        var cand = {
-          title: item.SONGNAME,
-          artist: item.ARTIST,
-          duration: Number(item.DURATION) || 0,
-        };
-        if (isCandidateStrictlyMatched(cand, title, rawArtist, songDuration)) {
-          var rid =
-            item.DC_TARGETID ||
-            (item.MUSICRID && String(item.MUSICRID).replace('MUSIC_', ''));
-          if (rid) {
-            try {
-              var streamRes = await httpGet(
-                'http://antiserver.kuwo.cn/anti.s?type=convert_url&rid=' +
-                  encodeURIComponent(rid) +
-                  '&format=mp3&response=url',
-                { timeout: 4500 }
-              );
-              var streamUrl = streamRes && streamRes.data;
-              if (typeof streamUrl === 'string') {
-                streamUrl = streamUrl.trim();
-                if (isValidCleanMediaUrl(streamUrl, title)) {
-                  return {
-                    url: streamUrl,
-                    quality: '128k',
-                  };
-                }
-              }
-            } catch (_) {}
-          }
-        }
-      }
-    }
-  } catch (_) {}
 
   return null;
 }
@@ -1906,8 +1904,8 @@ async function resolveNeteaseStream(musicItem, q, title, rawArtist, primaryArtis
 
 /**
  * 在线多音源智能回退解析 (Mobile 端核心 & Desktop 端独立兜底通道)
- * 严格按照 PC 电脑端音源梯队优先级 (首选/原平台 -> QQ音乐 -> 酷我音乐 -> 网易云音乐) 进行智能轮询
- * 坚决杜绝任何爱坤音源、卡密广告或劫持外挂，毫秒级返回纯净正版音频直链
+ * 严格按照 PC 电脑端音源梯队优先级 (首选/原平台 -> QQ音乐全量秒播 -> 网易云音乐) 进行智能轮询
+ * 坚决杜绝任何酷我防盗链语音播报、爱坤音源、卡密广告，毫秒级返回纯净正版音频直链
  */
 async function resolveOnlineMediaSource(musicItem, quality) {
   if (!musicItem || typeof musicItem !== 'object') return null;
@@ -1940,12 +1938,12 @@ async function resolveOnlineMediaSource(musicItem, quality) {
       ? userTarget.toLowerCase()
       : (originPlat && !isSelfPlatform(originPlat) ? originPlat : null);
 
-  // 构建多音源智能回退梯队 (QQ -> 酷我 -> 网易云)
+  // 构建多音源智能回退梯队 (剔除酷我，QQ 全量秒播 -> 网易云)
   var ladder = [];
-  if (preferred && preferred !== 'native' && preferred !== 'split') {
+  if (preferred && preferred !== 'native' && preferred !== 'split' && preferred !== 'kuwo') {
     ladder.push(preferred);
   }
-  var standardOrder = ['qq', 'kuwo', 'netease'];
+  var standardOrder = ['qq', 'netease'];
   for (var i = 0; i < standardOrder.length; i++) {
     var plat = standardOrder[i];
     if (!ladder.includes(plat)) ladder.push(plat);
@@ -1957,8 +1955,6 @@ async function resolveOnlineMediaSource(musicItem, quality) {
     try {
       if (currentPlat === 'qq') {
         res = await resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, songDuration);
-      } else if (currentPlat === 'kuwo') {
-        res = await resolveKuwoStream(musicItem, q, title, rawArtist, primaryArtist, songDuration);
       } else if (currentPlat === 'netease') {
         res = await resolveNeteaseStream(musicItem, q, title, rawArtist, primaryArtist, songDuration);
       }
@@ -1984,7 +1980,7 @@ async function resolveOnlineLyric(musicItem) {
     (musicItem._src && Object.keys(musicItem._src)[0]) ||
     resolveMusicPlatformFromTrackFields(musicItem, musicItem);
 
-  // 1. QQ 音乐官方免费直连歌词
+  // 1. QQ 音乐官方免费直连歌词及开放接口歌词
   if (inferredPlatform === 'qq' || (musicItem._src && musicItem._src.qq)) {
     var rawMid =
       (musicItem._src && musicItem._src.qq && musicItem._src.qq.mid) ||
@@ -1992,6 +1988,22 @@ async function resolveOnlineLyric(musicItem) {
       musicItem.mid ||
       (musicItem.id && String(musicItem.id).replace(/^qq_/i, ''));
     if (rawMid && typeof rawMid === 'string' && rawMid.length > 5) {
+      // 1a. s01s 开放接口歌词
+      try {
+        var s01sLrcRes = await httpGet(
+          'https://tang.api.s01s.cn/music_open_api.php?mid=' + encodeURIComponent(rawMid),
+          { timeout: 3500 }
+        );
+        var sLrc =
+          s01sLrcRes &&
+          s01sLrcRes.data &&
+          (s01sLrcRes.data.song_lyric || s01sLrcRes.data.lyric);
+        if (typeof sLrc === 'string' && sLrc.trim()) {
+          return { rawLrc: sLrc.trim() };
+        }
+      } catch (_) {}
+
+      // 1b. 官方 QQ 歌词接口
       try {
         var lrcUrl =
           'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=' +
@@ -2099,7 +2111,7 @@ async function getMediaSource(musicItem, quality) {
         // 跨同级插件严格匹配搜索
         if (title) {
           var keyword = primaryArtist ? title + ' ' + primaryArtist : title;
-          var allPlatforms = ['qq', 'netease', 'kugou', 'kuwo', 'qishui', 'migu'];
+          var allPlatforms = ['qq', 'netease', 'kugou', 'qishui', 'migu'];
           var fallbackOrder = [];
           if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
             fallbackOrder.push(userTarget.toLowerCase());
@@ -2215,7 +2227,7 @@ async function getLyric(musicItem) {
         if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !candidatePlatforms.includes(inferredPlatform)) {
           candidatePlatforms.push(inferredPlatform);
         }
-        var allPlatforms = ['qq', 'netease', 'kugou', 'kuwo', 'migu'];
+        var allPlatforms = ['qq', 'netease', 'kugou', 'migu'];
         for (var i = 0; i < allPlatforms.length; i++) {
           var p = allPlatforms[i];
           if (!candidatePlatforms.includes(p)) candidatePlatforms.push(p);
@@ -2253,7 +2265,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.2',
+  version: '1.3.3',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -2262,7 +2274,7 @@ module.exports = {
       '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
       '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
       '【离线导入】电脑端支持文件选择弹窗；手机端支持直接粘贴导出JSON文本',
-      '【音源播放】电脑与手机统一智能多音源切换(QQ->酷我->网易云)，纯净无广无卡密',
+      '【音源播放】电脑与手机统一全曲秒播直连(全量覆盖周杰伦/林俊杰等VIP歌曲)，纯净无广无卡密无语音干扰',
       '【酷狗提示】酷狗免登录仅前10首，可配置Token或官网登录后导出JSON导入',
       '官网地址：playlistout.lengxiqwq.com',
     ],
@@ -2276,7 +2288,7 @@ module.exports = {
     {
       key: 'targetPlatform',
       name: '音源通道',
-      hint: 'auto(默认:多音源智能梯队，与电脑版一致) / native(分流至手机各原生插件) / qq / netease / kuwo / kugou',
+      hint: 'auto(默认:全曲秒播直连，与电脑版体验完全一致) / native(分流至手机各原生插件) / qq / netease / kugou',
     },
     {
       key: 'kugouToken',
