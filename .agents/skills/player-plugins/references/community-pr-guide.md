@@ -1,26 +1,6 @@
-# Community Aggregator PR Submission Guide
+# Community PR Submission Template
 
-This reference outlines the required format, tone, and verification steps when proposing or submitting PRs to external music player plugin repositories (e.g. `qwerwhr/musicfree-plugins`, `meerl/MusicFreePlugins`, `Huibq/keep-alive`).
-
-## Core Principles
-
-1. **Be Honest and Factual**:
-   - Focus on what the plugin actually does: universal playlist parsing and cross-platform playlist migration into the player.
-   - Do NOT boast with exaggerated marketing terms, sensationalist hype, or flame emojis.
-   - NEVER make claims like "零版权风险" (Zero Copyright Risk). Developers know that playlist parsing interacts with public streaming platforms.
-2. **Highlight Genuine Technical Strengths**:
-   - **酷狗音乐 (Kugou)**: 攻克了免登录解析公开歌单的技术壁垒，解决了酷狗音乐歌单抓取通常需要登录和鉴权的痛点。
-   - **网易云音乐 (NetEase)**: 支持免登录完整分页提取超过 1000+ 首超大歌单。
-   - **QQ音乐 & 汽水音乐 (Qishui)**: 支持官方短链识别、APP 分享口令自动清洗与标准音轨提取。
-   - **双模解析**: 支持在线 URL 解析，以及离线标准 PlaylistOut JSON 数据源直接转换为播放列表。
-3. **Mobile Clipboard Invariant**:
-   - Mobile React Native environments have a clipboard limit of ~2000 characters. Large playlist JSONs cannot be reliably pasted on mobile devices.
-   - Recommend online URL parsing or `plugins.json` subscription for mobile devices.
-   - Reserve direct JSON string pasting guidance strictly for Desktop environments.
-
----
-
-## PR Description Template (Bilingual / Chinese)
+Use this template when submitting PRs to aggregator repositories (e.g. `qwerwhr/musicfree-plugins`, `meerl/MusicFreePlugins`):
 
 ```markdown
 ### 插件名称
