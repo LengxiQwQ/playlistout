@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.5)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.6)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -228,7 +228,7 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v130';
+  var SCRIPT_VER = 'v136';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
@@ -333,7 +333,7 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       }
 
       // 修正预输入占位符文字：用中文品牌名「把你的歌单带走」
-      var targetPlaceholder = '粘贴歌单链接或官网复制的 JSON，用「把你的歌单带走」解析';
+      var targetPlaceholder = '粘贴歌单链接或Json文本（官网获取）';
       if (placeholder !== targetPlaceholder) {
         textInput.setAttribute('placeholder', targetPlaceholder);
       }
@@ -1267,6 +1267,68 @@ function resolveLocalPath(inputPath) {
 }
 
 /**
+ * 判断输入是否为触发打开官网的指令
+ */
+function isOfficialWebsiteTrigger(str) {
+  if (!str || typeof str !== 'string') return false;
+  var s = str.trim().toLowerCase();
+  return (
+    s === '官网' ||
+    s === '去官网' ||
+    s === '打开官网' ||
+    s === 'gw' ||
+    s === 'go' ||
+    s === 'http://playlistout.lengxiqwq.com' ||
+    s === 'http://playlistout.lengxiqwq.com/' ||
+    s === 'https://playlistout.lengxiqwq.com' ||
+    s === 'https://playlistout.lengxiqwq.com/' ||
+    s === 'playlistout.lengxiqwq.com'
+  );
+}
+
+/**
+ * 尝试在系统默认浏览器中打开 PlaylistOut 官方网站
+ */
+function tryOpenOfficialWebsite() {
+  var url = 'https://playlistout.lengxiqwq.com';
+  // 1. Electron 桌面环境
+  try {
+    if (isHostElectron() && _cachedElectron && _cachedElectron.shell) {
+      if (typeof _cachedElectron.shell.openExternal === 'function') {
+        _cachedElectron.shell.openExternal(url);
+        return true;
+      }
+    }
+  } catch (_) {}
+
+  // 2. React Native / Mobile Android 环境尝试调用 Linking
+  try {
+    var g = typeof globalThis !== 'undefined' ? globalThis : (typeof global !== 'undefined' ? global : null);
+    if (g) {
+      var nm = g.nativeModuleProxy || (g.__fbBatchedBridge && g.__fbBatchedBridge.NativeModules);
+      if (nm && nm.LinkingManager && typeof nm.LinkingManager.openURL === 'function') {
+        nm.LinkingManager.openURL(url);
+        return true;
+      }
+      if (nm && nm.IntentAndroid && typeof nm.IntentAndroid.openURL === 'function') {
+        nm.IntentAndroid.openURL(url);
+        return true;
+      }
+    }
+  } catch (_) {}
+
+  // 3. 浏览器环境 window.open
+  try {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      window.open(url, '_blank');
+      return true;
+    }
+  } catch (_) {}
+
+  return false;
+}
+
+/**
  * 导入歌单 (支持：1. 浏览按钮弹窗选本地 JSON 文件；2. 直接输入本地 .json 路径；3. 在线歌单链接/分享文案解析)
  * @param {string} urlLike 歌单链接、分享文本、浏览触发指令或本地 .json 文件路径
  * @returns {Promise<Array<object>>} IMusicItem[] 歌曲列表
@@ -1282,6 +1344,12 @@ async function importMusicSheet(urlLike) {
   const trimmed = urlLike.trim();
   if (!trimmed) {
     throw new Error('输入内容不能为空');
+  }
+
+  // 0. 官网跳转指令支持 (用户在输入框输入 官网 / gw / 官网网址 等，尝试打开浏览器)
+  if (isOfficialWebsiteTrigger(trimmed)) {
+    tryOpenOfficialWebsite();
+    throw new Error('已尝试为您在浏览器中打开官网 (https://playlistout.lengxiqwq.com)，如未弹出请手动访问');
   }
 
   // 1. 直接粘贴 JSON 文本支持（移动端与跨端核心：用户从官网导出歌单后复制完整 JSON 字符串直接粘贴导入）
@@ -2264,18 +2332,33 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.5',
+  version: '1.3.6',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
+  description: [
+    '## 把你的歌单带走 (PlaylistOut) 官方插件',
+    '',
+    '支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等主流平台歌单在线解析与导入。',
+    '',
+    '### 🌐 官方网站（点击可直接在浏览器打开）',
+    '- [👉 点击一键前往官网解析 (playlistout.lengxiqwq.com)](https://playlistout.lengxiqwq.com)',
+    '',
+    '### 📱 手机端导入歌单指南',
+    '1. 在官网 (playlistout.lengxiqwq.com) 解析歌单，点击「复制 JSON (MusicFree 导入)」。',
+    '2. 打开 MusicFree「导入歌单」直接粘贴完整 JSON 文本即可全量导入。',
+    '3. 支持在「导入歌单」输入框中输入「官网」并点击确定，自动尝试唤起浏览器打开官网。',
+  ].join('\n'),
   hints: {
     importMusicSheet: [
+      '【输入指南】粘贴歌单链接或Json文本（官网获取）',
+      '【一键去官网】输入「官网」点确定，或在「插件设置-?」直接点击跳转',
+      '【酷狗全量导入】酷狗完整歌单请在官网扫码解析后点「复制 JSON」直接粘贴',
       '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
       '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
-      '【酷狗全量导入】酷狗完整歌单请在官网 (playlistout.lengxiqwq.com) 扫码解析后点击「复制 JSON」，回到此处直接粘贴即可全量导入！',
       '【离线导入】电脑端支持文件选择弹窗；电脑与手机均支持直接粘贴官网复制的完整 JSON 文本',
       '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致，纯净无广无语音干扰',
-      '官网地址：playlistout.lengxiqwq.com',
+      '官网地址：https://playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
@@ -2305,4 +2388,6 @@ module.exports = {
   getMediaSource,
   getLyric,
   _getKugouCredentials: getKugouCredentials,
+  _isOfficialWebsiteTrigger: isOfficialWebsiteTrigger,
+  _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
 };
