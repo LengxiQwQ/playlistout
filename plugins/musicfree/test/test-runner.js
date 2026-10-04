@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.2.12)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.0)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.2.12', 'Version must be 1.2.12');
+    assert.strictEqual(plugin.version, '1.3.0', 'Version must be 1.3.0');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -75,20 +75,24 @@ async function runAllTests() {
     assert(Array.isArray(plugin.hints?.importMusicSheet), 'hints.importMusicSheet must be an array');
     assert(plugin.hints.importMusicSheet.length >= 2, 'hints must provide concise user guidance');
     assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('支持平台')),
-      'hints must list supported platforms'
+      plugin.hints.importMusicSheet.some((h) => h.includes('双模通用')),
+      'hints must highlight dual-mode compatibility'
     );
     assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗限制')),
+      plugin.hints.importMusicSheet.some((h) => h.includes('在线解析')),
+      'hints must list online parsing platforms'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('离线导入')),
+      'hints must provide offline import guidance for desktop and mobile'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('音源播放')),
+      'hints must explain mobile audio delegation'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗提示')),
       'hints must provide KuGou limitation guidance'
-    );
-    assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('酷狗完整')),
-      'hints must provide KuGou full export guidance'
-    );
-    assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('解析失败')),
-      'hints must provide failure guidance'
     );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('playlistout.lengxiqwq.com')),
@@ -126,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.2.12');
+      assert.strictEqual(distPlugin.version, '1.3.0');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -184,7 +188,11 @@ async function runAllTests() {
   const v1210Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.10.js');
   const v1211Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.11.js');
   const v1211Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.11.js');
-  await test('Verifies v1.2.0 through v1.2.11 historical archives exist', () => {
+  const v1212Dist = path.resolve(__dirname, '../dist/musicfree-v1.2.12.js');
+  const v1212Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.12.js');
+  const v130Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.0.js');
+  const v130Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.0.js');
+  await test('Verifies v1.2.0 through v1.3.0 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -209,6 +217,10 @@ async function runAllTests() {
     assert(fs.existsSync(v1210Web), 'web/public/plugins/musicfree-v1.2.10.js must exist');
     assert(fs.existsSync(v1211Dist), 'dist/musicfree-v1.2.11.js must exist');
     assert(fs.existsSync(v1211Web), 'web/public/plugins/musicfree-v1.2.11.js must exist');
+    assert(fs.existsSync(v1212Dist), 'dist/musicfree-v1.2.12.js must exist');
+    assert(fs.existsSync(v1212Web), 'web/public/plugins/musicfree-v1.2.12.js must exist');
+    assert(fs.existsSync(v130Dist), 'dist/musicfree-v1.3.0.js must exist');
+    assert(fs.existsSync(v130Web), 'web/public/plugins/musicfree-v1.3.0.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
@@ -373,6 +385,8 @@ async function runAllTests() {
   fs.writeFileSync(tempEmptyJsonPath, JSON.stringify({ tracks: [] }), 'utf-8');
 
   try {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
+
     await test('Parses generic local .json into compliant IMusicItem[] with PlaylistOut platform', async () => {
       const items = await plugin.importMusicSheet(tempGenericPath);
       assert(Array.isArray(items), 'Output must be an array');
@@ -490,6 +504,7 @@ async function runAllTests() {
       );
     });
   } finally {
+    delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     try {
       if (fs.existsSync(tempGenericPath)) fs.unlinkSync(tempGenericPath);
       if (fs.existsSync(tempNeteasePath)) fs.unlinkSync(tempNeteasePath);
@@ -504,35 +519,125 @@ async function runAllTests() {
     } catch (_) {}
   }
 
+  // ── 3.5. Mobile Native Platform Delegation & Isolation ────────────
+  logSection('3.5. Mobile Native Platform Delegation & Isolation');
+
+  try {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+
+    await test('Mobile mode: NetEase playlist directly maps platform to "netease"', async () => {
+      const items = await plugin.importMusicSheet(sampleNeteaseJson);
+      assert.strictEqual(items.length, 1);
+      assert.strictEqual(items[0].platform, 'netease', 'Mobile platform must delegate to native netease plugin');
+      assert.strictEqual(items[0]._originPlatform, 'netease');
+      assert.strictEqual(items[0].id, '1973665667');
+      assert.strictEqual(items[0]._src?.netease?.id, '1973665667');
+      assert.deepStrictEqual(items[0]._srcOrder, ['netease']);
+    });
+
+    await test('Mobile mode: QQ Music playlist directly maps platform to "qq" with songmid', async () => {
+      const items = await plugin.importMusicSheet(sampleQqJson);
+      assert.strictEqual(items.length, 1);
+      assert.strictEqual(items[0].platform, 'qq', 'Mobile platform must delegate to native qq plugin');
+      assert.strictEqual(items[0]._originPlatform, 'qq');
+      assert.strictEqual(items[0].id, '0039MnYb0qxYAc');
+      assert.strictEqual(items[0].songmid, '0039MnYb0qxYAc');
+      assert.strictEqual(items[0]._src?.qq?.mid, '0039MnYb0qxYAc');
+      assert.deepStrictEqual(items[0]._srcOrder, ['qq']);
+    });
+
+    await test('Mobile mode: KuGou playlist directly maps platform to "kugou" with hash', async () => {
+      const items = await plugin.importMusicSheet(sampleKugouJson);
+      assert.strictEqual(items.length, 1);
+      assert.strictEqual(items[0].platform, 'kugou', 'Mobile platform must delegate to native kugou plugin');
+      assert.strictEqual(items[0]._originPlatform, 'kugou');
+      assert.strictEqual(items[0]._src?.kugou?.hash, 'hash12345');
+      assert.deepStrictEqual(items[0]._srcOrder, ['kugou']);
+    });
+
+    await test('Mobile mode: KuWo, QiShui, Bilibili, and Migu map to their respective native platforms', async () => {
+      const kuwoItems = await plugin.importMusicSheet(sampleKuwoJson);
+      assert.strictEqual(kuwoItems[0].platform, 'kuwo');
+
+      const qishuiItems = await plugin.importMusicSheet(sampleQishuiJson);
+      assert.strictEqual(qishuiItems[0].platform, 'qishui');
+
+      const biliItems = await plugin.importMusicSheet(sampleBilibiliJson);
+      assert.strictEqual(biliItems[0].platform, 'bilibili');
+
+      const miguItems = await plugin.importMusicSheet(sampleMiguJson);
+      assert.strictEqual(miguItems[0].platform, 'migu');
+    });
+
+    await test('Mobile mode: userVariables targetPlatform overrides track platform on mobile', async () => {
+      globalThis.env = {
+        getUserVariables: () => ({ targetPlatform: 'kuwo' }),
+      };
+      try {
+        const items = await plugin.importMusicSheet(sampleNeteaseJson);
+        assert.strictEqual(items.length, 1);
+        assert.strictEqual(items[0].platform, 'kuwo', 'targetPlatform must override track platform on mobile');
+        assert.strictEqual(items[0]._originPlatform, 'netease', 'Track natural platform preserved in _originPlatform');
+      } finally {
+        delete globalThis.env;
+      }
+    });
+
+    await test('Mobile mode: File picker trigger rejects with mobile-friendly guidance', async () => {
+      await assert.rejects(
+        async () => await plugin.importMusicSheet('__pick_file__'),
+        /移动端不支持系统文件弹窗/
+      );
+      await assert.rejects(
+        async () => await plugin.importMusicSheet('浏览'),
+        /移动端不支持系统文件弹窗/
+      );
+    });
+
+    await test('Mobile mode: Local file path rejects with mobile-friendly guidance to paste JSON directly', async () => {
+      await assert.rejects(
+        async () => await plugin.importMusicSheet('/sdcard/Music/playlist.json'),
+        /移动端无法直接读取设备文件路径/
+      );
+    });
+  } finally {
+    delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+  }
+
   // ── 4. userVariables Configuration Override ───────────────────────
   logSection('4. userVariables Configuration Override');
 
   await test('Respects userVariables to prioritize audio routing while preserving brand platform', async () => {
-    // 1. Mock MusicFree environment env.getUserVariables() returning targetPlatform='kuwo'
-    globalThis.env = {
-      getUserVariables: () => ({ targetPlatform: 'kuwo' }),
-    };
-
-    const tempTestPath = path.join(os.tmpdir(), `playlistout_test_forced_${Date.now()}.json`);
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
     try {
-      fs.writeFileSync(tempTestPath, sampleNeteaseJson, 'utf-8');
-      const items = await plugin.importMusicSheet(tempTestPath);
-      assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走', 'Platform displayed to user must always be plugin brand');
-      assert.strictEqual(items[0]._originPlatform, 'netease', 'Track origin platform preserved');
-
-      // 2. Reset to auto
+      // 1. Mock MusicFree environment env.getUserVariables() returning targetPlatform='kuwo'
       globalThis.env = {
-        getUserVariables: () => ({ targetPlatform: 'auto' }),
+        getUserVariables: () => ({ targetPlatform: 'kuwo' }),
       };
-      const items2 = await plugin.importMusicSheet(tempTestPath);
-      assert.strictEqual(items2[0].platform, '把你的歌单带走');
-      assert.strictEqual(items2[0]._originPlatform, 'netease');
-    } finally {
-      delete globalThis.env;
+
+      const tempTestPath = path.join(os.tmpdir(), `playlistout_test_forced_${Date.now()}.json`);
       try {
-        if (fs.existsSync(tempTestPath)) fs.unlinkSync(tempTestPath);
-      } catch (_) {}
+        fs.writeFileSync(tempTestPath, sampleNeteaseJson, 'utf-8');
+        const items = await plugin.importMusicSheet(tempTestPath);
+        assert.strictEqual(items.length, 1);
+        assert.strictEqual(items[0].platform, '把你的歌单带走', 'Platform displayed to user must always be plugin brand');
+        assert.strictEqual(items[0]._originPlatform, 'netease', 'Track origin platform preserved');
+
+        // 2. Reset to auto
+        globalThis.env = {
+          getUserVariables: () => ({ targetPlatform: 'auto' }),
+        };
+        const items2 = await plugin.importMusicSheet(tempTestPath);
+        assert.strictEqual(items2[0].platform, '把你的歌单带走');
+        assert.strictEqual(items2[0]._originPlatform, 'netease');
+      } finally {
+        delete globalThis.env;
+        try {
+          if (fs.existsSync(tempTestPath)) fs.unlinkSync(tempTestPath);
+        } catch (_) {}
+      }
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     }
   });
 
@@ -598,20 +703,37 @@ async function runAllTests() {
     delete globalThis.env;
   });
 
-  // ── 5. Direct JSON Pasting Interception ─────────────────────────────
-  logSection('5. Direct JSON Pasting Interception');
+  // ── 5. Direct JSON Pasting Support (Mobile & Desktop) ─────────────
+  logSection('5. Direct JSON Pasting Support (Mobile & Desktop)');
 
-  await test('Intercepts direct JSON object string starting with { with friendly guidance', async () => {
-    await assert.rejects(
-      async () => await plugin.importMusicSheet('{"tracks":[{"title":"晴天"}]}'),
-      /请勿直接粘贴 JSON 长文本/
-    );
+  await test('Directly parses JSON object string starting with { into valid tracks', async () => {
+    const rawJson = JSON.stringify({
+      tracks: [
+        { title: '晴天', artist: '周杰伦', id: '186016' },
+        { title: '花海', artist: '周杰伦', id: '186017' },
+      ],
+    });
+    const items = await plugin.importMusicSheet(rawJson);
+    assert(Array.isArray(items), 'Items must be an array');
+    assert.strictEqual(items.length, 2);
+    assert.strictEqual(items[0].title, '晴天');
+    assert.strictEqual(items[1].title, '花海');
   });
 
-  await test('Intercepts direct JSON array string starting with [ with friendly guidance', async () => {
+  await test('Directly parses JSON array string starting with [ into valid tracks', async () => {
+    const rawArray = JSON.stringify([
+      { title: '七里香', artist: '周杰伦', id: '186018' },
+    ]);
+    const items = await plugin.importMusicSheet(rawArray);
+    assert(Array.isArray(items), 'Items must be an array');
+    assert.strictEqual(items.length, 1);
+    assert.strictEqual(items[0].title, '七里香');
+  });
+
+  await test('Rejects malformed direct JSON text with clean error', async () => {
     await assert.rejects(
-      async () => await plugin.importMusicSheet('[{"title":"晴天"}]'),
-      /请勿直接粘贴 JSON 长文本/
+      async () => await plugin.importMusicSheet('{ invalid json: tracks '),
+      /JSON 解析失败/
     );
   });
 
@@ -637,28 +759,47 @@ async function runAllTests() {
     }
   }
 
-  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走"`, async () => {
-    const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走" in Desktop mode`, async () => {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
+    try {
+      const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
 
-    assert(Array.isArray(items), 'Items must be an array');
-    assert(items.length > 0, `Should resolve at least 1 track, got ${items.length}`);
-    console.log(`    ${COLORS.gray}Resolved ${items.length} tracks from production API${COLORS.reset}`);
+      assert(Array.isArray(items), 'Items must be an array');
+      assert(items.length > 0, `Should resolve at least 1 track, got ${items.length}`);
+      console.log(`    ${COLORS.gray}Resolved ${items.length} tracks from production API${COLORS.reset}`);
 
-    // Verify first 5 items schema conformance
-    const sampleItems = items.slice(0, 5);
-    for (let i = 0; i < sampleItems.length; i++) {
-      const it = sampleItems[i];
-      assert(Boolean(it.id), `Track ${i + 1} must have id`);
-      assert(Boolean(it.title), `Track ${i + 1} must have title`);
-      assert(Boolean(it.artist), `Track ${i + 1} must have artist`);
-      assert(
-        typeof it.duration === 'number' && it.duration >= 0,
-        `Track ${i + 1} duration must be non-negative number`
-      );
-      assert.strictEqual(it.platform, '把你的歌单带走', `Track ${i + 1} platform must be 把你的歌单带走`);
-      assert.strictEqual(it._originPlatform, 'netease', `Track ${i + 1} _originPlatform must bridge to netease`);
-      assert(Boolean(it._src?.netease?.id), `Track ${i + 1} must include _src.netease.id`);
-      assert.strictEqual(it.url, undefined, 'Must not inject pirate audio URL');
+      // Verify first 5 items schema conformance
+      const sampleItems = items.slice(0, 5);
+      for (let i = 0; i < sampleItems.length; i++) {
+        const it = sampleItems[i];
+        assert(Boolean(it.id), `Track ${i + 1} must have id`);
+        assert(Boolean(it.title), `Track ${i + 1} must have title`);
+        assert(Boolean(it.artist), `Track ${i + 1} must have artist`);
+        assert(
+          typeof it.duration === 'number' && it.duration >= 0,
+          `Track ${i + 1} duration must be non-negative number`
+        );
+        assert.strictEqual(it.platform, '把你的歌单带走', `Track ${i + 1} platform must be 把你的歌单带走`);
+        assert.strictEqual(it._originPlatform, 'netease', `Track ${i + 1} _originPlatform must bridge to netease`);
+        assert(Boolean(it._src?.netease?.id), `Track ${i + 1} must include _src.netease.id`);
+        assert.strictEqual(it.url, undefined, 'Must not inject pirate audio URL');
+      }
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+    }
+  });
+
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and delegates platform to "netease" in Mobile mode`, async () => {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+    try {
+      const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
+      assert(Array.isArray(items), 'Items must be an array');
+      assert(items.length > 0, `Should resolve at least 1 track, got ${items.length}`);
+      assert.strictEqual(items[0].platform, 'netease', 'Mobile mode must delegate to native netease platform');
+      assert.strictEqual(items[0]._originPlatform, 'netease');
+      assert(Boolean(items[0]._src?.netease?.id));
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     }
   });
 
@@ -703,6 +844,42 @@ async function runAllTests() {
       async () => await plugin.importMusicSheet('https://example.com/unsupported-page'),
       /解析失败/
     );
+  });
+
+  // ── 8.5. Hermes Engine Syntax Integrity ───────────────────────────
+  logSection('8.5. Android Hermes Engine Syntax Integrity');
+
+  await test('Guarantees 0 optional chaining (?.), 0 nullish coalescing (??), 0 async arrow in source', () => {
+    const code = fs.readFileSync(pluginPath, 'utf-8');
+    const lines = code.split(/\r?\n/);
+
+    const ocErrors = [];
+    const ncErrors = [];
+    const aaErrors = [];
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      // Skip comments
+      if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) {
+        return;
+      }
+      // Check for ?. outside regex
+      if (trimmed.includes('?.') && !/\/\^https\?:\/\//.test(trimmed)) {
+        ocErrors.push(`L${idx + 1}: ${trimmed}`);
+      }
+      // Check for ?? outside comments
+      if (trimmed.includes('??')) {
+        ncErrors.push(`L${idx + 1}: ${trimmed}`);
+      }
+      // Check for async arrow functions
+      if (/async\s*\([^)]*\)\s*=>/.test(trimmed) || /async\s+[a-zA-Z0-9_$]+\s*=>/.test(trimmed)) {
+        aaErrors.push(`L${idx + 1}: ${trimmed}`);
+      }
+    });
+
+    assert.strictEqual(ocErrors.length, 0, `Found forbidden ?. in source:\n${ocErrors.join('\n')}`);
+    assert.strictEqual(ncErrors.length, 0, `Found forbidden ?? in source:\n${ncErrors.join('\n')}`);
+    assert.strictEqual(aaErrors.length, 0, `Found forbidden async arrow in source:\n${aaErrors.join('\n')}`);
   });
 
   // ── Test Summary ──────────────────────────────────────────────────

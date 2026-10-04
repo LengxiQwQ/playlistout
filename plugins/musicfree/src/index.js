@@ -1,21 +1,39 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.2.12)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.0)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
- * 支持双模驱动：
- *   1. 本地离线 JSON 歌单文件导入（支持一键浏览选文件弹窗 + 拖拽 + 路径导入，零网络请求）
- *   2. 生产 API 在线毫秒级万能解析（QQ音乐 / 网易云 / 酷狗 / 汽水）
- * 原生音源桥接 (Native Platform Delegation)：
- *   - 导入歌单时自动将曲目映射至用户已安装的原生音源插件 (qq, netease, kugou, qishui, kuwo, migu, bilibili)，
- *     自动注入完整的 _src / _srcOrder / songmid 元数据，并通过属性拦截保护 platform 不被宿主 resetMediaItem 覆盖。
- *   - 对历史已导入且 platform 仍为 PlaylistOut 的歌单曲目，在 getMediaSource / getLyric 中动态桥接调用
- *     本地已安装的同名音源插件，无需重新导入即可直接播放与显示歌词。
+ * 支持双端双模驱动：
+ *   1. 桌面端 (Desktop/Electron)：
+ *      - 本地离线 JSON 歌单文件导入（一键浏览选文件弹窗 + 拖拽 + 本地绝对路径导入，零网络请求）
+ *      - 优雅的桌面 Toast 播放提示与 Sibling Bridge 原生音源桥接
+ *   2. 移动端 (Mobile/Android/React Native/Hermes)：
+ *      - 原生音源分流 (Native Platform Delegation)：导入时曲目 platform 自动映射至用户已安装的原生音源插件
+ *        (qq, netease, kugou, qishui, kuwo, migu, bilibili)，附带完整 _src / _srcOrder 元数据，由宿主原生调度播放与歌词
+ *      - 离线歌单全量支持：直接粘贴官网导出的 JSON 文本导入，或输入在线 JSON 直链导入
+ *   3. 生产 API 在线毫秒级万能解析（QQ音乐 / 网易云 / 酷狗 / 汽水）
+ *   4. Android Hermes 引擎全语法兼容（杜绝 ?., ??, async arrow 语法）
  */
 
 let _cachedFs = null;
 let _cachedPath = null;
 let _cachedElectron = null;
 let _hostLoadPromise = null;
+
+/**
+ * 宿主运行环境检测 (Desktop Electron vs Mobile Android/Hermes)
+ */
+function isHostElectron() {
+  if (typeof globalThis !== 'undefined' && typeof globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ === 'boolean') {
+    return globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+  }
+  try {
+    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
+    if (realProc && realProc.versions && realProc.versions.electron) {
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
 
 /**
  * 动态逃逸沙箱并加载 Node.js 原生模块 (fs, path, electron)
@@ -34,7 +52,7 @@ function ensureHostModulesAsync() {
     return _hostLoadPromise;
   }
 
-  _hostLoadPromise = (async () => {
+  _hostLoadPromise = (async function () {
     // 1. 先尝试同步途径（裸 Node.js 测试环境）
     try {
       const fsMod = require('fs');
@@ -49,7 +67,7 @@ function ensureHostModulesAsync() {
     try {
       const dynImport = new Function('specifier', 'return import(specifier)');
       const modNs = await dynImport('module');
-      const Module = modNs?.Module || modNs?.default;
+      const Module = (modNs && modNs.Module) || (modNs && modNs.default);
       if (Module && typeof Module._load === 'function') {
         if (!_cachedFs) {
           try {
@@ -70,13 +88,13 @@ function ensureHostModulesAsync() {
       if (!_cachedFs) {
         try {
           const fsNs = await dynImport('fs');
-          _cachedFs = fsNs?.default || fsNs;
+          _cachedFs = (fsNs && fsNs.default) || fsNs;
         } catch (_) {}
       }
       if (!_cachedPath) {
         try {
           const pathNs = await dynImport('path');
-          _cachedPath = pathNs?.default || pathNs;
+          _cachedPath = (pathNs && pathNs.default) || pathNs;
         } catch (_) {}
       }
     } catch (_) {}
@@ -629,7 +647,7 @@ function getRawUserVariables() {
 function getUserTargetPlatform() {
   try {
     const userVars = getRawUserVariables();
-    const target = userVars?.targetPlatform;
+    const target = userVars && userVars.targetPlatform;
     if (typeof target === 'string' && target.trim()) {
       return target.trim();
     }
@@ -646,7 +664,7 @@ function getUserTargetPlatform() {
 function getUserFallbackMode() {
   try {
     const userVars = getRawUserVariables();
-    const raw = String(userVars?.fallbackMode || '').trim().toLowerCase();
+    const raw = String((userVars && userVars.fallbackMode) || '').trim().toLowerCase();
     if (raw === 'similar' || raw === '2' || raw.includes('相似') || raw.includes('翻唱')) {
       return 'similar';
     }
@@ -668,8 +686,8 @@ function getUserFallbackMode() {
 function getKugouCredentials() {
   try {
     const userVars = getRawUserVariables();
-    let rawToken = String(userVars?.kugouToken || userVars?.kugou_token || '').trim();
-    let rawUserid = String(userVars?.kugouUserid || userVars?.kugou_userid || '').trim();
+    let rawToken = String((userVars && (userVars.kugouToken || userVars.kugou_token)) || '').trim();
+    let rawUserid = String((userVars && (userVars.kugouUserid || userVars.kugou_userid)) || '').trim();
 
     if (!rawToken && !rawUserid) {
       return null;
@@ -771,19 +789,26 @@ function resolveMusicPlatform(sourcePlatform) {
 function attachNativeSourceMetadata(item, track, targetPlatform) {
   if (!item || typeof item !== 'object') return item;
 
-  const rawId = String(track?.id ?? item.id ?? '').trim();
+  const rawId = String((track && track.id) || (item && item.id) || '').trim();
   const stripPrefix = (s, prefix) =>
     s.toLowerCase().startsWith(prefix + '_') ? s.slice(prefix.length + 1) : s;
 
+  const trackRawIds = (track && track.rawIds) || {};
+
   if (targetPlatform === 'qq' || targetPlatform === '20') {
     const sid = String(
-      track?.rawIds?.qq_songmid || track?.songmid || track?.mid || stripPrefix(rawId, 'qq')
+      trackRawIds.qq_songmid ||
+        (track && (track.songmid || track.mid)) ||
+        stripPrefix(rawId, 'qq')
     ).trim();
-    const mediaMid = String(track?.strMediaMid || track?.mediaMid || sid).trim();
-    const vid = String(track?.mvId || track?.vid || '').trim();
+    const mediaMid = String(
+      (track && (track.strMediaMid || track.mediaMid)) || sid
+    ).trim();
+    const vid = String((track && (track.mvId || track.vid)) || '').trim();
     // 当从 IndexedDB 恢复曲目时 track.isVip 为 undefined 且无真实 strMediaMid，
     // 默认置 vip=1 以启用 qq 插件 vipPreRoute 直走 vkeys-legacy 高速通道，避免无意义的官方接口 1000ms 空转
-    const vip = track?.isVip !== undefined ? (track.isVip ? 1 : 0) : 1;
+    const vip =
+      track && track.isVip !== undefined ? (track.isVip ? 1 : 0) : 1;
     item.songmid = sid;
     item.mid = sid;
     item._src = Object.assign({}, item._src, {
@@ -791,26 +816,32 @@ function attachNativeSourceMetadata(item, track, targetPlatform) {
     });
     item._srcOrder = ['qq'];
   } else if (targetPlatform === 'netease') {
-    const sid = String(track?.rawIds?.netease_id || stripPrefix(rawId, 'netease')).trim();
-    const mv = String(track?.mvId || track?.mv || '').trim();
+    const sid = String(
+      trackRawIds.netease_id || stripPrefix(rawId, 'netease')
+    ).trim();
+    const mv = String((track && (track.mvId || track.mv)) || '').trim();
     item._src = Object.assign({}, item._src, {
       netease: { id: sid, mv },
     });
     item._srcOrder = ['netease'];
   } else if (targetPlatform === 'kugou' || targetPlatform === 'WebFilter') {
     const sid = String(
-      track?.rawIds?.kugou_hash || track?.hash || stripPrefix(rawId, 'kugou')
+      trackRawIds.kugou_hash ||
+        (track && track.hash) ||
+        stripPrefix(rawId, 'kugou')
     ).trim();
     const mixsongid = String(
-      track?.rawIds?.kugou_album_audio_id || track?.mixsongid || ''
+      trackRawIds.kugou_album_audio_id ||
+        (track && track.mixsongid) ||
+        ''
     ).trim();
-    const mvHash = String(track?.mvHash || track?.mvId || '').trim();
+    const mvHash = String((track && (track.mvHash || track.mvId)) || '').trim();
     item.hash = sid;
     item._src = Object.assign({}, item._src, {
       kugou: {
         hash: sid,
-        hash320: String(track?.hash320 || ''),
-        hashSq: String(track?.hashSq || ''),
+        hash320: String((track && track.hash320) || ''),
+        hashSq: String((track && track.hashSq) || ''),
         mixsongid,
         mvHash,
       },
@@ -818,29 +849,37 @@ function attachNativeSourceMetadata(item, track, targetPlatform) {
     item._srcOrder = ['kugou'];
   } else if (targetPlatform === 'qishui') {
     const sid = String(
-      track?.rawIds?.qishui_id || track?.trackId || stripPrefix(rawId, 'qishui')
+      trackRawIds.qishui_id ||
+        (track && track.trackId) ||
+        stripPrefix(rawId, 'qishui')
     ).trim();
     item._src = Object.assign({}, item._src, {
       qishui: { trackId: sid },
     });
     item._srcOrder = ['qishui'];
   } else if (targetPlatform === 'kuwo') {
-    const sid = String(track?.rawIds?.kuwo_id || stripPrefix(rawId, 'kuwo')).trim();
+    const sid = String(
+      trackRawIds.kuwo_id || stripPrefix(rawId, 'kuwo')
+    ).trim();
     item._src = Object.assign({}, item._src, {
       kuwo: { rid: sid, id: sid },
     });
     item._srcOrder = ['kuwo'];
   } else if (targetPlatform === 'migu') {
     const sid = String(
-      track?.rawIds?.migu_id || track?.contentId || stripPrefix(rawId, 'migu')
+      trackRawIds.migu_id ||
+        (track && track.contentId) ||
+        stripPrefix(rawId, 'migu')
     ).trim();
-    const copyrightId = String(track?.copyrightId || sid).trim();
+    const copyrightId = String((track && track.copyrightId) || sid).trim();
     item._src = Object.assign({}, item._src, {
       migu: { contentId: sid, copyrightId },
     });
     item._srcOrder = ['migu'];
   } else if (targetPlatform === 'bilibili') {
-    const sid = String(track?.bvid || stripPrefix(rawId, 'bilibili')).trim();
+    const sid = String(
+      (track && track.bvid) || stripPrefix(rawId, 'bilibili')
+    ).trim();
     item.bvid = sid;
   }
 
@@ -865,13 +904,13 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   let artist = '';
   if (Array.isArray(track.artists) && track.artists.length > 0) {
     artist = track.artists
-      .map((a) => (typeof a === 'string' ? a : a?.name || ''))
+      .map((a) => (typeof a === 'string' ? a : (a && a.name) || ''))
       .map((s) => s.trim())
       .filter(Boolean)
       .join(', ');
   } else if (Array.isArray(track.artistList) && track.artistList.length > 0) {
     artist = track.artistList
-      .map((a) => a?.name || '')
+      .map((a) => (a && a.name) || '')
       .map((s) => s.trim())
       .filter(Boolean)
       .join(', ');
@@ -933,7 +972,24 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     naturalPlatform = resolveMusicPlatformFromTrackFields(track, { id, title, artwork });
   }
 
-  // 8. 构建 IMusicItem：对外来源 (platform) 始终为本插件品牌名称「把你的歌单带走 (PlaylistOut)」
+  // 8. 双模分支策略 (Dual-Mode Adaptation)：
+  // 桌面端 (Electron)：宿主具备 Node.js 与文件系统访问能力，可动态加载本地同级音源插件；
+  // 因此 item.platform 保持为插件自身名称「把你的歌单带走」，在播放时由 getMediaSource 动态桥接并触发桌面 Toast。
+  // 移动端 (Android / React Native / Hermes)：宿主为完全隔离沙箱，无法跨插件读写文件或加载同级代码；
+  // 因此 item.platform 直接分流映射至用户已安装的原生音源插件（如 qq / netease / kugou / qishui / kuwo / migu），
+  // 由 MusicFree 移动端内置的播放分发机制原生调用对应音源插件进行播放与歌词解析！
+  const isDesktop = isHostElectron();
+  let finalPlatform = PLUGIN_PLATFORM;
+
+  if (!isDesktop) {
+    const userTarget = getUserTargetPlatform();
+    if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
+      finalPlatform = userTarget.toLowerCase();
+    } else if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
+      finalPlatform = naturalPlatform;
+    }
+  }
+
   const item = {
     id,
     title,
@@ -941,15 +997,17 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     album,
     artwork,
     duration,
-    platform: PLUGIN_PLATFORM,
+    platform: finalPlatform,
   };
+
   if (naturalPlatform && naturalPlatform !== 'PlaylistOut') {
     item._originPlatform = naturalPlatform;
   }
 
   // 9. 注入原生插件所需的 _src / _srcOrder / songmid / hash 等取链字段
-  if (naturalPlatform && naturalPlatform !== 'PlaylistOut') {
-    attachNativeSourceMetadata(item, track, naturalPlatform);
+  const targetForSource = finalPlatform !== PLUGIN_PLATFORM ? finalPlatform : naturalPlatform;
+  if (targetForSource && targetForSource !== 'PlaylistOut') {
+    attachNativeSourceMetadata(item, track, targetForSource);
   }
 
   return item;
@@ -960,28 +1018,29 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
  */
 function resolveMusicPlatformFromTrackFields(track, item) {
   const explicitPlat =
-    track?._originPlatform ||
-    item?._originPlatform ||
-    track?.originPlatform ||
-    item?.originPlatform;
+    (track && (track._originPlatform || track.originPlatform)) ||
+    (item && (item._originPlatform || item.originPlatform));
   if (explicitPlat && !isSelfPlatform(explicitPlat)) {
     return explicitPlat;
   }
 
-  const sourceUrl = String(track?.sourceUrl || item?.sourceUrl || '');
-  const artwork = String(track?.coverUrl || track?.artwork || item?.artwork || '');
-  const id = String(track?.id || item?.id || '').trim();
+  const sourceUrl = String((track && track.sourceUrl) || (item && item.sourceUrl) || '');
+  const artwork = String(
+    (track && (track.coverUrl || track.artwork)) || (item && item.artwork) || ''
+  );
+  const id = String((track && track.id) || (item && item.id) || '').trim();
+  const trackRawIds = (track && track.rawIds) || {};
 
-  if (track?.rawIds?.qq_songmid || /qq\.com|gtimg\.cn/i.test(sourceUrl + ' ' + artwork)) {
+  if (trackRawIds.qq_songmid || /qq\.com|gtimg\.cn/i.test(sourceUrl + ' ' + artwork)) {
     return 'qq';
   }
-  if (track?.rawIds?.netease_id || /163\.com|126\.net/i.test(sourceUrl + ' ' + artwork)) {
+  if (trackRawIds.netease_id || /163\.com|126\.net/i.test(sourceUrl + ' ' + artwork)) {
     return 'netease';
   }
-  if (track?.rawIds?.kugou_hash || /kugou\.com/i.test(sourceUrl + ' ' + artwork)) {
+  if (trackRawIds.kugou_hash || /kugou\.com/i.test(sourceUrl + ' ' + artwork)) {
     return 'kugou';
   }
-  if (track?.rawIds?.qishui_id || /qishui|douyinpic\.com|byteimg\.com/i.test(sourceUrl + ' ' + artwork)) {
+  if (trackRawIds.qishui_id || /qishui|douyinpic\.com|byteimg\.com/i.test(sourceUrl + ' ' + artwork)) {
     return 'qishui';
   }
   if (/kuwo\.cn/i.test(sourceUrl + ' ' + artwork)) {
@@ -1030,11 +1089,11 @@ function parseJsonTracks(jsonStr, sourceDesc = 'JSON 数据') {
   } else if (parsed && typeof parsed === 'object') {
     if (Array.isArray(parsed.tracks)) {
       tracks = parsed.tracks;
-    } else if (Array.isArray(parsed.data?.result?.tracks)) {
+    } else if (parsed.data && parsed.data.result && Array.isArray(parsed.data.result.tracks)) {
       tracks = parsed.data.result.tracks;
-    } else if (Array.isArray(parsed.result?.tracks)) {
+    } else if (parsed.result && Array.isArray(parsed.result.tracks)) {
       tracks = parsed.result.tracks;
-    } else if (Array.isArray(parsed.data?.tracks)) {
+    } else if (parsed.data && Array.isArray(parsed.data.tracks)) {
       tracks = parsed.data.tracks;
     } else if (Array.isArray(parsed.songList)) {
       tracks = parsed.songList;
@@ -1053,9 +1112,15 @@ function parseJsonTracks(jsonStr, sourceDesc = 'JSON 数据') {
 
   // 探测歌单原始平台
   let detectedPlatform =
-    parsed.platform || parsed.result?.platform || parsed.data?.platform || 'PlaylistOut';
+    parsed.platform ||
+    (parsed.result && parsed.result.platform) ||
+    (parsed.data && parsed.data.platform) ||
+    'PlaylistOut';
   if (detectedPlatform === 'PlaylistOut') {
-    const url = parsed.sourceUrl || (Array.isArray(tracks) && tracks[0]?.sourceUrl) || '';
+    const url =
+      parsed.sourceUrl ||
+      (Array.isArray(tracks) && tracks[0] && tracks[0].sourceUrl) ||
+      '';
     if (/music\.163\.com/i.test(url)) detectedPlatform = 'netease';
     else if (/qq\.com/i.test(url)) detectedPlatform = 'qq';
     else if (/kugou\.com/i.test(url)) detectedPlatform = 'kugou';
@@ -1145,15 +1210,31 @@ async function importMusicSheet(urlLike) {
     throw new Error('输入内容不能为空');
   }
 
-  // 1. 明确拦截直接粘贴 JSON 长文本的操作，避免文本过长或截断导致异常
+  // 1. 直接粘贴 JSON 文本支持（移动端与跨端核心：用户从官网导出歌单后复制完整 JSON 字符串直接粘贴导入）
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    throw new Error(
-      '请勿直接粘贴 JSON 长文本，请点击弹窗中的「📂 浏览选择本地 JSON 歌单文件」按钮，或直接输入导出的本地 .json 文件路径 (如 D:\\playlist.json) 或在线歌单链接'
-    );
+    return parseJsonTracks(trimmed, '直接粘贴的 JSON 歌单');
   }
 
-  // 2. 触发系统原生文件选择对话框 (点击「📂 浏览...」按钮或输入 1 / 浏览 / json)
+  // 2. 在线 JSON 文件 URL 导入（如用户托管在网盘、GitHub Raw、Gitee 或个人服务器的 .json 歌单直链）
+  if (/^https?:\/\/[^\s]+\.json(?:\?[^\s]*)?$/i.test(trimmed)) {
+    let jsonRes;
+    try {
+      jsonRes = await httpGet(trimmed, { timeout: 15000 });
+    } catch (err) {
+      throw new Error(`获取在线 JSON 歌单失败: ${err.message}`);
+    }
+    if (jsonRes.status !== 200) {
+      throw new Error(`获取在线 JSON 失败 (HTTP ${jsonRes.status})`);
+    }
+    const content = typeof jsonRes.data === 'string' ? jsonRes.data : JSON.stringify(jsonRes.data);
+    return parseJsonTracks(content, `在线 JSON (${trimmed})`);
+  }
+
+  // 3. 触发系统原生文件选择对话框 (点击「📂 浏览...」按钮或输入 1 / 浏览 / json - 仅桌面端支持)
   if (isFilePickerTrigger(trimmed)) {
+    if (!isHostElectron()) {
+      throw new Error('移动端不支持系统文件弹窗，请复制并直接粘贴 JSON 歌单文本或歌单分享链接导入');
+    }
     const pickedPath = await openNativeJsonFileDialog();
     if (!pickedPath) {
       throw new Error('已取消选择本地 JSON 歌单文件');
@@ -1162,14 +1243,17 @@ async function importMusicSheet(urlLike) {
     return parseJsonTracks(fileContent, `本地文件 (${pickedPath})`);
   }
 
-  // 3. 本地 JSON 文件路径导入 (支持普通路径、带引号路径与 file:/// 协议)
+  // 4. 本地 JSON 文件路径导入 (支持普通路径、带引号路径与 file:/// 协议 - 仅桌面端支持)
   if (isLocalJsonPath(trimmed)) {
+    if (!isHostElectron()) {
+      throw new Error('移动端无法直接读取设备文件路径，请打开该文件全选复制并直接粘贴 JSON 文本导入');
+    }
     const targetPath = resolveLocalPath(trimmed);
     const fileContent = await readLocalFileText(targetPath);
     return parseJsonTracks(fileContent, `本地文件 (${targetPath})`);
   }
 
-  // 4. 在线云端 API 解析模式 (调用 PlaylistOut 生产 API: QQ/网易云/酷狗/汽水)
+  // 5. 在线云端 API 解析模式 (调用 PlaylistOut 生产 API: QQ/网易云/酷狗/汽水)
   const apiUrl = `https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=${encodeURIComponent(
     trimmed
   )}&type=playlist`;
@@ -1193,18 +1277,19 @@ async function importMusicSheet(urlLike) {
 
   if (res.status !== 200) {
     const errorMsg =
-      res.data?.error?.message ||
+      (res.data && res.data.error && res.data.error.message) ||
       (typeof res.data === 'string' && res.data ? res.data : `HTTP ${res.status}`);
     throw new Error(`在线解析失败: ${errorMsg}`);
   }
 
   if (!res.data || !res.data.success) {
-    const errorMsg = res.data?.error?.message || '未知解析错误';
+    const errorMsg =
+      (res.data && res.data.error && res.data.error.message) || '未知解析错误';
     throw new Error(`在线解析失败: ${errorMsg}`);
   }
 
-  const result = res.data.data?.result;
-  const rawTracks = result?.tracks;
+  const result = (res.data.data && res.data.data.result) || (res.data && res.data.result);
+  const rawTracks = result && result.tracks;
 
   if (!Array.isArray(rawTracks) || rawTracks.length === 0) {
     throw new Error('在线歌单解析结果为空或未找到歌曲');
@@ -1212,7 +1297,10 @@ async function importMusicSheet(urlLike) {
 
   // 探测歌单原始平台
   let detectedPlatform =
-    res.data.platform || res.data.data?.platform || result?.platform || 'PlaylistOut';
+    res.data.platform ||
+    (res.data.data && res.data.data.platform) ||
+    (result && result.platform) ||
+    'PlaylistOut';
   if (detectedPlatform === 'PlaylistOut') {
     if (/music\.163\.com/i.test(trimmed)) detectedPlatform = 'netease';
     else if (/qq\.com/i.test(trimmed)) detectedPlatform = 'qq';
@@ -1232,9 +1320,13 @@ async function importMusicSheet(urlLike) {
   }
 
   // 若为酷狗歌单且未配置 Token 或仅解析出前 10 首预览歌曲，明确弹出长效提示指导用户
+  const isKugouPreview =
+    result &&
+    ((result.retrieval && result.retrieval.mode === 'preview') ||
+      result.isPartialPreview);
   if (
     detectedPlatform === 'kugou' &&
-    (!creds?.token || result?.retrieval?.mode === 'preview' || result?.isPartialPreview)
+    (!creds || !creds.token || isKugouPreview)
   ) {
     showPlaybackToast(
       `💡【酷狗限制提示】受官方限制仅解析前 ${items.length} 首。推荐前往官网登录解析导出JSON离线导入。`,
@@ -1297,17 +1389,18 @@ async function loadInstalledSiblingPlugins() {
           } catch (_) {}
         }
         const mod = { exports: {}, loaded: false };
+        const procPlat = (realProc && realProc.platform) || 'win32';
         const hostEnv =
           typeof env !== 'undefined'
             ? env
             : {
                 getUserVariables: () => ({}),
-                os: realProc?.platform || 'win32',
+                os: procPlat,
                 appVersion: '0.0.8',
                 lang: 'zh-CN',
               };
         const hostProc = {
-          platform: realProc?.platform || 'win32',
+          platform: procPlat,
           version: '0.0.8',
           env: hostEnv,
         };
@@ -1322,7 +1415,7 @@ async function loadInstalledSiblingPlugins() {
           code
         );
         fn(require, require, mod, mod.exports, console, hostEnv, hostProc);
-        const instance = mod.exports?.default || mod.exports;
+        const instance = (mod.exports && mod.exports.default) || mod.exports;
         if (instance && typeof instance.platform === 'string' && !isSelfPlatform(instance.platform)) {
           if (!_siblingPluginMap.has(instance.platform)) {
             _siblingPluginMap.set(instance.platform, instance);
@@ -1482,10 +1575,14 @@ function isCandidateSimilarMatched(candidate, wantTitle) {
 async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
   try {
     const { electron } = await ensureHostModulesAsync();
-    const BrowserWindow = electron?.BrowserWindow;
+    const BrowserWindow = electron && electron.BrowserWindow;
     if (!BrowserWindow || typeof BrowserWindow.getAllWindows !== 'function') return;
     const wins = BrowserWindow.getAllWindows();
-    const win = BrowserWindow.getFocusedWindow?.() || wins.find((w) => !w.isDestroyed()) || wins[0];
+    const win =
+      (typeof BrowserWindow.getFocusedWindow === 'function' &&
+        BrowserWindow.getFocusedWindow()) ||
+      wins.find((w) => !w.isDestroyed()) ||
+      wins[0];
     if (!win || !win.webContents) return;
 
     const payload = JSON.stringify({ message: String(message || ''), kind, duration: durationMs || 3600 });
@@ -1542,13 +1639,7 @@ async function getMediaSource(musicItem, quality = 'standard') {
     return null;
   }
 
-  let isElectronHost = false;
-  try {
-    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
-    isElectronHost = Boolean(realProc && realProc.versions && realProc.versions.electron);
-  } catch (_) {}
-
-  if (!isElectronHost && !globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
+  if (!isHostElectron() && !globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
     return null;
   }
 
@@ -1631,7 +1722,7 @@ async function getMediaSource(musicItem, quality = 'standard') {
     if (!p || typeof p.search !== 'function' || typeof p.getMediaSource !== 'function') continue;
     try {
       const searchRes = await p.search(keyword, 1, 'music');
-      const candidates = searchRes?.data;
+      const candidates = searchRes && searchRes.data;
       if (Array.isArray(candidates) && candidates.length > 0) {
         cachedCandidatesByPlat.set(plat, candidates);
         const matched = candidates.find((c) =>
@@ -1697,13 +1788,7 @@ async function getLyric(musicItem) {
     return emptyLyric;
   }
 
-  let isElectronHost = false;
-  try {
-    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
-    isElectronHost = Boolean(realProc && realProc.versions && realProc.versions.electron);
-  } catch (_) {}
-
-  if (!isElectronHost && !globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
+  if (!isHostElectron() && !globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
     return emptyLyric;
   }
 
@@ -1746,17 +1831,18 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.2.12',
+  version: '1.3.0',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
   hints: {
     importMusicSheet: [
-      '支持平台：QQ音乐、网易云音乐、酷狗音乐、汽水音乐',
-      '【酷狗限制】受官方限制免登录仅前10首',
-      '【酷狗完整】推荐去官网登录解析，导出JSON离线导入',
-      '【解析失败】若遇到解析异常，请前往官网解析或反馈',
-      '官方网站：playlistout.lengxiqwq.com',
+      '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
+      '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
+      '【离线导入】电脑端支持文件选择弹窗；手机端支持直接粘贴导出JSON文本',
+      '【音源播放】手机端导入后自动分流至对应平台原生插件播放与显示歌词',
+      '【酷狗提示】酷狗免登录仅前10首，可配置Token或官网登录后导出JSON导入',
+      '官网地址：playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
