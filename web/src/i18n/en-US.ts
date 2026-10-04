@@ -355,7 +355,6 @@ export const enUS: Translations = {
     cancel: 'Cancel',
     jumpToAppBtn: '📱 Jump to KuGou App to Authorize',
     jumpToAppTip: 'Cannot scan on phone or tablet? Tap the button above to launch KuGou App, or long-press the QR code to save to Photos and scan from album in App.',
-    profileConnected: 'Logged in',
     profileLoading: 'Loading account profile...',
     profileFallbackName: 'KuGou account',
     profileUserIdLabel: 'User ID',
