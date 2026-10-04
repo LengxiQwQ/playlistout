@@ -1,48 +1,146 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import type { Playlist } from '../../api/types';
 import { useTranslation } from '../../i18n';
 import { MarkerButton } from '../ui/MarkerButton';
 import {
   createSoundiizMigration,
   SOUNDIIZ_MAX_TRACKS,
-  type SoundiizDestination,
 } from '../../services/migration/soundiiz';
 
 interface MigrationPanelProps {
   playlist: Playlist | null;
 }
 
-const DESTINATIONS: Array<{
-  id: SoundiizDestination;
-  key: 'spotify' | 'appleMusic' | 'youtubeMusic' | 'deezer' | 'tidal' | 'other';
-}> = [
-  { id: 'spotify', key: 'spotify' },
-  { id: 'apple', key: 'appleMusic' },
-  { id: 'youtube', key: 'youtubeMusic' },
-  { id: 'deezer', key: 'deezer' },
-  { id: 'tidal', key: 'tidal' },
-  { id: null, key: 'other' },
+type ServiceId = 'soundiiz' | 'tunemymusic' | 'freeyourmusic';
+
+interface MigrationService {
+  id: ServiceId;
+  name: string;
+  url: string;
+  supportsOneClick: boolean;
+  helpKey: 'soundiizHelp' | 'tuneMyMusicHelp' | 'freeYourMusicHelp';
+}
+
+const SERVICES: MigrationService[] = [
+  {
+    id: 'soundiiz',
+    name: 'Soundiiz',
+    url: 'https://soundiiz.com/',
+    supportsOneClick: true,
+    helpKey: 'soundiizHelp',
+  },
+  {
+    id: 'tunemymusic',
+    name: 'TuneMyMusic',
+    url: 'https://www.tunemymusic.com/',
+    supportsOneClick: false,
+    helpKey: 'tuneMyMusicHelp',
+  },
+  {
+    id: 'freeyourmusic',
+    name: 'FreeYourMusic',
+    url: 'https://freeyourmusic.com/',
+    supportsOneClick: false,
+    helpKey: 'freeYourMusicHelp',
+  },
 ];
+
+interface HelpTooltipProps {
+  label: string;
+  text: string;
+}
+
+const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
+  const [open, setOpen] = useState(false);
+  const tooltipId = useId();
+
+  return (
+    <span
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+      }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-label={label}
+        aria-describedby={open ? tooltipId : undefined}
+        aria-expanded={open}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen((value) => !value)}
+        style={{
+          width: '1.65rem',
+          height: '1.65rem',
+          borderRadius: '999px',
+          border: '1.5px dashed rgba(45, 52, 54, 0.45)',
+          background: 'rgba(255,255,255,0.72)',
+          color: 'var(--ink, #2d3436)',
+          fontFamily: 'inherit',
+          fontWeight: 700,
+          cursor: 'help',
+          lineHeight: 1,
+          padding: 0,
+        }}
+      >
+        ?
+      </button>
+
+      {open ? (
+        <div
+          id={tooltipId}
+          role="tooltip"
+          className="font-note"
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: 'calc(100% + 0.55rem)',
+            zIndex: 30,
+            width: 'min(22rem, 78vw)',
+            padding: '0.7rem 0.8rem',
+            borderRadius: '10px',
+            border: '1px solid rgba(45, 52, 54, 0.2)',
+            background: 'var(--paper, #fdfbf7)',
+            boxShadow: '0 8px 24px rgba(45, 52, 54, 0.14)',
+            color: '#4b5356',
+            fontSize: '0.92rem',
+            lineHeight: 1.5,
+            textAlign: 'left',
+            whiteSpace: 'normal',
+          }}
+        >
+          {text}
+        </div>
+      ) : null}
+    </span>
+  );
+};
 
 export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
   const { t, format: formatString } = useTranslation();
-  const [loadingDestination, setLoadingDestination] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadedCount = playlist?.tracks.length ?? 0;
   const totalCount = playlist?.trackCount ?? 0;
   const isPartial = Boolean(playlist && loadedCount < totalCount);
   const isOverLimit = loadedCount > SOUNDIIZ_MAX_TRACKS;
-  const unavailable = !playlist || loadedCount === 0 || isOverLimit;
+  const oneClickUnavailable = !playlist || loadedCount === 0 || isOverLimit;
 
-  const handleMigrate = async (destination: SoundiizDestination, label: string) => {
-    if (!playlist || unavailable || loadingDestination) return;
+  const openWebsite = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSoundiizOneClick = async () => {
+    if (!playlist || oneClickUnavailable || isPreparing) return;
 
     setErrorMessage(null);
-    const loadingKey = destination || 'other';
-    setLoadingDestination(loadingKey);
+    setIsPreparing(true);
 
-    // Open synchronously from the user's click so browsers do not block the final handoff.
+    // Open synchronously from the click so browsers do not block the final handoff.
     const targetWindow = window.open('about:blank', '_blank');
     if (targetWindow) {
       try {
@@ -55,7 +153,9 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
     }
 
     try {
-      const result = await createSoundiizMigration(playlist, destination);
+      // No destination is preselected: Soundiiz receives the tracklist first,
+      // then the user chooses the destination service there.
+      const result = await createSoundiizMigration(playlist, null);
 
       if (targetWindow && !targetWindow.closed) {
         targetWindow.location.replace(result.shareUrl);
@@ -72,9 +172,9 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
       } else {
         setErrorMessage(t.migration.failed);
       }
-      console.error(`Failed to create Soundiiz migration for ${label}:`, error);
+      console.error('Failed to create Soundiiz migration:', error);
     } finally {
-      setLoadingDestination(null);
+      setIsPreparing(false);
     }
   };
 
@@ -82,55 +182,136 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
     <div
       data-testid="migration-panel"
       style={{
-        paddingTop: '1.15rem',
+        paddingTop: '1.05rem',
         borderTop: '1px dashed rgba(45, 52, 54, 0.18)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ minWidth: 0, flex: '1 1 19rem' }}>
-          <div
-            className="font-handwriting"
-            style={{
-              fontSize: '1.35rem',
-              fontWeight: 700,
-              color: 'var(--ink, #2d3436)',
-              marginBottom: '0.25rem',
-            }}
-          >
-            {t.migration.title}
-          </div>
-          <div
-            className="font-note"
-            style={{
-              fontSize: '1.05rem',
-              color: '#636e72',
-              lineHeight: 1.55,
-              maxWidth: '48rem',
-            }}
-          >
-            {t.migration.subtitle}
-          </div>
-        </div>
-
+      <div style={{ marginBottom: '0.7rem' }}>
         <div
-          className="font-mono"
+          className="font-handwriting"
           style={{
-            fontSize: '0.76rem',
-            color: '#8a8f92',
-            whiteSpace: 'nowrap',
-            paddingTop: '0.25rem',
+            fontSize: '1.3rem',
+            fontWeight: 700,
+            color: 'var(--ink, #2d3436)',
           }}
         >
-          {t.migration.poweredBy}
+          {t.migration.title}
         </div>
+        <div
+          className="font-note"
+          style={{
+            marginTop: '0.15rem',
+            fontSize: '0.95rem',
+            color: '#7a8184',
+            lineHeight: 1.45,
+          }}
+        >
+          {t.migration.subtitle}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gap: '0.55rem',
+        }}
+      >
+        {SERVICES.map((service, index) => (
+          <div
+            key={service.id}
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.6rem 0.85rem',
+              padding: '0.55rem 0.65rem',
+              border: '1px dashed rgba(45, 52, 54, 0.2)',
+              borderRadius: '10px',
+              background: index % 2 === 0 ? 'rgba(255,255,255,0.38)' : 'transparent',
+            }}
+          >
+            <div
+              className="font-handwriting"
+              style={{
+                minWidth: '8rem',
+                fontSize: '1.08rem',
+                fontWeight: 700,
+                color: 'var(--ink, #2d3436)',
+              }}
+            >
+              {service.name}
+              {service.supportsOneClick ? (
+                <span
+                  className="font-note"
+                  style={{
+                    marginLeft: '0.45rem',
+                    fontSize: '0.72rem',
+                    fontWeight: 500,
+                    color: '#6b7280',
+                  }}
+                >
+                  {t.migration.directBadge}
+                </span>
+              ) : null}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '0.45rem',
+              }}
+            >
+              {service.supportsOneClick ? (
+                <MarkerButton
+                  type="button"
+                  variant="ink"
+                  rotateDeg={-0.35}
+                  disabled={oneClickUnavailable || isPreparing}
+                  onClick={handleSoundiizOneClick}
+                  aria-label={t.migration.oneClick}
+                  title={
+                    isOverLimit
+                      ? formatString(t.migration.oneClickDisabledTitle, {
+                          count: loadedCount,
+                          limit: SOUNDIIZ_MAX_TRACKS,
+                        })
+                      : t.migration.oneClickTitle
+                  }
+                  style={{
+                    fontSize: '0.92rem',
+                    padding: '0.42rem 0.78rem',
+                  }}
+                >
+                  {isPreparing ? t.migration.preparing : t.migration.oneClick}
+                </MarkerButton>
+              ) : null}
+
+              <MarkerButton
+                type="button"
+                variant="sticker"
+                rotateDeg={0.3}
+                onClick={() => openWebsite(service.url)}
+                aria-label={formatString(t.migration.visitAria, { service: service.name })}
+                style={{
+                  fontSize: '0.92rem',
+                  padding: '0.4rem 0.72rem',
+                  border: '1.5px dashed rgba(45, 52, 54, 0.42)',
+                }}
+              >
+                {t.migration.visit} ↗
+              </MarkerButton>
+
+              <HelpTooltip
+                label={formatString(t.migration.helpAria, { service: service.name })}
+                text={t.migration[service.helpKey]}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       {isOverLimit ? (
@@ -138,13 +319,10 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           className="font-note"
           role="status"
           style={{
-            marginTop: '0.8rem',
-            padding: '0.65rem 0.8rem',
-            border: '1.5px dashed rgba(180, 83, 9, 0.5)',
-            borderRadius: '10px',
-            background: 'rgba(245, 158, 11, 0.08)',
+            marginTop: '0.55rem',
             color: '#92400e',
-            lineHeight: 1.45,
+            fontSize: '0.86rem',
+            lineHeight: 1.4,
           }}
         >
           {formatString(t.migration.trackLimit, {
@@ -159,12 +337,10 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           className="font-note"
           role="status"
           style={{
-            marginTop: '0.8rem',
-            padding: '0.6rem 0.8rem',
-            border: '1px dashed rgba(45, 52, 54, 0.28)',
-            borderRadius: '10px',
-            color: '#636e72',
-            lineHeight: 1.45,
+            marginTop: '0.55rem',
+            color: '#73797c',
+            fontSize: '0.86rem',
+            lineHeight: 1.4,
           }}
         >
           {formatString(t.migration.partialNotice, {
@@ -174,61 +350,13 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
         </div>
       ) : null}
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.65rem',
-          marginTop: '0.95rem',
-        }}
-      >
-        {DESTINATIONS.map((destination, index) => {
-          const loadingKey = destination.id || 'other';
-          const isLoading = loadingDestination === loadingKey;
-          const label = t.migration[destination.key];
-
-          return (
-            <MarkerButton
-              key={loadingKey}
-              type="button"
-              variant="sticker"
-              rotateDeg={index % 2 === 0 ? -0.5 : 0.5}
-              disabled={unavailable || Boolean(loadingDestination)}
-              onClick={() => handleMigrate(destination.id, label)}
-              aria-label={label}
-              style={{
-                fontSize: '1rem',
-                padding: '0.48rem 0.9rem',
-                border: '1.5px dashed rgba(45, 52, 54, 0.45)',
-              }}
-            >
-              {isLoading ? t.migration.preparing : label}
-              {!isLoading ? ' ↗' : ''}
-            </MarkerButton>
-          );
-        })}
-      </div>
-
-      <div
-        className="font-note"
-        style={{
-          marginTop: '0.8rem',
-          fontSize: '0.9rem',
-          lineHeight: 1.5,
-          color: '#8a8f92',
-          maxWidth: '58rem',
-        }}
-      >
-        {t.migration.privacyNotice}
-      </div>
-
       {errorMessage ? (
         <div
           className="font-note"
           role="alert"
           style={{
-            marginTop: '0.7rem',
-            fontSize: '0.95rem',
+            marginTop: '0.55rem',
+            fontSize: '0.9rem',
             color: '#b91c1c',
           }}
         >
