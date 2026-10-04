@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import {
-  MUSICFREE_PLUGIN_URL,
   OPEN_SOURCE_INTEGRATIONS,
   SUPPORTED_INTEGRATION_COUNT,
   type IntegrationStatus,
@@ -19,7 +18,7 @@ const statusColor: Record<IntegrationStatus, 'green' | 'yellow' | 'blue'> = {
 
 export const PluginEcosystem: React.FC = () => {
   const { t, format } = useTranslation();
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [copyState, setCopyState] = useState<Record<string, 'copied' | 'failed'>>({});
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
   const resetTimerRef = useRef<number | null>(null);
 
@@ -40,14 +39,20 @@ export const PluginEcosystem: React.FC = () => {
     return t.ecosystem.statusPlanned;
   };
 
-  const handleCopyPluginUrl = async () => {
-    const ok = await copyToClipboard(MUSICFREE_PLUGIN_URL);
-    setCopyState(ok ? 'copied' : 'failed');
+  const handleCopyPluginUrl = async (id: string, url: string) => {
+    const ok = await copyToClipboard(url);
+    setCopyState((prev) => ({ ...prev, [id]: ok ? 'copied' : 'failed' }));
 
     if (resetTimerRef.current !== null) {
       window.clearTimeout(resetTimerRef.current);
     }
-    resetTimerRef.current = window.setTimeout(() => setCopyState('idle'), 2600);
+    resetTimerRef.current = window.setTimeout(() => {
+      setCopyState((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }, 2600);
   };
 
   return (
@@ -137,12 +142,12 @@ export const PluginEcosystem: React.FC = () => {
                     type="button"
                     variant="ink"
                     rotateDeg={-0.3}
-                    onClick={handleCopyPluginUrl}
+                    onClick={() => handleCopyPluginUrl(integration.id, integration.pluginUrl!)}
                     className="plugin-copy-button"
                   >
-                    {copyState === 'copied'
+                    {copyState[integration.id] === 'copied'
                       ? t.ecosystem.copiedInstallUrl
-                      : copyState === 'failed'
+                      : copyState[integration.id] === 'failed'
                         ? t.ecosystem.copyFailed
                         : t.ecosystem.copyInstallUrl}
                   </MarkerButton>

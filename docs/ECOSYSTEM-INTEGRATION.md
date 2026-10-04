@@ -38,6 +38,40 @@ flowchart TD
     D --> D2["优势：纯前端内存映射，零外部网络依赖，作者无运维负担"]
 ```
 
+### 2.2 多播放器插件工程目录与分发规范 (Multi-Player Architecture)
+
+为保障后续向多家开源播放器（MusicFree、洛雪、Moosync 等）横向扩展，项目采用**播放器目录隔离、全自动扫描构建、动态清单生成**的工业级架构：
+
+```text
+playlistout/
+  ├── plugins/                             # 播放器插件源码（按播放器 ID 严格隔离）
+  │   ├── musicfree/                       # MusicFree 插件
+  │   │   ├── src/index.js                 # 核心逻辑
+  │   │   ├── dist/                        # 本地打包产物
+  │   │   ├── scripts/build.js             # 插件独立构建管道
+  │   │   └── test/test-runner.js          # 插件自动化测试套件
+  │   ├── lx-music/                        # 洛雪音乐 (LX Music) 脚本/扩展
+  │   ├── moosync/                         # Moosync 扩展插件
+  │   └── ...                              # 后续横向扩展新播放器
+  │
+  ├── scripts/
+  │   ├── build-plugins.js                 # 全局插件构建器（自动发现 plugins/* 并构建）
+  │   └── test-plugins.js                  # 全局插件测试器（自动发现 plugins/* 并运行测试）
+  │
+  └── web/public/plugins/                  # 静态分发节点 (Cloudflare Pages CDN)
+      ├── index.json                       # 🌐 全生态播放器插件索引清单 (Ecosystem Manifest)
+      ├── musicfree/                       # MusicFree 专属分发目录
+      │   ├── 把你的歌单带走-PlaylistOut.js  # 插件主入口
+      │   └── plugins.json                 # 播放器规范订阅源
+      ├── lx-music/                        # 洛雪音乐专属分发目录
+      └── ...
+```
+
+**统一 URL 寻址与自更新标准**：
+* **插件直链**：`https://playlistout.lengxiqwq.com/plugins/<player-id>/<artifact>`
+* **播放器订阅源**：`https://playlistout.lengxiqwq.com/plugins/<player-id>/plugins.json`
+* **全生态清单**：`https://playlistout.lengxiqwq.com/plugins/index.json`
+
 ---
 
 ## 3. 目标开源平台深度画像与对症接入方案
