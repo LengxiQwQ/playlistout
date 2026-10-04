@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.6)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.7)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.6', 'Version must be 1.3.6');
+    assert.strictEqual(plugin.version, '1.3.7', 'Version must be 1.3.7');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -79,24 +79,12 @@ async function runAllTests() {
     assert(Array.isArray(plugin.hints?.importMusicSheet), 'hints.importMusicSheet must be an array');
     assert(plugin.hints.importMusicSheet.length >= 2, 'hints must provide concise user guidance');
     assert(
-      plugin.hints.importMusicSheet[0].includes('粘贴歌单链接或Json文本（官网获取）'),
+      plugin.hints.importMusicSheet[0].includes('直接粘贴各平台歌单分享链接即可全量导入'),
       'first hint must guide user on input text'
     );
     assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('一键去官网')),
-      'hints must include official website jump guidance'
-    );
-    assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('双模通用')),
-      'hints must highlight dual-mode compatibility'
-    );
-    assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('在线解析')),
-      'hints must list online parsing platforms'
-    );
-    assert(
-      plugin.hints.importMusicSheet.some((h) => h.includes('离线导入')),
-      'hints must provide offline import guidance for desktop and mobile'
+      plugin.hints.importMusicSheet.some((h) => h.includes('多平台支持')),
+      'hints must highlight multi-platform support'
     );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('音源播放')),
@@ -142,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.6');
+      assert.strictEqual(distPlugin.version, '1.3.7');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -216,7 +204,9 @@ async function runAllTests() {
   const v135Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.5.js');
   const v136Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.6.js');
   const v136Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.6.js');
-  await test('Verifies v1.2.0 through v1.3.6 release & historical archives exist', () => {
+  const v137Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.7.js');
+  const v137Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.7.js');
+  await test('Verifies v1.2.0 through v1.3.7 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -257,13 +247,15 @@ async function runAllTests() {
     assert(fs.existsSync(v135Web), 'web/public/plugins/musicfree-v1.3.5.js must exist');
     assert(fs.existsSync(v136Dist), 'dist/musicfree-v1.3.6.js must exist');
     assert(fs.existsSync(v136Web), 'web/public/plugins/musicfree-v1.3.6.js must exist');
+    assert(fs.existsSync(v137Dist), 'dist/musicfree-v1.3.7.js must exist');
+    assert(fs.existsSync(v137Web), 'web/public/plugins/musicfree-v1.3.7.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
     const srcCode = fs.readFileSync(pluginPath, 'utf-8');
     assert(!srcCode.includes('分享口令'), 'Source must not contain "分享口令"');
     assert(
-      srcCode.includes("var targetPlaceholder = '粘贴歌单链接或Json文本（官网获取）';"),
+      srcCode.includes("var targetPlaceholder = '粘贴歌单分享链接（QQ/网易/酷狗/汽水等）';"),
       'Placeholder must match clean prompt'
     );
   });
