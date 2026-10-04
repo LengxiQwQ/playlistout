@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.5)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.6)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.5', 'Version must be 1.3.5');
+    assert.strictEqual(plugin.version, '1.3.6', 'Version must be 1.3.6');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -72,8 +72,20 @@ async function runAllTests() {
     );
     assert.strictEqual(plugin.cacheControl, 'no-store', 'cacheControl must be no-store');
     assert.deepStrictEqual(plugin.supportedSearchType, ['sheet'], 'supportedSearchType must be [sheet]');
+    assert(
+      typeof plugin.description === 'string' && plugin.description.includes('https://playlistout.lengxiqwq.com'),
+      'description must provide clickable markdown link to website'
+    );
     assert(Array.isArray(plugin.hints?.importMusicSheet), 'hints.importMusicSheet must be an array');
     assert(plugin.hints.importMusicSheet.length >= 2, 'hints must provide concise user guidance');
+    assert(
+      plugin.hints.importMusicSheet[0].includes('粘贴歌单链接或Json文本（官网获取）'),
+      'first hint must guide user on input text'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('一键去官网')),
+      'hints must include official website jump guidance'
+    );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('双模通用')),
       'hints must highlight dual-mode compatibility'
@@ -130,7 +142,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.5');
+      assert.strictEqual(distPlugin.version, '1.3.6');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -202,7 +214,9 @@ async function runAllTests() {
   const v134Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.4.js');
   const v135Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.5.js');
   const v135Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.5.js');
-  await test('Verifies v1.2.0 through v1.3.5 release & historical archives exist', () => {
+  const v136Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.6.js');
+  const v136Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.6.js');
+  await test('Verifies v1.2.0 through v1.3.6 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -241,13 +255,15 @@ async function runAllTests() {
     assert(fs.existsSync(v134Web), 'web/public/plugins/musicfree-v1.3.4.js must exist');
     assert(fs.existsSync(v135Dist), 'dist/musicfree-v1.3.5.js must exist');
     assert(fs.existsSync(v135Web), 'web/public/plugins/musicfree-v1.3.5.js must exist');
+    assert(fs.existsSync(v136Dist), 'dist/musicfree-v1.3.6.js must exist');
+    assert(fs.existsSync(v136Web), 'web/public/plugins/musicfree-v1.3.6.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
     const srcCode = fs.readFileSync(pluginPath, 'utf-8');
     assert(!srcCode.includes('分享口令'), 'Source must not contain "分享口令"');
     assert(
-      srcCode.includes("var targetPlaceholder = '粘贴歌单链接或官网复制的 JSON，用「把你的歌单带走」解析';"),
+      srcCode.includes("var targetPlaceholder = '粘贴歌单链接或Json文本（官网获取）';"),
       'Placeholder must match clean prompt'
     );
   });
@@ -909,6 +925,22 @@ async function runAllTests() {
     await assert.rejects(
       async () => await plugin.importMusicSheet('https://example.com/unsupported-page'),
       /解析失败/
+    );
+  });
+
+  await test('Detects official website trigger and tries opening browser cleanly', async () => {
+    assert(plugin._isOfficialWebsiteTrigger('官网'), 'Must recognize 官网');
+    assert(plugin._isOfficialWebsiteTrigger('gw'), 'Must recognize gw');
+    assert(plugin._isOfficialWebsiteTrigger('https://playlistout.lengxiqwq.com'), 'Must recognize website url');
+    assert(!plugin._isOfficialWebsiteTrigger('https://y.qq.com/n/ryqq/playlist/123'), 'Must not match music url');
+
+    await assert.rejects(
+      async () => await plugin.importMusicSheet('官网'),
+      /在浏览器中打开官网/
+    );
+    await assert.rejects(
+      async () => await plugin.importMusicSheet('gw'),
+      /在浏览器中打开官网/
     );
   });
 
