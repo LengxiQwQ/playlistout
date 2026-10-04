@@ -1,6 +1,6 @@
 import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveData, ProviderError } from './models/playlist';
-import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists } from './providers/kugou';
+import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists, fetchKugouUserProfile } from './providers/kugou';
 import { getPublicStats, getMaintainerStats } from './stats';
 import { recordRateLimitEvent } from './analytics/recorder';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
@@ -324,6 +324,63 @@ export default {
             },
           }),
           { status: 502, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+    }
+
+    // Kugou lightweight authenticated profile endpoint
+    if (url.pathname === '/api/kugou/profile') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
+          }),
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
+        );
+      }
+
+      if (!token || !userid) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'INVALID_INPUT',
+              message: 'Missing Authorization Bearer token or X-Kugou-Userid header.',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...responseHeaders } },
+        );
+      }
+
+      try {
+        const profile = await fetchKugouUserProfile(token, userid);
+        return new Response(
+          JSON.stringify({ success: true, data: profile }),
+          { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...responseHeaders } },
+        );
+      } catch (err: unknown) {
+        if (
+          err instanceof ProviderError &&
+          (err.code === 'FORBIDDEN' || (err.details as any)?.authInvalid)
+        ) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'FORBIDDEN', message: 'Kugou session expired or rejected by upstream service.' },
+            }),
+            { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...responseHeaders } },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'UPSTREAM_ERROR',
+              message: 'Kugou user profile is temporarily unavailable.',
+            },
+          }),
+          { status: 502, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...responseHeaders } },
         );
       }
     }

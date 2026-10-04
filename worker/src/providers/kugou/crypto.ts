@@ -220,3 +220,52 @@ export function signKugouGatewayParams(
   const pairs = sortedKeys.map((k) => `${k}=${params[k]}`).join('');
   return md5(salt + pairs + dataStr + salt);
 }
+
+
+/**
+ * Public RSA key material used by Kugou Lite user-center requests.
+ * This endpoint uses raw RSA (no PKCS#1 padding): UTF-8 JSON is copied to the
+ * beginning of a 128-byte block, zero-filled on the right, then exponentiated.
+ */
+const KUGOU_LITE_RSA_MODULUS = BigInt(
+  '0xc40a2d0da76511f3bb1cc2bbd3afbd8bea83b4d6b05b6c13eb8920c53f1af7679b32ba0d0edb843240ef1b836efed3ee240734c14c1399fd6594d16af22f52525d14d72e0155c6dcc8638d4f7bb94f3a0b1f4c29f991972f2a160a25eb0a9e724336be7f69bbd319ffab1c6dd8470b021dc434f3faba89f4a2a01b33bdbdd08b',
+);
+const KUGOU_RSA_EXPONENT = 65537n;
+const KUGOU_RSA_BLOCK_BYTES = 128;
+
+function modPow(base: bigint, exponent: bigint, modulus: bigint): bigint {
+  let result = 1n;
+  let value = base % modulus;
+  let power = exponent;
+  while (power > 0n) {
+    if (power & 1n) result = (result * value) % modulus;
+    power >>= 1n;
+    value = (value * value) % modulus;
+  }
+  return result;
+}
+
+function bytesToBigInt(bytes: Uint8Array): bigint {
+  let value = 0n;
+  for (const byte of bytes) {
+    value = (value << 8n) | BigInt(byte);
+  }
+  return value;
+}
+
+/**
+ * Encrypts a small JSON payload using the raw RSA scheme expected by Kugou
+ * Lite user-center APIs. Returns lowercase hex; callers may uppercase it.
+ */
+export function encryptKugouLiteRsaRaw(payload: string | Record<string, unknown>): string {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length > KUGOU_RSA_BLOCK_BYTES) {
+    throw new Error('Kugou RSA payload exceeds 1024-bit key size');
+  }
+
+  const padded = new Uint8Array(KUGOU_RSA_BLOCK_BYTES);
+  padded.set(bytes, 0);
+  const encrypted = modPow(bytesToBigInt(padded), KUGOU_RSA_EXPONENT, KUGOU_LITE_RSA_MODULUS);
+  return encrypted.toString(16).padStart(KUGOU_RSA_BLOCK_BYTES * 2, '0');
+}
