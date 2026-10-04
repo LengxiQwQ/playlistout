@@ -223,6 +223,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
         {SERVICES.map((service, index) => (
           <div
             key={service.id}
+            className="migration-service-row"
             style={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -236,6 +237,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
             }}
           >
             <div
+              className="migration-service-name"
               style={{
                 minWidth: '8rem',
                 fontFamily: SYSTEM_FONT,
@@ -245,22 +247,10 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
               }}
             >
               {service.name}
-              {service.supportsOneClick ? (
-                <span
-                  style={{
-                    marginLeft: '0.45rem',
-                    fontFamily: SYSTEM_FONT,
-                    fontSize: '0.72rem',
-                    fontWeight: 500,
-                    color: '#6b7280',
-                  }}
-                >
-                  {t.migration.directBadge}
-                </span>
-              ) : null}
             </div>
 
             <div
+              className="migration-service-actions"
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',

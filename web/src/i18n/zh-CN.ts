@@ -182,8 +182,7 @@ export const zhCN: Translations = {
   },
   migration: {
     title: '第三方歌单迁移 ↗',
-    subtitle: '选一个专门做歌单迁移的工具；支持直传的就一键带过去，其余直接前往官网。',
-    directBadge: '支持直传',
+    subtitle: '选一个专门做歌单迁移的工具；Soundiiz 可一键带过去，其余直接前往官网。',
     oneClick: '一键迁移',
     oneClickTitle: '把当前歌单直接发送到 Soundiiz，打开后再选择目标音乐平台。',
     oneClickDisabledTitle: '当前已解析 {count} 首；Soundiiz 一键迁移最多支持 {limit} 首。',

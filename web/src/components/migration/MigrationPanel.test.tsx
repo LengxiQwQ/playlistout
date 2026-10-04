@@ -34,7 +34,16 @@ describe('MigrationPanel', () => {
     expect(screen.getByText('TuneMyMusic')).toBeInTheDocument();
     expect(screen.getByText('FreeYourMusic')).toBeInTheDocument();
     expect(screen.queryByText('Spotify')).not.toBeInTheDocument();
+    expect(screen.queryByText('支持直传')).not.toBeInTheDocument();
     expect(screen.getAllByText(/前往迁移/)).toHaveLength(3);
+
+    const soundiizName = screen.getByText('Soundiiz');
+    const soundiizRow = soundiizName.closest('.migration-service-row');
+    expect(soundiizRow).not.toBeNull();
+    expect(soundiizRow?.querySelector('.migration-service-name')).toContainElement(soundiizName);
+    expect(soundiizRow?.querySelector('.migration-service-actions')).toContainElement(
+      screen.getByRole('button', { name: '一键迁移' }),
+    );
   });
 
   it('sends the tracklist to Soundiiz without preselecting a destination', async () => {

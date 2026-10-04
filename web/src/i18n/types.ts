@@ -183,7 +183,6 @@ export interface Translations {
   migration: {
     title: string;
     subtitle: string;
-    directBadge: string;
     oneClick: string;
     oneClickTitle: string;
     oneClickDisabledTitle: string;
