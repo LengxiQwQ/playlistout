@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.3)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.4)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -723,7 +723,7 @@ function getUserTargetPlatform() {
       return target.trim();
     }
   } catch (_) {}
-  return 'auto';
+  return 'native';
 }
 
 /**
@@ -1044,24 +1044,23 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   }
 
   // 8. 平台归属策略 (Platform Routing Strategy)：
-  // 默认策略 (auto)：桌面端与移动端统一将 platform 保持为「把你的歌单带走」，
-  // 播放时由本插件全权接管智能换源梯队 (QQ -> 酷我 -> 网易云)，
-  // 彻底避免移动端被第三方劣质插件或卡密广告源劫持，确保手机端与电脑端体验完全一致！
-  // 分流策略：若用户在插件设置中显式配置 targetPlatform (如 'native' / 'split' / 'qq' / 'kuwo')，则尊重用户设置。
+  // 移动端默认策略 (native)：将 platform 自动分流至原曲自然平台（qq / netease / kugou / bilibili / migu / qishui），
+  // 由用户手机上安装的各原生音乐插件直接解析播放，与电脑端使用体验完全一致！
+  // 若用户显式配置特定平台（如 'qq' / 'netease' / 'kugou'）或 'auto' (由本插件全权解析)，则尊重用户设置。
   const isDesktop = isHostElectron();
   const userTarget = getUserTargetPlatform();
   let finalPlatform = PLUGIN_PLATFORM;
 
   if (!isDesktop) {
-    if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
-      const ut = userTarget.toLowerCase();
-      if (ut === 'native' || ut === 'split' || ut === 'origin') {
-        if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
-          finalPlatform = naturalPlatform;
-        }
-      } else {
-        finalPlatform = ut;
+    const ut = (userTarget || 'native').toLowerCase();
+    if (ut === 'native' || ut === 'split' || ut === 'origin') {
+      if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
+        finalPlatform = naturalPlatform;
       }
+    } else if (ut === 'auto' || isSelfPlatform(ut)) {
+      finalPlatform = PLUGIN_PLATFORM;
+    } else {
+      finalPlatform = ut;
     }
   }
 
@@ -2086,7 +2085,7 @@ async function getMediaSource(musicItem, quality) {
         var inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
         var userTarget = getUserTargetPlatform();
         var prioritizedPlatform =
-          userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)
+          userTarget && userTarget.toLowerCase() !== 'auto' && userTarget.toLowerCase() !== 'native' && !isSelfPlatform(userTarget)
             ? userTarget.toLowerCase()
             : (inferredPlatform && !isSelfPlatform(inferredPlatform) ? inferredPlatform : null);
 
@@ -2221,7 +2220,7 @@ async function getLyric(musicItem) {
         var userTarget = getUserTargetPlatform();
         var inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
         var candidatePlatforms = [];
-        if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
+        if (userTarget && userTarget.toLowerCase() !== 'auto' && userTarget.toLowerCase() !== 'native' && !isSelfPlatform(userTarget)) {
           candidatePlatforms.push(userTarget.toLowerCase());
         }
         if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !candidatePlatforms.includes(inferredPlatform)) {
@@ -2265,7 +2264,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.3',
+  version: '1.3.4',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
@@ -2274,31 +2273,31 @@ module.exports = {
       '【双模通用】支持电脑端与手机端 MusicFree，全平台无缝兼容',
       '【在线解析】直接粘贴 QQ音乐、网易云、酷狗、汽水 歌单分享链接',
       '【离线导入】电脑端支持文件选择弹窗；手机端支持直接粘贴导出JSON文本',
-      '【音源播放】电脑与手机统一全曲秒播直连(全量覆盖周杰伦/林俊杰等VIP歌曲)，纯净无广无卡密无语音干扰',
+      '【音源播放】移动端默认自动分流至各原生插件播放，体验与电脑版完全一致，纯净无广无语音干扰',
       '【酷狗提示】酷狗免登录仅前10首，可配置Token或官网登录后导出JSON导入',
       '官网地址：playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
     {
-      key: 'fallbackMode',
-      name: '换源策略',
-      hint: 'strict(默认:仅原版) / similar(含相似翻唱) / silent_skip(静默跳过)',
-    },
-    {
       key: 'targetPlatform',
       name: '音源通道',
-      hint: 'auto(默认:全曲秒播直连，与电脑版体验完全一致) / native(分流至手机各原生插件) / qq / netease / kugou',
+      hint: 'native(默认) / qq / netease',
+    },
+    {
+      key: 'fallbackMode',
+      name: '换源策略',
+      hint: 'strict(默认) / similar(翻唱)',
     },
     {
       key: 'kugouToken',
-      name: '酷狗Token/凭证',
-      hint: '官网复制Token(免登录仅前10首)；支持token或token:userid',
+      name: '酷狗Token',
+      hint: '官网Token(可选)',
     },
     {
       key: 'kugouUserid',
-      name: '酷狗UserID(可选)',
-      hint: '官网复制UserID(若在Token中已写token:userid则无需填写)',
+      name: '酷狗UID',
+      hint: '官网UserID(可选)',
     },
   ],
   supportedSearchType: ['sheet'],
