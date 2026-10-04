@@ -101,14 +101,23 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
           ⌇
         </div>
 
-        {/* Decorative green washi tape */}
-        <div className="result-corner-tape" style={{ position: 'absolute', top: '2rem', left: '-1rem', zIndex: 20 }}>
+        {/* Decorative green washi tape — pinned to the paper edge, clear of the cover art */}
+        <div
+          className="result-corner-tape"
+          style={{
+            position: 'absolute',
+            top: '-0.7rem',
+            left: '1.1rem',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}
+        >
           <Tape
             color="green"
-            rotateDeg={-6}
+            rotateDeg={-5}
             style={{
-              width: '8rem',
-              height: '1.85rem',
+              width: '6.5rem',
+              height: '1.55rem',
             }}
           />
         </div>
