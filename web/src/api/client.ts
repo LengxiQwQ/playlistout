@@ -196,6 +196,13 @@ export async function checkKugouQrCode(qrcode: string): Promise<ApiResponse<Kugo
   }
 }
 
+export interface KugouUserProfile {
+  userId: string;
+  nickname: string;
+  avatarUrl?: string;
+  signature?: string;
+}
+
 export interface KugouSessionValidationResult {
   status: 'valid' | 'invalid';
   userid?: string;
@@ -253,6 +260,57 @@ export async function validateKugouAuth(
       error: {
         code: 'NETWORK_ERROR',
         message: err instanceof Error ? err.message : '验证酷狗登录状态失败',
+      },
+    };
+  }
+}
+
+export async function fetchKugouProfile(
+  token: string,
+  userid: string,
+): Promise<ApiResponse<KugouUserProfile>> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    Authorization: `Bearer ${token}`,
+    'X-Kugou-Userid': userid,
+  };
+
+  const requestProfile = async (baseUrl: string): Promise<ApiResponse<KugouUserProfile> | null> => {
+    const response = await fetch(`${baseUrl}/api/kugou/profile`, { headers });
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      return await response.json();
+    }
+    return null;
+  };
+
+  try {
+    const local = await requestProfile(API_BASE_URL);
+    if (local) return local;
+
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      const fallback = await requestProfile(REMOTE_API_BASE_URL);
+      if (fallback) return fallback;
+    }
+
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: '读取酷狗账号资料失败' },
+    };
+  } catch (err: unknown) {
+    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+      try {
+        const fallback = await requestProfile(REMOTE_API_BASE_URL);
+        if (fallback) return fallback;
+      } catch {
+        // ignore
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '读取酷狗账号资料失败',
       },
     };
   }
