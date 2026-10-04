@@ -165,6 +165,8 @@ export interface Translations {
     exportAction: string;
     takeListWithYou: string;
     quickCopyTitle: string;
+    clipboardTextLabel: string;
+    clipboardJsonLabel: string;
     copyTitleOnly: string;
     copyTitleArtist: string;
     copyTitleArtistAlbum: string;

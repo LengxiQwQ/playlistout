@@ -165,6 +165,8 @@ export const enUS: Translations = {
     exportAction: 'EXPORT ↓',
     takeListWithYou: 'take the list with you →',
     quickCopyTitle: 'Quick Copy to Clipboard',
+    clipboardTextLabel: 'Plain text:',
+    clipboardJsonLabel: 'JSON data:',
     copyTitleOnly: 'Title only',
     copyTitleArtist: 'Title - Artist',
     copyTitleArtistAlbum: 'Title - Artist - Album',
