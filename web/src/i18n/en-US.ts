@@ -182,8 +182,7 @@ export const enUS: Translations = {
   },
   migration: {
     title: 'Third-party playlist transfer ↗',
-    subtitle: 'Pick a dedicated playlist transfer tool. Use one-click handoff where available, or open the service directly.',
-    directBadge: 'direct handoff',
+    subtitle: 'Pick a dedicated playlist transfer tool. Soundiiz supports one-click handoff; otherwise open the service directly.',
     oneClick: 'One-click transfer',
     oneClickTitle: 'Send the current tracklist to Soundiiz, then choose the destination music service there.',
     oneClickDisabledTitle: '{count} tracks are currently parsed; Soundiiz one-click transfer supports up to {limit}.',

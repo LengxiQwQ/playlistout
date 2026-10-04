@@ -136,7 +136,23 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(screen.getByRole('button', { name: '仅歌名' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '歌名 - 歌手' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '歌名 - 歌手 - 专辑' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: '📋 复制 JSON 数据' })).toBeEnabled();
+    const titleOnly = screen.getByRole('button', { name: '仅歌名' });
+    const titleArtist = screen.getByRole('button', { name: '歌名 - 歌手' });
+    const titleArtistAlbum = screen.getByRole('button', { name: '歌名 - 歌手 - 专辑' });
+    const jsonCopy = screen.getByRole('button', { name: '📋 复制 JSON 数据' });
+
+    expect(titleOnly).toBeEnabled();
+    expect(titleArtist).toBeEnabled();
+    expect(titleArtistAlbum).toBeEnabled();
+    expect(jsonCopy).toBeEnabled();
+
+    expect(titleOnly).toHaveClass('clipboard-copy-button');
+    expect(titleArtist).toHaveClass('clipboard-copy-button');
+    expect(titleArtistAlbum).toHaveClass('clipboard-copy-button');
+    expect(jsonCopy).toHaveClass('clipboard-json-copy-button');
+
+    expect(titleOnly.closest('.clipboard-text-row')).not.toBeNull();
+    expect(jsonCopy.closest('.clipboard-json-row')).not.toBeNull();
   });
 
 });
