@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.0)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.1)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.0', 'Version must be 1.3.0');
+    assert.strictEqual(plugin.version, '1.3.1', 'Version must be 1.3.1');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -130,7 +130,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.0');
+      assert.strictEqual(distPlugin.version, '1.3.1');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -192,7 +192,9 @@ async function runAllTests() {
   const v1212Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.2.12.js');
   const v130Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.0.js');
   const v130Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.0.js');
-  await test('Verifies v1.2.0 through v1.3.0 release & historical archives exist', () => {
+  const v131Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.1.js');
+  const v131Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.1.js');
+  await test('Verifies v1.2.0 through v1.3.1 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -221,6 +223,8 @@ async function runAllTests() {
     assert(fs.existsSync(v1212Web), 'web/public/plugins/musicfree-v1.2.12.js must exist');
     assert(fs.existsSync(v130Dist), 'dist/musicfree-v1.3.0.js must exist');
     assert(fs.existsSync(v130Web), 'web/public/plugins/musicfree-v1.3.0.js must exist');
+    assert(fs.existsSync(v131Dist), 'dist/musicfree-v1.3.1.js must exist');
+    assert(fs.existsSync(v131Web), 'web/public/plugins/musicfree-v1.3.1.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
@@ -880,6 +884,77 @@ async function runAllTests() {
     assert.strictEqual(ocErrors.length, 0, `Found forbidden ?. in source:\n${ocErrors.join('\n')}`);
     assert.strictEqual(ncErrors.length, 0, `Found forbidden ?? in source:\n${ncErrors.join('\n')}`);
     assert.strictEqual(aaErrors.length, 0, `Found forbidden async arrow in source:\n${aaErrors.join('\n')}`);
+  });
+
+  // ── 8.6. Online Stream & Lyric Resolution Engine ───────────────────
+  logSection('8.6. Online Stream & Lyric Resolution Engine');
+
+  await test('Mobile & Standalone mode: getMediaSource resolves online stream for valid tracks or returns null gracefully', async () => {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+    try {
+      // 1. QQ track with mid
+      const qqItem = {
+        id: 'qq_0039MnYb0qxYhV',
+        title: '晴天',
+        artist: '周杰伦',
+        platform: '把你的歌单带走',
+        _originPlatform: 'qq',
+        _src: { qq: { mid: '0039MnYb0qxYhV' } },
+      };
+      const qqRes = await plugin.getMediaSource(qqItem, 'standard');
+      if (qqRes) {
+        assert(typeof qqRes.url === 'string' && qqRes.url.startsWith('http'), 'QQ stream URL must be valid HTTP');
+        assert(qqRes.quality, 'QQ stream must specify quality');
+      }
+
+      // 2. NetEase track with id
+      const neteaseItem = {
+        id: 'netease_1357375695',
+        title: '海阔天空',
+        artist: 'Beyond',
+        platform: '把你的歌单带走',
+        _originPlatform: 'netease',
+        _src: { netease: { id: '1357375695' } },
+      };
+      const nRes = await plugin.getMediaSource(neteaseItem, 'standard');
+      if (nRes) {
+        assert(typeof nRes.url === 'string' && nRes.url.startsWith('http'), 'NetEase stream URL must be valid HTTP');
+      }
+
+      // 3. Fake non-existent track returns null without crashing
+      const fakeItem = {
+        id: 'fake_nonexistent_track_999999',
+        title: '完全不存在的随机歌曲标题_xyz',
+        artist: '未知无名',
+        platform: '把你的歌单带走',
+      };
+      const fakeRes = await plugin.getMediaSource(fakeItem, 'standard');
+      assert.strictEqual(fakeRes, null, 'Non-existent song must return null');
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+    }
+  });
+
+  await test('getLyric returns non-null { rawLrc: string } across mobile & desktop environments', async () => {
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+    try {
+      const qqItem = {
+        id: 'qq_0039MnYb0qxYhV',
+        title: '晴天',
+        artist: '周杰伦',
+        platform: '把你的歌单带走',
+        _originPlatform: 'qq',
+        _src: { qq: { mid: '0039MnYb0qxYhV' } },
+      };
+      const lrcRes = await plugin.getLyric(qqItem);
+      assert(lrcRes && typeof lrcRes.rawLrc === 'string', 'getLyric must always return rawLrc string');
+
+      // Empty/invalid item
+      const emptyRes = await plugin.getLyric(null);
+      assert.deepStrictEqual(emptyRes, { rawLrc: '' }, 'Empty item must return empty lyric');
+    } finally {
+      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+    }
   });
 
   // ── Test Summary ──────────────────────────────────────────────────
