@@ -206,7 +206,7 @@ describe('CSV Export', () => {
 
     // Core migration metadata is normalized and duplicates are preserved.
     expect(content).toContain('晴天,周杰伦,叶惠美,TWUM72300001,269,https://y.qq.com/n/ryqq/songDetail/001,1,track,false,playable');
-    expect(content).toContain('晴天,周杰伦,叶惠美,,,,8,track,false,playable');
+    expect(content).toContain('晴天,周杰伦,叶惠美,,269,,8,track,false,playable');
   });
 
   it('includes metadata comments when options.includeMetadata is true', () => {
