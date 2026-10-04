@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { KugouAuthModal } from './KugouAuthModal';
 import * as apiClient from '../../api/client';
 import * as kugouAuthUtil from '../../utils/kugouAuth';
@@ -79,7 +79,7 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
       expect(screen.getByTestId('kugou-profile-card')).toBeInTheDocument();
       expect(screen.getByText('酷狗账号')).toBeInTheDocument();
     });
-    expect(screen.getByText('✓ 已登录')).toBeInTheDocument();
+    expect(screen.queryByText('✓ 已登录')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '使用当前登录状态重新解析' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '退出' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '完成' })).not.toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
 
     const card = await screen.findByTestId('kugou-profile-card');
     expect(card).toHaveTextContent('冷汐OωO');
-    expect(card).toHaveTextContent('✓ 已登录');
+    expect(card).not.toHaveTextContent('已登录');
     expect(card).toHaveTextContent('音乐会跟着我走');
     expect(card).toHaveTextContent('用户 ID：1425711902');
 
@@ -125,6 +125,82 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
       'profile_token',
       '1425711902',
     );
+  });
+
+  it('keeps the modal open after QR login, shows the profile, and refreshes only after user closes it', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
+        success: true,
+        data: {
+          qrcode: 'login-qr-key',
+          qrcodeImg: 'data:image/png;base64,login_qr',
+          loginUrl: 'https://h5.kugou.com/test',
+          expiresAt: Date.now() + 300000,
+        },
+      });
+      vi.spyOn(apiClient, 'checkKugouQrCode').mockResolvedValue({
+        success: true,
+        data: {
+          status: 'success',
+          token: 'fresh_login_token',
+          userid: '1425711902',
+        },
+      });
+      vi.mocked(apiClient.fetchKugouProfile).mockResolvedValue({
+        success: true,
+        data: {
+          userId: '1425711902',
+          nickname: '扫码后的冷汐',
+          avatarUrl: 'https://c1.kgimg.com/v2/kugouicon/fresh-avatar.jpg',
+          signature: '扫码成功后直接看到我',
+        },
+      });
+
+      const handleClose = vi.fn();
+      const handleSuccess = vi.fn();
+      render(
+        <KugouAuthModal
+          isOpen={true}
+          onClose={handleClose}
+          onSuccess={handleSuccess}
+        />,
+      );
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByAltText('Kugou Login QR Code')).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const card = screen.getByTestId('kugou-profile-card');
+      expect(card).toHaveTextContent('扫码后的冷汐');
+      expect(card).toHaveTextContent('扫码成功后直接看到我');
+      expect(card).not.toHaveTextContent('已登录');
+      expect(screen.getByAltText('扫码后的冷汐')).toHaveAttribute(
+        'src',
+        'https://c1.kgimg.com/v2/kugouicon/fresh-avatar.jpg',
+      );
+
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(handleSuccess).not.toHaveBeenCalled();
+      expect(kugouAuthUtil.getKugouAuth()).toEqual({
+        token: 'fresh_login_token',
+        userid: '1425711902',
+      });
+
+      fireEvent.click(screen.getByTestId('kugou-modal-close-btn'));
+      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleSuccess).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows unknown state when validation encounters network error and retains credentials', async () => {

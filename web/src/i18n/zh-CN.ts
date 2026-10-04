@@ -355,7 +355,6 @@ export const zhCN: Translations = {
     cancel: '取消',
     jumpToAppBtn: '📱 一键跳转酷狗 App 授权',
     jumpToAppTip: '手机/平板无法扫码？点击上方按钮唤起酷狗 App 授权，或长按二维码保存至相册在酷狗内扫一扫识别。',
-    profileConnected: '已登录',
     profileLoading: '正在读取账号资料...',
     profileFallbackName: '酷狗账号',
     profileUserIdLabel: '用户 ID',
