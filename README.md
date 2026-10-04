@@ -152,7 +152,7 @@ https://playlistout.lengxiqwq.com/plugins/musicfree.js
 
 导出文件由浏览器本地生成，不需要把导出文件上传到服务器。
 
-如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。
+如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。各格式当前的字段、Sheet 与兼容性约定见 [Web 导出格式规范](docs/EXPORT-FORMATS.md)。
 
 ---
 
@@ -272,6 +272,7 @@ README 只保留使用项目所需的核心信息，更详细的协议、接口�
 |---|---|---|
 | [Public API](docs/API.md) | 第三方开发者 | API endpoint、参数、认证、CORS、限流、响应结构与错误码 |
 | [JSON Schema](docs/JSON-SCHEMA.md) | 播放器 / 工具开发者 | Playlist Out 标准 JSON 数据协议与字段定义 |
+| [Web 导出格式规范](docs/EXPORT-FORMATS.md) | 用户 / 迁移工具开发者 | CSV、XLSX、JSON、M3U8、TXT 的当前结构、字段和兼容性约定 |
 | [QQ 音乐 CLI](cli/qqmusic/README.md) | 命令行用户 | QQ 音乐歌单 / 用户歌单导出、安装与使用说明 |
 | [网易云音乐 CLI](cli/netease/README.md) | 命令行用户 | 网易云歌单 / 用户歌单导出、安装与使用说明 |
 | [MusicFree 插件](plugins/musicfree/README.md) | MusicFree 用户与插件开发者 | 插件安装、使用、配置、构建与测试 |
