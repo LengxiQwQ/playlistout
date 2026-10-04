@@ -7,8 +7,12 @@ import * as kugouAuthUtil from '../../utils/kugouAuth';
 
 describe('KugouAuthModal Component State Machine & UX Loop', () => {
   beforeEach(() => {
-    kugouAuthUtil.clearKugouAuth();
     vi.restoreAllMocks();
+    kugouAuthUtil.clearKugouAuth();
+    vi.spyOn(apiClient, 'fetchKugouProfile').mockResolvedValue({
+      success: false,
+      error: { code: 'UPSTREAM_ERROR', message: 'profile unavailable' },
+    });
   });
 
   afterEach(() => {
@@ -71,7 +75,11 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
       expect(screen.getByTestId('kugou-auth-valid')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('PlaylistOut 已连接酷狗账号')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('kugou-profile-card')).toBeInTheDocument();
+      expect(screen.getByText('酷狗账号')).toBeInTheDocument();
+    });
+    expect(screen.getByText('✓ 已登录')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '使用当前登录状态重新解析' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '退出' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '完成' })).not.toBeInTheDocument();
@@ -81,6 +89,42 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     // Clicking top-right "✕" close button calls onClose
     fireEvent.click(screen.getByTestId('kugou-modal-close-btn'));
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows avatar, nickname, signature and user id when profile is available', async () => {
+    kugouAuthUtil.setKugouAuth('profile_token', '1425711902');
+
+    vi.spyOn(apiClient, 'validateKugouAuth').mockResolvedValue({
+      success: true,
+      data: { status: 'valid', userid: '1425711902' },
+    });
+    vi.mocked(apiClient.fetchKugouProfile).mockResolvedValue({
+      success: true,
+      data: {
+        userId: '1425711902',
+        nickname: '冷汐OωO',
+        avatarUrl: 'https://c1.kgimg.com/v2/kugouicon/avatar.jpg',
+        signature: '音乐会跟着我走',
+      },
+    });
+
+    render(<KugouAuthModal isOpen={true} onClose={vi.fn()} />);
+
+    const card = await screen.findByTestId('kugou-profile-card');
+    expect(card).toHaveTextContent('冷汐OωO');
+    expect(card).toHaveTextContent('✓ 已登录');
+    expect(card).toHaveTextContent('音乐会跟着我走');
+    expect(card).toHaveTextContent('用户 ID：1425711902');
+
+    const avatar = screen.getByAltText('冷汐OωO');
+    expect(avatar).toHaveAttribute(
+      'src',
+      'https://c1.kgimg.com/v2/kugouicon/avatar.jpg',
+    );
+    expect(apiClient.fetchKugouProfile).toHaveBeenCalledWith(
+      'profile_token',
+      '1425711902',
+    );
   });
 
   it('shows unknown state when validation encounters network error and retains credentials', async () => {
@@ -248,10 +292,9 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
       expect(screen.getByTestId('kugou-api-credentials')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('1425711902')).toBeInTheDocument();
-    expect(screen.getByText(/test_token/)).toBeInTheDocument();
-
     const credentials = screen.getByTestId('kugou-api-credentials');
+    expect(credentials).toHaveTextContent('1425711902');
+    expect(credentials).toHaveTextContent('test_token');
     const copyButtons = Array.from(credentials.querySelectorAll('button'));
     expect(copyButtons.map((button) => button.getAttribute('data-testid'))).toEqual([
       'copy-kugou-token-btn',
