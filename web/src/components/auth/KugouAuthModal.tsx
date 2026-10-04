@@ -565,6 +565,8 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                 }}
                 onClick={() => {
                   clearKugouAuth();
+                  setProfile(null);
+                  setProfileLoading(false);
                   setAuthState('none');
                   loadQrCode();
                 }}
