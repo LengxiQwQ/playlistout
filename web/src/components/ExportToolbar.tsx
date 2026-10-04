@@ -7,6 +7,7 @@ import { trackClarityEvent, setClarityTag } from '../analytics/clarity';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
 import { MarkerButton } from './ui/MarkerButton';
+import { MigrationPanel } from './migration/MigrationPanel';
 
 export interface ExportToolbarProps {
   playlist: Playlist | null;
@@ -278,6 +279,8 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             </MarkerButton>
           </div>
         </div>
+
+        <MigrationPanel playlist={playlist} />
 
         {/* Clipboard Copy Actions */}
         <div
