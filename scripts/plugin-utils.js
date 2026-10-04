@@ -226,6 +226,7 @@ export function ensurePluginDependencies(plugin) {
   execFileSync(NPM_COMMAND, ['ci'], {
     cwd: plugin.pluginPath,
     stdio: 'inherit',
+    shell: process.platform === 'win32',
   });
 
   mkdirSync(nodeModulesDir, { recursive: true });
@@ -236,6 +237,7 @@ export function runPluginScript(plugin, scriptName, extraEnv = {}) {
   execFileSync(NPM_COMMAND, ['run', scriptName], {
     cwd: plugin.pluginPath,
     stdio: 'inherit',
+    shell: process.platform === 'win32',
     env: { ...process.env, ...extraEnv },
   });
 }
