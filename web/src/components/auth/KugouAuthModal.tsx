@@ -561,6 +561,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                   color: '#dc2626',
                 }}
                 onClick={() => {
+                  pendingSuccessRef.current = false;
                   clearKugouAuth();
                   setProfile(null);
                   setProfileLoading(false);
