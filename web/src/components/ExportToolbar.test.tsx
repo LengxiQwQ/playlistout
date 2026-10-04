@@ -93,4 +93,20 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(copySpy).toHaveBeenCalled();
     expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制 2 首歌曲（歌名 - 歌手）到剪贴板！');
   });
+  it('uses three equally prominent export section titles and removes the legacy MusicFree copy action', () => {
+    render(<ExportToolbar playlist={mockPlaylist} />);
+
+    const exportTitle = screen.getByText('选择导出格式（可多选）：');
+    const migrationTitle = screen.getByText('第三方歌单迁移 ↗');
+    const clipboardTitle = screen.getByText('快捷复制到剪贴板');
+
+    expect(exportTitle).toHaveStyle({ fontSize: '1.5rem', fontWeight: '700' });
+    expect(migrationTitle).toHaveStyle({ fontSize: '1.5rem', fontWeight: '700' });
+    expect(clipboardTitle).toHaveStyle({ fontSize: '1.5rem', fontWeight: '700' });
+
+    expect(
+      screen.queryByText('🎧 一键复制 MusicFree 官方插件链接'),
+    ).not.toBeInTheDocument();
+  });
+
 });
