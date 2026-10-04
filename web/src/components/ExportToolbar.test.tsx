@@ -94,18 +94,23 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制 2 首歌曲（歌名 - 歌手）到剪贴板！');
   });
 
-  it('triggers copy JSON and displays dedicated MusicFree import toast feedback', async () => {
+  it('triggers generic JSON clipboard copy and shows third-party guidance', async () => {
     const copySpy = vi.spyOn(clipboardUtils, 'copyToClipboard').mockResolvedValue(true);
 
     render(<ExportToolbar playlist={mockPlaylist} />);
 
-    const copyJsonBtn = screen.getByRole('button', { name: /复制 JSON/ });
+    const copyJsonBtn = screen.getByRole('button', { name: '📋 复制 JSON 数据' });
     expect(copyJsonBtn).not.toBeDisabled();
+    expect(
+      screen.getByText('适用于通过剪贴板导入歌单的第三方插件、播放器或工具。'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/MusicFree 导入/)).not.toBeInTheDocument();
 
     fireEvent.click(copyJsonBtn);
 
     expect(copySpy).toHaveBeenCalled();
-    expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制完整 JSON 歌单');
+    expect(await screen.findByTestId('export-toast')).toHaveTextContent('已复制完整 JSON 歌单数据');
+    expect(screen.getByTestId('export-toast')).not.toHaveTextContent('MusicFree');
   });
   it('uses three equally prominent export section titles and removes the legacy MusicFree copy action', () => {
     render(<ExportToolbar playlist={mockPlaylist} />);
