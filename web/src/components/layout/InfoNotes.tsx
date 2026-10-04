@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Tape } from '../ui/Tape';
+import { Sticker } from '../ui/Sticker';
 
 export interface InfoNotesProps {
   onOpenPrivacy?: () => void;
@@ -66,23 +67,51 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
       </Paper>
 
       {/* Note 3: Little note */}
-      <Paper
-        color="blue"
-        borderVariant="default"
-        rotateDeg={-0.5}
-        shadow="paper"
-        style={{ padding: '2rem 1.75rem' }}
-      >
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
-          {t.infoNotes.noteTitle}
+      <div className="info-notes-tip-wrap" style={{ position: 'relative', minWidth: 0 }}>
+        <Paper
+          color="blue"
+          borderVariant="default"
+          rotateDeg={-0.5}
+          shadow="paper"
+          style={{ padding: '2rem 1.75rem' }}
+        >
+          <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
+            {t.infoNotes.noteTitle}
+          </div>
+          <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
+            {t.infoNotes.noteContent}
+          </p>
+          <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#636e72' }}>
+            {t.infoNotes.noteSubtext}
+          </div>
+        </Paper>
+
+        <div
+          className="info-notes-favorited"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            right: '-2.6rem',
+            bottom: '-2.1rem',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        >
+          <Sticker
+            as="div"
+            color="pink"
+            rotateDeg={8}
+            style={{
+              opacity: 0.88,
+              fontSize: '0.9rem',
+              padding: '0.25rem 0.6rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ♥ favorited
+          </Sticker>
         </div>
-        <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
-          {t.infoNotes.noteContent}
-        </p>
-        <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#636e72' }}>
-          {t.infoNotes.noteSubtext}
-        </div>
-      </Paper>
+      </div>
     </section>
   );
 };

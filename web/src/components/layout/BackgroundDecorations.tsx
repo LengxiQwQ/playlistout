@@ -53,12 +53,6 @@ export const BackgroundDecorations: React.FC = () => {
         ❥
       </div>
 
-      <div style={{ position: 'absolute', top: '45%', left: 'max(1%, calc(50% - 680px))' }}>
-        <Sticker color="pink" rotateDeg={8} style={{ opacity: 0.9, fontSize: '0.9rem', padding: '0.25rem 0.6rem' }}>
-          ♥ favorited
-        </Sticker>
-      </div>
-
       <div style={{ position: 'absolute', top: '52%', left: 'max(8%, calc(50% - 600px))' }}>
         <Tape color="cyan" rotateDeg={-22} style={{ width: '3.5rem', height: '1rem', opacity: 0.6 }} />
       </div>
