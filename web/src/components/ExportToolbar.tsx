@@ -294,8 +294,21 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
           >
             {t.export.quickCopyTitle}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <Sticker
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+              <span
+                style={{
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: '#636e72',
+                  flexShrink: 0,
+                }}
+              >
+                {t.export.clipboardTextLabel}
+              </span>
+              <Sticker
               type="button"
               color="white"
               rotateDeg={-0.5}
@@ -330,6 +343,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             >
               {t.export.copyTitleArtistAlbum}
             </Sticker>
+            </div>
 
             <div
               style={{
@@ -337,10 +351,21 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 gap: '0.35rem',
-                flexBasis: '100%',
-                marginTop: '0.2rem',
               }}
             >
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                <span
+                  style={{
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    color: '#636e72',
+                    flexShrink: 0,
+                  }}
+                >
+                  {t.export.clipboardJsonLabel}
+                </span>
               <Sticker
                 type="button"
                 color="blue"
@@ -358,6 +383,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               >
                 📋 {t.export.copyJson}
               </Sticker>
+              </div>
               <div
                 style={{
                   maxWidth: '34rem',
