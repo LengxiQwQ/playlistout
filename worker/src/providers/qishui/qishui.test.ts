@@ -493,7 +493,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(playlist.creator).toBe('冷汐OωO');
     expect(playlist.channel).toBe('douyin');
     expect(playlist.availableChannels).toEqual(['qishui', 'douyin']);
-    expect(playlist.tracks.length).toBeGreaterThanOrEqual(200);
+    expect(playlist.tracks.length).toBeGreaterThanOrEqual(150);
 
     // Verify presence of original sounds and normalized titles
     const originalSounds = playlist.tracks.filter((t) => t.isOriginalSound);

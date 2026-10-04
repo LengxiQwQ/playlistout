@@ -60,10 +60,10 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
-  await test('Exports valid metadata conforming to MusicFree standards (v1.3.8)', () => {
+  await test('Exports valid metadata conforming to MusicFree standards (v1.3.9)', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
-    assert.strictEqual(plugin.version, '1.3.8', 'Version must be 1.3.8');
+    assert.strictEqual(plugin.version, '1.3.9', 'Version must be 1.3.9');
     assert.strictEqual(plugin.appVersion, '>0.1.0-alpha.0', 'appVersion must match specification');
     assert.strictEqual(
       plugin.srcUrl,
@@ -126,7 +126,7 @@ async function runAllTests() {
     await test('Distribution artifact (dist/musicfree.js) is valid and executable', () => {
       const distPlugin = require(distPath);
       assert.strictEqual(distPlugin.platform, '把你的歌单带走');
-      assert.strictEqual(distPlugin.version, '1.3.8');
+      assert.strictEqual(distPlugin.version, '1.3.9');
       assert(Array.isArray(distPlugin.userVariables));
       assert.strictEqual(typeof distPlugin.importMusicSheet, 'function');
       assert.strictEqual(typeof distPlugin.getMediaSource, 'function');
@@ -204,7 +204,9 @@ async function runAllTests() {
   const v137Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.7.js');
   const v138Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.8.js');
   const v138Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.8.js');
-  await test('Verifies v1.2.0 through v1.3.8 release & historical archives exist', () => {
+  const v139Dist = path.resolve(__dirname, '../dist/musicfree-v1.3.9.js');
+  const v139Web = path.resolve(__dirname, '../../../web/public/plugins/musicfree-v1.3.9.js');
+  await test('Verifies v1.2.0 through v1.3.9 release & historical archives exist', () => {
     assert(fs.existsSync(v120Dist), 'dist/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v120Web), 'web/public/plugins/musicfree-v1.2.0.js must exist');
     assert(fs.existsSync(v121Dist), 'dist/musicfree-v1.2.1.js must exist');
@@ -249,6 +251,8 @@ async function runAllTests() {
     assert(fs.existsSync(v137Web), 'web/public/plugins/musicfree-v1.3.7.js must exist');
     assert(fs.existsSync(v138Dist), 'dist/musicfree-v1.3.8.js must exist');
     assert(fs.existsSync(v138Web), 'web/public/plugins/musicfree-v1.3.8.js must exist');
+    assert(fs.existsSync(v139Dist), 'dist/musicfree-v1.3.9.js must exist');
+    assert(fs.existsSync(v139Web), 'web/public/plugins/musicfree-v1.3.9.js must exist');
   });
 
   await test('UI modal placeholder does not contain "口令" and uses concise phrasing', () => {
@@ -258,6 +262,13 @@ async function runAllTests() {
       srcCode.includes("var targetPlaceholder = '粘贴歌单分享链接（QQ/网易/酷狗/汽水）';"),
       'Placeholder must match clean prompt'
     );
+  });
+
+  await test('UI modal contains both desktop buttons: local file picker and clean official website jump', () => {
+    const srcCode = fs.readFileSync(pluginPath, 'utf-8');
+    assert(srcCode.includes("'📂 选择本地 JSON'"), 'Source must contain local file picker button');
+    assert(srcCode.includes("'🌐 去官网解析歌单'"), 'Source must contain clean official website button');
+    assert(!srcCode.includes("'🌐 官网获取酷狗Token'"), 'Source must not have complicated website button');
   });
 
   // ── 3. Local JSON File Path Import & Platform Bridge ──────────────

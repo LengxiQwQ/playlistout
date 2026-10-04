@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.8)
+ * PlaylistOut 官方 MusicFree 插件 (v1.3.9)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -228,19 +228,21 @@ function isSelfPlatform(plat) {
  */
 const RENDERER_FILE_PICKER_SCRIPT = `
 (function() {
-  var SCRIPT_VER = 'v138';
+  var SCRIPT_VER = 'v139';
   if (window.__playlistoutFilePickerVer === SCRIPT_VER) return;
   window.__playlistoutFilePickerVer = SCRIPT_VER;
 
-  // 清理历史旧版本残留的文件选择按钮与自定义样式，确保面板与弹窗纯净稳定
+  // 清理历史旧版本残留的药丸与自定义样式，确保面板与弹窗纯净稳定
   try {
-    var oldPickBtn = document.getElementById('playlistout-file-picker-btn');
-    if (oldPickBtn && oldPickBtn.parentNode) oldPickBtn.parentNode.removeChild(oldPickBtn);
     var oldStyle = document.getElementById('playlistout-user-variables-style');
     if (oldStyle && oldStyle.parentNode) oldStyle.parentNode.removeChild(oldStyle);
     var oldPills = document.querySelectorAll('.playlistout-var-pills');
     for (var p = 0; p < oldPills.length; p++) {
       if (oldPills[p].parentNode) oldPills[p].parentNode.removeChild(oldPills[p]);
+    }
+    var oldWebTokenBtn = document.getElementById('playlistout-open-web-btn');
+    if (oldWebTokenBtn && oldWebTokenBtn.innerText.indexOf('Token') !== -1) {
+      oldWebTokenBtn.remove();
     }
   } catch (_) {}
 
@@ -366,23 +368,68 @@ const RENDERER_FILE_PICKER_SCRIPT = `
       textInput.addEventListener('input', updateKugouModalTip);
       updateKugouModalTip();
 
-      if (modal.querySelector('#playlistout-open-web-btn')) continue;
+      if (modal.querySelector('#playlistout-file-picker-btn')) continue;
+
+      var existingWebBtn = modal.querySelector('#playlistout-open-web-btn');
+      if (existingWebBtn) existingWebBtn.remove();
 
       opeArea.style.gap = '10px';
       opeArea.style.flexWrap = 'wrap';
 
-      var webBtn = createDashedButton('playlistout-open-web-btn', '🌐 官网获取酷狗Token', function(e) {
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json,application/json';
+      fileInput.style.display = 'none';
+
+      var pickBtn = createDashedButton('playlistout-file-picker-btn', '📂 选择本地 JSON', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.value = '';
+        fileInput.click();
+      });
+
+      var webBtn = createDashedButton('playlistout-open-web-btn', '🌐 去官网解析歌单', function(e) {
         e.preventDefault();
         e.stopPropagation();
         openOfficialWebsite();
       });
 
+      fileInput.onchange = function() {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        var fullPath = f.path || '__PICK_FILE__';
+        applyChosenFile(modal, fullPath);
+      };
+
       var confirmBtn = opeArea.querySelector('div[data-type="primaryButton"]');
       if (confirmBtn) {
+        opeArea.insertBefore(fileInput, confirmBtn);
+        opeArea.insertBefore(pickBtn, confirmBtn);
         opeArea.insertBefore(webBtn, confirmBtn);
       } else {
+        opeArea.appendChild(fileInput);
+        opeArea.appendChild(pickBtn);
         opeArea.appendChild(webBtn);
       }
+
+      // 支持直接将 .json 文件拖拽到弹窗内导入
+      modal.ondragover = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        pickBtn.style.background = 'rgba(10, 149, 200, 0.18)';
+      };
+      modal.ondragleave = function() {
+        pickBtn.style.background = 'rgba(10, 149, 200, 0.06)';
+      };
+      modal.ondrop = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        pickBtn.style.background = 'rgba(10, 149, 200, 0.06)';
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f && f.path) {
+          applyChosenFile(modal, f.path);
+        }
+      };
     }
   }
 
@@ -2295,7 +2342,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.8',
+  version: '1.3.9',
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree.js',
   cacheControl: 'no-store',
