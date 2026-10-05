@@ -32,7 +32,7 @@ import {
   MAX_TRACK_COUNT,
   REFERRER_SOURCES,
 } from '../analytics/types';
-import { recordExportEvent, recordClipboardEvent, recordVisitEvent } from '../analytics/recorder';
+import { recordProductEventV2, recordVisitEventV2, normalizeClipboardModeV2 } from '../analytics/v2-recorder';
 import { isEventOriginAllowed } from '../cors';
 import { getClientIp, checkDurableRateLimit } from '../security/rate-limit';
 
@@ -504,27 +504,27 @@ export async function handleEvent(
   if (ctx && typeof ctx.waitUntil === 'function') {
     if (payload.type === 'export') {
       ctx.waitUntil(
-        recordExportEvent(
-          env.DB,
+        recordProductEventV2(env.DB, {
           request,
-          payload.platform,
-          payload.format,
-          payload.trackCount,
-        ),
+          type: 'export',
+          platform: payload.platform,
+          format: payload.format,
+          trackCount: payload.trackCount,
+        }),
       );
     } else if (payload.type === 'clipboard') {
       ctx.waitUntil(
-        recordClipboardEvent(
-          env.DB,
+        recordProductEventV2(env.DB, {
           request,
-          payload.platform,
-          payload.format,
-          payload.trackCount,
-        ),
+          type: 'clipboard',
+          platform: payload.platform,
+          format: normalizeClipboardModeV2(payload.format),
+          trackCount: payload.trackCount,
+        }),
       );
     } else if (payload.type === 'visit') {
       ctx.waitUntil(
-        recordVisitEvent(
+        recordVisitEventV2(
           env.DB,
           request,
           payload.referrerSource,
