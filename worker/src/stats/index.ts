@@ -165,6 +165,118 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
   }
 }
 
+async function getPublicStatsV2(
+  db: D1Database,
+): Promise<PublicStatsResponse | null> {
+  try {
+    const schema = await db
+      .prepare("SELECT value FROM analytics_v2_meta WHERE key='schema_version' LIMIT 1")
+      .first<{ value: string }>();
+    const backfill = await db
+      .prepare("SELECT value FROM analytics_v2_meta WHERE key='historical_backfill_status' LIMIT 1")
+      .first<{ value: string }>();
+    if (schema?.value !== '2' || backfill?.value !== 'complete') return null;
+
+    const today = getUtcDateString();
+    const productWhere = "channel != 'internal' AND trust_class NOT IN ('automated','abusive')";
+
+    const totals = await db.prepare(`
+      SELECT
+        SUM(CASE WHEN metric IN ('playlist_success','parse_success') THEN count ELSE 0 END) AS parses,
+        SUM(CASE WHEN metric IN ('playlist_success','parse_success') AND date=?1 THEN count ELSE 0 END) AS parses_today,
+        SUM(CASE WHEN metric='tracks_processed' THEN value_sum ELSE 0 END) AS tracks,
+        SUM(CASE WHEN metric='tracks_processed' AND date=?1 THEN value_sum ELSE 0 END) AS tracks_today,
+        SUM(CASE WHEN metric='export' THEN count ELSE 0 END) AS exports,
+        SUM(CASE WHEN metric='export' AND date=?1 THEN count ELSE 0 END) AS exports_today,
+        SUM(CASE WHEN metric='page_view' THEN count ELSE 0 END) AS page_views,
+        SUM(CASE WHEN metric='page_view' AND date=?1 THEN count ELSE 0 END) AS page_views_today,
+        SUM(CASE WHEN metric='daily_unique' THEN count ELSE 0 END) AS daily_unique,
+        SUM(CASE WHEN metric='daily_unique' AND date=?1 THEN count ELSE 0 END) AS daily_unique_today
+      FROM analytics_v2_daily_core
+      WHERE ${productWhere}
+    `).bind(today).first<any>();
+
+    const platformRows = await db.prepare(`
+      SELECT
+        platform,
+        SUM(CASE WHEN metric IN ('playlist_success','parse_success') THEN count ELSE 0 END) AS total,
+        SUM(CASE WHEN metric IN ('playlist_success','parse_success') AND date=?1 THEN count ELSE 0 END) AS today
+      FROM analytics_v2_daily_core
+      WHERE ${productWhere}
+        AND platform IN ('qqmusic','netease','kugou','qishui')
+      GROUP BY platform
+    `).bind(today).all<{ platform: string; total: number; today: number }>();
+
+    const byPlatform: Record<string, PlatformBreakdown> = {
+      qqmusic: { totalSuccess: 0, todaySuccess: 0 },
+      netease: { totalSuccess: 0, todaySuccess: 0 },
+      kugou: { totalSuccess: 0, todaySuccess: 0 },
+      qishui: { totalSuccess: 0, todaySuccess: 0 },
+    };
+    for (const row of platformRows.results || []) {
+      byPlatform[row.platform] = {
+        totalSuccess: Number(row.total || 0),
+        todaySuccess: Number(row.today || 0),
+      };
+    }
+
+    const formatRows = await db.prepare(`
+      SELECT value AS export_format, SUM(count) AS total
+      FROM analytics_v2_daily_dimensions
+      WHERE ${productWhere}
+        AND dimension='export_format'
+      GROUP BY value
+    `).all<{ export_format: string; total: number }>();
+    const exportFormatsBreakdown: Record<string, number> = {
+      txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0,
+    };
+    for (const row of formatRows.results || []) {
+      if (row.export_format in exportFormatsBreakdown) {
+        exportFormatsBreakdown[row.export_format] = Number(row.total || 0);
+      }
+    }
+
+    const since = getDateNDaysAgo(RECENT_DAYS_COUNT);
+    const trendRows = await db.prepare(`
+      SELECT
+        date,
+        SUM(CASE WHEN metric IN ('playlist_success','parse_success') THEN count ELSE 0 END) AS parses,
+        SUM(CASE WHEN metric='tracks_processed' THEN value_sum ELSE 0 END) AS tracks,
+        SUM(CASE WHEN metric='export' THEN count ELSE 0 END) AS exports
+      FROM analytics_v2_daily_core
+      WHERE ${productWhere} AND date >= ?1
+      GROUP BY date
+      ORDER BY date DESC
+    `).bind(since).all<{ date: string; parses: number; tracks: number; exports: number }>();
+
+    return {
+      launchedAt: LAUNCHED_AT,
+      cumulativeDailyVisitors: Number(totals?.daily_unique || 0),
+      totalVisitors: Number(totals?.daily_unique || 0),
+      visitorsToday: Number(totals?.daily_unique_today || 0),
+      totalPageViews: Number(totals?.page_views || 0),
+      pageViewsToday: Number(totals?.page_views_today || 0),
+      totalPlaylistsParsed: Number(totals?.parses || 0),
+      playlistsParsedToday: Number(totals?.parses_today || 0),
+      totalTracksProcessed: Number(totals?.tracks || 0),
+      tracksProcessedToday: Number(totals?.tracks_today || 0),
+      totalExports: Number(totals?.exports || 0),
+      exportsToday: Number(totals?.exports_today || 0),
+      exportFormatsBreakdown,
+      byPlatform,
+      recentDays: (trendRows.results || []).map((row) => ({
+        date: row.date,
+        parses: Number(row.parses || 0),
+        tracks: Number(row.tracks || 0),
+        exports: Number(row.exports || 0),
+      })),
+      generatedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Retrieves the public product usage statistics (GET /api/stats).
  * Strictly contains coarse, public-safe counters.
@@ -198,6 +310,9 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
   if (!db) {
     return defaultResponse;
   }
+
+  const v2Stats = await getPublicStatsV2(db);
+  if (v2Stats) return v2Stats;
 
   const today = getUtcDateString();
 
