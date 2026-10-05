@@ -120,6 +120,7 @@ export async function recordResolveV2(
 
   try {
     const ctx = createAnalyticsRequestContextV2(input.request);
+    if (ctx.isAutomated) return;
     const platform = normalizeAnalyticsPlatformV2(input.platform);
     const statements: D1PreparedStatement[] = [];
 
@@ -176,6 +177,7 @@ export async function recordProductEventV2(
 
   try {
     const ctx = createAnalyticsRequestContextV2(input.request);
+    if (ctx.isAutomated && input.type !== 'rate_limited') return;
     const platform = input.type === 'visit'
       ? 'none'
       : normalizeAnalyticsPlatformV2(input.platform);
