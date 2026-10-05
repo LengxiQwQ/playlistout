@@ -49,6 +49,7 @@ import type {
   AnalyticsPlatform,
   ProviderFailurePath,
 } from '../analytics/types';
+import type { AnalyticsRequestContext } from '../analytics/v2/types';
 
 export interface ResolveServiceOptions {
   q: string;
@@ -62,6 +63,7 @@ export interface ResolveServiceOptions {
   request?: Request;
   db?: D1Database;
   ctx?: ExecutionContext;
+  analyticsContext?: AnalyticsRequestContext;
 }
 
 export type SupportedType = 'auto' | 'playlist' | 'user';
@@ -127,6 +129,7 @@ function recordResolveSuccess(
   startTime: number,
   data: ResolveData,
   tracking: ResolveTracking,
+  analyticsContext?: AnalyticsRequestContext,
 ): ResolveData {
   const latencyMs = Date.now() - startTime;
   const inputType = classifyInputType(rawInput);
@@ -150,7 +153,7 @@ function recordResolveSuccess(
       requestedType: tracking.requestedType,
       requestedPlatform: tracking.requestedPlatform,
       inputType,
-    }),
+    }, analyticsContext),
   );
 
   // 2. If it is a playlist, ALSO record parse event (parse_success + tracks_processed)
@@ -166,7 +169,7 @@ function recordResolveSuccess(
         trackCount: playlist.tracks.length,
         latencyMs,
         providerPath,
-      }),
+      }, analyticsContext),
     );
   }
 
@@ -181,6 +184,7 @@ function recordResolveFailure(
   startTime: number,
   err: unknown,
   tracking: ResolveTracking,
+  analyticsContext?: AnalyticsRequestContext,
 ): void {
   if (!db) return;
 
@@ -215,7 +219,7 @@ function recordResolveFailure(
       failureClass,
       failureStage,
       providerFailurePath: providerFailurePath !== 'not_applicable' ? providerFailurePath : undefined,
-    }),
+    }, analyticsContext),
   );
 }
 
@@ -225,7 +229,7 @@ function recordResolveFailure(
 export async function resolveService(
   options: ResolveServiceOptions,
 ): Promise<ResolveData> {
-  const { q, type, platform, channel, auth, request, db, ctx } = options;
+  const { q, type, platform, channel, auth, request, db, ctx, analyticsContext } = options;
   const startTime = Date.now();
 
   const tracking: ResolveTracking = {
@@ -243,9 +247,9 @@ export async function resolveService(
 
   try {
     const data = await resolveServiceCore(options, tracking);
-    return recordResolveSuccess(request, db, ctx, q || '', startTime, data, tracking);
+    return recordResolveSuccess(request, db, ctx, q || '', startTime, data, tracking, analyticsContext);
   } catch (err: unknown) {
-    recordResolveFailure(request, db, ctx, q || '', startTime, err, tracking);
+    recordResolveFailure(request, db, ctx, q || '', startTime, err, tracking, analyticsContext);
     throw err;
   }
 }
