@@ -25,15 +25,19 @@ PlaylistOut standardizes on **Cloudflare Wrangler Native Migrations** as the aut
 
 ### Production Deployment Sequence
 ```text
-1. Worker Unit & Regression Tests (vitest)
-2. D1 Migration Safety Test Suite (npm run test:d1)
-3. Migration File Immutability Check (validate-migrations.js)
-4. Cloudflare D1 Identity Verification (verify-db.js — fails closed if missing/mismatched)
-5. Preflight Migration History Verification (verify-migration-history.js --remote --mode=pre-apply — exact prefix required; untracked fails closed)
-6. Wrangler Native Migration Apply (wrangler d1 migrations apply playlistout-stats --remote)
-7. Postflight Schema & Exact History Verification (verify-schema.js --remote — tables, columns, indexes, exact history equality)
-8. Worker Deployment (wrangler deploy)
-9. Admin Secret Configuration
+1. Worker typecheck + unit/regression tests
+2. D1 migration safety suite
+3. Migration filename / immutable-history validation
+4. Production D1 name + UUID verification
+5. Preflight migration-history exact-prefix verification
+6. Capture a D1 Time Travel bookmark
+7. Apply pending Wrangler native migrations
+8. Postflight current-schema + exact-history verification
+9. Analytics V2 invariant verification
+10. Verify Analytics V1 is fully retired
+11. Deploy Worker
+12. Reconcile live public /api/stats against production D1
+13. Configure maintainer admin secret
 ```
 
 ---
@@ -103,18 +107,16 @@ Because migrations run immediately before the new Worker code is deployed, datab
 
 ---
 
-## 6. Legacy Untracked Database Baseline
+## 6. Untracked Databases
 
-If an existing production database possesses full schema tables but was provisioned prior to tracking:
-- **Normal deploy fails closed** with an explicit error.
-- **Explicit baseline command**:
-  ```bash
-  node scripts/d1/baseline-legacy.js --baseline-existing --confirm
-  ```
-- **Guarantees**:
-  1. Verifies schema evidence (e.g. verifies `city` column in `daily_geo_stats` and `reset_at` in `security_rate_limits`).
-  2. Bounded strictly to historical boundary `0001`–`0008`.
-  3. Future migrations (e.g. `0009`+) are **never** swallowed and will remain pending for proper application.
+An existing database containing application tables without trustworthy `d1_migrations` history is **unsupported and fails closed**.
+
+Do not infer or fabricate migration history. The supported recovery paths are:
+
+1. restore a trusted D1 Time Travel / external backup that contains valid migration history, or
+2. explicitly provision a new database and apply migrations from `0001`.
+
+The former one-time legacy baseline tool has been retired now that the production database is fully tracked and Analytics V1 has been physically retired.
 
 ---
 
