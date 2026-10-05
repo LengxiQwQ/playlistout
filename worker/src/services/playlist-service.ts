@@ -12,6 +12,7 @@ import { qishuiProvider } from '../providers/qishui';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { recordParseEvent } from '../analytics/recorder';
 import { classifyInputType, classifyErrorCategory } from '../analytics/dimensions';
+import type { AnalyticsRequestContext } from '../analytics/v2/types';
 
 export interface PlaylistServiceOptions {
   rawInput: string;
@@ -25,6 +26,7 @@ export interface PlaylistServiceOptions {
   db?: D1Database;
   ctx?: ExecutionContext;
   skipAnalytics?: boolean;
+  analyticsContext?: AnalyticsRequestContext;
 }
 
 export interface PlaylistServiceResult {
@@ -35,7 +37,7 @@ export interface PlaylistServiceResult {
 export async function parsePlaylistService(
   options: PlaylistServiceOptions,
 ): Promise<PlaylistServiceResult> {
-  const { rawInput, platformParam, auth, request, db, ctx } = options;
+  const { rawInput, platformParam, auth, request, db, ctx, analyticsContext } = options;
 
   // Sample requests (triggered by website example links) are excluded from analytics
   const isSampleRequest = request?.headers.get('x-sample-request') === '1';
@@ -168,7 +170,7 @@ export async function parsePlaylistService(
           trackCount: playlist.tracks.length,
           latencyMs,
           providerPath,
-        }),
+        }, analyticsContext),
       );
     }
 
@@ -188,7 +190,7 @@ export async function parsePlaylistService(
           success: false,
           errorCategory,
           latencyMs,
-        }),
+        }, analyticsContext),
       );
     }
 
