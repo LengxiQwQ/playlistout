@@ -1,6 +1,5 @@
 import { isOriginAllowed } from '../cors';
 import { parseUserAgent } from './ua-parser';
-import { getUtcDateString } from '../stats';
 
 export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_mixed'] as const;
 export type AnalyticsChannel = (typeof ANALYTICS_CHANNELS)[number];
@@ -120,7 +119,7 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
 
   const now = new Date();
   return {
-    date: getUtcDateString(now),
+    date: now.toISOString().slice(0, 10),
     hour: now.getUTCHours(),
     channel,
     clientId,
