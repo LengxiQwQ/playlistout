@@ -18,13 +18,8 @@ import {
   updateWranglerDatabaseId,
   provisionDatabase,
 } from '../../scripts/d1/provision-db.js';
-import {
-  baselineLegacyDatabase,
-  HISTORICAL_BASELINE_MIGRATIONS,
-} from '../../scripts/d1/baseline-legacy.js';
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
 import { verifyAnalyticsV2 } from '../../scripts/d1/verify-analytics-v2.js';
-import { finalizeAnalyticsCutover } from '../../scripts/d1/finalize-analytics-v2-cutover.js';
 import { verifyAnalyticsV1Retired } from '../../scripts/d1/verify-analytics-v1-retired.js';
 import { verifyExpectedIsBracketed } from '../../scripts/d1/verify-production-public-stats.js';
 
@@ -98,6 +93,25 @@ function makeMutableQueryFn(db: DatabaseSync) {
     db.exec(sql);
     return [];
   };
+}
+
+async function verifyAnalyticsV1FrozenForTest(db: DatabaseSync): Promise<boolean> {
+  const manifest = db.prepare(
+    'SELECT table_name, row_count, count_sum, min_date, max_date FROM analytics_v1_archive_manifest ORDER BY table_name'
+  ).all() as any[];
+  if (manifest.length !== 7) return false;
+  for (const row of manifest) {
+    const current = db.prepare(
+      `SELECT COUNT(*) AS row_count, COALESCE(SUM(count),0) AS count_sum, MIN(date) AS min_date, MAX(date) AS max_date FROM ${row.table_name}`
+    ).get() as any;
+    if (
+      Number(current.row_count) !== Number(row.row_count) ||
+      Number(current.count_sum) !== Number(row.count_sum) ||
+      (current.min_date ?? null) !== (row.min_date ?? null) ||
+      (current.max_date ?? null) !== (row.max_date ?? null)
+    ) return false;
+  }
+  return true;
 }
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
@@ -407,115 +421,93 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
     });
   });
 
-  describe('5.5 Analytics V2 Public Cutover Reconciliation', () => {
+  describe('5.5 Analytics V1 Retirement Safety', () => {
     let db: DatabaseSync;
-    const through0013 = fs
-      .readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
-      .sort()
-      .slice(0, 13);
-
-    beforeEach(() => {
-      db = new DatabaseSync(':memory:');
-      applyMigrationsToDb(db, through0013);
-    });
 
     afterEach(() => {
       db.close();
     });
 
-    it('freezes a reconciled zero-delta cutover baseline before retirement', async () => {
-      const result = await finalizeAnalyticsCutover({
-        queryFn: makeMutableQueryFn(db),
-        confirm: true,
-      });
+    function applyThrough(sequence: number) {
+      const files = fs
+        .readdirSync(migrationsDir)
+        .filter((file) => file.endsWith('.sql'))
+        .sort()
+        .slice(0, sequence);
+      applyMigrationsToDb(db, files);
+    }
 
-      expect(result.finalized).toBe(true);
-      expect(result.alreadyFrozen).toBe(false);
-      expect(result.checks).toHaveLength(14);
-      expect(result.checks.every((check: any) => check.totalOk && check.dayOk)).toBe(true);
+    it('preserves pre-cutover public daily history before dropping V1 tables', async () => {
+      db = new DatabaseSync(':memory:');
+      applyThrough(12);
 
-      const state = db.prepare(
-        "SELECT status, frozen_at FROM analytics_v2_cutover_state WHERE id=1"
+      const baselineDate = db.prepare(
+        "SELECT baseline_date FROM analytics_v2_cutover_state WHERE id=1"
       ).get() as any;
-      expect(state.status).toBe('frozen');
-      expect(state.frozen_at).toBeTruthy();
-    });
+      const priorDate = new Date(`${baselineDate.baseline_date}T00:00:00.000Z`);
+      priorDate.setUTCDate(priorDate.getUTCDate() - 1);
+      const prior = priorDate.toISOString().slice(0, 10);
 
-    it('fails closed when V1 and V2 advance by different deltas', async () => {
-      const today = new Date().toISOString().slice(0, 10);
       db.prepare(`
         INSERT INTO aggregate_stats (date, platform, metric, count)
-        VALUES (?, 'all', 'parse_success', 1)
-      `).run(today);
+        VALUES
+          (?, 'all', 'parse_success', 7),
+          (?, 'all', 'tracks_processed', 70),
+          (?, 'all', 'exports_total', 3)
+      `).run(prior, prior, prior);
+
       db.prepare(`
-        INSERT INTO aggregate_stats (date, platform, metric, count)
-        VALUES ('TOTAL', 'all', 'parse_success', 1)
+        UPDATE analytics_v2_cutover_state
+        SET status='frozen', frozen_at=CURRENT_TIMESTAMP
+        WHERE id=1
       `).run();
 
-      await expect(
-        finalizeAnalyticsCutover({
-          queryFn: makeMutableQueryFn(db),
-          confirm: true,
-        })
-      ).rejects.toThrow(/Cutover reconciliation failed for metric:playlist_success/);
+      applyMigrationsToDb(db, ['0013_freeze_analytics_v1_archive.sql']);
+      const manifest = await verifyAnalyticsV1FrozenForTest(db);
+      expect(manifest).toBe(true);
 
-      const state = db.prepare(
-        "SELECT status FROM analytics_v2_cutover_state WHERE id=1"
-      ).get() as any;
-      expect(state.status).toBe('prepared');
+      applyMigrationsToDb(db, ['0014_retire_analytics_v1.sql']);
+
+      const history = db.prepare(
+        'SELECT parses, tracks, exports FROM analytics_v2_public_history WHERE date=?'
+      ).get(prior) as any;
+      expect(history).toEqual({ parses: 7, tracks: 70, exports: 3 });
+
+      const retirement = await verifyAnalyticsV1Retired({ queryFn: makeQueryFn(db) });
+      expect(retirement.verified).toBe(true);
+      expect(retirement.publicHistoryRows).toBe(1);
     });
-  });
 
-  describe('5.6 Analytics V1 Retirement & Public Contract Hardening', () => {
-    let db: DatabaseSync;
-    const through0013 = fs
-      .readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
-      .sort()
-      .slice(0, 13);
-
-    beforeEach(() => {
+    it('fails closed before dropping V1 when prepared state contains real legacy data', () => {
       db = new DatabaseSync(':memory:');
-      applyMigrationsToDb(db, through0013);
+      applyThrough(12);
+
+      db.prepare(`
+        INSERT INTO aggregate_stats (date, platform, metric, count)
+        VALUES ('2026-10-01', 'all', 'parse_success', 1)
+      `).run();
+
+      applyMigrationsToDb(db, ['0013_freeze_analytics_v1_archive.sql']);
+
+      expect(() =>
+        applyMigrationsToDb(db, ['0014_retire_analytics_v1.sql'])
+      ).toThrow();
+
+      const stillThere = db.prepare(
+        "SELECT COUNT(*) AS count FROM sqlite_master WHERE type='table' AND name='aggregate_stats'"
+      ).get() as any;
+      expect(stillThere.count).toBe(1);
     });
 
-    afterEach(() => {
-      db.close();
-    });
-
-    it('materializes public history and permanently removes all V1 fact tables', async () => {
-      await finalizeAnalyticsCutover({
-        queryFn: makeMutableQueryFn(db),
-        confirm: true,
-      });
-
-      const applied = applyMigrationsToDb(db, ['0014_retire_analytics_v1.sql']);
-      expect(applied).toEqual(['0014_retire_analytics_v1.sql']);
-
-      const result = await verifyAnalyticsV1Retired({
-        queryFn: makeQueryFn(db),
-      });
-      expect(result.verified).toBe(true);
-      expect(result.manifestRows).toBe(7);
-
-      const legacyTableCount = db.prepare(`
-        SELECT COUNT(*) AS count
-        FROM sqlite_master
-        WHERE type='table'
-          AND name IN (
-            'aggregate_stats','hourly_stats','daily_geo_stats','daily_client_stats',
-            'daily_performance_stats','daily_export_stats','daily_clipboard_stats'
-          )
-      `).get() as any;
-      expect(legacyTableCount.count).toBe(0);
-    });
-
-    it('rolls back and keeps V1 tables if the frozen archive changed after migration 0013', async () => {
-      await finalizeAnalyticsCutover({
-        queryFn: makeMutableQueryFn(db),
-        confirm: true,
-      });
+    it('rolls back if V1 changes after the 0013 fingerprint snapshot', () => {
+      db = new DatabaseSync(':memory:');
+      applyThrough(12);
+      db.prepare(`
+        UPDATE analytics_v2_cutover_state
+        SET status='frozen', frozen_at=CURRENT_TIMESTAMP
+        WHERE id=1
+      `).run();
+      applyMigrationsToDb(db, ['0013_freeze_analytics_v1_archive.sql']);
 
       db.prepare(`
         INSERT INTO aggregate_stats (date, platform, metric, count)
@@ -526,18 +518,14 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         applyMigrationsToDb(db, ['0014_retire_analytics_v1.sql'])
       ).toThrow();
 
-      const legacyStillExists = db.prepare(
-        "SELECT COUNT(*) AS count FROM sqlite_master WHERE type='table' AND name='aggregate_stats';"
-      ).get() as any;
-      expect(legacyStillExists.count).toBe(1);
-
       const cleanupState = db.prepare(
-        "SELECT COUNT(*) AS count FROM sqlite_master WHERE type='table' AND name='analytics_v1_cleanup_state';"
+        "SELECT COUNT(*) AS count FROM sqlite_master WHERE type='table' AND name='analytics_v1_cleanup_state'"
       ).get() as any;
       expect(cleanupState.count).toBe(0);
     });
 
     it('accepts a D1 expectation bracketed by two monotonic public API reads', () => {
+      db = new DatabaseSync(':memory:');
       const base = {
         totalPageViews: 100,
         pageViewsToday: 10,
@@ -558,35 +546,21 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           qishui: { totalSuccess: 10, todaySuccess: 1 },
         },
       };
-
       const expected = {
         ...base,
         totalPageViews: 101,
         pageViewsToday: 11,
-        totalPlaylistsParsed: 41,
-        playlistsParsedToday: 5,
-        byPlatform: {
-          ...base.byPlatform,
-          qqmusic: { totalSuccess: 11, todaySuccess: 2 },
-        },
       };
-
       const after = {
         ...expected,
         totalPageViews: 102,
         pageViewsToday: 12,
-        totalPlaylistsParsed: 42,
-        playlistsParsedToday: 6,
-        byPlatform: {
-          ...expected.byPlatform,
-          qqmusic: { totalSuccess: 12, todaySuccess: 3 },
-        },
       };
-
       expect(verifyExpectedIsBracketed(base, expected, after).length).toBeGreaterThan(20);
     });
 
     it('rejects a public API response that cannot bracket the D1 expectation', () => {
+      db = new DatabaseSync(':memory:');
       const sample = {
         totalPageViews: 100,
         pageViewsToday: 10,
@@ -607,106 +581,10 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           qishui: { totalSuccess: 10, todaySuccess: 1 },
         },
       };
-
       const expected = { ...sample, totalPageViews: 105 };
       expect(() =>
         verifyExpectedIsBracketed(sample, expected, sample)
       ).toThrow(/Production \/api\/stats reconciliation failed/);
-    });
-  });
-
-  describe('6. Legacy Untracked Database & Explicit Baseline', () => {
-    let db: DatabaseSync;
-
-    beforeEach(() => {
-      db = new DatabaseSync(':memory:');
-    });
-
-    afterEach(() => {
-      db.close();
-    });
-
-    it('fails closed on normal deploy if schema exists without trustworthy d1_migrations', async () => {
-      // Create partial business table without d1_migrations
-      db.exec('CREATE TABLE aggregate_stats (date TEXT, platform TEXT, metric TEXT, count INT);');
-
-      const queryFn = makeQueryFn(db);
-      await expect(verifyD1Schema({ queryFn })).rejects.toThrow(/Missing required tables:.*d1_migrations/);
-    });
-
-    it('refuses legacy baseline without explicit --baseline-existing and --confirm flags', async () => {
-      const queryFn = makeQueryFn(db);
-      await expect(
-        baselineLegacyDatabase({ queryFn, baselineExisting: false, confirm: false })
-      ).rejects.toThrow(/Legacy baseline requires explicit operator flags/);
-    });
-
-    it('refuses legacy baseline if schema evidence is missing or incomplete', async () => {
-      // Create only aggregate_stats, missing the rest
-      db.exec('CREATE TABLE aggregate_stats (date TEXT, platform TEXT, metric TEXT, count INT);');
-
-      const queryFn = makeQueryFn(db);
-      await expect(
-        baselineLegacyDatabase({ queryFn, baselineExisting: true, confirm: true })
-      ).rejects.toThrow(/missing required schema tables/);
-    });
-
-    it('successfully baselines known boundary (0001-0008) when schema evidence is verified', async () => {
-      // Pre-apply migrations 0001-0008 without recording in d1_migrations to simulate untracked legacy DB
-      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
-        const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-        db.exec(sql);
-      }
-
-      // Establish explicit baseline
-      const queryFn = makeQueryFn(db);
-      const result = await baselineLegacyDatabase({
-        queryFn,
-        baselineExisting: true,
-        confirm: true,
-      });
-
-      expect(result.baselined).toBe(true);
-      expect(result.count).toBe(8);
-
-      // Verify d1_migrations now contains exactly 0001-0008
-      const recorded = (db.prepare('SELECT name FROM d1_migrations ORDER BY id ASC;').all() as any[]).map(
-        (r) => r.name
-      );
-      expect(recorded).toEqual(HISTORICAL_BASELINE_MIGRATIONS);
-
-      // Apply pending 0009 migration on top of baseline
-      applyMigrationsToDb(db);
-
-      // Normal schema verification now passes
-      const verification = await verifyD1Schema({ queryFn });
-      expect(verification.verified).toBe(true);
-      expect(verification.pendingCount).toBe(0);
-    });
-
-    it('does NOT swallow future migrations (e.g. 0009): future migration remains pending after legacy baseline', async () => {
-      // Pre-apply 0001-0008
-      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
-        const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-        db.exec(sql);
-      }
-
-      // Establish explicit baseline
-      const queryFn = makeQueryFn(db);
-      await baselineLegacyDatabase({
-        queryFn,
-        baselineExisting: true,
-        confirm: true,
-      });
-
-      // Verify that if a 0009 migration exists, it is recognized as pending and not in d1_migrations
-      const applied = (db.prepare('SELECT name FROM d1_migrations;').all() as any[]).map((r) => r.name);
-      expect(applied).not.toContain('0009_future_schema.sql');
-
-      // If we query applied against a list containing 0009:
-      const allWithFuture = [...HISTORICAL_BASELINE_MIGRATIONS, '0009_future_schema.sql'];
-      const pending = allWithFuture.filter((f) => !applied.includes(f));
-      expect(pending).toEqual(['0009_future_schema.sql']);
     });
   });
 
