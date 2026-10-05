@@ -114,12 +114,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/d1/finalize-analytics-v2-cutover.js --remote --confirm
 
-      - name: Verify Analytics V1 Archive Frozen
+      - name: Verify Analytics V1 Fully Retired
         if: steps.check-creds.outputs.has_creds == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node scripts/d1/verify-analytics-v1-frozen.js --remote
+        run: node scripts/d1/verify-analytics-v1-retired.js --remote
 
       - name: Deploy to Cloudflare Workers
         if: steps.check-creds.outputs.has_creds == 'true'
