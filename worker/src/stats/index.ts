@@ -27,6 +27,7 @@ import type {
   PrivateAnalyticsResponse,
   MaintainerStatsResponse,
 } from '../analytics/types';
+import { getPublicStatsV2Cutover } from './public-v2';
 
 /** Backward-compat re-export for existing imports */
 export interface PlatformStat {
@@ -181,7 +182,7 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
  * Strictly contains coarse, public-safe counters.
  * Zero private dimensional data or private table queries.
  */
-export async function getPublicStats(db: D1Database | undefined): Promise<PublicStatsResponse> {
+async function getPublicStatsLegacy(db: D1Database | undefined): Promise<PublicStatsResponse> {
   const defaultResponse: PublicStatsResponse = {
     launchedAt: LAUNCHED_AT,
     cumulativeDailyVisitors: 0,
@@ -393,6 +394,26 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
     console.error('Failed to fetch public stats:', err);
     return defaultResponse;
   }
+}
+
+/**
+ * Public statistics cut over to Analytics V2 after migration 0012 is finalized.
+ * Before the cutover state is frozen (fresh/local databases and rollback paths),
+ * the immutable legacy reader remains the compatibility fallback.
+ */
+export async function getPublicStats(db: D1Database | undefined): Promise<PublicStatsResponse> {
+  if (!db) {
+    return getPublicStatsLegacy(db);
+  }
+
+  try {
+    const v2 = await getPublicStatsV2Cutover(db);
+    if (v2) return v2;
+  } catch (err: unknown) {
+    console.error('Analytics V2 public stats read failed; falling back to legacy snapshot:', err);
+  }
+
+  return getPublicStatsLegacy(db);
 }
 
 /**

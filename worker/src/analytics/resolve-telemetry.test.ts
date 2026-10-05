@@ -44,13 +44,17 @@ interface BoundCall {
 }
 
 function createTelemetryMockD1() {
-  const perfMap = new Map<string, number>(); // key: `${date}::${platform}::${dimension}::${value}`
-  const aggMap = new Map<string, number>(); // key: `${date}::${platform}::${metric}`
+  const perfMap = new Map<string, number>(); // legacy direct-recorder compatibility tests only
+  const aggMap = new Map<string, number>(); // legacy direct-recorder compatibility tests only
+  const v2CoreMap = new Map<string, number>(); // key: `${date}::${platform}::${metric}`
+  const v2BreakdownMap = new Map<string, number>(); // key: `${date}::${platform}::${dimension}::${value}`
   const allBinds: BoundCall[] = [];
 
   const db = {
     _perfMap: perfMap,
     _aggMap: aggMap,
+    _v2CoreMap: v2CoreMap,
+    _v2BreakdownMap: v2BreakdownMap,
     _allBinds: allBinds,
     prepare(sql: string) {
       return {
@@ -63,7 +67,15 @@ function createTelemetryMockD1() {
         },
         async run() {
           const params = this._params;
-          if (sql.includes('daily_performance_stats')) {
+          if (sql.includes('analytics_v2_daily_core')) {
+            const [date, , , platform, metric, increment] = params;
+            const key = `${date}::${platform}::${metric}`;
+            v2CoreMap.set(key, (v2CoreMap.get(key) || 0) + Number(increment || 0));
+          } else if (sql.includes('analytics_v2_breakdown')) {
+            const [date, , , platform, dimension, value, increment] = params;
+            const key = `${date}::${platform}::${dimension}::${value}`;
+            v2BreakdownMap.set(key, (v2BreakdownMap.get(key) || 0) + Number(increment || 0));
+          } else if (sql.includes('daily_performance_stats')) {
             const [date, platform, dim, val] = params;
             const key = `${date}::${platform}::${dim}::${val}`;
             perfMap.set(key, (perfMap.get(key) || 0) + 1);
@@ -166,6 +178,8 @@ function createTelemetryMockD1() {
   return db as unknown as D1Database & {
     _perfMap: Map<string, number>;
     _aggMap: Map<string, number>;
+    _v2CoreMap: Map<string, number>;
+    _v2BreakdownMap: Map<string, number>;
     _allBinds: BoundCall[];
   };
 }
@@ -236,10 +250,10 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.error.code).toBe('PLAYLIST_NOT_FOUND');
 
     // 1. Authoritative resolve outcome in daily_performance_stats: exactly 1 failure
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_code::playlist_not_found`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_class::not_found`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_stage::disambiguation_probe`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_code::playlist_not_found`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_class::not_found`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_stage::disambiguation_probe`)).toBe(1);
 
     // 2. Zero probe pollution in aggregate_stats
     expect(mockDb._aggMap.get(`${today}::qqmusic::parse_failure`)).toBeUndefined();
@@ -276,10 +290,10 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.error.code).toBe('UPSTREAM_TIMEOUT');
 
     // Attributed to NetEase at stage disambiguation_probe
-    expect(mockDb._perfMap.get(`${today}::netease::resolve_outcome::failure`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::netease::resolve_failure_code::upstream_timeout`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::netease::resolve_failure_class::timeout`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::netease::resolve_failure_stage::disambiguation_probe`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::netease::resolve_outcome::failure`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::netease::failure_code::upstream_timeout`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::netease::failure_class::timeout`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::netease::failure_stage::disambiguation_probe`)).toBe(1);
   });
 
   // ── Test C: Ambiguous input 409 ──
@@ -310,11 +324,11 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     const body: any = await response.json();
     expect(body.error.code).toBe('AMBIGUOUS_INPUT');
 
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_code::ambiguous_input`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_class::ambiguous`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_outcome::success_playlist`)).toBeUndefined();
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_outcome::success_user`)).toBeUndefined();
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_code::ambiguous_input`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_class::ambiguous`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::resolve_outcome::success_playlist`)).toBeUndefined();
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::resolve_outcome::success_user`)).toBeUndefined();
   });
 
   // ── Test D: Input validation error 400 ──
@@ -331,10 +345,10 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     const body: any = await response.json();
     expect(body.error.code).toBe('INVALID_INPUT');
 
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_code::invalid_input`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_class::input`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::unknown::resolve_failure_stage::input_validation`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::resolve_outcome::failure`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_code::invalid_input`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_class::input`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_stage::input_validation`)).toBe(1);
 
     // Verify zero raw input leakage in bind parameters
     for (const bind of mockDb._allBinds) {
@@ -369,11 +383,12 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.data.kind).toBe('playlist');
 
     // Authoritative resolve outcome
-    expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_outcome::success_playlist`)).toBe(1);
-    // Parse event also recorded for playlist
-    expect(mockDb._aggMap.get(`${today}::qqmusic::parse_success`)).toBe(1);
-    expect(mockDb._aggMap.get(`${today}::all::parse_success`)).toBe(1);
-    expect(mockDb._aggMap.get(`${today}::qqmusic::tracks_processed`)).toBe(2);
+    expect(mockDb._v2BreakdownMap.get(`${today}::qqmusic::resolve_outcome::success_playlist`)).toBe(1);
+    // V2 core event is recorded exactly once without legacy all/TOTAL rollups.
+    expect(mockDb._v2CoreMap.get(`${today}::qqmusic::resolve_request`)).toBe(1);
+    expect(mockDb._v2CoreMap.get(`${today}::qqmusic::playlist_success`)).toBe(1);
+    expect(mockDb._v2CoreMap.get(`${today}::qqmusic::tracks_processed`)).toBe(2);
+    expect(mockDb._aggMap.get(`${today}::qqmusic::parse_success`)).toBeUndefined();
   });
 
   // ── Test F: User profile success ──
@@ -398,12 +413,13 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(body.data.kind).toBe('user_playlists');
 
     // Authoritative outcome is success_user
-    expect(mockDb._perfMap.get(`${today}::netease::resolve_outcome::success_user`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::netease::resolve_outcome::success_user`)).toBe(1);
 
-    // CRITICAL: User profiles do NOT increment parse_success or tracks_processed in aggregate_stats!
-    expect(mockDb._aggMap.get(`${today}::netease::parse_success`)).toBeUndefined();
-    expect(mockDb._aggMap.get(`${today}::all::parse_success`)).toBeUndefined();
-    expect(mockDb._aggMap.get(`${today}::netease::tracks_processed`)).toBeUndefined();
+    // CRITICAL: user profiles increment user_success, never playlist_success/tracks.
+    expect(mockDb._v2CoreMap.get(`${today}::netease::resolve_request`)).toBe(1);
+    expect(mockDb._v2CoreMap.get(`${today}::netease::user_success`)).toBe(1);
+    expect(mockDb._v2CoreMap.get(`${today}::netease::playlist_success`)).toBeUndefined();
+    expect(mockDb._v2CoreMap.get(`${today}::netease::tracks_processed`)).toBeUndefined();
   });
 
   // ── Test G & H: Parse failure global aggregate writes platform='all' and updates operationalRecentDays ──
@@ -678,7 +694,7 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     await Promise.all(ctx._promises);
 
     // Stage must be bounded strictly to 'finalization'
-    expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_failure_stage::finalization`)).toBe(1);
+    expect(mockDb._v2BreakdownMap.get(`${today}::qqmusic::failure_stage::finalization`)).toBe(1);
     expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_failure_stage::malicious_sql_injection_or_unbounded_stage`)).toBeUndefined();
   });
 });

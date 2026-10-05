@@ -7,7 +7,7 @@ import { qishuiProvider } from '../providers/qishui';
 import * as qqUser from '../providers/qqmusic/user';
 import * as neteaseUser from '../providers/netease/user';
 import * as kugouClient from '../providers/kugou/client';
-import * as analyticsRecorder from '../analytics/recorder';
+import * as v2Recorder from '../analytics/v2-recorder';
 import { ProviderError } from '../models/playlist';
 import { resetRateLimitStore } from '../security/rate-limit';
 
@@ -570,7 +570,7 @@ describe('PlaylistOut Public API v1', () => {
 
   describe('Analytics Single Write & Probe Isolation (Issue 2)', () => {
     it('records parse analytics exactly once on successful numeric resolution across internal probes', async () => {
-      const recordSpy = vi.spyOn(analyticsRecorder, 'recordParseEvent').mockResolvedValue();
+      const recordSpy = vi.spyOn(v2Recorder, 'recordResolveV2').mockResolvedValue();
 
       // NetEase playlist succeeds, others fail/not found
       vi.spyOn(qqMusicProvider, 'parse').mockRejectedValueOnce(
@@ -597,20 +597,20 @@ describe('PlaylistOut Public API v1', () => {
       expect(body.success).toBe(true);
       expect(body.data.platform).toBe('netease');
 
-      // Despite 4 probes executing, recordParseEvent must only be called ONCE (for the final resolved playlist)
+      // Despite 4 probes executing, V2 records only the final authoritative result.
       expect(recordSpy).toHaveBeenCalledTimes(1);
       expect(recordSpy).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           platform: 'netease',
-          success: true,
+          outcome: 'success_playlist',
           trackCount: 1,
         }),
       );
     });
 
-    it('records zero parse analytics events when numeric resolution results in 409 AMBIGUOUS_INPUT', async () => {
-      const recordSpy = vi.spyOn(analyticsRecorder, 'recordParseEvent').mockResolvedValue();
+    it('records one final V2 failure and zero probe pollution for 409 AMBIGUOUS_INPUT', async () => {
+      const recordSpy = vi.spyOn(v2Recorder, 'recordResolveV2').mockResolvedValue();
 
       // Both QQ Music and NetEase find matching playlists
       vi.spyOn(qqMusicProvider, 'parse').mockResolvedValueOnce(
@@ -634,8 +634,15 @@ describe('PlaylistOut Public API v1', () => {
       const body: any = await response.json();
       expect(body.error.code).toBe('AMBIGUOUS_INPUT');
 
-      // No successful or failure parse analytics should be recorded for ambiguous disambiguation
-      expect(recordSpy).not.toHaveBeenCalled();
+      // Internal probes remain silent; the final ambiguous request records exactly one failure.
+      expect(recordSpy).toHaveBeenCalledTimes(1);
+      expect(recordSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          outcome: 'failure',
+          failureCode: 'ambiguous_input',
+        }),
+      );
     });
   });
 

@@ -30,7 +30,6 @@ import { qqMusicProvider, isQQShortLink } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
-import { recordParseEvent, recordResolveOutcome } from '../analytics/recorder';
 import { recordResolveV2 } from '../analytics/v2-recorder';
 import {
   classifyInputType,
@@ -142,18 +141,7 @@ function recordResolveSuccess(
     }
   };
 
-  // 1. Authoritative final resolve outcome (legacy + V2 shadow write)
-  runAsync(
-    recordResolveOutcome(db, {
-      request,
-      outcome,
-      platform,
-      requestedType: tracking.requestedType,
-      requestedPlatform: tracking.requestedPlatform,
-      inputType,
-    }),
-  );
-
+  // Analytics V2 is now the authoritative production write path.
   if (request) {
     const playlist = data.kind === 'playlist' ? (data.result as Playlist) : undefined;
     const providerPath = playlist
@@ -171,23 +159,6 @@ function recordResolveSuccess(
         requestedPlatform: tracking.requestedPlatform,
         providerFailurePath: providerPath,
         endpoint: 'resolve',
-      }),
-    );
-  }
-
-  // 2. If it is a playlist, ALSO record parse event (parse_success + tracks_processed)
-  if (data.kind === 'playlist' && request) {
-    const playlist = data.result as Playlist;
-    const providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
-    runAsync(
-      recordParseEvent(db, {
-        request,
-        platform: data.platform,
-        inputType,
-        success: true,
-        trackCount: playlist.tracks.length,
-        latencyMs,
-        providerPath,
       }),
     );
   }
@@ -224,21 +195,6 @@ function recordResolveFailure(
       promise.catch(() => {});
     }
   };
-
-  runAsync(
-    recordResolveOutcome(db, {
-      request,
-      outcome: 'failure',
-      platform,
-      requestedType: tracking.requestedType,
-      requestedPlatform: tracking.requestedPlatform,
-      inputType,
-      failureCode,
-      failureClass,
-      failureStage,
-      providerFailurePath: providerFailurePath !== 'not_applicable' ? providerFailurePath : undefined,
-    }),
-  );
 
   if (request) {
     runAsync(

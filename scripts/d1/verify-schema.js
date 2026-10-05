@@ -34,6 +34,8 @@ export const REQUIRED_TABLES = [
   'analytics_v2_geo',
   'analytics_v2_breakdown',
   'analytics_v2_client_env',
+  'analytics_v2_public_baseline',
+  'analytics_v2_cutover_state',
   'd1_migrations',
 ];
 
@@ -52,6 +54,8 @@ export const REQUIRED_COLUMNS = {
   analytics_v2_geo: ['date', 'channel', 'client_id', 'platform', 'country', 'region', 'metric', 'count'],
   analytics_v2_breakdown: ['date', 'channel', 'client_id', 'platform', 'dimension', 'value', 'count'],
   analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'browser_family', 'os_family', 'count'],
+  analytics_v2_public_baseline: ['key', 'baseline_date', 'legacy_total', 'v2_total', 'legacy_day', 'v2_day'],
+  analytics_v2_cutover_state: ['id', 'status', 'baseline_date', 'prepared_at', 'frozen_at'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
@@ -76,6 +80,7 @@ export const REQUIRED_INDEXES = [
   'idx_v2_geo_channel_client',
   'idx_v2_breakdown_lookup',
   'idx_v2_env_lookup',
+  'idx_v2_public_baseline_date',
 ];
 
 export async function verifyD1Schema(options = {}) {
