@@ -87,15 +87,16 @@ function makeQueryFn(db: DatabaseSync) {
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0011 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0012 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(11);
-      expect(result.files).toHaveLength(11);
+      expect(result.count).toBe(12);
+      expect(result.files).toHaveLength(12);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
       expect(result.files[8]).toBe('0009_parse_feedback.sql');
       expect(result.files[9]).toBe('0010_geo_attribution_expansion.sql');
       expect(result.files[10]).toBe('0011_analytics_v2.sql');
+      expect(result.files[11]).toBe('0012_analytics_v2_historical_backfill.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -157,9 +158,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 11 migrations sequentially from empty database', () => {
+    it('applies all 12 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(11);
+      expect(applied).toHaveLength(12);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -172,6 +173,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0009_parse_feedback.sql',
         '0010_geo_attribution_expansion.sql',
         '0011_analytics_v2.sql',
+        '0012_analytics_v2_historical_backfill.sql',
       ]);
     });
 
@@ -181,7 +183,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(11);
+      expect(verification.appliedMigrationsCount).toBe(12);
       expect(verification.pendingCount).toBe(0);
 
       // Verify specific critical columns
@@ -761,7 +763,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(8);
+      expect(res.pendingCount).toBe(9);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -796,7 +798,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_historical_backfill.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -818,11 +821,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_historical_backfill.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(11);
+      expect(res.appliedCount).toBe(12);
       expect(res.pendingCount).toBe(0);
     });
 
