@@ -19,6 +19,8 @@
     "build": "npm run build:plugins && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run validate:plugins && npm run test --workspaces --if-present",
+    "analytics:audit": "node scripts/analytics/audit-v1.js --pretty",
+    "analytics:audit:remote": "node scripts/analytics/audit-v1.js --remote --pretty",
     "gate": "node scripts/ci-gate.js",
     "check": "npm run gate",
     "prepare": "node scripts/setup-hooks.js"
