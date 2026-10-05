@@ -29,6 +29,11 @@ export const REQUIRED_TABLES = [
   'daily_clipboard_stats',
   'daily_visitor_hashes',
   'security_rate_limits',
+  'analytics_v2_daily_core',
+  'analytics_v2_hourly_core',
+  'analytics_v2_geo',
+  'analytics_v2_breakdown',
+  'analytics_v2_client_env',
   'd1_migrations',
 ];
 
@@ -42,6 +47,11 @@ export const REQUIRED_COLUMNS = {
   daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'country', 'region', 'city', 'count'],
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
+  analytics_v2_daily_core: ['date', 'channel', 'client_id', 'platform', 'metric', 'count'],
+  analytics_v2_hourly_core: ['date', 'hour', 'channel', 'client_id', 'platform', 'metric', 'count'],
+  analytics_v2_geo: ['date', 'channel', 'client_id', 'platform', 'country', 'region', 'metric', 'count'],
+  analytics_v2_breakdown: ['date', 'channel', 'client_id', 'platform', 'dimension', 'value', 'count'],
+  analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'os_family', 'count'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
@@ -58,6 +68,14 @@ export const REQUIRED_INDEXES = [
   'idx_clipboard_stats_country',
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
+  'idx_v2_daily_date',
+  'idx_v2_daily_channel_client',
+  'idx_v2_daily_platform',
+  'idx_v2_hourly_date_hour',
+  'idx_v2_geo_date_country_region',
+  'idx_v2_geo_channel_client',
+  'idx_v2_breakdown_lookup',
+  'idx_v2_env_lookup',
 ];
 
 export async function verifyD1Schema(options = {}) {
