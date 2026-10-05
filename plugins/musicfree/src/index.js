@@ -212,6 +212,24 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
+const PLUGIN_VERSION = '1.3.9';
+
+function getAnalyticsHostPlatform() {
+  try {
+    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
+    if (realProc && realProc.platform) {
+      if (realProc.platform === 'win32') return 'windows';
+      if (realProc.platform === 'darwin') return 'macos';
+      if (realProc.platform === 'linux' && isHostElectron()) return 'linux';
+    }
+  } catch (_) {}
+  try {
+    const ua = typeof navigator !== 'undefined' && navigator.userAgent ? String(navigator.userAgent) : '';
+    if (/android/i.test(ua)) return 'android';
+    if (/iphone|ipad|ios/i.test(ua)) return 'ios';
+  } catch (_) {}
+  return isHostElectron() ? 'unknown' : 'android';
+}
 
 function isSelfPlatform(plat) {
   return (
@@ -568,19 +586,27 @@ async function openNativeJsonFileDialog() {
  */
 async function httpGet(url, options = {}) {
   const timeoutMs = options.timeout || 15000;
-  const headers = Object.assign(
-    {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'application/json, text/plain, */*',
-      Origin: 'https://playlistout.lengxiqwq.com',
-      Referer: 'https://playlistout.lengxiqwq.com/',
-      'Sec-Fetch-Site': 'cross-site',
-      'Sec-Fetch-Mode': 'cors',
-      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-    },
-    options.headers || {}
-  );
+  const isPlaylistOutApi = /^https:\/\/playlistout-api\.lengxiqwq\.com\//i.test(url);
+  const defaultHeaders = isPlaylistOutApi
+    ? {
+        'User-Agent': 'PlaylistOut-MusicFree/' + PLUGIN_VERSION,
+        Accept: 'application/json, text/plain, */*',
+        'X-PlaylistOut-Client-Type': 'plugin',
+        'X-PlaylistOut-Client-Id': 'musicfree',
+        'X-PlaylistOut-Client-Version': PLUGIN_VERSION,
+        'X-PlaylistOut-Host': getAnalyticsHostPlatform(),
+      }
+    : {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'application/json, text/plain, */*',
+        Origin: 'https://playlistout.lengxiqwq.com',
+        Referer: 'https://playlistout.lengxiqwq.com/',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'cors',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      };
+  const headers = Object.assign(defaultHeaders, options.headers || {});
 
   let axiosClient = null;
   if (typeof axios !== 'undefined') {
@@ -2341,7 +2367,7 @@ async function getLyric(musicItem) {
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
-  version: '1.3.9',
+  version: PLUGIN_VERSION,
   appVersion: '>0.1.0-alpha.0',
   srcUrl: 'https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js',
   cacheControl: 'no-store',

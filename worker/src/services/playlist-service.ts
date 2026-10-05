@@ -11,6 +11,7 @@ import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { recordParseEvent } from '../analytics/recorder';
+import { recordResolveV2 } from '../analytics/v2-recorder';
 import { classifyInputType, classifyErrorCategory } from '../analytics/dimensions';
 
 export interface PlaylistServiceOptions {
@@ -160,15 +161,29 @@ export async function parsePlaylistService(
     // Best-effort anonymous statistics recording (success)
     if (!shouldSkipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
-        recordParseEvent(db, {
-          request,
-          platform: actualPlatform,
-          inputType,
-          success: true,
-          trackCount: playlist.tracks.length,
-          latencyMs,
-          providerPath,
-        }),
+        Promise.all([
+          recordParseEvent(db, {
+            request,
+            platform: actualPlatform,
+            inputType,
+            success: true,
+            trackCount: playlist.tracks.length,
+            latencyMs,
+            providerPath,
+          }),
+          recordResolveV2(db, {
+            request,
+            platform: actualPlatform,
+            outcome: 'success_playlist',
+            trackCount: playlist.tracks.length,
+            latencyMs,
+            inputType,
+            requestedType: 'playlist',
+            requestedPlatform: platformParam || 'auto',
+            providerFailurePath: providerPath,
+            endpoint: 'playlist',
+          }),
+        ]).then(() => undefined),
       );
     }
 
@@ -181,14 +196,29 @@ export async function parsePlaylistService(
     // Best-effort anonymous statistics recording (failure)
     if (!shouldSkipAnalytics && ctx && typeof ctx.waitUntil === 'function' && request) {
       ctx.waitUntil(
-        recordParseEvent(db, {
-          request,
-          platform: targetPlatform,
-          inputType,
-          success: false,
-          errorCategory,
-          latencyMs,
-        }),
+        Promise.all([
+          recordParseEvent(db, {
+            request,
+            platform: targetPlatform,
+            inputType,
+            success: false,
+            errorCategory,
+            latencyMs,
+          }),
+          recordResolveV2(db, {
+            request,
+            platform: targetPlatform,
+            outcome: 'failure',
+            latencyMs,
+            inputType,
+            requestedType: 'playlist',
+            requestedPlatform: platformParam || 'auto',
+            failureCode: errorCode,
+            failureClass: errorCategory,
+            failureStage: 'playlist_resolution',
+            endpoint: 'playlist',
+          }),
+        ]).then(() => undefined),
       );
     }
 

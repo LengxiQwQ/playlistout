@@ -23,6 +23,7 @@ import {
   HISTORICAL_BASELINE_MIGRATIONS,
 } from '../../scripts/d1/baseline-legacy.js';
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
+import { verifyAnalyticsV2 } from '../../scripts/d1/verify-analytics-v2.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,14 +88,15 @@ function makeQueryFn(db: DatabaseSync) {
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0010 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0011 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(10);
-      expect(result.files).toHaveLength(10);
+      expect(result.count).toBe(11);
+      expect(result.files).toHaveLength(11);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
       expect(result.files[8]).toBe('0009_parse_feedback.sql');
       expect(result.files[9]).toBe('0010_geo_attribution_expansion.sql');
+      expect(result.files[10]).toBe('0011_analytics_v2.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -156,9 +158,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 10 migrations sequentially from empty database', () => {
+    it('applies all 11 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(10);
+      expect(applied).toHaveLength(11);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -170,6 +172,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0008_security_rate_limits.sql',
         '0009_parse_feedback.sql',
         '0010_geo_attribution_expansion.sql',
+        '0011_analytics_v2.sql',
       ]);
     });
 
@@ -179,7 +182,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(10);
+      expect(verification.appliedMigrationsCount).toBe(11);
       expect(verification.pendingCount).toBe(0);
 
       // Verify specific critical columns
@@ -269,7 +272,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('resumes from partially applied state (0001-0004 -> applies 0005-0010)', async () => {
+    it('resumes from partially applied state (0001-0004 -> applies 0005-0011)', async () => {
       // Simulate database that only applied 0001 to 0004
       const firstBatch = [
         '0001_initial_stats.sql',
@@ -299,12 +302,13 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0008_security_rate_limits.sql',
         '0009_parse_feedback.sql',
         '0010_geo_attribution_expansion.sql',
+        '0011_analytics_v2.sql',
       ]);
 
       // Verify schema is now complete
       const verification = await verifyD1Schema({ queryFn: makeQueryFn(db) });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(10);
+      expect(verification.appliedMigrationsCount).toBe(11);
       expect(verification.pendingCount).toBe(0);
     });
   });
@@ -638,6 +642,56 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
     });
   });
 
+
+  describe('10.5 Analytics V2 Integrity Gate', () => {
+    let db: DatabaseSync;
+
+    beforeEach(() => {
+      db = new DatabaseSync(':memory:');
+      applyMigrationsToDb(db);
+    });
+
+    afterEach(() => {
+      db.close();
+    });
+
+    it('accepts canonical resolver, export, and clipboard aggregates', async () => {
+      db.exec(`
+        INSERT INTO analytics_v2_daily_core
+          (date, channel, client_id, platform, metric, count)
+        VALUES
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'resolve_request', 3),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'playlist_success', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'resolve_failure', 1),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'export', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'clipboard', 1);
+
+        INSERT INTO analytics_v2_breakdown
+          (date, channel, client_id, platform, dimension, value, count)
+        VALUES
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'export_format', 'json', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'clipboard_mode', 'title', 1);
+      `);
+
+      const result = await verifyAnalyticsV2({ queryFn: makeQueryFn(db) });
+      expect(result.verified).toBe(true);
+    });
+
+    it('fails closed when resolver request and terminal counts diverge', async () => {
+      db.exec(`
+        INSERT INTO analytics_v2_daily_core
+          (date, channel, client_id, platform, metric, count)
+        VALUES
+          ('2026-10-05', 'plugin', 'musicfree', 'qqmusic', 'resolve_request', 2),
+          ('2026-10-05', 'plugin', 'musicfree', 'qqmusic', 'playlist_success', 1);
+      `);
+
+      await expect(
+        verifyAnalyticsV2({ queryFn: makeQueryFn(db) })
+      ).rejects.toThrow(/resolver terminal invariant/);
+    });
+  });
+
   describe('11. R8.1 Preflight Migration History & Adversarial Gates', () => {
     let db: DatabaseSync;
 
@@ -744,7 +798,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(7);
+      expect(res.pendingCount).toBe(8);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -778,7 +832,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       }
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -799,11 +854,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       }
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(10);
+      expect(res.appliedCount).toBe(11);
       expect(res.pendingCount).toBe(0);
     });
 

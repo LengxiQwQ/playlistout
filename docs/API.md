@@ -72,6 +72,25 @@ PlaylistOut officially supports 4 major music platforms:
 
 ---
 
+## 3.1 Optional Integration Attribution
+
+Registered integrations may identify themselves for **aggregate analytics attribution only**:
+
+```http
+X-PlaylistOut-Client-Type: plugin
+X-PlaylistOut-Client-Id: musicfree
+X-PlaylistOut-Client-Version: 1.3.9
+X-PlaylistOut-Host: android
+```
+
+These headers are deliberately **not authentication**. They never grant higher trust, bypass rate limits, unlock credentials, or change authorization. Unknown/unregistered values are bounded server-side to prevent unbounded analytics cardinality.
+
+Do not send installation IDs, user/device identifiers, email addresses, tokens, or other persistent identifiers in attribution headers.
+
+The official web frontend is attributed separately. Public API requests without a registered integration identifier are counted as `api / anonymous_api`; they are normal product traffic and are not classified as abuse merely because they are programmatic.
+
+---
+
 ## 4. Response Envelope Contract
 
 ### 4.1 Standard Success Envelope (`200 OK`)

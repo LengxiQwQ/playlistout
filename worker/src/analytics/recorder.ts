@@ -36,6 +36,7 @@ import type {
 } from './types';
 import { REFERRER_SOURCES } from './types';
 import { getUtcDateString } from '../stats';
+import { recordDailyUniqueV2, recordProductEventV2 } from './v2-recorder';
 
 
 /**
@@ -73,15 +74,15 @@ export async function recordParseEvent(
     const hour = new Date().getUTCHours();
     const metric = ctx.success ? 'parse_success' : 'parse_failure';
 
-    // Real-time Traffic Isolation:
-    // If request originates from automated bot or direct API script without official web credentials,
-    // isolate telemetry directly into quarantined_stats and bypass production business aggregates.
+    // Security isolation is separate from product-channel attribution.
+    // Only automated/bot traffic is quarantined; legitimate public API traffic remains product data.
     const originClass = await classifyRequestOrigin(ctx.request);
-    const isDirectApi = ctx.isDirectApi ?? originClass.isDirectApi;
     const isBot = ctx.isBot ?? originClass.isBot;
 
-    if (isDirectApi || isBot) {
-      const reason = isBot ? 'auto_quarantined_bot_ua' : 'auto_quarantined_direct_api';
+    // Security isolation is independent from product channel attribution.
+    // Legitimate public API traffic is product traffic, not dirty data.
+    if (isBot) {
+      const reason = 'auto_quarantined_bot_ua';
       const quarantineMetric = ctx.success ? 'parse_success' : 'parse_failure';
       const cf = (ctx.request as any)?.cf;
       const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
@@ -342,6 +343,14 @@ export async function recordExportEvent(
   } catch (err: unknown) {
     console.error('Failed to record export aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'export',
+    platform,
+    format: exportFormat,
+    trackCount,
+  });
 }
 
 /**
@@ -358,10 +367,10 @@ export async function recordClipboardEvent(
 ): Promise<void> {
   if (!db) return;
 
+  const canonicalMode = normalizeClipboardMode(mode);
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
-    const canonicalMode = normalizeClipboardMode(mode);
 
     const cf = (request as any).cf;
     const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
@@ -422,6 +431,14 @@ export async function recordClipboardEvent(
   } catch (err: unknown) {
     console.error('Failed to record clipboard aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'clipboard',
+    platform,
+    format: canonicalMode,
+    trackCount,
+  });
 }
 
 /**
@@ -481,6 +498,15 @@ export async function recordRateLimitEvent(
   } catch (err: unknown) {
     console.error('Failed to record rate limit aggregate stats:', err);
   }
+
+  if (requestOrCountry && typeof requestOrCountry === 'object') {
+    await recordProductEventV2(db, {
+      request: requestOrCountry,
+      type: 'rate_limited',
+      platform,
+      endpoint,
+    });
+  }
 }
 
 /**
@@ -519,6 +545,11 @@ export async function recordVisitEvent(
 ): Promise<void> {
   if (!db) return;
 
+  let isNewVisitor = true;
+  const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
+    ? referrerSource
+    : 'other_web';
+
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
@@ -547,7 +578,6 @@ export async function recordVisitEvent(
     `;
 
     // Attempt to insert daily hash
-    let isNewVisitor = true;
     try {
       const res = await db.prepare(insertHashSql).bind(date, hash).run();
       if (res && res.meta && typeof res.meta.changes === 'number') {
@@ -597,9 +627,6 @@ export async function recordVisitEvent(
 
     // Referrer source recording (coarse category only, strictly bounded by REFERRER_SOURCES allowlist)
     // Raw URLs, paths, queries, and headers are NEVER read, received, or stored
-    const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
-      ? referrerSource
-      : 'other_web';
     const upsertPerfSql = `
       INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
       VALUES (?1, 'all', ?2, ?3, 1)
@@ -627,6 +654,13 @@ export async function recordVisitEvent(
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'visit',
+    referrerSource: safeSource,
+  });
+  await recordDailyUniqueV2(db, request, isNewVisitor);
 }
 
 /**

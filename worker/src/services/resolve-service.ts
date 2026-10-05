@@ -31,6 +31,7 @@ import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
 import { recordParseEvent, recordResolveOutcome } from '../analytics/recorder';
+import { recordResolveV2 } from '../analytics/v2-recorder';
 import {
   classifyInputType,
   classifyResolveFailureCode,
@@ -141,7 +142,7 @@ function recordResolveSuccess(
     }
   };
 
-  // 1. Authoritative final resolve outcome
+  // 1. Authoritative final resolve outcome (legacy + V2 shadow write)
   runAsync(
     recordResolveOutcome(db, {
       request,
@@ -152,6 +153,27 @@ function recordResolveSuccess(
       inputType,
     }),
   );
+
+  if (request) {
+    const playlist = data.kind === 'playlist' ? (data.result as Playlist) : undefined;
+    const providerPath = playlist
+      ? ((playlist as any).__providerPath as ('primary' | 'fallback') | undefined)
+      : undefined;
+    runAsync(
+      recordResolveV2(db, {
+        request,
+        outcome,
+        platform,
+        trackCount: playlist?.tracks.length,
+        latencyMs,
+        inputType,
+        requestedType: tracking.requestedType,
+        requestedPlatform: tracking.requestedPlatform,
+        providerFailurePath: providerPath,
+        endpoint: 'resolve',
+      }),
+    );
+  }
 
   // 2. If it is a playlist, ALSO record parse event (parse_success + tracks_processed)
   if (data.kind === 'playlist' && request) {
@@ -217,6 +239,25 @@ function recordResolveFailure(
       providerFailurePath: providerFailurePath !== 'not_applicable' ? providerFailurePath : undefined,
     }),
   );
+
+  if (request) {
+    runAsync(
+      recordResolveV2(db, {
+        request,
+        outcome: 'failure',
+        platform,
+        latencyMs: Date.now() - startTime,
+        inputType,
+        requestedType: tracking.requestedType,
+        requestedPlatform: tracking.requestedPlatform,
+        failureCode,
+        failureClass,
+        failureStage,
+        providerFailurePath: providerFailurePath !== 'not_applicable' ? providerFailurePath : undefined,
+        endpoint: 'resolve',
+      }),
+    );
+  }
 }
 
 /**

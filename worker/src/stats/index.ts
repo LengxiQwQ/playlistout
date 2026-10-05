@@ -128,6 +128,8 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
     let totalSuccess = 0;
     let todaySuccess = 0;
     let totalFailure = 0;
+    let fallbackFailureSum = 0;
+    let hasGlobalFailureTotal = false;
     const byPlatform: Record<string, PlatformStat> = {};
 
     for (const row of rows.results) {
@@ -146,11 +148,20 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
           if (date === 'TOTAL') byPlatform[platform].total = count;
           if (date === today) byPlatform[platform].today = count;
         }
-      } else if (metric === 'parse_failure') {
-        if (date === 'TOTAL') {
-          totalFailure += count;
+      } else if (metric === 'parse_failure' && date === 'TOTAL') {
+        if (platform === 'all') {
+          totalFailure = count;
+          hasGlobalFailureTotal = true;
+        } else {
+          fallbackFailureSum += count;
         }
       }
+    }
+
+    // Prefer the canonical global rollup. Older/mocked datasets may not have it,
+    // so only then fall back to summing concrete platforms. Never sum both.
+    if (!hasGlobalFailureTotal) {
+      totalFailure = fallbackFailureSum;
     }
 
     return {
@@ -291,7 +302,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         .prepare(`
           SELECT export_format, SUM(count) as total
           FROM daily_export_stats
-          WHERE date != 'TOTAL' AND export_format IN ('txt', 'csv', 'xlsx', 'json', 'm3u8')
+          WHERE date != 'TOTAL' AND platform != 'all' AND export_format IN ('txt', 'csv', 'xlsx', 'json', 'm3u8')
           GROUP BY export_format
         `)
         .all<{ export_format: string; total: number }>();
@@ -337,7 +348,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
           .prepare(`
             SELECT date, SUM(count) as total
             FROM daily_export_stats
-            WHERE date != 'TOTAL' AND date >= ?1
+            WHERE date != 'TOTAL' AND platform != 'all' AND date >= ?1
             GROUP BY date
             ORDER BY date DESC
           `)
@@ -610,7 +621,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
         .prepare(`
           SELECT clipboard_mode, SUM(count) as total
           FROM daily_clipboard_stats
-          WHERE date != 'TOTAL'
+          WHERE date != 'TOTAL' AND platform != 'all'
           GROUP BY clipboard_mode
         `)
         .all<{ clipboard_mode: string; total: number }>();

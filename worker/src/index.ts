@@ -2,6 +2,7 @@ import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveData, ProviderError } from './models/playlist';
 import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists, fetchKugouUserProfile } from './providers/kugou';
 import { getPublicStats, getMaintainerStats } from './stats';
+import { getAnalyticsV2, parseAnalyticsV2Filters } from './stats/v2';
 import { recordRateLimitEvent } from './analytics/recorder';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
@@ -411,7 +412,7 @@ export default {
       const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all'));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all', request));
         }
         return new Response(
           JSON.stringify({
@@ -525,7 +526,7 @@ export default {
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
 
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam, request));
         }
 
         return new Response(
@@ -781,7 +782,7 @@ export default {
       const rateCheck = checkRateLimit(clientIp, 60, 60, 'stats');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all'));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all', request));
         }
 
         return new Response(
@@ -919,6 +920,70 @@ export default {
         data: stats,
       };
       return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache',
+          ...responseHeaders,
+        },
+      });
+    }
+
+    // ── Analytics V2 Maintainer API (GET /api/internal/analytics/v2) ──
+    if (url.pathname === '/api/internal/analytics/v2') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' } }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const configuredSecret = _env.INSIGHTS_ADMIN_TOKEN?.trim();
+      if (!configuredSecret) {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Maintainer authentication secret is not configured on server.' } }),
+          {
+            status: 503,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const rawAuth = request.headers.get('authorization') || '';
+      const bearerMatch = rawAuth.match(/^Bearer\s+(.+)$/i);
+      const providedToken = bearerMatch ? bearerMatch[1].trim() : '';
+      if (!providedToken || !(await constantTimeCompare(providedToken, configuredSecret))) {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Missing or invalid maintainer authorization token.' } }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const analytics = await getAnalyticsV2(_env.DB, parseAnalyticsV2Filters(url));
+      return new Response(JSON.stringify({ success: true, data: analytics }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
