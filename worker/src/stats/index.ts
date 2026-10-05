@@ -291,7 +291,8 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
         .prepare(`
           SELECT export_format, SUM(count) as total
           FROM daily_export_stats
-          WHERE date != 'TOTAL' AND export_format IN ('txt', 'csv', 'xlsx', 'json', 'm3u8')
+          WHERE date != 'TOTAL' AND platform != 'all'
+            AND export_format IN ('txt', 'csv', 'xlsx', 'json', 'm3u8')
           GROUP BY export_format
         `)
         .all<{ export_format: string; total: number }>();
@@ -337,7 +338,7 @@ export async function getPublicStats(db: D1Database | undefined): Promise<Public
           .prepare(`
             SELECT date, SUM(count) as total
             FROM daily_export_stats
-            WHERE date != 'TOTAL' AND date >= ?1
+            WHERE date != 'TOTAL' AND platform != 'all' AND date >= ?1
             GROUP BY date
             ORDER BY date DESC
           `)
@@ -610,7 +611,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
         .prepare(`
           SELECT clipboard_mode, SUM(count) as total
           FROM daily_clipboard_stats
-          WHERE date != 'TOTAL'
+          WHERE date != 'TOTAL' AND platform != 'all'
           GROUP BY clipboard_mode
         `)
         .all<{ clipboard_mode: string; total: number }>();
@@ -794,7 +795,7 @@ export async function getPrivateAnalytics(db: D1Database | undefined): Promise<P
         .prepare(`
           SELECT date, SUM(count) as total
           FROM daily_clipboard_stats
-          WHERE date != 'TOTAL' AND date >= ?1
+          WHERE date != 'TOTAL' AND platform != 'all' AND date >= ?1
           GROUP BY date
           ORDER BY date DESC
         `)
