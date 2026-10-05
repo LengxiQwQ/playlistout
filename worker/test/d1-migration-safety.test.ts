@@ -815,13 +815,21 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const preflightIdx = content.indexOf('Preflight D1 Migration History');
       const migrationIdx = content.indexOf('Apply Pending D1 Migrations');
       const postflightIdx = content.indexOf('Postflight D1 Schema and History Completeness');
+      const v2IntegrityIdx = content.indexOf('Verify Analytics V2 Data Integrity');
+      const finalizerIdx = content.indexOf('Finalize Analytics V2 Public Cutover');
+      const archiveIdx = content.indexOf('Verify Analytics V1 Archive Frozen');
       const deployIdx = content.indexOf('Deploy to Cloudflare Workers');
+      const publicSmokeIdx = content.indexOf('Reconcile Production Public Stats');
 
       expect(identityIdx).toBeGreaterThan(0);
       expect(preflightIdx).toBeGreaterThan(identityIdx);
       expect(migrationIdx).toBeGreaterThan(preflightIdx);
       expect(postflightIdx).toBeGreaterThan(migrationIdx);
-      expect(deployIdx).toBeGreaterThan(postflightIdx);
+      expect(v2IntegrityIdx).toBeGreaterThan(postflightIdx);
+      expect(finalizerIdx).toBeGreaterThan(v2IntegrityIdx);
+      expect(archiveIdx).toBeGreaterThan(finalizerIdx);
+      expect(deployIdx).toBeGreaterThan(archiveIdx);
+      expect(publicSmokeIdx).toBeGreaterThan(deployIdx);
     });
 
     it('does not contain bot git commit / push step (zero source-tree mutation)', () => {
