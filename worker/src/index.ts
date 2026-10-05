@@ -3,6 +3,7 @@ import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveDa
 import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists, fetchKugouUserProfile } from './providers/kugou';
 import { getPublicStats, getMaintainerStats } from './stats';
 import { recordRateLimitEvent } from './analytics/recorder';
+import { createAnalyticsRequestContext } from './analytics/v2/context';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
@@ -42,6 +43,17 @@ export default {
     const url = new URL(request.url);
     const corsHeaders = getCorsHeaders(request, url.pathname);
     const responseHeaders = applySecurityHeaders(corsHeaders);
+
+    let analyticsContextPromise: ReturnType<typeof createAnalyticsRequestContext> | undefined;
+    const getAnalyticsContext = () => {
+      if (!analyticsContextPromise) {
+        analyticsContextPromise = createAnalyticsRequestContext(
+          request,
+          _env.INSIGHTS_ADMIN_TOKEN || '',
+        );
+      }
+      return analyticsContextPromise;
+    };
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
@@ -407,11 +419,13 @@ export default {
         );
       }
 
-      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve');
+      const analyticsContext = await getAnalyticsContext();
+      // Rate limit check: official Web receives its attested budget; public API/plugin declarations
+      // never gain trust or authorization merely from analytics headers.
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all'));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all', request, analyticsContext));
         }
         return new Response(
           JSON.stringify({
@@ -447,6 +461,7 @@ export default {
           request,
           db: _env.DB,
           ctx: _ctx,
+          analyticsContext,
         });
 
         const successResponse: ApiResponse<ResolveData> = {
@@ -518,14 +533,15 @@ export default {
         );
       }
 
-      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist');
+      const analyticsContext = await getAnalyticsContext();
+      // Rate limit check: channel identity is separate from trust/security classification.
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         const rawUrlParam = url.searchParams.get('url') || url.searchParams.get('id') || '';
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
 
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam, request, analyticsContext));
         }
 
         return new Response(
@@ -578,6 +594,7 @@ export default {
           request,
           db: _env.DB,
           ctx: _ctx,
+          analyticsContext,
         });
 
         const successResponse: ApiResponse<Playlist> = {
@@ -649,12 +666,12 @@ export default {
         );
       }
 
-      // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists');
+      const analyticsContext = await getAnalyticsContext();
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', userPlatformParam));
+          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', userPlatformParam, request, analyticsContext));
         }
 
         return new Response(
@@ -781,7 +798,7 @@ export default {
       const rateCheck = checkRateLimit(clientIp, 60, 60, 'stats');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all'));
+          _ctx.waitUntil((async () => recordRateLimitEvent(_env.DB, 'stats', 'all', request, await getAnalyticsContext()))());
         }
 
         return new Response(
@@ -931,7 +948,7 @@ export default {
 
     // ── Frontend Event Ingestion Endpoint (POST /api/event) ──
     if (url.pathname === '/api/event') {
-      return handleEvent(request, _env, _ctx, responseHeaders);
+      return handleEvent(request, _env, _ctx, responseHeaders, await getAnalyticsContext());
     }
 
     // ── Parse Failure Feedback Endpoint (POST /api/feedback) ──
