@@ -212,6 +212,41 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
+const PLAYLISTOUT_PLUGIN_VERSION = '1.3.9';
+
+function getPlaylistOutHostPlatform() {
+  try {
+    if (isHostElectron()) {
+      const realProc = new Function('return typeof process !== "undefined" ? process : null')();
+      const p = realProc && realProc.platform;
+      if (p === 'win32') return 'windows';
+      if (p === 'darwin') return 'macos';
+      if (p === 'linux') return 'linux';
+      return 'other';
+    }
+  } catch (_) {}
+
+  try {
+    if (
+      (typeof globalThis !== 'undefined' && globalThis.HermesInternal) ||
+      (typeof navigator !== 'undefined' && navigator.product === 'ReactNative')
+    ) {
+      return 'android';
+    }
+  } catch (_) {}
+
+  return 'unknown';
+}
+
+function getPlaylistOutAnalyticsHeaders() {
+  return {
+    'User-Agent': 'PlaylistOut-MusicFree/' + PLAYLISTOUT_PLUGIN_VERSION,
+    'X-PlaylistOut-Client-Type': 'plugin',
+    'X-PlaylistOut-Client-Id': 'musicfree',
+    'X-PlaylistOut-Client-Version': PLAYLISTOUT_PLUGIN_VERSION,
+    'X-PlaylistOut-Host-Platform': getPlaylistOutHostPlatform(),
+  };
+}
 
 function isSelfPlatform(plat) {
   return (
@@ -573,10 +608,6 @@ async function httpGet(url, options = {}) {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       Accept: 'application/json, text/plain, */*',
-      Origin: 'https://playlistout.lengxiqwq.com',
-      Referer: 'https://playlistout.lengxiqwq.com/',
-      'Sec-Fetch-Site': 'cross-site',
-      'Sec-Fetch-Mode': 'cors',
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     },
     options.headers || {}
@@ -1410,7 +1441,7 @@ async function importMusicSheet(urlLike) {
   )}&type=playlist`;
 
   const creds = getKugouCredentials();
-  const requestHeaders = {};
+  const requestHeaders = getPlaylistOutAnalyticsHeaders();
   if (creds && creds.token) {
     requestHeaders['Authorization'] = `Bearer ${creds.token}`;
     requestHeaders['X-Kugou-Token'] = creds.token;
