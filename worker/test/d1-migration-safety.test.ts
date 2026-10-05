@@ -334,6 +334,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0010_geo_attribution_expansion.sql',
         '0011_analytics_v2.sql',
         '0012_analytics_v2_cutover.sql',
+        '0013_freeze_analytics_v1_archive.sql',
       ]);
 
       // Verify schema is now complete
