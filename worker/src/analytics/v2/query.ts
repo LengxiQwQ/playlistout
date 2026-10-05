@@ -187,6 +187,58 @@ async function dimensionDistribution(
   }));
 }
 
+async function getQualitySnapshot(db: D1Database) {
+  const q = async (sql: string) => {
+    const result = await rows<{ value: number }>(db, sql);
+    return safeNumber(result[0]?.value);
+  };
+
+  const sentinelRows = await q(`
+    SELECT
+      (SELECT COUNT(*) FROM analytics_v2_daily_core WHERE date='TOTAL' OR platform='all') +
+      (SELECT COUNT(*) FROM analytics_v2_hourly_core WHERE date='TOTAL' OR platform='all') +
+      (SELECT COUNT(*) FROM analytics_v2_daily_dimensions WHERE date='TOTAL' OR platform='all')
+      AS value
+  `);
+
+  const resolveMismatches = await q(`
+    WITH grouped AS (
+      SELECT date, data_origin, channel, client_id, platform, country, region,
+        SUM(CASE WHEN metric='resolve_request' THEN count ELSE 0 END) requests,
+        SUM(CASE WHEN metric IN ('playlist_success','user_success','resolve_failure') THEN count ELSE 0 END) outcomes
+      FROM analytics_v2_daily_core
+      WHERE endpoint='resolve'
+      GROUP BY date, data_origin, channel, client_id, platform, country, region
+    )
+    SELECT COUNT(*) AS value FROM grouped WHERE requests != outcomes
+  `);
+
+  const exportCore = await q("SELECT COALESCE(SUM(count),0) AS value FROM analytics_v2_daily_core WHERE metric='export' AND endpoint='event_export'");
+  const exportDims = await q("SELECT COALESCE(SUM(count),0) AS value FROM analytics_v2_daily_dimensions WHERE dimension='export_format' AND endpoint='event_export'");
+  const clipboardCore = await q("SELECT COALESCE(SUM(count),0) AS value FROM analytics_v2_daily_core WHERE metric='clipboard' AND endpoint='event_clipboard'");
+  const clipboardDims = await q("SELECT COALESCE(SUM(count),0) AS value FROM analytics_v2_daily_dimensions WHERE dimension='clipboard_mode' AND endpoint='event_clipboard'");
+
+  const latest = await rows<{ latest: string | null }>(
+    db,
+    "SELECT MAX(date) AS latest FROM analytics_v2_daily_core WHERE data_origin='live'",
+  );
+
+  const healthy =
+    sentinelRows === 0 &&
+    resolveMismatches === 0 &&
+    exportCore === exportDims &&
+    clipboardCore === clipboardDims;
+
+  return {
+    healthy,
+    sentinelRows,
+    resolveMismatches,
+    exportInvariant: { core: exportCore, dimensions: exportDims, ok: exportCore === exportDims },
+    clipboardInvariant: { core: clipboardCore, dimensions: clipboardDims, ok: clipboardCore === clipboardDims },
+    latestLiveDate: latest[0]?.latest || null,
+  };
+}
+
 export async function getAnalyticsV2Dashboard(
   db: D1Database | undefined,
   filters: AnalyticsV2Filters,
@@ -354,6 +406,7 @@ export async function getAnalyticsV2Dashboard(
       regions: await distribution(db, filters, 'region'),
     },
     dimensions,
+    quality: await getQualitySnapshot(db),
     coverage: {
       hasHistorical,
       geoSliceRequested,
