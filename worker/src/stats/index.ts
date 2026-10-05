@@ -128,6 +128,8 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
     let totalSuccess = 0;
     let todaySuccess = 0;
     let totalFailure = 0;
+    let fallbackFailureSum = 0;
+    let hasGlobalFailureTotal = false;
     const byPlatform: Record<string, PlatformStat> = {};
 
     for (const row of rows.results) {
@@ -146,11 +148,20 @@ export async function getAggregateStats(db: D1Database | undefined): Promise<Agg
           if (date === 'TOTAL') byPlatform[platform].total = count;
           if (date === today) byPlatform[platform].today = count;
         }
-      } else if (metric === 'parse_failure') {
-        if (platform === 'all' && date === 'TOTAL') {
+      } else if (metric === 'parse_failure' && date === 'TOTAL') {
+        if (platform === 'all') {
           totalFailure = count;
+          hasGlobalFailureTotal = true;
+        } else {
+          fallbackFailureSum += count;
         }
       }
+    }
+
+    // Prefer the canonical global rollup. Older/mocked datasets may not have it,
+    // so only then fall back to summing concrete platforms. Never sum both.
+    if (!hasGlobalFailureTotal) {
+      totalFailure = fallbackFailureSum;
     }
 
     return {
