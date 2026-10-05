@@ -94,7 +94,7 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session',
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host-Platform',
       'Access-Control-Max-Age': '86400',
     };
   }
