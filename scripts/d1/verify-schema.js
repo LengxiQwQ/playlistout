@@ -29,6 +29,10 @@ export const REQUIRED_TABLES = [
   'daily_clipboard_stats',
   'daily_visitor_hashes',
   'security_rate_limits',
+  'analytics_v2_daily_core',
+  'analytics_v2_hourly_core',
+  'analytics_v2_daily_dimensions',
+  'analytics_v2_meta',
   'd1_migrations',
 ];
 
@@ -42,6 +46,10 @@ export const REQUIRED_COLUMNS = {
   daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'country', 'region', 'city', 'count'],
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
+  analytics_v2_daily_core: ['date', 'data_origin', 'channel', 'client_id', 'client_version', 'host_platform', 'trust_class', 'endpoint', 'platform', 'country', 'region', 'metric', 'count', 'value_sum'],
+  analytics_v2_hourly_core: ['date', 'hour', 'data_origin', 'channel', 'client_id', 'client_version', 'host_platform', 'trust_class', 'endpoint', 'platform', 'country', 'region', 'metric', 'count', 'value_sum'],
+  analytics_v2_daily_dimensions: ['date', 'data_origin', 'channel', 'client_id', 'client_version', 'host_platform', 'trust_class', 'endpoint', 'platform', 'country', 'region', 'dimension', 'value', 'count'],
+  analytics_v2_meta: ['key', 'value'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
@@ -58,6 +66,14 @@ export const REQUIRED_INDEXES = [
   'idx_clipboard_stats_country',
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
+  'idx_v2_daily_date',
+  'idx_v2_daily_metric',
+  'idx_v2_daily_filters',
+  'idx_v2_hourly_date',
+  'idx_v2_hourly_filters',
+  'idx_v2_dimension_date',
+  'idx_v2_dimension_lookup',
+  'idx_v2_dimension_filters',
 ];
 
 export async function verifyD1Schema(options = {}) {
