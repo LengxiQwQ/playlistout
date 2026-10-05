@@ -25,6 +25,8 @@ import {
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
 import { verifyAnalyticsV2 } from '../../scripts/d1/verify-analytics-v2.js';
 import { finalizeAnalyticsCutover } from '../../scripts/d1/finalize-analytics-v2-cutover.js';
+import { verifyAnalyticsV1Frozen } from '../../scripts/d1/verify-analytics-v1-frozen.js';
+import { verifyExpectedIsBracketed } from '../../scripts/d1/verify-production-public-stats.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -100,16 +102,17 @@ function makeMutableQueryFn(db: DatabaseSync) {
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0012 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0013 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(12);
-      expect(result.files).toHaveLength(12);
+      expect(result.count).toBe(13);
+      expect(result.files).toHaveLength(13);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
       expect(result.files[8]).toBe('0009_parse_feedback.sql');
       expect(result.files[9]).toBe('0010_geo_attribution_expansion.sql');
       expect(result.files[10]).toBe('0011_analytics_v2.sql');
       expect(result.files[11]).toBe('0012_analytics_v2_cutover.sql');
+      expect(result.files[12]).toBe('0013_freeze_analytics_v1_archive.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -171,9 +174,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 12 migrations sequentially from empty database', () => {
+    it('applies all 13 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(12);
+      expect(applied).toHaveLength(13);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -187,6 +190,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0010_geo_attribution_expansion.sql',
         '0011_analytics_v2.sql',
         '0012_analytics_v2_cutover.sql',
+        '0013_freeze_analytics_v1_archive.sql',
       ]);
     });
 
@@ -196,7 +200,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(12);
+      expect(verification.appliedMigrationsCount).toBe(13);
       expect(verification.pendingCount).toBe(0);
 
       // Verify specific critical columns
@@ -222,6 +226,11 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const cutoverState = (await queryFn('SELECT status, baseline_date FROM analytics_v2_cutover_state WHERE id=1;')) as any[];
       expect(cutoverState).toHaveLength(1);
       expect(cutoverState[0].status).toBe('prepared');
+
+      const archiveManifest = (await queryFn(
+        'SELECT table_name FROM analytics_v1_archive_manifest ORDER BY table_name;'
+      )) as { table_name: string }[];
+      expect(archiveManifest).toHaveLength(7);
     });
   });
 
@@ -293,7 +302,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('resumes from partially applied state (0001-0004 -> applies 0005-0012)', async () => {
+    it('resumes from partially applied state (0001-0004 -> applies 0005-0013)', async () => {
       // Simulate database that only applied 0001 to 0004
       const firstBatch = [
         '0001_initial_stats.sql',
@@ -330,7 +339,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       // Verify schema is now complete
       const verification = await verifyD1Schema({ queryFn: makeQueryFn(db) });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(12);
+      expect(verification.appliedMigrationsCount).toBe(13);
       expect(verification.pendingCount).toBe(0);
     });
   });
@@ -438,6 +447,121 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         "SELECT status FROM analytics_v2_cutover_state WHERE id=1"
       ).get() as any;
       expect(state.status).toBe('prepared');
+    });
+  });
+
+  describe('5.6 Post-Cutover Archive & Public Contract Hardening', () => {
+    let db: DatabaseSync;
+
+    beforeEach(async () => {
+      db = new DatabaseSync(':memory:');
+      applyMigrationsToDb(db);
+      await finalizeAnalyticsCutover({
+        queryFn: makeMutableQueryFn(db),
+        confirm: true,
+      });
+    });
+
+    afterEach(() => {
+      db.close();
+    });
+
+    it('accepts an untouched V1 archive after cutover', async () => {
+      const result = await verifyAnalyticsV1Frozen({
+        queryFn: makeQueryFn(db),
+      });
+
+      expect(result.verified).toBe(true);
+      expect(result.checks).toHaveLength(7);
+      expect(result.checks.every((check: any) => check.ok)).toBe(true);
+    });
+
+    it('fails closed if any frozen V1 table changes after the archive snapshot', async () => {
+      db.prepare(`
+        INSERT INTO aggregate_stats (date, platform, metric, count)
+        VALUES ('2099-01-01', 'qqmusic', 'parse_success', 1)
+      `).run();
+
+      await expect(
+        verifyAnalyticsV1Frozen({ queryFn: makeQueryFn(db) })
+      ).rejects.toThrow(/Analytics V1 archive immutability gate failed/);
+    });
+
+    it('accepts a D1 expectation bracketed by two monotonic public API reads', () => {
+      const base = {
+        totalPageViews: 100,
+        pageViewsToday: 10,
+        cumulativeDailyVisitors: 50,
+        totalVisitors: 50,
+        visitorsToday: 5,
+        totalPlaylistsParsed: 40,
+        playlistsParsedToday: 4,
+        totalTracksProcessed: 400,
+        tracksProcessedToday: 40,
+        totalExports: 20,
+        exportsToday: 2,
+        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4 },
+        byPlatform: {
+          qqmusic: { totalSuccess: 10, todaySuccess: 1 },
+          netease: { totalSuccess: 10, todaySuccess: 1 },
+          kugou: { totalSuccess: 10, todaySuccess: 1 },
+          qishui: { totalSuccess: 10, todaySuccess: 1 },
+        },
+      };
+
+      const expected = {
+        ...base,
+        totalPageViews: 101,
+        pageViewsToday: 11,
+        totalPlaylistsParsed: 41,
+        playlistsParsedToday: 5,
+        byPlatform: {
+          ...base.byPlatform,
+          qqmusic: { totalSuccess: 11, todaySuccess: 2 },
+        },
+      };
+
+      const after = {
+        ...expected,
+        totalPageViews: 102,
+        pageViewsToday: 12,
+        totalPlaylistsParsed: 42,
+        playlistsParsedToday: 6,
+        byPlatform: {
+          ...expected.byPlatform,
+          qqmusic: { totalSuccess: 12, todaySuccess: 3 },
+        },
+      };
+
+      expect(verifyExpectedIsBracketed(base, expected, after).length).toBeGreaterThan(20);
+    });
+
+    it('rejects a public API response that cannot bracket the D1 expectation', () => {
+      const sample = {
+        totalPageViews: 100,
+        pageViewsToday: 10,
+        cumulativeDailyVisitors: 50,
+        totalVisitors: 50,
+        visitorsToday: 5,
+        totalPlaylistsParsed: 40,
+        playlistsParsedToday: 4,
+        totalTracksProcessed: 400,
+        tracksProcessedToday: 40,
+        totalExports: 20,
+        exportsToday: 2,
+        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4 },
+        byPlatform: {
+          qqmusic: { totalSuccess: 10, todaySuccess: 1 },
+          netease: { totalSuccess: 10, todaySuccess: 1 },
+          kugou: { totalSuccess: 10, todaySuccess: 1 },
+          qishui: { totalSuccess: 10, todaySuccess: 1 },
+        },
+      };
+
+      const expected = { ...sample, totalPageViews: 105 };
+      expect(() =>
+        verifyExpectedIsBracketed(sample, expected, sample)
+      ).toThrow(/Production \/api\/stats reconciliation failed/);
     });
   });
 
@@ -875,7 +999,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(9);
+      expect(res.pendingCount).toBe(10);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -911,7 +1035,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -934,11 +1059,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(12);
+      expect(res.appliedCount).toBe(13);
       expect(res.pendingCount).toBe(0);
     });
 
