@@ -225,7 +225,7 @@ export async function handleInternalFeedback(
     ...responseHeaders,
   };
 
-  // 1. Token auth (same as /api/internal/stats)
+  // 1. Maintainer token authentication
   const configuredSecret = env.INSIGHTS_ADMIN_TOKEN?.trim();
   if (!configuredSecret) {
     return jsonResponse(
