@@ -56,7 +56,7 @@ function endpointFromPath(pathname: string): string {
 }
 
 function isExplicitAutomation(userAgent: string): boolean {
-  return /bot|spider|crawl|slurp|curl|python|wget|postman|apidog|go-http-client|uptime|headless|github-camo|uptimerobot|lighthouse|insights/i.test(
+  return /bot|spider|crawler|crawl\/|slurp|headless|github-camo|uptimerobot|lighthouse|synthetic-monitor|health-checker/i.test(
     userAgent,
   );
 }
