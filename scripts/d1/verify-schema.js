@@ -51,7 +51,7 @@ export const REQUIRED_COLUMNS = {
   analytics_v2_hourly_core: ['date', 'hour', 'channel', 'client_id', 'platform', 'metric', 'count'],
   analytics_v2_geo: ['date', 'channel', 'client_id', 'platform', 'country', 'region', 'metric', 'count'],
   analytics_v2_breakdown: ['date', 'channel', 'client_id', 'platform', 'dimension', 'value', 'count'],
-  analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'os_family', 'count'],
+  analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'browser_family', 'os_family', 'count'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
