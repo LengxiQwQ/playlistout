@@ -94,13 +94,13 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session',
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host',
       'Access-Control-Max-Age': '86400',
     };
   }
 
   // Strictly no browser CORS for internal stats endpoint (R6 Requirement 19 & 46)
-  if (path === '/api/internal/stats') {
+  if (path === '/api/internal/stats' || path === '/api/internal/analytics/v2') {
     return {
       Vary: 'Origin',
     };
@@ -143,7 +143,7 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] =
-      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request';
+      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host';
     headers['Access-Control-Max-Age'] = '86400';
   }
 
