@@ -296,6 +296,39 @@ export async function getAnalyticsV2(
     filterWhere.binds,
   ).all<{ name: string; count: number }>();
 
+  const envClauses = ['date >= ?', 'date <= ?'];
+  const envBinds: unknown[] = [filters.from, filters.to];
+  if (filters.channel) {
+    envClauses.push('channel = ?');
+    envBinds.push(filters.channel);
+  }
+  if (filters.client) {
+    envClauses.push('client_id = ?');
+    envBinds.push(filters.client);
+  }
+  const envWhere = envClauses.join(' AND ');
+  const envRows = await bindAll(
+    db.prepare(`
+      SELECT device_class, browser_family, os_family, SUM(count) AS count
+      FROM analytics_v2_client_env
+      WHERE ${envWhere}
+      GROUP BY device_class, browser_family, os_family
+      ORDER BY count DESC
+      LIMIT 100
+    `),
+    envBinds,
+  ).all<{ device_class: string; browser_family: string; os_family: string; count: number }>();
+
+  const envAggregate = (field: 'device_class' | 'browser_family' | 'os_family') => {
+    const totals = new Map<string, number>();
+    for (const row of envRows.results || []) {
+      totals.set(row[field], (totals.get(row[field]) || 0) + Number(row.count || 0));
+    }
+    return Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  };
+
   const exportFormats = breakdowns.export_format || [];
   const clipboardModes = breakdowns.clipboard_mode || [];
   const exportBreakdownTotal = exportFormats.reduce((sum, item) => sum + item.count, 0);
@@ -371,6 +404,12 @@ export async function getAnalyticsV2(
     },
     timeseries: Array.from(dayMap.values()),
     breakdowns,
+    environment: {
+      devices: envAggregate('device_class'),
+      browsers: envAggregate('browser_family'),
+      operatingSystems: envAggregate('os_family'),
+      filterScope: 'Environment supports date/channel/client filters. Platform and geography are intentionally separate privacy cubes.',
+    },
     geo: {
       countries: (countryRows.results || []).map((r) => ({ name: r.name, count: Number(r.count || 0) })),
       regions: (regionRows.results || []).map((r) => ({ name: r.name, count: Number(r.count || 0) })),
