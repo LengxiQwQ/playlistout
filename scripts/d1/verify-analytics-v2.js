@@ -9,7 +9,8 @@
 import { executeD1Query } from './verify-migration-history.js';
 
 async function one(sql, options) {
-  const rows = await executeD1Query(sql, options);
+  const queryFn = options.queryFn || ((statement) => executeD1Query(statement, options));
+  const rows = await queryFn(sql);
   return rows[0] || {};
 }
 
