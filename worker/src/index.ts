@@ -655,7 +655,7 @@ export default {
       if (!rateCheck.allowed) {
         const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'user_playlists', userPlatformParam));
+          _ctx.waitUntil(recordRateLimitEventV2(_env.DB, request, 'user_playlists', userPlatformParam));
         }
 
         return new Response(
