@@ -6,7 +6,7 @@
 
 **PlaylistOut v2.0.0 — QQ Music Web MVP: COMPLETE**
 **PlaylistOut Analytics Foundation (Milestones R1–R8): COMPLETE**
-**Analytics V2 + Dashboard V3: PRODUCTION CUTOVER — canonical attribution, continuity-safe public stats, V2-only writes, historical reconciliation, data-quality gates, and localhost dashboard**
+**Analytics V2 + Dashboard V3: POST-CUTOVER HARDENED — V2-only writes, continuity-safe public stats, frozen V1 archive guards, production reconciliation, data-quality gates, and localhost dashboard**
 
 The original P0–P9 delivery roadmap and the Analytics Foundation (R1–R8) have both finished and are treated as completed engineering foundations. Do not reopen completed phases for ordinary bug fixes.
 
@@ -22,6 +22,8 @@ Analytics Foundation milestone status:
 - **R8** ✅ D1 Provisioning & Migration Safety (Final Infrastructure Gate)
 
 Analytics Foundation R1–R8 remains **COMPLETE**. Analytics V2 is a replacement architecture rather than an R9 milestone: it removes legacy TOTAL/all double-count risk, separates product channels from security classification, adds registered integration attribution, replaces the static maintainer data wall with a localhost-only Dashboard V3, and freezes the V1 analytics tables as a read-only historical archive after a fail-closed production reconciliation.
+
+Post-cutover hardening adds two permanent deployment gates: V1 archive immutability verification and live `/api/stats` ↔ production D1 reconciliation. Once those gates pass in production, Analytics V2 is considered operationally complete. Removing the legacy compatibility endpoint/code/tables is a later cleanup milestone, not a blocker for correctness or production use.
 
 The current production baseline includes:
 
