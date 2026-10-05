@@ -24,6 +24,7 @@ import {
 } from '../../scripts/d1/baseline-legacy.js';
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
 import { verifyAnalyticsV2 } from '../../scripts/d1/verify-analytics-v2.js';
+import { finalizeAnalyticsCutover } from '../../scripts/d1/finalize-analytics-v2-cutover.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,6 +84,17 @@ function applyMigrationsToDb(db: DatabaseSync, migrationFileList?: string[]) {
 function makeQueryFn(db: DatabaseSync) {
   return async (sql: string) => {
     return db.prepare(sql).all() as any[];
+  };
+}
+
+function makeMutableQueryFn(db: DatabaseSync) {
+  return async (sql: string) => {
+    const normalized = sql.trim().toUpperCase();
+    if (normalized.startsWith('SELECT') || normalized.startsWith('PRAGMA') || normalized.startsWith('WITH')) {
+      return db.prepare(sql).all() as any[];
+    }
+    db.exec(sql);
+    return [];
   };
 }
 
@@ -371,6 +383,61 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         .prepare("SELECT count(*) as count FROM d1_migrations WHERE name='0099_faulty.sql';")
         .get() as any;
       expect(historyCheck.count).toBe(0);
+    });
+  });
+
+  describe('5.5 Analytics V2 Public Cutover Reconciliation', () => {
+    let db: DatabaseSync;
+
+    beforeEach(() => {
+      db = new DatabaseSync(':memory:');
+      applyMigrationsToDb(db);
+    });
+
+    afterEach(() => {
+      db.close();
+    });
+
+    it('freezes a reconciled zero-delta cutover baseline', async () => {
+      const result = await finalizeAnalyticsCutover({
+        queryFn: makeMutableQueryFn(db),
+        confirm: true,
+      });
+
+      expect(result.finalized).toBe(true);
+      expect(result.alreadyFrozen).toBe(false);
+      expect(result.checks).toHaveLength(14);
+      expect(result.checks.every((check: any) => check.totalOk && check.dayOk)).toBe(true);
+
+      const state = db.prepare(
+        "SELECT status, frozen_at FROM analytics_v2_cutover_state WHERE id=1"
+      ).get() as any;
+      expect(state.status).toBe('frozen');
+      expect(state.frozen_at).toBeTruthy();
+    });
+
+    it('fails closed when V1 and V2 advance by different deltas', async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      db.prepare(`
+        INSERT INTO aggregate_stats (date, platform, metric, count)
+        VALUES (?, 'all', 'parse_success', 1)
+      `).run(today);
+      db.prepare(`
+        INSERT INTO aggregate_stats (date, platform, metric, count)
+        VALUES ('TOTAL', 'all', 'parse_success', 1)
+      `).run();
+
+      await expect(
+        finalizeAnalyticsCutover({
+          queryFn: makeMutableQueryFn(db),
+          confirm: true,
+        })
+      ).rejects.toThrow(/Cutover reconciliation failed for metric:playlist_success/);
+
+      const state = db.prepare(
+        "SELECT status FROM analytics_v2_cutover_state WHERE id=1"
+      ).get() as any;
+      expect(state.status).toBe('prepared');
     });
   });
 
