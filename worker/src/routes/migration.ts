@@ -1,5 +1,6 @@
 import { isOriginAllowed } from '../cors';
 import { checkDualTrackRateLimit, getClientIp } from '../security/rate-limit';
+import { recordProductEventV2 } from '../analytics/v2-recorder';
 
 const SOUNDIIZ_ENDPOINT = 'https://soundiiz.com/go/import-playlist';
 const SOUNDIIZ_MAX_TRACKS = 200;
@@ -96,43 +97,6 @@ function validateShareUrl(value: unknown): string | null {
     return url.toString();
   } catch {
     return null;
-  }
-}
-
-async function recordMigrationAggregate(
-  db: D1Database | undefined,
-  sourcePlatform: string,
-  destination: string,
-): Promise<void> {
-  if (!db || typeof db.prepare !== 'function') return;
-
-  try {
-    const date = new Date().toISOString().slice(0, 10);
-    const platform = /^[a-z0-9_-]{1,24}$/i.test(sourcePlatform) ? sourcePlatform.toLowerCase() : 'all';
-    const target = destination || 'other';
-
-    const aggregateSql = `
-      INSERT INTO aggregate_stats (date, platform, metric, count)
-      VALUES (?1, ?2, 'migration_soundiiz', 1)
-      ON CONFLICT (date, platform, metric)
-      DO UPDATE SET count = count + 1;
-    `;
-
-    const perfSql = `
-      INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
-      VALUES (?1, ?2, 'migration_destination', ?3, 1)
-      ON CONFLICT (date, platform, dimension, value)
-      DO UPDATE SET count = count + 1;
-    `;
-
-    await db.batch([
-      db.prepare(aggregateSql).bind(date, platform),
-      db.prepare(aggregateSql).bind('TOTAL', platform),
-      db.prepare(perfSql).bind(date, platform, target),
-      db.prepare(perfSql).bind('TOTAL', platform, target),
-    ]);
-  } catch (error) {
-    console.error('Failed to record migration aggregate stats:', error);
   }
 }
 
@@ -329,7 +293,14 @@ export async function handleSoundiizMigration(
       );
     }
 
-    const statsTask = recordMigrationAggregate(env.DB, sourcePlatform, destination || 'other');
+    const statsTask = recordProductEventV2(env.DB, {
+      request,
+      type: 'migration',
+      platform: sourcePlatform,
+      destination: destination || 'other',
+      provider: 'soundiiz',
+      endpoint: 'migration_soundiiz',
+    });
     if (ctx && typeof ctx.waitUntil === 'function') {
       ctx.waitUntil(statsTask);
     } else {
