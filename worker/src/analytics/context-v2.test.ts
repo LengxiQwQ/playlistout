@@ -58,6 +58,20 @@ describe('Analytics V2 request context', () => {
     expect(ctx.hostPlatform).toBe('unknown');
   });
 
+  it('keeps ordinary API tools in product traffic but marks real crawlers automated', () => {
+    const curl = createAnalyticsRequestContextV2(request({
+      'User-Agent': 'curl/8.7.1',
+    }));
+    const crawler = createAnalyticsRequestContextV2(request({
+      'User-Agent': 'Googlebot/2.1',
+    }));
+
+    expect(curl.channel).toBe('api');
+    expect(curl.isAutomated).toBe(false);
+    expect(crawler.channel).toBe('api');
+    expect(crawler.isAutomated).toBe(true);
+  });
+
   it('never emits legacy all/TOTAL platform tokens', () => {
     expect(normalizeAnalyticsPlatformV2('all')).toBe('unknown');
     expect(normalizeAnalyticsPlatformV2('TOTAL')).toBe('unknown');
