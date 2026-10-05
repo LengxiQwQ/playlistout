@@ -1,4 +1,5 @@
 import { classifyLatency } from './dimensions';
+import { getClientIp } from '../security/rate-limit';
 import {
   createAnalyticsRequestContextV2,
   normalizeAnalyticsPlatformV2,
@@ -30,6 +31,47 @@ export interface ProductEventV2Input {
   trackCount?: number;
   referrerSource?: string;
   endpoint?: string;
+}
+
+async function computeDailyVisitorHash(request: Request, date: string): Promise<string> {
+  const ip = getClientIp(request);
+  const ua = (request.headers.get('user-agent') || '').trim().slice(0, 128);
+  const payload = new TextEncoder().encode(`${date}:${ip}:${ua}:playlistout_v_salt_2026`);
+  const digest = await crypto.subtle.digest('SHA-256', payload);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
+async function recordAutomatedSecurityEvent(
+  db: D1Database,
+  ctx: AnalyticsRequestContextV2,
+  platform: AnalyticsPlatformV2,
+  input: ResolveV2Input,
+): Promise<void> {
+  const details = JSON.stringify({
+    channel: ctx.channel,
+    clientId: ctx.clientId,
+    outcome: input.outcome,
+    endpoint: input.endpoint || 'resolve',
+    failureCode: input.failureCode || undefined,
+  });
+
+  await db.prepare(`
+    INSERT INTO quarantined_stats (
+      incident_date, batch_id, reason, source_table, platform,
+      metric_or_dimension, country, region, city, client_info, count, details_json
+    ) VALUES (?1, ?2, 'auto_quarantined_bot_ua', 'analytics_v2_security',
+      ?3, 'resolve_request', ?4, ?5, 'UNKNOWN', 'automated', 1, ?6)
+  `).bind(
+    ctx.date,
+    `v2_auto_${ctx.date.replace(/-/g, '')}`,
+    platform,
+    ctx.country,
+    ctx.region,
+    details,
+  ).run();
 }
 
 function boundedToken(value: unknown, fallback: string = 'unknown', max = 64): string {
@@ -120,8 +162,11 @@ export async function recordResolveV2(
 
   try {
     const ctx = createAnalyticsRequestContextV2(input.request);
-    if (ctx.isAutomated) return;
     const platform = normalizeAnalyticsPlatformV2(input.platform);
+    if (ctx.isAutomated) {
+      await recordAutomatedSecurityEvent(db, ctx, platform, input);
+      return;
+    }
     const statements: D1PreparedStatement[] = [];
 
     statements.push(...coreUpsert(db, ctx, platform, 'resolve_request', 1));
@@ -231,4 +276,64 @@ export async function recordDailyUniqueV2(
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 daily unique:', err);
   }
+}
+
+
+export async function recordVisitEventV2(
+  db: D1Database | undefined,
+  request: Request,
+  referrerSource: string = 'direct',
+): Promise<void> {
+  if (!db) return;
+
+  try {
+    const ctx = createAnalyticsRequestContextV2(request);
+    if (ctx.isAutomated) return;
+
+    const hash = await computeDailyVisitorHash(request, ctx.date);
+    let isNewVisitor = true;
+    try {
+      const result = await db.prepare(`
+        INSERT OR IGNORE INTO daily_visitor_hashes (date, hash)
+        VALUES (?1, ?2)
+      `).bind(ctx.date, hash).run();
+      if (result?.meta && typeof result.meta.changes === 'number') {
+        isNewVisitor = result.meta.changes > 0;
+      }
+    } catch {
+      isNewVisitor = true;
+    }
+
+    await recordProductEventV2(db, {
+      request,
+      type: 'visit',
+      referrerSource,
+    });
+    await recordDailyUniqueV2(db, request, isNewVisitor);
+
+    const cutoff = new Date(Date.now() - 7 * 86400 * 1000).toISOString().slice(0, 10);
+    await db.prepare('DELETE FROM daily_visitor_hashes WHERE date < ?1').bind(cutoff).run();
+  } catch (err: unknown) {
+    console.error('Failed to record Analytics V2 visit event:', err);
+  }
+}
+
+export async function recordRateLimitEventV2(
+  db: D1Database | undefined,
+  request: Request,
+  endpoint: string,
+  platform?: string,
+): Promise<void> {
+  await recordProductEventV2(db, {
+    request,
+    type: 'rate_limited',
+    endpoint,
+    platform,
+  });
+}
+
+export function normalizeClipboardModeV2(mode: string): string {
+  if (mode === 'title-artist') return 'title_artist';
+  if (mode === 'title-artist-album') return 'title_artist_album';
+  return mode;
 }
