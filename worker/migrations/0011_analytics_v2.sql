@@ -191,8 +191,8 @@ WHERE date != 'TOTAL' AND platform = 'all'
 INSERT OR REPLACE INTO analytics_v2_daily_core (date, channel, client_id, platform, metric, count)
 SELECT date, 'legacy_mixed', 'legacy_unknown', platform,
        CASE metric
-         WHEN 'parse_success' THEN 'playlist_success'
-         WHEN 'parse_failure' THEN 'resolve_failure'
+         WHEN 'parse_success' THEN 'parse_success_legacy'
+         WHEN 'parse_failure' THEN 'parse_failure_legacy'
          WHEN 'tracks_processed' THEN 'tracks_processed'
          WHEN 'exports_total' THEN 'export'
          WHEN 'clipboards_total' THEN 'clipboard'
