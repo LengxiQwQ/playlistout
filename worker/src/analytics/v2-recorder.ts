@@ -93,11 +93,11 @@ function envUpsert(
   ctx: AnalyticsRequestContextV2,
 ): D1PreparedStatement {
   return db.prepare(`
-    INSERT INTO analytics_v2_client_env (date, channel, client_id, device_class, os_family, count)
-    VALUES (?1, ?2, ?3, ?4, ?5, 1)
-    ON CONFLICT (date, channel, client_id, device_class, os_family)
+    INSERT INTO analytics_v2_client_env (date, channel, client_id, device_class, browser_family, os_family, count)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)
+    ON CONFLICT (date, channel, client_id, device_class, browser_family, os_family)
     DO UPDATE SET count = count + 1
-  `).bind(ctx.date, ctx.channel, ctx.clientId, ctx.deviceClass, ctx.osFamily);
+  `).bind(ctx.date, ctx.channel, ctx.clientId, ctx.deviceClass, ctx.browserFamily, ctx.osFamily);
 }
 
 function appendClientBreakdowns(
