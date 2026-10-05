@@ -6,7 +6,6 @@ import {
   type AnalyticsClientId,
   type AnalyticsPlatformV2,
 } from '../analytics/context';
-import { getUtcDateString } from './index';
 
 export interface AnalyticsV2Filters {
   from: string;
@@ -34,6 +33,7 @@ const CORE_METRICS = [
   'page_view',
   'visitor_unique',
   'rate_limited',
+  'migration_handoff',
 ] as const;
 
 const BREAKDOWN_DIMENSIONS = [
@@ -54,12 +54,14 @@ const BREAKDOWN_DIMENSIONS = [
   'host_platform',
   'referrer_source',
   'rate_limit_endpoint',
+  'migration_destination',
+  'migration_provider',
 ] as const;
 
 function dateDaysAgo(days: number): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
-  return getUtcDateString(d);
+  return d.toISOString().slice(0, 10);
 }
 
 function validDate(value: string | null): string | null {
@@ -81,7 +83,7 @@ function boundedRegion(value: string | null): string | undefined {
 }
 
 export function parseAnalyticsV2Filters(url: URL): AnalyticsV2Filters {
-  const today = getUtcDateString();
+  const today = new Date().toISOString().slice(0, 10);
   let from = validDate(url.searchParams.get('from')) || dateDaysAgo(29);
   let to = validDate(url.searchParams.get('to')) || today;
 
