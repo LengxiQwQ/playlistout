@@ -609,8 +609,8 @@ describe('PlaylistOut Public API v1', () => {
       );
     });
 
-    it('records zero parse analytics events when numeric resolution results in 409 AMBIGUOUS_INPUT', async () => {
-      const recordSpy = vi.spyOn(analyticsRecorder, 'recordParseEvent').mockResolvedValue();
+    it('records one final V2 failure and zero probe pollution for 409 AMBIGUOUS_INPUT', async () => {
+      const recordSpy = vi.spyOn(v2Recorder, 'recordResolveV2').mockResolvedValue();
 
       // Both QQ Music and NetEase find matching playlists
       vi.spyOn(qqMusicProvider, 'parse').mockResolvedValueOnce(
