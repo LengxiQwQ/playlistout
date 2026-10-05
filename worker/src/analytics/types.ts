@@ -21,67 +21,6 @@ export interface PublicDailyTrendEntry {
 /** Legacy alias for backward compatibility */
 export type DailyTrendEntry = PublicDailyTrendEntry;
 
-export interface OperationalDailyTrendEntry {
-  date: string;
-  clipboards: number;
-  visitors: number;
-  failures: number;
-}
-
-export interface HourlyEntry {
-  /** UTC hour, 0–23 */
-  hour: number;
-  pageViews: number;
-  /** 当日首次访问的独立访客数（按首次访问所在小时分布） */
-  visitors: number;
-}
-
-/**
- * A real rolling hourly bucket. `timestamp` is the UTC start of the hour.
- * Consumers may render it in any display timezone without changing bucket order.
- */
-export interface RollingHourlyEntry {
-  /** UTC ISO-8601 timestamp for the start of the hour */
-  timestamp: string;
-  pageViews: number;
-  /** Daily-unique visitors whose first visit occurred in this hour */
-  visitors: number;
-}
-
-export interface GeoDistributionItem {
-  country: string;
-  region?: string;
-  count: number;
-  /**
-   * 占已知国家总访问记录的百分比（分母为所有已知国家的记录总和，非仅 Top 10 之和）。
-   * Percentage share among all known geographic visit records (denominator is full known population, not Top 10 sum).
-   */
-  percentage: number;
-}
-
-export interface ProvinceDistributionItem {
-  province: string;
-  count: number;
-  /**
-   * 占中国境内已知省份总访问记录的百分比（分母为所有已知省份的记录总和，非仅 Top 10 之和）。
-   * Percentage share among all known China province visit records (denominator is full known CN population, not Top 10 sum).
-   */
-  percentage: number;
-}
-
-export interface ClientDistributionItem {
-  name: string;
-  count: number;
-  percentage: number;
-}
-
-export interface ClientStats {
-  browsers: ClientDistributionItem[];
-  devices: ClientDistributionItem[];
-  os: ClientDistributionItem[];
-  deviceBrands?: ClientDistributionItem[];
-}
-
 export interface PublicStatsResponse {
   launchedAt: string;
   /**
@@ -110,53 +49,6 @@ export interface PublicStatsResponse {
   byPlatform: Record<string, PlatformBreakdown>;
   recentDays: PublicDailyTrendEntry[];
   generatedAt: string;
-}
-
-// ── Private Maintainer Analytics Contract (served via GET /api/internal/stats) ──
-
-export interface PrivateAnalyticsResponse {
-  todayHourlyPageViews: HourlyEntry[];
-  last24HourlyPageViews: RollingHourlyEntry[];
-  topGeo: GeoDistributionItem[];
-  chinaProvinces: ProvinceDistributionItem[];
-  clientStats: ClientStats;
-  clipboardFormatsBreakdown: Record<string, number>;
-  referrerDistribution: ClientDistributionItem[];
-  inputTypeDistribution: ClientDistributionItem[];
-  latencyDistribution: ClientDistributionItem[];
-  errorCategoryDistribution: ClientDistributionItem[];
-  playlistSizeDistribution: ClientDistributionItem[];
-  providerPathDistribution: ClientDistributionItem[];
-  exportPlaylistSizeDistribution: ClientDistributionItem[];
-  clipboardPlaylistSizeDistribution: ClientDistributionItem[];
-  rateLimitEndpointDistribution: ClientDistributionItem[];
-  operationalRecentDays: OperationalDailyTrendEntry[];
-
-  // ── R7 Resolve Failure Telemetry (Private Maintainer Contract) ──
-  resolveOutcomeDistribution: ClientDistributionItem[];
-  resolveFailureCodeDistribution: ClientDistributionItem[];
-  resolveFailureClassDistribution: ClientDistributionItem[];
-  resolveFailureStageDistribution: ClientDistributionItem[];
-  resolveRequestedTypeDistribution: ClientDistributionItem[];
-  resolveRequestedPlatformDistribution: ClientDistributionItem[];
-  resolveInputTypeDistribution: ClientDistributionItem[];
-  resolveFailuresByPlatform: ClientDistributionItem[];
-  providerFailurePathDistribution: ClientDistributionItem[];
-
-  // Direct short aliases
-  resolveOutcomes?: ClientDistributionItem[];
-  resolveFailureCodes?: ClientDistributionItem[];
-  resolveFailureClasses?: ClientDistributionItem[];
-  resolveFailureStages?: ClientDistributionItem[];
-  resolveRequestedTypes?: ClientDistributionItem[];
-  resolveRequestedPlatforms?: ClientDistributionItem[];
-  resolveInputTypes?: ClientDistributionItem[];
-  providerFailurePaths?: ClientDistributionItem[];
-}
-
-export interface MaintainerStatsResponse {
-  public: PublicStatsResponse;
-  insights: PrivateAnalyticsResponse;
 }
 
 // ── Event Ingestion Types (POST /api/event) ──
@@ -236,21 +128,6 @@ export interface VisitEventPayload {
 }
 
 export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;
-
-// ── Parse Analytics Context (internal, passed to recorder) ──
-
-export interface ParseAnalyticsContext {
-  request: Request;
-  platform: string;
-  inputType: string;
-  success: boolean;
-  trackCount?: number;
-  errorCategory?: string;
-  latencyMs?: number;
-  providerPath?: 'primary' | 'fallback';
-  isDirectApi?: boolean;
-  isBot?: boolean;
-}
 
 // ── Dimension Constants ──
 
@@ -401,18 +278,3 @@ export const PROVIDER_FAILURE_PATHS = [
   'unknown',
 ] as const;
 export type ProviderFailurePath = typeof PROVIDER_FAILURE_PATHS[number];
-
-export interface ResolveAnalyticsContext {
-  request?: Request;
-  outcome: ResolveOutcome;
-  platform?: AnalyticsPlatform;
-  requestedType?: ResolveRequestedType;
-  requestedPlatform?: ResolveRequestedPlatform;
-  inputType?: InputType;
-  failureCode?: ResolveFailureCode;
-  failureClass?: ResolveFailureClass;
-  failureStage?: ResolveFailureStage;
-  providerFailurePath?: ProviderFailurePath;
-  country?: string;
-}
-
