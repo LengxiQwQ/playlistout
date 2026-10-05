@@ -44,11 +44,11 @@ export async function writeAnalyticsV2(
 
   const upsertDaily = `
     INSERT INTO analytics_v2_daily_core (
-      date, channel, client_id, client_version, host_platform, trust_class,
+      date, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, metric, count, value_sum
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+    ) VALUES (?1, 'live', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
     ON CONFLICT (
-      date, channel, client_id, client_version, host_platform, trust_class,
+      date, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, metric
     ) DO UPDATE SET
       count = count + excluded.count,
@@ -57,11 +57,11 @@ export async function writeAnalyticsV2(
 
   const upsertHourly = `
     INSERT INTO analytics_v2_hourly_core (
-      date, hour, channel, client_id, client_version, host_platform, trust_class,
+      date, hour, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, metric, count, value_sum
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+    ) VALUES (?1, ?2, 'live', ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
     ON CONFLICT (
-      date, hour, channel, client_id, client_version, host_platform, trust_class,
+      date, hour, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, metric
     ) DO UPDATE SET
       count = count + excluded.count,
@@ -70,11 +70,11 @@ export async function writeAnalyticsV2(
 
   const upsertDimension = `
     INSERT INTO analytics_v2_daily_dimensions (
-      date, channel, client_id, client_version, host_platform, trust_class,
+      date, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, dimension, value, count
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+    ) VALUES (?1, 'live', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
     ON CONFLICT (
-      date, channel, client_id, client_version, host_platform, trust_class,
+      date, data_origin, channel, client_id, client_version, host_platform, trust_class,
       endpoint, platform, country, region, dimension, value
     ) DO UPDATE SET count = count + excluded.count;
   `;
