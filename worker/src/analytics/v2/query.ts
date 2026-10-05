@@ -133,7 +133,7 @@ function pct(part: number, total: number): number {
 async function distribution(
   db: D1Database,
   filters: AnalyticsV2Filters,
-  field: 'channel' | 'client_id' | 'platform' | 'country' | 'region',
+  field: 'channel' | 'client_id' | 'client_version' | 'host_platform' | 'platform' | 'country' | 'region',
   limit = 30,
 ) {
   const where = whereFor(filters);
@@ -347,6 +347,8 @@ export async function getAnalyticsV2Dashboard(
     breakdowns: {
       channels: await distribution(db, filters, 'channel'),
       clients: await distribution(db, filters, 'client_id'),
+      clientVersions: await distribution(db, filters, 'client_version'),
+      hostPlatforms: await distribution(db, filters, 'host_platform'),
       platforms: await distribution(db, filters, 'platform'),
       countries: await distribution(db, filters, 'country'),
       regions: await distribution(db, filters, 'region'),
@@ -373,27 +375,23 @@ export async function getAnalyticsV2FilterOptions(
 
   const base: AnalyticsV2Filters = { ...filters, channel: undefined, client: undefined, platform: undefined, region: undefined };
   const where = whereFor(base);
-  const optionRows = async (field: 'channel' | 'client_id' | 'platform' | 'country' | 'region', extra = '') => {
+  const optionRows = async (field: 'channel' | 'client_id' | 'platform' | 'country' | 'region') => {
     const result = await rows<{ value: string }>(
       db,
       `SELECT DISTINCT ${field} AS value
        FROM analytics_v2_daily_core
-       WHERE ${where.sql} ${extra}
+       WHERE ${where.sql}
        ORDER BY value ASC`,
       where.values,
     );
     return result.map((row) => row.value).filter(Boolean);
   };
 
-  const countryFilter = filters.country
-    ? ` AND country = '${filters.country.replace(/'/g, "''")}'`
-    : '';
-
   return {
     channels: await optionRows('channel'),
     clients: await optionRows('client_id'),
     platforms: await optionRows('platform'),
     countries: await optionRows('country'),
-    regions: await optionRows('region', countryFilter),
+    regions: await optionRows('region'),
   };
 }
