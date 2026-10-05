@@ -69,6 +69,11 @@ export async function recordParseEvent(
 ): Promise<void> {
   if (!db) return;
 
+  let isNewVisitor = true;
+  const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
+    ? referrerSource
+    : 'other_web';
+
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
@@ -340,16 +345,17 @@ export async function recordExportEvent(
     }
 
     await db.batch(statements);
-    await recordProductEventV2(db, {
-      request,
-      type: 'export',
-      platform,
-      format: exportFormat,
-      trackCount,
-    });
   } catch (err: unknown) {
     console.error('Failed to record export aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'export',
+    platform,
+    format: exportFormat,
+    trackCount,
+  });
 }
 
 /**
@@ -366,10 +372,10 @@ export async function recordClipboardEvent(
 ): Promise<void> {
   if (!db) return;
 
+  const canonicalMode = normalizeClipboardMode(mode);
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
-    const canonicalMode = normalizeClipboardMode(mode);
 
     const cf = (request as any).cf;
     const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
@@ -427,16 +433,17 @@ export async function recordClipboardEvent(
     }
 
     await db.batch(statements);
-    await recordProductEventV2(db, {
-      request,
-      type: 'clipboard',
-      platform,
-      format: canonicalMode,
-      trackCount,
-    });
   } catch (err: unknown) {
     console.error('Failed to record clipboard aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'clipboard',
+    platform,
+    format: canonicalMode,
+    trackCount,
+  });
 }
 
 /**
@@ -493,16 +500,17 @@ export async function recordRateLimitEvent(
     ];
 
     await db.batch(statements);
-    if (requestOrCountry && typeof requestOrCountry === 'object') {
-      await recordProductEventV2(db, {
-        request: requestOrCountry,
-        type: 'rate_limited',
-        platform,
-        endpoint,
-      });
-    }
   } catch (err: unknown) {
     console.error('Failed to record rate limit aggregate stats:', err);
+  }
+
+  if (requestOrCountry && typeof requestOrCountry === 'object') {
+    await recordProductEventV2(db, {
+      request: requestOrCountry,
+      type: 'rate_limited',
+      platform,
+      endpoint,
+    });
   }
 }
 
@@ -570,7 +578,6 @@ export async function recordVisitEvent(
     `;
 
     // Attempt to insert daily hash
-    let isNewVisitor = true;
     try {
       const res = await db.prepare(insertHashSql).bind(date, hash).run();
       if (res && res.meta && typeof res.meta.changes === 'number') {
@@ -620,9 +627,6 @@ export async function recordVisitEvent(
 
     // Referrer source recording (coarse category only, strictly bounded by REFERRER_SOURCES allowlist)
     // Raw URLs, paths, queries, and headers are NEVER read, received, or stored
-    const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
-      ? referrerSource
-      : 'other_web';
     const upsertPerfSql = `
       INSERT INTO daily_performance_stats (date, platform, dimension, value, count)
       VALUES (?1, 'all', ?2, ?3, 1)
@@ -647,15 +651,16 @@ export async function recordVisitEvent(
     statements.push(db.prepare(pruneHashesSql).bind(cutoffDate));
 
     await db.batch(statements);
-    await recordProductEventV2(db, {
-      request,
-      type: 'visit',
-      referrerSource: safeSource,
-    });
-    await recordDailyUniqueV2(db, request, isNewVisitor);
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);
   }
+
+  await recordProductEventV2(db, {
+    request,
+    type: 'visit',
+    referrerSource: safeSource,
+  });
+  await recordDailyUniqueV2(db, request, isNewVisitor);
 }
 
 /**
