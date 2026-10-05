@@ -9,8 +9,7 @@ import * as neteaseUser from '../providers/netease/user';
 import * as kugouClient from '../providers/kugou/client';
 import { ProviderError } from '../models/playlist';
 import { resetRateLimitStore } from '../security/rate-limit';
-import { recordParseEvent } from './recorder';
-import { getPrivateAnalytics, getPublicStats, getUtcDateString } from '../stats';
+import { getUtcDateString } from '../stats';
 import {
   RESOLVE_OUTCOMES,
   RESOLVE_FAILURE_CODES,
@@ -44,15 +43,11 @@ interface BoundCall {
 }
 
 function createTelemetryMockD1() {
-  const perfMap = new Map<string, number>(); // legacy direct-recorder compatibility tests only
-  const aggMap = new Map<string, number>(); // legacy direct-recorder compatibility tests only
   const v2CoreMap = new Map<string, number>(); // key: `${date}::${platform}::${metric}`
   const v2BreakdownMap = new Map<string, number>(); // key: `${date}::${platform}::${dimension}::${value}`
   const allBinds: BoundCall[] = [];
 
   const db = {
-    _perfMap: perfMap,
-    _aggMap: aggMap,
     _v2CoreMap: v2CoreMap,
     _v2BreakdownMap: v2BreakdownMap,
     _allBinds: allBinds,
@@ -75,93 +70,11 @@ function createTelemetryMockD1() {
             const [date, , , platform, dimension, value, increment] = params;
             const key = `${date}::${platform}::${dimension}::${value}`;
             v2BreakdownMap.set(key, (v2BreakdownMap.get(key) || 0) + Number(increment || 0));
-          } else if (sql.includes('daily_performance_stats')) {
-            const [date, platform, dim, val] = params;
-            const key = `${date}::${platform}::${dim}::${val}`;
-            perfMap.set(key, (perfMap.get(key) || 0) + 1);
-          } else if (sql.includes('aggregate_stats')) {
-            let date: string;
-            let platform: string;
-            let metric: string;
-            let increment = 1;
-            if (sql.includes("'all'")) {
-              date = params[0];
-              platform = 'all';
-              metric = params[1];
-            } else {
-              date = params[0];
-              platform = params[1];
-              metric = sql.includes('tracks_processed') ? 'tracks_processed' : params[2];
-              increment = sql.includes('tracks_processed') ? (params[2] ?? 1) : 1;
-            }
-            const key = `${date}::${platform}::${metric}`;
-            aggMap.set(key, (aggMap.get(key) || 0) + increment);
           }
           return { success: true };
         },
         async all() {
           const sql = this._sql as string;
-          if (sql.includes('daily_performance_stats')) {
-            if (sql.includes("dimension = 'resolve_outcome'") && sql.includes("value = 'failure'")) {
-              // GROUP BY platform
-              const platCounts = new Map<string, number>();
-              for (const [key, count] of perfMap.entries()) {
-                const [date, platform, dim, val] = key.split('::');
-                if (date !== 'TOTAL' && dim === 'resolve_outcome' && val === 'failure') {
-                  platCounts.set(platform, (platCounts.get(platform) || 0) + count);
-                }
-              }
-              const results = Array.from(platCounts.entries()).map(([platform, total]) => ({ platform, total }));
-              return { results };
-            }
-
-            if (sql.includes('GROUP BY dimension, value')) {
-              const dimCounts = new Map<string, number>();
-              for (const [key, count] of perfMap.entries()) {
-                const [date, , dim, val] = key.split('::');
-                if (date !== 'TOTAL') {
-                  const subKey = `${dim}::${val}`;
-                  dimCounts.set(subKey, (dimCounts.get(subKey) || 0) + count);
-                }
-              }
-              const results = Array.from(dimCounts.entries()).map(([subKey, total]) => {
-                const [dimension, value] = subKey.split('::');
-                return { dimension, value, total };
-              });
-              return { results };
-            }
-          }
-
-          if (sql.includes('aggregate_stats')) {
-            if (sql.includes('GROUP BY date, metric')) {
-              const threshold = this._params[0];
-              const dateMetricCounts = new Map<string, number>();
-              for (const [key, count] of aggMap.entries()) {
-                const [date, platform, metric] = key.split('::');
-                if (platform === 'all' && date !== 'TOTAL' && date >= threshold) {
-                  const subKey = `${date}::${metric}`;
-                  dateMetricCounts.set(subKey, (dateMetricCounts.get(subKey) || 0) + count);
-                }
-              }
-              const results = Array.from(dateMetricCounts.entries()).map(([subKey, total]) => {
-                const [date, metric] = subKey.split('::');
-                return { date, metric, total };
-              });
-              return { results };
-            }
-
-            // SELECT date, platform, metric, count FROM aggregate_stats WHERE date IN (?1, ?2)
-            const d1 = this._params[0];
-            const d2 = this._params[1];
-            const results: any[] = [];
-            for (const [key, count] of aggMap.entries()) {
-              const [date, platform, metric] = key.split('::');
-              if (date === d1 || date === d2) {
-                results.push({ date, platform, metric, count });
-              }
-            }
-            return { results };
-          }
 
           return { results: [] };
         },
@@ -176,8 +89,6 @@ function createTelemetryMockD1() {
   };
 
   return db as unknown as D1Database & {
-    _perfMap: Map<string, number>;
-    _aggMap: Map<string, number>;
     _v2CoreMap: Map<string, number>;
     _v2BreakdownMap: Map<string, number>;
     _allBinds: BoundCall[];
@@ -214,8 +125,6 @@ const mockUserData = (platform: string, userId: string, nickname: string) => ({
 });
 
 describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic Tests A-N)', () => {
-  const ADMIN_SECRET = 'valid_insights_secret_r7_test_xyz';
-
   beforeEach(() => {
     vi.restoreAllMocks();
     resetRateLimitStore();
@@ -255,10 +164,9 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_class::not_found`)).toBe(1);
     expect(mockDb._v2BreakdownMap.get(`${today}::unknown::failure_stage::disambiguation_probe`)).toBe(1);
 
-    // 2. Zero probe pollution in aggregate_stats
-    expect(mockDb._aggMap.get(`${today}::qqmusic::parse_failure`)).toBeUndefined();
-    expect(mockDb._aggMap.get(`${today}::netease::parse_failure`)).toBeUndefined();
-    expect(mockDb._aggMap.get(`${today}::all::parse_failure`)).toBeUndefined();
+    // 2. Zero legacy/probe pollution: only V2 tables may be written.
+    expect(mockDb._allBinds.some((bind) => bind.sql.includes('aggregate_stats'))).toBe(false);
+    expect(mockDb._allBinds.some((bind) => bind.sql.includes('daily_performance_stats'))).toBe(false);
   });
 
   // ── Test B: Operational probe timeout / error ──
@@ -388,7 +296,7 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(mockDb._v2CoreMap.get(`${today}::qqmusic::resolve_request`)).toBe(1);
     expect(mockDb._v2CoreMap.get(`${today}::qqmusic::playlist_success`)).toBe(1);
     expect(mockDb._v2CoreMap.get(`${today}::qqmusic::tracks_processed`)).toBe(2);
-    expect(mockDb._aggMap.get(`${today}::qqmusic::parse_success`)).toBeUndefined();
+    expect(mockDb._allBinds.some((bind) => bind.sql.includes('aggregate_stats'))).toBe(false);
   });
 
   // ── Test F: User profile success ──
@@ -420,37 +328,6 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     expect(mockDb._v2CoreMap.get(`${today}::netease::user_success`)).toBe(1);
     expect(mockDb._v2CoreMap.get(`${today}::netease::playlist_success`)).toBeUndefined();
     expect(mockDb._v2CoreMap.get(`${today}::netease::tracks_processed`)).toBeUndefined();
-  });
-
-  // ── Test G & H: Parse failure global aggregate writes platform='all' and updates operationalRecentDays ──
-  it('Test G & H: recordParseEvent failure writes platform=all to aggregate_stats and reflects in operationalRecentDays.failures', async () => {
-    const mockDb = createTelemetryMockD1();
-    const today = getUtcDateString();
-
-    const req = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=test', {
-      headers: { Origin: 'https://playlistout.com', 'Sec-Fetch-Site': 'same-site' },
-    });
-    await recordParseEvent(mockDb, {
-      request: req,
-      platform: 'kugou',
-      inputType: 'web_url',
-      success: false,
-      errorCategory: 'error_upstream',
-      latencyMs: 1200,
-    });
-
-    // 1. Both platform-specific and 'all' written for parse_failure
-    expect(mockDb._aggMap.get(`${today}::kugou::parse_failure`)).toBe(1);
-    expect(mockDb._aggMap.get(`TOTAL::kugou::parse_failure`)).toBe(1);
-    expect(mockDb._aggMap.get(`${today}::all::parse_failure`)).toBe(1);
-    expect(mockDb._aggMap.get(`TOTAL::all::parse_failure`)).toBe(1);
-
-    // 2. Verified via getPrivateAnalytics operationalRecentDays
-    const analytics = await getPrivateAnalytics(mockDb);
-    expect(analytics.operationalRecentDays).toBeDefined();
-    const todayEntry = analytics.operationalRecentDays.find((d) => d.date === today);
-    expect(todayEntry).toBeDefined();
-    expect(todayEntry?.failures).toBe(1);
   });
 
   // ── Test I: Telemetry DB failure resilience ──
@@ -515,130 +392,41 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
     }
   });
 
-  // ── Test K: Finite cardinality assertion across all dimensions ──
-  it('Test K: All recorded dimensions and values in daily_performance_stats belong to bounded enum sets', async () => {
+  // ── Test K: Finite cardinality assertion across V2 dimensions ──
+  it('Test K: V2 resolve telemetry uses bounded dimensions and enum values', async () => {
     const mockDb = createTelemetryMockD1();
     const ctx = createMockCtx();
 
-    // Trigger resolve failure
-    const request = new Request('https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=bad_input&platform=qqmusic&type=playlist');
+    const request = new Request(
+      'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=bad_input&platform=qqmusic&type=playlist'
+    );
     await worker.fetch(request, { DB: mockDb }, ctx);
     await Promise.all(ctx._promises);
 
-    for (const key of mockDb._perfMap.keys()) {
+    expect(mockDb._v2BreakdownMap.size).toBeGreaterThan(0);
+    for (const key of mockDb._v2BreakdownMap.keys()) {
       const [date, platform, dimension, value] = key.split('::');
-      expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$|^TOTAL$/);
+      expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect((ANALYTICS_PLATFORMS as readonly string[]).includes(platform)).toBe(true);
 
       if (dimension === 'resolve_outcome') {
         expect((RESOLVE_OUTCOMES as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_failure_code') {
+      } else if (dimension === 'failure_code') {
         expect((RESOLVE_FAILURE_CODES as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_failure_class') {
+      } else if (dimension === 'failure_class') {
         expect((RESOLVE_FAILURE_CLASSES as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_failure_stage') {
+      } else if (dimension === 'failure_stage') {
         expect((RESOLVE_FAILURE_STAGES as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_requested_type') {
+      } else if (dimension === 'requested_type') {
         expect((RESOLVE_REQUESTED_TYPES as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_requested_platform') {
+      } else if (dimension === 'requested_platform') {
         expect((RESOLVE_REQUESTED_PLATFORMS as readonly string[]).includes(value)).toBe(true);
-      } else if (dimension === 'resolve_input_type') {
+      } else if (dimension === 'input_type') {
         expect((INPUT_TYPES as readonly string[]).includes(value)).toBe(true);
       } else if (dimension === 'provider_failure_path') {
         expect((PROVIDER_FAILURE_PATHS as readonly string[]).includes(value)).toBe(true);
       }
     }
-  });
-
-  // ── Test L: R6 Public Boundary (0 R7 private keys in public stats) ──
-  it('Test L: GET /api/stats and GET /api/v1/stats strictly contain 0 R7 private keys', async () => {
-    const mockDb = createTelemetryMockD1();
-    const ctx = createMockCtx();
-
-    // Public /api/stats
-    const req1 = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
-    const res1 = await worker.fetch(req1, { DB: mockDb }, ctx);
-    const body1: any = await res1.json();
-    expect(body1.success).toBe(true);
-
-    const r7Keys = [
-      'resolveOutcomes',
-      'resolveFailureCodes',
-      'resolveFailureClasses',
-      'resolveFailureStages',
-      'resolveRequestedTypes',
-      'resolveRequestedPlatforms',
-      'resolveInputTypes',
-      'resolveInputTypeDistribution',
-      'resolveFailuresByPlatform',
-      'providerFailurePaths',
-      'resolveOutcomeDistribution',
-      'resolveFailureCodeDistribution',
-    ];
-
-    for (const key of r7Keys) {
-      expect(body1.data[key]).toBeUndefined();
-    }
-
-    // Public /api/v1/stats
-    const req2 = new Request('https://playlistout-api.lengxiqwq.com/api/v1/stats');
-    const res2 = await worker.fetch(req2, { DB: mockDb }, ctx);
-    const body2: any = await res2.json();
-    expect(body2.success).toBe(true);
-
-    for (const key of r7Keys) {
-      expect(body2.data[key]).toBeUndefined();
-    }
-  });
-
-  // ── Test M: Private Positive (Authenticated internal endpoint returns all R7 dimensions) ──
-  it('Test M: GET /api/internal/stats returns all R7 failure telemetry arrays including resolveInputTypes', async () => {
-    const mockDb = createTelemetryMockD1();
-    const ctx = createMockCtx();
-    const today = getUtcDateString();
-
-    // Seed some performance stats
-    mockDb._perfMap.set(`${today}::qqmusic::resolve_outcome::failure`, 4);
-    mockDb._perfMap.set(`${today}::netease::resolve_outcome::failure`, 2);
-    mockDb._perfMap.set(`${today}::all::resolve_failure_code::playlist_not_found`, 5);
-    mockDb._perfMap.set(`${today}::all::resolve_failure_class::not_found`, 5);
-    mockDb._perfMap.set(`${today}::all::resolve_failure_stage::provider_fetch`, 3);
-    mockDb._perfMap.set(`${today}::all::resolve_requested_type::playlist`, 4);
-    mockDb._perfMap.set(`${today}::all::resolve_requested_platform::auto`, 6);
-    mockDb._perfMap.set(`${today}::all::resolve_input_type::web_url`, 3);
-    mockDb._perfMap.set(`${today}::qqmusic::provider_failure_path::primary`, 1);
-
-    const req = new Request('https://playlistout-api.lengxiqwq.com/api/internal/stats', {
-      headers: { Authorization: `Bearer ${ADMIN_SECRET}` },
-    });
-    const res = await worker.fetch(req, { DB: mockDb, INSIGHTS_ADMIN_TOKEN: ADMIN_SECRET }, ctx);
-    expect(res.status).toBe(200);
-
-    const body: any = await res.json();
-    expect(body.success).toBe(true);
-    const ins = body.data.insights;
-
-    // All R7 arrays must be present
-    expect(Array.isArray(ins.resolveOutcomes)).toBe(true);
-    expect(Array.isArray(ins.resolveFailureCodes)).toBe(true);
-    expect(Array.isArray(ins.resolveFailureClasses)).toBe(true);
-    expect(Array.isArray(ins.resolveFailureStages)).toBe(true);
-    expect(Array.isArray(ins.resolveRequestedTypes)).toBe(true);
-    expect(Array.isArray(ins.resolveRequestedPlatforms)).toBe(true);
-    expect(Array.isArray(ins.resolveInputTypes)).toBe(true);
-    expect(Array.isArray(ins.resolveInputTypeDistribution)).toBe(true);
-    expect(Array.isArray(ins.resolveFailuresByPlatform)).toBe(true);
-    expect(Array.isArray(ins.providerFailurePaths)).toBe(true);
-
-    // Verify content of resolveFailuresByPlatform
-    const qqFailures = ins.resolveFailuresByPlatform.find((x: any) => x.name === 'qqmusic');
-    expect(qqFailures).toBeDefined();
-    expect(qqFailures.count).toBe(4);
-
-    // Verify content of resolveInputTypes
-    const inputTypeItem = ins.resolveInputTypes.find((x: any) => x.name === 'web_url');
-    expect(inputTypeItem).toBeDefined();
-    expect(inputTypeItem.count).toBe(3);
   });
 
   // ── Test N: ProviderError telemetry metadata never leaks into API JSON response envelope ──
@@ -695,6 +483,6 @@ describe('PlaylistOut Insights R7 — Resolve Failure Telemetry (Deterministic T
 
     // Stage must be bounded strictly to 'finalization'
     expect(mockDb._v2BreakdownMap.get(`${today}::qqmusic::failure_stage::finalization`)).toBe(1);
-    expect(mockDb._perfMap.get(`${today}::qqmusic::resolve_failure_stage::malicious_sql_injection_or_unbounded_stage`)).toBeUndefined();
+    expect(mockDb._allBinds.some((bind) => bind.sql.includes('daily_performance_stats'))).toBe(false);
   });
 });
