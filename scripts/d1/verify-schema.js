@@ -22,6 +22,7 @@ export { executeD1Query, validateMigrationHistory };
 export const REQUIRED_TABLES = [
   'daily_visitor_hashes',
   'security_rate_limits',
+  'quarantined_stats',
   'parse_feedback',
   'analytics_v2_daily_core',
   'analytics_v2_hourly_core',
@@ -39,6 +40,7 @@ export const REQUIRED_TABLES = [
 export const REQUIRED_COLUMNS = {
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
+  quarantined_stats: ['id', 'incident_date', 'batch_id', 'reason', 'source_table', 'platform', 'metric_or_dimension', 'count', 'details_json'],
   quarantined_stats: ['incident_date', 'reason', 'source_table', 'platform', 'metric_or_dimension', 'count'],
   parse_feedback: ['id', 'url', 'error_code', 'platform', 'status', 'report_count', 'first_reported_at', 'last_reported_at', 'resolved_at'],
   analytics_v2_daily_core: ['date', 'channel', 'client_id', 'platform', 'metric', 'count'],
@@ -57,6 +59,9 @@ export const REQUIRED_COLUMNS = {
 export const REQUIRED_INDEXES = [
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
+  'idx_quarantined_date',
+  'idx_quarantined_reason',
+  'idx_quarantined_platform',
   'idx_v2_daily_date',
   'idx_v2_daily_channel_client',
   'idx_v2_daily_platform',
