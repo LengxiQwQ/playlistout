@@ -23,6 +23,7 @@ import {
   HISTORICAL_BASELINE_MIGRATIONS,
 } from '../../scripts/d1/baseline-legacy.js';
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
+import { verifyAnalyticsV2 } from '../../scripts/d1/verify-analytics-v2.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -638,6 +639,56 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         expect(line).not.toMatch(/\.wrangler/);
         expect(line).not.toMatch(/\.tmp_/);
       }
+    });
+  });
+
+
+  describe('10.5 Analytics V2 Integrity Gate', () => {
+    let db: DatabaseSync;
+
+    beforeEach(() => {
+      db = new DatabaseSync(':memory:');
+      applyMigrationsToDb(db);
+    });
+
+    afterEach(() => {
+      db.close();
+    });
+
+    it('accepts canonical resolver, export, and clipboard aggregates', async () => {
+      db.exec(`
+        INSERT INTO analytics_v2_daily_core
+          (date, channel, client_id, platform, metric, count)
+        VALUES
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'resolve_request', 3),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'playlist_success', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'resolve_failure', 1),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'export', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'clipboard', 1);
+
+        INSERT INTO analytics_v2_breakdown
+          (date, channel, client_id, platform, dimension, value, count)
+        VALUES
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'export_format', 'json', 2),
+          ('2026-10-05', 'api', 'anonymous_api', 'netease', 'clipboard_mode', 'title', 1);
+      `);
+
+      const result = await verifyAnalyticsV2({ queryFn: makeQueryFn(db) });
+      expect(result.verified).toBe(true);
+    });
+
+    it('fails closed when resolver request and terminal counts diverge', async () => {
+      db.exec(`
+        INSERT INTO analytics_v2_daily_core
+          (date, channel, client_id, platform, metric, count)
+        VALUES
+          ('2026-10-05', 'plugin', 'musicfree', 'qqmusic', 'resolve_request', 2),
+          ('2026-10-05', 'plugin', 'musicfree', 'qqmusic', 'playlist_success', 1);
+      `);
+
+      await expect(
+        verifyAnalyticsV2({ queryFn: makeQueryFn(db) })
+      ).rejects.toThrow(/resolver terminal invariant/);
     });
   });
 
