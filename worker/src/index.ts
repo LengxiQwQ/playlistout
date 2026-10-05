@@ -8,6 +8,7 @@ import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/t
 import { handleEvent } from './routes/event';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
 import { handleInternalQuarantine } from './routes/quarantine';
+import { handleInternalAnalyticsV2 } from './routes/analytics-v2';
 import { handleSoundiizMigration } from './routes/migration';
 import { applySecurityHeaders } from './security/headers';
 import { checkRateLimit, checkDualTrackRateLimit } from './security/rate-limit';
@@ -833,6 +834,11 @@ export default {
           ...responseHeaders,
         },
       });
+    }
+
+    // ── Analytics V2 Maintainer API (filterable, machine-only) ──
+    if (url.pathname === '/api/internal/analytics/v2') {
+      return handleInternalAnalyticsV2(request, _env, responseHeaders, constantTimeCompare);
     }
 
     // ── Maintainer Machine Analytics Endpoint (GET /api/internal/stats) ──
