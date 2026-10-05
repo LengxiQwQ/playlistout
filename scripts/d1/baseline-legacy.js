@@ -11,7 +11,19 @@
  * 3. Bounded to known historical migrations (0001-0008): NEVER marks unreviewed future migrations as applied.
  */
 
-import { executeD1Query, REQUIRED_TABLES, REQUIRED_COLUMNS } from './verify-schema.js';
+import { executeD1Query } from './verify-schema.js';
+
+export const LEGACY_BASELINE_REQUIRED_TABLES = [
+  'aggregate_stats',
+  'daily_export_stats',
+  'hourly_stats',
+  'daily_geo_stats',
+  'daily_client_stats',
+  'daily_performance_stats',
+  'daily_clipboard_stats',
+  'daily_visitor_hashes',
+  'security_rate_limits',
+];
 
 export const HISTORICAL_BASELINE_MIGRATIONS = [
   '0001_initial_stats.sql',
@@ -42,9 +54,10 @@ export async function baselineLegacyDatabase(options = {}) {
   const tablesResult = await queryFn("SELECT name FROM sqlite_master WHERE type='table';");
   const existingTables = new Set(tablesResult.map((r) => r.name));
 
-  // Verify non-migrations required tables
-  const businessTables = REQUIRED_TABLES.filter((t) => t !== 'd1_migrations');
-  const missingTables = businessTables.filter((t) => !existingTables.has(t));
+  // Verify only the frozen historical schema boundary represented by 0001-0008.
+  // Future tables (for example Analytics V2) must never become prerequisites for
+  // rescuing an old untracked database into migration control.
+  const missingTables = LEGACY_BASELINE_REQUIRED_TABLES.filter((t) => !existingTables.has(t));
   if (missingTables.length > 0) {
     throw new Error(
       `Refusing to baseline: target database is missing required schema tables: ${missingTables.join(', ')}\n` +
