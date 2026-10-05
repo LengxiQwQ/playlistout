@@ -69,11 +69,6 @@ export async function recordParseEvent(
 ): Promise<void> {
   if (!db) return;
 
-  let isNewVisitor = true;
-  const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
-    ? referrerSource
-    : 'other_web';
-
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
@@ -549,6 +544,11 @@ export async function recordVisitEvent(
   referrerSource: ReferrerSource = 'direct',
 ): Promise<void> {
   if (!db) return;
+
+  let isNewVisitor = true;
+  const safeSource: ReferrerSource = (REFERRER_SOURCES as readonly string[]).includes(referrerSource)
+    ? referrerSource
+    : 'other_web';
 
   try {
     const date = getUtcDateString();
