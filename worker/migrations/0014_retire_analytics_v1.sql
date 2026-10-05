@@ -14,7 +14,21 @@ CREATE TABLE _analytics_v1_retirement_guard (
   ok INTEGER NOT NULL CHECK (ok = 1)
 );
 
--- Cutover must already be final.
+-- Fresh databases can reach 0014 before the deployment finalizer. If the
+-- entire V1 archive is provably zero-volume, freezing is equivalent to a
+-- no-history cutover and is safe to finalize inside the migration.
+UPDATE analytics_v2_cutover_state
+SET status = 'frozen',
+    frozen_at = COALESCE(frozen_at, CURRENT_TIMESTAMP)
+WHERE id = 1
+  AND status = 'prepared'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM analytics_v1_archive_manifest
+    WHERE count_sum != 0
+  );
+
+-- Cutover must already be final (or the verified zero-volume fresh-DB case above).
 INSERT INTO _analytics_v1_retirement_guard (ok)
 VALUES (
   CASE WHEN COALESCE((
