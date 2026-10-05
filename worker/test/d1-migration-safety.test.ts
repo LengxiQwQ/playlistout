@@ -292,8 +292,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       db.prepare(`
         INSERT INTO parse_feedback
-          (id, fingerprint, platform, error_code, status, report_count, created_at, last_reported_at)
-        VALUES ('sentinel-feedback', 'sentinel-fingerprint', 'qqmusic', 'upstream_error',
+          (url, platform, error_code, status, report_count, first_reported_at, last_reported_at)
+        VALUES ('https://example.invalid/sentinel', 'qqmusic', 'upstream_error',
           'pending', 3, '2026-10-05T00:00:00.000Z', '2026-10-05T00:00:00.000Z')
       `).run();
 
@@ -308,7 +308,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       expect(metric.count).toBe(42);
 
       const feedback = db.prepare(
-        "SELECT report_count FROM parse_feedback WHERE id='sentinel-feedback'"
+        "SELECT report_count FROM parse_feedback WHERE url='https://example.invalid/sentinel'"
       ).get() as any;
       expect(feedback.report_count).toBe(3);
     });
@@ -962,15 +962,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
+      for (const file of fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()) {
         db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
       }
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_retire_analytics_v1.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0015_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
@@ -987,15 +981,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      for (const file of HISTORICAL_BASELINE_MIGRATIONS) {
+      for (const file of fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()) {
         db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
       }
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_retire_analytics_v1.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
