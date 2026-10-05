@@ -606,6 +606,11 @@ describe('PlaylistOut Public API v1', () => {
           success: true,
           trackCount: 1,
         }),
+        expect.objectContaining({
+          channel: 'api',
+          clientId: 'anonymous_api',
+          endpoint: 'resolve',
+        }),
       );
     });
 
