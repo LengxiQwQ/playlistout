@@ -67,7 +67,7 @@ function normalizeHostPlatform(value: string | null): string | null {
 
 function requestLooksAutomated(request: Request): boolean {
   const ua = request.headers.get('user-agent')?.trim() || '';
-  return /bot|spider|crawl|slurp|curl|python|wget|postman|apidog|go-http-client|uptime|headless|lighthouse/i.test(ua);
+  return /bot|spider|crawler|crawl|slurp|uptimerobot|github-camo|headless|lighthouse/i.test(ua);
 }
 
 function hasOfficialWebOrigin(request: Request): boolean {
