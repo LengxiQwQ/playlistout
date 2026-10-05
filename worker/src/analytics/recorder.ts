@@ -36,6 +36,15 @@ import type {
 } from './types';
 import { REFERRER_SOURCES } from './types';
 import { getUtcDateString } from '../stats';
+import type { AnalyticsRequestContext } from './v2/types';
+import {
+  recordClipboardV2,
+  recordExportV2,
+  recordParseV2,
+  recordRateLimitV2,
+  recordResolveV2,
+  recordVisitV2,
+} from './v2/recorder';
 
 
 /**
@@ -65,8 +74,25 @@ export function normalizeClipboardMode(mode: ClipboardMode): CanonicalClipboardM
 export async function recordParseEvent(
   db: D1Database | undefined,
   ctx: ParseAnalyticsContext,
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db) return;
+
+  if (v2Context) {
+    try {
+      await recordParseV2(db, v2Context, {
+        platform: ctx.platform,
+        inputType: ctx.inputType,
+        success: ctx.success,
+        trackCount: ctx.trackCount,
+        errorCategory: ctx.errorCategory,
+        latencyMs: ctx.latencyMs,
+        providerPath: ctx.providerPath,
+      });
+    } catch {
+      console.error('Failed to record Analytics V2 parse stats');
+    }
+  }
 
   try {
     const date = getUtcDateString();
@@ -276,8 +302,17 @@ export async function recordExportEvent(
   platform: string,
   exportFormat: ExportFormat,
   trackCount?: number,
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db) return;
+
+  if (v2Context) {
+    try {
+      await recordExportV2(db, v2Context, platform, exportFormat, trackCount);
+    } catch {
+      console.error('Failed to record Analytics V2 export stats');
+    }
+  }
 
   try {
     const date = getUtcDateString();
@@ -355,13 +390,22 @@ export async function recordClipboardEvent(
   platform: string,
   mode: ClipboardMode,
   trackCount?: number,
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db) return;
+
+  const canonicalMode = normalizeClipboardMode(mode);
+  if (v2Context) {
+    try {
+      await recordClipboardV2(db, v2Context, platform, canonicalMode, trackCount);
+    } catch {
+      console.error('Failed to record Analytics V2 clipboard stats');
+    }
+  }
 
   try {
     const date = getUtcDateString();
     const hour = new Date().getUTCHours();
-    const canonicalMode = normalizeClipboardMode(mode);
 
     const cf = (request as any).cf;
     const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
@@ -433,8 +477,17 @@ export async function recordRateLimitEvent(
   endpoint: string,
   platform: string = 'all',
   requestOrCountry?: Request | string,
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db) return;
+
+  if (v2Context) {
+    try {
+      await recordRateLimitV2(db, v2Context, endpoint, platform);
+    } catch {
+      console.error('Failed to record Analytics V2 rate-limit stats');
+    }
+  }
 
   try {
     const date = getUtcDateString();
@@ -516,6 +569,7 @@ export async function recordVisitEvent(
   db: D1Database | undefined,
   request: Request,
   referrerSource: ReferrerSource = 'direct',
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db) return;
 
@@ -624,6 +678,14 @@ export async function recordVisitEvent(
     statements.push(db.prepare(pruneHashesSql).bind(cutoffDate));
 
     await db.batch(statements);
+
+    if (v2Context) {
+      try {
+        await recordVisitV2(db, v2Context, safeSource, isNewVisitor);
+      } catch {
+        console.error('Failed to record Analytics V2 visit stats');
+      }
+    }
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);
   }
@@ -645,8 +707,17 @@ export async function recordVisitEvent(
 export async function recordResolveOutcome(
   db: D1Database | undefined,
   ctx: ResolveAnalyticsContext,
+  v2Context?: AnalyticsRequestContext,
 ): Promise<void> {
   if (!db || typeof db.prepare !== 'function') return;
+
+  if (v2Context) {
+    try {
+      await recordResolveV2(db, v2Context, ctx);
+    } catch {
+      console.error('Failed to record Analytics V2 resolve stats');
+    }
+  }
 
   try {
     const date = getUtcDateString();
