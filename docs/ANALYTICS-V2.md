@@ -117,3 +117,42 @@ The V2 response includes health checks for:
 - legacy mixed share
 
 A failed invariant is surfaced as a dashboard data-integrity warning.
+
+
+## Production cutover and legacy freeze
+
+Analytics V2 becomes the authoritative production write path through migration `0012_analytics_v2_cutover.sql`.
+
+The cutover is continuity-safe:
+
+1. Migration 0012 captures a V1/V2 baseline for every public counter exposed by `/api/stats`.
+2. While the pre-cutover Worker is still dual-writing, deployment runs `finalize-analytics-v2-cutover.js`.
+3. The finalizer compares V1 and V2 **deltas since the baseline**. Any mismatch fails closed and blocks deployment.
+4. On success, the finalizer refreshes the baseline to the last verified pre-cutover values and marks the cutover state `frozen`.
+5. The new Worker writes Analytics V2 only. Legacy analytics tables remain read-only for historical trend compatibility, rollback, and forensic inspection.
+
+Public lifetime counters use the following bridge:
+
+```
+public_total = legacy_total_at_cutover + (v2_total_now - v2_total_at_cutover)
+```
+
+This preserves exact visible historical totals without pretending that old MusicFree/Web/API attribution can be reconstructed.
+
+For the cutover UTC day, the same bridge is applied to daily counters. Later UTC days are read directly from V2. Earlier trend days remain sourced from the immutable V1 archive.
+
+### Legacy table policy after cutover
+
+The following tables are retained but are no longer production write targets:
+
+- `aggregate_stats`
+- `hourly_stats`
+- `daily_geo_stats`
+- `daily_client_stats`
+- `daily_performance_stats`
+- `daily_export_stats`
+- `daily_clipboard_stats`
+
+`daily_visitor_hashes` remains an intentionally short-lived deduplication helper for daily unique visitors. It is not an analytics history table and continues to be pruned.
+
+The old `/api/internal/stats` endpoint is compatibility-only after cutover. Dashboard V3 uses `/api/internal/analytics/v2`.
