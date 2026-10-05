@@ -34,6 +34,7 @@ const CORE_METRICS = [
   'page_view',
   'visitor_unique',
   'rate_limited',
+  'migration_handoff',
 ] as const;
 
 const BREAKDOWN_DIMENSIONS = [
@@ -54,6 +55,8 @@ const BREAKDOWN_DIMENSIONS = [
   'host_platform',
   'referrer_source',
   'rate_limit_endpoint',
+  'migration_destination',
+  'migration_provider',
 ] as const;
 
 function dateDaysAgo(days: number): string {
