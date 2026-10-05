@@ -25,12 +25,14 @@ export interface ResolveV2Input {
 
 export interface ProductEventV2Input {
   request: Request;
-  type: 'export' | 'clipboard' | 'visit' | 'rate_limited';
+  type: 'export' | 'clipboard' | 'visit' | 'rate_limited' | 'migration';
   platform?: string;
   format?: string;
   trackCount?: number;
   referrerSource?: string;
   endpoint?: string;
+  destination?: string;
+  provider?: string;
 }
 
 async function computeDailyVisitorHash(request: Request, date: string): Promise<string> {
@@ -253,6 +255,12 @@ export async function recordProductEventV2(
       statements.push(...coreUpsert(db, ctx, platform, 'rate_limited', 1));
       const endpoint = breakdownUpsert(db, ctx, platform, 'rate_limit_endpoint', input.endpoint || 'unknown');
       if (endpoint) statements.push(endpoint);
+    } else if (input.type === 'migration') {
+      statements.push(...coreUpsert(db, ctx, platform, 'migration_handoff', 1));
+      const destination = breakdownUpsert(db, ctx, platform, 'migration_destination', input.destination || 'other');
+      if (destination) statements.push(destination);
+      const provider = breakdownUpsert(db, ctx, platform, 'migration_provider', input.provider || 'unknown');
+      if (provider) statements.push(provider);
     }
 
     appendClientBreakdowns(statements, db, ctx, platform);
