@@ -100,9 +100,8 @@ export async function validateMigrationHistory(options = {}) {
       throw new Error(
         `[FAIL-CLOSED] Untracked database detected!\n` +
         `Existing business tables found (${businessTables.join(', ')}) but "d1_migrations" table does not exist.\n` +
-        `Refusing to apply migrations to prevent data corruption (e.g. Migration 0005 rewriting city data).\n` +
-        `To bring this database under migration control safely, run the explicit legacy baseline procedure:\n` +
-        `  node scripts/d1/baseline-legacy.js --baseline-existing --confirm`
+        `Refusing to apply migrations to prevent data corruption.\n` +
+        `Restore a trusted database backup with valid d1_migrations history, or provision a new database explicitly.`
       );
     }
 
@@ -135,8 +134,7 @@ export async function validateMigrationHistory(options = {}) {
       `[FAIL-CLOSED] Untracked database detected!\n` +
       `Existing business tables found (${businessTables.join(', ')}) but "d1_migrations" has 0 recorded migrations.\n` +
       `Refusing to apply migrations to prevent data corruption.\n` +
-      `Run the explicit legacy baseline procedure:\n` +
-      `  node scripts/d1/baseline-legacy.js --baseline-existing --confirm`
+      `Restore a trusted database backup with valid d1_migrations history, or provision a new database explicitly.`
     );
   }
 
