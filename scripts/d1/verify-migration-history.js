@@ -33,6 +33,10 @@ export const KNOWN_BUSINESS_TABLES = [
   'daily_clipboard_stats',
   'daily_visitor_hashes',
   'security_rate_limits',
+  'analytics_v2_daily_core',
+  'analytics_v2_hourly_core',
+  'analytics_v2_daily_dimensions',
+  'analytics_v2_meta',
 ];
 
 export async function executeD1Query(sql, options = {}) {
