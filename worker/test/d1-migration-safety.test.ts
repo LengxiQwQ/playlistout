@@ -23,6 +23,7 @@ import {
   HISTORICAL_BASELINE_MIGRATIONS,
 } from '../../scripts/d1/baseline-legacy.js';
 import { validateMigrationHistory } from '../../scripts/d1/verify-migration-history.js';
+import { verifyAnalyticsV2 } from '../../scripts/analytics/verify-v2.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -216,6 +217,13 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       expect(v2DimColNames).toContain('data_origin');
       expect(v2DimColNames).toContain('dimension');
       expect(v2DimColNames).toContain('value');
+
+      const analyticsQuality = await verifyAnalyticsV2({ queryFn });
+      expect(analyticsQuality.verified).toBe(true);
+      expect(analyticsQuality.checks.sentinelRows).toBe(0);
+      expect(analyticsQuality.checks.exportMismatches).toBe(0);
+      expect(analyticsQuality.checks.clipboardMismatches).toBe(0);
+      expect(analyticsQuality.checks.resolveMismatches).toBe(0);
     });
   });
 
