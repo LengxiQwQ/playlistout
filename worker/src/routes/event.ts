@@ -25,6 +25,7 @@ import type {
   SupportedPlatform,
   ReferrerSource,
 } from '../analytics/types';
+import type { AnalyticsRequestContext } from '../analytics/v2/types';
 import {
   SUPPORTED_PLATFORMS,
   VALID_EXPORT_FORMATS,
@@ -334,6 +335,7 @@ export async function handleEvent(
   env: Env,
   ctx: ExecutionContext,
   responseHeaders: Record<string, string>,
+  analyticsContext?: AnalyticsRequestContext,
 ): Promise<Response> {
   // 1. Method check: only POST is allowed
   if (request.method !== 'POST') {
@@ -510,6 +512,7 @@ export async function handleEvent(
           payload.platform,
           payload.format,
           payload.trackCount,
+          analyticsContext,
         ),
       );
     } else if (payload.type === 'clipboard') {
@@ -520,6 +523,7 @@ export async function handleEvent(
           payload.platform,
           payload.format,
           payload.trackCount,
+          analyticsContext,
         ),
       );
     } else if (payload.type === 'visit') {
@@ -528,6 +532,7 @@ export async function handleEvent(
           env.DB,
           request,
           payload.referrerSource,
+          analyticsContext,
         ),
       );
     }
