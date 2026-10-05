@@ -100,7 +100,7 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
   }
 
   // Strictly no browser CORS for internal stats endpoint (R6 Requirement 19 & 46)
-  if (path === '/api/internal/stats') {
+  if (path === '/api/internal/stats' || path === '/api/internal/analytics/v2') {
     return {
       Vary: 'Origin',
     };
@@ -160,7 +160,7 @@ export function handleOptions(request: Request, pathname?: string): Response {
   })();
 
   // Strictly reject browser preflight on internal stats endpoint (R6)
-  if (path === '/api/internal/stats') {
+  if (path === '/api/internal/stats' || path === '/api/internal/analytics/v2') {
     return new Response(null, {
       status: 403,
       headers: { Vary: 'Origin' },
