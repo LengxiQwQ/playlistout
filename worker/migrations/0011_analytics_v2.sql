@@ -4,6 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS analytics_v2_daily_core (
   date TEXT NOT NULL,
+  data_origin TEXT NOT NULL DEFAULT 'live',
   channel TEXT NOT NULL,
   client_id TEXT NOT NULL,
   client_version TEXT NOT NULL DEFAULT 'unknown',
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS analytics_v2_daily_core (
   count INTEGER NOT NULL DEFAULT 0,
   value_sum INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (
-    date, channel, client_id, client_version, host_platform, trust_class,
+    date, data_origin, channel, client_id, client_version, host_platform, trust_class,
     endpoint, platform, country, region, metric
   )
 );
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS analytics_v2_daily_core (
 CREATE TABLE IF NOT EXISTS analytics_v2_hourly_core (
   date TEXT NOT NULL,
   hour INTEGER NOT NULL,
+  data_origin TEXT NOT NULL DEFAULT 'live',
   channel TEXT NOT NULL,
   client_id TEXT NOT NULL,
   client_version TEXT NOT NULL DEFAULT 'unknown',
@@ -38,13 +40,14 @@ CREATE TABLE IF NOT EXISTS analytics_v2_hourly_core (
   count INTEGER NOT NULL DEFAULT 0,
   value_sum INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (
-    date, hour, channel, client_id, client_version, host_platform, trust_class,
+    date, hour, data_origin, channel, client_id, client_version, host_platform, trust_class,
     endpoint, platform, country, region, metric
   )
 );
 
 CREATE TABLE IF NOT EXISTS analytics_v2_daily_dimensions (
   date TEXT NOT NULL,
+  data_origin TEXT NOT NULL DEFAULT 'live',
   channel TEXT NOT NULL,
   client_id TEXT NOT NULL,
   client_version TEXT NOT NULL DEFAULT 'unknown',
@@ -58,7 +61,7 @@ CREATE TABLE IF NOT EXISTS analytics_v2_daily_dimensions (
   value TEXT NOT NULL,
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (
-    date, channel, client_id, client_version, host_platform, trust_class,
+    date, data_origin, channel, client_id, client_version, host_platform, trust_class,
     endpoint, platform, country, region, dimension, value
   )
 );
