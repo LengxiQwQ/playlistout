@@ -3,7 +3,7 @@ import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveDa
 import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists, fetchKugouUserProfile } from './providers/kugou';
 import { getPublicStats, getMaintainerStats } from './stats';
 import { getAnalyticsV2, parseAnalyticsV2Filters } from './stats/v2';
-import { recordRateLimitEvent } from './analytics/recorder';
+import { recordRateLimitEventV2 } from './analytics/v2-recorder';
 import type { PublicStatsResponse, MaintainerStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
@@ -412,7 +412,7 @@ export default {
       const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'resolve', 'all', request));
+          _ctx.waitUntil(recordRateLimitEventV2(_env.DB, request, 'resolve'));
         }
         return new Response(
           JSON.stringify({
@@ -526,7 +526,7 @@ export default {
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
 
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'playlist', rawPlatformParam, request));
+          _ctx.waitUntil(recordRateLimitEventV2(_env.DB, request, 'playlist', rawPlatformParam));
         }
 
         return new Response(
@@ -782,7 +782,7 @@ export default {
       const rateCheck = checkRateLimit(clientIp, 60, 60, 'stats');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
-          _ctx.waitUntil(recordRateLimitEvent(_env.DB, 'stats', 'all', request));
+          _ctx.waitUntil(recordRateLimitEventV2(_env.DB, request, 'stats'));
         }
 
         return new Response(
