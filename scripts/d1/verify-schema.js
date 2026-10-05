@@ -36,6 +36,7 @@ export const REQUIRED_TABLES = [
   'analytics_v2_client_env',
   'analytics_v2_public_baseline',
   'analytics_v2_cutover_state',
+  'analytics_v1_archive_manifest',
   'd1_migrations',
 ];
 
@@ -56,6 +57,7 @@ export const REQUIRED_COLUMNS = {
   analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'browser_family', 'os_family', 'count'],
   analytics_v2_public_baseline: ['key', 'baseline_date', 'legacy_total', 'v2_total', 'legacy_day', 'v2_day'],
   analytics_v2_cutover_state: ['id', 'status', 'baseline_date', 'prepared_at', 'frozen_at'],
+  analytics_v1_archive_manifest: ['table_name', 'captured_at', 'row_count', 'count_sum', 'min_date', 'max_date'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 

@@ -156,3 +156,34 @@ The following tables are retained but are no longer production write targets:
 `daily_visitor_hashes` remains an intentionally short-lived deduplication helper for daily unique visitors. It is not an analytics history table and continues to be pruned.
 
 The old `/api/internal/stats` endpoint is compatibility-only after cutover. Dashboard V3 uses `/api/internal/analytics/v2`.
+
+## Post-cutover hardening
+
+Migration `0013_freeze_analytics_v1_archive.sql` captures a compact manifest for the seven V1 analytics fact tables that must remain immutable after cutover:
+
+- row count
+- sum of the aggregate `count` column
+- minimum stored date
+- maximum stored date
+
+Every production Worker deployment runs `verify-analytics-v1-frozen.js`. Any mutation of the frozen V1 archive blocks deployment.
+
+After the Worker is deployed, `verify-production-public-stats.js` performs an end-to-end production reconciliation:
+
+1. read public `/api/stats`
+2. independently calculate the expected continuity-bridged counters from production D1
+3. read public `/api/stats` again
+4. require the D1 expectation to fall inside the monotonic interval formed by the two API reads
+
+The bracketed check tolerates legitimate concurrent production traffic while still detecting stale legacy reads, broken bridge calculations, or a deployed Worker serving counters inconsistent with D1.
+
+### Remaining cleanup policy
+
+No correctness-critical Analytics V2 work remains after these gates pass in production.
+
+The remaining legacy cleanup is intentionally deferred and non-destructive:
+
+- keep `/api/internal/stats` temporarily as a compatibility endpoint
+- keep legacy recorder/reader code long enough to preserve rollback and forensic value
+- do not drop V1 tables during the immediate post-cutover period
+- remove compatibility code/tables only in a later explicit cleanup milestone after a stable production observation window and a fresh backup/Time Travel recovery point
