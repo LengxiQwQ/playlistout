@@ -36,6 +36,7 @@ import type {
 } from './types';
 import { REFERRER_SOURCES } from './types';
 import { getUtcDateString } from '../stats';
+import { recordDailyUniqueV2, recordProductEventV2 } from './v2-recorder';
 
 
 /**
@@ -80,8 +81,10 @@ export async function recordParseEvent(
     const isDirectApi = ctx.isDirectApi ?? originClass.isDirectApi;
     const isBot = ctx.isBot ?? originClass.isBot;
 
-    if (isDirectApi || isBot) {
-      const reason = isBot ? 'auto_quarantined_bot_ua' : 'auto_quarantined_direct_api';
+    // Security isolation is independent from product channel attribution.
+    // Legitimate public API traffic is product traffic, not dirty data.
+    if (isBot) {
+      const reason = 'auto_quarantined_bot_ua';
       const quarantineMetric = ctx.success ? 'parse_success' : 'parse_failure';
       const cf = (ctx.request as any)?.cf;
       const country: string = cf?.country ? String(cf.country).toUpperCase().slice(0, 2) : 'UNKNOWN';
@@ -339,6 +342,13 @@ export async function recordExportEvent(
     }
 
     await db.batch(statements);
+    await recordProductEventV2(db, {
+      request,
+      type: 'export',
+      platform,
+      format: exportFormat,
+      trackCount,
+    });
   } catch (err: unknown) {
     console.error('Failed to record export aggregate stats:', err);
   }
@@ -419,6 +429,13 @@ export async function recordClipboardEvent(
     }
 
     await db.batch(statements);
+    await recordProductEventV2(db, {
+      request,
+      type: 'clipboard',
+      platform,
+      format: canonicalMode,
+      trackCount,
+    });
   } catch (err: unknown) {
     console.error('Failed to record clipboard aggregate stats:', err);
   }
@@ -478,6 +495,14 @@ export async function recordRateLimitEvent(
     ];
 
     await db.batch(statements);
+    if (requestOrCountry && typeof requestOrCountry === 'object') {
+      await recordProductEventV2(db, {
+        request: requestOrCountry,
+        type: 'rate_limited',
+        platform,
+        endpoint,
+      });
+    }
   } catch (err: unknown) {
     console.error('Failed to record rate limit aggregate stats:', err);
   }
@@ -624,6 +649,12 @@ export async function recordVisitEvent(
     statements.push(db.prepare(pruneHashesSql).bind(cutoffDate));
 
     await db.batch(statements);
+    await recordProductEventV2(db, {
+      request,
+      type: 'visit',
+      referrerSource: safeSource,
+    });
+    await recordDailyUniqueV2(db, request, isNewVisitor);
   } catch (err: unknown) {
     console.error('Failed to record visit aggregate stats:', err);
   }
