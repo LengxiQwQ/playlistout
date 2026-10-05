@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleSoundiizMigration } from './migration';
+import { resetRateLimits } from '../security/rate-limit';
 
 const headers = {
   Origin: 'https://playlistout.lengxiqwq.com',
@@ -13,6 +14,52 @@ function makeRequest(body: unknown, requestHeaders: Record<string, string> = hea
     headers: requestHeaders,
     body: JSON.stringify(body),
   });
+}
+
+interface CapturedBind {
+  sql: string;
+  params: unknown[];
+}
+
+function createAnalyticsCaptureDb() {
+  const binds: CapturedBind[] = [];
+  const db = {
+    _binds: binds,
+    prepare(sql: string) {
+      const statement: any = {
+        _params: [] as unknown[],
+        bind(...params: unknown[]) {
+          statement._params = params;
+          binds.push({ sql, params });
+          return statement;
+        },
+        async run() {
+          return { success: true };
+        },
+      };
+      return statement;
+    },
+    async batch(statements: any[]) {
+      for (const statement of statements) {
+        await statement.run();
+      }
+      return [];
+    },
+  };
+  return db as unknown as D1Database & { _binds: CapturedBind[] };
+}
+
+function createCtx() {
+  const promises: Promise<unknown>[] = [];
+  return {
+    ctx: {
+      waitUntil(promise: Promise<unknown>) {
+        promises.push(promise);
+      },
+      passThroughOnException() {},
+    } as unknown as ExecutionContext,
+    promises,
+  };
 }
 
 const validBody = {
@@ -32,6 +79,7 @@ describe('handleSoundiizMigration', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    resetRateLimits();
   });
 
   it('rejects requests that are not from an allowed Playlist Out web origin', async () => {
@@ -90,7 +138,10 @@ describe('handleSoundiizMigration', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const response = await handleSoundiizMigration(makeRequest(validBody), {}, {});
+    const db = createAnalyticsCaptureDb();
+    const { ctx, promises } = createCtx();
+    const response = await handleSoundiizMigration(makeRequest(validBody), { DB: db }, {}, ctx);
+    await Promise.all(promises);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -114,6 +165,19 @@ describe('handleSoundiizMigration', () => {
         { title: 'Song B', artists: ['Artist B'] },
       ],
     });
+
+    const v2Sql = db._binds.map((entry) => entry.sql).join('\n');
+    expect(v2Sql).toContain('analytics_v2_daily_core');
+    expect(v2Sql).toContain('analytics_v2_breakdown');
+    expect(v2Sql).not.toContain('aggregate_stats');
+    expect(v2Sql).not.toContain('daily_performance_stats');
+
+    const flattened = db._binds.flatMap((entry) => entry.params.map(String));
+    expect(flattened).toContain('migration_handoff');
+    expect(flattened).toContain('migration_destination');
+    expect(flattened).toContain('spotify');
+    expect(flattened).toContain('migration_provider');
+    expect(flattened).toContain('soundiiz');
   });
 
   it('blocks an unexpected upstream redirect URL', async () => {
