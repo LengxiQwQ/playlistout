@@ -64,9 +64,10 @@ CREATE TABLE IF NOT EXISTS analytics_v2_client_env (
   channel TEXT NOT NULL,
   client_id TEXT NOT NULL,
   device_class TEXT NOT NULL,
+  browser_family TEXT NOT NULL,
   os_family TEXT NOT NULL,
   count INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
-  PRIMARY KEY (date, channel, client_id, device_class, os_family),
+  PRIMARY KEY (date, channel, client_id, device_class, browser_family, os_family),
   CHECK (date != 'TOTAL')
 );
 
@@ -275,14 +276,14 @@ WHERE date != 'TOTAL' AND platform != 'all'
 GROUP BY date, platform, country, region;
 
 -- Historical environment cube.
-INSERT OR REPLACE INTO analytics_v2_client_env (date, channel, client_id, device_class, os_family, count)
-SELECT date, 'web', 'official_web', device_class, os_family, SUM(count)
+INSERT OR REPLACE INTO analytics_v2_client_env (date, channel, client_id, device_class, browser_family, os_family, count)
+SELECT date, 'web', 'official_web', device_class, browser_family, os_family, SUM(count)
 FROM daily_client_stats
 WHERE date != 'TOTAL' AND platform = 'all'
-GROUP BY date, device_class, os_family;
+GROUP BY date, device_class, browser_family, os_family;
 
-INSERT OR REPLACE INTO analytics_v2_client_env (date, channel, client_id, device_class, os_family, count)
-SELECT date, 'legacy_mixed', 'legacy_unknown', device_class, os_family, SUM(count)
+INSERT OR REPLACE INTO analytics_v2_client_env (date, channel, client_id, device_class, browser_family, os_family, count)
+SELECT date, 'legacy_mixed', 'legacy_unknown', device_class, browser_family, os_family, SUM(count)
 FROM daily_client_stats
 WHERE date != 'TOTAL' AND platform != 'all'
-GROUP BY date, device_class, os_family;
+GROUP BY date, device_class, browser_family, os_family;
