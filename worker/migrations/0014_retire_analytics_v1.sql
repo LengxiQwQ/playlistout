@@ -10,6 +10,29 @@
 -- analytics fact tables. The compact archive manifest remains as audit
 -- metadata; Time Travel / external backups remain the recovery mechanism.
 
+-- Security quarantine was historically created by an operator script.
+-- Make it part of the tracked schema before retiring that script.
+CREATE TABLE IF NOT EXISTS quarantined_stats (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quarantined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  incident_date TEXT NOT NULL,
+  batch_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  source_table TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  metric_or_dimension TEXT NOT NULL,
+  value TEXT,
+  country TEXT,
+  region TEXT,
+  city TEXT,
+  client_info TEXT,
+  count INTEGER NOT NULL,
+  details_json TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_quarantined_date ON quarantined_stats (incident_date);
+CREATE INDEX IF NOT EXISTS idx_quarantined_reason ON quarantined_stats (reason);
+CREATE INDEX IF NOT EXISTS idx_quarantined_platform ON quarantined_stats (platform);
+
 CREATE TABLE _analytics_v1_retirement_guard (
   ok INTEGER NOT NULL CHECK (ok = 1)
 );
