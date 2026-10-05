@@ -693,6 +693,9 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
 
 ### 10.1 Public Statistics (`GET /api/stats` & `GET /api/v1/stats`)
 
+> **Analytics V2 cutover:** The public response contract is unchanged. Lifetime counters are continuity-bridged at the production cutover point: the exact legacy public value at cutover is preserved, and only post-cutover Analytics V2 deltas are added. Earlier trend days remain read-only historical data; new days are sourced directly from V2. This prevents visible counters from resetting or jumping when storage architecture changes.
+
+
 - **Authentication**: None (open public endpoint).
 - **CORS**: `Access-Control-Allow-Origin: *` (unrestricted browser access).
 - **Cache-Control**: Edge cached (typically `max-age=60`).
@@ -730,6 +733,9 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
   ```
 
 ### 10.2 Maintainer Diagnostics (`GET /api/internal/stats`)
+
+> **Compatibility endpoint:** after the Analytics V2 production cutover, this legacy diagnostics contract is retained for backward compatibility but its V1-only dimensional sections are a historical snapshot. New operational dashboards must use `GET /api/internal/analytics/v2`.
+
 
 - **Authentication**: Required via HTTP Header:
   ```http
