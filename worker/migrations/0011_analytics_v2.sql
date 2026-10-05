@@ -85,7 +85,52 @@ CREATE INDEX IF NOT EXISTS idx_v2_env_lookup ON analytics_v2_client_env (date, c
 -- Base rows are platform-specific daily_export_stats rows only.
 -- ---------------------------------------------------------------------------
 
+-- Preserve any deterministic residual that existed only in the legacy "all" rollup.
+-- This avoids losing old exports recorded before per-platform attribution was complete.
+DROP TABLE IF EXISTS _migration_0011_export_residual;
+CREATE TABLE _migration_0011_export_residual AS
+SELECT
+  a.date,
+  a.export_format,
+  a.country,
+  a.region,
+  a.city,
+  a.count - COALESCE((
+    SELECT SUM(s.count)
+    FROM daily_export_stats s
+    WHERE s.date = a.date
+      AND s.date != 'TOTAL'
+      AND s.platform != 'all'
+      AND s.export_format = a.export_format
+      AND s.country = a.country
+      AND s.region = a.region
+      AND s.city = a.city
+  ), 0) AS count
+FROM daily_export_stats a
+WHERE a.date != 'TOTAL'
+  AND a.platform = 'all'
+  AND a.count > COALESCE((
+    SELECT SUM(s.count)
+    FROM daily_export_stats s
+    WHERE s.date = a.date
+      AND s.date != 'TOTAL'
+      AND s.platform != 'all'
+      AND s.export_format = a.export_format
+      AND s.country = a.country
+      AND s.region = a.region
+      AND s.city = a.city
+  ), 0);
+
 DELETE FROM daily_export_stats WHERE date = 'TOTAL' OR platform = 'all';
+
+INSERT INTO daily_export_stats (date, platform, export_format, country, region, city, count)
+SELECT date, 'unknown', export_format, country, region, city, count
+FROM _migration_0011_export_residual
+WHERE count > 0
+ON CONFLICT (date, platform, export_format, country, region, city)
+DO UPDATE SET count = count + excluded.count;
+
+DROP TABLE _migration_0011_export_residual;
 
 INSERT OR REPLACE INTO daily_export_stats (date, platform, export_format, country, region, city, count)
 SELECT date, 'all', export_format, country, region, city, SUM(count)
@@ -132,7 +177,51 @@ WHERE date != 'TOTAL' AND platform != 'all';
 
 -- Deterministic V1 repair: clipboard counters.
 
+-- Preserve deterministic clipboard residuals from legacy all-only rollups.
+DROP TABLE IF EXISTS _migration_0011_clipboard_residual;
+CREATE TABLE _migration_0011_clipboard_residual AS
+SELECT
+  a.date,
+  a.clipboard_mode,
+  a.country,
+  a.region,
+  a.city,
+  a.count - COALESCE((
+    SELECT SUM(s.count)
+    FROM daily_clipboard_stats s
+    WHERE s.date = a.date
+      AND s.date != 'TOTAL'
+      AND s.platform != 'all'
+      AND s.clipboard_mode = a.clipboard_mode
+      AND s.country = a.country
+      AND s.region = a.region
+      AND s.city = a.city
+  ), 0) AS count
+FROM daily_clipboard_stats a
+WHERE a.date != 'TOTAL'
+  AND a.platform = 'all'
+  AND a.count > COALESCE((
+    SELECT SUM(s.count)
+    FROM daily_clipboard_stats s
+    WHERE s.date = a.date
+      AND s.date != 'TOTAL'
+      AND s.platform != 'all'
+      AND s.clipboard_mode = a.clipboard_mode
+      AND s.country = a.country
+      AND s.region = a.region
+      AND s.city = a.city
+  ), 0);
+
 DELETE FROM daily_clipboard_stats WHERE date = 'TOTAL' OR platform = 'all';
+
+INSERT INTO daily_clipboard_stats (date, platform, clipboard_mode, country, region, city, count)
+SELECT date, 'unknown', clipboard_mode, country, region, city, count
+FROM _migration_0011_clipboard_residual
+WHERE count > 0
+ON CONFLICT (date, platform, clipboard_mode, country, region, city)
+DO UPDATE SET count = count + excluded.count;
+
+DROP TABLE _migration_0011_clipboard_residual;
 
 INSERT OR REPLACE INTO daily_clipboard_stats (date, platform, clipboard_mode, country, region, city, count)
 SELECT date, 'all', clipboard_mode, country, region, city, SUM(count)
