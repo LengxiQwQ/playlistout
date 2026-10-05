@@ -241,16 +241,13 @@ export async function getPublicStatsV2Cutover(
 
   const recentStart = dateDaysAgo(30);
   const legacyTrend = await db.prepare(`
-    SELECT date, metric, SUM(count) AS total
-    FROM aggregate_stats
-    WHERE platform = 'all'
-      AND date != 'TOTAL'
-      AND date >= ?1
+    SELECT date, parses, tracks, exports
+    FROM analytics_v2_public_history
+    WHERE date >= ?1
       AND date < ?2
-      AND metric IN ('parse_success','tracks_processed','exports_total')
-    GROUP BY date, metric
+    ORDER BY date ASC
   `).bind(recentStart, state.baseline_date)
-    .all<{ date: string; metric: string; total: number }>();
+    .all<{ date: string; parses: number; tracks: number; exports: number }>();
 
   const v2Trend = await db.prepare(`
     SELECT date, metric, SUM(count) AS total
@@ -271,9 +268,9 @@ export async function getPublicStatsV2Cutover(
 
   for (const row of legacyTrend.results || []) {
     const entry = ensureDay(row.date);
-    if (row.metric === 'parse_success') entry.parses = Number(row.total || 0);
-    if (row.metric === 'tracks_processed') entry.tracks = Number(row.total || 0);
-    if (row.metric === 'exports_total') entry.exports = Number(row.total || 0);
+    entry.parses = Number(row.parses || 0);
+    entry.tracks = Number(row.tracks || 0);
+    entry.exports = Number(row.exports || 0);
   }
 
   const v2ByDate = new Map<string, Record<string, number>>();
