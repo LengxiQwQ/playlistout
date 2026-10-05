@@ -29,6 +29,7 @@ export const REQUIRED_TABLES = [
   'daily_clipboard_stats',
   'daily_visitor_hashes',
   'security_rate_limits',
+  'quarantined_stats',
   'analytics_v2_daily_core',
   'analytics_v2_hourly_core',
   'analytics_v2_geo',
@@ -37,6 +38,8 @@ export const REQUIRED_TABLES = [
   'analytics_v2_public_baseline',
   'analytics_v2_cutover_state',
   'analytics_v1_archive_manifest',
+  'analytics_v2_public_history',
+  'analytics_v1_cleanup_state',
   'd1_migrations',
 ];
 
@@ -50,6 +53,7 @@ export const REQUIRED_COLUMNS = {
   daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'country', 'region', 'city', 'count'],
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
+  quarantined_stats: ['id', 'incident_date', 'batch_id', 'reason', 'source_table', 'platform', 'metric_or_dimension', 'count', 'details_json'],
   analytics_v2_daily_core: ['date', 'channel', 'client_id', 'platform', 'metric', 'count'],
   analytics_v2_hourly_core: ['date', 'hour', 'channel', 'client_id', 'platform', 'metric', 'count'],
   analytics_v2_geo: ['date', 'channel', 'client_id', 'platform', 'country', 'region', 'metric', 'count'],
@@ -58,6 +62,8 @@ export const REQUIRED_COLUMNS = {
   analytics_v2_public_baseline: ['key', 'baseline_date', 'legacy_total', 'v2_total', 'legacy_day', 'v2_day'],
   analytics_v2_cutover_state: ['id', 'status', 'baseline_date', 'prepared_at', 'frozen_at'],
   analytics_v1_archive_manifest: ['table_name', 'captured_at', 'row_count', 'count_sum', 'min_date', 'max_date'],
+  analytics_v2_public_history: ['date', 'parses', 'tracks', 'exports'],
+  analytics_v1_cleanup_state: ['id', 'status', 'prepared_at', 'retired_at', 'archived_table_count', 'public_history_rows'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
@@ -74,6 +80,9 @@ export const REQUIRED_INDEXES = [
   'idx_clipboard_stats_country',
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
+  'idx_quarantined_date',
+  'idx_quarantined_reason',
+  'idx_quarantined_platform',
   'idx_v2_daily_date',
   'idx_v2_daily_channel_client',
   'idx_v2_daily_platform',
