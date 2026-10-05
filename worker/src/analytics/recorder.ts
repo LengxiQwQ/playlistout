@@ -74,11 +74,9 @@ export async function recordParseEvent(
     const hour = new Date().getUTCHours();
     const metric = ctx.success ? 'parse_success' : 'parse_failure';
 
-    // Real-time Traffic Isolation:
-    // If request originates from automated bot or direct API script without official web credentials,
-    // isolate telemetry directly into quarantined_stats and bypass production business aggregates.
+    // Security isolation is separate from product-channel attribution.
+    // Only automated/bot traffic is quarantined; legitimate public API traffic remains product data.
     const originClass = await classifyRequestOrigin(ctx.request);
-    const isDirectApi = ctx.isDirectApi ?? originClass.isDirectApi;
     const isBot = ctx.isBot ?? originClass.isBot;
 
     // Security isolation is independent from product channel attribution.
