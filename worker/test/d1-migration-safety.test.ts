@@ -843,7 +843,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -865,11 +866,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0009_parse_feedback.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0010_geo_attribution_expansion.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(11);
+      expect(res.appliedCount).toBe(12);
       expect(res.pendingCount).toBe(0);
     });
 
