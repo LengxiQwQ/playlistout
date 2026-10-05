@@ -600,7 +600,10 @@ async function httpGet(url, options = {}) {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         Accept: 'application/json, text/plain, */*',
-        Referer: 'https://y.qq.com/',
+        Origin: 'https://playlistout.lengxiqwq.com',
+        Referer: 'https://playlistout.lengxiqwq.com/',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'cors',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       };
   const headers = Object.assign(defaultHeaders, options.headers || {});
