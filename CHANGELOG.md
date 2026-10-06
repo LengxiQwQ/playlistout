@@ -55,7 +55,7 @@ Following v2.1.0 batch export, v2.2.0 delivers a major architectural leap: nativ
 - **酷狗双模态安全授权与开发者凭证 (KuGou Dual-Mode Auth & Developer Credentials)**：
   - 桌面端支持动态二维码扫码，手机端支持 `kugouURL://` 协议一键拉起官方 App 完成登录，解决单设备无法扫码的痛点。
   - 授权成功后提供「开发者 API 凭证」卡片，一键复制 cURL 调试命令、原始 Token 与 UserID。
-  - 零数据持久化：凭据严格仅保存在本地浏览器 LocalStorage，绝不上报或存储至服务器。
+  - 零持久化：凭据保存在本地浏览器 LocalStorage；当用户请求需登录的酷狗数据时，仅通过 `Authorization` / `X-Kugou-Userid` 请求头发送给 PlaylistOut Worker 用于本次上游请求，绝不写入 D1、Analytics、日志或仓库。
 - **歌曲 VIP 与可用性状态识别 (Song VIP & Availability Status)**：
   - 全链路自动识别歌曲状态：正常可播、下架/无版权变灰、VIP 专享、付费专辑等。
   - 网页预览表格增加「VIP」与「状态」两列，彩色手绘手账徽章直观呈现。
