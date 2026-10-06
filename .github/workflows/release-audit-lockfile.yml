@@ -1,0 +1,31 @@
+name: Release Audit Lockfile Generator
+
+on:
+  push:
+    branches: [ 'refactor/release-audit-20261006' ]
+    paths:
+      - 'package.json'
+      - 'web/package.json'
+      - 'worker/package.json'
+      - '.github/workflows/release-audit-lockfile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Regenerate package lock
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-audit-package-lock
+          path: package-lock.json
+          if-no-files-found: error
