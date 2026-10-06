@@ -26,57 +26,41 @@ PlaylistOut is not a music player, downloader, streaming service, account system
 
 ---
 
-## 2. MVP Scope
+## 2. Current Production Scope
 
-The MVP supports **QQ Music only**.
+The original QQ Music-only Web MVP shipped with v2.0.0 and is release history. The current production baseline is the v2.2.x maintenance line.
 
-The MVP must support public QQ Music playlist URLs and extract at minimum:
+Current supported product capabilities are:
 
-- playlist name
-- creator/display name when available
-- track order
-- track title
-- artist(s)
-- album
+- public playlist parsing for **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, and **QiShui Music**
+- public user-playlist discovery where a provider exposes a supported, trustworthy path
+- browser-local TXT / CSV / XLSX / JSON / M3U8 export
+- clipboard copy workflows
+- Public API v1 for third-party applications, scripts, and migration tools
+- the MusicFree integration plugin plus a small interoperability lane for other open-source players
+- privacy-preserving aggregate Analytics V2 for public statistics and maintainer diagnostics
 
-Optional metadata may also be preserved internally when reliably available, including:
+The product principle remains:
 
-- playlist ID
-- track ID
-- duration
-- source URL
-- cover URL
+> **Paste. Parse. Export. Keep moving.**
 
-The MVP must allow local browser-side export to:
-
-- TXT
-- CSV
-- XLSX
-- JSON
-
-The MVP should also support convenient copy actions such as:
-
-- title only
-- `title - artist`
-- `title - artist - album`
-
-### Explicit MVP non-goals & Boundaries
+### Explicit non-goals & boundaries
 
 Do not add any of the following unless a later roadmap phase explicitly approves it:
 
-- PlaylistOut user registration, passwords, or user databases (PlaylistOut remains 100% stateless & accountless)
-- Server-side storage or database persistence of user credentials or auth tokens
-- Permanent user tracking or cross-day fingerprinting
-- Cookie imports or session hijacking
-- Cloud synchronization or server-side file hosting
-- Music streaming/playback or media file downloading
-- Lyrics scraping or audio extraction
-- Social features, comments, or algorithmic recommendations
-- Commercial monetization, payments, or ads
-- Generic proxy or scraping services
+- PlaylistOut user registration, passwords, or user databases
+- server-side persistence of music-platform credentials or auth tokens
+- permanent user tracking or cross-day fingerprinting
+- cookie imports or session hijacking
+- cloud synchronization or server-side export-file hosting
+- music streaming/playback or media-file downloading
+- lyrics scraping or audio extraction
+- social features, comments, or algorithmic recommendations
+- commercial monetization, payments, or ads
+- generic proxy or scraping services
+- direct platform-to-platform migration merely to duplicate mature existing tools without a concrete interoperability need
 
-*Note on Third-Party Platform Authentication*:
-PlaylistOut itself stores zero accounts or credentials. For music platforms that enforce public link preview limits (such as Kugou Music limiting public shares to 10-30 songs), optional client-side ephemeral QR authentication is supported. The resulting temporary tokens reside exclusively in the client's browser (localStorage/memory), are transmitted only via standard HTTP headers (`Authorization: Bearer`), and are never persisted in any database on the backend.
+Third-party platform authentication is allowed only when required to access content the user is already authorized to view. KuGou optional QR authorization is the current example: credentials stay in the user's browser, are transmitted only in request headers when needed for the upstream request, and must never be persisted to D1, analytics, logs, or repository files.
 
 ---
 
@@ -105,15 +89,17 @@ The Worker exists only because browsers cannot reliably request every music-plat
 
 ### Database / analytics
 
-- No application database is required for playlist content.
-- Cloudflare D1 may be used only for minimal aggregated usage statistics unless this constitution is explicitly changed.
-- Cloudflare Web Analytics may be used for site traffic analytics.
+- No application database is allowed for persisted playlist or track content.
+- Cloudflare D1 may store only privacy-preserving aggregate Analytics V2 data and bounded operational state required for rate limiting, security quarantine, feedback workflow, migration metadata, or short-lived daily-visitor deduplication.
+- Raw playlist/song content, credentials, raw IP addresses, complete User-Agent strings, and cross-day user identities must never be persisted.
+- Analytics V2 is the only production analytics backend. Public statistics and maintainer-only analytics remain separate contracts.
+- Cloudflare Web Analytics may be used for site-level traffic where it avoids duplicating detailed tracking in D1.
 
-### Legacy CLI
+### Python CLI
 
-The existing Python QQ Music exporter remains part of the repository as a CLI/legacy implementation and technical reference.
+The QQ Music and NetEase Cloud Music Python exporters remain first-class standalone tools and technical references.
 
-It must not be silently deleted during the web transition.
+They must stay independently testable and must never become a hidden runtime dependency of the Worker.
 
 ---
 
@@ -172,38 +158,35 @@ The Worker must **not**:
 
 Every music platform must be isolated behind a provider implementation.
 
-MVP provider:
+Current production providers:
 
 - `qqmusic`
-
-Future providers may include:
-
 - `netease`
 - `kugou`
-- `kuwo`
-- `migu`
 - `qishui`
 
-Adding a provider must not require redesigning the frontend or the normalized playlist model.
+Possible future providers such as Kuwo or Migu may be added only when there is a concrete user or integration need. Provider count is not a product goal.
 
-Conceptually, every provider must implement the same responsibilities:
+Adding or maintaining a provider must not require redesigning the frontend or normalized playlist model.
 
-1. validate/recognize input relevant to its platform
-2. extract or validate the playlist identifier
-3. fetch source playlist metadata and tracks
-4. handle pagination
-5. normalize source fields
-6. verify expected completeness when possible
-7. return the shared PlaylistOut model
-8. fail clearly and safely when source data cannot be trusted
+Every provider must:
 
-Provider-specific source shapes must not leak into generic frontend components.
+1. recognize and validate only inputs it intentionally supports
+2. extract or validate provider identifiers
+3. fetch only allowlisted upstream endpoints
+4. use bounded pagination and explicit completeness checks
+5. normalize source fields into the shared PlaylistOut model
+6. preserve original track order and legitimate duplicates
+7. fail clearly and safely when source data cannot be trusted
+8. include deterministic regression tests and real-source validation for production-facing changes
+
+Provider-specific source shapes must not leak into generic frontend components or public API consumers.
 
 ---
 
 ## 6. Normalized Data Contract
 
-The normalized model must be platform-independent from the beginning, even while QQ Music is the only MVP provider.
+The normalized model must remain platform-independent across all current and future providers.
 
 A playlist should conceptually contain:
 
@@ -256,16 +239,13 @@ The application must not persist:
 - account credentials
 - user profiles
 
-If analytics are enabled, only aggregate usage information should be stored, such as:
+Analytics may store only bounded, privacy-preserving aggregate or short-lived helper data needed for documented product/operational questions. Approved dimensions include date/hour buckets, product channel/client category, platform, coarse geography, bounded failure/latency categories, export/copy format, and coarse client environment.
 
-- date
-- platform
-- successful parse count
-- failed parse count
+Playlist contents are transient processing data and must not become a server-side dataset. Raw IP addresses, full referrer URLs, complete User-Agent strings, raw queries, playlist/song identifiers as user history, and persistent user/device identifiers are prohibited.
 
-Playlist contents are transient processing data and must not become a server-side dataset.
+No telemetry system or new dimension may be added silently. New analytics must document its purpose, privacy boundary, retention model, and public/private exposure before deployment.
 
-No telemetry system may be added silently.
+Raw D1 exports/backups must never be committed to the public repository. Production recovery uses D1 Time Travel and/or private external backups; public repository fixtures must contain only synthetic or explicitly public-safe data.
 
 ---
 
@@ -307,64 +287,66 @@ It should protect the free infrastructure without collecting unnecessary persona
 
 ## 9. Analytics Rules
 
-Two analytics categories are allowed.
+Analytics must remain useful without becoming user tracking.
 
-### Site traffic
+### Public product statistics
 
-Cloudflare Web Analytics may measure site-level traffic such as page views and visitors.
+`GET /api/stats` / `GET /api/v1/stats` may expose only public-safe aggregate product counters and recent aggregate trends. It must not leak maintainer-only geography, environment, security, or failure-diagnostic dimensions.
 
-### Product usage
+### Maintainer Analytics V2
 
-D1 may record aggregated parse counters by date/platform/result.
+`GET /api/internal/analytics/v2` is the only maintainer analytics endpoint. It requires Bearer authentication, does not enable browser CORS, and is consumed by the loopback-only Dashboard V3 proxy.
 
-A parse should only count as successful after the playlist response has passed the provider's success/completeness checks.
+Analytics V2 stores bounded aggregate cubes. It must not introduce request/session/user identities merely to make dimensions joinable. Geography, environment, and reliability data may intentionally remain separate privacy cubes; the dashboard must explain filter-scope boundaries instead of fabricating correlations.
 
-Do not use analytics as an excuse to persist playlist content.
+### Security and operational state
+
+Rate-limit state, security quarantine, migration audit metadata, feedback workflow state, and short-lived daily visitor hashes may exist in D1 only within their documented bounded purpose and retention rules. They must not become a shadow playlist/user history.
+
+A parse is counted as successful only after provider success/completeness checks pass. Analytics failures must never change the success or failure of the user's playlist/export action.
 
 ---
 
 ## 10. Repository Direction
 
-PlaylistOut is a monorepo containing the website, Worker, legacy CLI, documentation, and automation.
+PlaylistOut is a monorepo containing the website, Worker, standalone CLIs, player integrations, documentation, analytics maintenance tooling, and automation.
 
-Target structure:
+Current top-level structure:
 
 ```text
 playlistout/
-├── web/
-│   └── ... React + TypeScript + Vite
-├── worker/
-│   └── ... Cloudflare Worker + providers
+├── web/                  # React + TypeScript + Vite frontend
+├── worker/               # Cloudflare Worker API + D1 migrations/providers
 ├── cli/
-│   └── qqmusic/
-│       └── ... existing Python exporter
-├── docs/
-│   ├── PROJECT-CONSTITUTION.md
-│   └── ROADMAP.md
-├── .github/
-│   └── workflows/
+│   ├── qqmusic/          # standalone Python exporter
+│   └── netease/          # standalone Python exporter
+├── plugins/
+│   └── musicfree/        # MusicFree integration
+├── docs/                 # API/data contracts/governance/roadmap
+├── insights/             # public-safe repository traffic snapshots only; never raw D1 dumps
+├── scripts/              # build, CI, D1, dashboard, maintenance tools
+├── .github/workflows/    # CI, Pages, Worker, repository insights
 ├── README.md
 └── LICENSE
 ```
 
-The exact internal subfolders may evolve, but the top-level separation between `web`, `worker`, `cli`, and `docs` should remain clear.
+The exact internal subfolders may evolve, but the top-level separation between product surfaces, provider/runtime code, CLIs, integrations, documentation, and maintenance tooling should remain clear.
 
 ---
 
-## 11. Legacy Python Rules
+## 11. Python CLI Rules
 
-The existing QQ Music Python implementation is valuable because it contains proven request paths, fallback behavior, normalization logic, and CLI functionality.
+The standalone QQ Music and NetEase Cloud Music Python implementations are useful independent user tools and behavioral references.
 
-During migration:
+Rules:
 
-- preserve git history through normal moves where possible
-- relocate the old Python tool under `cli/qqmusic/`
-- keep its dependencies and tests functional
-- preserve or relocate its existing README information
-- do not make the new Worker import or execute Python
-- use the Python implementation as behavioral reference, not as a hidden runtime backend
+- keep their dependencies, tests, and READMEs functional
+- preserve CLI-specific behavior unless deliberately changed
+- do not make the Worker import, execute, or shell out to Python
+- use CLI implementations as behavioral references, not hidden production backends
+- do not assume Web export schemas and CLI export schemas are identical unless explicitly documented and tested
 
-The web MVP and Python CLI may coexist with different implementations as long as they share expected behavior for supported QQ Music data.
+Web, Public API, plugins, and Python CLIs may evolve independently as long as user-visible claims in README/docs match the real supported behavior.
 
 ---
 
@@ -376,17 +358,16 @@ The web MVP and Python CLI may coexist with different implementations as long as
 
 Every production-facing provider phase must include real-world validation against public playlists.
 
-For QQ Music MVP, final validation must include representative public playlists such as:
+For every production provider or major provider change, validation should include representative real public playlists covering the cases relevant to that provider, including where practical:
 
-- small playlist
-- medium playlist
-- large playlist / pagination case
+- small and medium playlists
+- large playlist / pagination cases
 - multi-artist tracks
-- Chinese titles
-- English titles
-- Japanese/Korean or other Unicode text where available
+- multilingual and Unicode titles
 - special characters
-- missing optional album/metadata cases where available
+- legitimate duplicate entries
+- missing optional metadata
+- provider-specific partial/authenticated paths when supported
 
 Acceptance must verify at minimum:
 
@@ -399,7 +380,7 @@ Acceptance must verify at minimum:
 - export correctness
 - error behavior
 
-Mock tests are useful but cannot replace real-source acceptance tests.
+Mock tests are useful but cannot replace real-source acceptance tests for production-facing provider support. Dependency advisories must also be evaluated by reachability; an accepted advisory must have a documented boundary and a regression/policy check preventing the vulnerable code path from becoming reachable without review.
 
 ---
 
