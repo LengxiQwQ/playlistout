@@ -6,7 +6,7 @@
 
 **PlaylistOut v2.0.0 — QQ Music Web MVP: COMPLETE**
 **PlaylistOut Analytics Foundation (Milestones R1–R8): COMPLETE**
-**Analytics V2 + Dashboard V3: POST-CUTOVER HARDENED — V2-only writes, continuity-safe public stats, frozen V1 archive guards, production reconciliation, data-quality gates, and localhost dashboard**
+**Analytics V2 + Dashboard V3: COMPLETE — V2-only analytics, V1 physically retired, continuity-safe public stats, production reconciliation, data-quality gates, and localhost dashboard**
 
 The original P0–P9 delivery roadmap and the Analytics Foundation (R1–R8) have both finished and are treated as completed engineering foundations. Do not reopen completed phases for ordinary bug fixes.
 
@@ -21,13 +21,11 @@ Analytics Foundation milestone status:
 - **R7** ✅ Resolve Failure Telemetry
 - **R8** ✅ D1 Provisioning & Migration Safety (Final Infrastructure Gate)
 
-Analytics Foundation R1–R8 remains **COMPLETE**. Analytics V2 is a replacement architecture rather than an R9 milestone: it removes legacy TOTAL/all double-count risk, separates product channels from security classification, adds registered integration attribution, replaces the static maintainer data wall with a localhost-only Dashboard V3, and freezes the V1 analytics tables as a read-only historical archive after a fail-closed production reconciliation.
-
-Post-cutover hardening adds two permanent deployment gates: V1 archive immutability verification and live `/api/stats` ↔ production D1 reconciliation. Once those gates pass in production, Analytics V2 is considered operationally complete. Removing the legacy compatibility endpoint/code/tables is a later cleanup milestone, not a blocker for correctness or production use.
+Analytics Foundation R1–R8 and the Analytics V2 migration are **COMPLETE**. The legacy TOTAL/all fact tables, legacy recorder/reader, and `/api/internal/stats` compatibility endpoint have been retired. The only production analytics path is V2, with permanent schema/integrity/public-contract deployment gates. Analytics is now a closed foundation; product work should not reopen it unless a real V2 requirement appears.
 
 The current production baseline includes:
 
-- public QQ Music playlist parsing (with NetEase, KuGou, and QiShui providers in expansion/active testing)
+- production playlist parsing for QQ Music, NetEase Cloud Music, KuGou Music, and QiShui Music
 - normalized platform-independent playlist data
 - bounded pagination including 1000+ track playlists
 - TXT / CSV / XLSX / JSON / M3U8 browser-local export
@@ -177,17 +175,15 @@ This milestone is complete when:
 
 ---
 
-# 3. Provider expansion lane
+# 3. Product / ecosystem lane
 
-The next major product step after the analytics foundation is adding more music-platform providers behind the existing normalized contract.
+The four primary supported providers are already in production: QQ Music, NetEase Cloud Music, KuGou Music, and QiShui Music.
 
-Recommended order unless later research changes the priority:
+The next product work should prioritize **useful interoperability** over adding providers merely for count:
 
-1. NetEase Cloud Music
-2. Kugou Music
-3. Kuwo Music
-4. Migu Music
-5. Qishui Music
+1. harden the existing four providers against upstream changes
+2. expand the open-source player ecosystem around the stable PlaylistOut API/JSON contract
+3. add another provider such as Kuwo or Migu only when there is a concrete user/integration need
 
 Each provider should be developed as its own scoped milestone. Do not implement several providers at once merely to claim broad compatibility.
 
