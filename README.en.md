@@ -272,6 +272,7 @@ The main README intentionally stays focused. Detailed protocols, APIs, and archi
 |---|---|---|
 | [Public API](docs/API.md) | Third-party developers | Endpoints, parameters, authentication, CORS, rate limits, response contracts, and errors |
 | [JSON Schema](docs/JSON-SCHEMA.md) | Player / tool developers | Playlist Out normalized JSON data contract and field definitions |
+| [Web Export Formats](docs/EXPORT-FORMATS.md) | Users / migration-tool developers | Current CSV, XLSX, JSON, M3U8, and TXT structures and compatibility rules |
 | [QQ Music CLI](cli/qqmusic/README.md) | Command-line users | QQ Music playlist / user-playlist export, setup, and usage |
 | [NetEase CLI](cli/netease/README.md) | Command-line users | NetEase playlist / user-playlist export, setup, and usage |
 | [MusicFree Plugin](plugins/musicfree/README.md) | MusicFree users and plugin developers | Installation, usage, configuration, build, and tests |

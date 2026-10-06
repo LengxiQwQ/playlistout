@@ -6,7 +6,26 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
+  repo-policy:
+    name: Repository Policy Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate repository policy
+        run: node scripts/ci-gate.js --policy-only
+
   python-cli:
     name: Python CLI Validation
     runs-on: ubuntu-latest

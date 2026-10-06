@@ -4,8 +4,8 @@
 
 ## Current status
 
-**PlaylistOut v2.0.0 — QQ Music Web MVP: COMPLETE**
-**PlaylistOut Analytics Foundation (Milestones R1–R8): COMPLETE**
+**PlaylistOut v2.2.0 release: SHIPPED — four-platform Web/API baseline**
+**Current main: v2.2.x maintenance + interoperability work**
 **Analytics V2 + Dashboard V3: COMPLETE — V2-only analytics, V1 physically retired, continuity-safe public stats, production reconciliation, data-quality gates, and localhost dashboard**
 
 The original P0–P9 delivery roadmap and the Analytics Foundation (R1–R8) have both finished and are treated as completed engineering foundations. Do not reopen completed phases for ordinary bug fixes.
@@ -34,18 +34,18 @@ The current production baseline includes:
 - abuse/security boundaries (in-memory + durable D1 rate limiting)
 - responsive web UI, privacy information and SEO metadata
 - GitHub Pages + Cloudflare Worker + D1 production deployment with Wrangler native migration safety
-- preserved Python QQ Music CLI
+- preserved Python QQ Music and NetEase Cloud Music CLIs
 
 ---
 
-# 1. Maintenance lane — v2.0.x
+# 1. Maintenance lane — v2.2.x
 
-Small fixes after v2.0.0 belong here rather than reopening P0–P9.
+Small fixes after the v2.2.0 release belong here rather than reopening completed delivery milestones.
 
 Typical work:
 
-- QQ Music upstream compatibility fixes
-- additional QQ Music URL/share-link compatibility
+- upstream compatibility fixes for the existing four production providers
+- additional supported URL/share-link compatibility when backed by real user need
 - browser-specific fixes
 - UI/UX bug fixes
 - export edge cases
@@ -62,7 +62,7 @@ Maintenance rules:
 - keep privacy and outbound-host restrictions intact
 - add regression tests for every reproducible bug where practical
 
-Compatibility fixes are normal maintenance. They do **not** mean the v2.0.0 MVP was incomplete.
+Compatibility fixes are normal maintenance. They do **not** reopen the completed v2.0.0 MVP, v2.2.0 multi-platform release, or Analytics Foundation milestones.
 
 ---
 
@@ -148,11 +148,11 @@ The implementation should stay small:
 - separate public statistics from private analytics logically in code/schema
 - provide one stable public stats read contract
 - do not expose private geography/device/error breakdowns through an unauthenticated public endpoint
-- if private viewing is needed later, use direct D1/Cloudflare access first; build an authenticated admin surface only when there is a real need
+- maintainer viewing uses the authenticated Analytics V2 endpoint through the loopback-only Dashboard V3 proxy; the admin token must never enter browser HTML/JavaScript
 - analytics writes remain best-effort and must never break playlist parsing or exporting
 - keep provider-facing production code independent from analytics storage details where practical
 
-Frontend events such as export-format or clipboard usage may be wired later during the UI redesign. This milestone should define the backend contract/schema so those events can be added without another data-model rewrite.
+Frontend export/clipboard/page-view events are already wired into bounded Analytics V2 dimensions. Future telemetry changes are ordinary V2 maintenance and must preserve the existing privacy model rather than reopening the retired V1 schema.
 
 ## 2.5 Acceptance gate
 
@@ -170,7 +170,7 @@ This milestone is complete when:
 
 > **Status (Milestones R1–R7 COMPLETE)**:
 > - R1–R5: Authenticity, verification, semantic consistency, client event trust boundary, and referrer minimization are verified and closed.
-> - R6: **Public / Private Analytics Split is COMPLETE**. Public product statistics (`/api/stats`) strictly decoupled from maintainer-only diagnostic insights (`/api/internal/stats` with Bearer auth). Zero private dimensions leak to unauthenticated endpoints or public GitHub snapshots.
+> - R6: **Public / Private Analytics Split is COMPLETE**. Public product statistics (`/api/stats`) are strictly decoupled from maintainer-only Analytics V2 (`/api/internal/analytics/v2` with Bearer auth and no browser CORS). Zero private dimensions leak to unauthenticated endpoints or public GitHub snapshots.
 > - R7: **Resolve Failure Telemetry is COMPLETE**. Bounded, privacy-preserving aggregate telemetry for universal resolver outcomes (`/api/v1/resolve`), platform operational failure attribution, provider primary/fallback failure path tracking, disambiguation stage telemetry, and failure rate visualization in maintainer dashboard. Zero raw query, URL, ID, token, or error message persistence. Silent internal probes preserve metric fidelity.
 
 ---

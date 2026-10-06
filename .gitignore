@@ -12,6 +12,9 @@ venv/
 dashboard.html
 scratch/
 
+# Never commit production/private D1 dumps
+/insights/backups/*.sql
+
 # Node / Web / Vite
 # Generated player-plugin distribution (rebuilt by scripts/build-plugins.js)
 /web/public/plugins/

@@ -4,6 +4,22 @@
 
 All notable changes to **PlaylistOut** will be documented in this file. Adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed / 变更
+
+- **Analytics V2 production cutover**: production analytics now runs exclusively on the V2 aggregate model; V1 fact tables and the former `/api/internal/stats` endpoint are retired, while public lifetime counters preserve continuity through the cutover bridge.
+- **Dashboard V3 maintenance surface**: the localhost-only maintainer dashboard now consumes Analytics V2, exposes honest filter-scope boundaries, uses hourly trends for single-day non-geographic views, and shows explicit data-integrity state.
+- **Release/runtime consistency**: v2.2.0 runtime version reporting is centralized, package/workspace versions are aligned, and post-release dependency/toolchain maintenance has been validated through CI and production deployment gates.
+- **Repository governance**: the project constitution and roadmap now describe the real four-provider v2.2.x production baseline instead of the historical QQ-only MVP state. Remote CI also runs repository policy checks that previously existed only in the local pre-push gate.
+
+### Security / 安全
+
+- Official Web analytics attribution now requires an allowed Web Origin; a forged session header alone cannot classify an API caller as `web / official_web`.
+- Dashboard V3 no longer executes third-party CDN JavaScript inside the localhost maintainer origin and sends restrictive local CSP/frame/permissions headers.
+- The current SheetJS dependency is kept behind a **write-only production boundary**. CI rejects `XLSX.read` / `XLSX.readFile` in production Web source so workbook parsing cannot be introduced without first reviewing and remediating the known parser advisories.
+- Removed obsolete V1 D1 SQL dumps/restoration scripts from the public repository because they contained maintainer-only historical analytics dimensions and daily visitor hashes. Public CI now forbids SQL backups under `insights/backups/`; recovery belongs in D1 Time Travel or private external storage.
+
 ## [v2.2.0] - 2026-09-19
 
 ### 🎧 四大平台矩阵、Public API v1、酷狗安全授权 & Analytics Foundation 完整交付 / Multi-Platform Matrix, Public API v1, KuGou Safe Auth & Analytics Foundation Complete

@@ -193,6 +193,16 @@ class TestStoredSnapshotPrivacy(unittest.TestCase):
         "resolveFailureStageDistribution",
     }
 
+    def test_public_repository_tracks_no_d1_sql_backups(self):
+        root = Path(__file__).resolve().parents[2]
+        backup_dir = root / "insights" / "backups"
+        sql_files = sorted(path.name for path in backup_dir.glob("*.sql"))
+        self.assertEqual(
+            sql_files,
+            [],
+            "D1 SQL dumps/restores may contain maintainer-only analytics and must stay private",
+        )
+
     def test_public_traffic_snapshot_has_no_private_dimensions(self):
         root = Path(__file__).resolve().parents[2]
         path = root / "insights" / "traffic.json"
