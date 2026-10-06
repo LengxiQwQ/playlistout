@@ -37,7 +37,7 @@ PlaylistOut officially supports 4 major music platforms:
      - Allows third-party web applications running in browsers to call the Public API directly.
    - **Sensitive & Auth Endpoints** (`/api/kugou/*`):
      - Restricted to authorized PlaylistOut domains and localhost development environments.
-   - **Maintainer Diagnostics Endpoint** (`GET /api/internal/stats`):
+   - **Maintainer Analytics Endpoint** (`GET /api/internal/analytics/v2`):
      - Explicitly closed to browser CORS (`Vary: Origin`, no `Access-Control-Allow-Origin`). Preflight OPTIONS requests are rejected with `403 Forbidden`.
      - Exclusively accessible by authorized server-side scripts (e.g. `scripts/utils/dashboard.py`) using Bearer Token authentication.
    - **Client Event Ingestion Endpoint** (`POST /api/event`):
@@ -732,93 +732,65 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
   }
   ```
 
-### 10.2 Maintainer Diagnostics (`GET /api/internal/stats`)
+### 10.2 Maintainer Analytics V2 (`GET /api/internal/analytics/v2`)
 
-> **Compatibility endpoint:** after the Analytics V2 production cutover, this legacy diagnostics contract is retained for backward compatibility but its V1-only dimensional sections are a historical snapshot. New operational dashboards must use `GET /api/internal/analytics/v2`.
+This is the only maintainer analytics endpoint. The retired `GET /api/internal/stats` endpoint returns `404 NOT_FOUND`.
 
+- **Authentication**: required via `Authorization: Bearer <INSIGHTS_ADMIN_TOKEN>`.
+- **CORS**: browser access is blocked. Dashboard V3 reaches this endpoint only through its loopback Python proxy.
+- **Cache-Control**: `no-store, no-cache, must-revalidate`.
+- **Filters**:
+  - `from=YYYY-MM-DD`
+  - `to=YYYY-MM-DD`
+  - `channel=web|plugin|api|internal|legacy_mixed`
+  - `client=official_web|musicfree|anonymous_api|internal|legacy_unknown|unknown_plugin`
+  - `platform=qqmusic|netease|kugou|qishui|unknown|none`
+  - `country=XX`
+  - `region=<bounded value>`
+- **Maximum range**: 366 days.
+- **Response**: aggregate-only overview, timeseries, bounded breakdowns, coarse geography/environment, available filter values, and data-quality checks.
 
-- **Authentication**: Required via HTTP Header:
-  ```http
-  Authorization: Bearer <INSIGHTS_ADMIN_TOKEN>
-  ```
-  Verification uses constant-time cryptographic hash comparison (`crypto.subtle.digest` SHA-256) to eliminate timing side-channels.
-- **Fail-Closed Behavior**: If `INSIGHTS_ADMIN_TOKEN` is not set on the server, the endpoint immediately returns `503 Service Unavailable` without accessing D1.
-- **Unauthorized Rejections**: Invalid or missing credentials return `401 Unauthorized` without querying the database.
-- **CORS**: Browser access is completely blocked (`Vary: Origin`, preflight OPTIONS returns `403 Forbidden`).
-- **Cache-Control**: `no-store, no-cache, must-revalidate`, `Pragma: no-cache`.
-- **Response Schema (`MaintainerStatsResponse`)**:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "public": { ... /* PublicStatsResponse */ },
-      "insights": {
-        "todayHourlyPageViews": [ ... ],
-        "last24HourlyPageViews": [ ... ],
-        "topGeo": [ ... ],
-        "chinaProvinces": [ ... ],
-        "clientStats": { "browsers": [ ... ], "devices": [ ... ], "os": [ ... ], "deviceBrands": [ ... ] },
-        "clipboardFormatsBreakdown": { ... },
-        "referrerDistribution": [ ... ],
-        "inputTypeDistribution": [ ... ],
-        "latencyDistribution": [ ... ],
-        "errorCategoryDistribution": [ ... ],
-        "playlistSizeDistribution": [ ... ],
-        "providerPathDistribution": [ ... ],
-        "exportPlaylistSizeDistribution": [ ... ],
-        "clipboardPlaylistSizeDistribution": [ ... ],
-        "rateLimitEndpointDistribution": [ ... ],
-        "operationalRecentDays": [
-          { "date": "2026-09-18", "clipboards": 12, "visitors": 15, "failures": 1 }
-        ],
-        "resolveOutcomeDistribution": [ ... ],
-        "resolveFailureCodeDistribution": [ ... ],
-        "resolveFailureClassDistribution": [ ... ],
-        "resolveFailureStageDistribution": [ ... ],
-        "resolveRequestedTypeDistribution": [ ... ],
-        "resolveRequestedPlatformDistribution": [ ... ],
-        "resolveInputTypeDistribution": [ ... ],
-        "resolveFailuresByPlatform": [ ... ],
-        "providerFailurePathDistribution": [ ... ]
-      }
-    }
-  }
-  ```
-- **Consumer**: Exclusively consumed by the maintainer's local dashboard tool (`python scripts/utils/dashboard.py`). Token is read from environment variable or `.dev.vars` and is never rendered into output HTML or logs.
+Important dimensions include:
 
-### 10.3 Resolve Failure Telemetry (Milestone R7 — Private Maintainer Observability)
+- resolver outcome / failure code / failure class / failure stage
+- requested type / requested platform / input type
+- provider failure path
+- latency bucket
+- export format / clipboard mode / export playlist-size bucket
+- client version / host platform
+- referrer source
+- rate-limit endpoint
+- migration destination / migration provider
 
-To enable maintainers to diagnose search and resolve anomalies without compromising user privacy, PlaylistOut implements **Resolve Failure Telemetry** governed by the following core invariants:
+No raw query, playlist URL/ID, token, cookie, raw IP, complete User-Agent, song metadata, or raw exception message is stored or returned.
 
-1. **Strict Privacy Boundary**:
-   - **Zero Raw Input Logging**: Raw input strings (`q`), normalized URLs, playlist IDs, user IDs, auth tokens, song metadata, and raw exception messages (`err.message`, `ProviderError.details`) are **never stored** in D1 or printed to transaction logs.
-   - **Bounded Enum Taxonomies**: Every telemetry dimension is strictly mapped to finite bounded sets before persistence. Unrecognized codes default safely to `'internal_error'`, `'finalization'`, or `'unknown'`.
+### 10.3 Resolve Failure Telemetry
 
-2. **Authoritative Exactly-Once Final Outcome**:
-   - Every invocation of `GET /api/v1/resolve` records exactly one final outcome:
-     - `success_playlist`: Single playlist successfully resolved.
-     - `success_user`: User profile successfully resolved (does NOT increment song track counts or fake parse counts).
-     - `failure`: Terminal resolution failure.
-   - **Silent Internal Probes**: Disambiguation probes executed during multi-provider probing pass `skipAnalytics: true` and never write intermediate parse records or inflate failure counters.
+Every invocation of `GET /api/v1/resolve` records exactly one authoritative terminal outcome in Analytics V2:
 
-3. **8 True D1 Storage Dimensions (`daily_performance_stats`)**:
-   - **`resolve_outcome`**: `success_playlist`, `success_user`, `failure`.
-   - **`resolve_failure_code`**: `invalid_input`, `unsupported_url`, `unsupported_platform`, `playlist_not_found`, `user_not_found`, `upstream_error`, `upstream_timeout`, `incomplete_playlist`, `parse_error`, `forbidden`, `rate_limited`, `ambiguous_input`, `internal_error`.
-   - **`resolve_failure_class`**: `input`, `not_found`, `ambiguous`, `auth`, `upstream`, `timeout`, `incomplete`, `parse`, `internal`.
-   - **`resolve_failure_stage`**: `input_validation`, `routing`, `short_link_resolution`, `playlist_resolution`, `user_resolution`, `disambiguation_probe`, `provider_fetch`, `finalization`.
-   - **`resolve_requested_type`**: `auto`, `playlist`, `user`, `unknown`.
-   - **`resolve_requested_platform`**: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, `unknown`.
-   - **`resolve_input_type`**: `web_url`, `mobile_share_link`, `raw_id`, `other`.
-   - **`provider_failure_path`**: Upstream execution path for failed provider requests: `primary`, `fallback`, `both`, `not_applicable`, `unknown`.
+- `success_playlist`
+- `success_user`
+- `failure`
 
-4. **Derived View — Failures by Platform (`resolveFailuresByPlatform`)**:
-   - Aggregated dynamically at query time (`SELECT platform, SUM(count) FROM daily_performance_stats WHERE dimension = 'resolve_outcome' AND value = 'failure' GROUP BY platform`), NOT stored as a separate D1 dimension. Returns failure counts grouped by target platform (`qqmusic`, `netease`, `kugou`, `qishui`, `unknown`).
+Internal multi-provider/disambiguation probes are silent and do not inflate request/failure counters.
 
-5. **Global Parse Failure Convergence**:
-   - Direct playlist parse failures record both platform-specific and `platform = 'all'` rows in `aggregate_stats`, ensuring `operationalRecentDays.failures` accurately reflects aggregate operational health.
+The canonical storage model is:
 
-6. **R6 Boundary Preservation**:
-   - All R7 telemetry dimensions, distribution lists, and dashboard cards are **strictly private** (`GET /api/internal/stats`). Public endpoints (`GET /api/stats`, `GET /api/v1/stats`), `traffic.json`, and the public README omit all R7 keys.
+- `analytics_v2_daily_core` / `analytics_v2_hourly_core` for bounded counters
+- `analytics_v2_breakdown` for failure/result/latency/provider-path dimensions
+- `analytics_v2_geo` for coarse country/region aggregates
+- `analytics_v2_client_env` for coarse browser/device/OS aggregates
 
+The core invariant is:
 
+```
+resolve_request = playlist_success + user_success + resolve_failure
+```
 
+The public `/api/stats` contract exposes only safe product totals and never exposes maintainer-only failure/geography/environment breakdowns.
+
+### 10.4 Analytics V1 Retirement
+
+Analytics V1 fact tables and the `/api/internal/stats` compatibility endpoint have been permanently retired. Historical public daily trend needed by `/api/stats` is compactly preserved in `analytics_v2_public_history`; public lifetime continuity is preserved by the cutover baseline.
+
+Current deployments fail closed if the retired V1 fact tables reappear or if the public API no longer matches the production D1 continuity bridge.

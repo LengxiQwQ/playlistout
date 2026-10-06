@@ -102,17 +102,18 @@ function makeMutableQueryFn(db: DatabaseSync) {
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0013 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0014 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(13);
-      expect(result.files).toHaveLength(13);
+      expect(result.count).toBe(14);
+      expect(result.files).toHaveLength(14);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
       expect(result.files[8]).toBe('0009_parse_feedback.sql');
       expect(result.files[9]).toBe('0010_geo_attribution_expansion.sql');
       expect(result.files[10]).toBe('0011_analytics_v2.sql');
       expect(result.files[11]).toBe('0012_analytics_v2_cutover.sql');
       expect(result.files[12]).toBe('0013_freeze_analytics_v1_archive.sql');
+      expect(result.files[13]).toBe('0014_prepare_analytics_v1_retirement.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -174,9 +175,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 13 migrations sequentially from empty database', () => {
+    it('applies all 14 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(13);
+      expect(applied).toHaveLength(14);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -191,6 +192,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0011_analytics_v2.sql',
         '0012_analytics_v2_cutover.sql',
         '0013_freeze_analytics_v1_archive.sql',
+        '0014_prepare_analytics_v1_retirement.sql',
       ]);
     });
 
@@ -200,7 +202,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(13);
+      expect(verification.appliedMigrationsCount).toBe(14);
       expect(verification.pendingCount).toBe(0);
 
       // Verify specific critical columns
@@ -225,7 +227,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const cutoverState = (await queryFn('SELECT status, baseline_date FROM analytics_v2_cutover_state WHERE id=1;')) as any[];
       expect(cutoverState).toHaveLength(1);
-      expect(cutoverState[0].status).toBe('prepared');
+      expect(cutoverState[0].status).toBe('frozen');
 
       const archiveManifest = (await queryFn(
         'SELECT table_name FROM analytics_v1_archive_manifest ORDER BY table_name;'
@@ -302,7 +304,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('resumes from partially applied state (0001-0004 -> applies 0005-0013)', async () => {
+    it('resumes from partially applied state (0001-0004 -> applies 0005-0014)', async () => {
       // Simulate database that only applied 0001 to 0004
       const firstBatch = [
         '0001_initial_stats.sql',
@@ -335,12 +337,13 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0011_analytics_v2.sql',
         '0012_analytics_v2_cutover.sql',
         '0013_freeze_analytics_v1_archive.sql',
+        '0014_prepare_analytics_v1_retirement.sql',
       ]);
 
       // Verify schema is now complete
       const verification = await verifyD1Schema({ queryFn: makeQueryFn(db) });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(13);
+      expect(verification.appliedMigrationsCount).toBe(14);
       expect(verification.pendingCount).toBe(0);
     });
   });
@@ -401,7 +404,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
     beforeEach(() => {
       db = new DatabaseSync(':memory:');
-      applyMigrationsToDb(db);
+      const through0013 = fs
+        .readdirSync(migrationsDir)
+        .filter((file) => file.endsWith('.sql'))
+        .sort()
+        .slice(0, 13);
+      applyMigrationsToDb(db, through0013);
     });
 
     afterEach(() => {
@@ -454,13 +462,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
   describe('5.6 Post-Cutover Archive & Public Contract Hardening', () => {
     let db: DatabaseSync;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       db = new DatabaseSync(':memory:');
       applyMigrationsToDb(db);
-      await finalizeAnalyticsCutover({
-        queryFn: makeMutableQueryFn(db),
-        confirm: true,
-      });
     });
 
     afterEach(() => {
@@ -1008,7 +1012,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(10);
+      expect(res.pendingCount).toBe(11);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -1045,12 +1049,13 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_prepare_analytics_v1_retirement.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0015_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
         validateMigrationHistory({ mode: 'post-apply', queryFn })
-      ).rejects.toThrow(/exceeding repository count/);
+      ).rejects.toThrow(/Unknown migration|exceeding repository count/);
     });
 
     it('postflight accepts exact matching history', async () => {
@@ -1069,11 +1074,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0011_analytics_v2.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0012_analytics_v2_cutover.sql');
       db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0013_freeze_analytics_v1_archive.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0014_prepare_analytics_v1_retirement.sql');
 
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(13);
+      expect(res.appliedCount).toBe(14);
       expect(res.pendingCount).toBe(0);
     });
 

@@ -51,7 +51,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
             if (opts.failRateLimit && sql.includes('security_rate_limits')) {
               throw new Error('D1 rate limiter failure');
             }
-            if (opts.failAnalytics && sql.includes('INSERT INTO aggregate_stats')) {
+            if (opts.failAnalytics && sql.includes('analytics_v2_')) {
               throw new Error('Analytics D1 error');
             }
             executedStatements.push(sql);
@@ -611,9 +611,9 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
         expect(response.status).toBe(400);
       }
 
-      // No performance stats writes occurred
-      const perfWrites = mockEnv.DB._statements.filter(s => s.includes('daily_performance_stats'));
-      expect(perfWrites).toHaveLength(0);
+      // Invalid referrer values must not reach any V2 analytics table.
+      const analyticsWrites = mockEnv.DB._statements.filter(s => s.includes('analytics_v2_'));
+      expect(analyticsWrites).toHaveLength(0);
     });
 
     it('accepts visit event with omitted referrerSource and defaults to direct', async () => {
