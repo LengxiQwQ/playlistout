@@ -295,7 +295,7 @@ Analytics must remain useful without becoming user tracking.
 
 ### Maintainer Analytics V2
 
-`GET /api/internal/analytics/v2` is the only maintainer analytics endpoint. It requires Bearer authentication, does not enable browser CORS, and is consumed by the loopback-only Dashboard V3 proxy.
+The maintainer Analytics V2 surface consists of the Bearer-authenticated, no-browser-CORS filtered query endpoint (`/api/internal/analytics/v2`) and its one-shot snapshot companion (`/api/internal/analytics/v2/snapshot`). Dashboard V3 must use the snapshot path for normal viewing: one cloud fetch at local-process startup (or explicit manual refresh), followed by local in-memory filtering. Routine date/tab/filter navigation must not consume additional Worker requests.
 
 Analytics V2 stores bounded aggregate cubes. It must not introduce request/session/user identities merely to make dimensions joinable. Geography, environment, and reliability data may intentionally remain separate privacy cubes; the dashboard must explain filter-scope boundaries instead of fabricating correlations.
 

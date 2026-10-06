@@ -158,25 +158,96 @@ function sumByName(rows: Array<{ name: string; count: number }>): Record<string,
   return result;
 }
 
-async function queryBreakdown(
+async function queryBreakdowns(
   db: D1Database,
   filters: AnalyticsV2Filters,
-  dimension: string,
-): Promise<CountRow[]> {
+): Promise<Record<string, CountRow[]>> {
   const where = buildWhere(filters);
+  const placeholders = BREAKDOWN_DIMENSIONS.map(() => '?').join(',');
   const result = await bindAll(
     db.prepare(`
-      SELECT value AS name, SUM(count) AS count
+      SELECT dimension, value AS name, SUM(count) AS count
       FROM analytics_v2_breakdown
-      WHERE ${where.sql} AND dimension = ?
-      GROUP BY value
-      ORDER BY count DESC
-      LIMIT 50
+      WHERE ${where.sql} AND dimension IN (${placeholders})
+      GROUP BY dimension, value
+      ORDER BY dimension ASC, count DESC
     `),
-    [...where.binds, dimension],
-  ).all<{ name: string; count: number }>();
+    [...where.binds, ...BREAKDOWN_DIMENSIONS],
+  ).all<{ dimension: string; name: string; count: number }>();
 
-  return (result.results || []).map((row) => ({ name: row.name, count: Number(row.count || 0) }));
+  const breakdowns: Record<string, CountRow[]> = Object.fromEntries(
+    BREAKDOWN_DIMENSIONS.map((dimension) => [dimension, []]),
+  );
+  for (const row of result.results || []) {
+    const bucket = breakdowns[row.dimension];
+    if (!bucket || bucket.length >= 50) continue;
+    bucket.push({ name: row.name, count: Number(row.count || 0) });
+  }
+  return breakdowns;
+}
+
+export interface AnalyticsV2Snapshot {
+  version: 2;
+  generatedAt: string;
+  dailyCore: Array<Record<string, unknown>>;
+  hourlyCore: Array<Record<string, unknown>>;
+  breakdowns: Array<Record<string, unknown>>;
+  geo: Array<Record<string, unknown>>;
+  clientEnv: Array<Record<string, unknown>>;
+}
+
+export async function getAnalyticsV2Snapshot(
+  db: D1Database | undefined,
+): Promise<AnalyticsV2Snapshot> {
+  if (!db) {
+    return {
+      version: 2,
+      generatedAt: new Date().toISOString(),
+      dailyCore: [],
+      hourlyCore: [],
+      breakdowns: [],
+      geo: [],
+      clientEnv: [],
+    };
+  }
+
+  const [dailyCore, hourlyCore, breakdowns, geo, clientEnv] = await Promise.all([
+    db.prepare(`
+      SELECT date, channel, client_id, platform, metric, count
+      FROM analytics_v2_daily_core
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, hour, channel, client_id, platform, metric, count
+      FROM analytics_v2_hourly_core
+      ORDER BY date ASC, hour ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, platform, dimension, value, count
+      FROM analytics_v2_breakdown
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, platform, country, region, metric, count
+      FROM analytics_v2_geo
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, device_class, browser_family, os_family, count
+      FROM analytics_v2_client_env
+      ORDER BY date ASC
+    `).all(),
+  ]);
+
+  return {
+    version: 2,
+    generatedAt: new Date().toISOString(),
+    dailyCore: (dailyCore.results || []) as Array<Record<string, unknown>>,
+    hourlyCore: (hourlyCore.results || []) as Array<Record<string, unknown>>,
+    breakdowns: (breakdowns.results || []) as Array<Record<string, unknown>>,
+    geo: (geo.results || []) as Array<Record<string, unknown>>,
+    clientEnv: (clientEnv.results || []) as Array<Record<string, unknown>>,
+  };
 }
 
 export async function getAnalyticsV2(
@@ -261,66 +332,8 @@ export async function getAnalyticsV2(
     hourlyTimeseries = Array.from(hourMap.values());
   }
 
-  const breakdowns: Record<string, CountRow[]> = {};
-  for (const dimension of BREAKDOWN_DIMENSIONS) {
-    breakdowns[dimension] = await queryBreakdown(db, filters, dimension);
-  }
-
   const geoWhere = buildWhere(filters, { geo: true });
-  const countryRows = await bindAll(
-    db.prepare(`
-      SELECT country AS name, SUM(count) AS count
-      FROM analytics_v2_geo
-      WHERE ${geoWhere.sql} AND country != 'UNKNOWN'
-      GROUP BY country
-      ORDER BY count DESC
-      LIMIT 50
-    `),
-    geoWhere.binds,
-  ).all<{ name: string; count: number }>();
-
-  const regionRows = await bindAll(
-    db.prepare(`
-      SELECT region AS name, SUM(count) AS count
-      FROM analytics_v2_geo
-      WHERE ${geoWhere.sql} AND region != 'UNKNOWN'
-      GROUP BY region
-      ORDER BY count DESC
-      LIMIT 80
-    `),
-    geoWhere.binds,
-  ).all<{ name: string; count: number }>();
-
   const filterWhere = buildWhere(filters);
-  const channels = await bindAll(
-    db.prepare(`
-      SELECT channel AS name, SUM(count) AS count
-      FROM analytics_v2_daily_core
-      WHERE ${filterWhere.sql} AND metric = 'resolve_request'
-      GROUP BY channel ORDER BY count DESC
-    `),
-    filterWhere.binds,
-  ).all<{ name: string; count: number }>();
-
-  const clients = await bindAll(
-    db.prepare(`
-      SELECT client_id AS name, SUM(count) AS count
-      FROM analytics_v2_daily_core
-      WHERE ${filterWhere.sql} AND metric = 'resolve_request'
-      GROUP BY client_id ORDER BY count DESC
-    `),
-    filterWhere.binds,
-  ).all<{ name: string; count: number }>();
-
-  const platforms = await bindAll(
-    db.prepare(`
-      SELECT platform AS name, SUM(count) AS count
-      FROM analytics_v2_daily_core
-      WHERE ${filterWhere.sql} AND metric IN ('resolve_request', 'export', 'clipboard')
-      GROUP BY platform ORDER BY count DESC
-    `),
-    filterWhere.binds,
-  ).all<{ name: string; count: number }>();
 
   const envClauses = ['date >= ?', 'date <= ?'];
   const envBinds: unknown[] = [filters.from, filters.to];
@@ -333,17 +346,101 @@ export async function getAnalyticsV2(
     envBinds.push(filters.client);
   }
   const envWhere = envClauses.join(' AND ');
-  const envRows = await bindAll(
+
+  const [
+    breakdowns,
+    countryRows,
+    regionRows,
+    channels,
+    clients,
+    platforms,
+    envRows,
+    invalidRows,
+    latest,
+    legacyRows,
+  ] = await Promise.all([
+    queryBreakdowns(db, filters),
+    bindAll(
+      db.prepare(`
+        SELECT country AS name, SUM(count) AS count
+        FROM analytics_v2_geo
+        WHERE ${geoWhere.sql} AND country != 'UNKNOWN'
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 50
+      `),
+      geoWhere.binds,
+    ).all<{ name: string; count: number }>(),
+    bindAll(
+      db.prepare(`
+        SELECT region AS name, SUM(count) AS count
+        FROM analytics_v2_geo
+        WHERE ${geoWhere.sql} AND region != 'UNKNOWN'
+        GROUP BY region
+        ORDER BY count DESC
+        LIMIT 80
+      `),
+      geoWhere.binds,
+    ).all<{ name: string; count: number }>(),
+    bindAll(
+      db.prepare(`
+        SELECT channel AS name, SUM(count) AS count
+        FROM analytics_v2_daily_core
+        WHERE ${filterWhere.sql} AND metric = 'resolve_request'
+        GROUP BY channel ORDER BY count DESC
+      `),
+      filterWhere.binds,
+    ).all<{ name: string; count: number }>(),
+    bindAll(
+      db.prepare(`
+        SELECT client_id AS name, SUM(count) AS count
+        FROM analytics_v2_daily_core
+        WHERE ${filterWhere.sql} AND metric = 'resolve_request'
+        GROUP BY client_id ORDER BY count DESC
+      `),
+      filterWhere.binds,
+    ).all<{ name: string; count: number }>(),
+    bindAll(
+      db.prepare(`
+        SELECT platform AS name, SUM(count) AS count
+        FROM analytics_v2_daily_core
+        WHERE ${filterWhere.sql} AND metric IN ('resolve_request', 'export', 'clipboard')
+        GROUP BY platform ORDER BY count DESC
+      `),
+      filterWhere.binds,
+    ).all<{ name: string; count: number }>(),
+    bindAll(
+      db.prepare(`
+        SELECT device_class, browser_family, os_family, SUM(count) AS count
+        FROM analytics_v2_client_env
+        WHERE ${envWhere}
+        GROUP BY device_class, browser_family, os_family
+        ORDER BY count DESC
+        LIMIT 100
+      `),
+      envBinds,
+    ).all<{ device_class: string; browser_family: string; os_family: string; count: number }>(),
     db.prepare(`
-      SELECT device_class, browser_family, os_family, SUM(count) AS count
-      FROM analytics_v2_client_env
-      WHERE ${envWhere}
-      GROUP BY device_class, browser_family, os_family
-      ORDER BY count DESC
-      LIMIT 100
-    `),
-    envBinds,
-  ).all<{ device_class: string; browser_family: string; os_family: string; count: number }>();
+      SELECT
+        (SELECT COUNT(*) FROM analytics_v2_daily_core WHERE date = 'TOTAL' OR platform = 'all') +
+        (SELECT COUNT(*) FROM analytics_v2_hourly_core WHERE date = 'TOTAL' OR platform = 'all') +
+        (SELECT COUNT(*) FROM analytics_v2_geo WHERE date = 'TOTAL' OR platform = 'all') +
+        (SELECT COUNT(*) FROM analytics_v2_breakdown WHERE date = 'TOTAL' OR platform = 'all') AS invalid_count
+    `).all<{ invalid_count: number }>(),
+    db.prepare(`
+      SELECT MAX(date) AS latest_date FROM analytics_v2_daily_core
+    `).all<{ latest_date: string | null }>(),
+    bindAll(
+      db.prepare(`
+        SELECT
+          SUM(CASE WHEN channel = 'legacy_mixed' THEN count ELSE 0 END) AS legacy_count,
+          SUM(count) AS total_count
+        FROM analytics_v2_daily_core
+        WHERE ${filterWhere.sql} AND metric = 'resolve_request'
+      `),
+      filterWhere.binds,
+    ).all<{ legacy_count: number | null; total_count: number | null }>(),
+  ]);
 
   const envAggregate = (field: 'device_class' | 'browser_family' | 'os_family') => {
     const totals = new Map<string, number>();
@@ -360,29 +457,7 @@ export async function getAnalyticsV2(
   const exportBreakdownTotal = exportFormats.reduce((sum, item) => sum + item.count, 0);
   const clipboardBreakdownTotal = clipboardModes.reduce((sum, item) => sum + item.count, 0);
 
-  const invalidRows = await db.prepare(`
-    SELECT
-      (SELECT COUNT(*) FROM analytics_v2_daily_core WHERE date = 'TOTAL' OR platform = 'all') +
-      (SELECT COUNT(*) FROM analytics_v2_hourly_core WHERE date = 'TOTAL' OR platform = 'all') +
-      (SELECT COUNT(*) FROM analytics_v2_geo WHERE date = 'TOTAL' OR platform = 'all') +
-      (SELECT COUNT(*) FROM analytics_v2_breakdown WHERE date = 'TOTAL' OR platform = 'all') AS invalid_count
-  `).all<{ invalid_count: number }>();
   const invalidCount = Number(invalidRows.results?.[0]?.invalid_count || 0);
-
-  const latest = await db.prepare(`
-    SELECT MAX(date) AS latest_date FROM analytics_v2_daily_core
-  `).all<{ latest_date: string | null }>();
-
-  const legacyRows = await bindAll(
-    db.prepare(`
-      SELECT
-        SUM(CASE WHEN channel = 'legacy_mixed' THEN count ELSE 0 END) AS legacy_count,
-        SUM(count) AS total_count
-      FROM analytics_v2_daily_core
-      WHERE ${filterWhere.sql} AND metric = 'resolve_request'
-    `),
-    filterWhere.binds,
-  ).all<{ legacy_count: number | null; total_count: number | null }>();
   const legacyCount = Number(legacyRows.results?.[0]?.legacy_count || 0);
   const totalCount = Number(legacyRows.results?.[0]?.total_count || 0);
 

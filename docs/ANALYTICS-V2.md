@@ -179,11 +179,20 @@ A failure in any of these checks blocks deployment.
 
 ## Current maintainer surface
 
-The only maintainer analytics endpoint is:
+The former `GET /api/internal/stats` compatibility endpoint has been removed. The current authenticated Analytics V2 surface is:
 
-`GET /api/internal/analytics/v2`
+- `GET /api/internal/analytics/v2` — filtered server-side aggregate query, retained for diagnostics/tests.
+- `GET /api/internal/analytics/v2/snapshot` — one-shot aggregate snapshot for the local Dashboard.
 
-The former `GET /api/internal/stats` compatibility endpoint has been removed. Dashboard V3 exclusively consumes Analytics V2 through the localhost proxy, and the admin token never enters browser HTML/JavaScript.
+Dashboard V3 is intentionally **snapshot-first and offline after startup**:
+
+1. the loopback Python process sends one Bearer-authenticated request for the full bounded aggregate snapshot when it starts;
+2. the snapshot stays only in local process memory;
+3. browser page loads, date changes, platform/client/geography filters, Reliability/Security views, and Feedback list reads use localhost/in-memory data only;
+4. an explicit “刷新云端数据” action performs one new snapshot request;
+5. Feedback status changes remain explicit authenticated PUT operations because they mutate production state.
+
+Neither maintainer endpoint enables browser CORS, and the admin token never enters browser HTML/JavaScript.
 
 ## Completion status
 

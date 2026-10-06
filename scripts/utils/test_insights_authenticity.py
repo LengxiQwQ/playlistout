@@ -21,6 +21,10 @@ from scripts.utils.dashboard import (
     FEEDBACK_PARAMS,
     HTML,
     Handler,
+    build_local_analytics,
+    build_local_feedback,
+    build_local_quarantine,
+    fetch_dashboard_snapshot,
     get_admin_token,
 )
 
@@ -111,6 +115,126 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertIn("/api/internal/analytics/v2", source)
         self.assertIn("拒绝监听非 loopback", source)
 
+    def test_dashboard_uses_single_startup_snapshot_for_read_only_views(self):
+        source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
+        self.assertIn("/api/internal/analytics/v2/snapshot", source)
+        self.assertIn("fetch_dashboard_snapshot(token)", source)
+        self.assertIn("build_local_analytics(type(self).snapshot", source)
+        self.assertIn("build_local_quarantine(", source)
+        self.assertIn("build_local_feedback(type(self).snapshot", source)
+        self.assertNotIn('self.proxy("/api/internal/analytics/v2"', source)
+        self.assertNotIn('self.proxy("/api/internal/quarantine"', source)
+        self.assertNotIn('self.proxy("/api/internal/feedback"', source)
+        self.assertIn('path != "/api/refresh"', source)
+
+    def test_snapshot_loader_uses_one_internal_snapshot_request(self):
+        body = json.dumps(
+            {
+                "success": True,
+                "data": {
+                    "version": 2,
+                    "generatedAt": "2026-10-06T10:00:00.000Z",
+                    "dailyCore": [],
+                    "hourlyCore": [],
+                    "breakdowns": [],
+                    "geo": [],
+                    "clientEnv": [],
+                    "quarantine": [],
+                    "feedback": [],
+                },
+            }
+        ).encode("utf-8")
+        with patch(
+            "scripts.utils.dashboard.remote_request",
+            return_value=(200, body, "application/json"),
+        ) as request:
+            snapshot = fetch_dashboard_snapshot("secret")
+        self.assertEqual(snapshot["version"], 2)
+        request.assert_called_once_with(
+            "secret",
+            "/api/internal/analytics/v2/snapshot",
+        )
+
+    def test_local_snapshot_supports_arbitrary_single_day_and_range(self):
+        snapshot = {
+            "generatedAt": "2026-10-06T10:00:00.000Z",
+            "dailyCore": [
+                {
+                    "date": "2026-10-04",
+                    "channel": "web",
+                    "client_id": "official_web",
+                    "platform": "qqmusic",
+                    "metric": "resolve_request",
+                    "count": 2,
+                },
+                {
+                    "date": "2026-10-04",
+                    "channel": "web",
+                    "client_id": "official_web",
+                    "platform": "qqmusic",
+                    "metric": "playlist_success",
+                    "count": 2,
+                },
+                {
+                    "date": "2026-10-05",
+                    "channel": "api",
+                    "client_id": "anonymous_api",
+                    "platform": "netease",
+                    "metric": "resolve_request",
+                    "count": 3,
+                },
+                {
+                    "date": "2026-10-05",
+                    "channel": "api",
+                    "client_id": "anonymous_api",
+                    "platform": "netease",
+                    "metric": "playlist_success",
+                    "count": 3,
+                },
+            ],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        one_day = build_local_analytics(
+            snapshot,
+            {"from": "2026-10-04", "to": "2026-10-04"},
+        )
+        self.assertEqual(one_day["overview"]["resolve_request"], 2)
+        full_range = build_local_analytics(
+            snapshot,
+            {"from": "2026-10-04", "to": "2026-10-05"},
+        )
+        self.assertEqual(full_range["overview"]["resolve_request"], 5)
+        self.assertEqual(
+            full_range["availableDateRange"],
+            {"from": "2026-10-04", "to": "2026-10-05"},
+        )
+
+    def test_local_snapshot_covers_quarantine_and_feedback_reads(self):
+        snapshot = {
+            "quarantine": [
+                {"id": 1, "incident_date": "2026-10-04", "reason": "bot", "count": 3},
+                {"id": 2, "incident_date": "2026-10-05", "reason": "bot", "count": 4},
+            ],
+            "feedback": [
+                {"id": 1, "status": "pending", "last_reported_at": "2026-10-05T00:00:00Z"},
+                {"id": 2, "status": "resolved", "last_reported_at": "2026-10-04T00:00:00Z"},
+            ],
+        }
+        quarantine = build_local_quarantine(
+            snapshot,
+            {"from": "2026-10-05", "to": "2026-10-05", "limit": "100"},
+        )
+        self.assertEqual(quarantine["totalRecords"], 1)
+        self.assertEqual(quarantine["totalEvents"], 4)
+        feedback = build_local_feedback(snapshot, {"status": "pending", "limit": "100"})
+        self.assertEqual(feedback["total"], 1)
+        self.assertEqual(feedback["entries"][0]["id"], 1)
+
     def test_dashboard_has_human_friendly_navigation_and_filters(self):
         for text in [
             "Overview",
@@ -126,8 +250,13 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             "Region",
             "今天",
             "昨天",
-            "7天",
-            "30天",
+            "前天",
+            "大前天",
+            "全部历史",
+            "近7天",
+            "近30天",
+            "查看这一天",
+            "应用范围",
             "Data Quality",
             "请求目标平台",
             "Client IDs",
@@ -136,6 +265,39 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             self.assertIn(text, HTML)
         self.assertNotIn("Hide MY", HTML)
         self.assertNotIn("隐藏马来西亚", HTML)
+
+    def test_dashboard_date_controls_support_single_day_and_arbitrary_range(self):
+        self.assertIn('id="singleDate"', HTML)
+        self.assertIn('id="fromDate"', HTML)
+        self.assertIn('id="toDate"', HTML)
+        self.assertIn('data-range="daybefore"', HTML)
+        self.assertIn('data-range="day3"', HTML)
+        self.assertIn('data-range="all"', HTML)
+        self.assertIn('id="refreshData"', HTML)
+        self.assertIn("AbortController", HTML)
+        self.assertIn("CACHE_MS=15000", HTML)
+        self.assertIn("不重复请求 Worker", HTML)
+
+    def test_dashboard_selector_helpers_are_distinct_and_valid(self):
+        self.assertIn(
+            'const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));',
+            HTML,
+        )
+        self.assertNotIn(
+            'const $=s=>document.querySelector(s),$=s=>Array.from(document.querySelectorAll(s));',
+            HTML,
+        )
+        self.assertIn('$$(".tab").forEach', HTML)
+        self.assertIn('$$(".range button").forEach', HTML)
+
+    def test_dashboard_dynamic_selects_use_id_selectors(self):
+        self.assertIn('let s=$("#"+id);if(!s)return', HTML)
+        self.assertNotIn("let s=$(id),old=s.value", HTML)
+
+    def test_security_quarantine_follows_selected_date_range(self):
+        self.assertIn('new URLSearchParams(dates())', HTML)
+        source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
+        self.assertIn("build_local_quarantine", source)
 
     def test_dashboard_explains_filter_scope_boundaries(self):
         self.assertIn("Platform / Country / Region 不会作用于环境数据", HTML)

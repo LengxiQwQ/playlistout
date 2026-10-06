@@ -732,14 +732,22 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
   }
   ```
 
-### 10.2 Maintainer Analytics V2 (`GET /api/internal/analytics/v2`)
+### 10.2 Maintainer Analytics V2
 
-This is the only maintainer analytics endpoint. The retired `GET /api/internal/stats` endpoint returns `404 NOT_FOUND`.
+The retired `GET /api/internal/stats` endpoint returns `404 NOT_FOUND`. Analytics V2 exposes two token-protected maintainer reads:
 
-- **Authentication**: required via `Authorization: Bearer <INSIGHTS_ADMIN_TOKEN>`.
-- **CORS**: browser access is blocked. Dashboard V3 reaches this endpoint only through its loopback Python proxy.
+- `GET /api/internal/analytics/v2` — filtered/aggregated query endpoint for diagnostics and tests.
+- `GET /api/internal/analytics/v2/snapshot` — full bounded aggregate snapshot used by the local Dashboard. It returns the V2 aggregate cubes plus maintainer quarantine/feedback rows in one authenticated response.
+
+Both endpoints:
+
+- **Authentication**: require `Authorization: Bearer <INSIGHTS_ADMIN_TOKEN>`.
+- **CORS**: browser access is blocked; preflight is rejected. Only the loopback Python process talks to these endpoints.
 - **Cache-Control**: `no-store, no-cache, must-revalidate`.
-- **Filters**:
+
+Dashboard V3 calls the snapshot endpoint **once when the Python process starts**. All date, channel, client, platform, geography, environment, reliability, and quarantine browsing after that is computed from the in-memory local snapshot. Reloading the browser page does not hit the Worker again. The only read-side action that fetches a new cloud snapshot is the explicit **刷新云端数据 / Refresh cloud data** control.
+
+The filtered query endpoint supports:
   - `from=YYYY-MM-DD`
   - `to=YYYY-MM-DD`
   - `channel=web|plugin|api|internal|legacy_mixed`
@@ -762,7 +770,7 @@ Important dimensions include:
 - rate-limit endpoint
 - migration destination / migration provider
 
-No raw query, playlist URL/ID, token, cookie, raw IP, complete User-Agent, song metadata, or raw exception message is stored or returned.
+No raw analytics query, token, cookie, raw IP, complete User-Agent, song metadata, or raw exception message is stored or returned. The snapshot may contain the same maintainer-only feedback rows already available from `/api/internal/feedback` (including user-submitted failed playlist URLs) and quarantined aggregate records; it remains Bearer-authenticated, no-CORS, and localhost-only in normal Dashboard use.
 
 Filter-scope rules are intentional privacy boundaries: geography filters affect the overview/timeseries/geo cube but do not retroactively correlate failure/latency breakdowns; environment data supports date/channel/client filters but not platform/geography filters. Dashboard V3 surfaces these scope limitations explicitly instead of implying correlations that are not stored.
 
