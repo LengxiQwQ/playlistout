@@ -55,7 +55,7 @@ export function extractQQPlaylistId(rawInput: string): string {
     (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') ||
     !isAllowedHost
   ) {
-    throw new ProviderError('UNSUPPORTED_URL', `Unsupported music platform host: "${hostname}". Currently only QQ Music is supported.`, 400);
+    throw new ProviderError('UNSUPPORTED_URL', `This QQ Music parser only accepts QQ Music hosts. Unsupported host: "${hostname}".`, 400);
   }
 
   const pathname = parsedUrl.pathname;
