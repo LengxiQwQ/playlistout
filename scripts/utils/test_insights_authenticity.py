@@ -126,8 +126,11 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             "Region",
             "今天",
             "昨天",
-            "7天",
-            "30天",
+            "前天",
+            "近7天",
+            "近30天",
+            "查看这一天",
+            "应用范围",
             "Data Quality",
             "请求目标平台",
             "Client IDs",
@@ -136,6 +139,23 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             self.assertIn(text, HTML)
         self.assertNotIn("Hide MY", HTML)
         self.assertNotIn("隐藏马来西亚", HTML)
+
+    def test_dashboard_date_controls_support_single_day_and_arbitrary_range(self):
+        self.assertIn('id="singleDate"', HTML)
+        self.assertIn('id="fromDate"', HTML)
+        self.assertIn('id="toDate"', HTML)
+        self.assertIn('data-range="daybefore"', HTML)
+        self.assertIn("AbortController", HTML)
+        self.assertIn("CACHE_MS=15000", HTML)
+
+    def test_dashboard_dynamic_selects_use_id_selectors(self):
+        self.assertIn('let s=$("#"+id);if(!s)return', HTML)
+        self.assertNotIn("let s=$(id),old=s.value", HTML)
+
+    def test_security_quarantine_follows_selected_date_range(self):
+        self.assertIn('new URLSearchParams(dates())', HTML)
+        source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
+        self.assertIn('"date", "from", "to"', source)
 
     def test_dashboard_explains_filter_scope_boundaries(self):
         self.assertIn("Platform / Country / Region 不会作用于环境数据", HTML)

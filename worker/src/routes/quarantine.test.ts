@@ -135,4 +135,46 @@ describe('handleInternalQuarantine', () => {
     expect(body.data.totalRecords).toBe(1);
     expect(body.data.totalEvents).toBe(425);
   });
+
+  it('applies from/to dates to rows, summary, and totals', async () => {
+    const seen: Array<{ sql: string; binds: unknown[] }> = [];
+    const mockDb: any = {
+      prepare(sql: string) {
+        let binds: unknown[] = [];
+        return {
+          bind(...args: unknown[]) {
+            binds = args;
+            return this;
+          },
+          async first<T = any>() {
+            seen.push({ sql, binds });
+            if (sql.includes('sqlite_master')) {
+              return { name: 'quarantined_stats' } as T;
+            }
+            return { total_records: 0, total_events: 0 } as T;
+          },
+          async all() {
+            seen.push({ sql, binds });
+            return { results: [] };
+          },
+        };
+      },
+    };
+
+    const req = new Request(
+      'https://api.playlistout.com/api/internal/quarantine?from=2026-10-03&to=2026-10-01',
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    const env: Env = { INSIGHTS_ADMIN_TOKEN: adminToken, DB: mockDb };
+    const res = await handleInternalQuarantine(req, env, {}, mockCompare);
+    expect(res.status).toBe(200);
+
+    const filtered = seen.filter((entry) => entry.sql.includes('incident_date >= ?'));
+    expect(filtered.length).toBe(3);
+    for (const entry of filtered) {
+      expect(entry.sql).toContain('incident_date <= ?');
+      expect(entry.binds).toEqual(['2026-10-01', '2026-10-03']);
+    }
+  });
+
 });

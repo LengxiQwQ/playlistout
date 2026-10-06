@@ -93,30 +93,51 @@ export async function handleInternalQuarantine(
 
     const url = new URL(request.url);
     const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') || '200', 10)));
-    const reason = url.searchParams.get('reason');
+    const reason = url.searchParams.get('reason')?.trim() || '';
+    const rawFrom = url.searchParams.get('from') || '';
+    const rawTo = url.searchParams.get('to') || '';
+    const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    let from = validDate(rawFrom) ? rawFrom : '';
+    let to = validDate(rawTo) ? rawTo : '';
+    if (from && to && from > to) [from, to] = [to, from];
 
-    let querySql = 'SELECT * FROM quarantined_stats';
+    const clauses: string[] = [];
     const bindings: string[] = [];
     if (reason) {
-      querySql += ' WHERE reason = ?1';
+      clauses.push('reason = ?');
       bindings.push(reason);
     }
-    querySql += ` ORDER BY id ASC LIMIT ${limit};`;
+    if (from) {
+      clauses.push('incident_date >= ?');
+      bindings.push(from);
+    }
+    if (to) {
+      clauses.push('incident_date <= ?');
+      bindings.push(to);
+    }
+    const whereSql = clauses.length > 0 ? ` WHERE ${clauses.join(' AND ')}` : '';
 
-    const stmt = env.DB.prepare(querySql);
-    const rows = bindings.length > 0 ? await stmt.bind(...bindings).all() : await stmt.all();
+    const querySql = `SELECT * FROM quarantined_stats${whereSql} ORDER BY incident_date DESC, id DESC LIMIT ${limit};`;
+    const rowStmt = env.DB.prepare(querySql);
+    const rows = bindings.length > 0 ? await rowStmt.bind(...bindings).all() : await rowStmt.all();
 
-    const summaryRows = await env.DB.prepare(`
+    const summarySql = `
       SELECT incident_date, batch_id, reason, source_table, count(*) as records_count, sum(count) as total_events
-      FROM quarantined_stats
+      FROM quarantined_stats${whereSql}
       GROUP BY incident_date, batch_id, reason, source_table
       ORDER BY incident_date DESC, total_events DESC;
-    `).all();
+    `;
+    const summaryStmt = env.DB.prepare(summarySql);
+    const summaryRows = bindings.length > 0 ? await summaryStmt.bind(...bindings).all() : await summaryStmt.all();
 
-    const totalStats = await env.DB.prepare(`
+    const totalSql = `
       SELECT count(*) as total_records, sum(count) as total_events
-      FROM quarantined_stats;
-    `).first<{ total_records: number; total_events: number }>();
+      FROM quarantined_stats${whereSql};
+    `;
+    const totalStmt = env.DB.prepare(totalSql);
+    const totalStats = bindings.length > 0
+      ? await totalStmt.bind(...bindings).first<{ total_records: number; total_events: number }>()
+      : await totalStmt.first<{ total_records: number; total_events: number }>();
 
     return jsonResponse(
       {
