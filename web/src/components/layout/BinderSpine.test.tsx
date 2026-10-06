@@ -21,22 +21,28 @@ describe('BinderSpine Component', () => {
     const disconnectMock = vi.fn();
     const observeMock = vi.fn();
 
-    // Mock ResizeObserver
+    // Vitest 5 no longer treats vi.fn().mockImplementation(() => object) as a
+    // constructable class. Use a real class because BinderSpine calls
+    // `new ResizeObserver(...)`.
     const originalResizeObserver = window.ResizeObserver;
-    window.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: observeMock,
-      disconnect: disconnectMock,
-      unobserve: vi.fn(),
-    }));
+    class MockResizeObserver {
+      observe = observeMock;
+      disconnect = disconnectMock;
+      unobserve = vi.fn();
+    }
+    window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
-    const { unmount } = render(<BinderSpine />);
-    unmount();
+    try {
+      const { unmount } = render(<BinderSpine />);
+      unmount();
 
-    expect(disconnectMock).toHaveBeenCalled();
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
-
-    window.ResizeObserver = originalResizeObserver;
+      expect(disconnectMock).toHaveBeenCalled();
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
+    } finally {
+      removeEventListenerSpy.mockRestore();
+      window.ResizeObserver = originalResizeObserver;
+    }
   });
 });

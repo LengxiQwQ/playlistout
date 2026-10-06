@@ -37,7 +37,7 @@ export const enUS: Translations = {
   hero: {
     tagline: 'Paste. Parse. Export.',
     pasteDoodle: '♪ Paste. Parse. Export.',
-    noLoginDoodle: 'No login, no mess :)',
+    noLoginDoodle: 'No PlaylistOut account needed :)',
     subtitle: 'A tiny notebook for taking your playlists with you.',
     titlePrefix: 'Let your ',
     titleHighlight: 'playlist out.',
@@ -257,7 +257,7 @@ export const enUS: Translations = {
     viewDataNotice: 'View data practices',
     closeLabel: 'Close privacy dialog',
     section1Title: '1. Public Playlists Only',
-    section1Content: 'Playlist Out parses publicly accessible playlists from QQ Music, NetEase Cloud Music, and KuGou Music (guest preview and QR authorization supported). We do not access or attempt to access private or restricted playlists.',
+    section1Content: 'Playlist Out parses publicly accessible playlists from QQ Music, NetEase Cloud Music, KuGou Music, and Soda Music (KuGou supports guest preview and QR authorization for full playlists). We do not access or attempt to access private or restricted playlists.',
     section2Title: '2. Zero Data Persistence',
     section2Content: 'Our serverless worker is stateless. Results are returned immediately; we never store your playlist links, IDs, song lists, titles, artists, or albums on servers.',
     section3Title: '3. 100% Local Browser Export',

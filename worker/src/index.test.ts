@@ -38,7 +38,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     const body = (await response.json()) as HealthResponseBody;
     expect(body.status).toBe('ok');
     expect(body.service).toBe('playlistout-api');
-    expect(body.version).toBe('2.0.0');
+    expect(body.version).toBe('2.2.0');
   });
 
   it('rejects non-GET methods on /health with 405 Method Not Allowed', async () => {
@@ -75,6 +75,12 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(response.status).toBe(204);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
+
+    const allowedHeaders = response.headers.get('Access-Control-Allow-Headers') || '';
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Type');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Id');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Version');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Host');
   });
 
   it('strictly rejects CORS OPTIONS preflight on sensitive endpoints for unauthorized origin with 403', async () => {

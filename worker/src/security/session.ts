@@ -1,10 +1,10 @@
 /**
- * Lightweight Stateless Client Session Attestation
+ * Lightweight stateless web-session signal for rate-limit classification.
  *
  * Web clients fetch an ephemeral token on load via GET /api/session/token.
- * The token format is: v1.<timestamp>.<hmacHex>
- * Valid for 15 minutes.
- * Prevents raw curl/python scripts from masquerading as official web front.
+ * The token format is: v1.<timestamp>.<digestHex> and is valid for 15 minutes.
+ * This is a best-effort anti-abuse signal, not user authentication or an
+ * authorization boundary. API security must never depend on this token.
  */
 
 const SESSION_SALT = 'playlistout_session_attestation_2026';

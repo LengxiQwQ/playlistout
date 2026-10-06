@@ -1,3 +1,4 @@
+import { PLAYLISTOUT_USER_AGENT } from '../version';
 import { isOriginAllowed } from '../cors';
 import { checkDualTrackRateLimit, getClientIp } from '../security/rate-limit';
 import { recordProductEventV2 } from '../analytics/v2-recorder';
@@ -248,7 +249,7 @@ export async function handleSoundiizMigration(
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'PlaylistOut/2.0 (+https://playlistout.lengxiqwq.com)',
+        'User-Agent': PLAYLISTOUT_USER_AGENT,
       },
       body: JSON.stringify({
         title,

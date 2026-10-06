@@ -15,6 +15,7 @@ import { generateSessionToken } from './security/session';
 import { parsePlaylistService } from './services/playlist-service';
 import { fetchUserPlaylistsService } from './services/user-service';
 import { resolveService } from './services/resolve-service';
+import { PLAYLISTOUT_VERSION } from './version';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -79,7 +80,7 @@ export default {
         JSON.stringify({
           status: 'ok',
           service: 'playlistout-api',
-          version: '2.0.0',
+          version: PLAYLISTOUT_VERSION,
         }),
         {
           status: 200,
@@ -409,7 +410,7 @@ export default {
       }
 
       // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve');
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'resolve', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         if (_ctx && typeof _ctx.waitUntil === 'function') {
           _ctx.waitUntil(recordRateLimitEventV2(_env.DB, request, 'resolve'));
@@ -520,7 +521,7 @@ export default {
       }
 
       // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist');
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         const rawUrlParam = url.searchParams.get('url') || url.searchParams.get('id') || '';
         const rawPlatformParam = url.searchParams.get('platform') || 'all';
@@ -651,7 +652,7 @@ export default {
       }
 
       // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists');
+      const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists', _env.INSIGHTS_ADMIN_TOKEN || '');
       if (!rateCheck.allowed) {
         const userPlatformParam = url.searchParams.get('platform') || 'all';
         if (_ctx && typeof _ctx.waitUntil === 'function') {

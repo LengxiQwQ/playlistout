@@ -33,7 +33,7 @@ PlaylistOut officially supports 4 major music platforms:
    - **Public GET Endpoints** (`/api/v1/resolve`, `/api/v1/playlist`, `/api/v1/user/playlists`, `/api/v1/stats`, `/api/v1/health`, and legacy query endpoints):
      - `Access-Control-Allow-Origin: *`
      - `Access-Control-Allow-Methods: GET, OPTIONS`
-     - `Access-Control-Allow-Headers: Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token`
+     - `Access-Control-Allow-Headers: Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host`
      - Allows third-party web applications running in browsers to call the Public API directly.
    - **Sensitive & Auth Endpoints** (`/api/kugou/*`):
      - Restricted to authorized PlaylistOut domains and localhost development environments.
@@ -413,7 +413,7 @@ GET /api/v1/health
 {
   "status": "ok",
   "service": "playlistout-api",
-  "version": "2.0.0"
+  "version": "2.2.0"
 }
 ```
 
@@ -715,7 +715,7 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
       "playlistsParsedToday": 5,
       "totalTracksProcessed": 64893,
       "tracksProcessedToday": 1602,
-      "totalExports": 641,
+      "totalExports": 649,
       "exportsToday": 36,
       "exportFormatsBreakdown": { "xlsx": 412, "txt": 204, "csv": 15, "json": 10, "m3u8": 8 },
       "byPlatform": {

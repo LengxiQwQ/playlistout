@@ -434,9 +434,9 @@ The user should immediately understand where to paste a link.
 
 Only show platforms that are actually implemented in production.
 
-At the time this design system was created, the production provider implementation is QQ Music.
+The current production provider set is QQ Music, NetEase Cloud Music, KuGou Music, and Soda Music (QiShui).
 
-The design may provide a reusable platform sticker component, but future platforms must only appear after their provider is genuinely available.
+The design may provide reusable platform sticker components, but a platform must only appear as supported after its provider is genuinely available in production. KuGou's zero-login mode is a limited public preview; full retrieval may require the optional browser-side QR authorization flow.
 
 ---
 

@@ -44,6 +44,16 @@ describe('Analytics V2 request context', () => {
     expect(api.clientId).toBe('anonymous_api');
   });
 
+  it('does not treat an unverified session header as official web attribution', () => {
+    const ctx = createAnalyticsRequestContextV2(request({
+      'X-PlaylistOut-Session': 'v1.123.forged',
+      'User-Agent': 'custom-client/1.0',
+    }));
+
+    expect(ctx.channel).toBe('api');
+    expect(ctx.clientId).toBe('anonymous_api');
+  });
+
   it('bounds unknown plugins and rejects unbounded version/host values', () => {
     const ctx = createAnalyticsRequestContextV2(request({
       'X-PlaylistOut-Client-Type': 'plugin',

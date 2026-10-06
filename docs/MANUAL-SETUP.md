@@ -101,25 +101,31 @@ D1 仅用于匿名聚合统计，不保存歌单 URL、歌单 ID、歌曲列表�
 worker/migrations/
 ```
 
-如需恢复新环境，可创建数据库并执行迁移：
+如需从零恢复一个**新环境**，必须使用仓库受支持的显式 provisioning / Wrangler Native Migrations 流程，不能手工只执行某一份 SQL 文件：
 
 ```bash
-npx wrangler d1 create playlistout-stats
-npx wrangler d1 execute playlistout-stats --remote --file=./migrations/0001_initial_stats.sql
+# 在仓库根目录，显式创建/绑定新环境并建立受追踪的 migration 历史
+node scripts/d1/provision-db.js
+
+# 如数据库已经由受支持流程创建并写入正确 database_id，
+# 在 worker/ 下应用所有待执行的 Wrangler migrations
+cd worker
+npx wrangler d1 migrations apply playlistout-stats --remote
 ```
 
-随后将 Cloudflare 返回的真实 `database_id` 写入 `worker/wrangler.jsonc`。
+生产部署会严格验证 `d1_migrations` 的数量、顺序与文件名。存在业务表但没有可信 migration 历史的数据库会 **fail closed**；不要通过手工插入 migration 记录或单独执行 `0001_*.sql` 绕过验证。
 
-当前生产环境已完成 D1 创建、绑定和 migration，不要重复创建同名生产数据库。
+当前生产环境已完成 D1 创建、绑定和全部 migrations，不要重复创建同名生产数据库。灾难恢复优先使用 D1 Time Travel / 可信备份。
 
 ---
 
 ## 6. GitHub Actions Secrets
 
-Worker 自动部署依赖以下 Repository Secrets：
+Worker 自动部署使用以下 Repository Secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+- `INSIGHTS_ADMIN_TOKEN`（维护者 Analytics / 内部管理接口，以及 Web session 速率分类信号）
 
 不要把它们写进仓库、日志、README、测试 fixture 或任何客户端代码。
 
@@ -144,7 +150,7 @@ Worker 自动部署依赖以下 Repository Secrets：
 
 ## 8. 生产验证清单
 
-当前 v2.0.0 基线：
+当前生产基线（v2.2.0）：
 
 - [x] `https://playlistout.lengxiqwq.com` 可由 GitHub Pages 部署
 - [x] `https://playlistout.com` / `https://www.playlistout.com` 301 重定向至主域名
@@ -154,7 +160,7 @@ Worker 自动部署依赖以下 Repository Secrets：
 - [x] D1 `playlistout-stats` 已创建并绑定
 - [x] D1 migration 已在生产环境执行
 - [x] Worker 自动部署 step 已真实执行成功
-- [x] QQ Music MVP 已发布为 `v2.0.0`
+- [x] QQ Music、网易云音乐、酷狗音乐、汽水音乐四个平台均已进入当前生产版本
 
 如果未来生产环境变化，以最新 workflow 日志、Cloudflare Dashboard 和实际 HTTP 行为为准，而不是长期依赖此处的历史勾选状态。
 
@@ -168,7 +174,7 @@ Worker 自动部署依赖以下 Repository Secrets：
 2. Pages 与 Worker 是否部署的是预期 commit。
 3. Cloudflare Worker 自定义域名是否仍绑定。
 4. D1 binding / migration 是否正常。
-5. QQ Music 上游接口是否发生兼容性变化。
+5. 对应音乐平台（QQ 音乐 / 网易云音乐 / 酷狗音乐 / 汽水音乐）上游接口是否发生兼容性变化。
 6. 最后再检查前端展示或浏览器兼容问题。
 
 不要通过放宽 SSRF/CORS/完整性校验来临时“修好”上游兼容问题。
