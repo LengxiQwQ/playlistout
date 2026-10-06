@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PLAYLISTOUT_VERSION } from '../src/version';
 
 const API_BASE = 'https://playlistout-api.lengxiqwq.com';
 const TEMPORARY_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -6,10 +7,10 @@ const TEMPORARY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const commonHeaders = {
   Accept: 'application/json',
   Origin: 'https://github.com',
-  'User-Agent': 'PlaylistOut-Live-Acceptance/2.2.0',
+  'User-Agent': `PlaylistOut-Live-Acceptance/${PLAYLISTOUT_VERSION}`,
   'X-PlaylistOut-Client-Type': 'api',
   'X-PlaylistOut-Client-Id': 'github_live_acceptance',
-  'X-PlaylistOut-Client-Version': '2.2.0',
+  'X-PlaylistOut-Client-Version': PLAYLISTOUT_VERSION,
   'X-PlaylistOut-Host': 'github_actions',
 };
 
@@ -78,13 +79,13 @@ function assertPlaylistEnvelope(body: any, platform: string) {
 }
 
 describe('Production Public API live smoke', { timeout: 90000 }, () => {
-  it('serves healthy v2.2.0 API with public CORS', async () => {
+  it('serves the current API version with public CORS', async () => {
     const { response, body } = await requestJson('/api/v1/health');
     expect(response.status).toBe(200);
     expect(response.headers.get('access-control-allow-origin')).toBe('*');
     expect(body.status).toBe('ok');
     expect(body.service).toBe('playlistout-api');
-    expect(body.version).toBe('2.2.0');
+    expect(body.version).toBe(PLAYLISTOUT_VERSION);
   });
 
   it('resolves a real QQ Music playlist through production', async () => {
