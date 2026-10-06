@@ -86,6 +86,29 @@ function validateWorkflows() {
     const fullPath = join(workflowsDir, file);
     const content = readFileSync(fullPath, 'utf-8');
 
+    // Keep the runner baseline explicit. GitHub's ubuntu-latest label can move
+    // between OS releases independently of this repository's validation cycle.
+    if (content.includes('runs-on: ubuntu-latest')) {
+      throw new Error(`${file} must pin the validated runner image (ubuntu-24.04), not ubuntu-latest`);
+    }
+
+    // Prevent regression to action majors that still depended on older Node
+    // runtimes or predate the currently validated Pages/Cloudflare toolchain.
+    const deprecatedActionPatterns = [
+      [/actions\/checkout@v[1-6](?:\b|\.)/, 'actions/checkout@v7+'],
+      [/actions\/setup-node@v[1-6](?:\b|\.)/, 'actions/setup-node@v7+'],
+      [/actions\/setup-python@v[1-6](?:\b|\.)/, 'actions/setup-python@v7+'],
+      [/actions\/configure-pages@v[1-5](?:\b|\.)/, 'actions/configure-pages@v6+'],
+      [/actions\/upload-pages-artifact@v[1-4](?:\b|\.)/, 'actions/upload-pages-artifact@v5+'],
+      [/actions\/deploy-pages@v[1-4](?:\b|\.)/, 'actions/deploy-pages@v5+'],
+      [/cloudflare\/wrangler-action@v[1-3](?:\b|\.)/, 'cloudflare/wrangler-action@v4+'],
+    ];
+    for (const [pattern, replacement] of deprecatedActionPatterns) {
+      if (pattern.test(content)) {
+        throw new Error(`${file} uses an outdated action major; use ${replacement}`);
+      }
+    }
+
     // Rule: GitHub Actions forbids `secrets.*` inside `if:` conditions
     const lines = content.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -103,6 +126,21 @@ function validateWorkflows() {
     if (file === 'ci.yml') {
       if (!/permissions:\s*\n\s+contents:\s+read/.test(content)) {
         throw new Error('ci.yml must explicitly use read-only repository contents permission');
+      }
+    }
+
+    if (file === 'deploy-pages.yml') {
+      if (!content.includes('group: "pages"') || !content.includes('cancel-in-progress: true')) {
+        throw new Error('deploy-pages.yml must use latest-wins Pages concurrency to prevent stale deployment locks');
+      }
+    }
+
+    if (file === 'live-acceptance.yml') {
+      if (!/permissions:\s*\n\s+contents:\s+read/.test(content)) {
+        throw new Error('live-acceptance.yml must explicitly use read-only repository contents permission');
+      }
+      if (!content.includes('group: provider-live-acceptance') || !content.includes('cancel-in-progress: true')) {
+        throw new Error('live-acceptance.yml must serialize/supersede overlapping upstream acceptance runs');
       }
     }
 

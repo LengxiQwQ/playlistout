@@ -26,12 +26,12 @@ concurrency:
 
 jobs:
   collect:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
       - name: Checkout / 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.TRAFFIC_TOKEN || secrets.WINGET_TOKEN || github.token }}
 

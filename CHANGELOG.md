@@ -13,6 +13,7 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 - **Release/runtime consistency**: v2.2.0 runtime version reporting is centralized, package/workspace versions are aligned, and post-release dependency/toolchain maintenance has been validated through CI and production deployment gates.
 - **Repository governance**: the project constitution and roadmap now describe the real four-provider v2.2.x production baseline instead of the historical QQ-only MVP state. Remote CI also runs repository policy checks that previously existed only in the local pre-push gate.
 - **Live acceptance**: Provider live acceptance now covers all four production providers (QQ Music, NetEase Cloud Music, KuGou Music, and Qishui Music) plus a deployed Public API smoke test for health, CORS, normalized playlist structure, and KuGou preview semantics.
+- **CI/CD runtime hardening**: GitHub Actions now pin the validated Ubuntu 24.04 runner, use current Node 24-compatible official action majors, make Pages deployments latest-wins to clear stale concurrency locks, and serialize/supersede overlapping live-acceptance runs.
 
 ### Fixed / 修复
 
