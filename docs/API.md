@@ -748,7 +748,7 @@ This is the only maintainer analytics endpoint. The retired `GET /api/internal/s
   - `country=XX`
   - `region=<bounded value>`
 - **Maximum range**: 366 days.
-- **Response**: aggregate-only overview, timeseries, bounded breakdowns, coarse geography/environment, available filter values, and data-quality checks.
+- **Response**: aggregate-only overview, daily timeseries, single-day hourly timeseries, bounded breakdowns, coarse geography/environment, available filter values, and data-quality checks. `hourlyTimeseries` is returned only for a single UTC day without geography filters; dashboards may convert those UTC hour labels for display without reordering buckets.
 
 Important dimensions include:
 
@@ -763,6 +763,8 @@ Important dimensions include:
 - migration destination / migration provider
 
 No raw query, playlist URL/ID, token, cookie, raw IP, complete User-Agent, song metadata, or raw exception message is stored or returned.
+
+Filter-scope rules are intentional privacy boundaries: geography filters affect the overview/timeseries/geo cube but do not retroactively correlate failure/latency breakdowns; environment data supports date/channel/client filters but not platform/geography filters. Dashboard V3 surfaces these scope limitations explicitly instead of implying correlations that are not stored.
 
 ### 10.3 Resolve Failure Telemetry
 

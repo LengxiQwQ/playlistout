@@ -118,6 +118,13 @@ The V2 response includes health checks for:
 
 A failed invariant is surfaced as a dashboard data-integrity warning.
 
+## Dashboard V3 presentation rules
+
+- The dashboard is served by a loopback-only Python proxy and contains **no third-party browser JavaScript**. Private maintainer analytics therefore cannot be read by a CDN-hosted script executing inside the localhost page.
+- Single-day, non-geographic queries expose `hourlyTimeseries` from `analytics_v2_hourly_core`; multi-day queries remain daily. UTC storage order is preserved even when hour labels are converted to the browser's local timezone for display.
+- Dashboard labels distinguish client IDs/categories from people or installations. Integration request cards use channel/client `resolve_request` counts rather than re-labeling all-channel totals.
+- Geography filters do not affect reliability breakdowns, and platform/geography filters do not affect client-environment cubes. The UI must show these scope boundaries whenever such a partial filter is active.
+- Data-quality failures show expected vs actual values, and feedback status changes require explicit confirmation.
 
 ## Production cutover and V1 retirement
 

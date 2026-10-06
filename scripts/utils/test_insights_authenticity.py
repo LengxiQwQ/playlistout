@@ -92,6 +92,18 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertNotIn("fbToken", HTML)
         self.assertIn("Token 不进入浏览器", HTML)
 
+    def test_dashboard_has_no_third_party_browser_script(self):
+        self.assertNotIn("cdn.jsdelivr.net", HTML)
+        self.assertNotIn("<script src=", HTML)
+        self.assertIn("hourlyTimeseries", HTML)
+
+    def test_dashboard_sets_local_security_headers(self):
+        source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
+        self.assertIn("Content-Security-Policy", source)
+        self.assertIn("connect-src 'self'", source)
+        self.assertIn("X-Frame-Options", source)
+        self.assertIn("Permissions-Policy", source)
+
     def test_dashboard_uses_loopback_proxy_and_v2_endpoint(self):
         source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
         self.assertIn("ThreadingHTTPServer", source)
@@ -117,10 +129,18 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             "7天",
             "30天",
             "Data Quality",
+            "请求目标平台",
+            "Client IDs",
+            "Common Latency",
         ]:
             self.assertIn(text, HTML)
         self.assertNotIn("Hide MY", HTML)
         self.assertNotIn("隐藏马来西亚", HTML)
+
+    def test_dashboard_explains_filter_scope_boundaries(self):
+        self.assertIn("Platform / Country / Region 不会作用于环境数据", HTML)
+        self.assertIn("Failure Code、Stage、Latency", HTML)
+        self.assertIn("不代表用户或设备身份", HTML)
 
     def test_dashboard_does_not_hardcode_incident_story(self):
         for stale_story in ["成都", "南京", "上海批量抓取", "2026-10-02"]:

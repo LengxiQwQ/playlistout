@@ -190,6 +190,7 @@ export async function getAnalyticsV2(
       generatedAt: new Date().toISOString(),
       overview: {},
       timeseries: [],
+      hourlyTimeseries: [],
       breakdowns: {},
       geo: { countries: [], regions: [] },
       availableFilters: { channels: [], clients: [], platforms: [], countries: [], regions: [] },
@@ -235,6 +236,29 @@ export async function getAnalyticsV2(
   for (const row of timeseriesRows.results || []) {
     if (!dayMap.has(row.date)) dayMap.set(row.date, { date: row.date });
     dayMap.get(row.date)![row.metric] = Number(row.count || 0);
+  }
+
+  let hourlyTimeseries: Array<Record<string, number | string>> = [];
+  if (!geoActive && filters.from === filters.to) {
+    const hourlyWhere = buildWhere(filters);
+    const hourlyRows = await bindAll(
+      db.prepare(`
+        SELECT hour, metric, SUM(count) AS count
+        FROM analytics_v2_hourly_core
+        WHERE ${hourlyWhere.sql}
+        GROUP BY hour, metric
+        ORDER BY hour ASC
+      `),
+      hourlyWhere.binds,
+    ).all<{ hour: number; metric: string; count: number }>();
+
+    const hourMap = new Map<number, Record<string, number | string>>();
+    for (const row of hourlyRows.results || []) {
+      const hour = Number(row.hour);
+      if (!hourMap.has(hour)) hourMap.set(hour, { date: filters.from, hour });
+      hourMap.get(hour)![row.metric] = Number(row.count || 0);
+    }
+    hourlyTimeseries = Array.from(hourMap.values());
   }
 
   const breakdowns: Record<string, CountRow[]> = {};
@@ -405,6 +429,7 @@ export async function getAnalyticsV2(
       active_clients: (clients.results || []).filter((r) => Number(r.count || 0) > 0).length,
     },
     timeseries: Array.from(dayMap.values()),
+    hourlyTimeseries,
     breakdowns,
     environment: {
       devices: envAggregate('device_class'),
