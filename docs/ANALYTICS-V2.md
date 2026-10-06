@@ -119,31 +119,32 @@ The V2 response includes health checks for:
 A failed invariant is surfaced as a dashboard data-integrity warning.
 
 
-## Production cutover and legacy freeze
+## Production cutover and V1 retirement
 
-Analytics V2 becomes the authoritative production write path through migration `0012_analytics_v2_cutover.sql`.
+Analytics V2 is the only production analytics backend.
 
-The cutover is continuity-safe:
+The migration sequence is deliberately staged:
 
-1. Migration 0012 captures a V1/V2 baseline for every public counter exposed by `/api/stats`.
-2. While the pre-cutover Worker is still dual-writing, deployment runs `finalize-analytics-v2-cutover.js`.
-3. The finalizer compares V1 and V2 **deltas since the baseline**. Any mismatch fails closed and blocks deployment.
-4. On success, the finalizer refreshes the baseline to the last verified pre-cutover values and marks the cutover state `frozen`.
-5. The new Worker writes Analytics V2 only. Legacy analytics tables remain read-only for historical trend compatibility, rollback, and forensic inspection.
+1. `0011_analytics_v2.sql` created the canonical V2 aggregate cubes and deterministically rebuilt historical data.
+2. `0012_analytics_v2_cutover.sql` captured public-counter continuity baselines.
+3. Deployment reconciled live V1/V2 deltas and froze the cutover.
+4. `0013_freeze_analytics_v1_archive.sql` captured exact fingerprints of the seven V1 fact tables.
+5. `0014_prepare_analytics_v1_retirement.sql` re-verified those fingerprints, formalized the security quarantine schema, and materialized the remaining public-history dependency into `analytics_v2_public_history` without destructive changes.
+6. After the V2-only Worker was deployed and production-reconciled, `0015_retire_analytics_v1.sql` re-verified the archive and permanently dropped the seven V1 fact tables.
 
-Public lifetime counters use the following bridge:
+Public lifetime counters continue to use the continuity bridge:
 
 ```
 public_total = legacy_total_at_cutover + (v2_total_now - v2_total_at_cutover)
 ```
 
-This preserves exact visible historical totals without pretending that old MusicFree/Web/API attribution can be reconstructed.
+For the cutover UTC day, the same bridge is applied to daily counters. Dates before the cutover are served from the compact immutable `analytics_v2_public_history` table. Dates after the cutover are served directly from V2.
 
-For the cutover UTC day, the same bridge is applied to daily counters. Later UTC days are read directly from V2. Earlier trend days remain sourced from the immutable V1 archive.
+The historical `analytics_v1_archive_manifest` is retained only as compact audit metadata. Recovery of the physically retired V1 tables is through D1 Time Travel / external backup, not through runtime code.
 
-### Legacy table policy after cutover
+### Retired V1 fact tables
 
-The following tables are retained but are no longer production write targets:
+These tables no longer exist in the current production schema:
 
 - `aggregate_stats`
 - `hourly_stats`
@@ -153,37 +154,32 @@ The following tables are retained but are no longer production write targets:
 - `daily_export_stats`
 - `daily_clipboard_stats`
 
-`daily_visitor_hashes` remains an intentionally short-lived deduplication helper for daily unique visitors. It is not an analytics history table and continues to be pruned.
+`daily_visitor_hashes` remains an intentionally short-lived daily-UV deduplication helper and is still pruned. Security quarantine, feedback, and durable rate-limit tables also remain active because they are not V1 product analytics fact tables.
 
-The old `/api/internal/stats` endpoint is compatibility-only after cutover. Dashboard V3 uses `/api/internal/analytics/v2`.
+### Permanent deployment gates
 
-## Post-cutover hardening
+Every Worker deployment now verifies:
 
-Migration `0013_freeze_analytics_v1_archive.sql` captures a compact manifest for the seven V1 analytics fact tables that must remain immutable after cutover:
+- migration-file integrity and exact migration history
+- production D1 identity
+- current post-retirement schema
+- Analytics V2 resolver/export/clipboard invariants
+- Analytics V1 is fully retired (the seven tables must be absent)
+- compact public-history metadata is consistent
+- the deployed public `/api/stats` response matches the production D1 continuity bridge under concurrent traffic
 
-- row count
-- sum of the aggregate `count` column
-- minimum stored date
-- maximum stored date
+A failure in any of these checks blocks deployment.
 
-Every production Worker deployment runs `verify-analytics-v1-frozen.js`. Any mutation of the frozen V1 archive blocks deployment.
+## Current maintainer surface
 
-After the Worker is deployed, `verify-production-public-stats.js` performs an end-to-end production reconciliation:
+The only maintainer analytics endpoint is:
 
-1. read public `/api/stats`
-2. independently calculate the expected continuity-bridged counters from production D1
-3. read public `/api/stats` again
-4. require the D1 expectation to fall inside the monotonic interval formed by the two API reads
+`GET /api/internal/analytics/v2`
 
-The bracketed check tolerates legitimate concurrent production traffic while still detecting stale legacy reads, broken bridge calculations, or a deployed Worker serving counters inconsistent with D1.
+The former `GET /api/internal/stats` compatibility endpoint has been removed. Dashboard V3 exclusively consumes Analytics V2 through the localhost proxy, and the admin token never enters browser HTML/JavaScript.
 
-### Remaining cleanup policy
+## Completion status
 
-No correctness-critical Analytics V2 work remains after these gates pass in production.
+Analytics V2 + Dashboard V3 is **complete and closed** as an engineering migration.
 
-The remaining legacy cleanup is intentionally deferred and non-destructive:
-
-- keep `/api/internal/stats` temporarily as a compatibility endpoint
-- keep legacy recorder/reader code long enough to preserve rollback and forensic value
-- do not drop V1 tables during the immediate post-cutover period
-- remove compatibility code/tables only in a later explicit cleanup milestone after a stable production observation window and a fresh backup/Time Travel recovery point
+There is no remaining V1 runtime reader, writer, private endpoint, fact table, or maintenance script. Future analytics changes should be ordinary V2 feature/maintenance work and must not reintroduce the retired TOTAL/all architecture.
