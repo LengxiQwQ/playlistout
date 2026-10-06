@@ -206,7 +206,7 @@ export async function fetchQishuiPlaylist(
       awemeCursor = nextCursor;
     }
 
-    const tracks: Track[] = allAwemeItems.map((item, idx) => normalizeAwemeMusicTrack(item, idx));
+    const tracks: Track[] = allAwemeItems.map((item, idx) => normalizeAwemeMusicTrack(item, idx + 1));
     const normalized = normalizeQishuiPlaylist(playlistMeta, tracks);
     return {
       ...normalized,
@@ -268,7 +268,7 @@ export async function fetchQishuiPlaylist(
     nextCursor = nextData.next_cursor !== undefined && nextData.next_cursor !== null ? String(nextData.next_cursor) : '';
   }
 
-  const tracks: Track[] = allMediaResources.map((m, idx) => normalizeQishuiTrack(m, idx));
+  const tracks: Track[] = allMediaResources.map((m, idx) => normalizeQishuiTrack(m, idx + 1));
   const normalized = normalizeQishuiPlaylist(playlistMeta, tracks);
   return {
     ...normalized,

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { qqMusicProvider } from '../src/providers/qqmusic';
 import { neteaseProvider } from '../src/providers/netease';
 import { kugouProvider } from '../src/providers/kugou';
+import { qishuiProvider } from '../src/providers/qishui';
 
 // Real-source validation timeout is set to 30s per test to allow real network round-trips
 describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, () => {
@@ -235,5 +236,28 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     expect(session.qrcode.length).toBeGreaterThan(10);
     expect(session.loginUrl).toContain('kugou.com');
     expect(session.expiresAt).toBeGreaterThan(Date.now());
+  });
+});
+
+
+describe('Real Public Qishui Playlist Live Validation', { timeout: 60000 }, () => {
+  it('validates public Qishui playlist via stable playlist_id URL', async () => {
+    const playlist = await qishuiProvider.parse(
+      'https://www.qishui.com/share/playlist?playlist_id=7087507348697186339',
+    );
+
+    expect(playlist.platform).toBe('qishui');
+    expect(playlist.id).toBe('7087507348697186339');
+    expect(playlist.name).toBeTruthy();
+    expect(playlist.trackCount).toBeGreaterThan(0);
+    expect(playlist.tracks.length).toBe(playlist.trackCount);
+    expect(playlist.channel).toBe('qishui');
+    expect(playlist.availableChannels).toContain('qishui');
+
+    playlist.tracks.slice(0, 20).forEach((track, i) => {
+      expect(track.index).toBe(i + 1);
+      expect(track.title.length).toBeGreaterThan(0);
+      expect(Array.isArray(track.artists)).toBe(true);
+    });
   });
 });

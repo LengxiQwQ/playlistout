@@ -12,6 +12,11 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 - **Dashboard V3 maintenance surface**: the localhost-only maintainer dashboard now consumes Analytics V2, exposes honest filter-scope boundaries, uses hourly trends for single-day non-geographic views, and shows explicit data-integrity state.
 - **Release/runtime consistency**: v2.2.0 runtime version reporting is centralized, package/workspace versions are aligned, and post-release dependency/toolchain maintenance has been validated through CI and production deployment gates.
 - **Repository governance**: the project constitution and roadmap now describe the real four-provider v2.2.x production baseline instead of the historical QQ-only MVP state. Remote CI also runs repository policy checks that previously existed only in the local pre-push gate.
+- **Live acceptance**: Provider live acceptance now covers all four production providers (QQ Music, NetEase Cloud Music, KuGou Music, and Qishui Music) plus a deployed Public API smoke test for health, CORS, normalized playlist structure, and KuGou preview semantics.
+
+### Fixed / 修复
+
+- **Qishui track ordering**: Qishui and Douyin-channel playlist tracks now follow PlaylistOut's shared 1-based `Track.index` contract instead of exposing a 0-based first track through the provider and production Public API.
 
 ### Security / 安全
 
