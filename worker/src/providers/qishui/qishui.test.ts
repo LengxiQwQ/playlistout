@@ -393,8 +393,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       },
     };
 
-    const track = normalizeAwemeMusicTrack(raw, 3);
-    expect(track.index).toBe(2);
+    const track = normalizeAwemeMusicTrack(raw, 1);
+    expect(track.index).toBe(1);
     expect(track.id).toBe('7657409429382204211');
     expect(track.title).toBe('@雷姆必拓牢实人创作的原声');
     expect(track.artists).toEqual(['雷姆必拓牢实人']);
@@ -415,8 +415,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       status: 1,
     };
 
-    const track = normalizeAwemeMusicTrack(raw, 1);
-    expect(track.index).toBe(1);
+    const track = normalizeAwemeMusicTrack(raw, 2);
+    expect(track.index).toBe(2);
     expect(track.title).toBe("If I Ain't Got You（剪辑版）");
     expect(track.artists).toEqual(['多喝热水']);
     expect(track.isOriginalSound).toBe(false);
@@ -437,13 +437,14 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       },
     };
 
-    const track = normalizeAwemeMusicTrack(raw, 2);
+    const track = normalizeAwemeMusicTrack(raw, 3);
+    expect(track.index).toBe(3);
     expect(track.title).toBe('真实的歌曲名字');
     expect(track.artists).toEqual(['真实歌手']);
   });
 
   it('throws PARSE_ERROR when Aweme music item is null or non-object', () => {
-    expect(() => normalizeAwemeMusicTrack(null as any, 0)).toThrowError(ProviderError);
+    expect(() => normalizeAwemeMusicTrack(null as any, 1)).toThrowError(ProviderError);
   });
 
   it('successfully fetches and normalizes the full 792-song live playlist with UGC videos', async () => {
@@ -452,12 +453,14 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(playlist.creator).toBe('戒烟求生');
     expect(playlist.tracks.length).toBe(792);
 
-    // Verify track 0 (regular audio)
+    // Verify first track (regular audio) uses the shared 1-based index contract.
+    expect(playlist.tracks[0].index).toBe(1);
     expect(playlist.tracks[0].title).toBeDefined();
     expect(playlist.tracks[0].artists.length).toBeGreaterThan(0);
 
-    // Verify track 12 (UGC video item)
+    // Array offset 12 is the 13th PlaylistOut track.
     const videoTrack = playlist.tracks[12];
+    expect(videoTrack.index).toBe(13);
     expect(videoTrack.id).toBe('7324660489924005174');
     expect(videoTrack.artists).toEqual(['天籁音曲']);
     expect(videoTrack.statusText).toBe('视频');
@@ -487,6 +490,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(genericSoundTitles.length).toBe(0);
     expect(playlist.channel).toBe('qishui');
     expect(playlist.availableChannels).toEqual(['qishui', 'douyin']);
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[playlist.tracks.length - 1].index).toBe(playlist.tracks.length);
   }, 40000);
 
   it('successfully extracts Douyin full collection channel when channel=douyin is requested', async () => {
@@ -496,6 +501,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(playlist.channel).toBe('douyin');
     expect(playlist.availableChannels).toEqual(['qishui', 'douyin']);
     expect(playlist.tracks.length).toBeGreaterThanOrEqual(150);
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[playlist.tracks.length - 1].index).toBe(playlist.tracks.length);
 
     // Verify presence of original sounds and normalized titles
     const originalSounds = playlist.tracks.filter((t) => t.isOriginalSound);
