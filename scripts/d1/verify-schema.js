@@ -20,16 +20,10 @@ const __filename = fileURLToPath(import.meta.url);
 export { executeD1Query, validateMigrationHistory };
 
 export const REQUIRED_TABLES = [
-  'aggregate_stats',
-  'daily_export_stats',
-  'hourly_stats',
-  'daily_geo_stats',
-  'daily_client_stats',
-  'daily_performance_stats',
-  'daily_clipboard_stats',
   'daily_visitor_hashes',
   'security_rate_limits',
   'quarantined_stats',
+  'parse_feedback',
   'analytics_v2_daily_core',
   'analytics_v2_hourly_core',
   'analytics_v2_geo',
@@ -37,23 +31,17 @@ export const REQUIRED_TABLES = [
   'analytics_v2_client_env',
   'analytics_v2_public_baseline',
   'analytics_v2_cutover_state',
-  'analytics_v1_archive_manifest',
   'analytics_v2_public_history',
+  'analytics_v1_archive_manifest',
   'analytics_v1_cleanup_state',
   'd1_migrations',
 ];
 
 export const REQUIRED_COLUMNS = {
-  aggregate_stats: ['date', 'platform', 'metric', 'count'],
-  daily_export_stats: ['date', 'platform', 'export_format', 'country', 'region', 'city', 'count'],
-  hourly_stats: ['date', 'hour', 'platform', 'metric', 'count'],
-  daily_geo_stats: ['date', 'platform', 'country', 'region', 'city', 'count'],
-  daily_client_stats: ['date', 'platform', 'device_class', 'browser_family', 'os_family', 'count'],
-  daily_performance_stats: ['date', 'platform', 'dimension', 'value', 'count'],
-  daily_clipboard_stats: ['date', 'platform', 'clipboard_mode', 'country', 'region', 'city', 'count'],
   daily_visitor_hashes: ['date', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
   quarantined_stats: ['id', 'incident_date', 'batch_id', 'reason', 'source_table', 'platform', 'metric_or_dimension', 'count', 'details_json'],
+  parse_feedback: ['id', 'url', 'error_code', 'platform', 'status', 'report_count', 'first_reported_at', 'last_reported_at', 'resolved_at'],
   analytics_v2_daily_core: ['date', 'channel', 'client_id', 'platform', 'metric', 'count'],
   analytics_v2_hourly_core: ['date', 'hour', 'channel', 'client_id', 'platform', 'metric', 'count'],
   analytics_v2_geo: ['date', 'channel', 'client_id', 'platform', 'country', 'region', 'metric', 'count'],
@@ -61,23 +49,13 @@ export const REQUIRED_COLUMNS = {
   analytics_v2_client_env: ['date', 'channel', 'client_id', 'device_class', 'browser_family', 'os_family', 'count'],
   analytics_v2_public_baseline: ['key', 'baseline_date', 'legacy_total', 'v2_total', 'legacy_day', 'v2_day'],
   analytics_v2_cutover_state: ['id', 'status', 'baseline_date', 'prepared_at', 'frozen_at'],
-  analytics_v1_archive_manifest: ['table_name', 'captured_at', 'row_count', 'count_sum', 'min_date', 'max_date'],
   analytics_v2_public_history: ['date', 'parses', 'tracks', 'exports'],
+  analytics_v1_archive_manifest: ['table_name', 'captured_at', 'row_count', 'count_sum', 'min_date', 'max_date'],
   analytics_v1_cleanup_state: ['id', 'status', 'prepared_at', 'retired_at', 'archived_table_count', 'public_history_rows'],
   d1_migrations: ['id', 'name', 'applied_at'],
 };
 
 export const REQUIRED_INDEXES = [
-  'idx_stats_date_platform',
-  'idx_export_stats_date',
-  'idx_export_stats_country',
-  'idx_hourly_stats_date',
-  'idx_geo_stats_date',
-  'idx_geo_stats_country',
-  'idx_client_stats_date',
-  'idx_perf_stats_date',
-  'idx_clipboard_stats_date',
-  'idx_clipboard_stats_country',
   'idx_visitor_hashes_date',
   'idx_security_rate_limits_reset_at',
   'idx_quarantined_date',
@@ -104,6 +82,20 @@ export async function verifyD1Schema(options = {}) {
   const missingTables = REQUIRED_TABLES.filter((t) => !existingTables.has(t));
   if (missingTables.length > 0) {
     throw new Error(`Missing required tables: ${missingTables.join(', ')}`);
+  }
+
+  const retiredV1Tables = [
+    'aggregate_stats',
+    'hourly_stats',
+    'daily_geo_stats',
+    'daily_client_stats',
+    'daily_performance_stats',
+    'daily_export_stats',
+    'daily_clipboard_stats',
+  ];
+  const reappearedV1 = retiredV1Tables.filter((t) => existingTables.has(t));
+  if (reappearedV1.length > 0) {
+    throw new Error(`Retired Analytics V1 tables must be absent: ${reappearedV1.join(', ')}`);
   }
 
   // 2. Verify columns for each critical table
