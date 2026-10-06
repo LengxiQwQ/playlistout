@@ -2,7 +2,7 @@ import { getCorsHeaders, handleOptions } from './cors';
 import { type ApiResponse, type Playlist, type UserPlaylistsData, type ResolveData, ProviderError } from './models/playlist';
 import { createKugouQrCode, checkKugouQrCode, fetchKugouUserPlaylists, fetchKugouUserProfile } from './providers/kugou';
 import { getPublicStats } from './stats';
-import { getAnalyticsV2, parseAnalyticsV2Filters } from './stats/v2';
+import { getAnalyticsV2, getAnalyticsV2Snapshot, parseAnalyticsV2Filters } from './stats/v2';
 import { recordRateLimitEventV2 } from './analytics/v2-recorder';
 import type { PublicStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
@@ -820,8 +820,11 @@ export default {
       });
     }
 
-    // ── Analytics V2 Maintainer API (GET /api/internal/analytics/v2) ──
-    if (url.pathname === '/api/internal/analytics/v2') {
+    // ── Analytics V2 Maintainer API ──
+    if (
+      url.pathname === '/api/internal/analytics/v2' ||
+      url.pathname === '/api/internal/analytics/v2/snapshot'
+    ) {
       if (request.method !== 'GET') {
         return new Response(
           JSON.stringify({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' } }),
@@ -862,6 +865,67 @@ export default {
           JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Missing or invalid maintainer authorization token.' } }),
           {
             status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      if (url.pathname === '/api/internal/analytics/v2/snapshot') {
+        const analytics = await getAnalyticsV2Snapshot(_env.DB);
+
+        let quarantine: unknown[] = [];
+        let feedback: unknown[] = [];
+        if (_env.DB) {
+          const [quarantineResult, feedbackResult] = await Promise.all([
+            (async () => {
+              try {
+                const table = await _env.DB!.prepare(
+                  "SELECT name FROM sqlite_master WHERE type='table' AND name='quarantined_stats';",
+                ).first();
+                if (!table) return [];
+                const rows = await _env.DB!.prepare(
+                  'SELECT * FROM quarantined_stats ORDER BY incident_date DESC, id DESC',
+                ).all();
+                return rows.results || [];
+              } catch {
+                return [];
+              }
+            })(),
+            (async () => {
+              try {
+                const table = await _env.DB!.prepare(
+                  "SELECT name FROM sqlite_master WHERE type='table' AND name='parse_feedback';",
+                ).first();
+                if (!table) return [];
+                const rows = await _env.DB!.prepare(
+                  'SELECT * FROM parse_feedback ORDER BY last_reported_at DESC, id DESC',
+                ).all();
+                return rows.results || [];
+              } catch {
+                return [];
+              }
+            })(),
+          ]);
+          quarantine = quarantineResult;
+          feedback = feedbackResult;
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              ...analytics,
+              quarantine,
+              feedback,
+            },
+          }),
+          {
+            status: 200,
             headers: {
               'Content-Type': 'application/json',
               'Cache-Control': 'no-store, no-cache, must-revalidate',

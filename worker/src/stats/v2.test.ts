@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAnalyticsV2, type AnalyticsV2Filters } from './v2';
+import { getAnalyticsV2, getAnalyticsV2Snapshot, type AnalyticsV2Filters } from './v2';
 
 function createDb(seenSql: string[] = []): D1Database {
   return {
@@ -77,6 +77,28 @@ describe('Analytics V2 maintainer timeseries', () => {
       to: '2026-10-06',
     });
     expect(result.hourlyTimeseries).toEqual([]);
+  });
+
+  it('exports every aggregate cube through one snapshot read', async () => {
+    const seenSql: string[] = [];
+    const snapshot = await getAnalyticsV2Snapshot(createDb(seenSql));
+
+    expect(snapshot.version).toBe(2);
+    expect(snapshot.dailyCore).toEqual([]);
+    expect(snapshot.hourlyCore).toEqual([]);
+    expect(snapshot.breakdowns).toEqual([]);
+    expect(snapshot.geo).toEqual([]);
+    expect(snapshot.clientEnv).toEqual([]);
+
+    for (const table of [
+      'analytics_v2_daily_core',
+      'analytics_v2_hourly_core',
+      'analytics_v2_breakdown',
+      'analytics_v2_geo',
+      'analytics_v2_client_env',
+    ]) {
+      expect(seenSql.filter((sql) => sql.includes(`FROM ${table}`))).toHaveLength(1);
+    }
   });
 
   it('queries all breakdown dimensions in one grouped statement', async () => {

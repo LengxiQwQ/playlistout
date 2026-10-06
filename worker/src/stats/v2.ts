@@ -186,6 +186,70 @@ async function queryBreakdowns(
   return breakdowns;
 }
 
+export interface AnalyticsV2Snapshot {
+  version: 2;
+  generatedAt: string;
+  dailyCore: Array<Record<string, unknown>>;
+  hourlyCore: Array<Record<string, unknown>>;
+  breakdowns: Array<Record<string, unknown>>;
+  geo: Array<Record<string, unknown>>;
+  clientEnv: Array<Record<string, unknown>>;
+}
+
+export async function getAnalyticsV2Snapshot(
+  db: D1Database | undefined,
+): Promise<AnalyticsV2Snapshot> {
+  if (!db) {
+    return {
+      version: 2,
+      generatedAt: new Date().toISOString(),
+      dailyCore: [],
+      hourlyCore: [],
+      breakdowns: [],
+      geo: [],
+      clientEnv: [],
+    };
+  }
+
+  const [dailyCore, hourlyCore, breakdowns, geo, clientEnv] = await Promise.all([
+    db.prepare(`
+      SELECT date, channel, client_id, platform, metric, count
+      FROM analytics_v2_daily_core
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, hour, channel, client_id, platform, metric, count
+      FROM analytics_v2_hourly_core
+      ORDER BY date ASC, hour ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, platform, dimension, value, count
+      FROM analytics_v2_breakdown
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, platform, country, region, metric, count
+      FROM analytics_v2_geo
+      ORDER BY date ASC
+    `).all(),
+    db.prepare(`
+      SELECT date, channel, client_id, device_class, browser_family, os_family, count
+      FROM analytics_v2_client_env
+      ORDER BY date ASC
+    `).all(),
+  ]);
+
+  return {
+    version: 2,
+    generatedAt: new Date().toISOString(),
+    dailyCore: (dailyCore.results || []) as Array<Record<string, unknown>>,
+    hourlyCore: (hourlyCore.results || []) as Array<Record<string, unknown>>,
+    breakdowns: (breakdowns.results || []) as Array<Record<string, unknown>>,
+    geo: (geo.results || []) as Array<Record<string, unknown>>,
+    clientEnv: (clientEnv.results || []) as Array<Record<string, unknown>>,
+  };
+}
+
 export async function getAnalyticsV2(
   db: D1Database | undefined,
   filters: AnalyticsV2Filters,
