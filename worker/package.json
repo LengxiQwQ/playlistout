@@ -12,6 +12,7 @@
     "test": "vitest run src/",
     "test:d1": "vitest run test/d1-migration-safety.test.ts",
     "test:live": "vitest run test/real-validation.test.ts",
+    "test:production:live": "vitest run test/production-api-live.test.ts",
     "test:live:authenticated": "vitest run test/authenticated-kugou-live.test.ts",
     "test:all": "vitest run"
   },
