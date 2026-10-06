@@ -70,7 +70,7 @@ describe('PlaylistOut Public API v1', () => {
       const body: any = await response.json();
       expect(body.status).toBe('ok');
       expect(body.service).toBe('playlistout-api');
-      expect(body.version).toBe('2.0.0');
+      expect(body.version).toBe('2.2.0');
     });
 
     it('rejects POST with 405 Method Not Allowed', async () => {
