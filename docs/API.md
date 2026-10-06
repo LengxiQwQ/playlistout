@@ -413,7 +413,7 @@ GET /api/v1/health
 {
   "status": "ok",
   "service": "playlistout-api",
-  "version": "2.0.0"
+  "version": "2.2.0"
 }
 ```
 
