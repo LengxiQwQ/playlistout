@@ -35,35 +35,94 @@ CREATE TABLE _v1_prepare_guard (
   ok INTEGER NOT NULL CHECK (ok = 1)
 );
 
+-- Cutover must already be frozen (or the verified zero-volume fresh DB case above).
+INSERT INTO _v1_prepare_guard (ok)
+VALUES (
+  CASE WHEN COALESCE((
+    SELECT CASE WHEN status='frozen' AND frozen_at IS NOT NULL THEN 1 ELSE 0 END
+    FROM analytics_v2_cutover_state
+    WHERE id=1
+  ), 0) = 1 THEN 1 ELSE 0 END
+);
+
+-- Re-verify all seven V1 fact tables independently against migration 0013.
+-- Separate checks avoid Cloudflare D1 compound-SELECT limits.
 INSERT INTO _v1_prepare_guard (ok)
 SELECT CASE WHEN
-  COALESCE((SELECT status='frozen' AND frozen_at IS NOT NULL
-            FROM analytics_v2_cutover_state WHERE id=1), 0)
-  AND (SELECT COUNT(*) FROM analytics_v1_archive_manifest) = 7
-  AND NOT EXISTS (
-    SELECT 1
-    FROM analytics_v1_archive_manifest m
-    JOIN (
-      SELECT 'aggregate_stats' AS table_name, COUNT(*) row_count, COALESCE(SUM(count),0) count_sum, MIN(date) min_date, MAX(date) max_date FROM aggregate_stats
-      UNION ALL
-      SELECT 'hourly_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM hourly_stats
-      UNION ALL
-      SELECT 'daily_geo_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM daily_geo_stats
-      UNION ALL
-      SELECT 'daily_client_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM daily_client_stats
-      UNION ALL
-      SELECT 'daily_performance_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM daily_performance_stats
-      UNION ALL
-      SELECT 'daily_export_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM daily_export_stats
-      UNION ALL
-      SELECT 'daily_clipboard_stats', COUNT(*), COALESCE(SUM(count),0), MIN(date), MAX(date) FROM daily_clipboard_stats
-    ) c ON c.table_name=m.table_name
-    WHERE c.row_count != m.row_count
-       OR c.count_sum != m.count_sum
-       OR COALESCE(c.min_date,'') != COALESCE(m.min_date,'')
-       OR COALESCE(c.max_date,'') != COALESCE(m.max_date,'')
-  )
-THEN 1 ELSE 0 END;
+  m.row_count = (SELECT COUNT(*) FROM aggregate_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM aggregate_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM aggregate_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM aggregate_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='aggregate_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM hourly_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM hourly_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM hourly_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM hourly_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='hourly_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM daily_geo_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM daily_geo_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM daily_geo_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM daily_geo_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='daily_geo_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM daily_client_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM daily_client_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM daily_client_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM daily_client_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='daily_client_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM daily_performance_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM daily_performance_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM daily_performance_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM daily_performance_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='daily_performance_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM daily_export_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM daily_export_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM daily_export_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM daily_export_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='daily_export_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+SELECT CASE WHEN
+  m.row_count = (SELECT COUNT(*) FROM daily_clipboard_stats)
+  AND m.count_sum = (SELECT COALESCE(SUM(count),0) FROM daily_clipboard_stats)
+  AND COALESCE(m.min_date,'') = COALESCE((SELECT MIN(date) FROM daily_clipboard_stats),'')
+  AND COALESCE(m.max_date,'') = COALESCE((SELECT MAX(date) FROM daily_clipboard_stats),'')
+THEN 1 ELSE 0 END
+FROM analytics_v1_archive_manifest m
+WHERE m.table_name='daily_clipboard_stats';
+
+INSERT INTO _v1_prepare_guard (ok)
+VALUES (
+  CASE WHEN (SELECT COUNT(*) FROM analytics_v1_archive_manifest)=7
+         AND (SELECT COUNT(*) FROM _v1_prepare_guard)=8
+       THEN 1 ELSE 0 END
+);
 
 CREATE TABLE IF NOT EXISTS analytics_v2_public_history (
   date TEXT PRIMARY KEY,
