@@ -37,7 +37,7 @@ export const zhCN: Translations = {
   hero: {
     tagline: '粘贴 · 解析 · 导出',
     pasteDoodle: '♪ 粘贴 · 解析 · 导出',
-    noLoginDoodle: '免登录 · 干净清爽 :)',
+    noLoginDoodle: '无需注册 · 干净清爽 :)',
     subtitle: '一本把你喜爱的歌单轻松带走的数字音乐手账。',
     titlePrefix: '把你的 ',
     titleHighlight: '歌单带走',
@@ -257,7 +257,7 @@ export const zhCN: Translations = {
     viewDataNotice: '查看数据说明',
     closeLabel: '关闭隐私说明',
     section1Title: '1. 仅限公开歌单',
-    section1Content: 'Playlist Out（把你的歌单带走）支持解析公开网页可访问的 QQ 音乐、网易云音乐与酷狗音乐歌单（支持免登录公开预览及酷狗 App 扫码安全授权解锁）。我们无法、也不会尝试获取或解析任何私密歌单、仅自己可见或未授权的受限内容。',
+    section1Content: 'Playlist Out（把你的歌单带走）支持解析公开网页可访问的 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐歌单（酷狗支持免登录公开预览及 App 扫码安全授权解锁完整歌单）。我们无法、也不会尝试获取或解析任何私密歌单、仅自己可见或未授权的受限内容。',
     section2Title: '2. 零数据持久化存储',
     section2Content: '服务端（Cloudflare Worker）采用纯无状态设计。处理完成后即时返回结果，绝不在服务器持久化存储您提交的歌单链接、歌单 ID、歌曲列表、歌曲标题、歌手、专辑等任何歌单内容。',
     section3Title: '3. 浏览器本地安全导出',
