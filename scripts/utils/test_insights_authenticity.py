@@ -278,6 +278,18 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertIn("CACHE_MS=15000", HTML)
         self.assertIn("不重复请求 Worker", HTML)
 
+    def test_dashboard_selector_helpers_are_distinct_and_valid(self):
+        self.assertIn(
+            'const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));',
+            HTML,
+        )
+        self.assertNotIn(
+            'const $=s=>document.querySelector(s),$=s=>Array.from(document.querySelectorAll(s));',
+            HTML,
+        )
+        self.assertIn('$$(".tab").forEach', HTML)
+        self.assertIn('$$(".range button").forEach', HTML)
+
     def test_dashboard_dynamic_selects_use_id_selectors(self):
         self.assertIn('let s=$("#"+id);if(!s)return', HTML)
         self.assertNotIn("let s=$(id),old=s.value", HTML)
