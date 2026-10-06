@@ -6,6 +6,16 @@ import {
   type AnalyticsClientId,
   type AnalyticsPlatformV2,
 } from '../analytics/context';
+import { REGISTERED_PLUGIN_IDS } from '../analytics/generated/registered-plugins';
+
+/**
+ * Filter allow-list: fixed non-plugin IDs plus every registered plugin ID.
+ * Derived rather than hand-maintained, so adding a plugin needs no edit here.
+ */
+const ALL_CLIENT_IDS: readonly string[] = [
+  ...ANALYTICS_CLIENT_IDS,
+  ...REGISTERED_PLUGIN_IDS,
+];
 
 export interface AnalyticsV2Filters {
   from: string;
@@ -103,7 +113,7 @@ export function parseAnalyticsV2Filters(url: URL): AnalyticsV2Filters {
     channel: (ANALYTICS_CHANNELS as readonly string[]).includes(rawChannel || '')
       ? (rawChannel as AnalyticsChannel)
       : undefined,
-    client: (ANALYTICS_CLIENT_IDS as readonly string[]).includes(rawClient || '')
+    client: ALL_CLIENT_IDS.includes(rawClient || '')
       ? (rawClient as AnalyticsClientId)
       : undefined,
     platform: (ANALYTICS_PLATFORMS_V2 as readonly string[]).includes(rawPlatform || '')

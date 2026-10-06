@@ -54,12 +54,28 @@ function classifyDevice(ua: string): DeviceClass {
 }
 
 /**
+ * Recognizes first-party player plugin runtimes: PlaylistOut-<PlayerId>/<version>.
+ * Returns the stable browser-family token `plugin:<player-id>`, or null.
+ * Identity itself comes from the attribution headers/channel, not from this token.
+ */
+export function parsePluginBrowserFamily(rawUA: string | null): string | null {
+  if (!rawUA) return null;
+  const match = rawUA.match(/^\s*PlaylistOut-([a-z0-9]+(?:-[a-z0-9]+)*)\//i);
+  return match ? `plugin:${match[1].toLowerCase()}` : null;
+}
+
+/**
  * Classifies the browser family with comprehensive domestic/global detection
  * and dynamic fallback for unlisted browsers.
  */
 export function classifyBrowser(rawUA: string): BrowserFamily {
   const ua = rawUA.trim();
   if (!ua) return 'other';
+
+  // 0. First-party player plugin runtimes win over generic discovery so their
+  // browser-family token is stable across versions (e.g. plugin:musicfree).
+  const pluginFamily = parsePluginBrowserFamily(ua);
+  if (pluginFamily) return pluginFamily as BrowserFamily;
 
   // 1. Bots, crawlers, and automated tools
   if (

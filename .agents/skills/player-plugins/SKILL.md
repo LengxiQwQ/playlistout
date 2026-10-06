@@ -48,7 +48,27 @@ Do **not** edit `PluginEcosystem.tsx` for each new available player. The root bu
 
 Only integrations that are still proposed/planned belong in the static roadmap list in `web/src/data/integrations.ts`.
 
-## 3. Commands
+## 3. Analytics attribution
+
+Every plugin identifies itself on PlaylistOut API requests. Registration is
+automatic: the publisher generates `worker/src/analytics/generated/registered-plugins.ts`
+from discovered plugin manifests, so do not hand-edit Worker plugin constants.
+
+Send on each PlaylistOut API request, injected at one centralized HTTP helper:
+
+```
+X-PlaylistOut-Client-Type: plugin
+X-PlaylistOut-Client-Id: <player-id>            # equals plugin.config.json#id
+X-PlaylistOut-Client-Version: <plugin version>
+X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
+User-Agent: PlaylistOut-<PlayerId>/<plugin version>
+```
+
+Identity is analytics-only: it never changes rate limits, and URL parameters are
+not used. Commit the regenerated registry after `npm run build:plugins`; the gate
+fails if it is stale.
+
+## 4. Commands
 
 ```bash
 npm run build:plugins
@@ -61,7 +81,7 @@ npm run gate
 
 Never hand-edit or commit `web/public/plugins/`.
 
-## 4. External communication
+## 5. External communication
 
 When preparing an upstream Issue/PR, read the current target plugin's config and actual generated manifest before quoting install URLs or supported install methods. Never assume every player has a subscription file.
 

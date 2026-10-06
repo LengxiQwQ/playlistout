@@ -66,6 +66,17 @@ describe('Coarse User-Agent Parser', () => {
       expect(parseUserAgent('Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 SoulBrowser/1.4.1').browserFamily).toBe('soulbrowser');
     });
 
+    it('identifies first-party player plugin runtimes', () => {
+      expect(parseUserAgent('PlaylistOut-MusicFree/1.3.9').browserFamily).toBe('plugin:musicfree');
+      expect(parseUserAgent('PlaylistOut-AnotherPlayer/2.0.1').browserFamily).toBe('plugin:anotherplayer');
+      // Leading whitespace is tolerated; the token must still be at the UA start
+      expect(parseUserAgent('  PlaylistOut-MusicFree/1.4.0').browserFamily).toBe('plugin:musicfree');
+    });
+
+    it('does not treat a plugin token appearing later in a browser UA as a plugin', () => {
+      expect(parseUserAgent('Mozilla/5.0 Chrome/120.0.0.0 PlaylistOut-MusicFree/1.3.9').browserFamily).toBe('chrome');
+    });
+
     it('returns bot_crawler for bots and automated tools', () => {
       expect(parseUserAgent('Googlebot/2.1 (+http://www.google.com/bot.html)').browserFamily).toBe('bot_crawler');
       expect(parseUserAgent('curl/7.68.0').browserFamily).toBe('bot_crawler');

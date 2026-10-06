@@ -1,18 +1,28 @@
 import { isOriginAllowed } from '../cors';
 import { parseUserAgent } from './ua-parser';
+import {
+  REGISTERED_PLUGIN_ID_SET,
+  type RegisteredPluginId,
+} from './generated/registered-plugins';
+import type { BrowserFamily, DeviceClass, OsFamily } from './types';
 
 export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_mixed'] as const;
 export type AnalyticsChannel = (typeof ANALYTICS_CHANNELS)[number];
 
+/**
+ * Non-plugin client IDs. Registered plugin IDs are appended via the generated
+ * registry; AnalyticsClientId is the union of both.
+ */
 export const ANALYTICS_CLIENT_IDS = [
   'official_web',
-  'musicfree',
   'anonymous_api',
   'internal',
   'legacy_unknown',
   'unknown_plugin',
 ] as const;
-export type AnalyticsClientId = (typeof ANALYTICS_CLIENT_IDS)[number];
+export type AnalyticsClientId =
+  | (typeof ANALYTICS_CLIENT_IDS)[number]
+  | RegisteredPluginId;
 
 export const ANALYTICS_PLATFORMS_V2 = [
   'qqmusic',
@@ -33,14 +43,37 @@ export interface AnalyticsRequestContextV2 {
   hostPlatform: string | null;
   country: string;
   region: string;
-  deviceClass: string;
-  browserFamily: string;
-  osFamily: string;
+  deviceClass: DeviceClass;
+  browserFamily: BrowserFamily;
+  osFamily: OsFamily;
   isAutomated: boolean;
 }
 
-const REGISTERED_PLUGIN_IDS = new Set(['musicfree']);
 const HOST_PLATFORMS = new Set(['android', 'windows', 'macos', 'linux', 'ios', 'unknown']);
+
+/**
+ * Maps a declared plugin host platform to coarse environment categories.
+ * Plugin runtimes (especially on Android) do not send a device-bearing UA,
+ * so the explicit Host header is authoritative for plugin traffic.
+ */
+export function mapHostPlatformToEnv(
+  hostPlatform: string | null,
+): { deviceClass: DeviceClass; osFamily: OsFamily } | null {
+  switch (hostPlatform) {
+    case 'android':
+      return { deviceClass: 'mobile', osFamily: 'android' };
+    case 'ios':
+      return { deviceClass: 'mobile', osFamily: 'ios' };
+    case 'windows':
+      return { deviceClass: 'desktop', osFamily: 'windows' };
+    case 'macos':
+      return { deviceClass: 'desktop', osFamily: 'macos' };
+    case 'linux':
+      return { deviceClass: 'desktop', osFamily: 'linux' };
+    default:
+      return null;
+  }
+}
 
 function normalizeCountry(value: unknown): string {
   const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
@@ -94,7 +127,7 @@ export function normalizeAnalyticsPlatformV2(value: unknown): AnalyticsPlatformV
 
 export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequestContextV2 {
   const cf = (request as any).cf;
-  const ua = parseUserAgent(request.headers.get('user-agent'));
+  const parsedUA = parseUserAgent(request.headers.get('user-agent'));
 
   const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
   const declaredId = request.headers.get('x-playlistout-client-id')?.trim().toLowerCase() || '';
@@ -106,7 +139,7 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
 
   if (declaredType === 'plugin') {
     channel = 'plugin';
-    clientId = REGISTERED_PLUGIN_IDS.has(declaredId)
+    clientId = REGISTERED_PLUGIN_ID_SET.has(declaredId)
       ? (declaredId as AnalyticsClientId)
       : 'unknown_plugin';
   } else if (hasOfficialWebOrigin(request)) {
@@ -115,6 +148,18 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
   } else {
     channel = 'api';
     clientId = 'anonymous_api';
+  }
+
+  // Plugin UA carries no device/OS hints; the explicit Host header is
+  // authoritative when it maps to a known environment.
+  let deviceClass = parsedUA.deviceClass;
+  let osFamily = parsedUA.osFamily;
+  if (channel === 'plugin') {
+    const hostEnv = mapHostPlatformToEnv(hostPlatform);
+    if (hostEnv) {
+      deviceClass = hostEnv.deviceClass;
+      osFamily = hostEnv.osFamily;
+    }
   }
 
   const now = new Date();
@@ -127,9 +172,9 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     hostPlatform: channel === 'plugin' ? hostPlatform : null,
     country: normalizeCountry(cf?.country),
     region: normalizeRegion(cf?.region),
-    deviceClass: ua.deviceClass,
-    browserFamily: ua.browserFamily,
-    osFamily: ua.osFamily,
+    deviceClass,
+    browserFamily: parsedUA.browserFamily,
+    osFamily,
     isAutomated: requestLooksAutomated(request),
   };
 }

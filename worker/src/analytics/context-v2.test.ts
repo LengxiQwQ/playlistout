@@ -29,6 +29,42 @@ describe('Analytics V2 request context', () => {
     expect(ctx.region).toBe('Guangdong');
   });
 
+  it('uses the Host header as the environment authority for plugin traffic', () => {
+    const android = createAnalyticsRequestContextV2(request({
+      'X-PlaylistOut-Client-Type': 'plugin',
+      'X-PlaylistOut-Client-Id': 'musicfree',
+      'X-PlaylistOut-Client-Version': '1.3.9',
+      'X-PlaylistOut-Host': 'android',
+      'User-Agent': 'PlaylistOut-MusicFree/1.3.9',
+    }));
+    const windows = createAnalyticsRequestContextV2(request({
+      'X-PlaylistOut-Client-Type': 'plugin',
+      'X-PlaylistOut-Client-Id': 'musicfree',
+      'X-PlaylistOut-Client-Version': '1.3.9',
+      'X-PlaylistOut-Host': 'windows',
+      'User-Agent': 'PlaylistOut-MusicFree/1.3.9',
+    }));
+
+    expect(android.deviceClass).toBe('mobile');
+    expect(android.osFamily).toBe('android');
+    expect(android.browserFamily).toBe('plugin:musicfree');
+    expect(windows.deviceClass).toBe('desktop');
+    expect(windows.osFamily).toBe('windows');
+  });
+
+  it('falls back to UA-parsed environment when Host is unknown or missing', () => {
+    const ctx = createAnalyticsRequestContextV2(request({
+      'X-PlaylistOut-Client-Type': 'plugin',
+      'X-PlaylistOut-Client-Id': 'musicfree',
+      'X-PlaylistOut-Client-Version': '1.3.9',
+      'X-PlaylistOut-Host': 'unknown',
+      'User-Agent': 'PlaylistOut-MusicFree/1.3.9',
+    }));
+
+    expect(ctx.deviceClass).toBe('desktop');
+    expect(ctx.osFamily).toBe('other');
+  });
+
   it('classifies official frontend traffic separately from public API traffic', () => {
     const web = createAnalyticsRequestContextV2(request({
       Origin: 'https://playlistout.lengxiqwq.com',

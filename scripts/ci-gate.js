@@ -274,6 +274,9 @@ function validateWeb() {
   runCommand('npm', ['run', 'validate:plugins']);
   logPass('Ecosystem player plugins built, published, and tested');
 
+  runCommand('node', ['scripts/verify-plugin-registry.js']);
+  logPass('Committed plugin registry matches discovered plugins');
+
   runCommand('npm', ['--prefix', 'web', 'test']);
   logPass('Web unit tests passed');
 

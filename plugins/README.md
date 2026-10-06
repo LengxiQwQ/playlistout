@@ -39,8 +39,35 @@ The root publisher:
 3. runs the plugin's own build;
 4. rejects plugin builds that write into another namespace;
 5. copies only declared artifacts to `web/public/plugins/<player-id>/`;
-6. generates `web/public/plugins/index.json`.
+6. generates `web/public/plugins/index.json`;
+7. generates the committed Worker registry
+   `worker/src/analytics/generated/registered-plugins.ts`.
 
 `web/public/plugins/` is generated output and is intentionally ignored by Git.
 The web UI reads `/plugins/index.json` at runtime, so a newly published plugin
 appears automatically without adding a player-specific frontend branch.
+
+## Analytics attribution
+
+Every plugin identifies itself on PlaylistOut API requests so usage can be
+attributed per integration. A discovered plugin directory is the registration;
+the Worker registry is generated from it, so there is no allowlist to edit.
+
+Send on each PlaylistOut API request:
+
+```
+X-PlaylistOut-Client-Type: plugin
+X-PlaylistOut-Client-Id: <player-id>              # same as plugin.config.json#id
+X-PlaylistOut-Client-Version: <plugin version>
+X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
+User-Agent: PlaylistOut-<PlayerId>/<plugin version>
+```
+
+Inject the headers at one centralized HTTP helper in the plugin so every
+PlaylistOut call is covered (see the MusicFree plugin's `httpGet`).
+
+- Identity is analytics attribution only; it never changes rate limits.
+- Do not pass identity through URL parameters.
+- After `npm run build:plugins`, commit the regenerated
+  `worker/src/analytics/generated/registered-plugins.ts`. The pre-push gate
+  fails if it is stale.

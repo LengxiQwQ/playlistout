@@ -16,12 +16,27 @@ Analytics V2 replaces the original TOTAL/all rollup model with canonical bounded
 | channel | client_id | Meaning |
 | --- | --- | --- |
 | `web` | `official_web` | Official PlaylistOut web frontend |
-| `plugin` | `musicfree` | Official MusicFree integration |
+| `plugin` | registered plugin id (e.g. `musicfree`) | A player integration listed in the generated registry |
+| `plugin` | `unknown_plugin` | Self-declared plugin traffic whose id is not registered |
 | `api` | `anonymous_api` | Public API caller without a registered integration ID |
 | `internal` | `internal` | Internal health/probe traffic when explicitly recorded |
 | `legacy_mixed` | `legacy_unknown` | Historical traffic that cannot be safely separated |
 
 Client identification is analytics attribution only. It is **not authentication** and never grants security privileges.
+
+### Plugin registry
+
+The set of registered plugin ids is not hand-maintained in the Worker. The root
+publisher (`scripts/build-plugins.js`) discovers every `plugins/*/plugin.config.json`
+and generates:
+
+```
+worker/src/analytics/generated/registered-plugins.ts
+```
+
+A plugin directory that discovers and validates is itself the registration. The
+generated file is committed and verified fresh by the pre-push gate
+(`scripts/verify-plugin-registry.js`); adding a plugin requires no Worker edit.
 
 ## Canonical core metrics
 
@@ -78,16 +93,36 @@ New explicit attribution begins when Analytics V2 is deployed.
 
 ## Plugin attribution headers
 
-Registered integrations may send:
+Registered integrations send these headers on every PlaylistOut API request:
 
 ```
 X-PlaylistOut-Client-Type: plugin
-X-PlaylistOut-Client-Id: musicfree
-X-PlaylistOut-Client-Version: 1.3.9
-X-PlaylistOut-Host: android|windows|macos|linux|unknown
+X-PlaylistOut-Client-Id: <player-id>            # must equal plugin.config.json#id
+X-PlaylistOut-Client-Version: <plugin version>
+X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
 ```
 
-Headers are bounded and sanitized. No install ID, user ID, device ID, email, token, or other persistent identifier is allowed.
+They also send a first-party runtime User-Agent:
+
+```
+User-Agent: PlaylistOut-<PlayerId>/<plugin version>
+```
+
+Rules:
+
+- Headers are bounded and sanitized: the id must match a registered plugin or the
+  request is attributed to `unknown_plugin`; the version must match a strict
+  token pattern; the host must be one of the listed platforms.
+- The Host header is authoritative for plugin device/OS attribution, because
+  plugin runtimes (especially Android) send a UA without device hints.
+- Identity travels in headers only. URL parameters are not used: they fragment
+  CDN caching and leak into logs.
+- Identity never changes rate limits or any security decision.
+- No install ID, user ID, device ID, email, token, or other persistent
+  identifier is allowed.
+
+A reference implementation of the centralized header injection is the MusicFree
+plugin's `httpGet` helper, which covers every PlaylistOut API call at one point.
 
 ## Internal API
 
@@ -98,7 +133,9 @@ Allowed filters:
 - `from=YYYY-MM-DD`
 - `to=YYYY-MM-DD`
 - `channel=web|plugin|api|internal|legacy_mixed`
-- `client=official_web|musicfree|anonymous_api|internal|legacy_unknown|unknown_plugin`
+- `client=<fixed id>|<registered plugin id>`, where fixed ids are
+  `official_web|anonymous_api|internal|legacy_unknown|unknown_plugin` and
+  registered plugin ids are the entries in the generated registry (e.g. `musicfree`)
 - `platform=qqmusic|netease|kugou|qishui|unknown|none`
 - `country=XX`
 - `region=<bounded string>`

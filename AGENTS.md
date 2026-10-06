@@ -12,7 +12,7 @@ All 7 automated checks must pass locally. Never push if `npm run gate` fails.
 - **Player IDs**: Use lowercase kebab-case. The directory name and `plugin.config.json#id` must match exactly.
 - **Player-Specific Layouts Are Allowed**: Different player SDKs may require different filenames, module formats, subscription formats, source layouts, or test frameworks. Do not impose MusicFree's artifact name or `plugins.json` on other players.
 - **Build Ownership**: Plugin build scripts may write only inside their own plugin directory (normally `dist/`). They MUST NOT write to `web/public/plugins`.
-- **Single Publisher**: `scripts/build-plugins.js` is the only owner of `web/public/plugins`. It discovers plugins, validates declared artifacts, publishes each plugin under `/plugins/<player-id>/`, and generates `/plugins/index.json`.
+- **Single Publisher**: `scripts/build-plugins.js` is the only owner of `web/public/plugins`. It discovers plugins, validates declared artifacts, publishes each plugin under `/plugins/<player-id>/`, and generates `/plugins/index.json`. It also generates the committed Worker registry `worker/src/analytics/generated/registered-plugins.ts`: the discovered plugin set is the registration, never hand-edit it, and the gate verifies it is fresh.
 - **Generated Output**: Never hand-edit or commit `web/public/plugins`; it is generated during build/deploy.
 - **Testing**: Root commands discover each plugin's `package.json` `build`/`test` scripts. Use `npm run validate:plugins` before web production builds.
 - **Dependencies**: A plugin with npm dependencies must keep a plugin-local lockfile. Root runners install those dependencies deterministically on clean machines.

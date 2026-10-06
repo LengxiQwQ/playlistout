@@ -17,11 +17,13 @@ import {
 } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import {
+  GENERATED_REGISTRY_PATH,
   PUBLIC_PLUGIN_BASE_URL,
   REPO_ROOT,
   WEB_PUBLIC_PLUGINS,
   discoverPlugins,
   ensurePluginDependencies,
+  generateRegisteredPluginsModule,
   publicPluginUrl,
   resolvePluginPath,
   runPluginScript,
@@ -127,6 +129,16 @@ function buildAllPlugins() {
   console.log(
     `\n✔ Ecosystem manifest generated: ${relative(REPO_ROOT, manifestPath)}`,
   );
+
+  // The publisher is also the single owner of the Worker-side registry:
+  // discovery from plugin manifests is the registration, so new plugins are
+  // attributed without hand-editing Worker constants.
+  mkdirSync(dirname(GENERATED_REGISTRY_PATH), { recursive: true });
+  writeFileSync(GENERATED_REGISTRY_PATH, generateRegisteredPluginsModule(plugins), 'utf-8');
+  console.log(
+    `✔ Registered plugin registry generated: ${relative(REPO_ROOT, GENERATED_REGISTRY_PATH)}`,
+  );
+
   console.log(`🎉 Published ${plugins.length} player plugin(s).\n`);
 }
 
