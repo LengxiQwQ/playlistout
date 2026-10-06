@@ -210,8 +210,8 @@ describe('Qishui Song Status & Normalization', () => {
       },
     };
 
-    const track = normalizeQishuiTrack(mediaResource, 0);
-    expect(track.index).toBe(0);
+    const track = normalizeQishuiTrack(mediaResource, 1);
+    expect(track.index).toBe(1);
     expect(track.id).toBe('7646305796047603758');
     expect(track.title).toBe("If I Ain't Got You");
     expect(track.artists).toEqual(['多喝热水']);
@@ -319,6 +319,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
 
     const playlist = await qishuiProvider.parse('7087507348697186339');
     expect(playlist.tracks.length).toBe(2);
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[1].index).toBe(2);
     expect(playlist.tracks[0].title).toBe('歌曲 1');
     expect(playlist.tracks[1].title).toBe('歌曲 2');
     expect(callCount).toBe(2);
@@ -347,8 +349,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       },
     };
 
-    const track = normalizeQishuiTrack(videoResource, 12);
-    expect(track.index).toBe(12);
+    const track = normalizeQishuiTrack(videoResource, 13);
+    expect(track.index).toBe(13);
     expect(track.id).toBe('7324660489924005174');
     expect(track.title).toBe('聆听一曲《瞬间的永恒》，平静舒缓，空灵唯美');
     expect(track.artists).toEqual(['天籁音曲']);
@@ -365,8 +367,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       entity: {},
     };
 
-    const track = normalizeQishuiTrack(unknownResource, 5);
-    expect(track.index).toBe(5);
+    const track = normalizeQishuiTrack(unknownResource, 6);
+    expect(track.index).toBe(6);
     expect(track.id).toBe('999999999');
     expect(track.title).toBe('未知或已下架音频');
     expect(track.isAvailable).toBe(false);
@@ -374,8 +376,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
   });
 
   it('throws PARSE_ERROR when media resource is null or non-object', () => {
-    expect(() => normalizeQishuiTrack(null as any, 0)).toThrowError(ProviderError);
-    expect(() => normalizeQishuiTrack(undefined as any, 0)).toThrowError(ProviderError);
+    expect(() => normalizeQishuiTrack(null as any, 1)).toThrowError(ProviderError);
+    expect(() => normalizeQishuiTrack(undefined as any, 1)).toThrowError(ProviderError);
   });
 
   it('normalizes Douyin original soundtrack item with isOriginalSound=true', () => {
@@ -391,8 +393,8 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
       },
     };
 
-    const track = normalizeAwemeMusicTrack(raw, 0);
-    expect(track.index).toBe(0);
+    const track = normalizeAwemeMusicTrack(raw, 3);
+    expect(track.index).toBe(2);
     expect(track.id).toBe('7657409429382204211');
     expect(track.title).toBe('@雷姆必拓牢实人创作的原声');
     expect(track.artists).toEqual(['雷姆必拓牢实人']);
