@@ -997,7 +997,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(14);
+      expect(res.appliedCount).toBe(15);
       expect(res.pendingCount).toBe(0);
     });
 
