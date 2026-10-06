@@ -109,7 +109,7 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     clientId = REGISTERED_PLUGIN_IDS.has(declaredId)
       ? (declaredId as AnalyticsClientId)
       : 'unknown_plugin';
-  } else if (request.headers.has('x-playlistout-session') || hasOfficialWebOrigin(request)) {
+  } else if (hasOfficialWebOrigin(request)) {
     channel = 'web';
     clientId = 'official_web';
   } else {
