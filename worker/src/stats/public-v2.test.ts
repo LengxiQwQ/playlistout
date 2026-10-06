@@ -134,6 +134,14 @@ describe('Analytics V2 public stats after V1 retirement', () => {
     expect(stats.exportFormatsBreakdown.txt).toBe(5);
     expect(stats.exportFormatsBreakdown.csv).toBe(4);
 
+    const platformSuccessTotal = Object.values(stats.byPlatform)
+      .reduce((sum, platform) => sum + platform.totalSuccess, 0);
+    expect(platformSuccessTotal).toBe(stats.totalPlaylistsParsed);
+
+    const exportFormatTotal = Object.values(stats.exportFormatsBreakdown)
+      .reduce((sum, count) => sum + count, 0);
+    expect(exportFormatTotal).toBe(stats.totalExports);
+
     expect(stats.recentDays.find((row) => row.date === yesterday)).toEqual({
       date: yesterday,
       parses: 7,

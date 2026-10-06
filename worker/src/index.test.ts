@@ -75,6 +75,12 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(response.status).toBe(204);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
+
+    const allowedHeaders = response.headers.get('Access-Control-Allow-Headers') || '';
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Type');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Id');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Client-Version');
+    expect(allowedHeaders).toContain('X-PlaylistOut-Host');
   });
 
   it('strictly rejects CORS OPTIONS preflight on sensitive endpoints for unauthorized origin with 403', async () => {
