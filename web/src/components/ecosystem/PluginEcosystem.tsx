@@ -184,10 +184,12 @@ export const PluginEcosystem: React.FC = () => {
                   {plugin.entrypoint ? (
                     <MarkerButton
                       type="button"
-                      variant="ink"
+                      variant="paper"
                       rotateDeg={-0.3}
                       onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
-                      className="plugin-copy-button"
+                      className={`plugin-copy-button plugin-copy-button-secondary${
+                        copyState[plugin.id] === 'copied' ? ' is-copied' : ''
+                      }`}
                     >
                       {copyState[plugin.id] === 'copied'
                         ? t.ecosystem.copiedInstallUrl

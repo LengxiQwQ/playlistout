@@ -186,6 +186,23 @@
   white-space: nowrap;
 }
 
+.plugin-copy-button-secondary {
+  background-color: #ffffff !important;
+  color: var(--ink, #2d3436) !important;
+  border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+}
+
+.plugin-copy-button-secondary:not(:disabled):hover {
+  background-color: var(--note-yellow, #fff8bd) !important;
+  color: var(--ink, #2d3436) !important;
+}
+
+.plugin-copy-button-secondary.is-copied,
+.plugin-copy-button-secondary.is-copied:not(:disabled):hover {
+  background-color: #d1fae5 !important;
+  color: var(--ink, #2d3436) !important;
+}
+
 .plugin-action-link {
   background-color: var(--ink, #2d3436);
   color: #ffffff !important;
