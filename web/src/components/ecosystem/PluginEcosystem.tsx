@@ -87,6 +87,8 @@ export const PluginEcosystem: React.FC = () => {
     }, 2600);
   };
 
+  const supportedCardCount = available.length + FEATURED_UPCOMING_INTEGRATIONS.length;
+
   return (
     <Paper
       as="section"
@@ -111,9 +113,9 @@ export const PluginEcosystem: React.FC = () => {
 
         <div
           className="plugin-supported-count"
-          aria-label={format(t.ecosystem.supportedCount, { count: available.length })}
+          aria-label={format(t.ecosystem.supportedCount, { count: supportedCardCount })}
         >
-          <span className="font-marker plugin-supported-number">{available.length}</span>
+          <span className="font-marker plugin-supported-number">{supportedCardCount}</span>
           <span className="font-handwriting plugin-supported-label">
             {t.ecosystem.supportedShort}
           </span>

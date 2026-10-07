@@ -86,7 +86,7 @@ describe('PluginEcosystem', () => {
     expect(screen.getByText('Second Player')).toBeInTheDocument();
     expect(screen.getByText('MusicFree 中文简介')).toBeInTheDocument();
     expect(screen.getByText('第二个播放器简介')).toBeInTheDocument();
-    expect(container.querySelector('.plugin-supported-number')).toHaveTextContent('2');
+    expect(container.querySelector('.plugin-supported-number')).toHaveTextContent('3');
 
     // Planned/proposed integrations remain a separate static roadmap list.
     expect(screen.getByText('LX Music')).toBeInTheDocument();
