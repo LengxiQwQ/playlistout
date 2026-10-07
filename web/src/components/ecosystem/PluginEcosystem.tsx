@@ -301,7 +301,7 @@ export const PluginEcosystem: React.FC = () => {
                     href={integration.homepageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                    className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
                     style={{ ['--rot' as any]: '-0.3deg' }}
                   >
                     {t.ecosystem.officialDownload}

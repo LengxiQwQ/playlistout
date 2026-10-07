@@ -151,10 +151,12 @@ describe('PluginEcosystem', () => {
     expect(
       screen.getByText('软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '官网下载' })).toHaveAttribute(
+    const downloadLink = screen.getByRole('link', { name: '官网下载' });
+    expect(downloadLink).toHaveAttribute(
       'href',
       'https://bbplayer.roitium.com',
     );
+    expect(downloadLink).toHaveClass('marker-button', 'marker-btn-ink');
     expect(screen.getByRole('link', { name: '相关讨论 ↗' })).toHaveAttribute(
       'href',
       'https://github.com/bbplayer-app/BBPlayer/issues/340',
