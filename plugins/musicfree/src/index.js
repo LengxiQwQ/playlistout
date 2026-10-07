@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.4.0)
+ * PlaylistOut 官方 MusicFree 插件 (v1.4.1)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -212,7 +212,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '1.4.0';
+const PLUGIN_VERSION = '1.4.1';
 
 /**
  * 宿主运行环境与形态全方位智能探测
