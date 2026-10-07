@@ -222,6 +222,8 @@ export interface Translations {
     statusUpcoming: string;
     kindBuiltin: string;
     kindPlugin: string;
+    officialDownload: string;
+    issueLink: string;
     viewPrProgress: string;
     officialPlugin: string;
     copyInstallUrl: string;

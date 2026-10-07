@@ -59,9 +59,9 @@ export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
     repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
     logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/main/apps/mobile/assets/images/icon.png',
     summary: {
-      'zh-CN': '软件原生内置支持导入 Playlist Out 本地 JSON 歌单，直接匹配 B 站音源播放（PR 已就绪，待作者合并发版）。',
-      'en-US': 'Native built-in support for importing Playlist Out local JSON playlists to match Bilibili audio (PR ready, awaiting upstream release).',
-      default: '软件原生内置支持导入 Playlist Out 本地 JSON 歌单，直接匹配 B 站音源播放（PR 已就绪，待作者合并发版）。',
+      'zh-CN': '软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入',
+      'en-US': 'Native built-in Playlist Out playlist import, supporting playlist links and local JSON import',
+      default: '软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入',
     },
   },
 ];

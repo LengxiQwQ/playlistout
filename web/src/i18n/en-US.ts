@@ -222,6 +222,8 @@ export const enUS: Translations = {
     statusUpcoming: 'Coming soon',
     kindBuiltin: 'Native built-in',
     kindPlugin: 'Plugin',
+    officialDownload: 'Download',
+    issueLink: 'Discussion',
     viewPrProgress: 'View PR progress',
     officialPlugin: 'Official Playlist Out plugin',
     copyInstallUrl: 'Copy plugin URL',

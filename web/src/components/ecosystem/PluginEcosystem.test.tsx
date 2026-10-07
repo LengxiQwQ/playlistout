@@ -137,7 +137,7 @@ describe('PluginEcosystem', () => {
     expect(buttons[1]).toHaveTextContent('复制插件地址');
   });
 
-  it('renders featured upcoming native integrations with coming soon sticker and PR link', async () => {
+  it('renders featured upcoming native integrations with coming soon sticker and download link', async () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <PluginEcosystem />
@@ -147,7 +147,15 @@ describe('PluginEcosystem', () => {
     expect(await screen.findByText('BBPlayer')).toBeInTheDocument();
     expect(screen.getByText('⏳ 待上线')).toBeInTheDocument();
     expect(screen.getByText('软件原生功能')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '查看 PR 进展 ↗' })).toHaveAttribute(
+    expect(screen.getAllByText('插件')).toHaveLength(2);
+    expect(
+      screen.getByText('软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '官网下载' })).toHaveAttribute(
+      'href',
+      'https://bbplayer.roitium.com',
+    );
+    expect(screen.getByRole('link', { name: '相关讨论 ↗' })).toHaveAttribute(
       'href',
       'https://github.com/bbplayer-app/BBPlayer/issues/340',
     );

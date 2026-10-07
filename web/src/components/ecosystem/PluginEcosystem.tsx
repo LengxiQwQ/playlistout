@@ -164,6 +164,14 @@ export const PluginEcosystem: React.FC = () => {
                     >
                       ✓ {t.ecosystem.statusAvailable}
                     </Sticker>
+                    <Sticker
+                      as="span"
+                      color="cyan"
+                      rotateDeg={-0.5}
+                      className="font-handwriting plugin-status-sticker"
+                    >
+                      {t.ecosystem.kindPlugin}
+                    </Sticker>
                   </div>
                   <p className="font-handwriting plugin-app-summary">
                     {getPluginSummary(plugin, language)}
@@ -270,11 +278,16 @@ export const PluginEcosystem: React.FC = () => {
                     >
                       ⏳ {t.ecosystem.statusUpcoming}
                     </Sticker>
-                    {integration.kind === 'builtin' ? (
-                      <span className="font-note plugin-kind-badge">
-                        {t.ecosystem.kindBuiltin}
-                      </span>
-                    ) : null}
+                    <Sticker
+                      as="span"
+                      color="purple"
+                      rotateDeg={0.5}
+                      className="font-handwriting plugin-status-sticker"
+                    >
+                      {integration.kind === 'builtin'
+                        ? t.ecosystem.kindBuiltin
+                        : t.ecosystem.kindPlugin}
+                    </Sticker>
                   </div>
                   <p className="font-handwriting plugin-app-summary">
                     {getIntegrationSummary(integration, language)}
@@ -283,29 +296,19 @@ export const PluginEcosystem: React.FC = () => {
               </div>
 
               <div className="plugin-app-actions">
-                {integration.prUrl || integration.issueUrl ? (
+                {integration.homepageUrl ? (
                   <a
-                    href={integration.prUrl || integration.issueUrl}
+                    href={integration.homepageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-marker plugin-action-link"
+                    className="font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                    style={{ ['--rot' as any]: '-0.3deg' }}
                   >
-                    {t.ecosystem.viewPrProgress} ↗
+                    {t.ecosystem.officialDownload}
                   </a>
                 ) : null}
 
                 <div className="plugin-app-links">
-                  {integration.homepageUrl ? (
-                    <a
-                      href={integration.homepageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
-                    >
-                      {t.ecosystem.websiteLink} ↗
-                    </a>
-                  ) : null}
-
                   {integration.repositoryUrl ? (
                     <a
                       href={integration.repositoryUrl}
@@ -314,6 +317,17 @@ export const PluginEcosystem: React.FC = () => {
                       className="font-handwriting plugin-app-link"
                     >
                       GitHub ↗
+                    </a>
+                  ) : null}
+
+                  {integration.prUrl || integration.issueUrl ? (
+                    <a
+                      href={integration.prUrl || integration.issueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      {t.ecosystem.issueLink} ↗
                     </a>
                   ) : null}
                 </div>
