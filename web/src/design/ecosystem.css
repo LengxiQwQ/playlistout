@@ -163,6 +163,14 @@
   flex: 0 0 auto;
 }
 
+.plugin-app-primary-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .plugin-copy-button {
   width: 8.6rem;
   height: 2.65rem;
@@ -315,6 +323,7 @@
     align-items: flex-start;
   }
 
+  .plugin-app-primary-buttons,
   .plugin-app-links {
     justify-content: flex-start;
   }

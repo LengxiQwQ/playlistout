@@ -180,34 +180,37 @@ export const PluginEcosystem: React.FC = () => {
               </div>
 
               <div className="plugin-app-actions">
-                {plugin.entrypoint ? (
-                  <MarkerButton
-                    type="button"
-                    variant="ink"
-                    rotateDeg={-0.3}
-                    onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
-                    className="plugin-copy-button"
-                  >
-                    {copyState[plugin.id] === 'copied'
-                      ? t.ecosystem.copiedInstallUrl
-                      : copyState[plugin.id] === 'failed'
-                        ? t.ecosystem.copyFailed
-                        : t.ecosystem.copyInstallUrl}
-                  </MarkerButton>
-                ) : null}
+                <div className="plugin-app-primary-buttons">
+                  {plugin.entrypoint ? (
+                    <MarkerButton
+                      type="button"
+                      variant="ink"
+                      rotateDeg={-0.3}
+                      onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
+                      className="plugin-copy-button"
+                    >
+                      {copyState[plugin.id] === 'copied'
+                        ? t.ecosystem.copiedInstallUrl
+                        : copyState[plugin.id] === 'failed'
+                          ? t.ecosystem.copyFailed
+                          : t.ecosystem.copyInstallUrl}
+                    </MarkerButton>
+                  ) : null}
 
-                <div className="plugin-app-links">
                   {plugin.homepageUrl ? (
                     <a
                       href={plugin.homepageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
+                      className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                      style={{ ['--rot' as any]: '0.3deg' }}
                     >
-                      {t.ecosystem.websiteLink} ↗
+                      {t.ecosystem.officialDownload}
                     </a>
                   ) : null}
+                </div>
 
+                <div className="plugin-app-links">
                   {plugin.repositoryUrl ? (
                     <a
                       href={plugin.repositoryUrl}

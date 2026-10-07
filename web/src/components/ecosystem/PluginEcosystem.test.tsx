@@ -25,6 +25,7 @@ const manifest = {
         'en-US': 'MusicFree English summary',
       },
       entrypoint: 'https://example.com/plugins/musicfree/plugin.js',
+      homepageUrl: 'https://musicfree.catcat.work/',
       artifacts: [
         {
           role: 'entrypoint',
@@ -151,12 +152,18 @@ describe('PluginEcosystem', () => {
     expect(
       screen.getByText('软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入'),
     ).toBeInTheDocument();
-    const downloadLink = screen.getByRole('link', { name: '官网下载' });
-    expect(downloadLink).toHaveAttribute(
+    const downloadLinks = screen.getAllByRole('link', { name: '官网下载' });
+    expect(downloadLinks).toHaveLength(2);
+    expect(downloadLinks[0]).toHaveAttribute(
+      'href',
+      'https://musicfree.catcat.work/',
+    );
+    expect(downloadLinks[1]).toHaveAttribute(
       'href',
       'https://bbplayer.roitium.com',
     );
-    expect(downloadLink).toHaveClass('marker-button', 'marker-btn-ink');
+    expect(downloadLinks[0]).toHaveClass('marker-button', 'marker-btn-ink');
+    expect(downloadLinks[1]).toHaveClass('marker-button', 'marker-btn-ink');
     expect(screen.getByRole('link', { name: '相关讨论 ↗' })).toHaveAttribute(
       'href',
       'https://github.com/bbplayer-app/BBPlayer/issues/340',
