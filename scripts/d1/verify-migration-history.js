@@ -46,24 +46,37 @@ export async function executeD1Query(sql, options = {}) {
   const escapedSql = normalizedSql.replace(/"/g, '\\"');
   const cmd = `npx wrangler d1 execute ${dbName} ${flag} --command "${escapedSql}" --json`;
 
-  try {
-    const stdout = execSync(cmd, {
-      cwd: workerDir,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, ...options.env },
-    });
+  const maxAttempts = options.retries ?? (isRemote ? 3 : 1);
+  let lastError;
 
-    const jsonStart = stdout.indexOf('[');
-    const jsonEnd = stdout.lastIndexOf(']');
-    if (jsonStart === -1 || jsonEnd === -1) {
-      throw new Error(`Invalid JSON output from wrangler d1 execute: ${stdout}`);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const stdout = execSync(cmd, {
+        cwd: workerDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, ...options.env },
+      });
+
+      const jsonStart = stdout.indexOf('[');
+      const jsonEnd = stdout.lastIndexOf(']');
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error(`Invalid JSON output from wrangler d1 execute: ${stdout}`);
+      }
+      const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
+      return parsed[0]?.results || [];
+    } catch (err) {
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      const stdout = err.stdout ? err.stdout.toString() : '';
+      const details = stderr.trim() || stdout.trim() || err.message;
+      lastError = new Error(`D1 query failed: ${details}`);
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      }
     }
-    const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
-    return parsed[0]?.results || [];
-  } catch (err) {
-    throw new Error(`D1 query failed: ${err.message}`);
   }
+
+  throw lastError;
 }
 
 export async function validateMigrationHistory(options = {}) {

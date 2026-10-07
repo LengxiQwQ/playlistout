@@ -7,6 +7,8 @@
  * the permanent post-cutover deployment gate.
  */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { executeD1Query } from './verify-migration-history.js';
 
 export const RETIRED_V1_TABLES = [
@@ -113,7 +115,7 @@ export async function verifyAnalyticsV1Retired(options = {}) {
   };
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const remote = process.argv.includes('--remote');
   verifyAnalyticsV1Retired({ remote })
     .then((result) => {
