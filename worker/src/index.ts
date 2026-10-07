@@ -6,6 +6,7 @@ import { getAnalyticsV2, getAnalyticsV2Snapshot, parseAnalyticsV2Filters } from 
 import { recordRateLimitEventV2 } from './analytics/v2-recorder';
 import type { PublicStatsResponse } from './analytics/types';
 import { handleEvent } from './routes/event';
+import { handleKugouLoginStream } from './routes/kugouStream';
 import { handleFeedback, handleInternalFeedback } from './routes/feedback';
 import { handleInternalQuarantine } from './routes/quarantine';
 import { handleSoundiizMigration } from './routes/migration';
@@ -16,6 +17,7 @@ import { parsePlaylistService } from './services/playlist-service';
 import { fetchUserPlaylistsService } from './services/user-service';
 import { resolveService } from './services/resolve-service';
 import { PLAYLISTOUT_VERSION } from './version';
+import { buildResponseMetadata } from './analytics/context';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -263,6 +265,20 @@ export default {
       }
     }
 
+    // SSE push stream for QR login (clients that support EventSource)
+    if (url.pathname === '/api/kugou/login/stream') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' },
+          }),
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET, OPTIONS', ...responseHeaders } },
+        );
+      }
+      return handleKugouLoginStream(request, responseHeaders);
+    }
+
     // Kugou session status validation endpoint
     if (url.pathname === '/api/kugou/auth/status') {
       if (request.method !== 'GET') {
@@ -451,14 +467,26 @@ export default {
           ctx: _ctx,
         });
 
+        const meta = buildResponseMetadata(request, {
+          resolvedPlatform: resolveData.platform,
+          trackCount: Array.isArray((resolveData.result as any)?.tracks)
+            ? (resolveData.result as any).tracks.length
+            : undefined,
+          mode: (resolveData.result as any)?.retrieval?.mode,
+        });
+
         const successResponse: ApiResponse<ResolveData> = {
           success: true,
           data: resolveData,
+          ...(meta ? { meta } : {}),
         };
         return new Response(JSON.stringify(successResponse), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
+            'X-PlaylistOut-Server-Version': PLAYLISTOUT_VERSION,
+            ...(meta?.client?.deviceClass ? { 'X-PlaylistOut-Client-Device': meta.client.deviceClass } : {}),
+            ...(meta?.client?.id ? { 'X-PlaylistOut-Client-Id': meta.client.id } : {}),
             ...responseHeaders,
           },
         });
@@ -582,14 +610,24 @@ export default {
           ctx: _ctx,
         });
 
+        const meta = buildResponseMetadata(request, {
+          resolvedPlatform: playlist.platform,
+          trackCount: playlist.trackCount || (playlist.tracks ? playlist.tracks.length : undefined),
+          mode: playlist.retrieval?.mode,
+        });
+
         const successResponse: ApiResponse<Playlist> = {
           success: true,
           data: playlist,
+          ...(meta ? { meta } : {}),
         };
         return new Response(JSON.stringify(successResponse), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
+            'X-PlaylistOut-Server-Version': PLAYLISTOUT_VERSION,
+            ...(meta?.client?.deviceClass ? { 'X-PlaylistOut-Client-Device': meta.client.deviceClass } : {}),
+            ...(meta?.client?.id ? { 'X-PlaylistOut-Client-Id': meta.client.id } : {}),
             ...responseHeaders,
           },
         });
@@ -710,14 +748,23 @@ export default {
           auth,
         });
 
+        const meta = buildResponseMetadata(request, {
+          resolvedPlatform: userData.platform,
+          trackCount: userData.total || (userData.playlists ? userData.playlists.length : undefined),
+        });
+
         const successResponse: ApiResponse<UserPlaylistsData> = {
           success: true,
           data: userData,
+          ...(meta ? { meta } : {}),
         };
         return new Response(JSON.stringify(successResponse), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
+            'X-PlaylistOut-Server-Version': PLAYLISTOUT_VERSION,
+            ...(meta?.client?.deviceClass ? { 'X-PlaylistOut-Client-Device': meta.client.deviceClass } : {}),
+            ...(meta?.client?.id ? { 'X-PlaylistOut-Client-Id': meta.client.id } : {}),
             ...responseHeaders,
           },
         });
@@ -805,19 +852,32 @@ export default {
         );
       }
 
+      // Edge cache: share one stats snapshot across all clients for 90 seconds;
+      // only a cache miss reaches D1 (the rate limit above still runs per request).
+      const statsCache = caches.default;
+      const statsCacheKey = 'https://playlistout-api.internal/cache/public-stats';
+      const cachedStatsResponse = await statsCache.match(statsCacheKey);
+      if (cachedStatsResponse) {
+        return cachedStatsResponse;
+      }
+
       const stats: PublicStatsResponse = await getPublicStats(_env.DB);
-      const response: ApiResponse<PublicStatsResponse> = {
-        success: true,
-        data: stats,
-      };
-      return new Response(JSON.stringify(response), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          ...responseHeaders,
+      const statsResponse = new Response(
+        JSON.stringify({
+          success: true,
+          data: stats,
+        } satisfies ApiResponse<PublicStatsResponse>),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=90, s-maxage=90',
+            ...responseHeaders,
+          },
         },
-      });
+      );
+      _ctx.waitUntil(statsCache.put(statsCacheKey, statsResponse.clone()));
+      return statsResponse;
     }
 
     // ── Analytics V2 Maintainer API ──

@@ -709,7 +709,12 @@ async function runAllTests() {
   // ── 6. Real Online Live Resolution ────────────────────────────────
   logSection('6. Real Online NetEase Playlist Resolution (E2E)');
 
-  const realNeteaseUrl = 'https://music.163.com/playlist?id=3778678';
+  if (process.env.RUN_E2E !== '1') {
+    console.log(
+      `    ${COLORS.gray}Skipped: these tests hit the live production API. Set RUN_E2E=1 to enable.${COLORS.reset}`
+    );
+  } else {
+    const realNeteaseUrl = 'https://music.163.com/playlist?id=3778678';
 
   async function retryOnRateLimit(fn, maxRetries = 3, delayMs = 3000) {
     for (let i = 0; i <= maxRetries; i++) {
@@ -771,6 +776,7 @@ async function runAllTests() {
       delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     }
   });
+  }
 
   // ── 7. getMediaSource & getLyric Bridge Specification ──────────────
   logSection('7. getMediaSource & getLyric Bridge Specification');
@@ -808,12 +814,18 @@ async function runAllTests() {
     );
   });
 
-  await test('Handles unsupported online URL with clean API error', async () => {
-    await assert.rejects(
-      async () => await plugin.importMusicSheet('https://example.com/unsupported-page'),
-      /解析失败/
+  if (process.env.RUN_E2E === '1') {
+    await test('Handles unsupported online URL with clean API error', async () => {
+      await assert.rejects(
+        async () => await plugin.importMusicSheet('https://example.com/unsupported-page'),
+        /解析失败/
+      );
+    });
+  } else {
+    console.log(
+      `    ${COLORS.gray}Skipped unsupported-URL E2E test (set RUN_E2E=1 to enable).${COLORS.reset}`
     );
-  });
+  }
 
   await test('Detects official website trigger and tries opening browser cleanly', async () => {
     assert(plugin._isOfficialWebsiteTrigger('官网'), 'Must recognize 官网');
@@ -829,6 +841,36 @@ async function runAllTests() {
       async () => await plugin.importMusicSheet('gw'),
       /在浏览器中打开官网/
     );
+  });
+
+  // ── 8.4. Client Environment Detection & Outgoing Headers ───────────
+  logSection('8.4. Client Environment Detection & Outgoing Headers');
+
+  await test('Accurately detects desktop and mobile environments with compliant device-class', () => {
+    // Test desktop mode
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
+    const desktopEnv = plugin._detectClientEnvironment();
+    assert.strictEqual(desktopEnv.deviceClass, 'desktop', 'Must detect desktop under Electron mock');
+    assert(typeof desktopEnv.os === 'string' && desktopEnv.os.length > 0, 'Must have valid OS');
+
+    const desktopHeaders = plugin._getPlaylistOutHeaders();
+    assert.strictEqual(desktopHeaders['X-PlaylistOut-Client-Type'], 'plugin');
+    assert.strictEqual(desktopHeaders['X-PlaylistOut-Client-Id'], 'musicfree');
+    assert.strictEqual(desktopHeaders['X-PlaylistOut-Client-Version'], pkg.version);
+    assert.strictEqual(desktopHeaders['X-PlaylistOut-Device-Class'], 'desktop');
+    assert(desktopHeaders['User-Agent'].includes('(desktop;'), 'UA must indicate desktop');
+
+    // Test mobile mode
+    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+    const mobileEnv = plugin._detectClientEnvironment();
+    assert.strictEqual(mobileEnv.deviceClass, 'mobile', 'Must detect mobile under non-Electron mock');
+
+    const mobileHeaders = plugin._getPlaylistOutHeaders();
+    assert.strictEqual(mobileHeaders['X-PlaylistOut-Device-Class'], 'mobile');
+    assert(mobileHeaders['User-Agent'].includes('(mobile;'), 'UA must indicate mobile');
+
+    // Restore
+    delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
   });
 
   // ── 8.5. Hermes Engine Syntax Integrity ───────────────────────────

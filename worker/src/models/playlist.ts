@@ -3,7 +3,7 @@
  * Defined in docs/PROJECT-CONSTITUTION.md Section 6
  */
 
-import type { ResolveFailureStage } from '../analytics/types';
+import type { DeviceClass, ResolveFailureStage } from '../analytics/types';
 
 export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
 
@@ -87,9 +87,36 @@ export interface UserPlaylistsData {
   playlists: UserPlaylistSummary[];
 }
 
+export interface ResponseClientMetadata {
+  channel: string;
+  id: string;
+  version: string | null;
+  deviceClass: DeviceClass;
+  osFamily: string;
+  rawHost: string | null;
+}
+
+export interface ResponseParseInfo {
+  resolvedPlatform: string;
+  trackCount?: number;
+  mode?: string;
+  timestamp: number;
+}
+
+export interface ResponseMetadata {
+  server: {
+    service: string;
+    version: string;
+  };
+  client: ResponseClientMetadata;
+  parseInfo?: ResponseParseInfo;
+  hints?: string[];
+}
+
 export interface ApiSuccessResponse<T> {
   success: true;
   data: T;
+  meta?: ResponseMetadata;
 }
 
 export type ResolveKind = 'playlist' | 'user_playlists';

@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from './index';
 import { qqMusicProvider } from './providers/qqmusic';
 import { neteaseProvider } from './providers/netease';
 import { ProviderError } from './models/playlist';
 import { resetRateLimits } from './security/rate-limit';
+import { installMockCaches, type MockCachesHandle } from './test-utils/caches-mock';
 
 interface HealthResponseBody {
   status: string;
@@ -22,14 +23,21 @@ interface ErrorResponseBody {
 
 function createMockCtx(): ExecutionContext {
   return {
-    waitUntil(_p: Promise<any>) {},
+    waitUntil(p: Promise<any>) {
+      p.catch(() => {});
+    },
     passThroughOnException() {},
   } as ExecutionContext;
 }
 
 describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
+  let cachesHandle: MockCachesHandle;
   beforeEach(() => {
     resetRateLimits();
+    cachesHandle = installMockCaches();
+  });
+  afterEach(() => {
+    cachesHandle.restore();
   });
   it('responds with ok to /health and returns minimal payload', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/health');
@@ -103,11 +111,26 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
   });
 
-  it('returns Cache-Control no-cache, no-store on /api/stats', async () => {
+  it('edge-caches /api/stats for 90 seconds on a cache miss', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate');
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=90, s-maxage=90');
+    expect(cachesHandle.cache.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves /api/stats from edge cache without recomputing', async () => {
+    cachesHandle.cache.match.mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: { cached: true } }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
+    const response = await worker.fetch(request, {}, createMockCtx());
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: { cached: boolean } };
+    expect(body.data.cached).toBe(true);
+    expect(cachesHandle.cache.put).not.toHaveBeenCalled();
   });
 
   it('rejects non-GET methods on /api/playlist with 405 Method Not Allowed', async () => {

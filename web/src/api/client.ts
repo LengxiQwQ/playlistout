@@ -376,7 +376,10 @@ export async function parsePlaylist(
     if (contentType.includes('application/json')) {
       const data: ApiResponse<Playlist> = await response.json();
       if (data.success) {
-        notifyStatsRefresh(500);
+        notifyStatsIncrement({
+          kind: 'parse',
+          trackCount: data.data?.trackCount ?? data.data?.tracks?.length,
+        });
       }
       return data;
     }
@@ -391,9 +394,12 @@ export async function parsePlaylist(
       if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
         const fallbackData: ApiResponse<Playlist> = await fallbackRes.json();
         if (fallbackData.success) {
-          notifyStatsRefresh(500);
-        }
-        return fallbackData;
+        notifyStatsIncrement({
+          kind: 'parse',
+          trackCount: fallbackData.data?.trackCount ?? fallbackData.data?.tracks?.length,
+        });
+      }
+      return fallbackData;
       }
     }
 
@@ -565,6 +571,84 @@ export function notifyStatsRefresh(delayMs: number = 800): void {
       }
     }, delayMs);
   }
+}
+
+export type StatsIncrementDetail =
+  | { kind: 'visit' }
+  | { kind: 'parse'; trackCount?: number }
+  | { kind: 'export'; format: string };
+
+/**
+ * Tells StatsJournal to bump its displayed counters locally after a recorded event,
+ * without sending another GET /api/stats request. The event itself has already been
+ * persisted server-side.
+ */
+export function notifyStatsIncrement(detail: StatsIncrementDetail): void {
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('playlistout:stats-increment', { detail }));
+    } catch {
+      // ignore if window is torn down
+    }
+  }
+}
+
+export interface KugouStreamHandlers {
+  onStatus: (data: { status: string; message?: string }) => void;
+  onSuccess: (data: { token: string; userid: string }) => void;
+  onTerminal: (data: { message?: string }, kind: 'expired' | 'failed') => void;
+  onConnectionError: () => void;
+}
+
+/**
+ * Subscribes to the Kugou QR login SSE stream. Returns a close function.
+ * The browser EventSource reconnects automatically when the server closes the
+ * connection at its subrequest-budget boundary (the server sends `retry` first).
+ */
+export function streamKugouQrStatus(qrcode: string, handlers: KugouStreamHandlers): () => void {
+  const base = API_BASE_URL || REMOTE_API_BASE_URL;
+
+  if (typeof EventSource === 'undefined') {
+    handlers.onConnectionError();
+    return () => {};
+  }
+
+  const es = new EventSource(
+    `${base}/api/kugou/login/stream?qrcode=${encodeURIComponent(qrcode)}`,
+  );
+
+  const parseData = (event: MessageEvent): any => {
+    try {
+      return JSON.parse(event.data);
+    } catch {
+      return {};
+    }
+  };
+
+  es.addEventListener('status', (event) => {
+    handlers.onStatus(parseData(event as MessageEvent));
+  });
+  es.addEventListener('success', (event) => {
+    handlers.onSuccess(parseData(event as MessageEvent));
+    es.close();
+  });
+  ['expired', 'failed'].forEach((eventName) => {
+    es.addEventListener(eventName, (event) => {
+      handlers.onTerminal(
+        parseData(event as MessageEvent),
+        eventName as 'expired' | 'failed',
+      );
+      es.close();
+    });
+  });
+  es.addEventListener('retry', () => {
+    // No action: EventSource reconnects on the imminent close.
+  });
+  es.onerror = () => {
+    handlers.onConnectionError();
+  };
+
+  return () => es.close();
 }
 
 /**
@@ -860,7 +944,7 @@ export async function recordVisit(): Promise<void> {
       keepalive: true,
     });
     if (res.ok) {
-      notifyStatsRefresh(800);
+      notifyStatsIncrement({ kind: 'visit' });
       return;
     }
   } catch {
@@ -869,7 +953,7 @@ export async function recordVisit(): Promise<void> {
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         const blob = new Blob([payload], { type: 'application/json' });
         navigator.sendBeacon(url, blob);
-        notifyStatsRefresh(1000);
+        notifyStatsIncrement({ kind: 'visit' });
       }
     } catch {
       // Fire-and-forget best-effort
@@ -901,7 +985,7 @@ export async function recordExportEvent(
       keepalive: true,
     });
     if (res.ok) {
-      notifyStatsRefresh(500);
+      notifyStatsIncrement({ kind: 'export', format });
       return;
     }
   } catch {
@@ -909,7 +993,7 @@ export async function recordExportEvent(
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         const blob = new Blob([payload], { type: 'application/json' });
         navigator.sendBeacon(url, blob);
-        notifyStatsRefresh(800);
+        notifyStatsIncrement({ kind: 'export', format });
       }
     } catch {
       // Fire-and-forget

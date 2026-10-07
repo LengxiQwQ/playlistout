@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { fetchStats, type StatsResponse } from '../../api/client';
+import { fetchStats, type StatsResponse, type StatsIncrementDetail } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Sticker } from '../ui/Sticker';
@@ -56,34 +56,48 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   }, []);
 
   useEffect(() => {
-    // Initial fetch
+    // Initial fetch (the only full refetch besides the slow background poll)
     refreshStats();
 
-    // Listen to global stats refresh events (fired when visit/parse/export occurs)
-    const handleRefreshEvent = () => {
-      refreshStats();
+    // Bump displayed counters locally after recorded events; no refetch
+    const handleIncrement = (event: Event) => {
+      const detail = (event as CustomEvent<StatsIncrementDetail>).detail;
+      if (!detail) return;
+      setStats((prev) => {
+        // If the initial fetch has not landed yet, ignore: it will include the event.
+        if (!prev) return prev;
+        const next = { ...prev };
+        if (detail.kind === 'visit') {
+          next.visitorsToday = prev.visitorsToday + 1;
+          next.cumulativeDailyVisitors = (prev.cumulativeDailyVisitors ?? 0) + 1;
+          next.totalVisitors = prev.totalVisitors + 1;
+          next.pageViewsToday = prev.pageViewsToday + 1;
+          next.totalPageViews = prev.totalPageViews + 1;
+        } else if (detail.kind === 'parse') {
+          next.playlistsParsedToday = prev.playlistsParsedToday + 1;
+          next.totalPlaylistsParsed = prev.totalPlaylistsParsed + 1;
+          const addedTracks = detail.trackCount ?? 0;
+          next.tracksProcessedToday = prev.tracksProcessedToday + addedTracks;
+          next.totalTracksProcessed = prev.totalTracksProcessed + addedTracks;
+        } else if (detail.kind === 'export') {
+          next.exportsToday = prev.exportsToday + 1;
+          next.totalExports = prev.totalExports + 1;
+        }
+        return next;
+      });
     };
+    window.addEventListener('playlistout:stats-increment', handleIncrement);
 
-    window.addEventListener('playlistout:stats-refresh', handleRefreshEvent);
-
-    // Refresh when user returns to this tab
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshStats();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Gentle polling every 60s
+    // Slow background poll while the tab is visible (5 minutes); the server also
+    // edge-caches the response. No refresh on tab switch and no fast polling.
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         refreshStats();
       }
-    }, 60000);
+    }, 5 * 60 * 1000);
 
     return () => {
-      window.removeEventListener('playlistout:stats-refresh', handleRefreshEvent);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('playlistout:stats-increment', handleIncrement);
       clearInterval(interval);
     };
   }, [refreshStats]);

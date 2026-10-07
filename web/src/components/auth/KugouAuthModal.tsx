@@ -8,6 +8,7 @@ import {
   fetchKugouQrCode,
   checkKugouQrCode,
   fetchKugouProfile,
+  streamKugouQrStatus,
   type KugouQrSession,
   type KugouUserProfile,
 } from '../../api/client';
@@ -176,59 +177,67 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     };
   }, [isOpen, authState]);
 
-  // Polling logic when qrSession is active and user is not validated
+  // QR login status transport: SSE first (one long-lived request, server pushes
+  // transitions), automatically falling back to 2s client polling if the stream
+  // cannot connect. The connection is NOT rebuilt on waiting->scanned transitions.
   useEffect(() => {
     if (
       !isOpen ||
       !qrSession?.qrcode ||
-      authState === 'valid' ||
-      status === 'success' ||
-      status === 'expired'
+      authState === 'valid'
     ) {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
       return;
     }
 
-    const poll = async () => {
-      // Proactive client-side expiration check against expiresAt
-      if (qrSession.expiresAt && Date.now() > qrSession.expiresAt) {
+    let cancelled = false;
+    let transport: 'sse' | 'polling' = 'sse';
+    let closeStream: (() => void) | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let sseErrorCount = 0;
+    let sseReceived = false;
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const applySuccess = (tokenValue: string, useridValue: string) => {
+      setKugouAuth(tokenValue, useridValue);
+      setAuthState('valid');
+      setStatus('success');
+      pendingSuccessRef.current = true;
+    };
+
+    const isLocallyExpired = () =>
+      Boolean(qrSession.expiresAt && Date.now() > qrSession.expiresAt);
+
+    const runPoll = async () => {
+      if (isLocallyExpired()) {
         setStatus('expired');
-        if (pollTimerRef.current) {
-          clearInterval(pollTimerRef.current);
-          pollTimerRef.current = null;
-        }
+        stopPolling();
         return;
       }
-
       try {
         const res = await checkKugouQrCode(qrSession.qrcode);
+        if (cancelled) return;
         if (res.success && res.data) {
           consecutiveErrorsRef.current = 0;
           const nextStatus = res.data.status;
           setStatus(nextStatus);
-
           if (nextStatus === 'success' && res.data.token && res.data.userid) {
-            setKugouAuth(res.data.token, res.data.userid);
-            setAuthState('valid');
-            if (pollTimerRef.current) {
-              clearInterval(pollTimerRef.current);
-              pollTimerRef.current = null;
-            }
-            pendingSuccessRef.current = true;
+            stopPolling();
+            applySuccess(res.data.token, res.data.userid);
           } else if (nextStatus === 'expired') {
-            if (pollTimerRef.current) {
-              clearInterval(pollTimerRef.current);
-              pollTimerRef.current = null;
-            }
+            stopPolling();
           }
         } else {
           consecutiveErrorsRef.current++;
           if (consecutiveErrorsRef.current >= 3) {
             setStatus('failed');
             setErrorMessage('登录状态检查失败，请检查网络');
+            stopPolling();
           }
         }
       } catch {
@@ -236,19 +245,69 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
         if (consecutiveErrorsRef.current >= 3) {
           setStatus('failed');
           setErrorMessage('登录状态检查遇到网络异常，请重试');
+          stopPolling();
         }
       }
     };
 
-    pollTimerRef.current = setInterval(poll, 2000);
+    const startPollingFallback = () => {
+      if (cancelled || transport === 'polling') return;
+      transport = 'polling';
+      pollTimer = setInterval(runPoll, 2000);
+    };
+
+    // Environments without EventSource (older webviews, test hosts): poll directly.
+    if (typeof EventSource === 'undefined') {
+      startPollingFallback();
+      return () => {
+        cancelled = true;
+        stopPolling();
+      };
+    }
+
+    closeStream = streamKugouQrStatus(qrSession.qrcode, {
+      onStatus: (data) => {
+        sseReceived = true;
+        sseErrorCount = 0;
+        consecutiveErrorsRef.current = 0;
+        if (isLocallyExpired()) {
+          if (closeStream) closeStream();
+          setStatus('expired');
+          return;
+        }
+        if (data.status === 'waiting' || data.status === 'scanned') {
+          setStatus(data.status);
+        }
+      },
+      onSuccess: (data) => {
+        applySuccess(data.token, data.userid);
+      },
+      onTerminal: (data, kind) => {
+        if (kind === 'expired') {
+          setErrorMessage(data.message || null);
+          setStatus('expired');
+        } else {
+          setErrorMessage(data.message || '登录检查异常，请重试');
+          setStatus('failed');
+        }
+      },
+      onConnectionError: () => {
+        // EventSource also errors briefly during the scheduled 95s reconnect, so
+        // only fall back when we never received any event and errors persist.
+        sseErrorCount++;
+        if (!sseReceived && sseErrorCount >= 2) {
+          if (closeStream) closeStream();
+          startPollingFallback();
+        }
+      },
+    });
 
     return () => {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
+      cancelled = true;
+      if (closeStream) closeStream();
+      stopPolling();
     };
-  }, [isOpen, qrSession?.qrcode, status, authState]);
+  }, [isOpen, qrSession?.qrcode, authState]);
 
   if (!isOpen) return null;
 

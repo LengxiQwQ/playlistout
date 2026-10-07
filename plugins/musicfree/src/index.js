@@ -214,21 +214,76 @@ const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
 const PLUGIN_VERSION = '1.4.0';
 
-function getAnalyticsHostPlatform() {
+/**
+ * 宿主运行环境与形态全方位智能探测
+ * @returns {{ deviceClass: 'desktop'|'mobile', os: string, engine: string }}
+ */
+function detectClientEnvironment() {
+  var isElectron = isHostElectron();
+  var os = 'unknown';
+  var engine = 'unknown';
+
+  // 1. 尝试检测 Hermes 引擎 (Android React Native)
   try {
-    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
-    if (realProc && realProc.platform) {
-      if (realProc.platform === 'win32') return 'windows';
-      if (realProc.platform === 'darwin') return 'macos';
-      if (realProc.platform === 'linux' && isHostElectron()) return 'linux';
+    if (typeof HermesInternal !== 'undefined' || (typeof globalThis !== 'undefined' && globalThis.HermesInternal)) {
+      engine = 'hermes';
     }
   } catch (_) {}
-  try {
-    const ua = typeof navigator !== 'undefined' && navigator.userAgent ? String(navigator.userAgent) : '';
-    if (/android/i.test(ua)) return 'android';
-    if (/iphone|ipad|ios/i.test(ua)) return 'ios';
-  } catch (_) {}
-  return isHostElectron() ? 'unknown' : 'android';
+
+  // 2. 判定设备类别 (deviceClass):
+  // MusicFree 官方只有两类客户端：桌面版 (Desktop/Electron) 与 手机版 (Mobile/Android/React Native)
+  var deviceClass = isElectron ? 'desktop' : 'mobile';
+
+  // 3. 判定操作系统 (os) 与引擎
+  if (deviceClass === 'desktop') {
+    try {
+      var realProc = new Function('return typeof process !== "undefined" ? process : null')();
+      if (realProc && realProc.versions) {
+        if (realProc.versions.electron) {
+          engine = 'electron';
+        } else if (realProc.versions.node) {
+          engine = 'v8';
+        }
+      }
+      if (realProc && realProc.platform) {
+        if (realProc.platform === 'win32') os = 'windows';
+        else if (realProc.platform === 'darwin') os = 'macos';
+        else if (realProc.platform === 'linux') os = 'linux';
+      }
+    } catch (_) {}
+    if (os === 'unknown') os = 'windows';
+  } else {
+    // 手机端
+    try {
+      var ua = typeof navigator !== 'undefined' && navigator.userAgent ? String(navigator.userAgent) : '';
+      if (/iphone|ipad|ios/i.test(ua)) os = 'ios';
+      else if (/android/i.test(ua)) os = 'android';
+    } catch (_) {}
+    if (os === 'unknown') os = 'android';
+  }
+
+  return {
+    deviceClass: deviceClass,
+    os: os,
+    engine: engine,
+  };
+}
+
+function getAnalyticsHostPlatform() {
+  return detectClientEnvironment().os;
+}
+
+function getPlaylistOutHeaders() {
+  var envInfo = detectClientEnvironment();
+  return {
+    'User-Agent': 'PlaylistOut-MusicFree/' + PLUGIN_VERSION + ' (' + envInfo.deviceClass + '; ' + envInfo.os + ')',
+    Accept: 'application/json, text/plain, */*',
+    'X-PlaylistOut-Client-Type': 'plugin',
+    'X-PlaylistOut-Client-Id': 'musicfree',
+    'X-PlaylistOut-Client-Version': PLUGIN_VERSION,
+    'X-PlaylistOut-Device-Class': envInfo.deviceClass,
+    'X-PlaylistOut-Host': envInfo.os,
+  };
 }
 
 function isSelfPlatform(plat) {
@@ -588,14 +643,7 @@ async function httpGet(url, options = {}) {
   const timeoutMs = options.timeout || 15000;
   const isPlaylistOutApi = /^https:\/\/playlistout-api\.lengxiqwq\.com\//i.test(url);
   const defaultHeaders = isPlaylistOutApi
-    ? {
-        'User-Agent': 'PlaylistOut-MusicFree/' + PLUGIN_VERSION,
-        Accept: 'application/json, text/plain, */*',
-        'X-PlaylistOut-Client-Type': 'plugin',
-        'X-PlaylistOut-Client-Id': 'musicfree',
-        'X-PlaylistOut-Client-Version': PLUGIN_VERSION,
-        'X-PlaylistOut-Host': getAnalyticsHostPlatform(),
-      }
+    ? getPlaylistOutHeaders()
     : {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -662,14 +710,15 @@ async function httpGet(url, options = {}) {
  */
 async function httpPost(url, body, options = {}) {
   const timeoutMs = options.timeout || 15000;
-  const headers = Object.assign(
-    {
-      'Content-Type': 'application/json',
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    options.headers || {}
-  );
+  const isPlaylistOutApi = /^https:\/\/playlistout-api\.lengxiqwq\.com\//i.test(url);
+  const defaultHeaders = isPlaylistOutApi
+    ? Object.assign(getPlaylistOutHeaders(), { 'Content-Type': 'application/json' })
+    : {
+        'Content-Type': 'application/json',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      };
+  const headers = Object.assign(defaultHeaders, options.headers || {});
 
   let axiosClient = null;
   if (typeof axios !== 'undefined') {
@@ -1422,6 +1471,33 @@ async function importMusicSheet(urlLike) {
 
   if (items.length === 0) {
     throw new Error('未解析到有效的歌曲数据');
+  }
+
+  // 审计与元数据感知：记录服务端返回的客户端识别信息
+  const meta = res.data && res.data.meta;
+  if (meta && meta.client) {
+    try {
+      const clientDesc =
+        (meta.client.deviceClass === 'desktop' ? '电脑版' : '手机版') +
+        ' (' +
+        (meta.client.osFamily || 'unknown') +
+        ')';
+      const serverVer = meta.server && meta.server.version ? meta.server.version : '2.2.0';
+      console.log(
+        '[PlaylistOut] 歌单解析就绪: 客户端=' +
+          clientDesc +
+          ', 插件=' +
+          (meta.client.id || 'musicfree') +
+          ' v' +
+          (meta.client.version || PLUGIN_VERSION) +
+          ', 服务端 API v' +
+          serverVer +
+          ', 来源=' +
+          detectedPlatform +
+          ', 曲目数=' +
+          items.length
+      );
+    } catch (_) {}
   }
 
   // 若为酷狗歌单且未配置 Token 或仅解析出前 10 首预览歌曲，明确弹出长效提示指导用户
@@ -2350,4 +2426,6 @@ module.exports = {
   _getKugouCredentials: getKugouCredentials,
   _isOfficialWebsiteTrigger: isOfficialWebsiteTrigger,
   _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
+  _detectClientEnvironment: detectClientEnvironment,
+  _getPlaylistOutHeaders: getPlaylistOutHeaders,
 };

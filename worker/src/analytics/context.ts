@@ -5,6 +5,8 @@ import {
   type RegisteredPluginId,
 } from './generated/registered-plugins';
 import type { BrowserFamily, DeviceClass, OsFamily } from './types';
+import { PLAYLISTOUT_VERSION } from '../version';
+import type { ResponseMetadata } from '../models/playlist';
 
 export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_mixed'] as const;
 export type AnalyticsChannel = (typeof ANALYTICS_CHANNELS)[number];
@@ -150,8 +152,14 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     clientId = 'anonymous_api';
   }
 
-  // Plugin UA carries no device/OS hints; the explicit Host header is
-  // authoritative when it maps to a known environment.
+  // Plugin UA carries no device/OS hints; the explicit Host / Device-Class headers
+  // are authoritative when they map to a known environment.
+  const declaredDeviceClassRaw = request.headers.get('x-playlistout-device-class')?.trim().toLowerCase();
+  const declaredDeviceClass: DeviceClass | null =
+    declaredDeviceClassRaw === 'desktop' || declaredDeviceClassRaw === 'mobile'
+      ? (declaredDeviceClassRaw as DeviceClass)
+      : null;
+
   let deviceClass = parsedUA.deviceClass;
   let osFamily = parsedUA.osFamily;
   if (channel === 'plugin') {
@@ -159,6 +167,9 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     if (hostEnv) {
       deviceClass = hostEnv.deviceClass;
       osFamily = hostEnv.osFamily;
+    }
+    if (declaredDeviceClass) {
+      deviceClass = declaredDeviceClass;
     }
   }
 
@@ -177,4 +188,55 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     osFamily,
     isAutomated: requestLooksAutomated(request),
   };
+}
+
+export function buildResponseMetadata(
+  request: Request,
+  parseInfo?: {
+    resolvedPlatform: string;
+    trackCount?: number;
+    mode?: string;
+  },
+): ResponseMetadata | undefined {
+  try {
+    const ctx = createAnalyticsRequestContextV2(request);
+    const hints: string[] = [];
+
+    if (ctx.channel === 'plugin') {
+      if (ctx.deviceClass === 'mobile') {
+        hints.push('mobile_client_detected');
+      } else if (ctx.deviceClass === 'desktop') {
+        hints.push('desktop_client_detected');
+      }
+    }
+
+    const meta: ResponseMetadata = {
+      server: {
+        service: 'playlistout-api',
+        version: PLAYLISTOUT_VERSION,
+      },
+      client: {
+        channel: ctx.channel,
+        id: ctx.clientId,
+        version: ctx.clientVersion,
+        deviceClass: ctx.deviceClass,
+        osFamily: ctx.osFamily,
+        rawHost: ctx.hostPlatform,
+      },
+      hints: hints.length > 0 ? hints : undefined,
+    };
+
+    if (parseInfo) {
+      meta.parseInfo = {
+        resolvedPlatform: parseInfo.resolvedPlatform,
+        trackCount: parseInfo.trackCount,
+        mode: parseInfo.mode,
+        timestamp: Date.now(),
+      };
+    }
+
+    return meta;
+  } catch (_) {
+    return undefined;
+  }
 }

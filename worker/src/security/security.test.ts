@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from '../index';
 import { resetRateLimitStore } from './rate-limit';
 import { qqMusicProvider } from '../providers/qqmusic';
+import { installMockCaches, type MockCachesHandle } from '../test-utils/caches-mock';
 
 function createMockCtx(): ExecutionContext {
   return {
@@ -11,9 +12,14 @@ function createMockCtx(): ExecutionContext {
 }
 
 describe('Abuse Protection & Security Hardening (Phase 6)', () => {
+  let cachesHandle: MockCachesHandle;
   beforeEach(() => {
     resetRateLimitStore();
     vi.restoreAllMocks();
+    cachesHandle = installMockCaches();
+  });
+  afterEach(() => {
+    cachesHandle.restore();
   });
 
   it('enforces rate limits (30 req/min for web frontend) and returns 429 with Retry-After', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from '../index';
 import { qqMusicProvider } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
@@ -10,6 +10,7 @@ import * as kugouClient from '../providers/kugou/client';
 import * as v2Recorder from '../analytics/v2-recorder';
 import { ProviderError } from '../models/playlist';
 import { resetRateLimitStore } from '../security/rate-limit';
+import { installMockCaches, type MockCachesHandle } from '../test-utils/caches-mock';
 
 function createMockCtx(): ExecutionContext {
   return {
@@ -54,9 +55,14 @@ const mockUserData = (platform: string, userId: string, nickname: string) => ({
 });
 
 describe('PlaylistOut Public API v1', () => {
+  let cachesHandle: MockCachesHandle;
   beforeEach(() => {
     vi.restoreAllMocks();
     resetRateLimitStore();
+    cachesHandle = installMockCaches();
+  });
+  afterEach(() => {
+    cachesHandle.restore();
   });
 
   describe('GET /api/v1/health', () => {
@@ -268,6 +274,69 @@ describe('PlaylistOut Public API v1', () => {
       expect(body.data.kind).toBe('playlist');
       expect(body.data.platform).toBe('qishui');
       expect(body.data.result.name).toBe('Qishui Soda Chill');
+    });
+
+    it('returns rich response metadata and headers identifying desktop plugin client', async () => {
+      vi.spyOn(qqMusicProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('qqmusic', '9044196528', 'QQ Folk Collection'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://y.qq.com/n/ryqq/playlist/9044196528',
+        {
+          headers: {
+            'X-PlaylistOut-Client-Type': 'plugin',
+            'X-PlaylistOut-Client-Id': 'musicfree',
+            'X-PlaylistOut-Client-Version': '1.4.0',
+            'X-PlaylistOut-Device-Class': 'desktop',
+            'X-PlaylistOut-Host': 'windows',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-PlaylistOut-Server-Version')).toBe('2.2.0');
+      expect(response.headers.get('X-PlaylistOut-Client-Device')).toBe('desktop');
+      expect(response.headers.get('X-PlaylistOut-Client-Id')).toBe('musicfree');
+
+      const body: any = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.meta).toBeDefined();
+      expect(body.meta.server.version).toBe('2.2.0');
+      expect(body.meta.client.id).toBe('musicfree');
+      expect(body.meta.client.channel).toBe('plugin');
+      expect(body.meta.client.version).toBe('1.4.0');
+      expect(body.meta.client.deviceClass).toBe('desktop');
+      expect(body.meta.client.osFamily).toBe('windows');
+      expect(body.meta.parseInfo.resolvedPlatform).toBe('qqmusic');
+      expect(body.meta.hints).toContain('desktop_client_detected');
+    });
+
+    it('accurately identifies mobile plugin request in metadata and headers', async () => {
+      vi.spyOn(neteaseProvider, 'parse').mockResolvedValueOnce(
+        mockPlaylist('netease', '2756674066', 'NetEase Top Songs'),
+      );
+
+      const request = new Request(
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://music.163.com/playlist?id=2756674066',
+        {
+          headers: {
+            'X-PlaylistOut-Client-Type': 'plugin',
+            'X-PlaylistOut-Client-Id': 'musicfree',
+            'X-PlaylistOut-Client-Version': '1.4.0',
+            'X-PlaylistOut-Device-Class': 'mobile',
+            'X-PlaylistOut-Host': 'android',
+          },
+        },
+      );
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-PlaylistOut-Client-Device')).toBe('mobile');
+
+      const body: any = await response.json();
+      expect(body.meta.client.deviceClass).toBe('mobile');
+      expect(body.meta.client.osFamily).toBe('android');
+      expect(body.meta.hints).toContain('mobile_client_detected');
     });
 
     it('extracts URL cleanly from mixed share text with emojis', async () => {

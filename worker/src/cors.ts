@@ -74,6 +74,7 @@ export function isPublicEndpoint(pathname: string): boolean {
     pathname === '/api/v1/resolve' ||
     pathname === '/api/v1/playlist' ||
     pathname === '/api/session/token' ||
+    pathname === '/api/kugou/login/stream' ||
     pathname === '/api/v1/user/playlists' ||
     pathname === '/api/v1/stats' ||
     pathname === '/api/v1/health'
@@ -94,7 +95,9 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host',
+        'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host, X-PlaylistOut-Device-Class',
+      'Access-Control-Expose-Headers':
+        'X-PlaylistOut-Server-Version, X-PlaylistOut-Client-Device, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version',
       'Access-Control-Max-Age': '86400',
     };
   }
@@ -143,7 +146,9 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] =
-      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host';
+      'Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host, X-PlaylistOut-Device-Class';
+    headers['Access-Control-Expose-Headers'] =
+      'X-PlaylistOut-Server-Version, X-PlaylistOut-Client-Device, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version';
     headers['Access-Control-Max-Age'] = '86400';
   }
 
