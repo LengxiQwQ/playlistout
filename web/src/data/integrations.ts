@@ -57,7 +57,7 @@ export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
     issueUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
     homepageUrl: 'https://bbplayer.roitium.com',
     repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
-    logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/main/apps/mobile/assets/images/icon.png',
+    logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/HEAD/apps/mobile/assets/images/icon_large.png',
     summary: {
       'zh-CN': '软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入',
       'en-US': 'Native built-in Playlist Out playlist import, supporting playlist links and local JSON import',
