@@ -136,4 +136,20 @@ describe('PluginEcosystem', () => {
     expect(buttons[0]).toHaveTextContent('复制插件地址');
     expect(buttons[1]).toHaveTextContent('复制插件地址');
   });
+
+  it('renders featured upcoming native integrations with coming soon sticker and PR link', async () => {
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <PluginEcosystem />
+      </LanguageProvider>,
+    );
+
+    expect(await screen.findByText('BBPlayer')).toBeInTheDocument();
+    expect(screen.getByText('⏳ 待上线')).toBeInTheDocument();
+    expect(screen.getByText('软件原生功能')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '查看 PR 进展 ↗' })).toHaveAttribute(
+      'href',
+      'https://github.com/bbplayer-app/BBPlayer/issues/340',
+    );
+  });
 });

@@ -219,6 +219,10 @@ export interface Translations {
     statusAvailable: string;
     statusProposed: string;
     statusPlanned: string;
+    statusUpcoming: string;
+    kindBuiltin: string;
+    kindPlugin: string;
+    viewPrProgress: string;
     officialPlugin: string;
     copyInstallUrl: string;
     copiedInstallUrl: string;

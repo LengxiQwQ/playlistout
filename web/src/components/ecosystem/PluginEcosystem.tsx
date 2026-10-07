@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import {
+  FEATURED_UPCOMING_INTEGRATIONS,
   PLUGIN_MANIFEST_URL,
   UPCOMING_INTEGRATIONS,
+  getIntegrationSummary,
   getPluginSummary,
   isPluginEcosystemManifest,
   type IntegrationStatus,
@@ -16,6 +18,7 @@ import { MarkerButton } from '../ui/MarkerButton';
 const statusColor: Record<IntegrationStatus, 'yellow' | 'blue'> = {
   proposed: 'yellow',
   planned: 'blue',
+  upcoming: 'yellow',
 };
 
 export const PluginEcosystem: React.FC = () => {
@@ -61,6 +64,7 @@ export const PluginEcosystem: React.FC = () => {
 
   const getStatusLabel = (status: IntegrationStatus) => {
     if (status === 'proposed') return t.ecosystem.statusProposed;
+    if (status === 'upcoming') return t.ecosystem.statusUpcoming;
     return t.ecosystem.statusPlanned;
   };
 
@@ -215,6 +219,101 @@ export const PluginEcosystem: React.FC = () => {
                       className="font-handwriting plugin-app-link"
                     >
                       {t.ecosystem.guideLink} ↗
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </Paper>
+        ))}
+
+        {FEATURED_UPCOMING_INTEGRATIONS.map((integration) => (
+          <Paper
+            key={integration.id}
+            color="white"
+            borderVariant="alt"
+            shadow="paper-sm"
+            rotateDeg={0.2}
+            tiltFactor={0.2}
+            interactive={false}
+            className="plugin-app-card is-upcoming"
+          >
+            <div className="plugin-app-row">
+              <div className="plugin-app-card-header">
+                <div className="plugin-app-logo-wrap">
+                  {integration.logoUrl && !logoFailed[integration.id] ? (
+                    <img
+                      src={integration.logoUrl}
+                      alt=""
+                      className="plugin-app-logo"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={() =>
+                        setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
+                      }
+                    />
+                  ) : (
+                    <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                      {integration.name.slice(0, 2)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="plugin-app-card-title">
+                  <div className="plugin-app-name-row">
+                    <h3 className="plugin-app-name">{integration.name}</h3>
+                    <Sticker
+                      as="span"
+                      color="yellow"
+                      rotateDeg={-0.6}
+                      className="font-handwriting plugin-status-sticker"
+                    >
+                      ⏳ {t.ecosystem.statusUpcoming}
+                    </Sticker>
+                    {integration.kind === 'builtin' ? (
+                      <span className="font-note plugin-kind-badge">
+                        {t.ecosystem.kindBuiltin}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="font-handwriting plugin-app-summary">
+                    {getIntegrationSummary(integration, language)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="plugin-app-actions">
+                {integration.prUrl || integration.issueUrl ? (
+                  <a
+                    href={integration.prUrl || integration.issueUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-marker plugin-action-link"
+                  >
+                    {t.ecosystem.viewPrProgress} ↗
+                  </a>
+                ) : null}
+
+                <div className="plugin-app-links">
+                  {integration.homepageUrl ? (
+                    <a
+                      href={integration.homepageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      {t.ecosystem.websiteLink} ↗
+                    </a>
+                  ) : null}
+
+                  {integration.repositoryUrl ? (
+                    <a
+                      href={integration.repositoryUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-handwriting plugin-app-link"
+                    >
+                      GitHub ↗
                     </a>
                   ) : null}
                 </div>

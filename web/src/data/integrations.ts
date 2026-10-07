@@ -1,12 +1,19 @@
 import type { Language } from '../i18n';
 
-export type IntegrationStatus = 'proposed' | 'planned';
+export type IntegrationStatus = 'proposed' | 'planned' | 'upcoming';
+export type IntegrationKind = 'plugin' | 'builtin';
 
 export interface UpcomingIntegration {
   id: string;
   name: string;
   status: IntegrationStatus;
+  kind?: IntegrationKind;
   issueUrl?: string;
+  prUrl?: string;
+  homepageUrl?: string;
+  repositoryUrl?: string;
+  logoUrl?: string;
+  summary?: Partial<Record<Language, string>> & { default?: string };
 }
 
 export interface PublishedPluginArtifact {
@@ -41,18 +48,30 @@ export interface PluginEcosystemManifest {
 
 export const PLUGIN_MANIFEST_URL = '/plugins/index.json';
 
+export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
+  {
+    id: 'bbplayer',
+    name: 'BBPlayer',
+    status: 'upcoming',
+    kind: 'builtin',
+    issueUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
+    homepageUrl: 'https://bbplayer.roitium.com',
+    repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
+    logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/main/apps/mobile/assets/images/icon.png',
+    summary: {
+      'zh-CN': '软件原生内置支持导入 Playlist Out 本地 JSON 歌单，直接匹配 B 站音源播放（PR 已就绪，待作者合并发版）。',
+      'en-US': 'Native built-in support for importing Playlist Out local JSON playlists to match Bilibili audio (PR ready, awaiting upstream release).',
+      default: '软件原生内置支持导入 Playlist Out 本地 JSON 歌单，直接匹配 B 站音源播放（PR 已就绪，待作者合并发版）。',
+    },
+  },
+];
+
 export const UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
   {
     id: 'lx-music',
     name: 'LX Music',
     status: 'proposed',
     issueUrl: 'https://github.com/lyswhut/lx-music-desktop/issues/3001',
-  },
-  {
-    id: 'bbplayer',
-    name: 'BBPlayer',
-    status: 'proposed',
-    issueUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
   },
   {
     id: 'listen1',
@@ -110,5 +129,16 @@ export function getPluginSummary(plugin: PublishedPlugin, language: Language): s
     plugin.summary?.[language] ||
     plugin.summary?.default ||
     plugin.description
+  );
+}
+
+export function getIntegrationSummary(
+  integration: UpcomingIntegration,
+  language: Language,
+): string {
+  return (
+    integration.summary?.[language] ||
+    integration.summary?.default ||
+    ''
   );
 }
