@@ -492,6 +492,8 @@ HTML = r'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PlaylistOut Analytics · 数据与审查控制台</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate icon" href="/favicon.ico">
 <style>
 :root{
   --bg:#f4f6fa;--p:#ffffff;--t:#1e293b;--m:#64748b;--l:#e2e8f0;--a:#206bc4;
@@ -509,11 +511,12 @@ HTML = r'''<!doctype html>
 button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:auto;padding:14px 22px}
 .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--p) 96%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--l);box-shadow:var(--s)}
-.head{display:flex;justify-content:space-between;gap:12px;align-items:center;min-height:48px;padding:4px 0}
-.brand{display:flex;align-items:center;gap:10px;shrink:0}
-.logo{width:30px;height:30px;border-radius:7px;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(32,107,196,.3)}
-h1{margin:0;font-size:16px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
-.badge-tag{font-size:11px;font-weight:500;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent)}
+.head{display:flex;justify-content:space-between;gap:8px;align-items:center;min-height:50px;padding:3px 0}
+.brand{display:flex;align-items:center;gap:9px;shrink:0}
+.logo-img{width:32px;height:32px;border-radius:8px;object-fit:cover;display:block;shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.15);border:1px solid var(--l)}
+.brand-info{display:flex;flex-direction:column;line-height:1.2}
+h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:6px}
+.badge-tag{font-size:10px;font-weight:600;padding:1px 5px;border-radius:999px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent)}
 .muted{font-size:12px;color:var(--m)}
 .headright{display:flex;align-items:center;gap:8px;shrink:0}
 .health{padding:4px 9px;border:1px solid var(--l);background:var(--p);border-radius:999px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
@@ -522,12 +525,17 @@ h1{margin:0;font-size:16px;font-weight:700;letter-spacing:-.2px;display:flex;ali
 .ghost{height:30px;padding:0 10px;border:1px solid var(--l);border-radius:7px;background:var(--p);cursor:pointer;font-size:12px;font-weight:500;box-shadow:var(--s);transition:all .15s}
 .ghost:hover{background:color-mix(in srgb,var(--p) 85%,var(--a));border-color:var(--a)}
 
-.tabs{display:flex;gap:4px;overflow:auto;padding:0;margin:0 8px}
-.tab{border:0;border-radius:7px;padding:6px 11px;background:transparent;color:var(--m);cursor:pointer;white-space:nowrap;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
-.tab:hover{color:var(--t);background:color-mix(in srgb,var(--p) 60%,transparent)}
-.tab.active{background:var(--a);color:#fff;box-shadow:0 1px 3px rgba(32,107,196,.3)}
-.tab-badge{padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;background:var(--w);color:#fff}
-.tab.active .tab-badge{background:#fff;color:var(--a)}
+.tabs{display:flex;gap:4px;align-items:center;padding:0;margin:0 10px;flex-shrink:0}
+.tab{border:1px solid transparent;border-radius:8px;padding:3px 9px;background:transparent;color:var(--m);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.tab:hover{color:var(--t);background:color-mix(in srgb,var(--p) 65%,transparent);border-color:var(--l)}
+.tab.active{background:var(--p);color:var(--a);border-color:color-mix(in srgb,var(--a) 30%,var(--l));box-shadow:var(--s)}
+.tab-icon{font-size:14px;line-height:1;display:flex;align-items:center}
+.tab-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
+.tab-title{font-size:12px;font-weight:600;color:inherit}
+.tab-sub{font-size:9.5px;font-weight:600;color:var(--m);letter-spacing:.3px;text-transform:uppercase}
+.tab.active .tab-sub{color:color-mix(in srgb,var(--a) 70%,var(--m))}
+.tab-badge{padding:1px 5px;border-radius:999px;font-size:10px;font-weight:700;background:var(--w);color:#fff;line-height:1.2;margin-left:2px}
+.tab.active .tab-badge{background:var(--w);color:#fff}
 
 .filter-card{padding:12px 16px;margin-bottom:14px;background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
 .filter-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--l);flex-wrap:wrap}
@@ -606,31 +614,69 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 .badge.resolved{background:color-mix(in srgb,var(--g) 15%,var(--p));color:var(--g);border:1px solid color-mix(in srgb,var(--g) 30%,transparent)}
 .badge.ignored{background:color-mix(in srgb,var(--m) 15%,var(--p));color:var(--m);border:1px solid color-mix(in srgb,var(--m) 30%,transparent)}
 .footer{text-align:center;color:var(--m);font-size:11px;padding:24px 0}
-@media(max-width:1100px){.head{flex-wrap:wrap}.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:980px){.head{flex-wrap:wrap;padding:6px 0;gap:8px}.tabs{order:3;width:100%;justify-content:flex-start;margin:4px 0 0;overflow-x:auto}}
 @media(max-width:760px){.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.bar{grid-template-columns:100px 1fr 60px}}
 </style></head><body>
 
-<!-- 纤细吸顶导航栏：仅常驻标签页与状态，绝不遮挡视野 -->
+<!-- 纤细吸顶导航栏：仅常驻标签页与状态，中英文上下换行，绝不遮挡视野 -->
 <header class="top"><div class="wrap">
   <div class="head">
     <div class="brand">
-      <div class="logo">PO</div>
-      <div>
-        <h1>PlaylistOut Analytics <span class="badge-tag">Tabler UI</span></h1>
-        <div class="muted" style="font-size:11px">Token 不进入浏览器 · 本地安全快照</div>
+      <img src="/logo-64.png" width="32" height="32" class="logo-img" alt="PlaylistOut" onerror="this.onerror=null;this.src='/favicon.svg'">
+      <div class="brand-info">
+        <h1>PlaylistOut <span class="badge-tag">Analytics</span></h1>
+        <div class="muted" style="font-size:10px;white-space:nowrap">Token 不进入浏览器 · 本地安全快照</div>
       </div>
     </div>
     <nav class="tabs">
-      <button class="tab active" data-page="overview">📊 总览 Overview</button>
-      <button class="tab" data-page="feedback">🐛 待审歌单 Feedback <span id="navPendingBadge" class="tab-badge" style="display:none">0</span></button>
-      <button class="tab" data-page="web">💻 终端与地域 Web</button>
-      <button class="tab" data-page="reliability">🛡️ 稳定性与偏好 Reliability</button>
-      <button class="tab" data-page="integrations">🔌 生态集成 Integrations</button>
-      <button class="tab" data-page="security">🔒 安全风控 Security</button>
+      <button class="tab active" data-page="overview">
+        <span class="tab-icon">📊</span>
+        <span class="tab-text">
+          <span class="tab-title">业务总览</span>
+          <span class="tab-sub">Overview</span>
+        </span>
+      </button>
+      <button class="tab" data-page="feedback">
+        <span class="tab-icon">🐛</span>
+        <span class="tab-text">
+          <span class="tab-title">待审歌单</span>
+          <span class="tab-sub">Feedback</span>
+        </span>
+        <span id="navPendingBadge" class="tab-badge" style="display:none">0</span>
+      </button>
+      <button class="tab" data-page="web">
+        <span class="tab-icon">💻</span>
+        <span class="tab-text">
+          <span class="tab-title">终端地域</span>
+          <span class="tab-sub">Web</span>
+        </span>
+      </button>
+      <button class="tab" data-page="reliability">
+        <span class="tab-icon">🛡️</span>
+        <span class="tab-text">
+          <span class="tab-title">稳定偏好</span>
+          <span class="tab-sub">Reliability</span>
+        </span>
+      </button>
+      <button class="tab" data-page="integrations">
+        <span class="tab-icon">🔌</span>
+        <span class="tab-text">
+          <span class="tab-title">生态集成</span>
+          <span class="tab-sub">Integrations</span>
+        </span>
+      </button>
+      <button class="tab" data-page="security">
+        <span class="tab-icon">🔒</span>
+        <span class="tab-text">
+          <span class="tab-title">安全风控</span>
+          <span class="tab-sub">Security</span>
+        </span>
+      </button>
     </nav>
     <div class="headright">
       <div id="health" class="health">● Loading</div>
-      <div id="updated" class="muted">尚未加载</div>
+      <div id="updated" class="muted" style="font-size:11px">尚未加载</div>
       <button id="refreshData" class="ghost">刷新云端数据</button>
     </div>
   </div>
@@ -682,13 +728,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
 <!-- 1. 业务总览 (Overview) -->
 <section class="page active" id="page-overview">
-  <div id="overviewAlert" class="alert-banner" style="display:none">
-    <div class="alert-content">
-      <div class="alert-icon">!</div>
-      <div>发现 <strong id="alertPendingCount">0</strong> 条用户上报失败的歌单等待审查，包含真实 URL。</div>
-    </div>
-    <button class="alert-btn" id="gotoFeedback">前往审查 ➜</button>
-  </div>
 
   <div class="section">
     <div><h2>整体情况 Overview</h2><div class="muted">先看结果，再下钻原因。</div></div>
@@ -1323,13 +1362,11 @@ async function feedbackCountCheck(){
   try{
     let d=await api("/api/feedback?status=pending&limit=1");
     let pending=d.counts?.pending??d.total??0;
-    let badge=$("#navPendingBadge"),banner=$("#overviewAlert");
+    let badge=$("#navPendingBadge");
     if(pending>0){
       if(badge){badge.style.display="inline-block";badge.textContent=pending}
-      if(banner){banner.style.display="flex";$("#alertPendingCount").textContent=pending}
     }else{
       if(badge)badge.style.display="none";
-      if(banner)banner.style.display="none";
     }
     if(d.counts){
       $("#fbCountAll").textContent=d.counts.all||0;
@@ -1524,6 +1561,17 @@ class Handler(BaseHTTPRequestHandler):
                     "snapshotGeneratedAt": type(self).snapshot.get("generatedAt"),
                 },
             )
+        elif path in {"/logo.png", "/logo-64.png", "/favicon.ico", "/favicon.svg"}:
+            repo_root = Path(__file__).resolve().parents[2]
+            name = path.lstrip("/")
+            target = repo_root / "web" / "public" / name
+            if not target.exists():
+                target = repo_root / "web" / "public" / ("logo-64.png" if name.endswith(".png") else "favicon.svg")
+            if target.exists():
+                ctype = "image/png" if target.suffix == ".png" else ("image/svg+xml" if target.suffix == ".svg" else "image/x-icon")
+                self.send_bytes(200, target.read_bytes(), ctype)
+                return
+            self.send_json(404, {"error": "not_found"})
         else:
             self.send_json(404, {"error": "not_found"})
 
