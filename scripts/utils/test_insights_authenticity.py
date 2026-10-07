@@ -513,7 +513,7 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertEqual(reconciled[0]["value"], "<500ms")
         self.assertEqual(reconciled[0]["count"], 20)
 
-    def test_bbplayer_preserved_under_exclude_my_and_has_workspace_breakdowns(self):
+    def test_bbplayer_obeys_exclude_my_and_has_workspace_breakdowns(self):
         snapshot = {
             "generatedAt": "2026-10-07T18:30:00Z",
             "dailyCore": [
@@ -544,7 +544,17 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
                     "region": "Selangor",
                     "metric": "resolve_request",
                     "count": 2,
-                }
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "playlist_success",
+                    "count": 2,
+                },
             ],
             "breakdowns": [
                 {
@@ -581,22 +591,26 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             "quarantine": [],
             "feedback": [],
         }
-        data = build_local_analytics(snapshot, {"exclude_my": "1"})
-        self.assertEqual(data["overview"]["resolve_request"], 2)
+        excluded = build_local_analytics(snapshot, {"exclude_my": "1"})
+        self.assertEqual(excluded["overview"]["resolve_request"], 0)
+        self.assertEqual(excluded["availableFilters"]["clients"], [])
+
+        included = build_local_analytics(snapshot, {"exclude_my": "0"})
+        self.assertEqual(included["overview"]["resolve_request"], 2)
         self.assertEqual(
-            data["availableFilters"]["clients"],
+            included["availableFilters"]["clients"],
             [{"name": "bbplayer", "count": 2}],
         )
         self.assertEqual(
-            data["breakdowns"]["bbplayer_version"],
+            included["breakdowns"]["bbplayer_version"],
             [{"name": "2.7.0", "count": 2}],
         )
         self.assertEqual(
-            data["breakdowns"]["bbplayer_host"],
+            included["breakdowns"]["bbplayer_host"],
             [{"name": "android", "count": 2}],
         )
         self.assertEqual(
-            data["environment"]["browsers"],
+            included["environment"]["browsers"],
             [{"name": "plugin:bbplayer", "count": 2}],
         )
         self.assertIn("bbplayerVersionBars", HTML)

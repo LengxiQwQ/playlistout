@@ -322,18 +322,15 @@ def apply_country_exclusion(
         row
         for row in geo
         if str(row.get("country", "")).upper() != excluded_country
-        or str(row.get("client_id", "")) == "bbplayer"
     ]
     excluded_map: dict[tuple[str, str, str, str, str], int] = defaultdict(int)
     legacy_parse_req: dict[tuple[str, str], int] = defaultdict(int)
 
     for row in geo:
         if str(row.get("country", "")).upper() == excluded_country:
-            cl = str(row.get("client_id", ""))
-            if cl == "bbplayer":
-                continue
             d = str(row.get("date", ""))
             ch = str(row.get("channel", ""))
+            cl = str(row.get("client_id", ""))
             p = str(row.get("platform", ""))
             m = str(row.get("metric", ""))
             cnt = int(row.get("count", 0) or 0)
@@ -502,19 +499,33 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             elif dimension == "host_platform" and cl:
                 breakdown_totals[f"{cl}_host"][value] += int(row.get("count", 0) or 0)
 
-    # Backfill early BBPlayer test requests before client_version / host_platform headers were sent
+    # Backfill early BBPlayer test requests before client_version / host_platform headers were sent,
+    # or clear/scale them when exclude_my filters out MY-origin BBPlayer requests.
     bbplayer_req_total = sum(
         int(row.get("count", 0) or 0)
         for row in filtered_source
         if row.get("client_id") == "bbplayer" and row.get("metric") == "resolve_request"
     )
     bbplayer_ver_recorded = sum(breakdown_totals["bbplayer_version"].values())
-    if bbplayer_req_total > bbplayer_ver_recorded:
+    if bbplayer_req_total == 0 and bbplayer_ver_recorded > 0:
+        for k, v in list(breakdown_totals["bbplayer_version"].items()):
+            breakdown_totals["client_version"][k] = max(0, breakdown_totals["client_version"].get(k, 0) - v)
+            if breakdown_totals["client_version"][k] == 0:
+                breakdown_totals["client_version"].pop(k, None)
+        breakdown_totals["bbplayer_version"].clear()
+    elif bbplayer_req_total > bbplayer_ver_recorded:
         diff = bbplayer_req_total - bbplayer_ver_recorded
         breakdown_totals["bbplayer_version"]["2.7.0"] += diff
         breakdown_totals["client_version"]["2.7.0"] += diff
+
     bbplayer_host_recorded = sum(breakdown_totals["bbplayer_host"].values())
-    if bbplayer_req_total > bbplayer_host_recorded:
+    if bbplayer_req_total == 0 and bbplayer_host_recorded > 0:
+        for k, v in list(breakdown_totals["bbplayer_host"].items()):
+            breakdown_totals["host_platform"][k] = max(0, breakdown_totals["host_platform"].get(k, 0) - v)
+            if breakdown_totals["host_platform"][k] == 0:
+                breakdown_totals["host_platform"].pop(k, None)
+        breakdown_totals["bbplayer_host"].clear()
+    elif bbplayer_req_total > bbplayer_host_recorded:
         diff = bbplayer_req_total - bbplayer_host_recorded
         breakdown_totals["bbplayer_host"]["android"] += diff
         breakdown_totals["host_platform"]["android"] += diff
@@ -523,6 +534,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         dimension: [
             {"name": name, "count": count}
             for name, count in sorted(values.items(), key=lambda item: (-item[1], item[0]))[:50]
+            if count > 0
         ]
         for dimension, values in breakdown_totals.items()
     }
@@ -571,6 +583,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         row
         for row in env_rows
         if _matches(row, filters, environment=True)
+        and not (exclude_my and row.get("client_id") == "bbplayer" and bbplayer_req_total == 0)
     ]
     devices = _sum_by(filtered_env, "device_class")
     browsers = _sum_by(filtered_env, "browser_family")
