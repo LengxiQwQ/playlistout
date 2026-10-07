@@ -1,7 +1,15 @@
-from qq_music_playlist_export import extract_playlist_id, extract_user_uin, export_to_m3u8, resolve_shortlink
+from qq_music_playlist_export import (
+    extract_playlist_id,
+    extract_user_uin,
+    export_to_m3u8,
+    resolve_shortlink,
+    normalize_qq_release_date,
+    try_c_y_qq,
+)
 from unittest.mock import patch, MagicMock
 import tempfile
 import os
+import json
 
 def test_extract_id_from_number():
     assert extract_playlist_id("123456789") == "123456789"
@@ -29,6 +37,51 @@ def test_resolve_shortlink():
 def test_extract_id_from_text():
     assert extract_playlist_id("歌单ID: 9044196528") == "9044196528"
     assert extract_playlist_id("分享歌单 https://y.qq.com/n/ryqq_v2/playlist/9044196528 欢迎收听") == "9044196528"
+
+
+def test_normalize_qq_release_date():
+    assert normalize_qq_release_date("20210119") == "2021-01-19"
+    assert normalize_qq_release_date("2021-01-19") == "2021-01-19"
+    assert normalize_qq_release_date("00000000") is None
+
+
+def test_try_c_y_qq_legacy_endpoint_keeps_cover_and_metadata():
+    payload = {
+        "code": 0,
+        "cdlist": [
+            {
+                "dissname": "测试歌单",
+                "nickname": "测试作者",
+                "songlist": [
+                    {
+                        "songname": "测试歌曲",
+                        "songmid": "003TESTMID",
+                        "singer": [{"name": "测试歌手"}],
+                        "album": {"name": "测试专辑", "mid": "001ALBUMMID", "time_public": "20210119"},
+                        "interval": 240,
+                        "index_album": 7,
+                        "index_cd": 0,
+                        "mv": {"vid": "m001testvid"},
+                    }
+                ],
+            }
+        ],
+    }
+    with patch("requests.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.text = json.dumps(payload, ensure_ascii=False)
+        mock_get.return_value = mock_resp
+
+        title, songs, author = try_c_y_qq("123456")
+        assert title == "测试歌单"
+        assert author == "测试作者"
+        assert songs[0][3] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000001ALBUMMID.jpg"
+        assert songs[0][4] == "003TESTMID"
+        assert songs[0][5] == 240000
+        assert songs[0][6] == "2021-01-19"
+        assert songs[0][7] == 7
+        assert songs[0][8] == 1
+        assert songs[0][9] == "m001testvid"
 
 def test_export_to_m3u8():
     with tempfile.NamedTemporaryFile(suffix='.m3u8', delete=False) as f:
@@ -58,7 +111,18 @@ def test_export_to_json_cover_url():
         tmp_name = f.name
     try:
         sample_songs = [
-            ("晴天", "周杰伦", "叶惠美", "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"),
+            (
+                "晴天",
+                "周杰伦",
+                "叶惠美",
+                "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg",
+                "0039MnYb0qxYAc",
+                269000,
+                "2003-07-31",
+                3,
+                1,
+                "m001testvid",
+            ),
             ("七里香", "周杰伦", "七里香"),
         ]
         export_to_json(sample_songs, tmp_name, playlist_title="Jay歌单", author="Jay")
@@ -72,6 +136,13 @@ def test_export_to_json_cover_url():
         assert data["tracks"][0]["title"] == "晴天"
         assert data["tracks"][0]["artist"] == "周杰伦"
         assert data["tracks"][0]["album"] == "叶惠美"
+        assert data["tracks"][0]["id"] == "0039MnYb0qxYAc"
+        assert data["tracks"][0]["durationMs"] == 269000
+        assert data["tracks"][0]["releaseDate"] == "2003-07-31"
+        assert data["tracks"][0]["trackNumber"] == 3
+        assert data["tracks"][0]["discNumber"] == 1
+        assert data["tracks"][0]["mvId"] == "m001testvid"
+        assert data["tracks"][0]["mvUrl"] == "https://y.qq.com/n/ryqq/mv/m001testvid"
         assert data["tracks"][0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
         assert "coverUrl" not in data["tracks"][1]
         # Verify no deprecated fields exist

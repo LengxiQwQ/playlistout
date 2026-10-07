@@ -199,7 +199,8 @@ export function normalizeNeteaseTrack(
   // Release Date (YYYY-MM-DD from publishTime ms timestamp if available)
   let releaseDate: string | undefined;
   if (typeof rawSong.publishTime === 'number' && rawSong.publishTime > 0) {
-    const d = new Date(rawSong.publishTime);
+    const publishMs = rawSong.publishTime > 1e11 ? rawSong.publishTime : rawSong.publishTime * 1000;
+    const d = new Date(publishMs);
     if (!isNaN(d.getTime())) {
       releaseDate = d.toISOString().slice(0, 10);
     }

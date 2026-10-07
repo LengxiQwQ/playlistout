@@ -26,16 +26,9 @@ interface MigrationApiResponse {
   };
 }
 
-function getTrackIsrc(track: { isrc?: string; rawIds?: Record<string, string | number> }): string | undefined {
+function getTrackIsrc(track: { isrc?: string }): string | undefined {
   if (track.isrc && typeof track.isrc === 'string' && track.isrc.trim()) {
     return track.isrc.trim();
-  }
-  if (track.rawIds) {
-    for (const [key, value] of Object.entries(track.rawIds)) {
-      if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
-        return value.trim();
-      }
-    }
   }
   return undefined;
 }
@@ -59,9 +52,7 @@ export function buildSoundiizMigrationPayload(
     tracks: playlist.tracks.map((track) => {
       const artistsList = track.artist
         ? track.artist.split(',').map((s) => s.trim()).filter(Boolean)
-        : Array.isArray((track as any).artists)
-          ? (track as any).artists
-          : [];
+        : [];
       return {
         title: track.title,
         artists: artistsList,

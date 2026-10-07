@@ -180,6 +180,28 @@ describe('QQ Music Short Link Resolution & Async Parsing', () => {
 });
 
 describe('QQ Music Normalization (Fixtures)', () => {
+  it('normalizes compact QQ release dates and modern zero-based disc indexes', () => {
+    const track = normalizeQQTrack(
+      {
+        songmid: '003TESTMID',
+        songname: 'Metadata Test',
+        singer: [{ name: 'Test Artist' }],
+        album: { name: 'Test Album', time_public: '20210119' },
+        interval: 240,
+        index_album: 7,
+        index_cd: 0,
+        mv: { vid: 'm001testvid' },
+      },
+      1,
+    );
+
+    expect(track.releaseDate).toBe('2021-01-19');
+    expect(track.trackNumber).toBe(7);
+    expect(track.discNumber).toBe(1);
+    expect(track.mvId).toBe('m001testvid');
+    expect(track.mvUrl).toBe('https://y.qq.com/n/ryqq/mv/m001testvid');
+  });
+
   it('normalizes primary c.y.qq.com response correctly', () => {
     const playlist = normalizeCYQQResponse(sampleCdlist, '9044196528');
 

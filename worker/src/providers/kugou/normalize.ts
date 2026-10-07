@@ -24,6 +24,10 @@ export interface KugouRawSong {
   privilege?: number;
   Privilege?: number;
   mvhash?: string;
+  sqhash?: string;
+  sqfilesize?: number;
+  '320hash'?: string;
+  '320filesize'?: number;
   sort?: number;
   fsort?: number;
   collecttime?: number;
@@ -212,6 +216,16 @@ export function normalizeKugouTrack(rawSong: KugouRawSong, index: number): Track
   const isVip = privilege === 10;
   const mvId = rawSong.mvhash ? rawSong.mvhash.trim() : undefined;
 
+  // Song-list payloads already expose explicit SQ/320 hashes and file sizes.
+  // Use those zero-request signals only; do not add a per-track detail request.
+  const hasLossless =
+    Boolean(rawSong.sqhash?.trim()) ||
+    (typeof rawSong.sqfilesize === 'number' && rawSong.sqfilesize > 0);
+  const has320 =
+    Boolean(rawSong['320hash']?.trim()) ||
+    (typeof rawSong['320filesize'] === 'number' && rawSong['320filesize'] > 0);
+  const maxQuality = hasLossless ? 'FLAC' : has320 ? '320kbps' : undefined;
+
   return {
     index,
     title,
@@ -225,6 +239,7 @@ export function normalizeKugouTrack(rawSong: KugouRawSong, index: number): Track
     isVip,
     status: isVip ? 'vip' : 'playable',
     statusText: isVip ? 'VIP专享' : '正常',
+    maxQuality,
     mvId,
   };
 }

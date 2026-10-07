@@ -6,6 +6,12 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **Canonical metadata follow-up fixes**:
+  - 修复 QQ CLI 老接口在生成单曲封面时引用未定义 `cover_url` 的回归问题，并补齐三条 QQ CLI 数据通道的 `releaseDate / trackNumber / discNumber / mvId / mvUrl` 输出。
+  - 修正 QQ Web/API 对真实 `time_public=YYYYMMDD` 与 `index_cd` 的解析，避免发行日期和碟号字段“有 Schema 但实际不出现”。
+  - 酷狗利用歌单响应中已有的 SQ/320 哈希与文件大小零额外请求补充 `maxQuality`；网易发行时间兼容秒/毫秒时间戳。
+  - Web JSON 与 Soundiiz Adapter 清理遗留 `rawIds / artists` 兜底，只消费新的 Canonical Track 字段。
+
 - **Canonical JSON 数据规范统一与跨端输出标准化**:
   - 全仓库统一规范歌曲对象结构，推荐键顺序：`index` → `title` → `artist` → `album` → `id` → `isrc` → `durationMs` → `releaseDate` → `trackNumber` → `discNumber` → `sourceUrl` → `playbackUrl` → `coverUrl` → `isOriginalSound` → `isVip` → `isAvailable` → `status` → `statusText` → `maxQuality` → `mvId` → `mvUrl`。
   - 彻底淘汰重复同义表达（`artists` 数组、`artistList`、`albumObj`、`publishTime`）及调试字典 `rawIds`，统一使用单字符串 `artist`（多歌手以 `, ` 连接）与纯字符串 `album`。

@@ -113,6 +113,52 @@ def extract_user_uin(text):
         return m.group(1)
     return None
 
+def normalize_qq_release_date(value):
+    raw = str(value or "").strip()
+    if re.fullmatch(r"\d{8}", raw) and raw != "00000000":
+        return f"{raw[0:4]}-{raw[4:6]}-{raw[6:8]}"
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw) and raw != "0000-00-00":
+        return raw
+    return None
+
+
+def extract_qq_song_metadata(song):
+    album_obj = song.get("album") if isinstance(song.get("album"), dict) else {}
+    release_date = normalize_qq_release_date(song.get("time_public") or album_obj.get("time_public"))
+
+    track_number = song.get("index_album")
+    try:
+        track_number = int(track_number)
+        if track_number <= 0:
+            track_number = None
+    except (TypeError, ValueError):
+        track_number = None
+
+    disc_number = None
+    index_cd = song.get("index_cd")
+    try:
+        if index_cd is not None:
+            parsed_index_cd = int(index_cd)
+            if parsed_index_cd >= 0:
+                disc_number = parsed_index_cd + 1
+    except (TypeError, ValueError):
+        pass
+
+    if disc_number is None:
+        legacy_cd = song.get("cdIdx")
+        try:
+            legacy_cd = int(legacy_cd)
+            if legacy_cd > 0:
+                disc_number = legacy_cd
+        except (TypeError, ValueError):
+            pass
+
+    mv_obj = song.get("mv") if isinstance(song.get("mv"), dict) else {}
+    mv_id = str(song.get("vid") or mv_obj.get("vid") or "").strip() or None
+
+    return release_date, track_number, disc_number, mv_id
+
+
 # --- 与 QQ音乐接口交互（返回 (playlist_title, [(name,singers,album), ...], author) 或 None） ---
 
 # 获取指定 QQ号 的所有歌单列表，返回 (nickname, [{"id":..., "name":...}, ...]) 或 None
@@ -229,10 +275,12 @@ def try_c_y_qq(disstid):
             singers = s.get("singername") or s.get("singer_name") or s.get("lan") or s.get("singer") or ""
         album = s.get("albumname") or (s.get("album") or {}).get("name") or s.get("albumname_utf8") or ""
         album_mid = s.get("albummid") or (s.get("album") or {}).get("mid") or ""
+        cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
         mid = (s.get("songmid") or s.get("mid") or "").strip()
         interval = s.get("interval")
         duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
-        results.append((name, singers, album, cover_url, mid, duration_ms))
+        release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
+        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
 
     return (title or "", results, author)
 
@@ -309,7 +357,8 @@ def try_u_y_qq_playlist_detail(playlist_id):
         mid = (s.get("mid") or s.get("songmid") or "").strip()
         interval = s.get("interval")
         duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
-        results.append((name, singers, album, cover_url, mid, duration_ms))
+        release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
+        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
     return (title or "", results, author)
 
 def get_playlist_songs(playlist_id):
@@ -353,7 +402,11 @@ def get_playlist_songs(playlist_id):
                 album = (s.get("album") or {}).get("name","")
                 album_mid = (s.get("album") or {}).get("mid") or s.get("albummid") or ""
                 cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
-                results.append((name, singers, album, cover_url))
+                mid = (s.get("mid") or s.get("songmid") or "").strip()
+                interval = s.get("interval")
+                duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
+                release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
+                results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
             author = data.get("data_signer") or data.get("nickname") or data.get("nick") or data.get("username") or ""
             return (title or "", results, author)
     except Exception:
@@ -438,6 +491,10 @@ def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=
             cover_url = item.get("coverUrl") or item.get("cover") or ""
             track_id = item.get("id") or ""
             duration_ms = item.get("durationMs")
+            release_date = item.get("releaseDate")
+            track_number = item.get("trackNumber")
+            disc_number = item.get("discNumber")
+            mv_id = item.get("mvId")
         else:
             name = item[0] if len(item) > 0 else ""
             singers = item[1] if len(item) > 1 else ""
@@ -445,6 +502,10 @@ def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=
             cover_url = item[3] if len(item) > 3 and item[3] else ""
             track_id = item[4] if len(item) > 4 and item[4] else ""
             duration_ms = item[5] if len(item) > 5 and isinstance(item[5], (int, float)) and item[5] > 0 else None
+            release_date = item[6] if len(item) > 6 and item[6] else None
+            track_number = item[7] if len(item) > 7 and isinstance(item[7], int) and item[7] > 0 else None
+            disc_number = item[8] if len(item) > 8 and isinstance(item[8], int) and item[8] > 0 else None
+            mv_id = item[9] if len(item) > 9 and item[9] else None
 
         source_url = f"https://y.qq.com/n/ryqq/songDetail/{track_id}" if track_id else None
 
@@ -459,10 +520,19 @@ def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=
             track_entry["id"] = str(track_id).strip()
         if duration_ms is not None and duration_ms > 0:
             track_entry["durationMs"] = int(duration_ms)
+        if release_date:
+            track_entry["releaseDate"] = str(release_date).strip()
+        if track_number:
+            track_entry["trackNumber"] = int(track_number)
+        if disc_number:
+            track_entry["discNumber"] = int(disc_number)
         if source_url:
             track_entry["sourceUrl"] = source_url
         if cover_url and str(cover_url).strip():
             track_entry["coverUrl"] = str(cover_url).strip()
+        if mv_id:
+            track_entry["mvId"] = str(mv_id).strip()
+            track_entry["mvUrl"] = f"https://y.qq.com/n/ryqq/mv/{mv_id}"
         tracks.append(track_entry)
 
     payload = {

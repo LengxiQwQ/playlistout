@@ -61,16 +61,9 @@ export function formatArtists(artists?: string[] | string): string {
   return String(artists).trim();
 }
 
-function getTrackIsrc(track: { isrc?: string; rawIds?: Record<string, string | number> }): string {
+function getTrackIsrc(track: { isrc?: string }): string {
   if (track.isrc && typeof track.isrc === 'string' && track.isrc.trim()) {
     return track.isrc.trim().toUpperCase();
-  }
-  if (track.rawIds) {
-    for (const [key, value] of Object.entries(track.rawIds)) {
-      if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
-        return value.trim().toUpperCase();
-      }
-    }
   }
   return '';
 }
@@ -218,7 +211,7 @@ export function generateTXT(playlist: Playlist): string {
 
   for (const track of playlist.tracks) {
     const title = cleanSingleLine(track.title || '');
-    const artistStr = cleanSingleLine(formatArtists(track.artist || (track as any).artists));
+    const artistStr = cleanSingleLine(formatArtists(track.artist));
     const albumStr = cleanSingleLine(track.album || '');
     const typeTag = track.isOriginalSound ? ' [视频原声]' : (track.statusText === '视频' ? ' [视频]' : '');
     const statusTag =
@@ -290,7 +283,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
   for (const track of playlist.tracks) {
     rows.push([
       track.title || '',
-      formatArtists(track.artist || (track as any).artists),
+      formatArtists(track.artist),
       track.album || '',
       getTrackIsrc(track),
       getTrackDurationSeconds(track.durationMs),
@@ -333,7 +326,7 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   const trackHeader = ['title', 'artist', 'album', 'isrc', 'duration', 'url', 'index', 'type', 'vip', 'status'];
   const trackRows = playlist.tracks.map((track) => [
     sanitizeSpreadsheetCell(track.title || ''),
-    sanitizeSpreadsheetCell(formatArtists(track.artist || (track as any).artists)),
+    sanitizeSpreadsheetCell(formatArtists(track.artist)),
     sanitizeSpreadsheetCell(track.album || ''),
     sanitizeSpreadsheetCell(getTrackIsrc(track)),
     getTrackDurationSeconds(track.durationMs),
@@ -431,7 +424,7 @@ export function generateJSON(playlist: Playlist): string {
     tracks: playlist.tracks.map((t) => ({
       index: t.index,
       title: t.title,
-      artist: formatArtists(t.artist || (t as any).artists),
+      artist: formatArtists(t.artist),
       album: t.album || undefined,
       id: t.id || undefined,
       isrc: t.isrc || undefined,
@@ -474,7 +467,7 @@ export function generateM3U8(playlist: Playlist): string {
         ? Math.round(track.durationMs / 1000)
         : -1;
 
-    const artistStr = cleanSingleLine(formatArtists(track.artist || (track as any).artists));
+    const artistStr = cleanSingleLine(formatArtists(track.artist));
     const titleStr = cleanSingleLine(track.title || '');
     const displayName = artistStr ? `${artistStr} - ${titleStr}` : titleStr;
 

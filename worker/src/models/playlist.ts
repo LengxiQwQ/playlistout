@@ -7,16 +7,6 @@ import type { ResolveFailureStage } from '../analytics/types';
 
 export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
 
-export interface TrackArtist {
-  id?: string;
-  name: string;
-}
-
-export interface TrackAlbum {
-  id?: string;
-  name: string;
-}
-
 export interface Track {
   index: number;
   title: string;

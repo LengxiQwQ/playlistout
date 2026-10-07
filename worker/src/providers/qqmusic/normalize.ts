@@ -13,6 +13,7 @@ export interface RawQQAlbum {
   mid?: string;
   name?: string;
   title?: string;
+  time_public?: string;
 }
 
 export interface RawQQSong {
@@ -30,6 +31,7 @@ export interface RawQQSong {
   interval?: number;
   time_public?: string;
   index_album?: number;
+  index_cd?: number;
   cdIdx?: number;
   vid?: string;
   mv?: { vid?: string; id?: number | string };
@@ -177,24 +179,34 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   const intervalSeconds = typeof rawSong.interval === 'number' && rawSong.interval >= 0 ? rawSong.interval : undefined;
   const durationMs = intervalSeconds !== undefined ? intervalSeconds * 1000 : undefined;
 
-  // Release date (YYYY-MM-DD from time_public if available and valid)
+  // Release date. QQ commonly returns compact YYYYMMDD (e.g. 20210119),
+  // while some endpoints return YYYY-MM-DD. Prefer the track date and fall back
+  // to the album date when the track-level field is absent.
+  const releaseDateRaw =
+    rawSong.time_public ||
+    (rawSong.album && typeof rawSong.album === 'object' ? rawSong.album.time_public : undefined);
   let releaseDate: string | undefined;
-  if (typeof rawSong.time_public === 'string') {
-    const cleanDate = rawSong.time_public.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) && cleanDate !== '0000-00-00') {
+  if (typeof releaseDateRaw === 'string') {
+    const cleanDate = releaseDateRaw.trim();
+    if (/^\d{8}$/.test(cleanDate) && cleanDate !== '00000000') {
+      releaseDate = `${cleanDate.slice(0, 4)}-${cleanDate.slice(4, 6)}-${cleanDate.slice(6, 8)}`;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) && cleanDate !== '0000-00-00') {
       releaseDate = cleanDate;
     }
   }
 
-  // Track & Disc numbers
+  // Track & Disc numbers. Modern QQ payloads use zero-based index_cd, so convert
+  // it to PlaylistOut's one-based discNumber. Keep cdIdx as a legacy fallback.
   const trackNumber =
     typeof rawSong.index_album === 'number' && rawSong.index_album > 0
       ? rawSong.index_album
       : undefined;
   const discNumber =
-    typeof rawSong.cdIdx === 'number' && rawSong.cdIdx > 0
-      ? rawSong.cdIdx
-      : undefined;
+    typeof rawSong.index_cd === 'number' && rawSong.index_cd >= 0
+      ? rawSong.index_cd + 1
+      : typeof rawSong.cdIdx === 'number' && rawSong.cdIdx > 0
+        ? rawSong.cdIdx
+        : undefined;
 
   // Source URL
   const sourceUrl = trackMid ? `https://y.qq.com/n/ryqq/songDetail/${trackMid}` : undefined;

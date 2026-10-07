@@ -107,6 +107,34 @@ describe('Kugou Provider Unit Tests', () => {
   });
 
   describe('Track & Playlist Normalization', () => {
+    it('derives maxQuality from existing Kugou song-list quality fields without extra requests', () => {
+      const flac = normalizeKugouTrack(
+        {
+          hash: 'BASE_HASH',
+          name: '歌手 - 无损歌曲',
+          singername: '歌手',
+          sqhash: 'SQ_HASH',
+          sqfilesize: 30000000,
+          '320hash': '320_HASH',
+          '320filesize': 10000000,
+        },
+        1,
+      );
+      expect(flac.maxQuality).toBe('FLAC');
+
+      const high = normalizeKugouTrack(
+        {
+          hash: 'BASE_HASH_2',
+          name: '歌手 - 高品质歌曲',
+          singername: '歌手',
+          '320hash': '320_HASH_2',
+          '320filesize': 10000000,
+        },
+        2,
+      );
+      expect(high.maxQuality).toBe('320kbps');
+    });
+
     it('normalizes Kugou track with singerinfo array and title splitting', () => {
       const raw = {
         hash: 'B55FCC75168E0C8F3EB8AAD347911328',

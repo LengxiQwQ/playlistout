@@ -227,7 +227,8 @@ def get_playlist_data(playlist_id):
             release_date = None
             if pub_time and isinstance(pub_time, (int, float)) and pub_time > 0:
                 try:
-                    release_date = datetime.fromtimestamp(pub_time / 1000, tz=timezone.utc).strftime('%Y-%m-%d')
+                    pub_seconds = pub_time / 1000 if pub_time > 1e11 else pub_time
+                    release_date = datetime.fromtimestamp(pub_seconds, tz=timezone.utc).strftime('%Y-%m-%d')
                 except Exception:
                     pass
             track_num = song.get('no')
