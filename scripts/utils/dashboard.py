@@ -1882,8 +1882,8 @@ function render(){
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
   bars("#integrationClients",f.clients);
-  bars("#versionBars",b.musicfree_version||b.client_version);
-  bars("#hostBars",b.musicfree_host||b.host_platform);
+  bars("#versionBars",b.musicfree_version);
+  bars("#hostBars",b.musicfree_host);
   bars("#bbplayerVersionBars",b.bbplayer_version,12,"#fb7299");
   bars("#bbplayerHostBars",b.bbplayer_host);
   bars("#migrationBars",b.migration_destination);

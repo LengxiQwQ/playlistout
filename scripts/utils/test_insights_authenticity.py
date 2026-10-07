@@ -595,7 +595,7 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertEqual(excluded["overview"]["resolve_request"], 0)
         self.assertEqual(excluded["availableFilters"]["clients"], [])
 
-        included = build_local_analytics(snapshot, {"exclude_my": "0"})
+        included = build_local_analytics(snapshot, {"exclude_my": "0", "client": "bbplayer"})
         self.assertEqual(included["overview"]["resolve_request"], 2)
         self.assertEqual(
             included["availableFilters"]["clients"],
@@ -609,6 +609,10 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             included["breakdowns"]["bbplayer_host"],
             [{"name": "android", "count": 2}],
         )
+        self.assertIsNone(included["breakdowns"].get("musicfree_version"))
+        self.assertIsNone(included["breakdowns"].get("musicfree_host"))
+        self.assertNotIn("b.musicfree_version||b.client_version", HTML)
+        self.assertNotIn("b.musicfree_host||b.host_platform", HTML)
         self.assertEqual(
             included["environment"]["browsers"],
             [{"name": "plugin:bbplayer", "count": 2}],
