@@ -16,27 +16,18 @@ Analytics V2 replaces the original TOTAL/all rollup model with canonical bounded
 | channel | client_id | Meaning |
 | --- | --- | --- |
 | `web` | `official_web` | Official PlaylistOut web frontend |
-| `plugin` | registered plugin id (e.g. `musicfree`) | A player integration listed in the generated registry |
-| `plugin` | `unknown_plugin` | Self-declared plugin traffic whose id is not registered |
+| `plugin` | registered plugin or ecosystem client id (e.g. `musicfree`, `bbplayer`) | A player plugin in `plugins/*` or registered standalone ecosystem client (`REGISTERED_ECOSYSTEM_CLIENT_IDS`) |
+| `plugin` | `unknown_plugin` | Self-declared plugin/integration traffic whose id is not registered |
 | `api` | `anonymous_api` | Public API caller without a registered integration ID |
 | `internal` | `internal` | Internal health/probe traffic when explicitly recorded |
 | `legacy_mixed` | `legacy_unknown` | Historical traffic that cannot be safely separated |
 
 Client identification is analytics attribution only. It is **not authentication** and never grants security privileges.
 
-### Plugin registry
+### Plugin & ecosystem client registry
 
-The set of registered plugin ids is not hand-maintained in the Worker. The root
-publisher (`scripts/build-plugins.js`) discovers every `plugins/*/plugin.config.json`
-and generates:
-
-```
-worker/src/analytics/generated/registered-plugins.ts
-```
-
-A plugin directory that discovers and validates is itself the registration. The
-generated file is committed and verified fresh by the pre-push gate
-(`scripts/verify-plugin-registry.js`); adding a plugin requires no Worker edit.
+- **Hosted plugins (`plugins/*`)**: The root publisher (`scripts/build-plugins.js`) discovers every `plugins/*/plugin.config.json` and generates `worker/src/analytics/generated/registered-plugins.ts` (`REGISTERED_PLUGIN_IDS`). The generated file is committed and verified fresh by `scripts/verify-plugin-registry.js`.
+- **Standalone ecosystem clients (e.g. `bbplayer`)**: Standalone third-party apps that live in their own repositories are registered in `REGISTERED_ECOSYSTEM_CLIENT_IDS` in `worker/src/analytics/context.ts` and combined into `REGISTERED_CLIENT_ID_SET`.
 
 ## Canonical core metrics
 
@@ -91,38 +82,40 @@ client_id = legacy_unknown
 
 New explicit attribution begins when Analytics V2 is deployed.
 
-## Plugin attribution headers
+## Plugin & ecosystem client attribution headers
 
 Registered integrations send these headers on every PlaylistOut API request:
 
 ```
 X-PlaylistOut-Client-Type: plugin
-X-PlaylistOut-Client-Id: <player-id>            # must equal plugin.config.json#id
-X-PlaylistOut-Client-Version: <plugin version>
+X-PlaylistOut-Client-Id: <client-id>            # e.g. musicfree, bbplayer
+X-PlaylistOut-Client-Version: <client-version>
+X-PlaylistOut-Device-Class: mobile|desktop
 X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
 ```
 
 They also send a first-party runtime User-Agent:
 
 ```
-User-Agent: PlaylistOut-<PlayerId>/<plugin version>
+User-Agent: PlaylistOut-<ClientName>/<client-version> (<deviceClass>; <os>)
 ```
 
 Rules:
 
-- Headers are bounded and sanitized: the id must match a registered plugin or the
+- Headers are bounded and sanitized: the id must match a registered plugin/ecosystem client or the
   request is attributed to `unknown_plugin`; the version must match a strict
-  token pattern; the host must be one of the listed platforms.
-- The Host header is authoritative for plugin device/OS attribution, because
-  plugin runtimes (especially Android) send a UA without device hints.
+  token pattern (`/^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$/`); the host must be one of the listed platforms.
+- Both `X-PlaylistOut-Client-Type: plugin` and `X-PlaylistOut-Client-Type: app` are accepted for registered integrations, with `plugin` preferred as the canonical value.
+- The `X-PlaylistOut-Host` and `X-PlaylistOut-Device-Class` headers are authoritative for plugin/app device and OS attribution, because native runtimes (especially on Android/iOS) often omit browser UA hints.
+- Country and region (`analytics_v2_geo`) are derived exclusively on the server side from Cloudflare Edge `request.cf.country` and `request.cf.region`. Clients never send IP or geolocation headers.
 - Identity travels in headers only. URL parameters are not used: they fragment
   CDN caching and leak into logs.
-- Identity never changes rate limits or any security decision.
 - No install ID, user ID, device ID, email, token, or other persistent
   identifier is allowed.
 
-A reference implementation of the centralized header injection is the MusicFree
-plugin's `httpGet` helper, which covers every PlaylistOut API call at one point.
+Reference implementations of centralized header injection are:
+- MusicFree plugin: `plugins/musicfree/src/index.js` (`getPluginHeaders()`)
+- BBPlayer mobile client: `apps/mobile/src/lib/services/playlistOutService.ts` (`getPlaylistOutHeaders()`)
 
 ## Internal API
 
@@ -133,9 +126,9 @@ Allowed filters:
 - `from=YYYY-MM-DD`
 - `to=YYYY-MM-DD`
 - `channel=web|plugin|api|internal|legacy_mixed`
-- `client=<fixed id>|<registered plugin id>`, where fixed ids are
+- `client=<fixed id>|<registered plugin or ecosystem id>`, where fixed ids are
   `official_web|anonymous_api|internal|legacy_unknown|unknown_plugin` and
-  registered plugin ids are the entries in the generated registry (e.g. `musicfree`)
+  registered client ids include `musicfree`, `bbplayer`, etc.
 - `platform=qqmusic|netease|kugou|qishui|unknown|none`
 - `country=XX`
 - `region=<bounded string>`

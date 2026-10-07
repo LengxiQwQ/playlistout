@@ -29,6 +29,28 @@ describe('Analytics V2 request context', () => {
     expect(ctx.region).toBe('Guangdong');
   });
 
+  it('classifies BBPlayer ecosystem integration headers and User-Agent accurately', () => {
+    const ctx = createAnalyticsRequestContextV2(request({
+      'X-PlaylistOut-Client-Type': 'plugin',
+      'X-PlaylistOut-Client-Id': 'bbplayer',
+      'X-PlaylistOut-Client-Version': '2.7.0',
+      'X-PlaylistOut-Device-Class': 'mobile',
+      'X-PlaylistOut-Host': 'android',
+      'User-Agent': 'PlaylistOut-BBPlayer/2.7.0 (mobile; android)',
+    }, { country: 'cn', region: 'Shanghai', asOrganization: 'Alibaba Cloud' }));
+
+    expect(ctx.channel).toBe('plugin');
+    expect(ctx.clientId).toBe('bbplayer');
+    expect(ctx.clientVersion).toBe('2.7.0');
+    expect(ctx.hostPlatform).toBe('android');
+    expect(ctx.deviceClass).toBe('mobile');
+    expect(ctx.osFamily).toBe('android');
+    expect(ctx.browserFamily).toBe('plugin:bbplayer');
+    expect(ctx.country).toBe('CN');
+    expect(ctx.region).toBe('Shanghai');
+    expect(ctx.isAutomated).toBe(false);
+  });
+
   it('uses the Host header as the environment authority for plugin traffic', () => {
     const android = createAnalyticsRequestContextV2(request({
       'X-PlaylistOut-Client-Type': 'plugin',

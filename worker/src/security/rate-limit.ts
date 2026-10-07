@@ -53,7 +53,7 @@ export interface RateLimitResult {
 
 import { isOriginAllowed } from '../cors';
 import { verifySessionToken } from './session';
-import { REGISTERED_PLUGIN_ID_SET } from '../analytics/generated/registered-plugins';
+import { REGISTERED_CLIENT_ID_SET } from '../analytics/context';
 
 export type ClientCategory = 'web' | 'plugin' | 'direct_api' | 'bot';
 
@@ -146,10 +146,10 @@ export async function classifyRequestOrigin(
     };
   }
 
-  // 4. Check registered player plugin clients (e.g. MusicFree)
+  // 4. Check registered player plugin / ecosystem clients (e.g. MusicFree, BBPlayer)
   const clientType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
   const clientId = request.headers.get('x-playlistout-client-id')?.trim().toLowerCase() || '';
-  if (clientType === 'plugin' && REGISTERED_PLUGIN_ID_SET.has(clientId)) {
+  if ((clientType === 'plugin' || clientType === 'app') && REGISTERED_CLIENT_ID_SET.has(clientId)) {
     return {
       clientCategory: 'plugin',
       isWebFront: false,

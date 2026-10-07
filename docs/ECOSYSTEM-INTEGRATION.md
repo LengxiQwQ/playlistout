@@ -187,7 +187,175 @@ playlistout/
 
 ---
 
-## 5. 开源合规、隐私安全与免责声明
+## 5. 第三方客户端 / 插件 API 请求归因与遥测标准规范 (Third-Party API Attribution Spec)
+
+任何接入 PlaylistOut 生产 API（`https://playlistout-api.lengxiqwq.com`）的官方插件（如 `musicfree`）或独立生态客户端（如 `bbplayer`），在发起每一次 HTTP 请求（包括 `/api/v1/resolve` 与 `/api/kugou/auth/status`）时，**必须携带标准化的请求头（HTTP Headers）**，以便服务端 Analytics V2 引擎能够准确识别流量来源、终端系统、客户端版本与归属地分布，并避免移动端代理流量被误判为自动化爬虫。
+
+### 5.1 标准请求头一览 (Required HTTP Headers)
+
+| 请求头名称 (Header) | 必填 | 取值规范 / 正则约束 | 示例值 (BBPlayer / MusicFree) | 对应服务端 Analytics V2 维度 |
+| :--- | :---: | :--- | :--- | :--- |
+| `Accept` | 是 | `application/json, text/plain, */*` | `application/json, text/plain, */*` | 标准内容协商 |
+| `User-Agent` | **是** | `PlaylistOut-<ClientName>/<version> (<deviceClass>; <os>)`<br/>必须以 `PlaylistOut-<Name>/` 开头 | `PlaylistOut-BBPlayer/2.7.0 (mobile; android)`<br/>`PlaylistOut-MusicFree/1.3.9 (desktop; windows)` | 解析为 `browser_family = plugin:<id>`（如 `plugin:bbplayer`、`plugin:musicfree`），写入 `analytics_v2_client_env` |
+| `X-PlaylistOut-Client-Type` | **是** | `plugin`（推荐标准值，亦兼容 `app`） | `plugin` | 归入 `channel = 'plugin'`，并豁免移动端 VPN/代理触发的云机房 ASN 自动隔离 |
+| `X-PlaylistOut-Client-Id` | **是** | 已注册的小写客户端标识 | `bbplayer` / `musicfree` | 归入 `client_id`（覆盖 `daily_core`、`hourly_core`、`geo`、`breakdown`、`client_env` 五大立方体）；未注册 ID 会回退为 `unknown_plugin` |
+| `X-PlaylistOut-Client-Version` | **是** | `/^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$/`（不含空格） | `2.7.0` / `1.3.9` | 写入 `analytics_v2_breakdown` 的 `client_version` 维度 |
+| `X-PlaylistOut-Device-Class` | **是** | `mobile` \| `desktop` | `mobile` | 覆盖 `analytics_v2_client_env` 的 `device_class`（解决 React Native / OkHttp 默认 UA 缺少设备标识问题） |
+| `X-PlaylistOut-Host` | **是** | `android` \| `ios` \| `windows` \| `macos` \| `linux` \| `unknown` | `android` | 决定 `analytics_v2_client_env` 的 `os_family` 以及 `analytics_v2_breakdown` 的 `host_platform` |
+
+> **可选业务鉴权头（仅酷狗完整歌单解锁时附加）**：
+> - `Authorization: Bearer <kugou_token>`
+> - `X-Kugou-Token: <kugou_token>`
+> - `X-Kugou-Userid: <kugou_userid>`
+> 严禁将任何 Token 或用户凭据拼接在 URL Query 参数中（服务端会直接拦截并返回 `400 INVALID_INPUT`）。
+
+---
+
+### 5.2 IP 归属地（国家 / 省份）采集机制说明
+
+- **客户端无需、也不应自行获取或上报任何 IP / 地理位置字段。**
+- 当请求到达 Cloudflare 边缘节点时，Worker 会自动从 `request.cf.country`（两位 ISO 国家代码，如 `CN`）和 `request.cf.region`（省份/州名，如 `Guangdong`、`Shanghai`）提取粗粒度归属地。
+- 只要客户端正确携带上述 `X-PlaylistOut-Client-Type` 与 `X-PlaylistOut-Client-Id`，服务端就会自动将该次请求的地域归属关联记录到 `analytics_v2_geo` 表的 `(date, channel='plugin', client_id='<id>', platform, country, region, metric)` 中，且**绝不落盘原始 IP 地址**。
+
+---
+
+### 5.3 服务端注册新客户端 Checklist (Server-Side Onboarding)
+
+当有新的第三方播放器或插件接入时，按以下两种方式之一在 `playlistout` 仓库完成注册：
+
+1. **仓内托管插件（位于 `plugins/<player-id>/`）**：
+   - 在 `plugins/<player-id>/plugin.config.json` 中声明 `"id": "<player-id>"`。
+   - 运行 `npm run build:plugins`，构建脚本会自动将其写入 `worker/src/analytics/generated/registered-plugins.ts`。
+2. **独立仓库生态客户端（如 `BBPlayer`）**：
+   - 在 `worker/src/analytics/context.ts` 的 `REGISTERED_ECOSYSTEM_CLIENT_IDS` 数组中添加客户端 ID（如 `'bbplayer'`）。
+   - 在 `scripts/utils/dashboard.py` 的 `CORE_BRAND_COLORS` 与 `formatHumanLabel` 中添加对应的品牌色与中文展示名称，使本地监控大盘（Dashboard V3）自动渲染专属配色与名称。
+
+---
+
+### 5.4 服务端响应 `meta` 自检契约 (Response Attribution Verification)
+
+接入完成后，客户端可通过检查 `/api/v1/resolve` 响应体顶层的 `meta` 字段，确认服务端是否已正确识别并归因该客户端：
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "server": {
+      "service": "playlistout-api",
+      "version": "1.3.9"
+    },
+    "client": {
+      "channel": "plugin",
+      "id": "bbplayer",
+      "version": "2.7.0",
+      "deviceClass": "mobile",
+      "osFamily": "android",
+      "rawHost": "android"
+    },
+    "hints": ["mobile_client_detected"],
+    "parseInfo": {
+      "resolvedPlatform": "netease",
+      "trackCount": 128,
+      "mode": "full",
+      "timestamp": 1759860000000
+    }
+  }
+}
+```
+
+- 若 `meta.client.channel === "plugin"` 且 `meta.client.id === "<你的客户端ID>"`（而非 `"anonymous_api"` 或 `"unknown_plugin"`），说明归因接入完全成功。
+
+---
+
+### 5.5 标准接入代码模板 (Reference Implementation)
+
+#### 模板 A：React Native / Expo 客户端（以 BBPlayer 为例）
+
+```ts
+import * as Application from 'expo-application'
+import { Platform } from 'react-native'
+
+const FALLBACK_APP_VERSION = '2.7.0'
+
+export function detectClientEnvironment() {
+  const rawOs = String(Platform.OS || '').toLowerCase()
+  let os: 'android' | 'ios' | 'windows' | 'macos' | 'linux' | 'unknown' = 'unknown'
+  if (rawOs === 'android') os = 'android'
+  else if (rawOs === 'ios') os = 'ios'
+  else if (rawOs === 'windows') os = 'windows'
+  else if (rawOs === 'macos') os = 'macos'
+
+  const deviceClass: 'mobile' | 'desktop' =
+    os === 'windows' || os === 'macos' || os === 'linux' ? 'desktop' : 'mobile'
+
+  const rawVer = (Application.nativeApplicationVersion || FALLBACK_APP_VERSION).trim()
+  const version = /^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$/.test(rawVer)
+    ? rawVer
+    : FALLBACK_APP_VERSION
+
+  return { deviceClass, os, version }
+}
+
+export function getPlaylistOutHeaders(): Record<string, string> {
+  const envInfo = detectClientEnvironment()
+  return {
+    Accept: 'application/json, text/plain, */*',
+    'User-Agent': `PlaylistOut-BBPlayer/${envInfo.version} (${envInfo.deviceClass}; ${envInfo.os})`,
+    'X-PlaylistOut-Client-Type': 'plugin',
+    'X-PlaylistOut-Client-Id': 'bbplayer',
+    'X-PlaylistOut-Client-Version': envInfo.version,
+    'X-PlaylistOut-Device-Class': envInfo.deviceClass,
+    'X-PlaylistOut-Host': envInfo.os,
+  }
+}
+```
+
+#### 模板 B：Node / Electron / CommonJS 插件（以 MusicFree 为例）
+
+```js
+const PLUGIN_VERSION = '1.3.9';
+
+function detectClientEnvironment() {
+  let os = 'unknown';
+  let deviceClass = 'mobile';
+  try {
+    if (typeof process !== 'undefined' && process && process.platform) {
+      const p = String(process.platform).toLowerCase();
+      if (p === 'win32') { os = 'windows'; deviceClass = 'desktop'; }
+      else if (p === 'darwin') { os = 'macos'; deviceClass = 'desktop'; }
+      else if (p === 'linux') { os = 'linux'; deviceClass = 'desktop'; }
+      else if (p === 'android') { os = 'android'; deviceClass = 'mobile'; }
+      else if (p === 'ios') { os = 'ios'; deviceClass = 'mobile'; }
+    }
+    if (os === 'unknown') {
+      os = 'android';
+      deviceClass = 'mobile';
+    }
+  } catch (_) {
+    os = 'android';
+    deviceClass = 'mobile';
+  }
+  return { deviceClass, os, version: PLUGIN_VERSION };
+}
+
+function getPluginHeaders() {
+  const envInfo = detectClientEnvironment();
+  return {
+    'Accept': 'application/json, text/plain, */*',
+    'User-Agent': `PlaylistOut-MusicFree/${envInfo.version} (${envInfo.deviceClass}; ${envInfo.os})`,
+    'X-PlaylistOut-Client-Type': 'plugin',
+    'X-PlaylistOut-Client-Id': 'musicfree',
+    'X-PlaylistOut-Client-Version': envInfo.version,
+    'X-PlaylistOut-Device-Class': envInfo.deviceClass,
+    'X-PlaylistOut-Host': envInfo.os
+  };
+}
+```
+
+---
+
+## 6. 开源合规、隐私安全与免责声明
 
 在与各开源项目作者沟通与提 PR 时，必须严格恪守以下原则：
 
@@ -202,7 +370,7 @@ playlistout/
 
 ---
 
-## 6. 实施路线图与执行排期 (Action Plan)
+## 7. 实施路线图与执行排期 (Action Plan)
 
 - [x] **Phase 1: MusicFree 官方插件研发与交付（已完成）**
   - 在 [`plugins/musicfree`](../plugins/musicfree/README.md) 中完整实现 `musicfree-plugin-playlistout`，通过 12 项全绿自动化测试套件。
@@ -210,7 +378,7 @@ playlistout/
   - 构建产物同步托管至官方分发节点：`https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js`，国内用户一键极速安装。
 - [x] **Phase 2: 洛雪音乐 (LX Music)、BBPlayer 与 Listen 1 官方 Issue 正式发起（已完成）**
   - **洛雪音乐 (LX Music)**: 已提交 [#3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) - 建议在“导入列表”中支持自动兼容通用歌单 JSON 结构（附轻量 PR 方案）。
-  - **BBPlayer**: 已提交 [#340](https://github.com/bbplayer-app/BBPlayer/issues/340) - 建议支持通过本地 JSON 文件直接导入歌单进行 B 站音源匹配（附 PR 意向）。
+  - **BBPlayer**: 已提交 [#340](https://github.com/bbplayer-app/BBPlayer/issues/340) 并已在主程序中完成标准化的 PlaylistOut API + 本地/在线 JSON 双通道接入与遥测归因对齐。
   - **Listen 1**: 已提交 [#1413](https://github.com/listen1/listen1_desktop/issues/1413) - 建议在歌单导入/恢复功能中向下兼容通用歌单 JSON 格式（附 PR 意向）。
 - [ ] **Phase 3: 静待作者反馈并提交轻量 PR**
   - 根据各平台维护者反馈，提交 20~40 行极简、零侵入的本地 JSON 导入兼容 PR。

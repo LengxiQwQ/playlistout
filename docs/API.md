@@ -72,35 +72,77 @@ PlaylistOut officially supports 4 major music platforms:
 
 ---
 
-## 3.1 Optional Integration Attribution
+## 3.1 Third-Party Client & Plugin Attribution Specification
 
-Registered integrations may identify themselves for **aggregate analytics attribution only**:
+Registered player plugins and ecosystem clients (such as `musicfree`, `bbplayer`, etc.) should send standardized attribution headers on every PlaylistOut API request (`/api/v1/resolve`, `/api/kugou/auth/status`, etc.) for **aggregate Analytics V2 insights**:
 
 ```http
+Accept: application/json, text/plain, */*
+User-Agent: PlaylistOut-<ClientName>/<version> (<deviceClass>; <os>)
 X-PlaylistOut-Client-Type: plugin
-X-PlaylistOut-Client-Id: musicfree
-X-PlaylistOut-Client-Version: 1.3.9
-X-PlaylistOut-Host: android
+X-PlaylistOut-Client-Id: <client-id>
+X-PlaylistOut-Client-Version: <version>
+X-PlaylistOut-Device-Class: mobile|desktop
+X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
 ```
 
-These headers are deliberately **not authentication**. They never grant higher trust, bypass rate limits, unlock credentials, or change authorization. Unknown/unregistered values are bounded server-side to prevent unbounded analytics cardinality.
+### Header Field Reference
 
-Do not send installation IDs, user/device identifiers, email addresses, tokens, or other persistent identifiers in attribution headers.
+| Header | Required | Allowed Values / Format | Purpose in Analytics V2 |
+| :--- | :---: | :--- | :--- |
+| `User-Agent` | **Yes** | `PlaylistOut-<ClientName>/<version> (<deviceClass>; <os>)`<br/>e.g. `PlaylistOut-BBPlayer/2.7.0 (mobile; android)` or `PlaylistOut-MusicFree/1.3.9 (desktop; windows)` | Parsed by `parsePluginBrowserFamily` into `browser_family = plugin:<client-id>` (e.g. `plugin:bbplayer`, `plugin:musicfree`) in `analytics_v2_client_env`. |
+| `X-PlaylistOut-Client-Type` | **Yes** | `plugin` (or `app` for standalone ecosystem apps) | Routes the request into the `plugin` product channel and exempts mobile proxy/VPN cloud-ASN users from false-positive bot quarantine. |
+| `X-PlaylistOut-Client-Id` | **Yes** | Registered lowercase ID (`musicfree`, `bbplayer`, etc.) | Maps to `client_id` across `analytics_v2_daily_core`, `analytics_v2_hourly_core`, `analytics_v2_geo`, `analytics_v2_breakdown`, and `analytics_v2_client_env`. Unregistered IDs fall back to `unknown_plugin`. |
+| `X-PlaylistOut-Client-Version` | **Yes** | `/^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$/` (e.g. `2.7.0`, `1.3.9`) | Recorded in the `client_version` breakdown dimension (`analytics_v2_breakdown`). |
+| `X-PlaylistOut-Device-Class` | **Yes** | `mobile` \| `desktop` | Authoritative override for `device_class` in `analytics_v2_client_env` when native HTTP runtimes omit browser UA tokens. |
+| `X-PlaylistOut-Host` | **Yes** | `android` \| `ios` \| `windows` \| `macos` \| `linux` \| `unknown` | Authoritative source for `os_family` (`analytics_v2_client_env`) and `host_platform` (`analytics_v2_breakdown`). |
 
-The official web frontend is attributed separately. Public API requests without a registered integration identifier are counted as `api / anonymous_api`; they are normal product traffic and are not classified as abuse merely because they are programmatic.
+### How IP Geolocation (`country` / `region`) Works
+
+- **Clients must NEVER self-report IP addresses or location headers.**
+- Cloudflare Edge automatically populates `request.cf.country` (2-letter ISO code, e.g. `CN`, `US`) and `request.cf.region` (province/state name, e.g. `Guangdong`, `Shanghai`) at the network edge.
+- Once the client sends valid `X-PlaylistOut-Client-Type` and `X-PlaylistOut-Client-Id` headers, the backend automatically correlates the edge GeoIP with `(channel='plugin', client_id='<client-id>', platform, country, region)` in `analytics_v2_geo`.
+- Raw IP addresses are **never** stored in D1.
+
+### Privacy & Security Rules
+
+- Attribution headers are for **aggregate product analytics only**. Do not send installation IDs, user/device identifiers, email addresses, tokens, or other persistent identifiers in attribution headers.
+- Identity travels in HTTP headers only (never in URL query parameters, which would fragment CDN caching and leak into logs).
+- The official web frontend is attributed separately (`web / official_web`). Public API requests without a registered integration identifier are counted as `api / anonymous_api`.
 
 ---
 
 ## 4. Response Envelope Contract
 
-### 4.1 Standard Success Envelope (`200 OK`)
+### 4.1 Standard Success Envelope (`200 OK`) & Attribution Audit (`meta`)
 
-All successful data queries return a unified JSON envelope:
+All successful data queries return a unified JSON envelope, including a `meta` block that echoes back how the server classified the client request:
 
 ```json
 {
   "success": true,
-  "data": { ... }
+  "data": { ... },
+  "meta": {
+    "server": {
+      "service": "playlistout-api",
+      "version": "1.3.9"
+    },
+    "client": {
+      "channel": "plugin",
+      "id": "bbplayer",
+      "version": "2.7.0",
+      "deviceClass": "mobile",
+      "osFamily": "android",
+      "rawHost": "android"
+    },
+    "hints": ["mobile_client_detected"],
+    "parseInfo": {
+      "resolvedPlatform": "netease",
+      "trackCount": 128,
+      "mode": "full",
+      "timestamp": 1759860000000
+    }
+  }
 }
 ```
 

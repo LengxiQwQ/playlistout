@@ -1453,6 +1453,7 @@ const PROVINCE_NAMES = {
 const CORE_BRAND_COLORS = {
   "qqmusic": "#10b981", "netease": "#ef4444", "kugou": "#3b82f6", "qishui": "#f59e0b",
   "plugin:musicfree": "#8b5cf6", "musicfree": "#8b5cf6", "plugin": "#8b5cf6",
+  "plugin:bbplayer": "#fb7299", "bbplayer": "#fb7299",
   "official_web": "#0284c7", "web": "#0284c7",
   "anonymous_api": "#10b981", "api": "#10b981",
   "legacy_mixed": "#64748b", "legacy_unknown": "#64748b",
@@ -1518,9 +1519,10 @@ function formatHumanLabel(name){
     // 终端与渠道
     "desktop": "桌面电脑", "mobile": "移动手机", "tablet": "平板设备",
     "plugin:musicfree": "MusicFree", "musicfree": "MusicFree",
+    "plugin:bbplayer": "BBPlayer", "bbplayer": "BBPlayer",
     "official_web": "官方网页端", "anonymous_api": "公共匿名 API",
     "legacy_unknown": "历史未细分流量 (V1时期)", "legacy_mixed": "历史混合渠道 (V1时期)",
-    "web": "官方网页端", "plugin": "播放器插件", "api": "公共 API",
+    "web": "官方网页端", "plugin": "播放器插件 / 生态客户端", "api": "公共 API",
     
     // 耗时桶
     "<500ms": "< 500ms (极速响应)", "500-1000ms": "500 - 1000ms (正常)", "500ms_1s": "500ms - 1s (正常)",

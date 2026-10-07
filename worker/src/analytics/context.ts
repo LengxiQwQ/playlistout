@@ -12,8 +12,20 @@ export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_m
 export type AnalyticsChannel = (typeof ANALYTICS_CHANNELS)[number];
 
 /**
- * Non-plugin client IDs. Registered plugin IDs are appended via the generated
- * registry; AnalyticsClientId is the union of both.
+ * Registered standalone app / ecosystem integrations outside `plugins/*`
+ * that participate in the official plugin/integration attribution channel.
+ */
+export const REGISTERED_ECOSYSTEM_CLIENT_IDS = ['bbplayer'] as const;
+export type RegisteredEcosystemClientId = (typeof REGISTERED_ECOSYSTEM_CLIENT_IDS)[number];
+
+export const REGISTERED_CLIENT_ID_SET: ReadonlySet<string> = new Set([
+  ...REGISTERED_PLUGIN_ID_SET,
+  ...REGISTERED_ECOSYSTEM_CLIENT_IDS,
+]);
+
+/**
+ * Non-plugin and registered ecosystem client IDs. Registered plugin IDs are
+ * appended via the generated registry; AnalyticsClientId is the union of both.
  */
 export const ANALYTICS_CLIENT_IDS = [
   'official_web',
@@ -21,6 +33,7 @@ export const ANALYTICS_CLIENT_IDS = [
   'internal',
   'legacy_unknown',
   'unknown_plugin',
+  ...REGISTERED_ECOSYSTEM_CLIENT_IDS,
 ] as const;
 export type AnalyticsClientId =
   | (typeof ANALYTICS_CLIENT_IDS)[number]
@@ -108,9 +121,10 @@ function requestLooksAutomated(request: Request): boolean {
   const cf = (request as any).cf;
   const asOrg = String(cf?.asOrganization || '').toLowerCase();
   const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
+  const isDeclaredIntegration = declaredType === 'plugin' || declaredType === 'app';
   if (
     !hasOfficialWebOrigin(request) &&
-    declaredType !== 'plugin' &&
+    !isDeclaredIntegration &&
     asOrg &&
     /amazon|digitalocean|ovh|hetzner|linode|vultr|google cloud|alibaba|tencent cloud|choopa|datacamp|m247|contabo|hostinger/i.test(asOrg)
   ) {
@@ -153,9 +167,9 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
   let channel: AnalyticsChannel;
   let clientId: AnalyticsClientId;
 
-  if (declaredType === 'plugin') {
+  if (declaredType === 'plugin' || declaredType === 'app') {
     channel = 'plugin';
-    clientId = REGISTERED_PLUGIN_ID_SET.has(declaredId)
+    clientId = REGISTERED_CLIENT_ID_SET.has(declaredId)
       ? (declaredId as AnalyticsClientId)
       : 'unknown_plugin';
   } else if (hasOfficialWebOrigin(request)) {

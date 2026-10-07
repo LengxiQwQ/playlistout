@@ -56,17 +56,19 @@ the Worker registry is generated from it, so there is no allowlist to edit.
 Send on each PlaylistOut API request:
 
 ```
+Accept: application/json, text/plain, */*
 X-PlaylistOut-Client-Type: plugin
 X-PlaylistOut-Client-Id: <player-id>              # same as plugin.config.json#id
 X-PlaylistOut-Client-Version: <plugin version>
+X-PlaylistOut-Device-Class: mobile|desktop
 X-PlaylistOut-Host: android|ios|windows|macos|linux|unknown
-User-Agent: PlaylistOut-<PlayerId>/<plugin version>
+User-Agent: PlaylistOut-<PlayerId>/<plugin version> (<deviceClass>; <os>)
 ```
 
 Inject the headers at one centralized HTTP helper in the plugin so every
-PlaylistOut call is covered (see the MusicFree plugin's `httpGet`).
+PlaylistOut call is covered (see the MusicFree plugin's `getPluginHeaders()`).
 
-- Identity is analytics attribution only; it never changes rate limits.
+- Identity is analytics attribution only; do not pass persistent device or user IDs.
 - Do not pass identity through URL parameters.
 - After `npm run build:plugins`, commit the regenerated
   `worker/src/analytics/generated/registered-plugins.ts`. The pre-push gate
