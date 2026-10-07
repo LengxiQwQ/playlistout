@@ -178,8 +178,52 @@ def _sum_by(rows: list[dict], key: str) -> list[dict]:
     ]
 
 
+def reconcile_daily_core(rows: list[dict]) -> list[dict]:
+    reconciled: dict[tuple[str, str, str, str], dict[str, int]] = {}
+    legacy_groups: set[tuple[str, str, str, str]] = set()
+    for row in rows:
+        key = (
+            str(row.get("date", "")),
+            str(row.get("channel", "")),
+            str(row.get("client_id", "")),
+            str(row.get("platform", "")),
+        )
+        metric = str(row.get("metric", ""))
+        count = int(row.get("count", 0) or 0)
+        if key not in reconciled:
+            reconciled[key] = {}
+        if metric in {"parse_success_legacy", "parse_failure_legacy"}:
+            legacy_groups.add(key)
+        reconciled[key][metric] = max(reconciled[key].get(metric, 0), count)
+
+    if not legacy_groups:
+        return rows
+
+    result = []
+    for (date, channel, client_id, platform), metrics in reconciled.items():
+        if (date, channel, client_id, platform) in legacy_groups:
+            leg_success = metrics.pop("parse_success_legacy", 0)
+            leg_fail = metrics.pop("parse_failure_legacy", 0)
+            metrics["playlist_success"] = max(metrics.get("playlist_success", 0), leg_success)
+            metrics["resolve_failure"] = max(metrics.get("resolve_failure", 0), leg_fail)
+            req = metrics.get("playlist_success", 0) + metrics.get("user_success", 0) + metrics.get("resolve_failure", 0)
+            metrics["resolve_request"] = max(metrics.get("resolve_request", 0), req)
+
+        for metric, count in metrics.items():
+            if metric not in {"parse_success_legacy", "parse_failure_legacy"}:
+                result.append({
+                    "date": date,
+                    "channel": channel,
+                    "client_id": client_id,
+                    "platform": platform,
+                    "metric": metric,
+                    "count": count,
+                })
+    return result
+
+
 def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
-    daily = [row for row in snapshot.get("dailyCore", []) if isinstance(row, dict)]
+    daily = reconcile_daily_core([row for row in snapshot.get("dailyCore", []) if isinstance(row, dict)])
     hourly = [row for row in snapshot.get("hourlyCore", []) if isinstance(row, dict)]
     breakdown_rows = [row for row in snapshot.get("breakdowns", []) if isinstance(row, dict)]
     geo_rows = [row for row in snapshot.get("geo", []) if isinstance(row, dict)]
@@ -507,7 +551,7 @@ HTML = r'''<!doctype html>
     --g:#34d399;--r:#f87171;--w:#fbbf24;--s:0 1px 3px rgba(0,0,0,.3);
   }
 }
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px;line-height:1.5}
+*{box-sizing:border-box}html{scrollbar-gutter:stable}body{margin:0;background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px;line-height:1.5;overflow-y:scroll}
 button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:auto;padding:14px 22px}
 .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--p) 96%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--l);box-shadow:var(--s)}
@@ -558,10 +602,6 @@ h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px;display:flex;ali
 .page{display:none}.page.active{display:block}
 .section{display:flex;justify-content:space-between;align-items:end;margin:16px 0 10px}
 .section h2{margin:0;font-size:16px;font-weight:700}
-.alert-banner{background:color-mix(in srgb,var(--w) 12%,var(--p));border:1px solid color-mix(in srgb,var(--w) 35%,transparent);border-radius:var(--rad);padding:10px 14px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.alert-content{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t)}
-.alert-icon{width:24px;height:24px;border-radius:6px;background:var(--w);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;shrink:0}
-.alert-btn{padding:4px 10px;border-radius:6px;background:var(--w);color:#fff;border:0;cursor:pointer;font-weight:600;font-size:11px;white-space:nowrap}
 
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 .card,.panel{background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
@@ -728,7 +768,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
 <!-- 1. 业务总览 (Overview) -->
 <section class="page active" id="page-overview">
-
   <div class="section">
     <div><h2>整体情况 Overview</h2><div class="muted">先看结果，再下钻原因。</div></div>
   </div>
@@ -1363,10 +1402,9 @@ async function feedbackCountCheck(){
     let d=await api("/api/feedback?status=pending&limit=1");
     let pending=d.counts?.pending??d.total??0;
     let badge=$("#navPendingBadge");
-    if(pending>0){
-      if(badge){badge.style.display="inline-block";badge.textContent=pending}
-    }else{
-      if(badge)badge.style.display="none";
+    if(badge){
+      if(pending>0){badge.style.display="inline-block";badge.textContent=pending}
+      else{badge.style.display="none"}
     }
     if(d.counts){
       $("#fbCountAll").textContent=d.counts.all||0;
@@ -1455,14 +1493,6 @@ $$(".tab").forEach(b=>b.onclick=()=>{
 $$(".fb-tab").forEach(b=>b.onclick=()=>{
   feedback(b.dataset.fbStatus);
 });
-
-$("#gotoFeedback").onclick=()=>{
-  $$(".tab").forEach(x=>x.classList.remove("active"));
-  $$(".tab").find(x=>x.dataset.page==="feedback")?.classList.add("active");
-  $$(".page").forEach(x=>x.classList.remove("active"));
-  $("#page-feedback").classList.add("active");
-  feedback("pending");
-};
 
 $$(".range button").forEach(b=>b.onclick=()=>setPreset(b.dataset.range));
 ["channel","client","platform","country","region"].forEach(id=>{let el=$("#"+id);if(el)el.onchange=()=>load()});
