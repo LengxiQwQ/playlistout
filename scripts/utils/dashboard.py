@@ -241,13 +241,19 @@ def reconcile_client_env(rows: list[dict]) -> list[dict]:
         os_f = str(row.get("os_family", ""))
         cnt = int(row.get("count", 0) or 0)
 
-        # Normalize legacy plugin browser tokens to canonical plugin:musicfree
+        # Normalize legacy plugin browser tokens to canonical plugin:<id>
         if bf in {"playlistout_musicfree", "playlistout_plugin"}:
             bf = "plugin:musicfree"
             if ch == "legacy_mixed":
                 ch = "plugin"
             if cl == "legacy_unknown":
                 cl = "musicfree"
+        elif bf == "bbplayer_playlistout":
+            bf = "plugin:bbplayer"
+            if ch in {"legacy_mixed", "api"}:
+                ch = "plugin"
+            if cl in {"legacy_unknown", "anonymous_api"}:
+                cl = "bbplayer"
 
         merged[(d, ch, cl, dev, bf, os_f)] += cnt
 
@@ -1797,13 +1803,14 @@ function render(){
   bars("#clipboardModeBars",b.clipboard_mode);
 
   // 4. Integrations Page
+  let bbplayerReq=countNamed(f.clients,"bbplayer");
   kpis("#integrationKpis",[
     ["API Requests",fmt(apiReq),"Public API resolve_request"],
-    ["Plugin Requests",fmt(pluginReq),"插件 resolve_request"],
+    ["Plugin Requests",fmt(pluginReq),"插件 / 生态客户端请求"],
     ["MusicFree",fmt(musicfreeReq),"已识别 MusicFree 请求"],
+    ["BBPlayer",fmt(bbplayerReq),"已识别 BBPlayer 请求"],
     ["Anonymous API",fmt(anonymousApiReq),"未注册 API 客户端"],
-    ["Client IDs",fmt(o.active_clients),"活跃客户端类别"],
-    ["Migration Handoffs",fmt(o.migration_handoff),"迁移服务跳转"]
+    ["Client IDs",fmt(o.active_clients),"活跃客户端类别"]
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
   bars("#integrationClients",f.clients);
