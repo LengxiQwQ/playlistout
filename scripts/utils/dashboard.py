@@ -312,12 +312,41 @@ def is_exclude_my(query: dict[str, str]) -> bool:
     return val not in {"0", "false", "no", "off"}
 
 
+def _scale_group_rows(rows: list[dict], ratio: float) -> list[dict]:
+    if ratio <= 0:
+        return []
+    if ratio >= 1:
+        return rows
+    orig_total = sum(int(r.get("count", 0) or 0) for r in rows)
+    target_total = int(round(orig_total * ratio))
+    if target_total <= 0:
+        return []
+    exact = [int(r.get("count", 0) or 0) * ratio for r in rows]
+    floored = [int(v) for v in exact]
+    rem = target_total - sum(floored)
+    if rem > 0:
+        order = sorted(range(len(rows)), key=lambda i: (-(exact[i] - floored[i]), -int(rows[i].get("count", 0) or 0)))
+        for idx in order[:rem]:
+            floored[idx] += 1
+    out: list[dict] = []
+    for r, c in zip(rows, floored):
+        if c > 0:
+            nr = dict(r)
+            nr["count"] = c
+            out.append(nr)
+    return out
+
+
 def apply_country_exclusion(
     daily: list[dict],
     geo: list[dict],
     hourly: list[dict],
     excluded_country: str = "MY",
-) -> tuple[list[dict], list[dict], list[dict]]:
+    breakdowns: list[dict] | None = None,
+    env_rows: list[dict] | None = None,
+) -> tuple[list[dict], list[dict], list[dict], list[dict], list[dict]]:
+    b_in = breakdowns if breakdowns is not None else []
+    e_in = env_rows if env_rows is not None else []
     filtered_geo = [
         row
         for row in geo
@@ -339,7 +368,7 @@ def apply_country_exclusion(
                 legacy_parse_req[(d, p)] += cnt
 
     if not excluded_map and not legacy_parse_req:
-        return daily, filtered_geo, hourly
+        return daily, filtered_geo, hourly, b_in, e_in
 
     grouped_daily: dict[tuple[str, str, str, str], dict[str, int]] = defaultdict(dict)
     for row in daily:
@@ -354,8 +383,16 @@ def apply_country_exclusion(
     filtered_daily: list[dict] = []
     daily_totals_before: dict[tuple[str, str], int] = defaultdict(int)
     daily_totals_after: dict[tuple[str, str], int] = defaultdict(int)
+    group_req_before: dict[tuple[str, str, str, str], int] = defaultdict(int)
+    group_req_after: dict[tuple[str, str, str, str], int] = defaultdict(int)
+    client_req_before: dict[tuple[str, str, str], int] = defaultdict(int)
+    client_req_after: dict[tuple[str, str, str], int] = defaultdict(int)
 
     for (d, ch, cl, p), metrics in grouped_daily.items():
+        orig_req = int(metrics.get("resolve_request", 0) or 0)
+        group_req_before[(d, ch, cl, p)] += orig_req
+        client_req_before[(d, ch, cl)] += orig_req
+
         for m, c in list(metrics.items()):
             daily_totals_before[(d, m)] += c
             deduction = excluded_map.get((d, ch, cl, p, m), 0)
@@ -379,6 +416,10 @@ def apply_country_exclusion(
                 + metrics.get("resolve_failure", 0)
             )
             metrics["resolve_request"] = req
+
+        after_req = int(metrics.get("resolve_request", 0) or 0)
+        group_req_after[(d, ch, cl, p)] += after_req
+        client_req_after[(d, ch, cl)] += after_req
 
         for m, c in metrics.items():
             daily_totals_after[(d, m)] += c
@@ -408,21 +449,68 @@ def apply_country_exclusion(
             new_row["count"] = new_count
             filtered_hourly.append(new_row)
 
-    return filtered_daily, filtered_geo, filtered_hourly
+    non_resolve_dims = {"export_format", "clipboard_mode", "export_playlist_size", "referrer_source", "migration_destination", "migration_provider"}
+    grouped_b: dict[tuple[str, str, str, str, str], list[dict]] = defaultdict(list)
+    filtered_breakdowns: list[dict] = []
+    for row in b_in:
+        dim = str(row.get("dimension", ""))
+        if dim in non_resolve_dims:
+            filtered_breakdowns.append(row)
+            continue
+        key = (
+            str(row.get("date", "")),
+            str(row.get("channel", "")),
+            str(row.get("client_id", "")),
+            str(row.get("platform", "")),
+            dim,
+        )
+        grouped_b[key].append(row)
+
+    for (d, ch, cl, p, _dim), rows in grouped_b.items():
+        before = group_req_before.get((d, ch, cl, p), 0)
+        after = group_req_after.get((d, ch, cl, p), 0)
+        if before > 0 and after < before:
+            filtered_breakdowns.extend(_scale_group_rows(rows, after / before))
+        else:
+            filtered_breakdowns.extend(rows)
+
+    grouped_e: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
+    for row in e_in:
+        key = (
+            str(row.get("date", "")),
+            str(row.get("channel", "")),
+            str(row.get("client_id", "")),
+        )
+        grouped_e[key].append(row)
+
+    filtered_env_rows: list[dict] = []
+    for (d, ch, cl), rows in grouped_e.items():
+        before = client_req_before.get((d, ch, cl), 0)
+        after = client_req_after.get((d, ch, cl), 0)
+        if before > 0 and after < before:
+            filtered_env_rows.extend(_scale_group_rows(rows, after / before))
+        else:
+            filtered_env_rows.extend(rows)
+
+    return filtered_daily, filtered_geo, filtered_hourly, filtered_breakdowns, filtered_env_rows
 
 
 def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     raw_daily = reconcile_daily_core([row for row in snapshot.get("dailyCore", []) if isinstance(row, dict)])
     raw_hourly = [row for row in snapshot.get("hourlyCore", []) if isinstance(row, dict)]
     raw_geo = [row for row in snapshot.get("geo", []) if isinstance(row, dict)]
-    breakdown_rows = reconcile_breakdown_rows([row for row in snapshot.get("breakdowns", []) if isinstance(row, dict)])
-    env_rows = reconcile_client_env([row for row in snapshot.get("clientEnv", []) if isinstance(row, dict)])
+    raw_breakdowns = reconcile_breakdown_rows([row for row in snapshot.get("breakdowns", []) if isinstance(row, dict)])
+    raw_env_rows = reconcile_client_env([row for row in snapshot.get("clientEnv", []) if isinstance(row, dict)])
 
     exclude_my = is_exclude_my(query)
     if exclude_my:
-        daily, geo_rows, hourly = apply_country_exclusion(raw_daily, raw_geo, raw_hourly, "MY")
+        daily, geo_rows, hourly, breakdown_rows, env_rows = apply_country_exclusion(
+            raw_daily, raw_geo, raw_hourly, "MY", raw_breakdowns, raw_env_rows
+        )
     else:
-        daily, geo_rows, hourly = raw_daily, raw_geo, raw_hourly
+        daily, geo_rows, hourly, breakdown_rows, env_rows = (
+            raw_daily, raw_geo, raw_hourly, raw_breakdowns, raw_env_rows
+        )
 
 
     all_dates = sorted({str(row.get("date")) for row in daily if row.get("date")})
@@ -499,33 +587,20 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             elif dimension == "host_platform" and cl:
                 breakdown_totals[f"{cl}_host"][value] += int(row.get("count", 0) or 0)
 
-    # Backfill early BBPlayer test requests before client_version / host_platform headers were sent,
-    # or clear/scale them when exclude_my filters out MY-origin BBPlayer requests.
+    # Backfill early BBPlayer test requests before client_version / host_platform headers were sent
     bbplayer_req_total = sum(
         int(row.get("count", 0) or 0)
         for row in filtered_source
         if row.get("client_id") == "bbplayer" and row.get("metric") == "resolve_request"
     )
-    bbplayer_ver_recorded = sum(breakdown_totals["bbplayer_version"].values())
-    if bbplayer_req_total == 0 and bbplayer_ver_recorded > 0:
-        for k, v in list(breakdown_totals["bbplayer_version"].items()):
-            breakdown_totals["client_version"][k] = max(0, breakdown_totals["client_version"].get(k, 0) - v)
-            if breakdown_totals["client_version"][k] == 0:
-                breakdown_totals["client_version"].pop(k, None)
-        breakdown_totals["bbplayer_version"].clear()
-    elif bbplayer_req_total > bbplayer_ver_recorded:
+    bbplayer_ver_recorded = sum(breakdown_totals.get("bbplayer_version", {}).values())
+    if bbplayer_req_total > bbplayer_ver_recorded:
         diff = bbplayer_req_total - bbplayer_ver_recorded
         breakdown_totals["bbplayer_version"]["2.7.0"] += diff
         breakdown_totals["client_version"]["2.7.0"] += diff
 
-    bbplayer_host_recorded = sum(breakdown_totals["bbplayer_host"].values())
-    if bbplayer_req_total == 0 and bbplayer_host_recorded > 0:
-        for k, v in list(breakdown_totals["bbplayer_host"].items()):
-            breakdown_totals["host_platform"][k] = max(0, breakdown_totals["host_platform"].get(k, 0) - v)
-            if breakdown_totals["host_platform"][k] == 0:
-                breakdown_totals["host_platform"].pop(k, None)
-        breakdown_totals["bbplayer_host"].clear()
-    elif bbplayer_req_total > bbplayer_host_recorded:
+    bbplayer_host_recorded = sum(breakdown_totals.get("bbplayer_host", {}).values())
+    if bbplayer_req_total > bbplayer_host_recorded:
         diff = bbplayer_req_total - bbplayer_host_recorded
         breakdown_totals["bbplayer_host"]["android"] += diff
         breakdown_totals["host_platform"]["android"] += diff
@@ -537,6 +612,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             if count > 0
         ]
         for dimension, values in breakdown_totals.items()
+        if any(c > 0 for c in values.values())
     }
 
     filtered_geo = [
@@ -554,15 +630,28 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     def filter_option_rows(omit: str, metrics: set[str]) -> list[dict]:
         return [
             row
-            for row in daily
+            for row in source
             if str(row.get("metric", "")) in metrics
-            and _matches(row, filters, omit=omit)
+            and _matches(row, filters, include_geo=geo_active, omit=omit)
         ]
 
     channels = _sum_by(filter_option_rows("channel", {"resolve_request"}), "channel")
     clients = _sum_by(filter_option_rows("client", {"resolve_request"}), "client_id")
     platforms = _sum_by(
         filter_option_rows("platform", {"resolve_request", "export", "clipboard"}),
+        "platform",
+    )
+
+    matched_channels = _sum_by(
+        [row for row in filtered_source if str(row.get("metric", "")) == "resolve_request"],
+        "channel",
+    )
+    matched_clients = _sum_by(
+        [row for row in filtered_source if str(row.get("metric", "")) == "resolve_request"],
+        "client_id",
+    )
+    matched_platforms = _sum_by(
+        [row for row in filtered_source if str(row.get("metric", "")) in {"resolve_request", "export", "clipboard"}],
         "platform",
     )
 
@@ -583,7 +672,6 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         row
         for row in env_rows
         if _matches(row, filters, environment=True)
-        and not (exclude_my and row.get("client_id") == "bbplayer" and bbplayer_req_total == 0)
     ]
     devices = _sum_by(filtered_env, "device_class")
     browsers = _sum_by(filtered_env, "browser_family")
@@ -668,12 +756,17 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "success_rate": round(success_count / resolve_request * 100, 2)
             if resolve_request > 0
             else 0,
-            "active_clients": len([item for item in clients if item["count"] > 0]),
+            "active_clients": len([item for item in matched_clients if item["count"] > 0]),
             "pending_feedback": fb_pending,
         },
         "timeseries": timeseries,
         "hourlyTimeseries": hourly_timeseries,
         "breakdowns": breakdowns,
+        "distributions": {
+            "channels": matched_channels,
+            "clients": matched_clients,
+            "platforms": matched_platforms,
+        },
         "environment": {
             "devices": devices,
             "browsers": browsers,
@@ -1781,10 +1874,10 @@ function renderTrend(id,rows){
 }
 
 function render(){
-  let o=A.overview||{},b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},q=A.dataQuality||{};
+  let o=A.overview||{},b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f,q=A.dataQuality||{};
   let succ=Number(o.playlist_success||0)+Number(o.user_success||0);
-  let apiReq=countNamed(f.channels,"api"),pluginReq=countNamed(f.channels,"plugin"),webReq=countNamed(f.channels,"web");
-  let musicfreeReq=countNamed(f.clients,"musicfree"),anonymousApiReq=countNamed(f.clients,"anonymous_api");
+  let apiReq=countNamed(d.channels,"api"),pluginReq=countNamed(d.channels,"plugin"),webReq=countNamed(d.channels,"web");
+  let musicfreeReq=countNamed(d.clients,"musicfree"),anonymousApiReq=countNamed(d.clients,"anonymous_api");
 
   // 1. Overview KPIs
   kpis("#overviewKpis",[
@@ -1797,8 +1890,8 @@ function render(){
   ]);
 
   renderTrend("#trend",(A.hourlyTimeseries||[]).length?A.hourlyTimeseries:(A.timeseries||[]));
-  bars("#platformBars",f.platforms);
-  bars("#clientBars",f.clients);
+  bars("#platformBars",d.platforms);
+  bars("#clientBars",d.clients);
   bars("#countryBars",A.geo?.countries,10);
   bars("#regionBars",A.geo?.regions,10);
 
@@ -1871,7 +1964,7 @@ function render(){
   bars("#clipboardModeBars",b.clipboard_mode);
 
   // 4. Integrations Page
-  let bbplayerReq=countNamed(f.clients,"bbplayer");
+  let bbplayerReq=countNamed(d.clients,"bbplayer");
   kpis("#integrationKpis",[
     ["API Requests",fmt(apiReq),"Public API resolve_request"],
     ["Plugin Requests",fmt(pluginReq),"插件 / 生态客户端请求"],
@@ -1881,7 +1974,7 @@ function render(){
     ["Client IDs",fmt(o.active_clients),"活跃客户端类别"]
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
-  bars("#integrationClients",f.clients);
+  bars("#integrationClients",d.clients);
   bars("#versionBars",b.musicfree_version);
   bars("#hostBars",b.musicfree_host);
   bars("#bbplayerVersionBars",b.bbplayer_version,12,"#fb7299");

@@ -533,6 +533,22 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
                     "metric": "playlist_success",
                     "count": 2,
                 },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "metric": "resolve_request",
+                    "count": 10,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "metric": "playlist_success",
+                    "count": 10,
+                },
             ],
             "geo": [
                 {
@@ -555,6 +571,36 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
                     "metric": "playlist_success",
                     "count": 2,
                 },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "country": "CN",
+                    "region": "Guangdong",
+                    "metric": "resolve_request",
+                    "count": 6,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "resolve_request",
+                    "count": 4,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "playlist_success",
+                    "count": 4,
+                },
             ],
             "breakdowns": [
                 {
@@ -575,6 +621,24 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
                     "value": "android",
                     "count": 2,
                 },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "dimension": "client_version",
+                    "value": "0.1.3",
+                    "count": 10,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "qqmusic",
+                    "dimension": "host_platform",
+                    "value": "android",
+                    "count": 10,
+                },
             ],
             "clientEnv": [
                 {
@@ -592,13 +656,25 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             "feedback": [],
         }
         excluded = build_local_analytics(snapshot, {"exclude_my": "1"})
-        self.assertEqual(excluded["overview"]["resolve_request"], 0)
-        self.assertEqual(excluded["availableFilters"]["clients"], [])
+        self.assertEqual(excluded["overview"]["resolve_request"], 6)
+        self.assertEqual(
+            excluded["availableFilters"]["clients"],
+            [{"name": "musicfree", "count": 6}],
+        )
+        self.assertIsNone(excluded["breakdowns"].get("bbplayer_version"))
+        self.assertEqual(
+            excluded["breakdowns"]["musicfree_version"],
+            [{"name": "0.1.3", "count": 6}],
+        )
 
         included = build_local_analytics(snapshot, {"exclude_my": "0", "client": "bbplayer"})
         self.assertEqual(included["overview"]["resolve_request"], 2)
         self.assertEqual(
             included["availableFilters"]["clients"],
+            [{"name": "musicfree", "count": 10}, {"name": "bbplayer", "count": 2}],
+        )
+        self.assertEqual(
+            included["distributions"]["clients"],
             [{"name": "bbplayer", "count": 2}],
         )
         self.assertEqual(
