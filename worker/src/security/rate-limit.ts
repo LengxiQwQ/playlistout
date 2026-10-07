@@ -53,19 +53,22 @@ export interface RateLimitResult {
 
 import { isOriginAllowed } from '../cors';
 import { verifySessionToken } from './session';
+import { REGISTERED_PLUGIN_ID_SET } from '../analytics/generated/registered-plugins';
 
-export type ClientCategory = 'web' | 'direct_api' | 'bot';
+export type ClientCategory = 'web' | 'plugin' | 'direct_api' | 'bot';
 
 export interface OriginClassification {
   clientCategory: ClientCategory;
   isWebFront: boolean;
+  isPlugin: boolean;
   isDirectApi: boolean;
   isBot: boolean;
   rateLimit: number;
 }
 
 /**
- * Classifies an incoming request origin into web front, direct API, or bot/crawler.
+ * Classifies an incoming request origin into web front, registered player plugin,
+ * direct API, or bot/crawler.
  * Used for dual-track rate limiting and real-time telemetry auto-quarantine.
  */
 export async function classifyRequestOrigin(
@@ -85,6 +88,7 @@ export async function classifyRequestOrigin(
       return {
         clientCategory: 'web',
         isWebFront: true,
+        isPlugin: false,
         isDirectApi: false,
         isBot: false,
         rateLimit: 30, // Official Web Front: 30 req / min
@@ -103,6 +107,7 @@ export async function classifyRequestOrigin(
     return {
       clientCategory: 'bot',
       isWebFront: false,
+      isPlugin: false,
       isDirectApi: true,
       isBot: true,
       rateLimit: 6, // Automated bots / tools: 6 req / min
@@ -134,16 +139,52 @@ export async function classifyRequestOrigin(
     return {
       clientCategory: 'web',
       isWebFront: true,
+      isPlugin: false,
       isDirectApi: false,
       isBot: false,
       rateLimit: 30, // Official Web Front: 30 req / min
     };
   }
 
-  // 4. Fallback: Untrusted / Direct API script (missing web credentials or direct programmatic callers)
+  // 4. Check registered player plugin clients (e.g. MusicFree)
+  const clientType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
+  const clientId = request.headers.get('x-playlistout-client-id')?.trim().toLowerCase() || '';
+  if (clientType === 'plugin' && REGISTERED_PLUGIN_ID_SET.has(clientId)) {
+    return {
+      clientCategory: 'plugin',
+      isWebFront: false,
+      isPlugin: true,
+      isDirectApi: false,
+      isBot: false,
+      rateLimit: 12, // Registered Player Plugins: 12 req / min (average 1 req / 5s)
+    };
+  }
+
+  // 5. Detect cloud datacenter / hosting ASNs on unauthenticated callers
+  const cf = (request as any).cf;
+  const asOrg = String(cf?.asOrganization || '').toLowerCase();
+  const isCloudDatacenter =
+    asOrg &&
+    /amazon|digitalocean|ovh|hetzner|linode|vultr|google cloud|alibaba|tencent cloud|choopa|datacamp|m247|contabo|hostinger/i.test(
+      asOrg,
+    );
+
+  if (isCloudDatacenter) {
+    return {
+      clientCategory: 'bot',
+      isWebFront: false,
+      isPlugin: false,
+      isDirectApi: true,
+      isBot: true,
+      rateLimit: 6, // Cloud/Datacenter scraper: 6 req / min
+    };
+  }
+
+  // 6. Fallback: Untrusted / Direct API script (missing web credentials or direct programmatic callers)
   return {
     clientCategory: 'direct_api',
     isWebFront: false,
+    isPlugin: false,
     isDirectApi: true,
     isBot: false,
     rateLimit: 6, // Direct API: 6 req / min (average 1 req / 10s)

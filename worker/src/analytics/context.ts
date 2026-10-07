@@ -102,7 +102,21 @@ function normalizeHostPlatform(value: string | null): string | null {
 
 function requestLooksAutomated(request: Request): boolean {
   const ua = request.headers.get('user-agent')?.trim() || '';
-  return /bot|spider|crawler|crawl|slurp|uptimerobot|github-camo|headless|lighthouse/i.test(ua);
+  if (/bot|spider|crawler|crawl|slurp|uptimerobot|github-camo|headless|lighthouse/i.test(ua)) {
+    return true;
+  }
+  const cf = (request as any).cf;
+  const asOrg = String(cf?.asOrganization || '').toLowerCase();
+  const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
+  if (
+    !hasOfficialWebOrigin(request) &&
+    declaredType !== 'plugin' &&
+    asOrg &&
+    /amazon|digitalocean|ovh|hetzner|linode|vultr|google cloud|alibaba|tencent cloud|choopa|datacamp|m247|contabo|hostinger/i.test(asOrg)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function hasOfficialWebOrigin(request: Request): boolean {

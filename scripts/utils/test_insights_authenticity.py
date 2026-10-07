@@ -26,6 +26,8 @@ from scripts.utils.dashboard import (
     build_local_quarantine,
     fetch_dashboard_snapshot,
     get_admin_token,
+    reconcile_breakdown_rows,
+    reconcile_client_env,
 )
 
 
@@ -86,7 +88,7 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             self.assertEqual(get_admin_token(Path("/missing")), "secret")
 
     def test_missing_token_is_none(self):
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"INSIGHTS_ADMIN_TOKEN": ""}):
             self.assertIsNone(get_admin_token(Path("/definitely/missing")))
 
     def test_dashboard_never_embeds_admin_token(self):
@@ -311,9 +313,120 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
     def test_local_proxy_whitelists_query_parameters(self):
         self.assertEqual(
             ANALYTICS_PARAMS,
-            {"from", "to", "channel", "client", "platform", "country", "region"},
+            {
+                "from",
+                "to",
+                "channel",
+                "client",
+                "platform",
+                "country",
+                "region",
+                "exclude_my",
+                "excludeMy",
+            },
         )
-        self.assertEqual(FEEDBACK_PARAMS, {"status", "limit", "offset", "id"})
+        self.assertEqual(
+            FEEDBACK_PARAMS,
+            {"status", "limit", "offset", "id", "exclude_my", "excludeMy"},
+        )
+
+    def test_exclude_my_deducts_malaysia_test_records_and_preserves_invariants(self):
+        snapshot = {
+            "dailyCore": [
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "metric": "playlist_success",
+                    "count": 20,
+                },
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "metric": "resolve_failure",
+                    "count": 5,
+                },
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "metric": "resolve_request",
+                    "count": 25,
+                },
+            ],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "playlist_success",
+                    "count": 15,
+                },
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "resolve_failure",
+                    "count": 2,
+                },
+                {
+                    "date": "2026-10-06",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "netease",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "resolve_request",
+                    "count": 17,
+                },
+            ],
+            "clientEnv": [],
+            "quarantine": [
+                {"id": 1, "incident_date": "2026-10-06", "country": "MY", "count": 2},
+                {"id": 2, "incident_date": "2026-10-06", "country": "CN", "count": 5},
+            ],
+            "feedback": [
+                {"id": 1, "country": "MY", "status": "pending"},
+                {"id": 2, "country": "CN", "status": "pending"},
+            ],
+        }
+
+        # 1. Default (exclude_my is active by default)
+        default_res = build_local_analytics(snapshot, {"from": "2026-10-06", "to": "2026-10-06"})
+        self.assertEqual(default_res["overview"]["playlist_success"], 5)  # 20 - 15
+        self.assertEqual(default_res["overview"]["resolve_failure"], 3)   # 5 - 2
+        self.assertEqual(default_res["overview"]["resolve_request"], 8)   # 5 + 3 = 8
+        self.assertEqual(len(default_res["geo"]["countries"]), 0)         # MY removed
+
+        # Quarantine & feedback default exclusion
+        q_res = build_local_quarantine(snapshot, {})
+        self.assertEqual(q_res["totalRecords"], 1)
+        self.assertEqual(q_res["quarantine"][0]["country"], "CN")
+
+        fb_res = build_local_feedback(snapshot, {})
+        self.assertEqual(fb_res["total"], 1)
+        self.assertEqual(fb_res["entries"][0]["country"], "CN")
+
+        # 2. Explicitly include Malaysia (exclude_my=0)
+        include_res = build_local_analytics(snapshot, {"from": "2026-10-06", "to": "2026-10-06", "exclude_my": "0"})
+        self.assertEqual(include_res["overview"]["playlist_success"], 20)
+        self.assertEqual(include_res["overview"]["resolve_failure"], 5)
+        self.assertEqual(include_res["overview"]["resolve_request"], 25)
+        self.assertEqual(len(include_res["geo"]["countries"]), 1)
+        self.assertEqual(include_res["geo"]["countries"][0]["name"], "MY")
+
 
     def test_dashboard_html_is_data_driven_not_seeded(self):
         forbidden = [
@@ -335,6 +448,70 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         source = Path(__file__).with_name("dashboard.py").read_text(encoding="utf-8")
         self.assertNotIn("Authorization: Bearer", HTML)
         self.assertIn('"Authorization": "Bearer " + token', source)
+
+    def test_client_env_reconciliation_unifies_legacy_tokens(self):
+        rows = [
+            {
+                "date": "2026-10-04",
+                "channel": "legacy_mixed",
+                "client_id": "legacy_unknown",
+                "device_class": "mobile",
+                "browser_family": "playlistout_musicfree",
+                "os_family": "android",
+                "count": 10,
+            },
+            {
+                "date": "2026-10-04",
+                "channel": "plugin",
+                "client_id": "musicfree",
+                "device_class": "mobile",
+                "browser_family": "playlistout_plugin",
+                "os_family": "android",
+                "count": 5,
+            },
+            {
+                "date": "2026-10-04",
+                "channel": "plugin",
+                "client_id": "musicfree",
+                "device_class": "mobile",
+                "browser_family": "plugin:musicfree",
+                "os_family": "android",
+                "count": 15,
+            },
+        ]
+        reconciled = reconcile_client_env(rows)
+        self.assertEqual(len(reconciled), 1)
+        self.assertEqual(reconciled[0]["browser_family"], "plugin:musicfree")
+        self.assertEqual(reconciled[0]["channel"], "plugin")
+        self.assertEqual(reconciled[0]["client_id"], "musicfree")
+        self.assertEqual(reconciled[0]["count"], 30)
+
+    def test_breakdown_reconciliation_normalizes_latency_buckets(self):
+        rows = [
+            {
+                "date": "2026-10-04",
+                "channel": "plugin",
+                "client_id": "musicfree",
+                "platform": "qqmusic",
+                "dimension": "latency_bucket",
+                "value": "_500ms",
+                "count": 8,
+            },
+            {
+                "date": "2026-10-04",
+                "channel": "plugin",
+                "client_id": "musicfree",
+                "platform": "qqmusic",
+                "dimension": "latency_bucket",
+                "value": "<500ms",
+                "count": 12,
+            },
+        ]
+        reconciled = reconcile_breakdown_rows(rows)
+        self.assertEqual(len(reconciled), 1)
+        self.assertEqual(reconciled[0]["dimension"], "latency_bucket")
+        self.assertEqual(reconciled[0]["value"], "<500ms")
+        self.assertEqual(reconciled[0]["count"], 20)
 
 
 class TestStoredSnapshotPrivacy(unittest.TestCase):

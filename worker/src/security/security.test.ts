@@ -96,6 +96,78 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
     expect(body.error.code).toBe('RATE_LIMITED');
   });
 
+  it('allows registered player plugins (MusicFree) 12 req/min (1 req per 5s)', async () => {
+    vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
+      platform: 'qqmusic',
+      id: '123',
+      name: 'Plugin Rate Limit Test',
+      trackCount: 1,
+      tracks: [{ index: 1, title: 'T1', artist: 'A1' }],
+    });
+
+    const clientIp = '198.51.100.99';
+
+    // First 12 requests succeed with plugin credentials
+    for (let i = 0; i < 12; i++) {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+        headers: {
+          'cf-connecting-ip': clientIp,
+          'X-PlaylistOut-Client-Type': 'plugin',
+          'X-PlaylistOut-Client-Id': 'musicfree',
+          'X-PlaylistOut-Client-Version': '1.3.9',
+        },
+      });
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+    }
+
+    // 13th request must be rate limited with 429
+    const limitedRequest = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      headers: {
+        'cf-connecting-ip': clientIp,
+        'X-PlaylistOut-Client-Type': 'plugin',
+        'X-PlaylistOut-Client-Id': 'musicfree',
+        'X-PlaylistOut-Client-Version': '1.3.9',
+      },
+    });
+    const limitedResponse = await worker.fetch(limitedRequest, {}, createMockCtx());
+    expect(limitedResponse.status).toBe(429);
+  });
+
+  it('detects unauthenticated cloud datacenter scrapers and enforces 6 req/min rate limit', async () => {
+    vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
+      platform: 'qqmusic',
+      id: '123',
+      name: 'Cloud Scraper Test',
+      trackCount: 1,
+      tracks: [{ index: 1, title: 'T1', artist: 'A1' }],
+    });
+
+    const clientIp = '54.239.28.88';
+
+    for (let i = 0; i < 6; i++) {
+      const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+        headers: {
+          'cf-connecting-ip': clientIp,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+      });
+      (request as any).cf = { asOrganization: 'Amazon.com, Inc.' };
+      const response = await worker.fetch(request, {}, createMockCtx());
+      expect(response.status).toBe(200);
+    }
+
+    const limitedRequest = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
+      headers: {
+        'cf-connecting-ip': clientIp,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      },
+    });
+    (limitedRequest as any).cf = { asOrganization: 'Amazon.com, Inc.' };
+    const limitedResponse = await worker.fetch(limitedRequest, {}, createMockCtx());
+    expect(limitedResponse.status).toBe(429);
+  });
+
   it('isolates rate limits by endpoint scope (stats limit does not exhaust playlist/resolve limit)', async () => {
     vi.spyOn(qqMusicProvider, 'parse').mockResolvedValue({
       platform: 'qqmusic',
