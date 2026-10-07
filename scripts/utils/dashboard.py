@@ -1608,7 +1608,12 @@ def main() -> None:
 
     Handler.token = token
     Handler.snapshot = snapshot
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    try:
+        server = ThreadingHTTPServer((args.host, args.port), Handler)
+    except OSError as exc:
+        print(f"\n[Dashboard 错误] 端口 {args.port} 绑定失败（{exc}）。")
+        print(f"[Dashboard 提示] 本地已有旧的看板实例在运行，请先关闭之前的命令行窗口，或使用 --port 指定新端口。\n")
+        sys.exit(1)
     url = "http://127.0.0.1:" + str(args.port) + "/"
     print("[Dashboard] PlaylistOut Analytics V2")
     print("[Dashboard] " + url)

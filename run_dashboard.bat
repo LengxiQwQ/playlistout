@@ -19,6 +19,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :4178 ^| findstr LISTENING') do (
+    echo [提示] 发现端口 4178 仍有旧实例运行 (PID %%a)，正在释放以便加载最新代码...
+    taskkill /f /pid %%a >nul 2>&1
+)
+
 python scripts\utils\dashboard.py
 
 if %errorlevel% neq 0 (
