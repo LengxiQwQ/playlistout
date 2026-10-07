@@ -21,6 +21,10 @@ export const kugouProvider: KugouProvider = {
 
   extractId(input: string): string | null {
     const trimmed = input.trim();
+    const collectionMatch =
+      trimmed.match(/[?&]global_specialid=(collection_\d+_\d+_\d+_\d+)/i) ||
+      trimmed.match(/\b(collection_\d+_\d+_\d+_\d+)\b/i);
+    if (collectionMatch) return collectionMatch[1];
     const gcidMatch = trimmed.match(/(?:songlist\/|src_cid=)?(gcid_[a-zA-Z0-9]+)/i);
     if (gcidMatch) return gcidMatch[1];
     const specialMatch = trimmed.match(/special\/single\/(\d+)/i);

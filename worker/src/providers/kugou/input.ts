@@ -3,9 +3,10 @@
  */
 
 export interface KugouTarget {
-  type: 'songlist' | 'special' | 'cloudlist';
+  type: 'songlist' | 'special' | 'cloudlist' | 'collection';
   id: string;
   originalUrl: string;
+  specialid?: number;
 }
 
 /**
@@ -22,7 +23,9 @@ export function matchesKugouInput(input: string): boolean {
     /src_cid=[a-zA-Z0-9]+/i.test(trimmed) ||
     /special\/single\/\d+/i.test(trimmed) ||
     /kugou_cloudlist_\d+/i.test(trimmed) ||
-    /[?&]listid=\d+/i.test(trimmed)
+    /[?&]listid=\d+/i.test(trimmed) ||
+    /collection_\d+_\d+_\d+_\d+/i.test(trimmed) ||
+    /global_specialid=/i.test(trimmed)
   );
 }
 
@@ -102,6 +105,20 @@ export async function extractKugouTarget(input: string): Promise<KugouTarget | n
       type: 'special',
       id: specialMatch[1],
       originalUrl: text,
+    };
+  }
+
+  // 1b. Collection playlist from Kugou AppLite / Concept Edition / new share page (e.g. global_specialid=collection_3_1504683618_2_0)
+  const collectionMatch =
+    text.match(/[?&]global_specialid=(collection_\d+_\d+_\d+_\d+)/i) ||
+    text.match(/\b(collection_\d+_\d+_\d+_\d+)\b/i);
+  if (collectionMatch) {
+    const specialidMatch = text.match(/[?&]specialid=(-?\d+)/i);
+    return {
+      type: 'collection',
+      id: collectionMatch[1],
+      originalUrl: text,
+      specialid: specialidMatch ? parseInt(specialidMatch[1], 10) : 0,
     };
   }
 

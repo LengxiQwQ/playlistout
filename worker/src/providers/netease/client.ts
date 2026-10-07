@@ -165,7 +165,11 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
         rawJson = data;
       } else if (data && data.code === 404) {
         rawJson = { code: 404 };
+      } else if (data && ((data as any).code === -462 || data.code === 429 || data.code === 503)) {
+        lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream anti-bot or rate limit (code ${data.code})`, 502);
       }
+    } else if (v6Response.status >= 500 || v6Response.status === 429) {
+      lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${v6Response.status})`, 502);
     }
   } catch (err) {
     lastUpstreamError = err;
@@ -186,7 +190,11 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
           rawJson = data;
         } else if (data && data.code === 404) {
           rawJson = { code: 404 };
+        } else if (data && ((data as any).code === -462 || data.code === 429 || data.code === 503)) {
+          lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream anti-bot or rate limit (code ${data.code})`, 502);
         }
+      } else if (v3Response.status >= 500 || v3Response.status === 429) {
+        lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${v3Response.status})`, 502);
       }
     } catch (err) {
       lastUpstreamError = err;
@@ -209,7 +217,11 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
           };
         } else if (legacyJson && legacyJson.code === 404) {
           rawJson = { code: 404 };
+        } else if (legacyJson && (legacyJson.code === -462 || legacyJson.code === 429 || legacyJson.code === 503)) {
+          lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream anti-bot or rate limit (code ${legacyJson.code})`, 502);
         }
+      } else if (legacyResponse.status >= 500 || legacyResponse.status === 429) {
+        lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${legacyResponse.status})`, 502);
       }
     } catch (err) {
       lastUpstreamError = err;
@@ -228,7 +240,11 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
           rawJson = data;
         } else if (data && data.code === 404) {
           rawJson = { code: 404 };
+        } else if (data && ((data as any).code === -462 || data.code === 429 || data.code === 503)) {
+          lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream anti-bot or rate limit (code ${data.code})`, 502);
         }
+      } else if (v6GetResponse.status >= 500 || v6GetResponse.status === 429) {
+        lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${v6GetResponse.status})`, 502);
       }
     } catch (err) {
       lastUpstreamError = err;
@@ -397,16 +413,41 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
     }
 
     if (stillMissingIds.length > 0) {
-      throw new ProviderError(
-        'INCOMPLETE_PLAYLIST',
-        `Incomplete playlist: NetEase playlist reported ${trackIdList.length} songs, but only ${trackIdList.length - stillMissingIds.length} could be retrieved (${stillMissingIds.length} missing).`,
-        502,
-        {
-          expectedCount: trackIdList.length,
-          actualCount: trackIdList.length - stillMissingIds.length,
-          missingIds: stillMissingIds.slice(0, 10),
-        },
-      );
+      const missingCount = stillMissingIds.length;
+      const missingRatio = missingCount / trackIdList.length;
+      // If only a tiny fraction is missing (<= 5% or <= 20 songs on large lists), synthesize unplayable placeholders
+      // to preserve the rest of the 95%+ tracks for user export rather than failing the entire playlist.
+      if (trackIdList.length >= 50 && missingRatio <= 0.05 && missingCount <= 20) {
+        for (const missingId of stillMissingIds) {
+          const idStr = String(missingId);
+          songMap.set(idStr, {
+            id: Number(missingId),
+            name: `已下架或未知歌曲 (${idStr})`,
+            ar: [{ name: '未知艺人' }],
+            al: { name: '未知专辑' },
+            dt: 0,
+            fee: 0,
+          });
+          privMap.set(idStr, {
+            id: Number(missingId),
+            st: -1,
+            pl: 0,
+            cp: 0,
+            subp: 0,
+          });
+        }
+      } else {
+        throw new ProviderError(
+          'INCOMPLETE_PLAYLIST',
+          `Incomplete playlist: NetEase playlist reported ${trackIdList.length} songs, but only ${trackIdList.length - stillMissingIds.length} could be retrieved (${stillMissingIds.length} missing).`,
+          502,
+          {
+            expectedCount: trackIdList.length,
+            actualCount: trackIdList.length - stillMissingIds.length,
+            missingIds: stillMissingIds.slice(0, 10),
+          },
+        );
+      }
     }
 
     // Keep exact order from trackIds (no fabricated placeholders)

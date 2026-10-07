@@ -93,6 +93,21 @@ describe('Kugou Provider Unit Tests', () => {
       expect(target2?.id).toBe('10');
     });
 
+    it('extracts target for collection playlist (Kugou Lite / Concept Edition)', async () => {
+      const target1 = await extractKugouTarget(
+        'https://activity.kugou.com/share/v-a00a45b0/index.html?specialid=0&global_specialid=collection_3_1504683618_2_0&cType=0&u=1504683618',
+      );
+      expect(target1).not.toBeNull();
+      expect(target1?.type).toBe('collection');
+      expect(target1?.id).toBe('collection_3_1504683618_2_0');
+      expect(target1?.specialid).toBe(0);
+
+      const target2 = await extractKugouTarget('collection_3_2160192812_2_0');
+      expect(target2).not.toBeNull();
+      expect(target2?.type).toBe('collection');
+      expect(target2?.id).toBe('collection_3_2160192812_2_0');
+    });
+
     it('extracts ID via kugouProvider.extractId', () => {
       expect(kugouProvider.extractId('https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/')).toBe(
         'gcid_3zr52qfrzaz06a',
@@ -103,6 +118,14 @@ describe('Kugou Provider Unit Tests', () => {
       );
       expect(kugouProvider.extractId('https://m.kugou.com/songlist/?listid=4')).toBe('4');
       expect(kugouProvider.extractId('kugou_cloudlist_10')).toBe('10');
+      expect(
+        kugouProvider.extractId(
+          'https://activity.kugou.com/share/v-a00a45b0/index.html?specialid=0&global_specialid=collection_3_1504683618_2_0',
+        ),
+      ).toBe('collection_3_1504683618_2_0');
+      expect(kugouProvider.extractId('collection_3_1504683618_2_0')).toBe(
+        'collection_3_1504683618_2_0',
+      );
     });
   });
 
@@ -1368,6 +1391,80 @@ describe('Kugou Provider Unit Tests', () => {
       expect(res.playlists).toHaveLength(2);
       expect(res.playlists.map((p) => p.name)).toEqual(['默认收藏', '我喜欢']);
       expect(res.total).toBe(2);
+    });
+
+    it('successfully parses Kugou collection playlist (Kugou Lite / Concept Edition) login-free', async () => {
+      const mockInfo = {
+        status: 1,
+        data: {
+          specialname: '概念版歌单测试',
+          nickname: '概念版测试用户',
+          user_avatar: 'https://imge.kugou.com/kugouicon/avatar.jpg',
+          songcount: 2,
+          publishtime: '2026-10-06 12:00:00',
+        },
+      };
+
+      const mockTracks = {
+        status: 1,
+        data: {
+          count: 2,
+          info: [
+            {
+              name: '周杰伦 - 晴天',
+              singername: '周杰伦',
+              albuminfo: { name: '叶惠美' },
+              hash: 'HASH_COLLECTION_1',
+              timelen: 269000,
+              cover: 'https://imge.kugou.com/cover1.jpg',
+            },
+            {
+              name: '孙燕姿 - 漩涡',
+              singername: '孙燕姿',
+              albuminfo: { name: '同名专辑' },
+              hash: 'HASH_COLLECTION_2',
+              timelen: 240000,
+              cover: 'https://imge.kugou.com/cover2.jpg',
+            },
+          ],
+        },
+      };
+
+      globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('mobiles.kugou.com')) {
+          return {
+            ok: true,
+            json: async () => mockInfo,
+          } as Response;
+        }
+        if (typeof url === 'string' && url.includes('pubsongscdn.kugou.com')) {
+          return {
+            ok: true,
+            json: async () => mockTracks,
+          } as Response;
+        }
+        return { ok: false, status: 404 } as Response;
+      });
+
+      const { fetchKugouPlaylist } = await import('./client');
+      const playlist = await fetchKugouPlaylist({
+        type: 'collection',
+        id: 'collection_3_1504683618_2_0',
+        originalUrl:
+          'https://activity.kugou.com/share/v-a00a45b0/index.html?specialid=0&global_specialid=collection_3_1504683618_2_0',
+        specialid: 0,
+      });
+
+      expect(playlist.name).toBe('概念版歌单测试');
+      expect(playlist.creator).toBe('概念版测试用户');
+      expect(playlist.coverUrl).toBe('https://imge.kugou.com/kugouicon/avatar.jpg');
+      expect(playlist.trackCount).toBe(2);
+      expect(playlist.tracks).toHaveLength(2);
+      expect(playlist.tracks[0].title).toBe('晴天');
+      expect(playlist.tracks[0].artist).toBe('周杰伦');
+      expect(playlist.tracks[0].id).toBe('HASH_COLLECTION_1');
+      expect(playlist.tracks[1].title).toBe('漩涡');
+      expect(playlist.tracks[1].artist).toBe('孙燕姿');
     });
   });
 });

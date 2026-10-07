@@ -322,7 +322,7 @@ async function resolveServiceCore(
     detectedPlatform = 'qqmusic';
   } else if (/(?:music\.163\.com|163cn\.tv)/i.test(trimmed)) {
     detectedPlatform = 'netease';
-  } else if (/(?:kugou\.com)/i.test(trimmed)) {
+  } else if (/(?:kugou\.com|collection_\d+_\d+_\d+_\d+)/i.test(trimmed)) {
     detectedPlatform = 'kugou';
   } else if (/(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(trimmed)) {
     detectedPlatform = 'qishui';

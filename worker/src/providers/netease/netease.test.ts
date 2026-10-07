@@ -336,5 +336,84 @@ describe('NetEase Song Status & Normalization', () => {
         globalThis.fetch = originalFetch;
       }
     });
+
+    it('synthesizes placeholders for small percentage of missing tracks in large playlists', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        const totalTracks = 100;
+        const trackIds = Array.from({ length: totalTracks }, (_, i) => ({ id: i + 1 }));
+        const returnedSongs = trackIds.slice(0, 98).map((t) => ({
+          id: t.id,
+          name: `Song ${t.id}`,
+          ar: [{ name: 'Artist' }],
+        }));
+        const returnedPrivs = trackIds.slice(0, 98).map((t) => ({
+          id: t.id,
+          fee: 0,
+          st: 0,
+          pl: 320000,
+        }));
+
+        globalThis.fetch = vi.fn()
+          // 1. Playlist detail
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              playlist: {
+                id: 77777,
+                name: '大型容错歌单',
+                trackCount: totalTracks,
+                trackIds,
+              },
+            }),
+          } as Response)
+          // 2. Song detail
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: returnedSongs,
+              privileges: returnedPrivs,
+            }),
+          } as Response)
+          // 3. Retry on missing IDs (returns empty)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [],
+              privileges: [],
+            }),
+          } as Response)
+          // 4. Fallback 2 (v1 detail returns empty)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [],
+            }),
+          } as Response)
+          // 5. Fallback 3 (legacy playlist detail returns empty)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              result: { tracks: [] },
+            }),
+          } as Response);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        const playlist = await fetchNeteasePlaylist('77777');
+        expect(playlist.tracks).toHaveLength(100);
+        expect(playlist.tracks[98].title).toBe('已下架或未知歌曲 (99)');
+        expect(playlist.tracks[98].isAvailable).toBe(false);
+        expect(playlist.tracks[98].status).toBe('unplayable');
+        expect(playlist.tracks[99].title).toBe('已下架或未知歌曲 (100)');
+        expect(playlist.tracks[99].isAvailable).toBe(false);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });

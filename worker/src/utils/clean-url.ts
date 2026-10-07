@@ -34,7 +34,7 @@ export function extractCleanUrlOrInput(input: string): string {
 
   // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "c6.y.qq.com/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:[a-zA-Z0-9-]+\.)*kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];

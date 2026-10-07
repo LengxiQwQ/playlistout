@@ -23,6 +23,7 @@ import {
   KUGOU_LITE_APPID,
   KUGOU_LITE_CLIENTVER,
   KUGOU_LITE_SALT,
+  KUGOU_SONGINFO_KEY,
   encryptKugouLiteRsaRaw,
 } from './crypto';
 
@@ -579,6 +580,175 @@ async function fetchCloudlistAllTracks(options: {
 }
 
 /**
+ * Fetches and normalizes a Kugou Collection playlist (Kugou Lite / 酷狗概念版 / 新版集合歌单).
+ * Completely login-free; public metadata from mobiles.kugou.com/v5/special/info_v2 (with fallback)
+ * and all tracks from pubsongscdn.kugou.com/v2/get_other_list_file.
+ */
+export async function fetchKugouCollectionPlaylist(target: KugouTarget): Promise<Playlist> {
+  const collectionId = target.id;
+  const specialid = target.specialid ?? 0;
+
+  // 1. Fetch metadata (playlist title, creator nickname, avatar)
+  let listName: string | undefined;
+  let creatorNickname: string | undefined;
+  let coverUrl: string | undefined;
+  let createTime: number | undefined;
+
+  try {
+    const nowMs = Date.now();
+    const queryParams: Record<string, string> = {
+      srcappid: '2919',
+      clientver: '20000',
+      clienttime: String(nowMs),
+      mid: String(nowMs),
+      uuid: String(nowMs),
+      dfid: '-',
+      specialid: String(specialid),
+      global_specialid: collectionId,
+      sign: 'h5',
+    };
+    const sortedKeys = Object.keys(queryParams).sort();
+    const pairs = sortedKeys.map((k) => `${k}=${queryParams[k]}`).join('');
+    queryParams.signature = md5(KUGOU_SONGINFO_KEY + pairs + KUGOU_SONGINFO_KEY);
+
+    const url = `https://mobiles.kugou.com/v5/special/info_v2?${new URLSearchParams(queryParams).toString()}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': MOBILE_UA,
+        Referer: 'https://activity.kugou.com/',
+        clienttime: String(nowMs),
+        dfid: '-',
+        mid: String(nowMs),
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const json = (await res.json()) as Record<string, any>;
+      if (json && json.status === 1 && json.data) {
+        const d = json.data;
+        if (d.specialname && typeof d.specialname === 'string') listName = d.specialname.trim();
+        if (d.nickname && typeof d.nickname === 'string') creatorNickname = d.nickname.trim();
+        if (d.user_avatar && typeof d.user_avatar === 'string') coverUrl = d.user_avatar.trim();
+        else if (d.imgurl && typeof d.imgurl === 'string') coverUrl = d.imgurl.trim();
+        if (d.publishtime) {
+          const ts = Date.parse(String(d.publishtime).replace(' ', 'T'));
+          if (!isNaN(ts)) createTime = Math.floor(ts / 1000);
+        }
+      }
+    }
+  } catch {
+    // Non-fatal if info_v2 fails or times out
+  }
+
+  // Fallback defaults from collection ID structure (collection_{type}_{userid}_{listid}_{...})
+  const parts = collectionId.split('_');
+  const userId = parts[2] || '';
+  const listId = parts[3] || '';
+  if (!listName) {
+    listName = `酷狗歌单_${listId || collectionId}`;
+  }
+  if (!creatorNickname && userId) {
+    creatorNickname = `酷狗用户_${userId}`;
+  }
+
+  // 2. Fetch full track list with pagination from pubsongscdn.kugou.com
+  const allSongs: KugouRawSong[] = [];
+  let page = 1;
+  const pagesize = 100;
+  let totalCount = Infinity;
+  const maxPages = 50; // Safety cap (up to 5,000 tracks)
+
+  while (allSongs.length < totalCount && page <= maxPages) {
+    const nowMs = Date.now();
+    const params: Record<string, string> = {
+      srcappid: '2919',
+      clientver: '20000',
+      clienttime: String(nowMs),
+      mid: String(nowMs),
+      uuid: String(nowMs),
+      dfid: '-',
+      uid: '0',
+      appid: '1058',
+      token: '',
+      type: '0',
+      module: 'playlist',
+      page: String(page),
+      pagesize: String(pagesize),
+      global_collection_id: collectionId,
+    };
+    const sortedKeys = Object.keys(params).sort();
+    const pairs = sortedKeys.map((k) => `${k}=${params[k]}`).join('');
+    params.signature = md5(KUGOU_SONGINFO_KEY + pairs + KUGOU_SONGINFO_KEY);
+
+    const pageUrl = `https://pubsongscdn.kugou.com/v2/get_other_list_file?${new URLSearchParams(params).toString()}`;
+    const res = await fetch(pageUrl, {
+      headers: {
+        'User-Agent': MOBILE_UA,
+        Referer: 'https://activity.kugou.com/',
+      },
+    });
+
+    if (!res.ok) {
+      if (allSongs.length > 0) break;
+      throw new ProviderError(
+        'UPSTREAM_ERROR',
+        `Failed to fetch songs from Kugou collection (HTTP ${res.status})`,
+        502,
+      );
+    }
+
+    const json = (await res.json()) as Record<string, any>;
+    if (json.status !== 1 || !json.data || !Array.isArray(json.data.info)) {
+      if (allSongs.length > 0) break;
+      throw new ProviderError(
+        'PLAYLIST_NOT_FOUND',
+        `Kugou collection playlist not found or empty (${json.errmsg || 'no songs'})`,
+        404,
+      );
+    }
+
+    totalCount = Number(json.data.count || 0);
+    const batch: KugouRawSong[] = json.data.info;
+    if (batch.length === 0) break;
+
+    // Use first song cover as playlist cover fallback if header cover is missing
+    if (!coverUrl && batch[0]) {
+      coverUrl = batch[0].cover || batch[0].trans_param?.union_cover;
+    }
+
+    allSongs.push(...batch);
+    if (allSongs.length >= totalCount || batch.length < pagesize) {
+      break;
+    }
+    page++;
+  }
+
+  // 3. Map tracks through canonical normalizer
+  const tracks = allSongs.map((s, idx) => normalizeKugouTrack(s, idx + 1));
+
+  return normalizeKugouPlaylist({
+    id: collectionId,
+    listInfo: {
+      name: listName,
+      pic: coverUrl,
+      count: tracks.length,
+      nickname: creatorNickname,
+      list_create_username: creatorNickname,
+      ctime: createTime,
+    },
+    tracks,
+    sourceUrl: target.originalUrl,
+    isPartialPreview: false,
+    retrieval: { mode: 'full' },
+  });
+}
+
+/**
  * Main entrypoint to parse a Kugou playlist.
  */
 export async function fetchKugouPlaylist(
@@ -588,6 +758,11 @@ export async function fetchKugouPlaylist(
   // 1. Curated / Special playlist (full without auth)
   if (target.type === 'special') {
     return fetchSpecialPlaylist(target.id, target.originalUrl);
+  }
+
+  // 1b. Collection playlist (Kugou Lite / 概念版 / 新版集合歌单, full without auth)
+  if (target.type === 'collection') {
+    return fetchKugouCollectionPlaylist(target);
   }
 
   // 2. Direct Cloudlist playlist (requires auth token & userid)
