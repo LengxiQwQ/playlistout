@@ -19,7 +19,7 @@ const mockSamplePlaylist: Playlist = {
       index: 1,
       id: 'song_1',
       title: '晴天',
-      artists: ['周杰伦'],
+      artist: '周杰伦',
       album: '叶惠美',
       durationMs: 269000,
     },
@@ -27,7 +27,7 @@ const mockSamplePlaylist: Playlist = {
       index: 2,
       id: 'song_2',
       title: '珊瑚海',
-      artists: ['周杰伦', 'Lara梁心颐'],
+      artist: '周杰伦, Lara梁心颐',
       album: '十一月的萧邦',
       durationMs: 256000,
     },
@@ -35,7 +35,7 @@ const mockSamplePlaylist: Playlist = {
       index: 3,
       id: 'song_1', // Legitimate duplicate track
       title: '晴天',
-      artists: ['周杰伦'],
+      artist: '周杰伦',
       album: '叶惠美',
       durationMs: 269000,
     },
@@ -92,7 +92,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     expect(tableContainer).toBeInTheDocument();
 
     // Multi-artist display
-    expect(screen.getByText('周杰伦 / Lara梁心颐')).toBeInTheDocument();
+    expect(screen.getByText('周杰伦, Lara梁心颐')).toBeInTheDocument();
 
     // Both copies of legitimate duplicate '晴天' survive
     const qingtianRows = screen.getAllByText('晴天');
@@ -267,7 +267,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
       index: i + 1,
       id: `song_${i + 1}`,
       title: `Song ${i + 1}`,
-      artists: [`Artist ${i + 1}`],
+      artist: `Artist ${i + 1}`,
       album: `Album ${i + 1}`,
       durationMs: 180000,
     }));

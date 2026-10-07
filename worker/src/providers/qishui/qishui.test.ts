@@ -214,7 +214,7 @@ describe('Qishui Song Status & Normalization', () => {
     expect(track.index).toBe(1);
     expect(track.id).toBe('7646305796047603758');
     expect(track.title).toBe("If I Ain't Got You");
-    expect(track.artists).toEqual(['多喝热水']);
+    expect(track.artist).toBe('多喝热水');
     expect(track.album).toBe("If I Ain't Got You");
     expect(track.durationMs).toBe(219325);
     expect(track.coverUrl).toBe(
@@ -353,7 +353,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(track.index).toBe(13);
     expect(track.id).toBe('7324660489924005174');
     expect(track.title).toBe('聆听一曲《瞬间的永恒》，平静舒缓，空灵唯美');
-    expect(track.artists).toEqual(['天籁音曲']);
+    expect(track.artist).toBe('天籁音曲');
     expect(track.durationMs).toBe(162367);
     expect(track.coverUrl).toBe('https://p26-sign.douyinpic.com/tos-cn-i-0026/sample.jpeg');
     expect(track.isAvailable).toBe(true);
@@ -397,7 +397,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     expect(track.index).toBe(1);
     expect(track.id).toBe('7657409429382204211');
     expect(track.title).toBe('@雷姆必拓牢实人创作的原声');
-    expect(track.artists).toEqual(['雷姆必拓牢实人']);
+    expect(track.artist).toBe('雷姆必拓牢实人');
     expect(track.durationMs).toBe(21000);
     expect(track.isOriginalSound).toBe(true);
     expect(track.statusText).toBe('原声');
@@ -418,7 +418,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     const track = normalizeAwemeMusicTrack(raw, 2);
     expect(track.index).toBe(2);
     expect(track.title).toBe("If I Ain't Got You（剪辑版）");
-    expect(track.artists).toEqual(['多喝热水']);
+    expect(track.artist).toBe('多喝热水');
     expect(track.isOriginalSound).toBe(false);
     expect(track.statusText).toBe('歌曲');
   });
@@ -440,7 +440,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     const track = normalizeAwemeMusicTrack(raw, 3);
     expect(track.index).toBe(3);
     expect(track.title).toBe('真实的歌曲名字');
-    expect(track.artists).toEqual(['真实歌手']);
+    expect(track.artist).toBe('真实歌手');
   });
 
   it('throws PARSE_ERROR when Aweme music item is null or non-object', () => {
@@ -456,13 +456,13 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     // Verify first track (regular audio) uses the shared 1-based index contract.
     expect(playlist.tracks[0].index).toBe(1);
     expect(playlist.tracks[0].title).toBeDefined();
-    expect(playlist.tracks[0].artists.length).toBeGreaterThan(0);
+    expect(playlist.tracks[0].artist).toBeTruthy();
 
     // Array offset 12 is the 13th PlaylistOut track.
     const videoTrack = playlist.tracks[12];
     expect(videoTrack.index).toBe(13);
     expect(videoTrack.id).toBe('7324660489924005174');
-    expect(videoTrack.artists).toEqual(['天籁音曲']);
+    expect(videoTrack.artist).toBe('天籁音曲');
     expect(videoTrack.statusText).toBe('视频');
     expect(videoTrack.isAvailable).toBe(true);
     expect(videoTrack.durationMs).toBe(162367);
@@ -477,7 +477,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     // Verify sample tracks have genuine titles and artists
     const trackLi = playlist.tracks.find((t) => t.title === '我李逍遥可以对天发誓');
     expect(trackLi).toBeDefined();
-    expect(trackLi?.artists).toEqual(['Watch with Caution']);
+    expect(trackLi?.artist).toBe('Watch with Caution');
 
     const trackAlicia = playlist.tracks.find((t) => t.title === "If I Ain't Got You");
     expect(trackAlicia).toBeDefined();

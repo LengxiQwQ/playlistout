@@ -22,7 +22,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       id: '123',
       name: 'Rate Limit Test',
       trackCount: 1,
-      tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
+      tracks: [{ index: 1, title: 'T1', artist: 'A1' }],
     });
 
     const clientIp = '203.0.113.195';
@@ -63,7 +63,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       id: '123',
       name: 'Rate Limit Direct API Test',
       trackCount: 1,
-      tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
+      tracks: [{ index: 1, title: 'T1', artist: 'A1' }],
     });
 
     const clientIp = '198.51.100.42';
@@ -96,7 +96,7 @@ describe('Abuse Protection & Security Hardening (Phase 6)', () => {
       id: '123',
       name: 'Rate Limit Scope Test',
       trackCount: 1,
-      tracks: [{ index: 1, title: 'T1', artists: ['A1'] }],
+      tracks: [{ index: 1, title: 'T1', artist: 'A1' }],
     });
 
     const clientIp = '203.0.113.210';

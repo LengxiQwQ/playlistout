@@ -19,24 +19,26 @@ export interface TrackAlbum {
 
 export interface Track {
   index: number;
-  id?: string;
   title: string;
-  artists: string[];
-  artistList?: TrackArtist[];
+  artist: string;
   album?: string;
-  albumObj?: TrackAlbum;
+  id?: string;
+  isrc?: string;
   durationMs?: number;
+  releaseDate?: string;
+  trackNumber?: number;
+  discNumber?: number;
   sourceUrl?: string;
+  playbackUrl?: string;
   coverUrl?: string;
-  isAvailable?: boolean;
+  isOriginalSound?: boolean;
   isVip?: boolean;
+  isAvailable?: boolean;
   status?: TrackAvailability;
   statusText?: string;
-  isOriginalSound?: boolean;
   maxQuality?: string;
-  publishTime?: number;
   mvId?: string;
-  rawIds?: Record<string, string | number>;
+  mvUrl?: string;
 }
 
 export type PlaylistRetrievalMode = 'full' | 'preview';

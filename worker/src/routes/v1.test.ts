@@ -30,7 +30,7 @@ const mockPlaylist = (platform: string, id: string, name: string) => ({
       index: 1,
       id: 't1',
       title: 'Test Song',
-      artists: ['Test Artist'],
+      artist: 'Test Artist',
       album: 'Test Album',
       durationMs: 180000,
     },

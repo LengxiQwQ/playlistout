@@ -13,8 +13,8 @@ const mockPlaylist: Playlist = {
   name: '测试歌单',
   trackCount: 2,
   tracks: [
-    { index: 1, title: 'Song 1', artists: ['Artist 1'] },
-    { index: 2, title: 'Song 2', artists: ['Artist 2'] },
+    { index: 1, title: 'Song 1', artist: 'Artist 1' },
+    { index: 2, title: 'Song 2', artist: 'Artist 2' },
   ],
 };
 

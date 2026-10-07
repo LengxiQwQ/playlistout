@@ -16,6 +16,7 @@ interface MigrationEnv {
 
 interface MigrationTrackInput {
   title?: unknown;
+  artist?: unknown;
   artists?: unknown;
   album?: unknown;
   isrc?: unknown;
@@ -54,13 +55,23 @@ function cleanString(value: unknown, maxLength: number): string {
   return value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
-function cleanArtists(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const artists = value
-    .slice(0, 10)
-    .map((artist) => cleanString(artist, 200))
-    .filter(Boolean);
-  return artists.length > 0 ? artists : undefined;
+function cleanArtists(value: unknown, singleArtist?: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const artists = value
+      .slice(0, 10)
+      .map((artist) => cleanString(artist, 200))
+      .filter(Boolean);
+    if (artists.length > 0) return artists;
+  }
+  if (typeof singleArtist === 'string' && singleArtist.trim()) {
+    const list = singleArtist
+      .split(',')
+      .map((s) => cleanString(s, 200))
+      .filter(Boolean)
+      .slice(0, 10);
+    if (list.length > 0) return list;
+  }
+  return undefined;
 }
 
 function cleanIsrc(value: unknown): string | undefined {
@@ -212,7 +223,7 @@ export async function handleSoundiizMigration(
     const trackTitle = cleanString(track?.title, 300);
     if (!trackTitle) return null;
 
-    const artists = cleanArtists(track?.artists);
+    const artists = cleanArtists(track?.artists, track?.artist);
     const album = cleanString(track?.album, 300);
     const isrc = cleanIsrc(track?.isrc);
 

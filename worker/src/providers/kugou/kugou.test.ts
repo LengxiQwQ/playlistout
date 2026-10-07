@@ -122,7 +122,7 @@ describe('Kugou Provider Unit Tests', () => {
       expect(track.index).toBe(1);
       expect(track.id).toBe('B55FCC75168E0C8F3EB8AAD347911328');
       expect(track.title).toBe('借口');
-      expect(track.artists).toEqual(['周杰伦']);
+      expect(track.artist).toBe('周杰伦');
       expect(track.album).toBe('七里香');
       expect(track.durationMs).toBe(265613);
       expect(track.isVip).toBe(true);
@@ -142,8 +142,8 @@ describe('Kugou Provider Unit Tests', () => {
           intro: '我的私藏歌单',
         },
         tracks: [
-          { index: 1, title: '借口', artists: ['周杰伦'] },
-          { index: 2, title: '晴天', artists: ['周杰伦'] },
+          { index: 1, title: '借口', artist: '周杰伦' },
+          { index: 2, title: '晴天', artist: '周杰伦' },
         ],
         isPartialPreview: true,
       });

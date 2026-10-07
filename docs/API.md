@@ -184,14 +184,14 @@ The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side b
       "tracks": [
         {
           "index": 1,
-          "id": "003mN2sZ2...",
           "title": "南山南",
-          "artists": ["马頔"],
+          "artist": "马頔",
           "album": "孤岛",
+          "id": "003mN2sZ2...",
           "durationMs": 324000,
           "coverUrl": "https://y.gtimg.cn/music/photo_new/...",
-          "isAvailable": true,
           "isVip": false,
+          "isAvailable": true,
           "status": "playable"
         }
       ]

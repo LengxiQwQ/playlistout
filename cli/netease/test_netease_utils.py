@@ -63,14 +63,29 @@ def test_export_json_cover_url():
             ("晴天", "周杰伦", "叶惠美", "04:29", "正常", "https://p3.music.126.net/sample_cover.jpg"),
             ("七里香", "周杰伦", "七里香", "04:59", "正常", ""),
         ]
-        export_json(tmp_name, "测试歌单", sample_tracks, "作者", "https://p1.music.126.net/playlist_cover.jpg")
+        export_json(tmp_name, "测试歌单", sample_tracks, "作者", "https://p1.music.126.net/playlist_cover.jpg", playlist_id="12345")
         with open(tmp_name, 'r', encoding='utf-8') as f:
             data = json.load(f)
         assert data["name"] == "测试歌单"
+        assert data["creator"] == "作者"
         assert data["coverUrl"] == "https://p1.music.126.net/playlist_cover.jpg"
+        assert data["platform"] == "netease"
+        assert data["id"] == "12345"
+        assert data["sourceUrl"] == "https://music.163.com/#/playlist?id=12345"
         assert data["trackCount"] == 2
+        assert len(data["tracks"]) == 2
+        assert data["tracks"][0]["title"] == "晴天"
+        assert data["tracks"][0]["artist"] == "周杰伦"
+        assert data["tracks"][0]["album"] == "叶惠美"
+        assert data["tracks"][0]["durationMs"] == 269000
+        assert data["tracks"][0]["status"] == "playable"
+        assert data["tracks"][0]["statusText"] == "正常"
         assert data["tracks"][0]["coverUrl"] == "https://p3.music.126.net/sample_cover.jpg"
-        assert data["tracks"][1]["coverUrl"] == ""
+        assert "coverUrl" not in data["tracks"][1]
+        for t in data["tracks"]:
+            assert "artists" not in t
+            assert "albumObj" not in t
+            assert "rawIds" not in t
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)

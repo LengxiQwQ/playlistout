@@ -145,7 +145,7 @@ https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-Playli
 | 格式 | 适合的场景 |
 |---|---|
 | **Excel (.xlsx)** | 通用表格交换、FreeYourMusic / Soundiiz 等文件导入、整理归档；首个 `Tracks` Sheet 为干净的一歌一行结构 |
-| **JSON** | 开发者、脚本、第三方应用和播放器接入；保留完整结构化数据并直接暴露常用 `artist` / `isrc` 字段 |
+| **JSON** | 开发者、脚本、第三方应用和播放器接入；采用统一 Canonical 结构（单一歌手 `artist`、平铺通用、零空值填充） |
 | **TXT** | 阅读、简单备份与文本处理 |
 | **CSV** | 通用歌单迁移与数据交换；使用 `title / artist / album / isrc` 等语言无关标准列名 |
 | **M3U8** | 本地播放器、媒体库以及支持 Extended M3U/M3U8 的迁移工具 |

@@ -12,8 +12,8 @@ describe('PlaylistSummary Component — Kugou Retrieval Banners & Actions', () =
     creator: '冷汐',
     trackCount: 100,
     tracks: [
-      { index: 1, id: 's1', title: '歌曲 1', artists: ['歌手 1'] },
-      { index: 2, id: 's2', title: '歌曲 2', artists: ['歌手 2'] },
+      { index: 1, id: 's1', title: '歌曲 1', artist: '歌手 1' },
+      { index: 2, id: 's2', title: '歌曲 2', artist: '歌手 2' },
     ],
     retrieval: {
       mode: 'preview',
@@ -207,7 +207,7 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
     creator: '冷汐OωO',
     trackCount: 136,
     tracks: [
-      { index: 1, id: 't1', title: '我李逍遥可以对天发誓', artists: ['Watch with Caution'] },
+      { index: 1, id: 't1', title: '我李逍遥可以对天发誓', artist: 'Watch with Caution' },
     ],
     channel: 'qishui',
     availableChannels: ['qishui', 'douyin'],

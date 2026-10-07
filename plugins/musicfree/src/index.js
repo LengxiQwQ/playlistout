@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.3.9)
+ * PlaylistOut 官方 MusicFree 插件 (v1.4.0)
  *
  * 遵循 MusicFree 插件开发规范 (CommonJS)
  * 支持双端双模驱动：
@@ -212,7 +212,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '1.3.9';
+const PLUGIN_VERSION = '1.4.0';
 
 function getAnalyticsHostPlatform() {
   try {
@@ -899,17 +899,9 @@ function attachNativeSourceMetadata(item, track, targetPlatform) {
   const stripPrefix = (s, prefix) =>
     s.toLowerCase().startsWith(prefix + '_') ? s.slice(prefix.length + 1) : s;
 
-  const trackRawIds = (track && track.rawIds) || {};
-
   if (targetPlatform === 'qq' || targetPlatform === '20') {
-    const sid = String(
-      trackRawIds.qq_songmid ||
-        (track && (track.songmid || track.mid)) ||
-        stripPrefix(rawId, 'qq')
-    ).trim();
-    const mediaMid = String(
-      (track && (track.strMediaMid || track.mediaMid)) || sid
-    ).trim();
+    const sid = stripPrefix(rawId, 'qq');
+    const mediaMid = sid;
     const vid = String((track && (track.mvId || track.vid)) || '').trim();
     // 当从 IndexedDB 恢复曲目时 track.isVip 为 undefined 且无真实 strMediaMid，
     // 默认置 vip=1 以启用 qq 插件 vipPreRoute 直走 vkeys-legacy 高速通道，避免无意义的官方接口 1000ms 空转
@@ -922,64 +914,35 @@ function attachNativeSourceMetadata(item, track, targetPlatform) {
     });
     item._srcOrder = ['qq'];
   } else if (targetPlatform === 'netease') {
-    const sid = String(
-      trackRawIds.netease_id || stripPrefix(rawId, 'netease')
-    ).trim();
+    const sid = stripPrefix(rawId, 'netease');
     const mv = String((track && (track.mvId || track.mv)) || '').trim();
     item._src = Object.assign({}, item._src, {
       netease: { id: sid, mv },
     });
     item._srcOrder = ['netease'];
   } else if (targetPlatform === 'kugou' || targetPlatform === 'WebFilter') {
-    const sid = String(
-      trackRawIds.kugou_hash ||
-        (track && track.hash) ||
-        stripPrefix(rawId, 'kugou')
-    ).trim();
-    const mixsongid = String(
-      trackRawIds.kugou_album_audio_id ||
-        (track && track.mixsongid) ||
-        ''
-    ).trim();
-    const mvHash = String((track && (track.mvHash || track.mvId)) || '').trim();
+    const sid = stripPrefix(rawId, 'kugou');
     item.hash = sid;
     item._src = Object.assign({}, item._src, {
-      kugou: {
-        hash: sid,
-        hash320: String((track && track.hash320) || ''),
-        hashSq: String((track && track.hashSq) || ''),
-        mixsongid,
-        mvHash,
-      },
+      kugou: { hash: sid },
     });
     item._srcOrder = ['kugou'];
   } else if (targetPlatform === 'qishui') {
-    const sid = String(
-      trackRawIds.qishui_id ||
-        (track && track.trackId) ||
-        stripPrefix(rawId, 'qishui')
-    ).trim();
+    const sid = stripPrefix(rawId, 'qishui');
     item._src = Object.assign({}, item._src, {
       qishui: { trackId: sid },
     });
     item._srcOrder = ['qishui'];
   } else if (targetPlatform === 'kuwo') {
-    const sid = String(
-      trackRawIds.kuwo_id || stripPrefix(rawId, 'kuwo')
-    ).trim();
+    const sid = stripPrefix(rawId, 'kuwo');
     item._src = Object.assign({}, item._src, {
       kuwo: { rid: sid, id: sid },
     });
     item._srcOrder = ['kuwo'];
   } else if (targetPlatform === 'migu') {
-    const sid = String(
-      trackRawIds.migu_id ||
-        (track && track.contentId) ||
-        stripPrefix(rawId, 'migu')
-    ).trim();
-    const copyrightId = String((track && track.copyrightId) || sid).trim();
+    const sid = stripPrefix(rawId, 'migu');
     item._src = Object.assign({}, item._src, {
-      migu: { contentId: sid, copyrightId },
+      migu: { contentId: sid, copyrightId: sid },
     });
     item._srcOrder = ['migu'];
   } else if (targetPlatform === 'bilibili') {
@@ -1004,60 +967,30 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   }
 
   // 1. 歌曲标题 (默认 '未知歌曲')
-  const title = (track.title || track.name || '未知歌曲').toString().trim() || '未知歌曲';
+  const title = (track.title || '未知歌曲').toString().trim() || '未知歌曲';
 
-  // 2. 歌手 (数组逗号拼接，如 "周杰伦, 阿信")
-  let artist = '';
-  if (Array.isArray(track.artists) && track.artists.length > 0) {
-    artist = track.artists
-      .map((a) => (typeof a === 'string' ? a : (a && a.name) || ''))
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(', ');
-  } else if (Array.isArray(track.artistList) && track.artistList.length > 0) {
-    artist = track.artistList
-      .map((a) => (a && a.name) || '')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(', ');
-  } else if (typeof track.artist === 'string' && track.artist.trim()) {
-    artist = track.artist.trim();
-  } else if (typeof track.author === 'string' && track.author.trim()) {
-    artist = track.author.trim();
-  } else if (typeof track.singer === 'string' && track.singer.trim()) {
-    artist = track.singer.trim();
-  }
-  if (!artist) {
-    artist = '未知歌手';
-  }
+  // 2. 歌手 (统一单一 artist 字符串)
+  const artist =
+    typeof track.artist === 'string' && track.artist.trim()
+      ? track.artist.trim()
+      : '未知歌手';
 
-  // 3. 专辑 (空值兜底 '')
-  let album = '';
-  if (typeof track.album === 'string' && track.album.trim()) {
-    album = track.album.trim();
-  } else if (track.albumObj && typeof track.albumObj.name === 'string') {
-    album = track.albumObj.name.trim();
-  }
+  // 3. 专辑 (统一单一 album 字符串)
+  const album =
+    typeof track.album === 'string' && track.album.trim()
+      ? track.album.trim()
+      : '';
 
-  // 4. 封面图 (空值兜底 '')
-  let artwork = '';
-  if (typeof track.artwork === 'string' && track.artwork.trim()) {
-    artwork = track.artwork.trim();
-  } else if (typeof track.coverUrl === 'string' && track.coverUrl.trim()) {
-    artwork = track.coverUrl.trim();
-  } else if (typeof track.picUrl === 'string' && track.picUrl.trim()) {
-    artwork = track.picUrl.trim();
-  }
+  // 4. 封面图 (统一 coverUrl 字符串)
+  const artwork =
+    typeof track.coverUrl === 'string' && track.coverUrl.trim()
+      ? track.coverUrl.trim()
+      : '';
 
   // 5. 时长 (秒，Math.round((track.durationMs || 0) / 1000))
   let duration = 0;
   if (typeof track.durationMs === 'number' && track.durationMs > 0) {
     duration = Math.round(track.durationMs / 1000);
-  } else if (typeof track.duration === 'number' && track.duration > 0) {
-    duration =
-      track.duration > 10000
-        ? Math.round(track.duration / 1000)
-        : Math.round(track.duration);
   }
 
   // 6. 唯一标识 (优先使用 track.id，如网易云 song id 或 QQ song mid)
@@ -1135,21 +1068,20 @@ function resolveMusicPlatformFromTrackFields(track, item) {
 
   const sourceUrl = String((track && track.sourceUrl) || (item && item.sourceUrl) || '');
   const artwork = String(
-    (track && (track.coverUrl || track.artwork)) || (item && item.artwork) || ''
+    (track && track.coverUrl) || (item && item.artwork) || ''
   );
   const id = String((track && track.id) || (item && item.id) || '').trim();
-  const trackRawIds = (track && track.rawIds) || {};
 
-  if (trackRawIds.qq_songmid || /qq\.com|gtimg\.cn/i.test(sourceUrl + ' ' + artwork)) {
+  if (/qq\.com|gtimg\.cn/i.test(sourceUrl + ' ' + artwork)) {
     return 'qq';
   }
-  if (trackRawIds.netease_id || /163\.com|126\.net/i.test(sourceUrl + ' ' + artwork)) {
+  if (/163\.com|126\.net/i.test(sourceUrl + ' ' + artwork)) {
     return 'netease';
   }
-  if (trackRawIds.kugou_hash || /kugou\.com/i.test(sourceUrl + ' ' + artwork)) {
+  if (/kugou\.com/i.test(sourceUrl + ' ' + artwork)) {
     return 'kugou';
   }
-  if (trackRawIds.qishui_id || /qishui|douyinpic\.com|byteimg\.com/i.test(sourceUrl + ' ' + artwork)) {
+  if (/qishui|douyinpic\.com|byteimg\.com/i.test(sourceUrl + ' ' + artwork)) {
     return 'qishui';
   }
   if (/kuwo\.cn/i.test(sourceUrl + ' ' + artwork)) {
@@ -1204,10 +1136,6 @@ function parseJsonTracks(jsonStr, sourceDesc = 'JSON 数据') {
       tracks = parsed.result.tracks;
     } else if (parsed.data && Array.isArray(parsed.data.tracks)) {
       tracks = parsed.data.tracks;
-    } else if (Array.isArray(parsed.songList)) {
-      tracks = parsed.songList;
-    } else if (Array.isArray(parsed.songs)) {
-      tracks = parsed.songs;
     }
   }
 
@@ -1447,7 +1375,7 @@ async function importMusicSheet(urlLike) {
 
   let res;
   try {
-    res = await httpGet(apiUrl, { timeout: 15000, headers: requestHeaders });
+    res = await httpGet(apiUrl, { timeout: 30000, headers: requestHeaders });
   } catch (err) {
     throw new Error(`请求 PlaylistOut API 超时或网络失败: ${err.message}`);
   }

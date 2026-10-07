@@ -37,6 +37,9 @@ export interface RawNeteaseSong {
   duration?: number;
   fee?: number;
   mv?: number | string;
+  publishTime?: number;
+  no?: number;
+  cd?: string | number;
   noCopyrightRcmd?: unknown;
   privilege?: RawNeteasePrivilege;
 }
@@ -163,28 +166,22 @@ export function normalizeNeteaseTrack(
 
   // Artists
   const rawArtists = Array.isArray(rawSong.ar) ? rawSong.ar : Array.isArray(rawSong.artists) ? rawSong.artists : [];
-  let artists: string[] = [];
-  let artistList: import('../../models/playlist').TrackArtist[] = [];
-  
+  const artists: string[] = [];
   for (const a of rawArtists) {
     if (a && typeof a === 'object') {
       const name = (a.name || '').trim();
       if (name) {
         artists.push(name);
-        const aId = a.id !== undefined && a.id !== null ? String(a.id) : undefined;
-        artistList.push({ id: aId, name });
       }
     }
   }
+  const artist = artists.join(', ');
 
   // Album
   const rawAlbum = rawSong.al || rawSong.album;
   let album: string | undefined;
-  let albumObj: import('../../models/playlist').TrackAlbum | undefined;
   if (rawAlbum && typeof rawAlbum === 'object' && typeof rawAlbum.name === 'string' && rawAlbum.name.trim().length > 0) {
     album = rawAlbum.name.trim();
-    const aId = rawAlbum.id !== undefined && rawAlbum.id !== null ? String(rawAlbum.id) : undefined;
-    albumObj = { id: aId, name: album };
   }
 
   // Duration
@@ -198,9 +195,30 @@ export function normalizeNeteaseTrack(
   // Track ID and URLs
   const trackId = rawSong.id !== undefined && rawSong.id !== null ? String(rawSong.id).trim() : undefined;
   const sourceUrl = trackId ? `https://music.163.com/#/song?id=${trackId}` : undefined;
-  
+
+  // Release Date (YYYY-MM-DD from publishTime ms timestamp if available)
+  let releaseDate: string | undefined;
+  if (typeof rawSong.publishTime === 'number' && rawSong.publishTime > 0) {
+    const d = new Date(rawSong.publishTime);
+    if (!isNaN(d.getTime())) {
+      releaseDate = d.toISOString().slice(0, 10);
+    }
+  }
+
+  // Track & Disc numbers
+  const trackNumber =
+    typeof rawSong.no === 'number' && rawSong.no > 0 ? rawSong.no : undefined;
+  let discNumber: number | undefined;
+  if (rawSong.cd !== undefined && rawSong.cd !== null) {
+    const parsedCd = parseInt(String(rawSong.cd), 10);
+    if (Number.isInteger(parsedCd) && parsedCd > 0) {
+      discNumber = parsedCd;
+    }
+  }
+
   // MV
   const mvId = rawSong.mv !== undefined && rawSong.mv !== 0 && rawSong.mv !== null ? String(rawSong.mv).trim() : undefined;
+  const mvUrl = mvId ? `https://music.163.com/#/mv?id=${mvId}` : undefined;
 
   // Cover URL
   let coverUrl: string | undefined;
@@ -209,7 +227,7 @@ export function normalizeNeteaseTrack(
   }
 
   const statusInfo = determineNeteaseTrackStatus(rawSong, privilege);
-  
+
   // Max Audio Quality
   const priv = privilege || rawSong.privilege;
   let maxQuality: string | undefined;
@@ -226,22 +244,23 @@ export function normalizeNeteaseTrack(
 
   return {
     index,
-    id: trackId,
     title,
-    artists,
-    artistList: artistList.length > 0 ? artistList : undefined,
+    artist,
     album,
-    albumObj,
+    id: trackId,
     durationMs,
+    releaseDate,
+    trackNumber,
+    discNumber,
     sourceUrl,
     coverUrl,
     isAvailable: statusInfo.isAvailable,
     isVip: statusInfo.isVip,
     status: statusInfo.status,
     statusText: statusInfo.statusText,
-    mvId,
     maxQuality,
-    rawIds: trackId ? { netease_id: trackId } : undefined,
+    mvId,
+    mvUrl,
   };
 }
 

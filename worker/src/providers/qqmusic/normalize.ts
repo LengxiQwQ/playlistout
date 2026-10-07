@@ -28,6 +28,11 @@ export interface RawQQSong {
   albummid?: string;
   album?: RawQQAlbum | string;
   interval?: number;
+  time_public?: string;
+  index_album?: number;
+  cdIdx?: number;
+  vid?: string;
+  mv?: { vid?: string; id?: number | string };
   pay?: {
     payplay?: number;
     payalbum?: number;
@@ -138,35 +143,28 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     throw new ProviderError('PARSE_ERROR', `Missing mandatory track title for song at index ${index}.`, 502);
   }
 
-  // Extract artists array & object list
-  let artists: string[] = [];
-  let artistList: import('../../models/playlist').TrackArtist[] = [];
+  // Extract artist string (multiple artists joined by ", ")
+  const artists: string[] = [];
   if (Array.isArray(rawSong.singer)) {
     for (const s of rawSong.singer) {
       if (s && typeof s === 'object') {
         const name = (s.name || s.title || '').trim();
         if (name) {
           artists.push(name);
-          const sMid = (s.mid || '').trim();
-          const sId = s.id !== undefined && s.id !== null ? String(s.id) : undefined;
-          artistList.push({ id: sMid || sId, name });
         }
       }
     }
   }
+  const artist = artists.join(', ');
 
-  // Extract album name & object
+  // Extract album name (string only)
   let album: string | undefined;
-  let albumObj: import('../../models/playlist').TrackAlbum | undefined;
   if (typeof rawSong.albumname === 'string' && rawSong.albumname.trim().length > 0) {
     album = rawSong.albumname.trim();
   } else if (rawSong.album && typeof rawSong.album === 'object') {
     const albumObjName = (rawSong.album.name || rawSong.album.title || '').trim();
     if (albumObjName.length > 0) {
       album = albumObjName;
-      const aMid = (rawSong.album.mid || '').trim();
-      const aId = rawSong.album.id !== undefined && rawSong.album.id !== null ? String(rawSong.album.id) : undefined;
-      albumObj = { id: aMid || aId, name: albumObjName };
     }
   }
 
@@ -175,14 +173,28 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
   const trackId = rawSong.songid ?? rawSong.id;
   const id = trackMid || (trackId !== undefined && trackId !== null ? String(trackId).trim() : undefined);
 
-  // Raw IDs for geeks
-  const rawIds: Record<string, string | number> = {};
-  if (trackMid) rawIds.qq_songmid = trackMid;
-  if (trackId !== undefined && trackId !== null) rawIds.qq_songid = trackId;
-
   // Duration in milliseconds
   const intervalSeconds = typeof rawSong.interval === 'number' && rawSong.interval >= 0 ? rawSong.interval : undefined;
   const durationMs = intervalSeconds !== undefined ? intervalSeconds * 1000 : undefined;
+
+  // Release date (YYYY-MM-DD from time_public if available and valid)
+  let releaseDate: string | undefined;
+  if (typeof rawSong.time_public === 'string') {
+    const cleanDate = rawSong.time_public.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) && cleanDate !== '0000-00-00') {
+      releaseDate = cleanDate;
+    }
+  }
+
+  // Track & Disc numbers
+  const trackNumber =
+    typeof rawSong.index_album === 'number' && rawSong.index_album > 0
+      ? rawSong.index_album
+      : undefined;
+  const discNumber =
+    typeof rawSong.cdIdx === 'number' && rawSong.cdIdx > 0
+      ? rawSong.cdIdx
+      : undefined;
 
   // Source URL
   const sourceUrl = trackMid ? `https://y.qq.com/n/ryqq/songDetail/${trackMid}` : undefined;
@@ -278,15 +290,26 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     maxQuality = '128kbps';
   }
 
+  // MV
+  const rawVid =
+    typeof rawSong.vid === 'string' && rawSong.vid.trim()
+      ? rawSong.vid.trim()
+      : typeof rawSong.mv?.vid === 'string' && rawSong.mv.vid.trim()
+        ? rawSong.mv.vid.trim()
+        : undefined;
+  const mvId = rawVid || undefined;
+  const mvUrl = mvId ? `https://y.qq.com/n/ryqq/mv/${mvId}` : undefined;
+
   return {
     index,
-    id,
     title,
-    artists,
-    artistList: artistList.length > 0 ? artistList : undefined,
+    artist,
     album,
-    albumObj,
+    id,
     durationMs,
+    releaseDate,
+    trackNumber,
+    discNumber,
     sourceUrl,
     coverUrl,
     isAvailable,
@@ -294,7 +317,8 @@ export function normalizeQQTrack(rawSong: RawQQSong, index: number): Track {
     status,
     statusText,
     maxQuality,
-    rawIds: Object.keys(rawIds).length > 0 ? rawIds : undefined,
+    mvId,
+    mvUrl,
   };
 }
 

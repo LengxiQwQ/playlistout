@@ -19,12 +19,12 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title).toBeTruthy();
-      expect(Array.isArray(track.artists)).toBe(true);
-      expect(track.artists.length).toBeGreaterThan(0);
+      expect(typeof track.artist).toBe('string');
+      expect(track.artist.length).toBeGreaterThan(0);
     });
 
     // Check multi-artist presence
-    const multiArtistSongs = playlist.tracks.filter((t) => t.artists.length > 1);
+    const multiArtistSongs = playlist.tracks.filter((t) => t.artist.includes(', '));
     expect(multiArtistSongs.length).toBeGreaterThan(0);
   });
 
@@ -40,7 +40,7 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     // First track verification
     expect(playlist.tracks[0].index).toBe(1);
     expect(playlist.tracks[0].title).toBeTruthy();
-    expect(playlist.tracks[0].artists).toEqual(['周杰伦']);
+    expect(playlist.tracks[0].artist).toBe('周杰伦');
 
     // Last track verification
     const last = playlist.tracks[171];
@@ -60,7 +60,7 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     const koreanOrJapaneseTracks = playlist.tracks.filter(
       (t) =>
         /[\uac00-\ud7af\u3040-\u30ff]/.test(t.title) ||
-        t.artists.some((a) => /[\uac00-\ud7af\u3040-\u30ff]/.test(a)),
+        /[\uac00-\ud7af\u3040-\u30ff]/.test(t.artist),
     );
     expect(koreanOrJapaneseTracks.length).toBeGreaterThan(0);
   });
@@ -78,7 +78,7 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     // Track integrity spot-check
     expect(playlist.tracks[0].index).toBe(1);
     expect(playlist.tracks[0].title).toBeTruthy();
-    expect(playlist.tracks[0].artists.length).toBeGreaterThan(0);
+    expect(playlist.tracks[0].artist.length).toBeGreaterThan(0);
     expect(playlist.tracks.some((t) => t.title === '何物')).toBe(true);
 
     // Last track index check
@@ -120,7 +120,7 @@ describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, ()
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
+      expect(typeof track.artist).toBe('string');
     });
   });
 
@@ -153,8 +153,8 @@ describe('Real Public NetEase Playlist Live Validation', { timeout: 30000 }, () 
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
-      expect(track.artists.length).toBeGreaterThan(0);
+      expect(typeof track.artist).toBe('string');
+      expect(track.artist.length).toBeGreaterThan(0);
     });
   });
 
@@ -183,7 +183,7 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
+      expect(typeof track.artist).toBe('string');
     });
   });
 
@@ -202,7 +202,7 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
+      expect(typeof track.artist).toBe('string');
     });
   });
 
@@ -224,7 +224,7 @@ describe('Real Public Kugou Playlist Live Validation', { timeout: 30000 }, () =>
     playlist.tracks.forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
+      expect(typeof track.artist).toBe('string');
     });
   });
 
@@ -257,7 +257,7 @@ describe('Real Public Qishui Playlist Live Validation', { timeout: 60000 }, () =
     playlist.tracks.slice(0, 20).forEach((track, i) => {
       expect(track.index).toBe(i + 1);
       expect(track.title.length).toBeGreaterThan(0);
-      expect(Array.isArray(track.artists)).toBe(true);
+      expect(typeof track.artist).toBe('string');
     });
   });
 });

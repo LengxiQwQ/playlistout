@@ -14,14 +14,14 @@ const playlist: Playlist = {
     {
       index: 1,
       title: 'Song A',
-      artists: ['Artist A'],
+      artist: 'Artist A',
       album: 'Album A',
-      rawIds: { isrc: 'USQX91300105' },
+      isrc: 'USQX91300105',
     },
     {
       index: 2,
       title: 'Song B',
-      artists: ['Artist B', 'Artist C'],
+      artist: 'Artist B, Artist C',
     },
   ],
 };

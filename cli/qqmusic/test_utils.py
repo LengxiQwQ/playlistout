@@ -61,13 +61,24 @@ def test_export_to_json_cover_url():
             ("晴天", "周杰伦", "叶惠美", "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"),
             ("七里香", "周杰伦", "七里香"),
         ]
-        export_to_json(sample_songs, tmp_name)
+        export_to_json(sample_songs, tmp_name, playlist_title="Jay歌单", author="Jay")
         with open(tmp_name, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        assert len(data) == 2
-        assert data[0]["Title"] == "晴天"
-        assert data[0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
-        assert "coverUrl" not in data[1] or data[1].get("coverUrl") == ""
+        assert data["name"] == "Jay歌单"
+        assert data["creator"] == "Jay"
+        assert data["platform"] == "qqmusic"
+        assert data["trackCount"] == 2
+        assert len(data["tracks"]) == 2
+        assert data["tracks"][0]["title"] == "晴天"
+        assert data["tracks"][0]["artist"] == "周杰伦"
+        assert data["tracks"][0]["album"] == "叶惠美"
+        assert data["tracks"][0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
+        assert "coverUrl" not in data["tracks"][1]
+        # Verify no deprecated fields exist
+        for t in data["tracks"]:
+            assert "artists" not in t
+            assert "albumObj" not in t
+            assert "rawIds" not in t
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)

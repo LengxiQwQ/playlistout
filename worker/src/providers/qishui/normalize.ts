@@ -22,7 +22,7 @@ export interface RawQishuiArtist {
 export interface RawQishuiAlbum {
   id?: string | number;
   name?: string;
-  release_date?: number;
+  release_date?: number | string;
   url_cover?: RawQishuiCover;
 }
 
@@ -278,32 +278,35 @@ export function normalizeQishuiTrack(
 
     // Artists
     const artists: string[] = [];
-    const artistList: import('../../models/playlist').TrackArtist[] = [];
     if (Array.isArray(rawTrack.artists)) {
       for (const a of rawTrack.artists) {
         const name = (a.name || a.artist_name || a.simple_display_name || a.user?.nickname || '').trim();
         if (name) {
           artists.push(name);
-          const aId = a.id !== undefined && a.id !== null ? String(a.id) : a.user?.uid !== undefined && a.user?.uid !== null ? String(a.user?.uid) : undefined;
-          artistList.push({ id: aId, name });
         }
       }
     }
-    if (artists.length === 0) {
-      artists.push('未知艺人');
-    }
+    const artist = artists.length > 0 ? artists.join(', ') : '未知艺人';
 
-    // Album
+    // Album & Release Date
     let album: string | undefined;
-    let albumObj: import('../../models/playlist').TrackAlbum | undefined;
-    let publishTime: number | undefined;
+    let releaseDate: string | undefined;
     if (rawTrack.album?.name && rawTrack.album.name.trim().length > 0) {
       album = rawTrack.album.name.trim();
-      const aId = rawTrack.album.id !== undefined && rawTrack.album.id !== null ? String(rawTrack.album.id) : undefined;
-      albumObj = { id: aId, name: album };
-      
-      if (typeof rawTrack.album.release_date === 'number' && rawTrack.album.release_date > 0) {
-        publishTime = rawTrack.album.release_date > 1e11 ? Math.floor(rawTrack.album.release_date / 1000) : rawTrack.album.release_date;
+    }
+    if (rawTrack.album?.release_date) {
+      const rd = rawTrack.album.release_date;
+      if (typeof rd === 'number' && rd > 0) {
+        const ms = rd > 1e11 ? rd : rd * 1000;
+        const d = new Date(ms);
+        if (!isNaN(d.getTime())) {
+          releaseDate = d.toISOString().slice(0, 10);
+        }
+      } else if (typeof rd === 'string') {
+        const trimmed = rd.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          releaseDate = trimmed;
+        }
       }
     }
 
@@ -336,24 +339,21 @@ export function normalizeQishuiTrack(
 
     return {
       index,
-      id,
       title,
-      artists,
-      artistList: artistList.length > 0 ? artistList : undefined,
+      artist,
       album,
-      albumObj,
+      id,
       durationMs,
-      coverUrl,
+      releaseDate,
       sourceUrl: id ? `https://music.douyin.com/qishui/share/track?track_id=${id}` : undefined,
-      isAvailable: statusInfo.isAvailable,
-      isVip: statusInfo.isVip,
+      coverUrl,
       isOriginalSound: Boolean(rawTrack.label_info?.is_original),
+      isVip: statusInfo.isVip,
+      isAvailable: statusInfo.isAvailable,
       status: statusInfo.status,
       statusText: statusInfo.statusText,
-      publishTime,
       maxQuality,
       mvId: rawTrack.vid ? String(rawTrack.vid) : undefined,
-      rawIds: id ? { qishui_track_id: id } : undefined,
     };
   }
 
@@ -381,7 +381,6 @@ export function normalizeQishuiTrack(
 
     // Artists / Creators
     const artists: string[] = [];
-    const artistList: import('../../models/playlist').TrackArtist[] = [];
     if (Array.isArray(rawVideo.artists)) {
       for (const a of rawVideo.artists) {
         const name = (
@@ -394,14 +393,10 @@ export function normalizeQishuiTrack(
         ).trim();
         if (name) {
           artists.push(name);
-          const aId = a.id !== undefined && a.id !== null ? String(a.id) : a.user?.uid !== undefined && a.user?.uid !== null ? String(a.user?.uid) : undefined;
-          artistList.push({ id: aId, name });
         }
       }
     }
-    if (artists.length === 0) {
-      artists.push('未知艺人');
-    }
+    const artist = artists.length > 0 ? artists.join(', ') : '未知艺人';
 
     // Duration: Qishui returns ms if > 10000, seconds otherwise
     let durationMs: number | undefined;
@@ -419,19 +414,17 @@ export function normalizeQishuiTrack(
 
     return {
       index,
-      id: vid,
       title,
-      artists,
-      artistList: artistList.length > 0 ? artistList : undefined,
+      artist,
+      id: vid,
       durationMs,
-      coverUrl,
       sourceUrl: vid ? `https://music.douyin.com/qishui/share/track?track_id=${vid}` : undefined,
-      isAvailable: true,
+      coverUrl,
       isVip,
+      isAvailable: true,
       status: isVip ? 'vip' : 'playable',
       statusText: isVip ? 'VIP专享' : '视频',
       mvId: vid,
-      rawIds: vid ? { qishui_vid: vid } : undefined,
     };
   }
 
@@ -439,9 +432,9 @@ export function normalizeQishuiTrack(
   const fallbackId = mediaResource.id ? String(mediaResource.id).trim() : undefined;
   return {
     index,
-    id: fallbackId,
     title: '未知或已下架音频',
-    artists: ['未知艺人'],
+    artist: '未知艺人',
+    id: fallbackId,
     isAvailable: false,
     isVip: false,
     status: 'unplayable',
@@ -522,7 +515,7 @@ export function normalizeAwemeMusicTrack(raw: RawAwemeMusic, index: number): Tra
   }
 
   const author = (raw.unified_music_group?.author || raw.author || '').trim();
-  const artists = author ? [author] : ['未知艺人'];
+  const artist = author || '未知艺人';
   const album = raw.album?.trim() ? raw.album.trim() : undefined;
   const durationMs = typeof raw.duration === 'number' && raw.duration > 0 ? raw.duration * 1000 : undefined;
   const coverUrl =
@@ -538,19 +531,18 @@ export function normalizeAwemeMusicTrack(raw: RawAwemeMusic, index: number): Tra
 
   return {
     index,
-    id,
     title,
-    artists,
+    artist,
     album,
+    id,
     durationMs,
-    coverUrl,
     sourceUrl,
-    isAvailable,
-    isVip: false,
+    coverUrl,
     isOriginalSound,
+    isVip: false,
+    isAvailable,
     status,
     statusText,
-    rawIds: id ? { douyin_id: id } : undefined,
   };
 }
 

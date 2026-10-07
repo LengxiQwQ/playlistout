@@ -169,7 +169,7 @@ async function runAllTests() {
         index: 1,
         id: '186016',
         title: '晴天',
-        artists: ['周杰伦'],
+        artist: '周杰伦',
         album: '叶惠美',
         durationMs: 269000,
         coverUrl: 'https://p1.music.126.net/jay-cover.jpg',
@@ -178,7 +178,7 @@ async function runAllTests() {
         index: 2,
         id: '186017',
         title: '温柔 (Live)',
-        artists: ['五月天', '阿信'],
+        artist: '五月天, 阿信',
         album: '人生无限公司',
         durationMs: 275400,
         coverUrl: 'https://p1.music.126.net/mayday-cover.jpg',
@@ -195,7 +195,7 @@ async function runAllTests() {
       {
         id: '1973665667',
         title: '海屿你',
-        artists: ['马也_Crabbit'],
+        artist: '马也_Crabbit',
         durationMs: 295940,
       },
     ],
@@ -210,7 +210,7 @@ async function runAllTests() {
       {
         id: '0039MnYb0qxYAc',
         title: '夜曲',
-        artists: ['周杰伦'],
+        artist: '周杰伦',
       },
     ],
   });
@@ -224,7 +224,7 @@ async function runAllTests() {
       {
         id: 'hash12345',
         title: '一路生花',
-        artists: ['温奕心'],
+        artist: '温奕心',
       },
     ],
   });
@@ -238,7 +238,7 @@ async function runAllTests() {
       {
         id: '123456',
         title: '孤勇者',
-        artists: ['陈奕迅'],
+        artist: '陈奕迅',
       },
     ],
   });
@@ -252,7 +252,7 @@ async function runAllTests() {
       {
         id: '7100000000',
         title: '可能',
-        artists: ['程响'],
+        artist: '程响',
       },
     ],
   });
@@ -266,7 +266,7 @@ async function runAllTests() {
       {
         id: 'BV1xx411c7mD',
         title: '达拉崩吧',
-        artists: ['周深'],
+        artist: '周深',
       },
     ],
   });
@@ -280,7 +280,7 @@ async function runAllTests() {
       {
         id: 'migu600001',
         title: '告白气球',
-        artists: ['周杰伦'],
+        artist: '周杰伦',
       },
     ],
   });
@@ -669,7 +669,7 @@ async function runAllTests() {
         index: i,
         id: `song_${i}`,
         title: `酷狗金曲_${i}`,
-        artists: ['歌手A'],
+        artist: '歌手A',
         album: '经典专辑',
         sourceUrl: 'https://www.kugou.com/song/abc',
       });
@@ -716,9 +716,9 @@ async function runAllTests() {
       try {
         return await fn();
       } catch (err) {
-        if (i < maxRetries && /Too many requests|429/i.test(err.message)) {
+        if (i < maxRetries && /Too many requests|429|aborted|timed out|timeout|ETIMEDOUT|ECONNRESET|fetch failed|网络失败|502|503|504/i.test(err.message)) {
           console.log(
-            `    ${COLORS.gray}Rate limit encountered, waiting ${delayMs / 1000}s before retry ${i + 1}/${maxRetries}...${COLORS.reset}`
+            `    ${COLORS.gray}Transient failure encountered (${err.message}), waiting ${delayMs / 1000}s before retry ${i + 1}/${maxRetries}...${COLORS.reset}`
           );
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;

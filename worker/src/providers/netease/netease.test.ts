@@ -163,7 +163,7 @@ describe('NetEase Song Status & Normalization', () => {
     expect(track.index).toBe(1);
     expect(track.id).toBe('2123827852');
     expect(track.title).toBe('みなごろし');
-    expect(track.artists).toEqual(['なきそ', '歌愛ユキ']);
+    expect(track.artist).toBe('なきそ, 歌愛ユキ');
     expect(track.album).toBe('みなごろし');
     expect(track.durationMs).toBe(125294);
     expect(track.sourceUrl).toBe('https://music.163.com/#/song?id=2123827852');

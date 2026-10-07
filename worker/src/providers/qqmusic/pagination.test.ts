@@ -257,14 +257,14 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
     expect(track1000.index).toBe(1000);
     expect(track1000.title).toBe('晴天');
     expect(track1000.id).toBe('mid_song_a');
-    expect(track1000.artists).toEqual(['周杰伦']);
+    expect(track1000.artist).toBe('周杰伦');
 
     // #1001 (0-indexed 1000) must ALSO be Song A (never stripped by false overlap detection)
     const track1001 = result.tracks[1000];
     expect(track1001.index).toBe(1001);
     expect(track1001.title).toBe('晴天');
     expect(track1001.id).toBe('mid_song_a');
-    expect(track1001.artists).toEqual(['周杰伦']);
+    expect(track1001.artist).toBe('周杰伦');
 
     // #1002 (0-indexed 1001) must be Song B
     const track1002 = result.tracks[1001];
@@ -426,7 +426,7 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
     }
   });
 
-  it('normalizes tracks with empty artists to [] without fabricating 未知歌手', () => {
+  it('normalizes tracks with empty artists to "" without fabricating 未知歌手', () => {
     const track = normalizeQQTrack(
       {
         songid: 888,
@@ -438,8 +438,8 @@ describe('Deterministic QQ Music Pagination & Fail-Closed Tests', () => {
       1,
     );
 
-    expect(track.artists).toEqual([]);
-    expect(track.artists).not.toContain('未知歌手');
+    expect(track.artist).toBe('');
+    expect(track.artist).not.toContain('未知歌手');
   });
 
   it('enforces fail-closed completeness check directly in normalizeCYQQResponse', () => {

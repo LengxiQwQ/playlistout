@@ -19,18 +19,18 @@ const sampleTracks: Track[] = [
     index: 1,
     id: '001',
     title: '晴天',
-    artists: ['周杰伦'],
+    artist: '周杰伦',
     album: '叶惠美',
+    isrc: 'TWUM72300001',
     durationMs: 269000,
     coverUrl: 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg',
     sourceUrl: 'https://y.qq.com/n/ryqq/songDetail/001',
-    rawIds: { isrc: 'TWUM72300001', qq_songmid: '001' },
   },
   {
     index: 2,
     id: '002',
     title: 'Shape of You',
-    artists: ['Ed Sheeran'],
+    artist: 'Ed Sheeran',
     album: '÷ (Divide)',
     durationMs: 233000,
   },
@@ -38,7 +38,7 @@ const sampleTracks: Track[] = [
     index: 3,
     id: '003',
     title: '사랑을 했다 (LOVE SCENARIO)',
-    artists: ['iKON (아이콘)'],
+    artist: 'iKON (아이콘)',
     album: 'Return',
     durationMs: 209000,
   },
@@ -46,7 +46,7 @@ const sampleTracks: Track[] = [
     index: 4,
     id: '004',
     title: 'Lemon',
-    artists: ['米津玄師'],
+    artist: '米津玄師',
     album: 'Lemon',
     durationMs: 255000,
   },
@@ -54,7 +54,7 @@ const sampleTracks: Track[] = [
     index: 5,
     id: '005',
     title: 'Song with, "Comma" & \nNewline',
-    artists: ['Artist A', 'Artist B'],
+    artist: 'Artist A, Artist B',
     album: 'Special Album',
     durationMs: 180000,
   },
@@ -62,7 +62,7 @@ const sampleTracks: Track[] = [
     index: 6,
     id: '006',
     title: '=SUM(A1:B1)', // Formula injection test
-    artists: ['+DangerousArtist', '@AtArtist', '-MinusArtist'],
+    artist: '+DangerousArtist, @AtArtist, -MinusArtist',
     album: '=1+1',
     durationMs: 120000,
   },
@@ -70,14 +70,14 @@ const sampleTracks: Track[] = [
     index: 7,
     id: '007',
     title: 'No Album Song',
-    artists: ['Solo Artist'],
+    artist: 'Solo Artist',
     // Missing album and duration
   },
   {
     index: 8,
     id: '001', // Legitimate duplicate track (same as track 1)
     title: '晴天',
-    artists: ['周杰伦'],
+    artist: '周杰伦',
     album: '叶惠美',
     durationMs: 269000,
   },
@@ -270,7 +270,7 @@ describe('Cross-Platform Compatibility: NetEase Millisecond Timestamps & Partial
     expect(parsed.trackCount).toBe(124);
     expect(parsed.loadedTrackCount).toBe(2);
     expect(parsed.isPartial).toBe(true);
-    expect(parsed.totalDuration).toBeNull();
+    expect(parsed.totalDuration).toBeUndefined();
     expect(parsed.loadedDuration).toBeTruthy();
   });
 });
@@ -335,9 +335,26 @@ describe('JSON Export', () => {
     expect(parsed.trackCount).toBe(8);
     expect(parsed.tracks).toHaveLength(8);
     expect(parsed.tracks[0].artist).toBe('周杰伦');
-    expect(parsed.tracks[0].artists).toEqual(['周杰伦']);
     expect(parsed.tracks[0].isrc).toBe('TWUM72300001');
-    expect(parsed.tracks[0].rawIds.qq_songmid).toBe('001');
+    expect(parsed.tracks[0].artists).toBeUndefined();
+    expect(parsed.tracks[0].artistList).toBeUndefined();
+    expect(parsed.tracks[0].albumObj).toBeUndefined();
+    expect(parsed.tracks[0].rawIds).toBeUndefined();
+
+    // Verify canonical key order
+    const keys = Object.keys(parsed.tracks[0]);
+    const expectedOrder = [
+      'index', 'title', 'artist', 'album', 'id', 'isrc', 'durationMs',
+      'releaseDate', 'trackNumber', 'discNumber', 'sourceUrl', 'playbackUrl',
+      'coverUrl', 'isOriginalSound', 'isVip', 'isAvailable', 'status',
+      'statusText', 'maxQuality', 'mvId', 'mvUrl',
+    ];
+    let lastIndex = -1;
+    for (const key of keys) {
+      const orderIdx = expectedOrder.indexOf(key);
+      expect(orderIdx).toBeGreaterThan(lastIndex);
+      lastIndex = orderIdx;
+    }
 
     // Raw source text preserved faithfully without formula quote prefix
     expect(parsed.tracks[5].title).toBe('=SUM(A1:B1)');
@@ -365,7 +382,7 @@ describe('Original Sound Export Handling', () => {
           index: 1,
           id: 'sound_001',
           title: '@创作者创作的原声',
-          artists: ['创作者'],
+          artist: '创作者',
           isOriginalSound: true,
         },
       ],

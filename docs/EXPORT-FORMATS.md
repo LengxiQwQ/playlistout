@@ -102,14 +102,13 @@ JSON 是 Playlist Out 面向程序、脚本、开源播放器和 API 生态的�
 - `trackCount`
 - `tracks`
 
-每首歌曲保留完整结构化字段，同时为了通用导入器增加便利字段：
+每首歌曲采用单一表达、平铺通用的标准规范：
 
-- `artist`：扁平字符串，多位歌手使用 `, ` 连接
-- `artists`：原有字符串数组，继续保留
-- `isrc`：如果来源平台提供 ISRC，则提升为一级字段
-- `rawIds`：来源平台原始 ID 字典，继续保留
-
-因此第三方应用既可以简单读取 `title / artist / album / isrc`，也可以使用 `artists / artistList / albumObj / rawIds` 获取更完整的数据。
+- `artist`：唯一的歌手字段（字符串），多位歌手使用 `, ` 连接
+- `album`：纯字符串专辑名称，无可靠数据时省略，不再输出 `albumObj`
+- `isrc`：如来源可靠提供，直接作为一级可选字段
+- 彻底移除 `artists` 数组、`artistList`、`albumObj`、`publishTime` 与调试用的 `rawIds`
+- 缺失或不可靠的可选字段直接省略，不填充 `null` 或伪造空值
 
 完整字段定义见 [JSON 数据格式规范](JSON-SCHEMA.md)。
 

@@ -13,7 +13,7 @@ describe('Web API Client & Types', () => {
       index: 1,
       id: '101',
       title: 'Sample Track',
-      artists: ['Artist A', 'Artist B'],
+      artist: 'Artist A, Artist B',
       album: 'Sample Album',
       durationMs: 210000,
       sourceUrl: 'https://example.com/track/101',
@@ -30,7 +30,7 @@ describe('Web API Client & Types', () => {
 
     expect(playlist.platform).toBe('qqmusic');
     expect(playlist.tracks).toHaveLength(1);
-    expect(playlist.tracks[0].artists).toEqual(['Artist A', 'Artist B']);
+    expect(playlist.tracks[0].artist).toBe('Artist A, Artist B');
     expect(playlist.tracks[0].index).toBe(1);
   });
 

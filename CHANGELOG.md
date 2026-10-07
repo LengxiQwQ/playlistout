@@ -6,8 +6,11 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
-### Changed / 变更
-
+- **Canonical JSON 数据规范统一与跨端输出标准化**:
+  - 全仓库统一规范歌曲对象结构，推荐键顺序：`index` → `title` → `artist` → `album` → `id` → `isrc` → `durationMs` → `releaseDate` → `trackNumber` → `discNumber` → `sourceUrl` → `playbackUrl` → `coverUrl` → `isOriginalSound` → `isVip` → `isAvailable` → `status` → `statusText` → `maxQuality` → `mvId` → `mvUrl`。
+  - 彻底淘汰重复同义表达（`artists` 数组、`artistList`、`albumObj`、`publishTime`）及调试字典 `rawIds`，统一使用单字符串 `artist`（多歌手以 `, ` 连接）与纯字符串 `album`。
+  - 严格贯彻“单写宽容读”架构：Writer 仅输出新规范，严禁为了占位填充 `null` 或假数据；Reader（MusicFree 插件升级至 v1.4.0）深度兼容旧版历史数据。
+  - 同步对齐 QQ 音乐与网易云 Python CLI 导出工具，输出一致的 Canonical Playlist 格式。
 - **Analytics V2 production cutover**: production analytics now runs exclusively on the V2 aggregate model; V1 fact tables and the former `/api/internal/stats` endpoint are retired, while public lifetime counters preserve continuity through the cutover bridge.
 - **Dashboard V3 maintenance surface**: the localhost-only maintainer dashboard now consumes Analytics V2, exposes honest filter-scope boundaries, uses hourly trends for single-day non-geographic views, and shows explicit data-integrity state.
 - **Release/runtime consistency**: v2.2.0 runtime version reporting is centralized, package/workspace versions are aligned, and post-release dependency/toolchain maintenance has been validated through CI and production deployment gates.

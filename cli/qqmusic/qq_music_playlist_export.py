@@ -229,8 +229,10 @@ def try_c_y_qq(disstid):
             singers = s.get("singername") or s.get("singer_name") or s.get("lan") or s.get("singer") or ""
         album = s.get("albumname") or (s.get("album") or {}).get("name") or s.get("albumname_utf8") or ""
         album_mid = s.get("albummid") or (s.get("album") or {}).get("mid") or ""
-        cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
-        results.append((name, singers, album, cover_url))
+        mid = (s.get("songmid") or s.get("mid") or "").strip()
+        interval = s.get("interval")
+        duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
+        results.append((name, singers, album, cover_url, mid, duration_ms))
 
     return (title or "", results, author)
 
@@ -304,7 +306,10 @@ def try_u_y_qq_playlist_detail(playlist_id):
         album = (s.get("album") or {}).get("name") or s.get("albumname") or ""
         album_mid = (s.get("album") or {}).get("mid") or s.get("albummid") or ""
         cover_url = f"https://y.gtimg.cn/music/photo_new/T002R300x300M000{album_mid}.jpg" if album_mid else ""
-        results.append((name, singers, album, cover_url))
+        mid = (s.get("mid") or s.get("songmid") or "").strip()
+        interval = s.get("interval")
+        duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
+        results.append((name, singers, album, cover_url, mid, duration_ms))
     return (title or "", results, author)
 
 def get_playlist_songs(playlist_id):
@@ -422,24 +427,59 @@ def export_to_xlsx(rows, output_path):
         ws.column_dimensions[col].width = min(max(10, int(max_len * 1.1) + 2), 60)
     wb.save(output_path)
 
-# 保存为 json（数组对象），使用 utf-8 编码
-def export_to_json(rows, output_path):
-    data = []
-    for item in rows:
-        name = item[0] if len(item) > 0 else ""
-        singers = item[1] if len(item) > 1 else ""
-        album = item[2] if len(item) > 2 else ""
-        entry = {
-            "Title": name or "",
-            "Artist": singers or "",
-            "Album": album or ""
+# 保存为 json（Canonical Playlist/Track 规范），使用 utf-8 编码
+def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=""):
+    tracks = []
+    for i, item in enumerate(rows, 1):
+        if isinstance(item, dict):
+            name = item.get("title") or item.get("name") or item.get("Title") or ""
+            singers = item.get("artist") or item.get("singers") or item.get("Artist") or ""
+            album = item.get("album") or item.get("Album") or ""
+            cover_url = item.get("coverUrl") or item.get("cover") or ""
+            track_id = item.get("id") or ""
+            duration_ms = item.get("durationMs")
+        else:
+            name = item[0] if len(item) > 0 else ""
+            singers = item[1] if len(item) > 1 else ""
+            album = item[2] if len(item) > 2 else ""
+            cover_url = item[3] if len(item) > 3 and item[3] else ""
+            track_id = item[4] if len(item) > 4 and item[4] else ""
+            duration_ms = item[5] if len(item) > 5 and isinstance(item[5], (int, float)) and item[5] > 0 else None
+
+        source_url = f"https://y.qq.com/n/ryqq/songDetail/{track_id}" if track_id else None
+
+        track_entry = {
+            "index": i,
+            "title": str(name).strip() if name else "未知歌曲",
+            "artist": str(singers).strip() if singers else "未知歌手",
         }
-        if len(item) > 3 and item[3]:
-            entry["coverUrl"] = item[3]
-        data.append(entry)
+        if album and str(album).strip():
+            track_entry["album"] = str(album).strip()
+        if track_id and str(track_id).strip():
+            track_entry["id"] = str(track_id).strip()
+        if duration_ms is not None and duration_ms > 0:
+            track_entry["durationMs"] = int(duration_ms)
+        if source_url:
+            track_entry["sourceUrl"] = source_url
+        if cover_url and str(cover_url).strip():
+            track_entry["coverUrl"] = str(cover_url).strip()
+        tracks.append(track_entry)
+
+    payload = {
+        "name": playlist_title or "QQ音乐歌单",
+    }
+    if author and str(author).strip():
+        payload["creator"] = str(author).strip()
+    payload["platform"] = "qqmusic"
+    if playlist_id and str(playlist_id).strip():
+        payload["id"] = str(playlist_id).strip()
+        payload["sourceUrl"] = f"https://y.qq.com/n/ryqq/playlist/{playlist_id}"
+    payload["trackCount"] = len(tracks)
+    payload["tracks"] = tracks
+
     try:
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
     except Exception:
         raise
 
@@ -539,7 +579,7 @@ def batch_export_songs(playlists, folder_name, nickname=""):
                 export_to_xlsx(songs, out_path)
             elif fmt_choice == "2":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.json")
-                export_to_json(songs, out_path)
+                export_to_json(songs, out_path, playlist_title=title or pname, author=author or nickname, playlist_id=str(pid))
             elif fmt_choice == "3":
                 out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.txt")
                 export_to_txt(songs, out_path)
@@ -665,7 +705,7 @@ def main():
                         out_name = None
                 elif choice == "2":
                     out_name = f"{safe_title} - {safe_author}.json"
-                    export_to_json(songs, out_name)
+                    export_to_json(songs, out_name, playlist_title=playlist_title, author=display_author, playlist_id=str(pid) if pid else "")
                 elif choice == "3":
                     out_name = f"{safe_title} - {safe_author}.txt"
                     export_to_txt(songs, out_name)

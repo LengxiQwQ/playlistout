@@ -15,7 +15,7 @@ export function formatTracksForClipboard(playlist: Playlist, mode: ClipboardMode
 
   for (const track of playlist.tracks) {
     const title = cleanSingleLine(track.title || '');
-    const artists = cleanSingleLine(formatArtists(track.artists));
+    const artists = cleanSingleLine(formatArtists(track.artist || (track as any).artists));
     const album = cleanSingleLine(track.album || '');
 
     switch (mode) {

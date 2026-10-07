@@ -219,7 +219,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
       name: '网易云兜底歌单',
       trackCount: 1,
       tracks: [
-        { index: 1, title: '测试歌曲', artists: ['测试歌手'] },
+        { index: 1, title: '测试歌曲', artist: '测试歌手' },
       ],
     });
 

@@ -184,7 +184,7 @@ export function exportToMultiSheetExcel(
     const songRows = pl.tracks.map((t) => [
       t.index,
       sanitizeSpreadsheetCell(t.title || ''),
-      sanitizeSpreadsheetCell(formatArtists(t.artists)),
+      sanitizeSpreadsheetCell(formatArtists(t.artist || (t as any).artists)),
       sanitizeSpreadsheetCell(t.album || ''),
       formatDuration(t.durationMs),
     ]);

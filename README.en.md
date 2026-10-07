@@ -145,7 +145,7 @@ Different players expose different extension and import capabilities, so Playlis
 | Format | Best For |
 |---|---|
 | **Excel (.xlsx)** | Organization, archiving, and manual analysis |
-| **JSON** | Developers, scripts, third-party apps, and player integrations |
+| **JSON** | Developers, scripts, third-party apps, and player integrations (Canonical schema: single flat `artist`, zero nulls/padding) |
 | **TXT** | Reading, simple backup, and text processing |
 | **CSV** | Spreadsheet and generic data workflows |
 | **M3U8** | Local players and media libraries |

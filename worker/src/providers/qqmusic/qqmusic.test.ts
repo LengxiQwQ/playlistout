@@ -201,7 +201,7 @@ describe('QQ Music Normalization (Fixtures)', () => {
     const t1 = playlist.tracks[0];
     expect(t1.index).toBe(1);
     expect(t1.title).toBe('晴天');
-    expect(t1.artists).toEqual(['周杰伦']);
+    expect(t1.artist).toBe('周杰伦');
     expect(t1.album).toBe('叶惠美');
     expect(t1.durationMs).toBe(269000);
     expect(t1.sourceUrl).toBe('https://y.qq.com/n/ryqq/songDetail/001abc');
@@ -211,7 +211,7 @@ describe('QQ Music Normalization (Fixtures)', () => {
     const t2 = playlist.tracks[1];
     expect(t2.index).toBe(2);
     expect(t2.title).toBe('Not Available');
-    expect(t2.artists).toEqual(['YOUNGJOO', 'HAON (김하온)']);
+    expect(t2.artist).toBe('YOUNGJOO, HAON (김하온)');
     expect(t2.album).toBe('하우스 오브 걸스');
     expect(t2.durationMs).toBe(185000);
 
@@ -219,20 +219,20 @@ describe('QQ Music Normalization (Fixtures)', () => {
     const t3 = playlist.tracks[2];
     expect(t3.index).toBe(3);
     expect(t3.title).toBe('Shape of You');
-    expect(t3.artists).toEqual(['Ed Sheeran']);
+    expect(t3.artist).toBe('Ed Sheeran');
     expect(t3.album).toBe('÷ (Deluxe)');
 
     // Track 4: Japanese
     const t4 = playlist.tracks[3];
     expect(t4.index).toBe(4);
     expect(t4.title).toBe('Lemon');
-    expect(t4.artists).toEqual(['米津玄師']);
+    expect(t4.artist).toBe('米津玄師');
 
     // Track 5: Missing album & emoji
     const t5 = playlist.tracks[4];
     expect(t5.index).toBe(5);
     expect(t5.title).toBe('No Album Track 🎶');
-    expect(t5.artists).toEqual(['Various Artists']);
+    expect(t5.artist).toBe('Various Artists');
     expect(t5.album).toBeUndefined();
     expect(t5.coverUrl).toBeUndefined();
   });
@@ -247,7 +247,7 @@ describe('QQ Music Normalization (Fixtures)', () => {
     expect(playlist.coverUrl).toBe('https://qpic.y.qq.com/music_cover/alt/300?n=1');
     expect(playlist.trackCount).toBe(2);
     expect(playlist.tracks[0].title).toBe('稻香');
-    expect(playlist.tracks[0].artists).toEqual(['周杰伦']);
+    expect(playlist.tracks[0].artist).toBe('周杰伦');
     expect(playlist.tracks[0].album).toBe('魔杰座');
     expect(playlist.tracks[1].title).toBe('夜曲');
   });

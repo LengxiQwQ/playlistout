@@ -18,6 +18,7 @@ import platform
 import subprocess
 import requests
 import socket
+from datetime import datetime, timezone
 
 # 强制优先使用 IPv4 避免国内部分运营商 IPv6 握手超时
 try:
@@ -219,7 +220,33 @@ def get_playlist_data(playlist_id):
             cover_url = (song.get('al') or {}).get('picUrl') or (song.get('album') or {}).get('picUrl') or ''
             if cover_url and cover_url.startswith('http://'):
                 cover_url = 'https://' + cover_url[7:]
-            tracks.append((name, singers, album, duration_str, status_text, cover_url))
+
+            dt_raw = song.get('dt')
+            dt_ms = int(dt_raw) if isinstance(dt_raw, (int, float)) and dt_raw > 0 else None
+            pub_time = song.get('publishTime')
+            release_date = None
+            if pub_time and isinstance(pub_time, (int, float)) and pub_time > 0:
+                try:
+                    release_date = datetime.fromtimestamp(pub_time / 1000, tz=timezone.utc).strftime('%Y-%m-%d')
+                except Exception:
+                    pass
+            track_num = song.get('no')
+            disc_num = song.get('cd')
+            mv_id = song.get('mv')
+            tracks.append((
+                name,
+                singers,
+                album,
+                duration_str,
+                status_text,
+                cover_url,
+                tid_str,
+                dt_ms,
+                release_date,
+                track_num if isinstance(track_num, int) and track_num > 0 else None,
+                int(disc_num) if isinstance(disc_num, (int, str)) and str(disc_num).isdigit() and int(disc_num) > 0 else None,
+                str(mv_id) if mv_id and str(mv_id) != "0" else None,
+            ))
 
         playlist_cover = pl.get('coverImgUrl') or ''
         if playlist_cover and playlist_cover.startswith('http://'):
@@ -292,26 +319,106 @@ def export_csv(filename, tracks):
         for i, t in enumerate(tracks, 1):
             writer.writerow([i, t[0], t[1], t[2], t[3], t[4]])
 
-def export_json(filename, playlist_title, tracks, author, playlist_cover=""):
+def export_json(filename, playlist_title, tracks, author, playlist_cover="", playlist_id=""):
+    tracks_out = []
+    for i, t in enumerate(tracks, 1):
+        if isinstance(t, dict):
+            name = t.get("title") or t.get("name") or ""
+            singers = t.get("artist") or t.get("artists") or ""
+            album = t.get("album") or ""
+            duration_str = t.get("duration") or ""
+            status_text = t.get("statusText") or t.get("status") or ""
+            cover_url = t.get("coverUrl") or t.get("cover") or ""
+            tid_str = t.get("id") or ""
+            dt_ms = t.get("durationMs")
+            release_date = t.get("releaseDate")
+            track_num = t.get("trackNumber")
+            disc_num = t.get("discNumber")
+            mv_id = t.get("mvId")
+        else:
+            name = t[0] if len(t) > 0 else ""
+            singers = t[1] if len(t) > 1 else ""
+            album = t[2] if len(t) > 2 else ""
+            duration_str = t[3] if len(t) > 3 else ""
+            status_text = t[4] if len(t) > 4 else ""
+            cover_url = t[5] if len(t) > 5 and t[5] else ""
+            tid_str = t[6] if len(t) > 6 and t[6] else ""
+            dt_ms = t[7] if len(t) > 7 and isinstance(t[7], (int, float)) and t[7] > 0 else None
+            release_date = t[8] if len(t) > 8 and t[8] else None
+            track_num = t[9] if len(t) > 9 and isinstance(t[9], int) and t[9] > 0 else None
+            disc_num = t[10] if len(t) > 10 and isinstance(t[10], int) and t[10] > 0 else None
+            mv_id = t[11] if len(t) > 11 and t[11] else None
+
+        # Parse duration_str if dt_ms is missing
+        if dt_ms is None and duration_str and ":" in str(duration_str):
+            parts = str(duration_str).split(":")
+            try:
+                if len(parts) == 2:
+                    dt_ms = (int(parts[0]) * 60 + int(parts[1])) * 1000
+                elif len(parts) == 3:
+                    dt_ms = (int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])) * 1000
+            except ValueError:
+                pass
+
+        artist_str = str(singers).replace(" / ", ", ").strip() if singers else "未知歌手"
+        album_str = str(album).strip() if album else ""
+
+        is_vip = (status_text == "VIP专享")
+        is_available = (status_text != "下架/无版权")
+        if status_text == "下架/无版权":
+            machine_status = "unplayable"
+        elif status_text == "VIP专享":
+            machine_status = "vip"
+        elif status_text == "付费专辑":
+            machine_status = "paid"
+        else:
+            machine_status = "playable"
+
+        track_entry = {
+            "index": i,
+            "title": str(name).strip() if name else "未知歌曲",
+            "artist": artist_str,
+        }
+        if album_str and album_str != "未知专辑":
+            track_entry["album"] = album_str
+        if tid_str:
+            track_entry["id"] = str(tid_str).strip()
+        if dt_ms is not None and dt_ms > 0:
+            track_entry["durationMs"] = int(dt_ms)
+        if release_date:
+            track_entry["releaseDate"] = str(release_date).strip()
+        if track_num:
+            track_entry["trackNumber"] = int(track_num)
+        if disc_num:
+            track_entry["discNumber"] = int(disc_num)
+        if tid_str:
+            track_entry["sourceUrl"] = f"https://music.163.com/#/song?id={tid_str}"
+        if cover_url and str(cover_url).strip():
+            track_entry["coverUrl"] = str(cover_url).strip()
+        track_entry["isVip"] = is_vip
+        track_entry["isAvailable"] = is_available
+        track_entry["status"] = machine_status
+        track_entry["statusText"] = status_text or "正常"
+        if mv_id:
+            track_entry["mvId"] = str(mv_id).strip()
+            track_entry["mvUrl"] = f"https://music.163.com/#/mv?id={mv_id}"
+
+        tracks_out.append(track_entry)
+
     payload = {
-        "name": playlist_title,
-        "author": author,
-        "coverUrl": playlist_cover,
-        "trackCount": len(tracks),
-        "tracks": [
-            {
-                "index": i,
-                "title": t[0],
-                "artists": t[1],
-                "album": t[2],
-                "duration": t[3],
-                "status": t[4],
-                "isAvailable": t[4] != '下架/无版权',
-                "coverUrl": t[5] if len(t) > 5 else "",
-            }
-            for i, t in enumerate(tracks, 1)
-        ],
+        "name": playlist_title or "网易云音乐歌单",
     }
+    if author and str(author).strip():
+        payload["creator"] = str(author).strip()
+    if playlist_cover and str(playlist_cover).strip():
+        payload["coverUrl"] = str(playlist_cover).strip()
+    payload["platform"] = "netease"
+    if playlist_id and str(playlist_id).strip():
+        payload["id"] = str(playlist_id).strip()
+        payload["sourceUrl"] = f"https://music.163.com/#/playlist?id={playlist_id}"
+    payload["trackCount"] = len(tracks_out)
+    payload["tracks"] = tracks_out
+
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
@@ -418,7 +525,7 @@ def main():
 
             if choice == "2":
                 fn = f"{base}.json"
-                export_json(fn, title, tracks, author, playlist_cover)
+                export_json(fn, title, tracks, author, playlist_cover, playlist_id=str(playlist_id))
             elif choice == "3":
                 fn = f"{base}.txt"
                 export_txt(fn, title, tracks, author)

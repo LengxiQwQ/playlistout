@@ -10,7 +10,7 @@ const mockTracks: Track[] = [
     id: 'track-1',
     index: 1,
     title: '晴天',
-    artists: ['周杰伦'],
+    artist: '周杰伦',
     album: '叶惠美',
     durationMs: 269000,
     coverUrl: 'https://example.com/cover.jpg',
@@ -20,7 +20,7 @@ const mockTracks: Track[] = [
     id: 'track-2',
     index: 2,
     title: '夜曲',
-    artists: ['周杰伦'],
+    artist: '周杰伦',
     album: '十一月的萧邦',
     durationMs: 226000,
     status: 'vip',
@@ -78,7 +78,7 @@ describe('TrackTable Component (Mobile view modes)', () => {
       id: `track-${idx + 1}`,
       index: idx + 1,
       title: `Song ${idx + 1}`,
-      artists: ['Artist'],
+      artist: 'Artist',
     }));
 
     render(
@@ -100,14 +100,14 @@ describe('TrackTable Component (Mobile view modes)', () => {
         id: 'track-ugc',
         index: 1,
         title: '@用户创作的原声',
-        artists: ['创作者'],
+        artist: '创作者',
         isOriginalSound: true,
       },
       {
         id: 'track-video',
         index: 2,
         title: '某影视剪辑片段',
-        artists: ['电影原声'],
+        artist: '电影原声',
         statusText: '视频',
       },
     ];

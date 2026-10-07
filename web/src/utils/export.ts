@@ -51,18 +51,25 @@ export function sanitizeSpreadsheetCell(value: string): string {
 }
 
 /**
- * Formats artist array into readable string.
+ * Formats artist into readable string.
  */
-export function formatArtists(artists?: string[]): string {
-  if (!artists || artists.length === 0) return '';
-  return artists.join(', ');
+export function formatArtists(artists?: string[] | string): string {
+  if (!artists) return '';
+  if (Array.isArray(artists)) {
+    return artists.join(', ');
+  }
+  return String(artists).trim();
 }
 
-function getTrackIsrc(rawIds?: Record<string, string | number>): string {
-  if (!rawIds) return '';
-  for (const [key, value] of Object.entries(rawIds)) {
-    if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
-      return value.trim().toUpperCase();
+function getTrackIsrc(track: { isrc?: string; rawIds?: Record<string, string | number> }): string {
+  if (track.isrc && typeof track.isrc === 'string' && track.isrc.trim()) {
+    return track.isrc.trim().toUpperCase();
+  }
+  if (track.rawIds) {
+    for (const [key, value] of Object.entries(track.rawIds)) {
+      if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
+        return value.trim().toUpperCase();
+      }
     }
   }
   return '';
@@ -211,7 +218,7 @@ export function generateTXT(playlist: Playlist): string {
 
   for (const track of playlist.tracks) {
     const title = cleanSingleLine(track.title || '');
-    const artistStr = cleanSingleLine(formatArtists(track.artists));
+    const artistStr = cleanSingleLine(formatArtists(track.artist || (track as any).artists));
     const albumStr = cleanSingleLine(track.album || '');
     const typeTag = track.isOriginalSound ? ' [视频原声]' : (track.statusText === '视频' ? ' [视频]' : '');
     const statusTag =
@@ -283,9 +290,9 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
   for (const track of playlist.tracks) {
     rows.push([
       track.title || '',
-      formatArtists(track.artists),
+      formatArtists(track.artist || (track as any).artists),
       track.album || '',
-      getTrackIsrc(track.rawIds),
+      getTrackIsrc(track),
       getTrackDurationSeconds(track.durationMs),
       track.sourceUrl || '',
       String(track.index),
@@ -326,9 +333,9 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
   const trackHeader = ['title', 'artist', 'album', 'isrc', 'duration', 'url', 'index', 'type', 'vip', 'status'];
   const trackRows = playlist.tracks.map((track) => [
     sanitizeSpreadsheetCell(track.title || ''),
-    sanitizeSpreadsheetCell(formatArtists(track.artists)),
+    sanitizeSpreadsheetCell(formatArtists(track.artist || (track as any).artists)),
     sanitizeSpreadsheetCell(track.album || ''),
-    sanitizeSpreadsheetCell(getTrackIsrc(track.rawIds)),
+    sanitizeSpreadsheetCell(getTrackIsrc(track)),
     getTrackDurationSeconds(track.durationMs),
     sanitizeSpreadsheetCell(track.sourceUrl || ''),
     track.index,
@@ -392,10 +399,10 @@ export function generateXLSX(playlist: Playlist): Uint8Array {
  */
 export function generateJSON(playlist: Playlist): string {
   const isPartial = playlist.tracks.length < playlist.trackCount;
-  const createdStr = formatTimestamp(playlist.createTime) || null;
+  const createdStr = formatTimestamp(playlist.createTime) || undefined;
   const exportedStr = formatDateTime();
-  const updatedStr = formatTimestamp(playlist.updateTime) || null;
-  const durationStr = formatTotalDuration(playlist.tracks) || null;
+  const updatedStr = formatTimestamp(playlist.updateTime) || undefined;
+  const durationStr = formatTotalDuration(playlist.tracks) || undefined;
   const loadedDurationMs = playlist.tracks.reduce((acc, t) => acc + (t.durationMs || 0), 0);
   const sourceUrl = getPlatformPlaylistUrl(playlist.platform, playlist.id, playlist.sourceUrl);
 
@@ -405,44 +412,44 @@ export function generateJSON(playlist: Playlist): string {
     generator: 'Playlist Out',
     generatorUrl: 'https://playlistout.lengxiqwq.com',
     name: playlist.name,
-    creator: playlist.creator || '',
-    coverUrl: playlist.coverUrl || '',
+    creator: playlist.creator || undefined,
+    coverUrl: playlist.coverUrl || undefined,
     updateTime: updatedStr,
     platform: playlist.platform,
     id: playlist.id,
-    sourceUrl,
+    sourceUrl: sourceUrl || undefined,
     trackCount: playlist.trackCount,
     loadedTrackCount: playlist.tracks.length,
     isPartial,
-    totalDuration: isPartial ? null : durationStr,
-    totalDurationMs: isPartial ? null : loadedDurationMs,
+    totalDuration: isPartial ? undefined : durationStr,
+    totalDurationMs: isPartial ? undefined : loadedDurationMs,
     loadedDuration: durationStr,
     loadedDurationMs,
-    playCount: playlist.playCount || null,
-    tags: playlist.tags || [],
-    description: playlist.description || '',
+    playCount: playlist.playCount || undefined,
+    tags: playlist.tags && playlist.tags.length > 0 ? playlist.tags : undefined,
+    description: playlist.description ? playlist.description : undefined,
     tracks: playlist.tracks.map((t) => ({
       index: t.index,
-      id: t.id,
       title: t.title,
-      artist: formatArtists(t.artists),
-      artists: t.artists,
-      artistList: t.artistList,
-      album: t.album || '',
-      isrc: getTrackIsrc(t.rawIds) || undefined,
-      albumObj: t.albumObj,
-      durationMs: t.durationMs,
-      coverUrl: t.coverUrl || '',
-      isOriginalSound: Boolean(t.isOriginalSound),
-      isVip: Boolean(t.isVip || t.status === 'vip'),
-      isAvailable: t.isAvailable ?? true,
+      artist: formatArtists(t.artist || (t as any).artists),
+      album: t.album || undefined,
+      id: t.id || undefined,
+      isrc: t.isrc || undefined,
+      durationMs: t.durationMs !== undefined ? t.durationMs : undefined,
+      releaseDate: t.releaseDate || undefined,
+      trackNumber: t.trackNumber !== undefined ? t.trackNumber : undefined,
+      discNumber: t.discNumber !== undefined ? t.discNumber : undefined,
+      sourceUrl: t.sourceUrl || undefined,
+      playbackUrl: t.playbackUrl || undefined,
+      coverUrl: t.coverUrl || undefined,
+      isOriginalSound: t.isOriginalSound !== undefined ? t.isOriginalSound : undefined,
+      isVip: t.isVip !== undefined ? t.isVip : (t.status === 'vip' ? true : undefined),
+      isAvailable: t.isAvailable !== undefined ? t.isAvailable : undefined,
       status: t.status || (t.isAvailable === false ? 'unplayable' : 'playable'),
       statusText: getTrackStatusText(t),
-      sourceUrl: t.sourceUrl,
-      maxQuality: t.maxQuality,
-      publishTime: t.publishTime ? formatTimestamp(t.publishTime) : undefined,
-      mvId: t.mvId,
-      rawIds: t.rawIds,
+      maxQuality: t.maxQuality || undefined,
+      mvId: t.mvId || undefined,
+      mvUrl: t.mvUrl || undefined,
     })),
   };
 
@@ -467,7 +474,7 @@ export function generateM3U8(playlist: Playlist): string {
         ? Math.round(track.durationMs / 1000)
         : -1;
 
-    const artistStr = cleanSingleLine(formatArtists(track.artists));
+    const artistStr = cleanSingleLine(formatArtists(track.artist || (track as any).artists));
     const titleStr = cleanSingleLine(track.title || '');
     const displayName = artistStr ? `${artistStr} - ${titleStr}` : titleStr;
 

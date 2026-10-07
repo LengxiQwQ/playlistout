@@ -28,8 +28,8 @@ describe('batchExport utilities', () => {
           creator: '歌手A',
           trackCount: 2,
           tracks: [
-            { index: 1, title: '南山南', artists: ['马頔'], album: '孤岛', durationMs: 240000 },
-            { index: 2, title: '安和桥', artists: ['宋冬野'], album: '安和桥北', durationMs: 260000 },
+            { index: 1, title: '南山南', artist: '马頔', album: '孤岛', durationMs: 240000 },
+            { index: 2, title: '安和桥', artist: '宋冬野', album: '安和桥北', durationMs: 260000 },
           ],
         },
         {
@@ -39,7 +39,7 @@ describe('batchExport utilities', () => {
           creator: '歌手B',
           trackCount: 1,
           tracks: [
-            { index: 1, title: '无地自容', artists: ['黑豹乐队'], album: '黑豹', durationMs: 310000 },
+            { index: 1, title: '无地自容', artist: '黑豹乐队', album: '黑豹', durationMs: 310000 },
           ],
         },
       ];
@@ -63,7 +63,7 @@ describe('batchExport utilities', () => {
           creator: '歌手A',
           trackCount: 1,
           tracks: [
-            { index: 1, title: '南山南', artists: ['马頔'], album: '孤岛', durationMs: 240000 },
+            { index: 1, title: '南山南', artist: '马頔', album: '孤岛', durationMs: 240000 },
           ],
         },
       ];

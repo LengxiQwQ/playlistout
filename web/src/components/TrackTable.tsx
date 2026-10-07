@@ -138,8 +138,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           </thead>
           <tbody>
             {tracks.map((track, i) => {
-              const artistsText =
-                track.artists && track.artists.length > 0 ? track.artists.join(' / ') : t.table.noArtist;
+              const artistsText = track.artist?.trim() ? track.artist : t.table.noArtist;
               const albumText = track.album?.trim() ? track.album : t.table.noAlbum;
               const durationText = formatDuration(track.durationMs);
               const isUnplayable = track.status === 'unplayable' || (track.isAvailable === false && track.status !== 'geo_blocked');

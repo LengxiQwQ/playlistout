@@ -203,10 +203,10 @@ interface Playlist {
 
 interface Track {
   index: number;
-  id?: string;
   title: string;
-  artists: string[];
+  artist: string;
   album?: string;
+  id?: string;
   durationMs?: number;
   sourceUrl?: string;
 }

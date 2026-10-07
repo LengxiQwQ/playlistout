@@ -26,11 +26,15 @@ interface MigrationApiResponse {
   };
 }
 
-function getTrackIsrc(rawIds?: Record<string, string | number>): string | undefined {
-  if (!rawIds) return undefined;
-  for (const [key, value] of Object.entries(rawIds)) {
-    if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
-      return value.trim();
+function getTrackIsrc(track: { isrc?: string; rawIds?: Record<string, string | number> }): string | undefined {
+  if (track.isrc && typeof track.isrc === 'string' && track.isrc.trim()) {
+    return track.isrc.trim();
+  }
+  if (track.rawIds) {
+    for (const [key, value] of Object.entries(track.rawIds)) {
+      if (key.toLowerCase() === 'isrc' && typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
     }
   }
   return undefined;
@@ -52,12 +56,19 @@ export function buildSoundiizMigrationPayload(
     trackCount: playlist.trackCount,
     loadedTrackCount: playlist.tracks.length,
     isPartial,
-    tracks: playlist.tracks.map((track) => ({
-      title: track.title,
-      artists: track.artists,
-      album: track.album || undefined,
-      isrc: getTrackIsrc(track.rawIds),
-    })),
+    tracks: playlist.tracks.map((track) => {
+      const artistsList = track.artist
+        ? track.artist.split(',').map((s) => s.trim()).filter(Boolean)
+        : Array.isArray((track as any).artists)
+          ? (track as any).artists
+          : [];
+      return {
+        title: track.title,
+        artists: artistsList,
+        album: track.album || undefined,
+        isrc: getTrackIsrc(track),
+      };
+    }),
   };
 }
 
