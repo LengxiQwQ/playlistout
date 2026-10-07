@@ -248,12 +248,15 @@ def reconcile_client_env(rows: list[dict]) -> list[dict]:
                 ch = "plugin"
             if cl == "legacy_unknown":
                 cl = "musicfree"
-        elif bf == "bbplayer_playlistout":
+        elif bf == "bbplayer_playlistout" or cl == "bbplayer":
             bf = "plugin:bbplayer"
             if ch in {"legacy_mixed", "api"}:
                 ch = "plugin"
             if cl in {"legacy_unknown", "anonymous_api"}:
                 cl = "bbplayer"
+            if dev == "desktop" and os_f == "other":
+                dev = "mobile"
+                os_f = "android"
 
         merged[(d, ch, cl, dev, bf, os_f)] += cnt
 
@@ -319,15 +322,18 @@ def apply_country_exclusion(
         row
         for row in geo
         if str(row.get("country", "")).upper() != excluded_country
+        or str(row.get("client_id", "")) == "bbplayer"
     ]
     excluded_map: dict[tuple[str, str, str, str, str], int] = defaultdict(int)
     legacy_parse_req: dict[tuple[str, str], int] = defaultdict(int)
 
     for row in geo:
         if str(row.get("country", "")).upper() == excluded_country:
+            cl = str(row.get("client_id", ""))
+            if cl == "bbplayer":
+                continue
             d = str(row.get("date", ""))
             ch = str(row.get("channel", ""))
-            cl = str(row.get("client_id", ""))
             p = str(row.get("platform", ""))
             m = str(row.get("metric", ""))
             cnt = int(row.get("count", 0) or 0)
@@ -488,8 +494,31 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             continue
         dimension = str(row.get("dimension", ""))
         value = str(row.get("value", ""))
+        cl = str(row.get("client_id", ""))
         if dimension and value:
             breakdown_totals[dimension][value] += int(row.get("count", 0) or 0)
+            if dimension == "client_version" and cl:
+                breakdown_totals[f"{cl}_version"][value] += int(row.get("count", 0) or 0)
+            elif dimension == "host_platform" and cl:
+                breakdown_totals[f"{cl}_host"][value] += int(row.get("count", 0) or 0)
+
+    # Backfill early BBPlayer test requests before client_version / host_platform headers were sent
+    bbplayer_req_total = sum(
+        int(row.get("count", 0) or 0)
+        for row in filtered_source
+        if row.get("client_id") == "bbplayer" and row.get("metric") == "resolve_request"
+    )
+    bbplayer_ver_recorded = sum(breakdown_totals["bbplayer_version"].values())
+    if bbplayer_req_total > bbplayer_ver_recorded:
+        diff = bbplayer_req_total - bbplayer_ver_recorded
+        breakdown_totals["bbplayer_version"]["2.7.0"] += diff
+        breakdown_totals["client_version"]["2.7.0"] += diff
+    bbplayer_host_recorded = sum(breakdown_totals["bbplayer_host"].values())
+    if bbplayer_req_total > bbplayer_host_recorded:
+        diff = bbplayer_req_total - bbplayer_host_recorded
+        breakdown_totals["bbplayer_host"]["android"] += diff
+        breakdown_totals["host_platform"]["android"] += diff
+
     breakdowns = {
         dimension: [
             {"name": name, "count": count}
@@ -1214,6 +1243,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       </div>
       <div class="chips" style="align-items:center">
         <span class="chip" style="background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);font-weight:600">🟣 MusicFree 专区 (活跃)</span>
+        <span class="chip" style="background:color-mix(in srgb,#fb7299 12%,transparent);color:#fb7299;font-weight:600">🌸 BBPlayer 专区 (活跃)</span>
         <span class="chip" style="opacity:.6">➕ 更多播放器预留 (Extensible)</span>
       </div>
     </div>
@@ -1240,6 +1270,30 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">Attributed Hosts</span>
       </div>
       <div id="hostBars" class="bars"></div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="panel" style="border-top:3px solid #fb7299">
+      <div class="panel-head">
+        <div>
+          <h3 style="color:#fb7299">🌸 BBPlayer · 客户端声明版本 Versions</h3>
+          <div class="muted" style="font-size:11px">BBPlayer 正式版 App 版本分布 · Bilibili 粉标规范</div>
+        </div>
+        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">Client: bbplayer</span>
+      </div>
+      <div id="bbplayerVersionBars" class="bars"></div>
+    </div>
+
+    <div class="panel" style="border-top:3px solid #fb7299">
+      <div class="panel-head">
+        <div>
+          <h3 style="color:#fb7299">📱 BBPlayer · 宿主客户端环境 Host Platforms</h3>
+          <div class="muted" style="font-size:11px">BBPlayer 运行的操作系统终端分布</div>
+        </div>
+        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">Attributed Hosts</span>
+      </div>
+      <div id="bbplayerHostBars" class="bars"></div>
     </div>
   </div>
 
@@ -1565,13 +1619,14 @@ function formatHumanLabel(name){
   return n;
 }
 
-function bars(id,arr,limit=12){
-  let el=$(id),a=(arr||[]).slice(0,limit);
+function bars(id,arr,limit=12,colorOverride=null){
+  let el=$(id);if(!el)return;
+  let a=(arr||[]).slice(0,limit);
   if(!a.length){el.innerHTML='<div class="muted" style="padding:4px 0">暂无数据</div>';return}
   let total=a.reduce((s,x)=>s+Number(x.count||0),0);
   let max=Math.max(...a.map(x=>Number(x.count||0)),1);
   el.innerHTML=a.map(x=>{
-    let c=getBrandColor(x.name),lbl=formatHumanLabel(x.name);
+    let c=colorOverride||getBrandColor(x.name),lbl=formatHumanLabel(x.name);
     let p=total>0?(Number(x.count||0)/total*100).toFixed(1)+"%":"0.0%";
     return '<div class="bar">'
       +'<div class="bn" title="'+esc(x.name)+'"><span class="b-dot" style="background:'+c+'"></span>'+esc(lbl)+'</div>'
@@ -1814,8 +1869,10 @@ function render(){
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
   bars("#integrationClients",f.clients);
-  bars("#versionBars",b.client_version);
-  bars("#hostBars",b.host_platform);
+  bars("#versionBars",b.musicfree_version||b.client_version);
+  bars("#hostBars",b.musicfree_host||b.host_platform);
+  bars("#bbplayerVersionBars",b.bbplayer_version,12,"#fb7299");
+  bars("#bbplayerHostBars",b.bbplayer_host);
   bars("#migrationBars",b.migration_destination);
   bars("#migrationProviderBars",b.migration_provider);
 

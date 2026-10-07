@@ -513,6 +513,95 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertEqual(reconciled[0]["value"], "<500ms")
         self.assertEqual(reconciled[0]["count"], 20)
 
+    def test_bbplayer_preserved_under_exclude_my_and_has_workspace_breakdowns(self):
+        snapshot = {
+            "generatedAt": "2026-10-07T18:30:00Z",
+            "dailyCore": [
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "metric": "resolve_request",
+                    "count": 2,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "metric": "playlist_success",
+                    "count": 2,
+                },
+            ],
+            "geo": [
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "country": "MY",
+                    "region": "Selangor",
+                    "metric": "resolve_request",
+                    "count": 2,
+                }
+            ],
+            "breakdowns": [
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "dimension": "client_version",
+                    "value": "2.7.0",
+                    "count": 2,
+                },
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "platform": "qqmusic",
+                    "dimension": "host_platform",
+                    "value": "android",
+                    "count": 2,
+                },
+            ],
+            "clientEnv": [
+                {
+                    "date": "2026-10-07",
+                    "channel": "plugin",
+                    "client_id": "bbplayer",
+                    "device_class": "mobile",
+                    "browser_family": "bbplayer_playlistout",
+                    "os_family": "android",
+                    "count": 2,
+                }
+            ],
+            "hourlyCore": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        data = build_local_analytics(snapshot, {"exclude_my": "1"})
+        self.assertEqual(data["overview"]["resolve_request"], 2)
+        self.assertEqual(
+            data["availableFilters"]["clients"],
+            [{"name": "bbplayer", "count": 2}],
+        )
+        self.assertEqual(
+            data["breakdowns"]["bbplayer_version"],
+            [{"name": "2.7.0", "count": 2}],
+        )
+        self.assertEqual(
+            data["breakdowns"]["bbplayer_host"],
+            [{"name": "android", "count": 2}],
+        )
+        self.assertEqual(
+            data["environment"]["browsers"],
+            [{"name": "plugin:bbplayer", "count": 2}],
+        )
+        self.assertIn("bbplayerVersionBars", HTML)
+        self.assertIn("bbplayerHostBars", HTML)
+
 
 class TestStoredSnapshotPrivacy(unittest.TestCase):
     FORBIDDEN_PRIVATE_KEYS = {
