@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SearchNote } from './SearchNote';
 import { LanguageProvider } from '../../i18n';
+import * as apiClient from '../../api/client';
 
 describe('SearchNote Component (Phase 4)', () => {
   it('renders input, parse button, samples, and platform indicators', () => {
@@ -112,5 +113,40 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(kugouBadge).toBeInTheDocument();
     expect(kugouBadge).toHaveStyle({ backgroundColor: '#bfdbfe' });
     localStorage.clear();
+  });
+
+  it('automatically opens KugouAuthModal when URL has ?login=kugou and cleans URL on close', () => {
+    window.history.replaceState({}, '', '/?login=kugou');
+    vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
+      success: true,
+      data: {
+        qrcode: 'test-qr-key',
+        qrcodeImg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+        loginUrl: 'https://h5.kugou.com/test',
+        expiresAt: Date.now() + 300000,
+      },
+    });
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl=""
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={null}
+          onRetry={vi.fn()}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐 · 扫码解锁')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('kugou-modal-close-btn'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(window.location.search).toBe('');
   });
 });

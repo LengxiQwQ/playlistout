@@ -30,6 +30,30 @@ export interface SearchNoteProps {
   ) => void;
 }
 
+function shouldOpenKugouLoginFromUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('login')?.toLowerCase() === 'kugou';
+  } catch {
+    return false;
+  }
+}
+
+function clearKugouLoginFromUrl(): void {
+  if (typeof window === 'undefined' || !window.history?.replaceState) return;
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('login')?.toLowerCase() === 'kugou') {
+      url.searchParams.delete('login');
+      const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState(window.history.state, '', nextUrl);
+    }
+  } catch {
+    // Ignore URL manipulation errors in restricted environments
+  }
+}
+
 export const SearchNote: React.FC<SearchNoteProps> = ({
   inputUrl,
   onInputChange,
@@ -43,7 +67,9 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
   onSelectSample,
 }) => {
   const { t, language } = useTranslation();
-  const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
+  const [isKugouModalOpen, setIsKugouModalOpen] = useState<boolean>(() =>
+    shouldOpenKugouLoginFromUrl(),
+  );
   const [hasKugou, setHasKugou] = useState(false);
 
   useEffect(() => {
@@ -409,7 +435,10 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
       </StickyNote>
       <KugouAuthModal
         isOpen={isKugouModalOpen}
-        onClose={() => setIsKugouModalOpen(false)}
+        onClose={() => {
+          setIsKugouModalOpen(false);
+          clearKugouLoginFromUrl();
+        }}
         onSuccess={() => {
           if (inputUrl && inputUrl.trim()) {
             onParse();
