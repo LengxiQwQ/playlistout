@@ -15,8 +15,6 @@
 
 🌐 在线使用：[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/)
 
-简体中文 · [English](README.en.md)
-
 </div>
 
 ---
@@ -297,6 +295,51 @@ Issue、功能建议和 Pull Request 都欢迎。
 Playlist Out 使用 [MIT License](LICENSE) 开源。
 
 MIT License 允许你在保留原始版权与许可声明的前提下自由使用、复制、修改和分发代码，包括用于商业项目。具体条款以仓库中的 [`LICENSE`](LICENSE) 文件为准。
+
+---
+
+<!-- WEBSITE_STATS:START -->
+### 🌐 网站运营与活跃数据看板
+
+> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。
+
+#### 📌 核心流量与使用规模
+
+> 💡 👥 累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。
+
+| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **577**<br><sub>今日独立 +21</sub> | **1,078**<br><sub>今日 +30</sub> | **2,574**<br><sub>今日 +136</sub> | **695,495**<br><sub>今日 +40,427</sub> | **829**<br><sub>今日 +29</sub> | **27 天**<br><sub>上线于 2026-09-12</sub> |
+
+#### 📊 业务转化与平台偏好
+- **🎵 平台解析份额：** QQ 音乐 **27%** (696 次) ｜ 网易云音乐 **57%** (1,476 次) ｜ 酷狗音乐 **13%** (322 次) ｜ 汽水音乐 **3%** (80 次)
+- **📦 导出格式偏好：** Excel 表格 (.xlsx) **66%** ｜ JSON 数据 **9%** ｜ TXT 纯文本 **16%** ｜ CSV 表格 **6%** ｜ M3U8 歌单 **3%**
+
+> 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
+<!-- WEBSITE_STATS:END -->
+
+---
+
+## ⭐ Star 历史
+
+<a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&theme=dark&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=LengxiQwQ/playlistout&type=date&legend=top-left&sealed_token=OaKwkWC2X0kmrzy16Wj7Qef0e-M9T5jTHXDQh3JN1hdjg3twCmEZxCJ3vmpH8ZMlK6jjI7F_ntJENcAl11D2S64ym_jrGAnMVVtAtYVCtgUGBaYy9T5JPQ" />
+ </picture>
+</a>
+
+<!-- INSIGHTS:START -->
+**📊 仓库流量**
+
+访问次数：**1,083** ｜ 不重复访客：**226**（近 14 天） ｜ 仓库克隆：**7,990** ｜ 不重复克隆：**934**（近 14 天）
+
+**热门来源（近 14 天）：** Bing · github.com · Google · Baidu · sogou.com  
+**热门内容（近 14 天）：** plugins/musicfree · releases/tag/v2.2.0 · tree/main · commits/main
+
+> 数据开始：2026-09-07 · 最后更新：2026-10-07
+<!-- INSIGHTS:END -->
 
 ---
 

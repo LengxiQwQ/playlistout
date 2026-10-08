@@ -8,7 +8,7 @@
 # 产物（全部入库）：
 #   insights/raw/<时间戳>.json   原始完整响应（永久归档，零丢弃）
 #   insights/traffic.json        整理存档（views/clones 按日 upsert + 快照追加）
-#   README.md / README.en.md     双语数据区块（<!-- INSIGHTS:START/END --> 之间）
+#   README.md                    数据区块（<!-- WEBSITE_STATS / INSIGHTS:START/END --> 之间）
 
 name: Repository Insights / 仓库洞察
 
@@ -46,7 +46,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add insights/ README.md README.en.md
+          git add insights/ README.md
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0

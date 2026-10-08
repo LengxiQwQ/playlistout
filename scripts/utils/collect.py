@@ -9,7 +9,7 @@
   3. 整理存档     → insights/traffic.json
        views/clones:          按日期 upsert（14 天内刷新，窗口外保留）
        referrers/paths/repo:  快照追加（带 fetched_at，历史全保留）
-  4. 更新 README  → README.md (中文) / README.en.md (英文) 的 <!-- INSIGHTS:START/END --> 区块
+  4. 更新 README  → README.md 的 <!-- WEBSITE_STATS:START/END --> 与 <!-- INSIGHTS:START/END --> 区块
 
 环境变量：
   TRAFFIC_TOKEN / GITHUB_PAT_TOKEN / WINGET_TOKEN  必需：带 public_repo/repo scope 的 PAT（GITHUB_TOKEN 无法读 traffic API）
@@ -841,10 +841,6 @@ def main() -> None:
             root, "README.md", "WEBSITE_STATS",
             render_website_section(effective_website_stats, updated_at, "zh")
         )
-        update_readme_block(
-            root, "README.en.md", "WEBSITE_STATS",
-            render_website_section(effective_website_stats, updated_at, "en")
-        )
 
     # 4. 渲染并更新 GitHub 仓库流量 (INSIGHTS 区块)
     if data.get("views") or data.get("clones") or merged.get("views"):
@@ -854,10 +850,6 @@ def main() -> None:
         update_readme_block(
             root, "README.md", "INSIGHTS",
             render_section(metrics, refs, paths, updated_at, "zh", repo)
-        )
-        update_readme_block(
-            root, "README.en.md", "INSIGHTS",
-            render_section(metrics, refs, paths, updated_at, "en", repo)
         )
 
     log("done")
