@@ -39,32 +39,67 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 
 ## 主要能力
 
-| 能力 | 说明 | 能力 | 说明 |
-|---|---|---|---|
-| **跨平台解析** | 统一解析多个主流音乐平台的公开歌单 | **多格式导出** | Excel / JSON / TXT / CSV / M3U8 |
-| **多种输入方式** | 网页链接、短链、分享文本和部分数字 ID | **结构化数据** | 保留歌曲、歌手、专辑、封面、来源及可用状态 |
-| **公开用户歌单** | 支持部分平台的用户公开歌单合集 | **播放器生态** | 通过插件、JSON 兼容或轻量适配连接开源播放器 |
-| **Python CLI** | 提供可直接运行的 QQ 音乐与网易云音乐命令行导出脚本 | **本地导出** | 文件由浏览器本地生成，不需要上传到服务器 |
-| **Public API** | 为第三方应用、脚本和迁移工具提供统一解析能力 | **开放接入** | Web、CLI、插件与第三方应用可按不同方式使用同一套歌单数据 |
+| 核心能力 | 说明 |
+|---|---|
+| **多平台大歌单解析** | 支持 **QQ 音乐**、**网易云音乐**、**汽水音乐**、**酷狗音乐（含酷狗概念版）**，大歌单自动完整翻页 |
+| **多种输入直接识别** | 支持粘贴 App 分享口令/文本、网页链接、短链、纯数字 ID，以及**酷狗音乐概念版**分享链接与酷狗码，无需手动提取网址 |
+| **按用户批量查歌单** | 输入一个用户（如 QQ 号、网易云用户主页 / UID，或扫码授权酷狗账号），即可查出该用户下的**全部歌单**，支持勾选并批量解析导出 |
+| **多格式纯本地导出** | 浏览器本地直接生成 `Excel`、`JSON`、`CSV`、`M3U8`、`TXT` 文件及剪贴板文本，保留歌曲、歌手、专辑、封面、时长及 VIP / 下架状态 |
+| **播放器与迁移互通** | 支持把解析后的歌单直接带进 **MusicFree**、**BBPlayer** 等开源播放器，或通过 **Soundiiz / TuneMyMusic / FreeYourMusic** 跨平台迁移 |
+| **CLI 与开放 API** | 提供可本地运行的 **Python CLI** 命令行批量导出工具，以及面向开发者的 **Public API** 与标准 **JSON 数据协议** |
 
 ---
 
 ## 支持的音乐平台
 
-| 平台 | 公开歌单 | 用户公开歌单 | 说明 |
+| 平台 | 单歌单解析 | 按用户批量解析 | 说明 |
 |---|:---:|:---:|---|
-| **QQ 音乐** | ✅ | ✅ | 无需登录 |
-| **网易云音乐** | ✅ | ✅ | 无需登录 |
-| **汽水音乐** | ✅ | — | 支持公开分享歌单 |
-| **酷狗音乐** | ✅ | ✅ | 公开内容可免登录预览；完整歌单或用户合集可能需要扫码授权 |
+| **QQ 音乐** | ✅ | ✅ | 免登录；支持歌单链接 / ID，或输入 QQ 号查出该用户下全部公开歌单并批量导出 |
+| **网易云音乐** | ✅ | ✅ | 免登录；支持歌单链接 / 短链 / ID，或输入用户主页 / UID 查出该用户下全部公开歌单并批量导出 |
+| **汽水音乐** | ✅ | — | 免登录；支持公开分享歌单，可切换「汽水官方解析」与「抖音全量解析（含视频原声）」 |
+| **酷狗音乐（含概念版）** | ✅ | ✅ | 公开内容可免登录预览歌单 10 首歌曲；扫码授权后可解析完整歌单，并支持查看与批量导出账号下全部歌单 |
 
 > 平台能力依赖上游公开页面与接口，可能随着上游机制变化而调整。
 
 ---
 
+## 把歌单带进更多地方
+
+**Playlist Out 不只帮你把歌单导出来，也能把它继续带进支持的开源播放器。**  
+不同播放器的架构各不相同，Playlist Out 会根据目标应用提供 **独立插件**、**软件原生内置** 或 **通用 JSON 导入兼容** 等接入方式。
+
+### 已接入应用
+
+#### 1. [MusicFree](https://musicfree.catcat.work/)（✅ 已支持 · 插件接入）
+
+在 MusicFree 中安装 Playlist Out 插件后，即可通过「导入外部歌单」直接粘贴歌单链接，或填入本地导出的 JSON 文件路径完成导入。
+
+- **插件安装地址**（对应网页端「复制插件地址」按钮）：
+  
+  ```text
+  https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js
+  ```
+- **相关入口**：[官网下载](https://musicfree.catcat.work/) · [GitHub 源码](https://github.com/maotoumao/MusicFree) · [插件安装与使用说明](plugins/musicfree/README.md) · [GitHub Discussion](https://github.com/maotoumao/MusicFree/discussions/666)
+
+#### 2. [BBPlayer](https://bbplayer.roitium.com)（⏳ 即将可用 · 软件原生功能）
+
+BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需额外安装插件，支持通过歌单链接在线解析或选择本地 JSON 文件导入。该功能当前为**即将可用（待上线）**状态，将随 BBPlayer 新版本发布上线。
+
+- **相关入口**：[官网下载](https://bbplayer.roitium.com) · [GitHub 源码](https://github.com/bbplayer-app/BBPlayer) · [相关讨论 (Issue #340)](https://github.com/bbplayer-app/BBPlayer/issues/340)
+
+### 下一站（正在推进）
+
+| 应用 | 当前状态 | 规划接入方式 | 进展与入口 |
+|---|---|---|---|
+| **[LX Music](https://lxmusic.toside.cn/)** | 💬 已向上游提案 | 本地 JSON 导入兼容 | [Issue #3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) · [GitHub](https://github.com/lyswhut/lx-music-desktop) |
+| **[Listen 1](https://listen1.github.io/listen1/)** | 💬 已向上游提案 | 本地 JSON 导入兼容 | [Issue #1413](https://github.com/listen1/listen1_desktop/issues/1413) · [GitHub](https://github.com/listen1/listen1_desktop) |
+| **[Moosync](https://moosync.app/)** | 🗓️ 计划中 | Extension 扩展适配 | [GitHub](https://github.com/Moosync/Moosync) |
+
+---
+
 ## Python CLI / 命令行
 
-除了网页，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
+除了网页和第三方播放器，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
 
 当前仓库内置两套独立 CLI：
 
@@ -96,45 +131,6 @@ python netease_playlist_export.py
 👉 [网易云音乐 CLI 完整说明](cli/netease/README.md)
 
 > 当前仓库中的独立 Python CLI 主要覆盖 QQ 音乐与网易云音乐；酷狗音乐和汽水音乐目前通过 Web / Public API 提供解析能力。
-
----
-
-## 把歌单带进更多地方
-
-**Playlist Out 不只帮你把歌单导出来，也能把它继续带进支持的开源播放器。**
-
-### 已支持
-
-| 应用 | 状态 | 接入方式 |
-|---|---|---|
-| **MusicFree** | ✅ 已支持 | Playlist Out 插件 |
-
-### MusicFree
-
-Playlist Out 提供 MusicFree 歌单导入插件，可直接把外部歌单带进 MusicFree。
-
-**插件安装地址**
-
-```text
-https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js
-```
-
-- [MusicFree 官网](https://musicfree.catcat.work/) — 下载和了解 MusicFree
-- [MusicFree GitHub](https://github.com/maotoumao/MusicFree) — 查看播放器源码
-- [Playlist Out · MusicFree 插件文档](plugins/musicfree/README.md) — 安装、使用、配置与插件开发说明
-
-### 正在推进
-
-| 应用 | 当前状态 | 进展 |
-|---|---|---|
-| **LX Music** | 💬 已向上游提案 | [Issue #3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) |
-| **BBPlayer** | 💬 已向上游提案 | [Issue #340](https://github.com/bbplayer-app/BBPlayer/issues/340) |
-| **Listen 1** | 💬 已向上游提案 | [Issue #1413](https://github.com/listen1/listen1_desktop/issues/1413) |
-| **Moosync** | 🗓️ 计划中 | Extension 适配 |
-
-不同播放器的架构并不相同，因此 Playlist Out 会根据目标应用选择插件、通用 JSON 导入或轻量 PR 适配，而不是要求所有播放器使用同一种接入方式。
-
-> 具体的播放器调研、数据映射与接入计划见 [开源播放器生态接入文档](docs/ECOSYSTEM-INTEGRATION.md)。
 
 ---
 
@@ -298,28 +294,6 @@ MIT License 允许你在保留原始版权与许可声明的前提下自由使�
 
 ---
 
-<!-- WEBSITE_STATS:START -->
-### 🌐 网站运营与活跃数据看板
-
-> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。
-
-#### 📌 核心流量与使用规模
-
-> 💡 👥 累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。
-
-| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| **577**<br><sub>今日独立 +21</sub> | **1,078**<br><sub>今日 +30</sub> | **2,574**<br><sub>今日 +136</sub> | **695,495**<br><sub>今日 +40,427</sub> | **829**<br><sub>今日 +29</sub> | **27 天**<br><sub>上线于 2026-09-12</sub> |
-
-#### 📊 业务转化与平台偏好
-- **🎵 平台解析份额：** QQ 音乐 **27%** (696 次) ｜ 网易云音乐 **57%** (1,476 次) ｜ 酷狗音乐 **13%** (322 次) ｜ 汽水音乐 **3%** (80 次)
-- **📦 导出格式偏好：** Excel 表格 (.xlsx) **66%** ｜ JSON 数据 **9%** ｜ TXT 纯文本 **16%** ｜ CSV 表格 **6%** ｜ M3U8 歌单 **3%**
-
-> 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
-<!-- WEBSITE_STATS:END -->
-
----
-
 ## ⭐ Star 历史
 
 <a href="https://www.star-history.com/?repos=LengxiQwQ%2Fplaylistout&type=date&legend=top-left">
@@ -352,7 +326,5 @@ MIT License 允许你在保留原始版权与许可声明的前提下自由使�
 希望它能把你认真整理的歌单带出来，也能继续带到你真正想去的地方。
 
 **Made with ❤️ by [LengxiQwQ](https://github.com/LengxiQwQ)**
-
-[Website](https://playlistout.lengxiqwq.com) · [GitHub](https://github.com/LengxiQwQ/playlistout) · [Issues](https://github.com/LengxiQwQ/playlistout/issues)
 
 </div>
