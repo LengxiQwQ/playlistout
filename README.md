@@ -307,12 +307,12 @@ MIT License 允许你在保留原始版权与许可声明的前提下自由使�
 <!-- INSIGHTS:START -->
 **📊 仓库流量**
 
-访问次数：**1,126** ｜ 不重复访客：**234**（近 14 天） ｜ 仓库克隆：**8,429** ｜ 不重复克隆：**972**（近 14 天）
+访问次数：**1,153** ｜ 不重复访客：**232**（近 14 天） ｜ 仓库克隆：**8,597** ｜ 不重复克隆：**956**（近 14 天）
 
-**热门来源（近 14 天）：** github.com · Bing · Google · Baidu · sogou.com  
-**热门内容（近 14 天）：** plugins/musicfree · releases/tag/v2.2.0 · tree/main · commits/main
+**热门来源（近 14 天）：** github.com · Bing · Google · Baidu · chatgpt.com · sogou.com  
+**热门内容（近 14 天）：** plugins/musicfree · releases/tag/v2.2.0 · tree/main · README.md
 
-> 数据开始：2026-09-07 · 最后更新：2026-10-08
+> 数据开始：2026-09-07 · 最后更新：2026-10-09
 <!-- INSIGHTS:END -->
 
 ---
