@@ -415,5 +415,52 @@ describe('NetEase Song Status & Normalization', () => {
         globalThis.fetch = originalFetch;
       }
     });
+
+    it('directly uses complete inline tracks and privileges from v6 detail API without secondary fetchSongDetails calls', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        const totalTracks = 3;
+        const trackIds = [{ id: 101 }, { id: 102 }, { id: 103 }];
+        const inlineTracks = [
+          { id: 101, name: 'Inline Song 1', ar: [{ name: 'Artist A' }], al: { name: 'Album A' }, dt: 180000 },
+          { id: 102, name: 'Inline Song 2', ar: [{ name: 'Artist B' }], al: { name: 'Album B' }, dt: 200000 },
+          { id: 103, name: 'Inline Song 3', ar: [{ name: 'Artist C' }], al: { name: 'Album C' }, dt: 220000 },
+        ];
+        const inlinePrivileges = [
+          { id: 101, fee: 0, st: 0, pl: 320000 },
+          { id: 102, fee: 1, st: 0, pl: 320000 },
+          { id: 103, fee: 0, st: 0, pl: 320000 },
+        ];
+
+        const mockFetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            code: 200,
+            playlist: {
+              id: 99999,
+              name: '完整内联歌单',
+              trackCount: totalTracks,
+              trackIds,
+              tracks: inlineTracks,
+            },
+            privileges: inlinePrivileges,
+          }),
+        } as Response);
+
+        globalThis.fetch = mockFetch;
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        const playlist = await fetchNeteasePlaylist('99999');
+
+        expect(playlist.tracks).toHaveLength(3);
+        expect(playlist.tracks[0].title).toBe('Inline Song 1');
+        expect(playlist.tracks[1].isVip).toBe(true);
+        expect(playlist.tracks[2].artist).toBe('Artist C');
+        // Critical verification: exactly 1 upstream request was made (no secondary batch song detail calls)
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });

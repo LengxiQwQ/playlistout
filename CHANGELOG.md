@@ -27,6 +27,7 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ### Fixed / 修复
 
+- **NetEase playlist inline tracks optimization**: 修复网易云详情接口（v6）已包含全量内联歌曲时仍全量重新批量请求 `api/v3/song/detail` 导致的连接重置、多轮重试风暴和请求超时问题，将常规千首以内歌单解析耗时从 20+ 秒大幅降至 2~3 秒。
 - **Qishui track ordering**: Qishui and Douyin-channel playlist tracks now follow PlaylistOut's shared 1-based `Track.index` contract instead of exposing a 0-based first track through the provider and production Public API.
 
 ### Security / 安全

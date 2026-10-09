@@ -299,21 +299,40 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
   let tracks: Track[] = [];
 
   if (trackIdList.length > 0) {
-    // If playlist has trackIds, batch fetch all details to avoid 10-song limit
-    const { songs, privileges } = await fetchSongDetails(trackIdList);
-
     // Map by song ID for fast lookup
     const songMap = new Map<string, RawNeteaseSong>();
-    for (const s of songs) {
-      if (s.id !== undefined && s.id !== null) {
-        songMap.set(String(s.id), s);
+    const privMap = new Map<string, RawNeteasePrivilege>();
+
+    // 1. First seed with inline tracks & privileges if already provided (e.g. from v6 detail API with n: 100000)
+    if (Array.isArray(playlistDetail.tracks)) {
+      for (const inlineSong of playlistDetail.tracks) {
+        if (inlineSong && inlineSong.id !== undefined && inlineSong.id !== null) {
+          songMap.set(String(inlineSong.id), inlineSong);
+        }
       }
     }
 
-    const privMap = new Map<string, RawNeteasePrivilege>();
-    for (const p of privileges) {
-      if (p.id !== undefined && p.id !== null) {
-        privMap.set(String(p.id), p);
+    if (Array.isArray(rawJson.privileges)) {
+      for (const p of rawJson.privileges) {
+        if (p && p.id !== undefined && p.id !== null) {
+          privMap.set(String(p.id), p);
+        }
+      }
+    }
+
+    // 2. Only batch fetch song details for IDs not present in inline tracks (e.g. when tracks > 1000 or truncated to 10)
+    const unpopulatedIds = trackIdList.filter((id) => !songMap.has(String(id)));
+    if (unpopulatedIds.length > 0) {
+      const { songs, privileges } = await fetchSongDetails(unpopulatedIds);
+      for (const s of songs) {
+        if (s.id !== undefined && s.id !== null) {
+          songMap.set(String(s.id), s);
+        }
+      }
+      for (const p of privileges) {
+        if (p.id !== undefined && p.id !== null) {
+          privMap.set(String(p.id), p);
+        }
       }
     }
 
