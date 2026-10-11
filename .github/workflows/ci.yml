@@ -47,16 +47,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r cli/qqmusic/requirements.txt
           pip install -r cli/netease/requirements.txt
+          pip install -r cli/kuwo/requirements.txt
           pip install pytest
 
       - name: Syntax check
         run: |
           python -m compileall cli/qqmusic/
           python -m compileall cli/netease/
+          python -m compileall cli/kuwo/
 
       - name: Run pytest
         run: |
-          pytest -v cli/qqmusic/ cli/netease/
+          pytest -v cli/qqmusic/ cli/netease/ cli/kuwo/
           python -m pytest -v scripts/utils/test_insights_authenticity.py
 
   plugins:

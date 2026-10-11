@@ -319,7 +319,8 @@ playlistout/
 ├── worker/               # Cloudflare Worker API + D1 migrations/providers
 ├── cli/
 │   ├── qqmusic/          # standalone Python exporter
-│   └── netease/          # standalone Python exporter
+│   ├── netease/          # standalone Python exporter
+│   └── kuwo/             # standalone Python exporter
 ├── plugins/
 │   └── musicfree/        # MusicFree integration
 ├── docs/                 # API/data contracts/governance/roadmap
@@ -336,7 +337,7 @@ The exact internal subfolders may evolve, but the top-level separation between p
 
 ## 11. Python CLI Rules
 
-The standalone QQ Music and NetEase Cloud Music Python implementations are useful independent user tools and behavioral references.
+The standalone QQ Music, NetEase Cloud Music, and Kuwo Music Python implementations are useful independent user tools and behavioral references.
 
 Rules:
 

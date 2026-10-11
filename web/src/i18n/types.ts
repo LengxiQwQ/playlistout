@@ -257,7 +257,6 @@ export interface Translations {
     allTimeSubtext: string;
     fromWhereTitle: string;
     formatPreferencesTitle: string;
-    otherPlatformsComing: string;
     recentDaysTitle: string;
     recentDaysFootnote: string;
   };

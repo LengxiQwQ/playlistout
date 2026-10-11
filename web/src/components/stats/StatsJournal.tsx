@@ -550,9 +550,6 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                   </div>
                 </div>
               ))}
-              <div style={{ color: '#8a8f92', fontSize: '1.05rem', marginTop: '0.15rem' }}>
-                <span className="font-note">{t.stats.otherPlatformsComing}</span>
-              </div>
             </div>
 
             {/* Format Preferences */}

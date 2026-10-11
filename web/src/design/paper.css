@@ -496,6 +496,17 @@ button.sticker:disabled,
   font-family: var(--font-handwriting, cursive);
 }
 
+.quick-samples-toggle:hover {
+  background: rgba(45, 52, 54, 0.08) !important;
+  border-color: rgba(45, 52, 54, 0.55) !important;
+  color: #2d3436 !important;
+  transform: translateY(-1px);
+}
+
+.quick-samples-toggle:active {
+  transform: translateY(0);
+}
+
 /* Result Paper Section - Ensure clean default sans-serif for content readability */
 .result-paper-section,
 .result-paper-card {

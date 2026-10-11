@@ -102,14 +102,15 @@ BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需
 
 除了网页和第三方播放器，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
 
-当前仓库内置两套独立 CLI：
+当前仓库内置三套独立 CLI：
 
 | 平台 | 脚本 | 支持内容 |
 |---|---|---|
 | **QQ 音乐** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | 歌单链接 / ID、QQ 号用户歌单、批量导出 |
 | **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 |
+| **酷我音乐** | [`cli/kuwo/kuwo_playlist_export.py`](cli/kuwo/kuwo_playlist_export.py) | 歌单链接 / 移动端短链 / ID、多页自动分页 |
 
-两套 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
+三套 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
 
 ### QQ 音乐 CLI
 
@@ -131,7 +132,17 @@ python netease_playlist_export.py
 
 👉 [网易云音乐 CLI 完整说明](cli/netease/README.md)
 
-> 当前仓库中的独立 Python CLI 主要覆盖 QQ 音乐与网易云音乐；酷狗音乐和汽水音乐目前通过 Web / Public API 提供解析能力。
+### 酷我音乐 CLI
+
+```bash
+cd cli/kuwo
+pip install -r requirements.txt
+python kuwo_playlist_export.py
+```
+
+👉 [酷我音乐 CLI 完整说明](cli/kuwo/README.md)
+
+> 当前仓库中的独立 Python CLI 覆盖 QQ 音乐、网易云音乐与酷我音乐；酷狗音乐和汽水音乐目前通过 Web / Public API 提供解析能力。
 
 ---
 
@@ -270,6 +281,7 @@ README 只保留使用项目所需的核心信息，更详细的协议、接口�
 | [Web 导出格式规范](docs/EXPORT-FORMATS.md) | 用户 / 迁移工具开发者 | CSV、XLSX、JSON、M3U8、TXT 的当前结构、字段和兼容性约定 |
 | [QQ 音乐 CLI](cli/qqmusic/README.md) | 命令行用户 | QQ 音乐歌单 / 用户歌单导出、安装与使用说明 |
 | [网易云音乐 CLI](cli/netease/README.md) | 命令行用户 | 网易云歌单 / 用户歌单导出、安装与使用说明 |
+| [酷我音乐 CLI](cli/kuwo/README.md) | 命令行用户 | 酷我音乐歌单多页全量导出、安装与使用说明 |
 | [MusicFree 插件](plugins/musicfree/README.md) | MusicFree 用户与插件开发者 | 插件安装、使用、配置、构建与测试 |
 | [生态接入计划](docs/ECOSYSTEM-INTEGRATION.md) | 开源播放器维护者 | 第三方播放器调研、字段映射、Issue / PR 接入规划 |
 | [项目规范](docs/PROJECT-CONSTITUTION.md) | 贡献者 / 维护者 | 项目架构、安全、隐私、产品边界和长期原则 |

@@ -6,6 +6,13 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **Kuwo Music CLI Exporter / 酷我音乐 CLI 导出工具**:
+  - 新增酷我音乐独立 Python CLI 导出工具（[`cli/kuwo/`](cli/kuwo/)），支持歌单 URL、短链与 ID 智能提取。
+  - 支持全量多页自动分页与并发拉取拼接，突破单页数量限制。
+  - 支持歌曲可用性与版权状态判定（正常、VIP专享、下架/无版权）。
+  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
+  - 配套 11 项完整的自动化单元与集成测试（[`cli/kuwo/test_kuwo_utils.py`](cli/kuwo/test_kuwo_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
+
 - **Canonical metadata follow-up fixes**:
   - 修复 QQ CLI 老接口在生成单曲封面时引用未定义 `cover_url` 的回归问题，并补齐三条 QQ CLI 数据通道的 `releaseDate / trackNumber / discNumber / mvId / mvUrl` 输出。
   - 修正 QQ Web/API 对真实 `time_public=YYYYMMDD` 与 `index_cd` 的解析，避免发行日期和碟号字段“有 Schema 但实际不出现”。
