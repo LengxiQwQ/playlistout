@@ -53,29 +53,28 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
-    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
-    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    author_link = terminal_link(AUTHOR_URL, f"作者: {AUTHOR_NAME}")
+    repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
+    web_link = terminal_link(WEB_URL, "在线网页版")
     title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
     print(f"           {title}")
-    print(f"  {author_btn}   {repo_btn}   {web_btn}")
-    print("-" * 64)
-    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("")
+    print(f"  {author_link} · {repo_link} · {web_link}")
+    print("")
+    print("  核心特性: 100% 本地隐私安全 · 全格式歌单备份导出")
     print("=" * 64)
 
 
 def print_format_menu():
     """统一线框引导 UI - 导出格式选择菜单"""
-    print("-" * 64)
-    print("请选择导出文件格式：")
-    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
-    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
-    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
-    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
-    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
-    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
-    print("-" * 64)
+    print("\n请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件")
+    print("  [2] .csv   - 标准 CSV 表格")
+    print("  [3] .json  - Canonical JSON 标准格式")
+    print("  [4] .txt   - 纯文本歌单清单")
+    print("  [5] .m3u8  - 通用播放列表 (M3U8)")
+    print("  [0] 全部导出 (默认，直接回车即可)\n")
 
 
 def resolve_export_formats(choice):
@@ -102,9 +101,7 @@ def resolve_export_formats(choice):
 
 
 def print_exit_banner():
-    print("\n" + "=" * 64)
-    print("感谢使用 Playlist Out，程序已安全退出！")
-    print("=" * 64)
+    print("\n感谢使用 Playlist Out，程序已安全退出！\n")
 
 
 LUNA_USER_AGENT = 'Luna/19.1.0 Android'
@@ -649,6 +646,17 @@ def export_csv(filename, tracks):
             writer.writerow([i, t[0], t[1], t[2], t[3], t[4]])
 
 
+def format_total_duration(total_ms):
+    if not total_ms or total_ms <= 0:
+        return ""
+    total_minutes = int(total_ms // 60000)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    if hours > 0:
+        return f"{hours} 小时 {minutes} 分钟"
+    return f"{minutes} 分钟"
+
+
 def export_json(filename, playlist_title, tracks, author, playlist_cover="", playlist_id=""):
     tracks_out = []
     for i, t in enumerate(tracks, 1):
@@ -660,8 +668,14 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             status_text = t.get("statusText") or t.get("status") or ""
             cover_url = t.get("coverUrl") or t.get("cover") or ""
             tid = t.get("id") or ""
+            isrc = t.get("isrc") or ""
             dt_ms = t.get("durationMs")
             release_date = t.get("releaseDate")
+            track_num = t.get("trackNumber")
+            disc_num = t.get("discNumber")
+            is_orig = t.get("isOriginalSound")
+            max_quality = t.get("maxQuality")
+            mv_id = t.get("mvId")
         else:
             name = t[0] if len(t) > 0 else ""
             artist = t[1] if len(t) > 1 else ""
@@ -670,8 +684,14 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             status_text = t[4] if len(t) > 4 else ""
             cover_url = t[5] if len(t) > 5 and t[5] else ""
             tid = t[6] if len(t) > 6 and t[6] else ""
+            isrc = ""
             dt_ms = t[7] if len(t) > 7 and isinstance(t[7], (int, float)) and t[7] > 0 else None
             release_date = t[8] if len(t) > 8 and t[8] else None
+            track_num = None
+            disc_num = None
+            is_orig = True if status_text == "原声" else None
+            max_quality = t[9] if len(t) > 9 and t[9] else None
+            mv_id = None
 
         if dt_ms is None and duration_str and ":" in str(duration_str):
             parts = str(duration_str).split(":")
@@ -706,21 +726,41 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             track_entry["album"] = album_str
         if tid:
             track_entry["id"] = str(tid).strip()
-            track_entry["sourceUrl"] = f"https://music.douyin.com/qishui/share/track?track_id={tid}"
+        if isrc and str(isrc).strip():
+            track_entry["isrc"] = str(isrc).strip().upper()
         if dt_ms is not None and dt_ms > 0:
             track_entry["durationMs"] = int(dt_ms)
         if release_date:
             track_entry["releaseDate"] = str(release_date).strip()
+        if track_num:
+            track_entry["trackNumber"] = int(track_num)
+        if disc_num:
+            track_entry["discNumber"] = int(disc_num)
+        if tid:
+            track_entry["sourceUrl"] = f"https://music.douyin.com/qishui/share/track?track_id={tid}"
         if cover_url and str(cover_url).strip():
             track_entry["coverUrl"] = str(cover_url).strip()
+        if is_orig is not None:
+            track_entry["isOriginalSound"] = bool(is_orig)
         track_entry["isVip"] = is_vip
         track_entry["isAvailable"] = is_available
         track_entry["status"] = machine_status
         track_entry["statusText"] = status_text or "正常"
+        if max_quality and str(max_quality).strip():
+            track_entry["maxQuality"] = str(max_quality).strip()
+        if mv_id and str(mv_id).strip():
+            track_entry["mvId"] = str(mv_id).strip()
 
         tracks_out.append(track_entry)
 
+    loaded_duration_ms = sum(t.get("durationMs", 0) for t in tracks_out)
+    duration_str = format_total_duration(loaded_duration_ms)
+
     payload = {
+        "generator": "PlaylistOut",
+        "generatorUrl": WEB_URL,
+        "exportedFrom": "PlaylistOutCLI",
+        "exportedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "name": playlist_title or "汽水音乐歌单",
     }
     if author and str(author).strip():
@@ -732,6 +772,15 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
         payload["id"] = str(playlist_id).strip()
         payload["sourceUrl"] = f"https://music.douyin.com/qishui/share/playlist?playlist_id={playlist_id}"
     payload["trackCount"] = len(tracks_out)
+    payload["loadedTrackCount"] = len(tracks_out)
+    payload["isPartial"] = False
+    if loaded_duration_ms > 0:
+        if duration_str:
+            payload["totalDuration"] = duration_str
+        payload["totalDurationMs"] = loaded_duration_ms
+        if duration_str:
+            payload["loadedDuration"] = duration_str
+        payload["loadedDurationMs"] = loaded_duration_ms
     payload["tracks"] = tracks_out
 
     with open(filename, 'w', encoding='utf-8') as f:
@@ -816,8 +865,7 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
 
     exported_files = []
 
-    print("\n" + "-" * 64)
-    print(f"[*] 开始导出歌单《{playlist_title}》 (共 {len(tracks)} 首歌曲)...")
+    print(f"\n[*] 开始导出歌单《{playlist_title}》 (共 {len(tracks)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         fn = os.path.join(output_dir, f"{safe_title}.{fmt}")
@@ -833,13 +881,11 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
             elif fmt == 'm3u8':
                 export_m3u8(fn, playlist_title, tracks, author)
             exported_files.append(fn)
-            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(fn)}")
+            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(fn)}")
         except Exception as e:
-            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
 
-    print("-" * 64)
-    print(f"[🎉] 导出任务全部完成！共导出 {len(tracks)} 首歌曲。")
-    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print(f"\n[🎉] 导出完成！共 {len(tracks)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
 
     if exported_files and reveal_folder:
@@ -886,10 +932,10 @@ def main():
         return
 
     print_banner("汽水音乐")
-    print("支持：歌单链接 / 移动端短链 / 抖音收藏分享文案 / 歌单ID")
     try:
         while True:
-            user_input = input("\n请输入链接或 ID（输入 0 退出）：").strip()
+            user_input = input("\n请输入歌单链接 或 歌单ID（输入 0 退出）：").strip()
+            print("=" * 64)
             if not user_input or user_input in ('0', 'q', 'quit', 'exit'):
                 print_exit_banner()
                 break
@@ -897,12 +943,14 @@ def main():
             playlist_id = extract_playlist_id(user_input)
             if not playlist_id:
                 print("❌ 未能识别到有效的汽水音乐歌单 ID，请检查输入！")
+                print("=" * 64)
                 continue
 
             print(f"正在获取歌单 (ID: {playlist_id}) 信息...")
             info = get_playlist_info(playlist_id, channel=args.channel)
             if not info:
                 print("❌ 获取歌单信息失败，请重试。")
+                print("=" * 64)
                 continue
 
             playlist_title, tracks, author, _, _ = info
@@ -913,6 +961,7 @@ def main():
 
             print_format_menu()
             fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+            print("=" * 64)
             sel_formats = resolve_export_formats(fmt_input)
 
             perform_export(info, output_dir, sel_formats, reveal_folder=not args.no_open)

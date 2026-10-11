@@ -19,6 +19,7 @@ import subprocess
 import requests
 import socket
 import argparse
+from datetime import datetime
 
 # 针对 Windows 控制台尽量启用 UTF-8 编码避免特殊字符乱码
 if sys.platform == 'win32':
@@ -52,29 +53,28 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
-    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
-    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    author_link = terminal_link(AUTHOR_URL, f"作者: {AUTHOR_NAME}")
+    repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
+    web_link = terminal_link(WEB_URL, "在线网页版")
     title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
     print(f"           {title}")
-    print(f"  {author_btn}   {repo_btn}   {web_btn}")
-    print("-" * 64)
-    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("")
+    print(f"  {author_link} · {repo_link} · {web_link}")
+    print("")
+    print("  核心特性: 100% 本地隐私安全 · 全格式歌单备份导出")
     print("=" * 64)
 
 
 def print_format_menu():
     """统一线框引导 UI - 导出格式选择菜单"""
-    print("-" * 64)
-    print("请选择导出文件格式：")
-    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
-    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
-    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
-    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
-    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
-    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
-    print("-" * 64)
+    print("\n请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件")
+    print("  [2] .csv   - 标准 CSV 表格")
+    print("  [3] .json  - Canonical JSON 标准格式")
+    print("  [4] .txt   - 纯文本歌单清单")
+    print("  [5] .m3u8  - 通用播放列表 (M3U8)")
+    print("  [0] 全部导出 (默认，直接回车即可)\n")
 
 
 def resolve_export_formats(choice):
@@ -120,9 +120,7 @@ def reveal_folder(target_path):
 
 def print_exit_banner():
     """统一退出提示"""
-    print("\n" + "=" * 64)
-    print("感谢使用 Playlist Out，程序已安全退出！")
-    print("=" * 64)
+    print("\n感谢使用 Playlist Out，程序已安全退出！\n")
 
 # --- 辅助函数 ---
 
@@ -257,6 +255,65 @@ def extract_qq_song_metadata(song):
     return release_date, track_number, disc_number, mv_id
 
 
+def extract_qq_song_status_and_quality(song):
+    file_obj = song.get("file") if isinstance(song.get("file"), dict) else {}
+    pay_obj = song.get("pay") if isinstance(song.get("pay"), dict) else {}
+    action_obj = song.get("action") if isinstance(song.get("action"), dict) else {}
+
+    size128 = song.get("size128") if song.get("size128") is not None else (file_obj.get("size_128mp3") if file_obj.get("size_128mp3") is not None else file_obj.get("size_128"))
+    size320 = song.get("size320") if song.get("size320") is not None else (file_obj.get("size_320mp3") if file_obj.get("size_320mp3") is not None else file_obj.get("size_320"))
+    sizeflac = song.get("sizeflac") if song.get("sizeflac") is not None else file_obj.get("size_flac")
+
+    payplay = pay_obj.get("payplay") if pay_obj.get("payplay") is not None else pay_obj.get("pay_play")
+    payalbum = pay_obj.get("payalbum") if pay_obj.get("payalbum") is not None else (1 if (pay_obj.get("price_album") or 0) > 0 else 0)
+    alertid = song.get("alertid") if song.get("alertid") is not None else action_obj.get("alert")
+    msgid = song.get("msgid") if song.get("msgid") is not None else action_obj.get("msgid")
+    icons = action_obj.get("icons") or 0
+    is_vip_icon = bool(isinstance(icons, int) and (((icons >> 1) & 1) == 1 or ((icons >> 18) & 1) == 1))
+
+    is_paid_album = (payalbum == 1)
+    is_vip_stream = (payplay == 1 or msgid == 13 or alertid == 41 or is_vip_icon)
+    is_geo_blocked_only = (alertid in (2, 21) or msgid == 14)
+
+    has_explicit_zero_audio = (size128 == 0 and size320 == 0 and (sizeflac is None or sizeflac == 0))
+    is_takedown_alert = (
+        alertid == 11 or
+        (alertid is not None and alertid != 0 and not is_geo_blocked_only and alertid != 41 and not is_vip_stream and not is_paid_album)
+    )
+    is_takedown_msg = (msgid == 0 and not is_vip_stream and not is_paid_album)
+    is_truly_unplayable = (is_takedown_alert or is_takedown_msg or has_explicit_zero_audio)
+
+    if is_paid_album:
+        status_text = "付费专辑"
+    elif is_truly_unplayable:
+        status_text = "下架/无版权"
+    elif is_vip_stream:
+        status_text = "VIP专享"
+    else:
+        status_text = "正常"
+
+    max_quality = None
+    if isinstance(sizeflac, (int, float)) and sizeflac > 0:
+        max_quality = "FLAC"
+    elif isinstance(size320, (int, float)) and size320 > 0:
+        max_quality = "320kbps"
+    elif isinstance(size128, (int, float)) and size128 > 0:
+        max_quality = "128kbps"
+
+    return status_text, max_quality
+
+
+def format_total_duration(total_ms):
+    if not total_ms or total_ms <= 0:
+        return None
+    total_minutes = int(total_ms // 60000)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    if hours > 0:
+        return f"{hours} 小时 {minutes} 分钟"
+    return f"{minutes} 分钟"
+
+
 # --- 与 QQ音乐接口交互（返回 (playlist_title, [(name,singers,album), ...], author) 或 None） ---
 
 # 获取指定 QQ号 的所有歌单列表，返回 (nickname, [{"id":..., "name":...}, ...]) 或 None
@@ -378,7 +435,8 @@ def try_c_y_qq(disstid):
         interval = s.get("interval")
         duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
         release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
-        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
+        status_text, max_quality = extract_qq_song_status_and_quality(s)
+        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id, status_text, max_quality))
 
     return (title or "", results, author)
 
@@ -456,7 +514,8 @@ def try_u_y_qq_playlist_detail(playlist_id):
         interval = s.get("interval")
         duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
         release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
-        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
+        status_text, max_quality = extract_qq_song_status_and_quality(s)
+        results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id, status_text, max_quality))
     return (title or "", results, author)
 
 def get_playlist_songs(playlist_id):
@@ -504,7 +563,8 @@ def get_playlist_songs(playlist_id):
                 interval = s.get("interval")
                 duration_ms = interval * 1000 if isinstance(interval, (int, float)) and interval > 0 else None
                 release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
-                results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id))
+                status_text, max_quality = extract_qq_song_status_and_quality(s)
+                results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id, status_text, max_quality))
             author = data.get("data_signer") or data.get("nickname") or data.get("nick") or data.get("username") or ""
             return (title or "", results, author)
     except Exception:
@@ -579,7 +639,7 @@ def export_to_xlsx(rows, output_path):
     wb.save(output_path)
 
 # 保存为 json（Canonical Playlist/Track 规范），使用 utf-8 编码
-def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=""):
+def export_to_json(rows, output_path, playlist_title="", author="", playlist_id="", playlist_cover=""):
     tracks = []
     for i, item in enumerate(rows, 1):
         if isinstance(item, dict):
@@ -588,34 +648,53 @@ def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=
             album = item.get("album") or item.get("Album") or ""
             cover_url = item.get("coverUrl") or item.get("cover") or ""
             track_id = item.get("id") or ""
+            isrc = item.get("isrc") or ""
             duration_ms = item.get("durationMs")
             release_date = item.get("releaseDate")
             track_number = item.get("trackNumber")
             disc_number = item.get("discNumber")
             mv_id = item.get("mvId")
+            status_text = item.get("statusText") or "正常"
+            max_quality = item.get("maxQuality")
         else:
             name = item[0] if len(item) > 0 else ""
             singers = item[1] if len(item) > 1 else ""
             album = item[2] if len(item) > 2 else ""
             cover_url = item[3] if len(item) > 3 and item[3] else ""
             track_id = item[4] if len(item) > 4 and item[4] else ""
+            isrc = ""
             duration_ms = item[5] if len(item) > 5 and isinstance(item[5], (int, float)) and item[5] > 0 else None
             release_date = item[6] if len(item) > 6 and item[6] else None
             track_number = item[7] if len(item) > 7 and isinstance(item[7], int) and item[7] > 0 else None
             disc_number = item[8] if len(item) > 8 and isinstance(item[8], int) and item[8] > 0 else None
             mv_id = item[9] if len(item) > 9 and item[9] else None
+            status_text = item[10] if len(item) > 10 and item[10] else "正常"
+            max_quality = item[11] if len(item) > 11 and item[11] else None
 
         source_url = f"https://y.qq.com/n/ryqq/songDetail/{track_id}" if track_id else None
+
+        is_vip = (status_text == "VIP专享")
+        is_available = (status_text != "下架/无版权")
+        if status_text == "下架/无版权":
+            machine_status = "unplayable"
+        elif status_text == "VIP专享":
+            machine_status = "vip"
+        elif status_text == "付费专辑":
+            machine_status = "paid"
+        else:
+            machine_status = "playable"
 
         track_entry = {
             "index": i,
             "title": str(name).strip() if name else "未知歌曲",
             "artist": str(singers).strip() if singers else "未知歌手",
         }
-        if album and str(album).strip():
+        if album and str(album).strip() and str(album).strip() != "未知专辑":
             track_entry["album"] = str(album).strip()
         if track_id and str(track_id).strip():
             track_entry["id"] = str(track_id).strip()
+        if isrc and str(isrc).strip():
+            track_entry["isrc"] = str(isrc).strip().upper()
         if duration_ms is not None and duration_ms > 0:
             track_entry["durationMs"] = int(duration_ms)
         if release_date:
@@ -628,21 +707,45 @@ def export_to_json(rows, output_path, playlist_title="", author="", playlist_id=
             track_entry["sourceUrl"] = source_url
         if cover_url and str(cover_url).strip():
             track_entry["coverUrl"] = str(cover_url).strip()
+        track_entry["isVip"] = is_vip
+        track_entry["isAvailable"] = is_available
+        track_entry["status"] = machine_status
+        track_entry["statusText"] = status_text or "正常"
+        if max_quality and str(max_quality).strip():
+            track_entry["maxQuality"] = str(max_quality).strip()
         if mv_id:
             track_entry["mvId"] = str(mv_id).strip()
             track_entry["mvUrl"] = f"https://y.qq.com/n/ryqq/mv/{mv_id}"
         tracks.append(track_entry)
 
+    loaded_duration_ms = sum(t.get("durationMs", 0) for t in tracks)
+    duration_str = format_total_duration(loaded_duration_ms)
+
     payload = {
+        "generator": "PlaylistOut",
+        "generatorUrl": WEB_URL,
+        "exportedFrom": "PlaylistOutCLI",
+        "exportedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "name": playlist_title or "QQ音乐歌单",
     }
     if author and str(author).strip():
         payload["creator"] = str(author).strip()
+    if playlist_cover and str(playlist_cover).strip():
+        payload["coverUrl"] = str(playlist_cover).strip()
     payload["platform"] = "qqmusic"
     if playlist_id and str(playlist_id).strip():
         payload["id"] = str(playlist_id).strip()
         payload["sourceUrl"] = f"https://y.qq.com/n/ryqq/playlist/{playlist_id}"
     payload["trackCount"] = len(tracks)
+    payload["loadedTrackCount"] = len(tracks)
+    payload["isPartial"] = False
+    if loaded_duration_ms > 0:
+        if duration_str:
+            payload["totalDuration"] = duration_str
+        payload["totalDurationMs"] = loaded_duration_ms
+        if duration_str:
+            payload["loadedDuration"] = duration_str
+        payload["loadedDurationMs"] = loaded_duration_ms
     payload["tracks"] = tracks
 
     try:
@@ -738,8 +841,7 @@ def perform_export(songs, playlist_title, author, pid, output_dir="output", form
     os.makedirs(output_dir, exist_ok=True)
     exported_files = []
 
-    print("\n" + "-" * 64)
-    print(f"[*] 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...")
+    print(f"\n[*] 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
@@ -755,13 +857,11 @@ def perform_export(songs, playlist_title, author, pid, output_dir="output", form
             elif fmt == "m3u8":
                 export_to_m3u8(songs, out_path, playlist_title)
             exported_files.append(out_path)
-            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(out_path)}")
+            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_path)}")
         except Exception as e:
-            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
 
-    print("-" * 64)
-    print(f"[🎉] 导出任务全部完成！共导出 {len(songs)} 首歌曲。")
-    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print(f"\n[🎉] 导出完成！共 {len(songs)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
 
     if exported_files and reveal_folder_flag:
@@ -775,6 +875,7 @@ def batch_export_songs(playlists, folder_name, nickname="", output_dir="output",
     if formats is None:
         print_format_menu()
         fmt_choice = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+        print("=" * 64)
         formats = resolve_export_formats(fmt_choice)
 
     target_dir = os.path.join(output_dir, folder_name)
@@ -809,8 +910,7 @@ def batch_export_songs(playlists, folder_name, nickname="", output_dir="output",
         else:
             failed += 1
 
-    print("\n" + "=" * 64)
-    print(f"批量导出完成！成功：{exported} 个歌单，失败：{failed} 个歌单")
+    print(f"\n批量导出完成！成功：{exported} 个歌单，失败：{failed} 个歌单")
     print(f"文件保存在：{os.path.abspath(target_dir)}")
     print("=" * 64)
     if all_exported_files and reveal_folder_flag:
@@ -870,6 +970,7 @@ def main():
     try:
         while True:
             user_input = input("\n请输入歌单链接 或 歌单ID 或 QQ号（输入 0 退出）：").strip()
+            print("=" * 64)
             if not user_input or user_input in ("0", "q", "quit", "exit"):
                 print_exit_banner()
                 break
@@ -895,8 +996,9 @@ def main():
                 qq_nickname, qq_playlists = qq_info
                 print(f"\n'{user_input}' 既是歌单ID也是QQ号，请选择：")
                 print(f"  [1] 导出该歌单 — [{pid}] {title}（{len(songs)} 首）")
-                print(f"  [2] 导出该QQ号所有歌单 — {qq_nickname} 共 {len(qq_playlists)} 个歌单")
+                print(f"  [2] 导出该QQ号所有歌单 — {qq_nickname} 共 {len(qq_playlists)} 个歌单\n")
                 c = input("请选择 (1/2，默认1)：").strip()
+                print("=" * 64)
                 if c == "2":
                     print(f"\n用户：{qq_nickname}，共 {len(qq_playlists)} 个歌单：")
                     for i, pl in enumerate(qq_playlists):
@@ -914,6 +1016,7 @@ def main():
 
             elif not playlist_info and not qq_info:
                 print("\n无法识别输入，请确认歌单链接/ID 或 QQ号是否正确")
+                print("=" * 64)
                 continue
 
             title, songs, author = playlist_info
@@ -924,6 +1027,7 @@ def main():
             print(f"\n已获取到 {display_author} 的歌单：\n名称：{playlist_title}，共 {len(songs)} 首歌曲")
             print_format_menu()
             fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+            print("=" * 64)
             sel_formats = resolve_export_formats(fmt_input)
             perform_export(songs, playlist_title, display_author, pid, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)
 

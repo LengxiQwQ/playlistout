@@ -310,9 +310,45 @@ class TestExporters:
         assert out_file.exists()
         with open(out_file, "r", encoding="utf-8") as f:
             data = json.load(f)
+            assert data["generator"] == "PlaylistOut"
+            assert data["generatorUrl"] == "https://playlistout.lengxiqwq.com"
+            assert data["exportedFrom"] == "PlaylistOutCLI"
+            assert "exportedAt" in data
+            assert data["name"] == "测试歌单"
+            assert data["creator"] == "测试作者"
+            assert data["coverUrl"] == "https://example.com/cover.jpg"
             assert data["platform"] == "kugou"
-            assert data["playlist"]["name"] == "测试歌单"
-            assert len(data["playlist"]["tracks"]) == 2
+            assert data["id"] == "test_pl_1"
+            assert data["sourceUrl"] == "https://www.kugou.com/yy/special/single/546903.html"
+            assert data["trackCount"] == 2
+            assert data["loadedTrackCount"] == 2
+            assert data["isPartial"] is False
+            assert data["totalDuration"] == "8 分钟"
+            assert data["totalDurationMs"] == 492000
+            assert data["loadedDuration"] == "8 分钟"
+            assert data["loadedDurationMs"] == 492000
+            assert data["playCount"] == 100
+            assert data["description"] == "歌单描述说明"
+            assert len(data["tracks"]) == 2
+            t1 = data["tracks"][0]
+            assert t1["index"] == 1
+            assert t1["title"] == "晴天"
+            assert t1["artist"] == "周杰伦"
+            assert t1["album"] == "叶惠美"
+            assert t1["id"] == "HASH_QINGTIAN"
+            assert t1["durationMs"] == 269000
+            assert t1["sourceUrl"] == "https://www.kugou.com/song/#hash=HASH_QINGTIAN"
+            assert t1["coverUrl"] == "https://example.com/1.jpg"
+            assert t1["isVip"] is False
+            assert t1["isAvailable"] is True
+            assert t1["status"] == "playable"
+            assert t1["statusText"] == "正常"
+            assert t1["maxQuality"] == "FLAC"
+            t2 = data["tracks"][1]
+            assert t2["isVip"] is True
+            assert t2["status"] == "vip"
+            assert t2["statusText"] == "VIP专享"
+            assert t2["maxQuality"] == "320kbps"
 
     def test_export_txt(self, tmp_path, sample_playlist):
         out_file = tmp_path / "test.txt"

@@ -24,6 +24,7 @@ import subprocess
 import argparse
 import requests
 import socket
+from datetime import datetime
 
 # 针对 Windows 控制台尽量启用 UTF-8 编码避免特殊字符乱码
 if sys.platform == 'win32':
@@ -57,29 +58,28 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
-    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
-    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    author_link = terminal_link(AUTHOR_URL, f"作者: {AUTHOR_NAME}")
+    repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
+    web_link = terminal_link(WEB_URL, "在线网页版")
     title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
     print(f"           {title}")
-    print(f"  {author_btn}   {repo_btn}   {web_btn}")
-    print("-" * 64)
-    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("")
+    print(f"  {author_link} · {repo_link} · {web_link}")
+    print("")
+    print("  核心特性: 100% 本地隐私安全 · 全格式歌单备份导出")
     print("=" * 64)
 
 
 def print_format_menu():
     """统一线框引导 UI - 导出格式选择菜单"""
-    print("-" * 64)
-    print("请选择导出文件格式：")
-    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
-    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
-    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
-    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
-    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
-    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
-    print("-" * 64)
+    print("\n请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件")
+    print("  [2] .csv   - 标准 CSV 表格")
+    print("  [3] .json  - Canonical JSON 标准格式")
+    print("  [4] .txt   - 纯文本歌单清单")
+    print("  [5] .m3u8  - 通用播放列表 (M3U8)")
+    print("  [0] 全部导出 (默认，直接回车即可)\n")
 
 
 def resolve_export_formats(choice):
@@ -106,9 +106,7 @@ def resolve_export_formats(choice):
 
 
 def print_exit_banner():
-    print("\n" + "=" * 64)
-    print("感谢使用 Playlist Out，程序已安全退出！")
-    print("=" * 64)
+    print("\n感谢使用 Playlist Out，程序已安全退出！\n")
 
 
 # ----------------- 常量与签名密钥 -----------------
@@ -300,8 +298,7 @@ def poll_kugou_qr_status(qrcode_key):
 
 def run_qr_login_flow(no_open=False):
     """执行二维码扫码登录流程"""
-    print("\n" + "=" * 64)
-    print("【方式一：酷狗 APP 扫码登录】")
+    print("\n【方式一：酷狗 APP 扫码登录】")
     print("正在申请官方登录二维码，请稍候...")
     qrcode, qrcode_img_b64, login_url = request_kugou_qr()
 
@@ -331,12 +328,10 @@ def run_qr_login_flow(no_open=False):
         except Exception as e:
             print(f"[!] 保存二维码图片失败: {e}")
 
-    qr_btn = terminal_link(login_url, "[ 点击在浏览器打开二维码 ]")
-    print("\n" + "-" * 64)
-    print("手机端操作指南：")
-    print("1. 打开手机【酷狗音乐】APP -> 点击右上角扫一扫 -> 扫描弹出的图片")
-    print(f"2. 若未弹出图片，请点击：{qr_btn}")
-    print("-" * 64)
+    qr_btn = terminal_link(login_url, "点击在浏览器打开二维码")
+    print("\n手机端操作指南：")
+    print("  1. 打开手机【酷狗音乐】APP -> 点击右上角扫一扫 -> 扫描弹出的图片")
+    print(f"  2. 若未弹出图片，请点击：{qr_btn}\n")
 
     last_msg = ""
     start_time = time.time()
@@ -352,16 +347,20 @@ def run_qr_login_flow(no_open=False):
             if status == "success":
                 print(f"[✓] 酷狗账号登录成功！UserID: {userid}")
                 save_auth_credentials(token, userid, source="qr")
+                print("=" * 64)
                 return token, userid
             elif status == "expired":
                 print("[!] 二维码已超时过期，请重新登录。")
+                print("=" * 64)
                 return None, None
             elif status == "failed":
                 print(f"[!] 登录异常: {msg}")
+                print("=" * 64)
                 return None, None
 
             time.sleep(1.5)
         print("[!] 扫码超时，请重试。")
+        print("=" * 64)
         return None, None
     finally:
         if qr_temp_file and os.path.exists(qr_temp_file):
@@ -373,49 +372,49 @@ def run_qr_login_flow(no_open=False):
 
 def run_manual_login_flow():
     """手动输入从官网获取的 ID 和 Token"""
-    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
-    print("\n" + "=" * 64)
-    print("【方式二：手动输入 Playlist Out 官网或抓包凭证】")
-    print(f"您可以点击访问 Playlist Out 官网：{web_btn}")
-    print("在登录酷狗后，将页面上显示的 UserID 与 Token 粘贴到此处：")
-    print("=" * 64)
+    web_link = terminal_link(WEB_URL, "在线网页版")
+    print(f"\n【手动输入 Playlist Out 官网或抓包凭证】")
+    print(f"您可以点击访问 Playlist Out {web_link} 登录酷狗后粘贴 UserID 与 Token：\n")
 
     try:
         userid_input = input("请输入 酷狗 UserID (如: 12345678): ").strip()
+        print("=" * 64)
         if not userid_input:
             print("[!] UserID 不能为空！")
+            print("=" * 64)
             return None, None
 
         token_input = input("请输入 酷狗 Token (32位十六进制字符串): ").strip()
+        print("=" * 64)
         if not token_input:
             print("[!] Token 不能为空！")
+            print("=" * 64)
             return None, None
 
         save_auth_credentials(token_input, userid_input, source="manual")
         print(f"[✓] 凭证配置成功！UserID: {userid_input}")
+        print("=" * 64)
         return token_input, userid_input
     except (KeyboardInterrupt, EOFError):
         print("\n[*] 已取消输入。")
+        print("=" * 64)
         return None, None
 
 
 def interactive_login_menu():
     """交互式登录菜单，提供两种选择与说明"""
-    print("\n" + "=" * 64)
-    print("          酷狗音乐凭证配置 / 登录认证")
-    print("说明：")
-    print("  • 官方精选歌单、概念版集合歌单、H5分享页歌单 100% 免登录直接导出！")
-    print("  • 仅当您导出 个人自建歌单（Cloudlist/我喜欢的歌）时需要凭证。")
-    print("=" * 64)
+    print("\n酷狗音乐凭证配置 / 登录认证")
+    print("  • 官方精选、概念版集合、H5 分享歌单 100% 免登录直接导出")
+    print("  • 仅导出「个人自建歌单 / 我喜欢」时需要凭证\n")
     print("请选择认证方式：")
-    print("  [1] 扫码登录 (在终端生成二维码，无需访问网站，直接获取并永久保存)")
-    print("  [2] 手动输入 (使用在官网扫码后获得的 UserID 与 Token，永久保存)")
-    print("  [0] 返回 / 取消")
-    print("=" * 64)
+    print("  [1] 扫码登录 (在终端生成二维码扫码，永久保存)")
+    print("  [2] 手动输入 (使用官网扫码获得的 UserID 与 Token，永久保存)")
+    print("  [0] 返回 / 取消\n")
 
     while True:
         try:
             choice = input("请输入选项 [1/2/0]: ").strip()
+            print("=" * 64)
             if choice == "1":
                 return run_qr_login_flow()
             elif choice == "2":
@@ -424,8 +423,10 @@ def interactive_login_menu():
                 return None, None
             else:
                 print("无效选项，请输入 1、2 或 0")
+                print("=" * 64)
         except (KeyboardInterrupt, EOFError):
             print("\n[*] 已退出。")
+            print("=" * 64)
             return None, None
 
 
@@ -654,7 +655,17 @@ def normalize_kugou_track(raw_song, index):
     secs = (duration_ms % 60000) // 1000
     duration_str = f"{mins:02d}:{secs:02d}" if duration_ms > 0 else "--:--"
 
-    return {
+    pub_date = str(
+        raw_song.get("publish_date")
+        or (raw_song.get("trans_param") or {}).get("publish_date")
+        or ""
+    ).strip()
+    release_date = pub_date if re.match(r"^\d{4}-\d{2}-\d{2}$", pub_date) and pub_date != "0000-00-00" else None
+
+    raw_mv = str(raw_song.get("mvhash") or raw_song.get("MvHash") or "").strip()
+    mv_id = raw_mv if raw_mv and not re.fullmatch(r"0+", raw_mv) else None
+
+    track_obj = {
         "index": index,
         "title": title,
         "artist": artist,
@@ -670,6 +681,11 @@ def normalize_kugou_track(raw_song, index):
         "cover_url": cover,
         "source_url": source_url,
     }
+    if release_date:
+        track_obj["release_date"] = release_date
+    if mv_id:
+        track_obj["mv_id"] = mv_id
+    return track_obj
 
 
 # ----------------- 数据抓取器 -----------------
@@ -1149,15 +1165,142 @@ def export_csv(playlist, output_path):
             ])
 
 
+def format_total_duration(total_ms):
+    if not total_ms or total_ms <= 0:
+        return ""
+    total_minutes = int(total_ms // 60000)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    if hours > 0:
+        return f"{hours} 小时 {minutes} 分钟"
+    return f"{minutes} 分钟"
+
+
 def export_json(playlist, output_path):
     """导出 PlaylistOut Canonical 标准规范 JSON 格式"""
-    canonical_data = {
-        "platform": "kugou",
-        "exported_at": int(time.time()),
-        "playlist": playlist,
+    tracks_out = []
+    for i, t in enumerate(playlist.get("tracks") or [], 1):
+        idx = int(t.get("index") or i)
+        title = str(t.get("title") or "未知歌曲").strip() or "未知歌曲"
+        artist = str(t.get("artist") or "未知歌手").strip() or "未知歌手"
+        album = str(t.get("album") or "").strip()
+        tid = str(t.get("id") or "").strip()
+        isrc = str(t.get("isrc") or "").strip().upper()
+        dur_ms = t.get("durationMs") if t.get("durationMs") is not None else t.get("duration_ms")
+        release_date = str(t.get("releaseDate") or t.get("release_date") or "").strip()
+        track_num = t.get("trackNumber") or t.get("track_number")
+        disc_num = t.get("discNumber") or t.get("disc_number")
+        source_url = str(t.get("sourceUrl") or t.get("source_url") or "").strip()
+        if not source_url and tid:
+            source_url = f"https://www.kugou.com/song/#hash={tid}"
+        cover_url = str(t.get("coverUrl") or t.get("cover_url") or "").strip()
+        is_vip = bool(t.get("isVip") if "isVip" in t else t.get("is_vip", False))
+        is_available = bool(t.get("isAvailable") if "isAvailable" in t else t.get("is_available", True))
+        status_text = str(t.get("statusText") or t.get("status_text") or "").strip()
+        if not status_text:
+            status_text = "下架/无版权" if not is_available else ("VIP专享" if is_vip else "正常")
+        machine_status = str(t.get("status") or "").strip()
+        if not machine_status:
+            if not is_available or status_text == "下架/无版权":
+                machine_status = "unplayable"
+            elif is_vip or status_text == "VIP专享":
+                machine_status = "vip"
+            elif status_text == "付费专辑":
+                machine_status = "paid"
+            else:
+                machine_status = "playable"
+        max_quality = str(t.get("maxQuality") or t.get("max_quality") or "").strip()
+        mv_id = str(t.get("mvId") or t.get("mv_id") or "").strip()
+        mv_url = str(t.get("mvUrl") or t.get("mv_url") or "").strip()
+        if mv_id and not mv_url:
+            mv_url = f"https://www.kugou.com/mvweb/html/mv_{mv_id}.html"
+
+        track_entry = {
+            "index": idx,
+            "title": title,
+            "artist": artist,
+        }
+        if album and album != "未知专辑":
+            track_entry["album"] = album
+        if tid:
+            track_entry["id"] = tid
+        if isrc:
+            track_entry["isrc"] = isrc
+        if isinstance(dur_ms, (int, float)) and dur_ms > 0:
+            track_entry["durationMs"] = int(dur_ms)
+        if release_date:
+            track_entry["releaseDate"] = release_date
+        if isinstance(track_num, int) and track_num > 0:
+            track_entry["trackNumber"] = int(track_num)
+        if isinstance(disc_num, int) and disc_num > 0:
+            track_entry["discNumber"] = int(disc_num)
+        if source_url:
+            track_entry["sourceUrl"] = source_url
+        if cover_url:
+            track_entry["coverUrl"] = cover_url
+        track_entry["isVip"] = is_vip
+        track_entry["isAvailable"] = is_available
+        track_entry["status"] = machine_status
+        track_entry["statusText"] = status_text
+        if max_quality:
+            track_entry["maxQuality"] = max_quality
+        if mv_id:
+            track_entry["mvId"] = mv_id
+            track_entry["mvUrl"] = mv_url
+
+        tracks_out.append(track_entry)
+
+    loaded_duration_ms = sum(t.get("durationMs", 0) for t in tracks_out)
+    duration_str = format_total_duration(loaded_duration_ms)
+    track_count = int(playlist.get("trackCount") or playlist.get("track_count") or len(tracks_out))
+    is_partial = bool(playlist.get("isPartial", len(tracks_out) < track_count))
+
+    payload = {
+        "generator": "PlaylistOut",
+        "generatorUrl": WEB_URL,
+        "exportedFrom": "PlaylistOutCLI",
+        "exportedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "name": str(playlist.get("name") or "酷狗音乐歌单").strip() or "酷狗音乐歌单",
     }
+    creator = str(playlist.get("creator") or "").strip()
+    if creator:
+        payload["creator"] = creator
+    cover_url = str(playlist.get("coverUrl") or playlist.get("cover_url") or "").strip()
+    if cover_url:
+        payload["coverUrl"] = cover_url
+    payload["platform"] = "kugou"
+    pid = str(playlist.get("id") or "").strip()
+    if pid:
+        payload["id"] = pid
+    source_url = str(playlist.get("sourceUrl") or playlist.get("source_url") or "").strip()
+    if not source_url and pid:
+        source_url = f"https://www.kugou.com/yy/special/single/{pid}.html"
+    if source_url:
+        payload["sourceUrl"] = source_url
+    payload["trackCount"] = track_count
+    payload["loadedTrackCount"] = len(tracks_out)
+    payload["isPartial"] = is_partial
+    if loaded_duration_ms > 0:
+        if not is_partial:
+            if duration_str:
+                payload["totalDuration"] = duration_str
+            payload["totalDurationMs"] = loaded_duration_ms
+        if duration_str:
+            payload["loadedDuration"] = duration_str
+        payload["loadedDurationMs"] = loaded_duration_ms
+    play_count = int(playlist.get("playCount") or playlist.get("play_count") or 0)
+    if play_count > 0:
+        payload["playCount"] = play_count
+    tags = playlist.get("tags")
+    if isinstance(tags, list) and len(tags) > 0:
+        payload["tags"] = tags
+    description = str(playlist.get("description") or "").strip()
+    if description:
+        payload["description"] = description
+    payload["tracks"] = tracks_out
+
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(canonical_data, f, ensure_ascii=False, indent=2)
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 def export_txt(playlist, output_path):
@@ -1228,8 +1371,7 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
 
     exported_files = []
 
-    print("\n" + "-" * 64)
-    print(f"[*] 开始导出歌单《{playlist['name']}》 (共 {len(playlist['tracks'])} 首歌曲)...")
+    print(f"\n[*] 开始导出歌单《{playlist['name']}》 (共 {len(playlist['tracks'])} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_file = os.path.join(output_dir, f"{base_filename}.{fmt}")
@@ -1245,13 +1387,11 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
             elif fmt == "m3u8":
                 export_m3u8(playlist, out_file)
             exported_files.append(out_file)
-            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(out_file)}")
+            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_file)}")
         except Exception as e:
-            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+            print(f"  [✗] {fmt.upper():<5} 失败: {e}")
 
-    print("-" * 64)
-    print(f"[🎉] 导出任务全部完成！共导出 {len(playlist['tracks'])} 首歌曲。")
-    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print(f"\n[🎉] 导出完成！共 {len(playlist['tracks'])} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
 
     if exported_files and reveal_folder_flag:
@@ -1384,7 +1524,7 @@ def main():
 
     # 交互模式
     print_banner("酷狗音乐")
-    print("支持：官方精选歌单 / 概念版集合歌单 / H5分享短链 / 个人自建歌单")
+    print("\n支持：官方精选歌单 / 概念版集合歌单 / H5分享短链 / 个人自建歌单")
     token, userid, _ = load_auth_credentials()
     if token and userid:
         print(f"[*] 检测到已保存的酷狗登录凭证 (UserID: {userid})")
@@ -1394,6 +1534,7 @@ def main():
     try:
         while True:
             user_input = input("\n请输入链接或 ID（输入 login 配置登录，输入 0 退出）：").strip()
+            print("=" * 64)
             if not user_input or user_input in ("0", "q", "quit", "exit"):
                 print_exit_banner()
                 break
@@ -1405,11 +1546,13 @@ def main():
             target = extract_kugou_target(user_input)
             if not target:
                 print("❌ 无法识别输入的酷狗链接或歌单 ID，请检查输入格式！")
+                print("=" * 64)
                 continue
 
             playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid)
             if not playlist or not playlist.get("tracks"):
                 print("❌ 未能获取到任何有效歌曲数据，请检查歌单是否有效或重试。")
+                print("=" * 64)
                 continue
 
             tracks = playlist.get("tracks", [])
@@ -1420,6 +1563,7 @@ def main():
 
             print_format_menu()
             fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+            print("=" * 64)
             sel_formats = resolve_export_formats(fmt_input)
 
             perform_export(playlist, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)

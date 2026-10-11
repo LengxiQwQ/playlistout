@@ -128,8 +128,8 @@ def test_export_json_canonical_structure():
         tmp_name = f.name
     try:
         sample_tracks = [
-            ("晴天", "周杰伦", "叶惠美", "04:29", "正常", "https://img.kuwo.cn/cover1.jpg", "1001", 269000, "2003-07-31"),
-            ("下架单曲", "未知歌手", "", "", "下架/无版权", "", "1002", None, None),
+            ("晴天", "周杰伦", "叶惠美", "04:29", "正常", "https://img.kuwo.cn/cover1.jpg", "1001", 269000, "2003-07-31", "FLAC"),
+            ("下架单曲", "未知歌手", "", "", "下架/无版权", "", "1002", None, None, None),
         ]
         export_json(
             tmp_name,
@@ -142,6 +142,10 @@ def test_export_json_canonical_structure():
         with open(tmp_name, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+        assert data["generator"] == "PlaylistOut"
+        assert data["generatorUrl"] == "https://playlistout.lengxiqwq.com"
+        assert data["exportedFrom"] == "PlaylistOutCLI"
+        assert "exportedAt" in data
         assert data["name"] == "周杰伦精选"
         assert data["creator"] == "酷我歌单作者"
         assert data["coverUrl"] == "https://img.kuwo.cn/playlist.jpg"
@@ -149,6 +153,12 @@ def test_export_json_canonical_structure():
         assert data["id"] == "2311665489"
         assert data["sourceUrl"] == "https://www.kuwo.cn/playlist_detail/2311665489"
         assert data["trackCount"] == 2
+        assert data["loadedTrackCount"] == 2
+        assert data["isPartial"] is False
+        assert data["totalDuration"] == "4 分钟"
+        assert data["totalDurationMs"] == 269000
+        assert data["loadedDuration"] == "4 分钟"
+        assert data["loadedDurationMs"] == 269000
         assert len(data["tracks"]) == 2
 
         t1 = data["tracks"][0]
@@ -159,12 +169,13 @@ def test_export_json_canonical_structure():
         assert t1["id"] == "1001"
         assert t1["durationMs"] == 269000
         assert t1["releaseDate"] == "2003-07-31"
-        assert t1["coverUrl"] == "https://img.kuwo.cn/cover1.jpg"
         assert t1["sourceUrl"] == "https://www.kuwo.cn/play_detail/1001"
+        assert t1["coverUrl"] == "https://img.kuwo.cn/cover1.jpg"
         assert t1["isVip"] is False
         assert t1["isAvailable"] is True
         assert t1["status"] == "playable"
         assert t1["statusText"] == "正常"
+        assert t1["maxQuality"] == "FLAC"
 
         t2 = data["tracks"][1]
         assert t2["index"] == 2

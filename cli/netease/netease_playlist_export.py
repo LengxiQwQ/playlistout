@@ -53,29 +53,28 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
-    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
-    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    author_link = terminal_link(AUTHOR_URL, f"作者: {AUTHOR_NAME}")
+    repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
+    web_link = terminal_link(WEB_URL, "在线网页版")
     title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
     print(f"           {title}")
-    print(f"  {author_btn}   {repo_btn}   {web_btn}")
-    print("-" * 64)
-    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("")
+    print(f"  {author_link} · {repo_link} · {web_link}")
+    print("")
+    print("  核心特性: 100% 本地隐私安全 · 全格式歌单备份导出")
     print("=" * 64)
 
 
 def print_format_menu():
     """统一线框引导 UI - 导出格式选择菜单"""
-    print("-" * 64)
-    print("请选择导出文件格式：")
-    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
-    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
-    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
-    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
-    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
-    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
-    print("-" * 64)
+    print("\n请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件")
+    print("  [2] .csv   - 标准 CSV 表格")
+    print("  [3] .json  - Canonical JSON 标准格式")
+    print("  [4] .txt   - 纯文本歌单清单")
+    print("  [5] .m3u8  - 通用播放列表 (M3U8)")
+    print("  [0] 全部导出 (默认，直接回车即可)\n")
 
 
 def resolve_export_formats(choice):
@@ -121,9 +120,7 @@ def reveal_folder(target_path):
 
 def print_exit_banner():
     """统一退出提示"""
-    print("\n" + "=" * 64)
-    print("感谢使用 Playlist Out，程序已安全退出！")
-    print("=" * 64)
+    print("\n感谢使用 Playlist Out，程序已安全退出！\n")
 
 HEADERS = {
     'User-Agent': (
@@ -213,6 +210,30 @@ def determine_track_status(song, priv):
     if fee == 4:
         return '付费专辑'
     return '正常'
+
+def extract_netease_max_quality(song, priv):
+    if not isinstance(song, dict):
+        return None
+    priv = priv if isinstance(priv, dict) else {}
+    max_br = priv.get('maxbr') or 0
+    max_level = str(priv.get('maxBrLevel') or '').lower()
+    if max_level in ('hires', 'jymaster', 'sky', 'jyeffect', 'lossless') or max_br >= 999000 or song.get('hr') or song.get('sq'):
+        return 'FLAC'
+    if max_level == 'exhigh' or max_br >= 320000 or song.get('h'):
+        return '320kbps'
+    if max_br > 0 or song.get('m') or song.get('l'):
+        return '128kbps'
+    return None
+
+def format_total_duration(total_ms):
+    if not total_ms or total_ms <= 0:
+        return ""
+    total_minutes = int(total_ms // 60000)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    if hours > 0:
+        return f"{hours} 小时 {minutes} 分钟"
+    return f"{minutes} 分钟"
 
 def fetch_song_details(track_ids):
     if not track_ids:
@@ -332,6 +353,7 @@ def get_playlist_data(playlist_id):
             track_num = song.get('no')
             disc_num = song.get('cd')
             mv_id = song.get('mv')
+            max_quality = extract_netease_max_quality(song, priv)
             tracks.append((
                 name,
                 singers,
@@ -345,6 +367,7 @@ def get_playlist_data(playlist_id):
                 track_num if isinstance(track_num, int) and track_num > 0 else None,
                 int(disc_num) if isinstance(disc_num, (int, str)) and str(disc_num).isdigit() and int(disc_num) > 0 else None,
                 str(mv_id) if mv_id and str(mv_id) != "0" else None,
+                max_quality,
             ))
 
         playlist_cover = pl.get('coverImgUrl') or ''
@@ -429,11 +452,13 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             status_text = t.get("statusText") or t.get("status") or ""
             cover_url = t.get("coverUrl") or t.get("cover") or ""
             tid_str = t.get("id") or ""
+            isrc = t.get("isrc") or ""
             dt_ms = t.get("durationMs")
             release_date = t.get("releaseDate")
             track_num = t.get("trackNumber")
             disc_num = t.get("discNumber")
             mv_id = t.get("mvId")
+            max_quality = t.get("maxQuality")
         else:
             name = t[0] if len(t) > 0 else ""
             singers = t[1] if len(t) > 1 else ""
@@ -442,11 +467,13 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             status_text = t[4] if len(t) > 4 else ""
             cover_url = t[5] if len(t) > 5 and t[5] else ""
             tid_str = t[6] if len(t) > 6 and t[6] else ""
+            isrc = ""
             dt_ms = t[7] if len(t) > 7 and isinstance(t[7], (int, float)) and t[7] > 0 else None
             release_date = t[8] if len(t) > 8 and t[8] else None
             track_num = t[9] if len(t) > 9 and isinstance(t[9], int) and t[9] > 0 else None
             disc_num = t[10] if len(t) > 10 and isinstance(t[10], int) and t[10] > 0 else None
             mv_id = t[11] if len(t) > 11 and t[11] else None
+            max_quality = t[12] if len(t) > 12 and t[12] else None
 
         # Parse duration_str if dt_ms is missing
         if dt_ms is None and duration_str and ":" in str(duration_str):
@@ -466,6 +493,8 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
         is_available = (status_text != "下架/无版权")
         if status_text == "下架/无版权":
             machine_status = "unplayable"
+        elif status_text == "仅海外受限":
+            machine_status = "geo_blocked"
         elif status_text == "VIP专享":
             machine_status = "vip"
         elif status_text == "付费专辑":
@@ -482,6 +511,8 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
             track_entry["album"] = album_str
         if tid_str:
             track_entry["id"] = str(tid_str).strip()
+        if isrc and str(isrc).strip():
+            track_entry["isrc"] = str(isrc).strip().upper()
         if dt_ms is not None and dt_ms > 0:
             track_entry["durationMs"] = int(dt_ms)
         if release_date:
@@ -498,13 +529,22 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
         track_entry["isAvailable"] = is_available
         track_entry["status"] = machine_status
         track_entry["statusText"] = status_text or "正常"
+        if max_quality and str(max_quality).strip():
+            track_entry["maxQuality"] = str(max_quality).strip()
         if mv_id:
             track_entry["mvId"] = str(mv_id).strip()
             track_entry["mvUrl"] = f"https://music.163.com/#/mv?id={mv_id}"
 
         tracks_out.append(track_entry)
 
+    loaded_duration_ms = sum(t.get("durationMs", 0) for t in tracks_out)
+    duration_str = format_total_duration(loaded_duration_ms)
+
     payload = {
+        "generator": "PlaylistOut",
+        "generatorUrl": WEB_URL,
+        "exportedFrom": "PlaylistOutCLI",
+        "exportedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "name": playlist_title or "网易云音乐歌单",
     }
     if author and str(author).strip():
@@ -516,6 +556,15 @@ def export_json(filename, playlist_title, tracks, author, playlist_cover="", pla
         payload["id"] = str(playlist_id).strip()
         payload["sourceUrl"] = f"https://music.163.com/#/playlist?id={playlist_id}"
     payload["trackCount"] = len(tracks_out)
+    payload["loadedTrackCount"] = len(tracks_out)
+    payload["isPartial"] = False
+    if loaded_duration_ms > 0:
+        if duration_str:
+            payload["totalDuration"] = duration_str
+        payload["totalDurationMs"] = loaded_duration_ms
+        if duration_str:
+            payload["loadedDuration"] = duration_str
+        payload["loadedDurationMs"] = loaded_duration_ms
     payload["tracks"] = tracks_out
 
     with open(filename, 'w', encoding='utf-8') as f:
@@ -582,8 +631,7 @@ def perform_export(title, tracks, author, playlist_cover="", playlist_id="", out
     os.makedirs(output_dir, exist_ok=True)
     exported_files = []
 
-    print("\n" + "-" * 64)
-    print(f"[*] 开始导出歌单《{title}》 (共 {len(tracks)} 首歌曲)...")
+    print(f"\n[*] 开始导出歌单《{title}》 (共 {len(tracks)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
@@ -599,13 +647,11 @@ def perform_export(title, tracks, author, playlist_cover="", playlist_id="", out
             elif fmt == "m3u8":
                 export_m3u8(out_path, title, tracks, author)
             exported_files.append(out_path)
-            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(out_path)}")
+            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_path)}")
         except Exception as e:
-            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
 
-    print("-" * 64)
-    print(f"[🎉] 导出任务全部完成！共导出 {len(tracks)} 首歌曲。")
-    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print(f"\n[🎉] 导出完成！共 {len(tracks)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
 
     if exported_files and reveal_folder_flag:
@@ -675,6 +721,7 @@ def main():
     try:
         while True:
             user_input = input("\n请输入链接或 ID（输入 0 退出）：").strip()
+            print("=" * 64)
             if not user_input or user_input in ('0', 'q', 'quit', 'exit'):
                 print_exit_banner()
                 break
@@ -698,6 +745,7 @@ def main():
                             print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
 
                     sel = input("\n请选择要导出的歌单序号（或输入 all 导出所有，0 返回）：").strip()
+                    print("=" * 64)
                     if sel == '0':
                         continue
                     to_export = []
@@ -708,6 +756,7 @@ def main():
 
                     print_format_menu()
                     fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+                    print("=" * 64)
                     sel_formats = resolve_export_formats(fmt_input)
 
                     for pl in to_export:
@@ -725,6 +774,7 @@ def main():
                 data = get_playlist_data(playlist_id)
                 if not data:
                     print("❌ 获取歌单失败，请检查是否公开或 ID 是否正确。")
+                    print("=" * 64)
                     continue
                 title, tracks, author = data[:3]
                 playlist_cover = data[3] if len(data) > 3 else ''
@@ -735,10 +785,12 @@ def main():
 
                 print_format_menu()
                 fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+                print("=" * 64)
                 sel_formats = resolve_export_formats(fmt_input)
                 perform_export(title, tracks, author, playlist_cover, playlist_id, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)
             else:
                 print("❌ 无法识别的输入，请输入网易云歌单链接、短链或 ID。")
+                print("=" * 64)
     except KeyboardInterrupt:
         print_exit_banner()
 

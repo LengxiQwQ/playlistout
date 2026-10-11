@@ -202,6 +202,10 @@ def test_export_json_canonical_structure():
         with open(tmp_name, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+        assert data["generator"] == "PlaylistOut"
+        assert data["generatorUrl"] == "https://playlistout.lengxiqwq.com"
+        assert data["exportedFrom"] == "PlaylistOutCLI"
+        assert "exportedAt" in data
         assert data["name"] == "抖音收藏歌单"
         assert data["creator"] == "冷汐OωO"
         assert data["coverUrl"] == "https://example.com/playlist.jpg"
@@ -209,6 +213,12 @@ def test_export_json_canonical_structure():
         assert data["id"] == "7087507348697186339"
         assert data["sourceUrl"] == "https://music.douyin.com/qishui/share/playlist?playlist_id=7087507348697186339"
         assert data["trackCount"] == 2
+        assert data["loadedTrackCount"] == 2
+        assert data["isPartial"] is False
+        assert data["totalDuration"] == "4 分钟"
+        assert data["totalDurationMs"] == 269000
+        assert data["loadedDuration"] == "4 分钟"
+        assert data["loadedDurationMs"] == 269000
         assert len(data["tracks"]) == 2
 
         t1 = data["tracks"][0]
@@ -219,13 +229,16 @@ def test_export_json_canonical_structure():
         assert t1["id"] == "1001"
         assert t1["durationMs"] == 269000
         assert t1["releaseDate"] == "2003-07-31"
-        assert t1["coverUrl"] == "https://example.com/cover1.jpg"
         assert t1["sourceUrl"] == "https://music.douyin.com/qishui/share/track?track_id=1001"
+        assert t1["coverUrl"] == "https://example.com/cover1.jpg"
+        assert t1["isVip"] is False
+        assert t1["isAvailable"] is True
         assert t1["status"] == "playable"
         assert t1["statusText"] == "正常"
 
         t2 = data["tracks"][1]
         assert t2["index"] == 2
+        assert t2["isAvailable"] is False
         assert t2["status"] == "unplayable"
         assert t2["statusText"] == "下架/无版权"
     finally:

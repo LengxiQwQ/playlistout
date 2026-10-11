@@ -122,16 +122,30 @@ def test_export_to_json_cover_url():
                 3,
                 1,
                 "m001testvid",
+                "正常",
+                "FLAC",
             ),
             ("七里香", "周杰伦", "七里香"),
         ]
-        export_to_json(sample_songs, tmp_name, playlist_title="Jay歌单", author="Jay")
+        export_to_json(sample_songs, tmp_name, playlist_title="Jay歌单", author="Jay", playlist_id="1001")
         with open(tmp_name, 'r', encoding='utf-8') as f:
             data = json.load(f)
+        assert data["generator"] == "PlaylistOut"
+        assert data["generatorUrl"] == "https://playlistout.lengxiqwq.com"
+        assert data["exportedFrom"] == "PlaylistOutCLI"
+        assert "exportedAt" in data
         assert data["name"] == "Jay歌单"
         assert data["creator"] == "Jay"
         assert data["platform"] == "qqmusic"
+        assert data["id"] == "1001"
+        assert data["sourceUrl"] == "https://y.qq.com/n/ryqq/playlist/1001"
         assert data["trackCount"] == 2
+        assert data["loadedTrackCount"] == 2
+        assert data["isPartial"] is False
+        assert data["totalDuration"] == "4 分钟"
+        assert data["totalDurationMs"] == 269000
+        assert data["loadedDuration"] == "4 分钟"
+        assert data["loadedDurationMs"] == 269000
         assert len(data["tracks"]) == 2
         assert data["tracks"][0]["title"] == "晴天"
         assert data["tracks"][0]["artist"] == "周杰伦"
@@ -141,9 +155,15 @@ def test_export_to_json_cover_url():
         assert data["tracks"][0]["releaseDate"] == "2003-07-31"
         assert data["tracks"][0]["trackNumber"] == 3
         assert data["tracks"][0]["discNumber"] == 1
+        assert data["tracks"][0]["sourceUrl"] == "https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYAc"
+        assert data["tracks"][0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
+        assert data["tracks"][0]["isVip"] is False
+        assert data["tracks"][0]["isAvailable"] is True
+        assert data["tracks"][0]["status"] == "playable"
+        assert data["tracks"][0]["statusText"] == "正常"
+        assert data["tracks"][0]["maxQuality"] == "FLAC"
         assert data["tracks"][0]["mvId"] == "m001testvid"
         assert data["tracks"][0]["mvUrl"] == "https://y.qq.com/n/ryqq/mv/m001testvid"
-        assert data["tracks"][0]["coverUrl"] == "https://y.gtimg.cn/music/photo_new/T002R300x300M000003ALB.jpg"
         assert "coverUrl" not in data["tracks"][1]
         # Verify no deprecated fields exist
         for t in data["tracks"]:
