@@ -136,7 +136,7 @@ try {
         $Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     try {
-        $Response = Invoke-WebRequest -Uri $EndpointUrl -Method Get -Headers $Headers -UseBasicParsing -TimeoutSec 15
+        $Response = Invoke-WebRequest -Uri $EndpointUrl -Method Get -Headers $Headers -UseBasicParsing -TimeoutSec 60
         $Stopwatch.Stop()
         $DurationMs = [Math]::Round($Stopwatch.Elapsed.TotalMilliseconds, 1)
 

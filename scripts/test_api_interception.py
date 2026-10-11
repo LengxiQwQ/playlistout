@@ -89,7 +89,7 @@ def execute_request(
     t0 = time.perf_counter()
 
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             duration_ms = (time.perf_counter() - t0) * 1000
             status_code = resp.status
             reason = getattr(resp, "reason", "OK")
