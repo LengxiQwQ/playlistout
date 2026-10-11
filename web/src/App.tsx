@@ -800,11 +800,6 @@ export const AppContent: React.FC = () => {
             <PluginEcosystem />
           </div>
 
-          {/* Developer entry points — visible but secondary to the core parse/export flow */}
-          <div className="baseline-grid-snap">
-            <DeveloperPanel />
-          </div>
-
           {/* Educational Stationery Notes */}
           <div className="baseline-grid-snap">
             <InfoNotes />
@@ -813,6 +808,11 @@ export const AppContent: React.FC = () => {
           {/* Aggregate Public Stats Journal */}
           <div className="baseline-grid-snap">
             <StatsJournal />
+          </div>
+
+          {/* Developer entry points — intentionally last for users who explore the project deeply */}
+          <div className="baseline-grid-snap">
+            <DeveloperPanel />
           </div>
         </main>
 
