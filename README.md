@@ -312,7 +312,7 @@ MIT License 允许你在保留原始版权与许可声明的前提下自由使�
 **热门来源（近 14 天）：** github.com · Bing · Google · Baidu · chatgpt.com · sogou.com  
 **热门内容（近 14 天）：** plugins/musicfree · tree/main · releases/tag/v2.2.0 · pulls
 
-> 数据开始：2026-09-07 · 最后更新：2026-10-10
+> 数据开始：2026-09-07 · 最后更新：2026-10-11
 <!-- INSIGHTS:END -->
 
 ---
