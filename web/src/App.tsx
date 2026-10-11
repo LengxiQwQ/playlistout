@@ -96,7 +96,7 @@ export const AppContent: React.FC = () => {
   const handleParse = useCallback(
     async (
       urlToParse?: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
       modeHint?: 'user' | 'playlist',
       isSample?: boolean,
       channelHint?: 'qishui' | 'douyin',
@@ -177,6 +177,8 @@ export const AppContent: React.FC = () => {
               ? 'kugou'
               : platformHint === 'qishui'
               ? 'qishui'
+              : platformHint === 'kuwo'
+              ? 'kuwo'
               : platformHint === 'qqmusic'
               ? 'qqmusic'
               : undefined;
@@ -317,6 +319,8 @@ export const AppContent: React.FC = () => {
               ? 'kugou'
               : validation.platform === 'qishui'
               ? 'qishui'
+              : validation.platform === 'kuwo'
+              ? 'kuwo'
               : 'qqmusic';
           const res = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
@@ -588,7 +592,7 @@ export const AppContent: React.FC = () => {
   const handleQuickSample = useCallback(
     (
       sampleInput: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
       modeHint?: 'user' | 'playlist',
     ) => {
       setInputUrl(sampleInput);

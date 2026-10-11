@@ -325,7 +325,7 @@ export async function fetchKugouProfile(
 export async function parsePlaylist(
   urlOrId: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
   authOptions?: { token?: string; userid?: string },
   isSample?: boolean,
   channel?: 'qishui' | 'douyin',

@@ -53,7 +53,7 @@ export interface PublicStatsResponse {
 
 // ── Event Ingestion Types (POST /api/event) ──
 
-export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui'] as const;
+export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'] as const;
 export type SupportedPlatform = typeof SUPPORTED_PLATFORMS[number];
 
 export const VALID_EXPORT_FORMATS = ['xlsx', 'json', 'txt', 'csv', 'm3u8'] as const;
@@ -256,6 +256,7 @@ export const RESOLVE_REQUESTED_PLATFORMS = [
   'netease',
   'kugou',
   'qishui',
+  'kuwo',
   'unknown',
 ] as const;
 export type ResolveRequestedPlatform = typeof RESOLVE_REQUESTED_PLATFORMS[number];
@@ -266,6 +267,7 @@ export const ANALYTICS_PLATFORMS = [
   'netease',
   'kugou',
   'qishui',
+  'kuwo',
   'unknown',
 ] as const;
 export type AnalyticsPlatform = typeof ANALYTICS_PLATFORMS[number];

@@ -1,5 +1,5 @@
 export type InputKind = 'single_playlist_url' | 'user_profile_url' | 'numeric' | 'short_link' | 'unknown';
-export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'numeric' | 'unknown';
+export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'numeric' | 'unknown';
 
 export interface ValidationResult {
   valid: boolean;
@@ -47,7 +47,7 @@ export function extractCleanUrlOrInput(input: string): string {
 
   // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "c6.y.qq.com/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];
@@ -154,11 +154,11 @@ export function validatePlaylistInput(input: string): ValidationResult {
   }
 
   // Check if user submitted a link from other music platforms
-  if (/kuwo\.cn|migu\.cn|spotify\.com|apple\.com/i.test(trimmed)) {
+  if (/migu\.cn|spotify\.com|apple\.com/i.test(trimmed)) {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐公开歌单。',
+      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐公开歌单。',
     };
   }
 
@@ -299,10 +299,21 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
+  // 10. Kuwo Music URL
+  const isKuwoUrl = /(?:[a-zA-Z0-9-]+\.)*kuwo\.cn/i.test(trimmed);
+  if (isKuwoUrl) {
+    return {
+      valid: true,
+      kind: 'single_playlist_url',
+      platform: 'kuwo',
+      cleanedInput: trimmed,
+    };
+  }
+
   // Not recognized
   return {
     valid: false,
     code: 'UNSUPPORTED_URL',
-    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐或汽水音乐歌单链接、用户主页链接或数字 ID。',
+    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐或酷我音乐歌单链接、用户主页链接或数字 ID。',
   };
 }

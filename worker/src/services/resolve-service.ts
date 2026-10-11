@@ -30,6 +30,7 @@ import { qqMusicProvider, isQQShortLink } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
+import { kuwoProvider } from '../providers/kuwo';
 import { recordResolveV2 } from '../analytics/v2-recorder';
 import {
   classifyInputType,
@@ -65,7 +66,7 @@ export interface ResolveServiceOptions {
 }
 
 export type SupportedType = 'auto' | 'playlist' | 'user';
-export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui';
+export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo';
 
 interface ResolveTracking {
   stage: ResolveFailureStage;
@@ -297,7 +298,8 @@ async function resolveServiceCore(
     rawPlatform === 'qqmusic' ||
     rawPlatform === 'netease' ||
     rawPlatform === 'kugou' ||
-    rawPlatform === 'qishui'
+    rawPlatform === 'qishui' ||
+    rawPlatform === 'kuwo'
   ) {
     normalizedPlatform = rawPlatform;
     tracking.requestedPlatform = rawPlatform;
@@ -308,7 +310,7 @@ async function resolveServiceCore(
     tracking.requestedPlatform = 'unknown';
     throw new ProviderError(
       'UNSUPPORTED_PLATFORM',
-      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui.`,
+      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui, kuwo.`,
       400,
     );
   }
@@ -326,6 +328,8 @@ async function resolveServiceCore(
     detectedPlatform = 'kugou';
   } else if (/(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(trimmed)) {
     detectedPlatform = 'qishui';
+  } else if (/(?:[a-zA-Z0-9-]+\.)*kuwo\.cn/i.test(trimmed)) {
+    detectedPlatform = 'kuwo';
   }
 
   if (detectedPlatform) {
@@ -341,9 +345,13 @@ async function resolveServiceCore(
     );
   }
 
-  // Qishui does not support user profiles
-  if (normalizedPlatform === 'qishui' && normalizedType === 'user') {
-    throw new ProviderError('INVALID_INPUT', 'Qishui Music does not support user profiles or user playlists.', 400);
+  // Qishui and Kuwo do not support user profiles
+  if ((normalizedPlatform === 'qishui' || normalizedPlatform === 'kuwo') && normalizedType === 'user') {
+    throw new ProviderError(
+      'INVALID_INPUT',
+      `${normalizedPlatform === 'kuwo' ? 'Kuwo' : 'Qishui'} Music does not support user profiles or user playlists.`,
+      400,
+    );
   }
 
   // Detect explicit user profile URLs
@@ -387,7 +395,8 @@ async function resolveServiceCore(
       (/(?:y\.qq\.com|music\.qq\.com)\/.*[?&](?:id|disstid|dissid|tid)=\d+/i.test(trimmed) && !isQQProfile)) ||
     (/music\.163\.com\/.*playlist/i.test(trimmed)) ||
     isKugouPlaylist ||
-    (qishuiProvider.matches(trimmed));
+    qishuiProvider.matches(trimmed) ||
+    kuwoProvider.matches(trimmed);
 
   if (normalizedType === 'user' && isExplicitPlaylist) {
     throw new ProviderError(
@@ -666,11 +675,11 @@ async function resolveServiceCore(
   // Case 2: Explicit platform, auto type -> Probe single vs user within that platform
   if (normalizedPlatform !== 'auto' && normalizedType === 'auto') {
     tracking.platform = normalizedPlatform;
-    if (normalizedPlatform === 'qishui') {
+    if (normalizedPlatform === 'qishui' || normalizedPlatform === 'kuwo') {
       tracking.stage = 'playlist_resolution';
       const { playlist, platform: actualPlatform } = await parsePlaylistService({
         rawInput: trimmed,
-        platformParam: 'qishui',
+        platformParam: normalizedPlatform,
         auth,
         request,
         db,

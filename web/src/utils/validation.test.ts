@@ -157,20 +157,37 @@ describe('Client-Side Input Validation', () => {
     expect(resWechatText.platform).toBe('qishui');
   });
 
+  it('accepts Kuwo playlist URLs as valid', () => {
+    const res1 = validatePlaylistInput('https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('single_playlist_url');
+    expect(res1.platform).toBe('kuwo');
+
+    const res2 = validatePlaylistInput('https://www.kuwo.cn/playlist_detail/2311665489');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('single_playlist_url');
+    expect(res2.platform).toBe('kuwo');
+
+    const res3 = validatePlaylistInput('分享歌单 https://m.kuwo.cn/newh5app/playlist_detail/3003374223?t=plantform 来自酷我音乐');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('single_playlist_url');
+    expect(res3.platform).toBe('kuwo');
+  });
+
   it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐');
 
-    const res2 = validatePlaylistInput('https://www.kuwo.cn/playlist_detail/123');
+    const res2 = validatePlaylistInput('https://music.migu.cn/v3/music/playlist/123');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐与汽水音乐');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐或汽水音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐或酷我音乐歌单链接');
   });
 });
 
@@ -210,8 +227,9 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
   const example4 = '发现一个很不错的歌单哦《是冷汐呀喜欢的音乐》你也来听听吧!（来自 @酷狗音乐 海量曲库，极致音质）https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1';
   const example5 = '【推荐】来自网易云音乐的是冷汐呀233 听过2984首歌，拥有11位粉丝 https://163cn.tv/bgpHWLfw';
   const example6 = '分享歌单: 是冷汐呀233喜欢的音乐 是冷汐呀233 https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783';
+  const example7 = '分享酷我歌单 https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar 赶紧去听听吧';
 
-  it('extracts exact URLs from all 6 real-world platform share text samples', () => {
+  it('extracts exact URLs from all 7 real-world platform share text samples', () => {
     expect(extractCleanUrlOrInput(example1)).toBe('https://qishui.douyin.com/s/iXHhKHhY/');
     expect(extractCleanUrlOrInput(example2)).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
     expect(extractCleanUrlOrInput(example3)).toBe(
@@ -223,6 +241,9 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
     expect(extractCleanUrlOrInput(example5)).toBe('https://163cn.tv/bgpHWLfw');
     expect(extractCleanUrlOrInput(example6)).toBe(
       'https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783',
+    );
+    expect(extractCleanUrlOrInput(example7)).toBe(
+      'https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar',
     );
   });
 
@@ -280,6 +301,14 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
     expect(res6.platform).toBe('netease');
     expect(res6.cleanedInput).toBe(
       'https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783',
+    );
+
+    const res7 = validatePlaylistInput(example7);
+    expect(res7.valid).toBe(true);
+    expect(res7.kind).toBe('single_playlist_url');
+    expect(res7.platform).toBe('kuwo');
+    expect(res7.cleanedInput).toBe(
+      'https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar',
     );
   });
 

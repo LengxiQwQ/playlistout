@@ -43,7 +43,8 @@ export function classifyInputType(input: string): InputType {
     /y\.music\.163\.com/i.test(trimmed) ||
     /m\.kugou\.com/i.test(trimmed) ||
     /t\d?\.kugou\.com/i.test(trimmed) ||
-    /(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed)
+    /(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed) ||
+    /m\.kuwo\.cn/i.test(trimmed)
   ) {
     return 'mobile_share_link';
   }
@@ -54,7 +55,8 @@ export function classifyInputType(input: string): InputType {
     /music\.163\.com/i.test(trimmed) ||
     /kugou\.com/i.test(trimmed) ||
     /qishui\.douyin\.com/i.test(trimmed) ||
-    /music\.douyin\.com/i.test(trimmed)
+    /music\.douyin\.com/i.test(trimmed) ||
+    /kuwo\.cn/i.test(trimmed)
   ) {
     return 'web_url';
   }
@@ -221,7 +223,8 @@ export function classifyResolveRequestedPlatform(
     clean === 'qqmusic' ||
     clean === 'netease' ||
     clean === 'kugou' ||
-    clean === 'qishui'
+    clean === 'qishui' ||
+    clean === 'kuwo'
   ) {
     return clean;
   }
@@ -236,7 +239,7 @@ export function classifyAnalyticsPlatform(
 ): AnalyticsPlatform {
   if (!platform) return 'unknown';
   const clean = platform.trim().toLowerCase();
-  if (clean === 'qqmusic' || clean === 'netease' || clean === 'kugou' || clean === 'qishui') {
+  if (clean === 'qqmusic' || clean === 'netease' || clean === 'kugou' || clean === 'qishui' || clean === 'kuwo') {
     return clean;
   }
   return 'unknown';

@@ -9,6 +9,7 @@ import { qqMusicProvider } from '../providers/qqmusic';
 import { neteaseProvider } from '../providers/netease';
 import { kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
+import { kuwoProvider } from '../providers/kuwo';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { recordResolveV2 } from '../analytics/v2-recorder';
 import { classifyInputType, classifyErrorCategory } from '../analytics/dimensions';
@@ -29,7 +30,7 @@ export interface PlaylistServiceOptions {
 
 export interface PlaylistServiceResult {
   playlist: Playlist;
-  platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui';
+  platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo';
 }
 
 export async function parsePlaylistService(
@@ -61,8 +62,9 @@ export async function parsePlaylistService(
     | typeof neteaseProvider
     | typeof kugouProvider
     | typeof qishuiProvider
+    | typeof kuwoProvider
     | null = null;
-  let targetPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' = 'qqmusic';
+  let targetPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' = 'qqmusic';
 
   if (kugouProvider.matches(playlistInput)) {
     matchedProvider = kugouProvider;
@@ -70,6 +72,9 @@ export async function parsePlaylistService(
   } else if (qishuiProvider.matches(playlistInput)) {
     matchedProvider = qishuiProvider;
     targetPlatform = 'qishui';
+  } else if (kuwoProvider.matches(playlistInput)) {
+    matchedProvider = kuwoProvider;
+    targetPlatform = 'kuwo';
   } else if (neteaseProvider.matches(playlistInput)) {
     matchedProvider = neteaseProvider;
     targetPlatform = 'netease';
@@ -80,6 +85,9 @@ export async function parsePlaylistService(
     } else if (platformParam === 'qishui') {
       matchedProvider = qishuiProvider;
       targetPlatform = 'qishui';
+    } else if (platformParam === 'kuwo') {
+      matchedProvider = kuwoProvider;
+      targetPlatform = 'kuwo';
     } else if (platformParam === 'netease') {
       matchedProvider = neteaseProvider;
       targetPlatform = 'netease';
@@ -98,7 +106,7 @@ export async function parsePlaylistService(
   if (!matchedProvider) {
     throw new ProviderError(
       'UNSUPPORTED_URL',
-      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, or Qishui Music playlist URL.',
+      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music, or Kuwo Music playlist URL.',
       400,
     );
   }
@@ -122,7 +130,7 @@ export async function parsePlaylistService(
 
   try {
     let playlist: Playlist;
-    let actualPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' = targetPlatform;
+    let actualPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' = targetPlatform;
     let providerPath: ('primary' | 'fallback') | undefined;
 
     try {
@@ -137,9 +145,12 @@ export async function parsePlaylistService(
           channel: options.channel === 'douyin' ? 'douyin' : 'qishui',
         });
         actualPlatform = 'qishui';
+      } else if (matchedProvider === kuwoProvider) {
+        playlist = await kuwoProvider.parse(playlistInput);
+        actualPlatform = 'kuwo';
       } else {
         playlist = await matchedProvider.parse(playlistInput);
-        actualPlatform = (playlist.platform as 'qqmusic' | 'netease' | 'kugou' | 'qishui') || targetPlatform;
+        actualPlatform = (playlist.platform as 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo') || targetPlatform;
         providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
       }
     } catch (err: unknown) {

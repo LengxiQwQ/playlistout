@@ -8,6 +8,7 @@ import { extractQQNumberAsync, fetchQQUserPlaylists } from '../providers/qqmusic
 import { extractNeteaseUserId, fetchNeteaseUserPlaylists, matchesNeteaseInput } from '../providers/netease';
 import { fetchKugouUserPlaylists, kugouProvider } from '../providers/kugou';
 import { qishuiProvider } from '../providers/qishui';
+import { kuwoProvider } from '../providers/kuwo';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 
 export interface UserServiceOptions {
@@ -45,6 +46,10 @@ export async function fetchUserPlaylistsService(
 
   if (platformParam === 'qishui' || qishuiProvider.matches(cleanInput)) {
     throw new ProviderError('INVALID_INPUT', 'Qishui Music does not support user playlists export.', 400);
+  }
+
+  if (platformParam === 'kuwo' || kuwoProvider.matches(cleanInput)) {
+    throw new ProviderError('INVALID_INPUT', 'Kuwo Music does not support user playlists export.', 400);
   }
 
   // Kugou User Playlists branch (requires token & userid via headers)

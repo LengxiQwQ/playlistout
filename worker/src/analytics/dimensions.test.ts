@@ -175,6 +175,7 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyResolveRequestedPlatform('netease')).toBe('netease');
       expect(classifyResolveRequestedPlatform('kugou')).toBe('kugou');
       expect(classifyResolveRequestedPlatform('qishui')).toBe('qishui');
+      expect(classifyResolveRequestedPlatform('kuwo')).toBe('kuwo');
       expect(classifyResolveRequestedPlatform(undefined)).toBe('auto');
       expect(classifyResolveRequestedPlatform('spotify_secret_key')).toBe('unknown');
     });
@@ -184,6 +185,7 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyAnalyticsPlatform('netease')).toBe('netease');
       expect(classifyAnalyticsPlatform('kugou')).toBe('kugou');
       expect(classifyAnalyticsPlatform('qishui')).toBe('qishui');
+      expect(classifyAnalyticsPlatform('kuwo')).toBe('kuwo');
       expect(classifyAnalyticsPlatform('other')).toBe('unknown');
       expect(classifyAnalyticsPlatform(undefined)).toBe('unknown');
     });

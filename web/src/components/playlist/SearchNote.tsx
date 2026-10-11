@@ -25,7 +25,7 @@ export interface SearchNoteProps {
   feedbackSubmitted?: boolean;
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
     modeHint?: 'user' | 'playlist',
   ) => void;
 }
@@ -293,6 +293,28 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             type="button"
             color="white"
+            rotateDeg={-0.5}
+            onClick={() =>
+              onSelectSample(
+                'https://m.kuwo.cn/newh5app/playlist_detail/2311665489',
+                'kuwo',
+                'playlist',
+              )
+            }
+            className="font-handwriting"
+            style={{
+              padding: '0.35rem 0.9rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-handwriting, cursive)',
+              cursor: 'pointer',
+            }}
+          >
+            {t.search.sampleKuwo}
+          </Sticker>
+          <Sticker
+            type="button"
+            color="white"
             rotateDeg={1}
             onClick={() =>
               onSelectSample(
@@ -412,6 +434,19 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               title={t.search.platformQishuiDesc}
             >
               {t.search.platformQishui}
+            </Sticker>
+            <Sticker
+              color="yellow"
+              rotateDeg={-0.5}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '1rem',
+                fontFamily: 'var(--font-handwriting, cursive)',
+                fontWeight: 700,
+              }}
+              title={t.search.platformKuwoDesc}
+            >
+              {t.search.platformKuwo}
             </Sticker>
             {/* Kugou: single unified sticker showing login state — placed last */}
             <Sticker

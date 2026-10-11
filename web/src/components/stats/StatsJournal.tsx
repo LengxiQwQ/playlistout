@@ -171,7 +171,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const netease = raw.netease?.totalSuccess || 0;
     const kugou = raw.kugou?.totalSuccess || 0;
     const qishui = raw.qishui?.totalSuccess || 0;
-    const total = qq + netease + kugou + qishui;
+    const kuwo = raw.kuwo?.totalSuccess || 0;
+    const total = qq + netease + kugou + qishui + kuwo;
 
     if (total === 0) {
       return [
@@ -179,6 +180,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
         { id: 'netease', name: getPlatformName('netease', language), count: 0, pct: 0, color: '#e11d48' },
         { id: 'qishui', name: getPlatformName('qishui', language), count: 0, pct: 0, color: '#65a30d' },
         { id: 'kugou', name: getPlatformName('kugou', language), count: 0, pct: 0, color: '#2563eb' },
+        { id: 'kuwo', name: getPlatformName('kuwo', language), count: 0, pct: 0, color: '#ca8a04' },
       ];
     }
 
@@ -186,12 +188,14 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const neteasePct = Math.round((netease / total) * 100);
     const qishuiPct = Math.round((qishui / total) * 100);
     const kugouPct = Math.round((kugou / total) * 100);
+    const kuwoPct = Math.round((kuwo / total) * 100);
 
     return [
       { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: qqPct, color: '#059669' },
       { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: neteasePct, color: '#e11d48' },
       { id: 'qishui', name: getPlatformName('qishui', language), count: qishui, pct: qishuiPct, color: '#65a30d' },
       { id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#2563eb' },
+      { id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: kuwoPct, color: '#ca8a04' },
     ];
   }, [stats?.byPlatform, language]);
 

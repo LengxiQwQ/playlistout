@@ -5,7 +5,7 @@ import type {
 } from '../analytics/types';
 
 const LAUNCHED_AT = '2026-09-12';
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui'] as const;
+const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'] as const;
 const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'] as const;
 
 interface BaselineRow {
@@ -54,6 +54,7 @@ function emptyPublicStats(): PublicStatsResponse {
       netease: { totalSuccess: 0, todaySuccess: 0 },
       kugou: { totalSuccess: 0, todaySuccess: 0 },
       qishui: { totalSuccess: 0, todaySuccess: 0 },
+      kuwo: { totalSuccess: 0, todaySuccess: 0 },
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),
@@ -117,7 +118,10 @@ export async function getPublicStatsV2Cutover(
     'metric:playlist_success',
     'metric:tracks_processed',
     'metric:export',
-    ...PUBLIC_PLATFORMS.map((p) => `platform_success:${p}`),
+    'platform_success:qqmusic',
+    'platform_success:netease',
+    'platform_success:kugou',
+    'platform_success:qishui',
     ...EXPORT_FORMATS.map((f) => `export_format:${f}`),
   ];
   for (const key of requiredKeys) {
@@ -200,8 +204,16 @@ export async function getPublicStatsV2Cutover(
 
   const byPlatform: Record<string, PlatformBreakdown> = {};
   for (const platform of PUBLIC_PLATFORMS) {
+    const baseline = baselines.get(`platform_success:${platform}`) || {
+      key: `platform_success:${platform}`,
+      baseline_date: state.baseline_date,
+      legacy_total: 0,
+      v2_total: 0,
+      legacy_day: 0,
+      v2_day: 0,
+    };
     const bridged = bridgedValue(
-      baselines.get(`platform_success:${platform}`)!,
+      baseline,
       platformMetric(platform, 'total'),
       today === state.baseline_date
         ? baselineDatePlatform(platform)

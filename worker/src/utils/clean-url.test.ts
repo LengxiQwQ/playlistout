@@ -93,4 +93,12 @@ describe('Worker extractCleanUrlOrInput', () => {
     const protocolLess = '163cn.tv/bhsHbRfW';
     expect(extractCleanUrlOrInput(protocolLess)).toBe('https://163cn.tv/bhsHbRfW');
   });
+
+  it('extracts Kuwo URL and protocol-less variants from share text', () => {
+    const shareText = '【歌单】我喜欢听 https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar 来自酷我音乐';
+    expect(extractCleanUrlOrInput(shareText)).toBe('https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar');
+
+    const protocolLess = 'www.kuwo.cn/playlist_detail/2311665489';
+    expect(extractCleanUrlOrInput(protocolLess)).toBe('https://www.kuwo.cn/playlist_detail/2311665489');
+  });
 });
