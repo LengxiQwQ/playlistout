@@ -5,8 +5,8 @@ import { DeveloperPanel } from './DeveloperPanel';
 import * as clipboardUtils from '../../utils/clipboard';
 
 describe('DeveloperPanel', () => {
-  it('exposes the three canonical developer entry points', () => {
-    render(<DeveloperPanel />);
+  it('exposes API, JSON, local CLI, and integration entry points', () => {
+    const { container } = render(<DeveloperPanel />);
 
     expect(screen.getByRole('heading', { name: '给开发者 / For Developers' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '查看 JSON 规范 ↗' })).toHaveAttribute(
@@ -17,13 +17,20 @@ describe('DeveloperPanel', () => {
       'href',
       'https://github.com/LengxiQwQ/playlistout/blob/main/docs/API.md',
     );
+    expect(screen.getByRole('link', { name: '查看 CLI 使用说明 ↗' })).toHaveAttribute(
+      'href',
+      'https://github.com/LengxiQwQ/playlistout#python-cli--命令行',
+    );
     expect(screen.getByRole('link', { name: '查看接入指南 ↗' })).toHaveAttribute(
       'href',
       'https://github.com/LengxiQwQ/playlistout/blob/main/docs/ECOSYSTEM-INTEGRATION.md',
     );
+
+    // The section itself is the only paper surface. Inner methods stay flat.
+    expect(container.querySelectorAll('#developers .journal-paper')).toHaveLength(0);
   });
 
-  it('copies the public API base URL without exposing extra credentials', async () => {
+  it('copies the public API base URL', async () => {
     const copySpy = vi.spyOn(clipboardUtils, 'copyToClipboard').mockResolvedValue(true);
 
     render(<DeveloperPanel />);

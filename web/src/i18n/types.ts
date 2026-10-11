@@ -254,6 +254,10 @@ export interface Translations {
     copyApi: string;
     copiedApi: string;
     copyFailed: string;
+    cliTitle: string;
+    cliDescription: string;
+    cliMeta: string;
+    cliAction: string;
     integrationTitle: string;
     integrationDescription: string;
     integrationMeta: string;

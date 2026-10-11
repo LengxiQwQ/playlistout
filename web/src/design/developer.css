@@ -1,9 +1,9 @@
-/* PlaylistOut developer discovery panel */
+/* PlaylistOut developer discovery panel — one paper layer, flat content inside */
 
 .developer-panel {
   max-width: var(--result-paper-width, 1050px);
   margin: 0 auto;
-  padding: 1.8rem 2rem 1.6rem;
+  padding: 1.8rem 2rem 1.55rem;
   overflow: hidden;
 }
 
@@ -28,146 +28,124 @@
 
 .developer-subtitle {
   margin: 0.45rem 0 0;
-  max-width: 48rem;
+  max-width: 50rem;
   color: #566065;
-  font-size: 1.16rem;
-  line-height: 1.45;
+  font-size: 1.14rem;
+  line-height: 1.48;
 }
 
 .developer-value-note {
   flex: 0 0 auto;
-  margin-top: 0.15rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid rgba(217, 119, 6, 0.38);
-  color: #b45309;
-  font-size: 1.15rem;
+  margin-top: 0.2rem;
+  color: #8a6a24;
+  font-size: 1.02rem;
   font-weight: 700;
-  line-height: 1.2;
-  transform: rotate(0.7deg);
+  line-height: 1.25;
+  text-align: right;
   white-space: nowrap;
 }
 
-.developer-card-grid {
+.developer-method-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1.45rem;
+  border-top: 1.5px dashed rgba(45, 52, 54, 0.22);
+  border-bottom: 1.5px dashed rgba(45, 52, 54, 0.22);
 }
 
-.developer-card {
+.developer-method {
   min-width: 0;
-  min-height: 17rem;
-  padding: 1.2rem 1.2rem 1.15rem;
-  display: flex;
-  flex-direction: column;
+  padding: 1.25rem 1.35rem 1.3rem;
 }
 
-.developer-card-topline {
+.developer-method:nth-child(odd) {
+  border-right: 1px dashed rgba(45, 52, 54, 0.18);
+}
+
+.developer-method:nth-child(-n + 2) {
+  border-bottom: 1px dashed rgba(45, 52, 54, 0.18);
+}
+
+.developer-method-topline {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
-.developer-card-mark {
-  display: inline-grid;
-  place-items: center;
-  min-width: 2.75rem;
-  min-height: 2.5rem;
-  padding: 0.28rem 0.45rem;
-  border: 1.5px solid rgba(45, 52, 54, 0.32);
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.16);
-  color: var(--ink, #2d3436);
-  font-size: 0.92rem;
+.developer-method-mark {
+  color: #5f6970;
+  font-size: 0.98rem;
   font-weight: 700;
   line-height: 1;
 }
 
-.developer-card-meta {
+.developer-method-meta {
   min-width: 0;
-  color: #6b7280;
+  color: #8a8f92;
   font-size: 0.72rem;
   line-height: 1.35;
   text-align: right;
 }
 
-.developer-card-title {
-  margin: 1rem 0 0;
+.developer-method-title {
+  margin: 0.65rem 0 0;
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   color: var(--ink, #2d3436);
-  font-size: 1.28rem;
+  font-size: 1.2rem;
   font-weight: 750;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
-.developer-card-description {
-  margin: 0.55rem 0 0;
-  color: #4f5a60;
+.developer-method-description {
+  margin: 0.45rem 0 0;
+  color: #535e63;
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   line-height: 1.58;
 }
 
-.developer-card-link {
-  align-self: flex-start;
-  margin-top: auto;
-  padding-top: 1rem;
-  color: #3f4d55;
-  font-size: 1.08rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-decoration: none;
-  border-bottom: 1px dashed rgba(63, 77, 85, 0.52);
+.developer-method-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
 }
 
-.developer-card-link:hover {
+.developer-method-link,
+.developer-copy-api {
+  color: #415661;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  border: 0;
+  border-bottom: 1px dashed rgba(65, 86, 97, 0.5);
+  background: transparent;
+  padding: 0;
+}
+
+.developer-copy-api {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.developer-method-link:hover,
+.developer-copy-api:hover {
   color: var(--ink, #2d3436);
   border-bottom-color: currentColor;
 }
 
-.developer-api-box {
-  margin-top: 0.85rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed rgba(45, 52, 54, 0.22);
-  display: grid;
-  gap: 0.45rem;
-}
-
-.developer-api-label {
-  color: #6b7280;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.developer-api-url {
-  display: block;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  color: var(--ink, #2d3436);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-
-.developer-api-copy {
-  justify-self: start;
-  min-height: 2.25rem;
-  padding: 0.38rem 0.75rem !important;
-  font-size: 0.82rem;
-}
-
-.developer-api-copy.is-copied {
-  background: var(--note-mint, #dff7ef) !important;
+.developer-copy-api.is-copied {
+  color: #15803d;
+  border-bottom-color: rgba(21, 128, 61, 0.45);
 }
 
 .developer-footer-note {
-  margin-top: 1.15rem;
-  padding-top: 0.85rem;
-  border-top: 1px dashed rgba(45, 52, 54, 0.2);
-  color: #6b7280;
-  font-size: 1.05rem;
+  margin-top: 0.95rem;
+  color: #7a8286;
+  font-size: 1rem;
   line-height: 1.3;
   text-align: center;
 }
@@ -196,28 +174,35 @@
   border-bottom-color: currentColor;
 }
 
-@media (max-width: 900px) {
-  .developer-card-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 760px) {
+  .developer-heading-row {
+    flex-direction: column;
+    gap: 0.55rem;
   }
 
-  .developer-card {
-    min-height: 0;
+  .developer-value-note {
+    text-align: left;
+    white-space: normal;
   }
 
-  .developer-card-link {
-    margin-top: 1rem;
+  .developer-method-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .developer-method {
+    padding: 1.05rem 0.25rem 1.1rem;
+    border-right: 0 !important;
+    border-bottom: 1px dashed rgba(45, 52, 54, 0.18) !important;
+  }
+
+  .developer-method:last-child {
+    border-bottom: 0 !important;
   }
 }
 
 @media (max-width: 620px) {
   .developer-panel {
-    padding: 1.4rem 1.15rem 1.35rem !important;
-  }
-
-  .developer-heading-row {
-    flex-direction: column;
-    gap: 0.7rem;
+    padding: 1.35rem 1.15rem 1.3rem !important;
   }
 
   .developer-title {
@@ -225,30 +210,16 @@
   }
 
   .developer-subtitle {
-    font-size: 1.05rem;
+    font-size: 1.03rem;
   }
 
-  .developer-value-note {
-    align-self: flex-start;
-    white-space: normal;
-    font-size: 1.05rem;
-  }
-
-  .developer-card {
-    padding: 1rem !important;
-  }
-
-  .developer-card-topline {
+  .developer-method-topline {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.35rem;
   }
 
-  .developer-card-meta {
+  .developer-method-meta {
     text-align: left;
-  }
-
-  .developer-api-copy {
-    width: 100%;
-    justify-content: center;
   }
 }

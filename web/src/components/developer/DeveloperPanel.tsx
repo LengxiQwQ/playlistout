@@ -2,30 +2,26 @@ import React, { useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import { Paper } from '../ui/Paper';
-import { MarkerButton } from '../ui/MarkerButton';
 
 const API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 const REPOSITORY_DOC_BASE = 'https://github.com/LengxiQwQ/playlistout/blob/main';
+const CLI_GUIDE_URL = 'https://github.com/LengxiQwQ/playlistout#python-cli--命令行';
 
-type DeveloperCardColor = 'yellow' | 'blue' | 'mint';
-
-interface DeveloperCard {
-  id: 'json' | 'api' | 'integration';
+interface DeveloperMethod {
+  id: 'json' | 'api' | 'cli' | 'integration';
   mark: string;
   title: string;
   description: string;
   meta: string;
   action: string;
   href: string;
-  color: DeveloperCardColor;
-  rotateDeg: number;
 }
 
 export const DeveloperPanel: React.FC = () => {
   const { t } = useTranslation();
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
-  const cards: DeveloperCard[] = [
+  const methods: DeveloperMethod[] = [
     {
       id: 'json',
       mark: '{ }',
@@ -34,8 +30,6 @@ export const DeveloperPanel: React.FC = () => {
       meta: t.developer.jsonMeta,
       action: t.developer.jsonAction,
       href: `${REPOSITORY_DOC_BASE}/docs/JSON-SCHEMA.md`,
-      color: 'blue',
-      rotateDeg: -0.35,
     },
     {
       id: 'api',
@@ -45,8 +39,15 @@ export const DeveloperPanel: React.FC = () => {
       meta: t.developer.apiMeta,
       action: t.developer.apiAction,
       href: `${REPOSITORY_DOC_BASE}/docs/API.md`,
-      color: 'yellow',
-      rotateDeg: 0.3,
+    },
+    {
+      id: 'cli',
+      mark: '>_',
+      title: t.developer.cliTitle,
+      description: t.developer.cliDescription,
+      meta: t.developer.cliMeta,
+      action: t.developer.cliAction,
+      href: CLI_GUIDE_URL,
     },
     {
       id: 'integration',
@@ -56,8 +57,6 @@ export const DeveloperPanel: React.FC = () => {
       meta: t.developer.integrationMeta,
       action: t.developer.integrationAction,
       href: `${REPOSITORY_DOC_BASE}/docs/ECOSYSTEM-INTEGRATION.md`,
-      color: 'mint',
-      rotateDeg: -0.2,
     },
   ];
 
@@ -95,53 +94,41 @@ export const DeveloperPanel: React.FC = () => {
         <div className="font-note developer-value-note">{t.developer.valueNote}</div>
       </div>
 
-      <div className="developer-card-grid">
-        {cards.map((card) => (
-          <Paper
-            as="article"
-            key={card.id}
-            color={card.color}
-            borderVariant="alt"
-            shadow="paper-sm"
-            rotateDeg={card.rotateDeg}
-            tiltFactor={0.18}
-            className={`developer-card developer-card-${card.id}`}
-          >
-            <div className="developer-card-topline">
-              <span className="font-mono developer-card-mark" aria-hidden="true">
-                {card.mark}
+      <div className="developer-method-grid">
+        {methods.map((method) => (
+          <article key={method.id} className={`developer-method developer-method-${method.id}`}>
+            <div className="developer-method-topline">
+              <span className="font-mono developer-method-mark" aria-hidden="true">
+                {method.mark}
               </span>
-              <span className="font-mono developer-card-meta">{card.meta}</span>
+              <span className="font-mono developer-method-meta">{method.meta}</span>
             </div>
 
-            <h3 className="developer-card-title">{card.title}</h3>
-            <p className="developer-card-description">{card.description}</p>
+            <h3 className="developer-method-title">{method.title}</h3>
+            <p className="developer-method-description">{method.description}</p>
 
-            {card.id === 'api' ? (
-              <div className="developer-api-box">
-                <span className="font-mono developer-api-label">{t.developer.apiBaseLabel}</span>
-                <code className="font-mono developer-api-url">{API_BASE_URL}</code>
-                <MarkerButton
+            <div className="developer-method-actions">
+              <a
+                href={method.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-handwriting developer-method-link"
+              >
+                {method.action}
+              </a>
+
+              {method.id === 'api' ? (
+                <button
                   type="button"
-                  variant="paper"
-                  rotateDeg={-0.2}
                   onClick={handleCopyApi}
-                  className={`developer-api-copy${copyState === 'copied' ? ' is-copied' : ''}`}
+                  className={`font-handwriting developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
+                  aria-label={copyLabel}
                 >
                   {copyLabel}
-                </MarkerButton>
-              </div>
-            ) : null}
-
-            <a
-              href={card.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-handwriting developer-card-link"
-            >
-              {card.action}
-            </a>
-          </Paper>
+                </button>
+              ) : null}
+            </div>
+          </article>
         ))}
       </div>
 
