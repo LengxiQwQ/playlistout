@@ -38,22 +38,24 @@ export const BackgroundDecorations: React.FC = () => {
         <Tape color="yellow" rotateDeg={25} style={{ width: '4rem', height: '1.2rem', opacity: 0.7 }} />
       </div>
 
+      {/* Hidden for now; keep commented for potential future use
       <div style={{ position: 'absolute', top: '18%', right: 'max(12%, calc(50% - 500px))' }}>
         <Sticker color="red" rotateDeg={10} style={{ opacity: 0.75, fontSize: '0.8rem', padding: '0.15rem 0.45rem' }}>
           mix vol.1
         </Sticker>
       </div>
+      */}
 
       <div style={{ position: 'absolute', top: '25%', right: 'max(1%, calc(50% - 750px))', fontSize: '3rem', color: '#e2e8f0', opacity: 0.5 }}>
         ✧
       </div>
 
-      {/* Middle Left Area */}
-      <div style={{ position: 'absolute', top: '35%', left: 'max(12%, calc(50% - 550px))', fontSize: '2.5rem', color: '#fca5a5', opacity: 0.5 }}>
+      {/* Middle Left Area — positioned cleanly in the open corridor below PluginEcosystem */}
+      <div style={{ position: 'absolute', top: '36.8%', left: 'max(4%, calc(50% - 620px))', fontSize: '2.35rem', color: '#fca5a5', opacity: 0.65 }}>
         ❥
       </div>
 
-      <div style={{ position: 'absolute', top: '52%', left: 'max(8%, calc(50% - 600px))' }}>
+      <div style={{ position: 'absolute', top: '51%', left: 'max(8%, calc(50% - 600px))' }}>
         <Tape color="cyan" rotateDeg={-22} style={{ width: '3.5rem', height: '1rem', opacity: 0.6 }} />
       </div>
 
@@ -62,7 +64,7 @@ export const BackgroundDecorations: React.FC = () => {
         〰〰
       </div>
 
-      <div style={{ position: 'absolute', top: '55%', right: 'max(4%, calc(50% - 720px))' }}>
+      <div style={{ position: 'absolute', top: '53.5%', right: 'max(4%, calc(50% - 720px))' }}>
         <Tape color="green" rotateDeg={-45} style={{ width: '3rem', height: '1rem', opacity: 0.6 }} />
       </div>
 
@@ -89,8 +91,8 @@ export const BackgroundDecorations: React.FC = () => {
         <Tape color="cyan" rotateDeg={8} style={{ width: '4rem', height: '1rem', opacity: 0.5 }} />
       </div>
 
-      <div className="background-decoration-playlistout" style={{ position: 'absolute', bottom: '10%', right: 'max(5%, calc(50% - 680px))' }}>
-        <Sticker color="white" rotateDeg={-5} style={{ opacity: 0.8, fontSize: '0.85rem', padding: '0.2rem 0.5rem', border: '1px solid #e2e8f0' }}>
+      <div className="background-decoration-playlistout" style={{ position: 'absolute', bottom: '15%', right: 'max(6%, calc(50% - 650px))' }}>
+        <Sticker color="white" rotateDeg={-5} style={{ opacity: 0.85, fontSize: '0.85rem', padding: '0.2rem 0.5rem', border: '1px solid #e2e8f0' }}>
           PLAYLIST OUT
         </Sticker>
       </div>

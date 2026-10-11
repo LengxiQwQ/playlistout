@@ -50,7 +50,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
         style={{
           position: 'relative',
           width: '100%',
-          height: 'calc(var(--ruled-line-height, 38px) * 2)',
+          height: 'var(--ruled-line-height, 38px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

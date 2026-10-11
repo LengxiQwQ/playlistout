@@ -213,7 +213,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       {/* Header */}
       <div
         className="stats-journal-header"
-        style={{ textAlign: 'center', marginBottom: 'calc(var(--ruled-line-height, 38px) * 1.5)' }}
+        style={{ textAlign: 'center', marginBottom: '1rem' }}
       >
         <div
           className="font-note stats-journal-subtitle"
@@ -234,6 +234,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             height: 'calc(var(--ruled-line-height, 38px) * 2)',
             lineHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
             margin: 0,
+            marginTop: '1.15rem',
           }}
         >
           {t.stats.title}
@@ -249,8 +250,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           alignItems: 'center',
           minHeight: '1.9rem',
           paddingLeft: 'clamp(0.5rem, 2vw, 1.25rem)',
-          marginTop: '-1.2rem',
-          marginBottom: '0.45rem',
+          marginTop: '-0.55rem',
+          marginBottom: '1.5rem',
           pointerEvents: 'none',
         }}
       >
@@ -702,7 +703,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
         style={{
           display: 'flex',
           justifyContent: 'center',
-          marginTop: 'calc(var(--ruled-line-height, 38px) * 1.25)',
+          marginTop: 'calc(var(--ruled-line-height, 38px) * 1.65)',
           marginBottom: '0.25rem',
         }}
       >
@@ -715,7 +716,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             justifyContent: 'center',
             border: '1px dashed rgba(160, 150, 140, 0.45)',
             borderRadius: '12px',
-            padding: '0.45rem 1.75rem',
+            padding: '0.75rem 1.85rem 0.65rem',
             transform: 'rotate(-0.8deg)',
             backgroundColor: 'rgba(255, 253, 247, 0.85)',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
@@ -742,7 +743,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             style={{
               fontSize: '1.05rem',
               color: '#8a8f92',
-              marginTop: '0.2rem',
+              marginTop: '0.35rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',

@@ -22,7 +22,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
         gap: '2.5rem',
         alignItems: 'start',
         position: 'relative',
-        paddingBottom: '4.5rem',
+        paddingBottom: '2.5rem',
       }}
     >
       {/* Note 1: Why this exists */}
@@ -94,7 +94,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
         style={{
           position: 'absolute',
           right: '2rem',
-          bottom: '0.65rem',
+          bottom: '0.1rem',
           pointerEvents: 'none',
           zIndex: 2,
         }}

@@ -45,7 +45,8 @@ except Exception:
 # ----------------- 统一品牌与终端交互组件 -----------------
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
-AUTHOR_NAME = "lengxiQwQ"
+WEB_URL = "https://playlistout.lengxiqwq.com"
+AUTHOR_NAME = "LengxiQwQ"
 
 
 def terminal_link(url, text=None):
@@ -56,13 +57,14 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    repo_hyperlink = terminal_link(REPO_URL, REPO_URL)
-    author_hyperlink = terminal_link(AUTHOR_URL, AUTHOR_NAME)
-    title = f"PlaylistOut - {platform_name} 歌单导出工具"
+    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
+    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
+    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
-    print(f"        {title}")
-    print(f"  开源仓库: {repo_hyperlink}")
-    print(f"  开发作者: {author_hyperlink} ({AUTHOR_URL})")
+    print(f"           {title}")
+    print(f"  {author_btn}   {repo_btn}   {web_btn}")
+    print("-" * 64)
     print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
     print("=" * 64)
 
@@ -105,7 +107,7 @@ def resolve_export_formats(choice):
 
 def print_exit_banner():
     print("\n" + "=" * 64)
-    print("感谢使用 PlaylistOut，程序已安全退出！")
+    print("感谢使用 Playlist Out，程序已安全退出！")
     print("=" * 64)
 
 
@@ -329,10 +331,11 @@ def run_qr_login_flow(no_open=False):
         except Exception as e:
             print(f"[!] 保存二维码图片失败: {e}")
 
+    qr_btn = terminal_link(login_url, "[ 点击在浏览器打开二维码 ]")
     print("\n" + "-" * 64)
     print("手机端操作指南：")
     print("1. 打开手机【酷狗音乐】APP -> 点击右上角扫一扫 -> 扫描弹出的图片")
-    print(f"2. 若未弹出图片，可在浏览器打开链接扫码：\n   {login_url}")
+    print(f"2. 若未弹出图片，请点击：{qr_btn}")
     print("-" * 64)
 
     last_msg = ""
@@ -370,9 +373,10 @@ def run_qr_login_flow(no_open=False):
 
 def run_manual_login_flow():
     """手动输入从官网获取的 ID 和 Token"""
+    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
     print("\n" + "=" * 64)
-    print("【方式二：手动输入 PlaylistOut 官网或抓包凭证】")
-    print("您可以在浏览器访问 PlaylistOut 官网（https://playlistout.com），")
+    print("【方式二：手动输入 Playlist Out 官网或抓包凭证】")
+    print(f"您可以点击访问 Playlist Out 官网：{web_btn}")
     print("在登录酷狗后，将页面上显示的 UserID 与 Token 粘贴到此处：")
     print("=" * 64)
 

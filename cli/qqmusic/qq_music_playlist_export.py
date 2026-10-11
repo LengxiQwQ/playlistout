@@ -40,7 +40,8 @@ except Exception:
 # ----------------- 统一品牌与终端交互组件 -----------------
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
-AUTHOR_NAME = "lengxiQwQ"
+WEB_URL = "https://playlistout.lengxiqwq.com"
+AUTHOR_NAME = "LengxiQwQ"
 
 
 def terminal_link(url, text=None):
@@ -51,13 +52,14 @@ def terminal_link(url, text=None):
 
 def print_banner(platform_name):
     """统一线框引导 UI - 头部 Banner"""
-    repo_hyperlink = terminal_link(REPO_URL, REPO_URL)
-    author_hyperlink = terminal_link(AUTHOR_URL, AUTHOR_NAME)
-    title = f"PlaylistOut - {platform_name} 歌单导出工具"
+    author_btn = terminal_link(AUTHOR_URL, f"[ 作者: {AUTHOR_NAME} ]")
+    repo_btn = terminal_link(REPO_URL, "[ GitHub 开源仓库 ]")
+    web_btn = terminal_link(WEB_URL, "[ 在线网页版 ]")
+    title = f"Playlist Out - {platform_name} 歌单导出工具"
     print("=" * 64)
-    print(f"        {title}")
-    print(f"  开源仓库: {repo_hyperlink}")
-    print(f"  开发作者: {author_hyperlink} ({AUTHOR_URL})")
+    print(f"           {title}")
+    print(f"  {author_btn}   {repo_btn}   {web_btn}")
+    print("-" * 64)
     print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
     print("=" * 64)
 
@@ -119,7 +121,7 @@ def reveal_folder(target_path):
 def print_exit_banner():
     """统一退出提示"""
     print("\n" + "=" * 64)
-    print("感谢使用 PlaylistOut，程序已安全退出！")
+    print("感谢使用 Playlist Out，程序已安全退出！")
     print("=" * 64)
 
 # --- 辅助函数 ---
