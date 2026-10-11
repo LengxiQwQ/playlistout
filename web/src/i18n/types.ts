@@ -175,6 +175,8 @@ export interface Translations {
     copyTitleArtistAlbum: string;
     copyJson: string;
     copyJsonHint: string;
+    jsonSchemaHint: string;
+    jsonSchemaLink: string;
     toastExportSuccess: string;
     toastExportMultipleSuccess: string;
     toastExportFailed: string;
@@ -236,6 +238,28 @@ export interface Translations {
     guideLink: string;
     nextTitle: string;
   };
+  developer: {
+    title: string;
+    subtitle: string;
+    valueNote: string;
+    jsonTitle: string;
+    jsonDescription: string;
+    jsonMeta: string;
+    jsonAction: string;
+    apiTitle: string;
+    apiDescription: string;
+    apiMeta: string;
+    apiAction: string;
+    apiBaseLabel: string;
+    copyApi: string;
+    copiedApi: string;
+    copyFailed: string;
+    integrationTitle: string;
+    integrationDescription: string;
+    integrationMeta: string;
+    integrationAction: string;
+    footerNote: string;
+  };
   stats: {
     subtitle: string;
     title: string;
@@ -285,6 +309,7 @@ export interface Translations {
     licenseUrl: string;
     disclaimer: string;
     githubLink: string;
+    developerDocsLink: string;
     authorLink: string;
     sponsorLink: string;
     sponsorMenuTitle: string;

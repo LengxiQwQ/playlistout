@@ -1,0 +1,254 @@
+/* PlaylistOut developer discovery panel */
+
+.developer-panel {
+  max-width: var(--result-paper-width, 1050px);
+  margin: 0 auto;
+  padding: 1.8rem 2rem 1.6rem;
+  overflow: hidden;
+}
+
+.developer-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.developer-heading-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.developer-title {
+  margin: 0;
+  color: var(--ink, #2d3436);
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  line-height: 1.2;
+}
+
+.developer-subtitle {
+  margin: 0.45rem 0 0;
+  max-width: 48rem;
+  color: #566065;
+  font-size: 1.16rem;
+  line-height: 1.45;
+}
+
+.developer-value-note {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid rgba(217, 119, 6, 0.38);
+  color: #b45309;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+  transform: rotate(0.7deg);
+  white-space: nowrap;
+}
+
+.developer-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.35rem;
+}
+
+.developer-card {
+  min-width: 0;
+  min-height: 17rem;
+  padding: 1.2rem 1.2rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.developer-card-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.developer-card-mark {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.5rem;
+  padding: 0.28rem 0.45rem;
+  border: 1.5px solid rgba(45, 52, 54, 0.32);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.16);
+  color: var(--ink, #2d3436);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.developer-card-meta {
+  min-width: 0;
+  color: #6b7280;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.developer-card-title {
+  margin: 1rem 0 0;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  color: var(--ink, #2d3436);
+  font-size: 1.28rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.developer-card-description {
+  margin: 0.55rem 0 0;
+  color: #4f5a60;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 0.94rem;
+  line-height: 1.58;
+}
+
+.developer-card-link {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 1rem;
+  color: #3f4d55;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(63, 77, 85, 0.52);
+}
+
+.developer-card-link:hover {
+  color: var(--ink, #2d3436);
+  border-bottom-color: currentColor;
+}
+
+.developer-api-box {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(45, 52, 54, 0.22);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.developer-api-label {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.developer-api-url {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--ink, #2d3436);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.developer-api-copy {
+  justify-self: start;
+  min-height: 2.25rem;
+  padding: 0.38rem 0.75rem !important;
+  font-size: 0.82rem;
+}
+
+.developer-api-copy.is-copied {
+  background: var(--note-mint, #dff7ef) !important;
+}
+
+.developer-footer-note {
+  margin-top: 1.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(45, 52, 54, 0.2);
+  color: #6b7280;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.export-json-schema-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+  color: #6b7280;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.export-json-schema-hint a {
+  color: #43606f;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(67, 96, 111, 0.5);
+}
+
+.export-json-schema-hint a:hover {
+  color: var(--ink, #2d3436);
+  border-bottom-color: currentColor;
+}
+
+@media (max-width: 900px) {
+  .developer-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-card {
+    min-height: 0;
+  }
+
+  .developer-card-link {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .developer-panel {
+    padding: 1.4rem 1.15rem 1.35rem !important;
+  }
+
+  .developer-heading-row {
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .developer-title {
+    font-size: 1.7rem;
+  }
+
+  .developer-subtitle {
+    font-size: 1.05rem;
+  }
+
+  .developer-value-note {
+    align-self: flex-start;
+    white-space: normal;
+    font-size: 1.05rem;
+  }
+
+  .developer-card {
+    padding: 1rem !important;
+  }
+
+  .developer-card-topline {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .developer-card-meta {
+    text-align: left;
+  }
+
+  .developer-api-copy {
+    width: 100%;
+    justify-content: center;
+  }
+}

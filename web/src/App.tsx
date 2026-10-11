@@ -12,6 +12,7 @@ import { ResultPaper } from './components/playlist/ResultPaper';
 import { UserPlaylistsPaper } from './components/playlist/UserPlaylistsPaper';
 import { InfoNotes } from './components/layout/InfoNotes';
 import { PluginEcosystem } from './components/ecosystem/PluginEcosystem';
+import { DeveloperPanel } from './components/developer/DeveloperPanel';
 import { StatsJournal } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
@@ -797,6 +798,11 @@ export const AppContent: React.FC = () => {
           {/* Open-source player plugin ecosystem — after parsed playlist results */}
           <div className="baseline-grid-snap">
             <PluginEcosystem />
+          </div>
+
+          {/* Developer entry points — visible but secondary to the core parse/export flow */}
+          <div className="baseline-grid-snap">
+            <DeveloperPanel />
           </div>
 
           {/* Educational Stationery Notes */}

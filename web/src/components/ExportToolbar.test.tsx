@@ -41,6 +41,16 @@ describe('ExportToolbar Component (Phase 4)', () => {
     expect(copyTitleBtn).toBeDisabled();
   });
 
+  it('surfaces the canonical JSON schema beside export formats', () => {
+    render(<ExportToolbar playlist={mockPlaylist} />);
+
+    expect(screen.getByText('JSON 可用于播放器、脚本与第三方工具接入。')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '查看 JSON 数据格式规范 ↗' })).toHaveAttribute(
+      'href',
+      'https://github.com/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md',
+    );
+  });
+
   it('toggles format selection and triggers export via export action button', () => {
     const exportSpy = vi.spyOn(exportUtils, 'exportPlaylist').mockReturnValue({
       filename: '测试歌单.xlsx',

@@ -15,7 +15,7 @@ The Public API v1 powers both the official PlaylistOut web application and exter
 
 ## 2. Supported Music Platforms
 
-PlaylistOut officially supports 4 major music platforms:
+PlaylistOut officially supports 5 major music platforms:
 
 | Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
 | :--- | :--- | :--- | :---: | :---: | :---: |

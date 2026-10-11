@@ -240,6 +240,17 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                 );
               })}
             </div>
+
+            <div className="export-json-schema-hint">
+              <span>{t.export.jsonSchemaHint}</span>
+              <a
+                href="https://github.com/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t.export.jsonSchemaLink}
+              </a>
+            </div>
           </div>
 
           {/* Big Export Action Button */}
