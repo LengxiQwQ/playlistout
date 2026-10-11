@@ -51,7 +51,7 @@ export const BackgroundDecorations: React.FC = () => {
       </div>
 
       {/* Middle Left Area — positioned cleanly in the open corridor below PluginEcosystem */}
-      <div style={{ position: 'absolute', top: '36.8%', left: 'max(4%, calc(50% - 620px))', fontSize: '2.35rem', color: '#fca5a5', opacity: 0.65 }}>
+      <div style={{ position: 'absolute', top: '38.2%', left: 'max(3%, calc(50% - 630px))', fontSize: '2.35rem', color: '#fca5a5', opacity: 0.65 }}>
         ❥
       </div>
 

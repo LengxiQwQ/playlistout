@@ -136,51 +136,54 @@ export const PluginEcosystem: React.FC = () => {
           >
             <div className="plugin-app-row">
               <div className="plugin-app-card-header">
-                <div className="plugin-app-logo-wrap">
-                  {plugin.logoUrl && !logoFailed[plugin.id] ? (
-                    <img
-                      src={plugin.logoUrl}
-                      alt=""
-                      className="plugin-app-logo"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      onError={() =>
-                        setLogoFailed((prev) => ({ ...prev, [plugin.id]: true }))
-                      }
-                    />
-                  ) : (
-                    <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                      {plugin.name.slice(0, 2)}
-                    </span>
-                  )}
-                </div>
+                <div className="plugin-app-card-identity">
+                  <div className="plugin-app-logo-wrap">
+                    {plugin.logoUrl && !logoFailed[plugin.id] ? (
+                      <img
+                        src={plugin.logoUrl}
+                        alt=""
+                        className="plugin-app-logo"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={() =>
+                          setLogoFailed((prev) => ({ ...prev, [plugin.id]: true }))
+                        }
+                      />
+                    ) : (
+                      <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                        {plugin.name.slice(0, 2)}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="plugin-app-card-title">
-                  <div className="plugin-app-name-row">
-                    <h3 className="plugin-app-name">{plugin.name}</h3>
-                    <div className="plugin-app-badges-row">
-                      <Sticker
-                        as="span"
-                        color="green"
-                        rotateDeg={0.7}
-                        className="font-handwriting plugin-status-sticker"
-                      >
-                        ✓ {t.ecosystem.statusAvailable}
-                      </Sticker>
-                      <Sticker
-                        as="span"
-                        color="cyan"
-                        rotateDeg={-0.5}
-                        className="font-handwriting plugin-status-sticker"
-                      >
-                        {t.ecosystem.kindPlugin}
-                      </Sticker>
+                  <div className="plugin-app-card-title">
+                    <div className="plugin-app-name-row">
+                      <h3 className="plugin-app-name">{plugin.name}</h3>
+                      <div className="plugin-app-badges-row">
+                        <Sticker
+                          as="span"
+                          color="green"
+                          rotateDeg={0.7}
+                          className="font-handwriting plugin-status-sticker"
+                        >
+                          ✓ {t.ecosystem.statusAvailable}
+                        </Sticker>
+                        <Sticker
+                          as="span"
+                          color="cyan"
+                          rotateDeg={-0.5}
+                          className="font-handwriting plugin-status-sticker"
+                        >
+                          {t.ecosystem.kindPlugin}
+                        </Sticker>
+                      </div>
                     </div>
                   </div>
-                  <p className="font-handwriting plugin-app-summary">
-                    {getPluginSummary(plugin, language)}
-                  </p>
                 </div>
+
+                <p className="font-handwriting plugin-app-summary">
+                  {getPluginSummary(plugin, language)}
+                </p>
               </div>
 
               <div className="plugin-app-actions">
@@ -257,53 +260,56 @@ export const PluginEcosystem: React.FC = () => {
           >
             <div className="plugin-app-row">
               <div className="plugin-app-card-header">
-                <div className="plugin-app-logo-wrap">
-                  {integration.logoUrl && !logoFailed[integration.id] ? (
-                    <img
-                      src={integration.logoUrl}
-                      alt=""
-                      className="plugin-app-logo"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      onError={() =>
-                        setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
-                      }
-                    />
-                  ) : (
-                    <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                      {integration.name.slice(0, 2)}
-                    </span>
-                  )}
-                </div>
+                <div className="plugin-app-card-identity">
+                  <div className="plugin-app-logo-wrap">
+                    {integration.logoUrl && !logoFailed[integration.id] ? (
+                      <img
+                        src={integration.logoUrl}
+                        alt=""
+                        className="plugin-app-logo"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={() =>
+                          setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
+                        }
+                      />
+                    ) : (
+                      <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                        {integration.name.slice(0, 2)}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="plugin-app-card-title">
-                  <div className="plugin-app-name-row">
-                    <h3 className="plugin-app-name">{integration.name}</h3>
-                    <div className="plugin-app-badges-row">
-                      <Sticker
-                        as="span"
-                        color="yellow"
-                        rotateDeg={-0.6}
-                        className="font-handwriting plugin-status-sticker"
-                      >
-                        ⏳ {t.ecosystem.statusUpcoming}
-                      </Sticker>
-                      <Sticker
-                        as="span"
-                        color="purple"
-                        rotateDeg={0.5}
-                        className="font-handwriting plugin-status-sticker"
-                      >
-                        {integration.kind === 'builtin'
-                          ? t.ecosystem.kindBuiltin
-                          : t.ecosystem.kindPlugin}
-                      </Sticker>
+                  <div className="plugin-app-card-title">
+                    <div className="plugin-app-name-row">
+                      <h3 className="plugin-app-name">{integration.name}</h3>
+                      <div className="plugin-app-badges-row">
+                        <Sticker
+                          as="span"
+                          color="yellow"
+                          rotateDeg={-0.6}
+                          className="font-handwriting plugin-status-sticker"
+                        >
+                          ⏳ {t.ecosystem.statusUpcoming}
+                        </Sticker>
+                        <Sticker
+                          as="span"
+                          color="purple"
+                          rotateDeg={0.5}
+                          className="font-handwriting plugin-status-sticker"
+                        >
+                          {integration.kind === 'builtin'
+                            ? t.ecosystem.kindBuiltin
+                            : t.ecosystem.kindPlugin}
+                        </Sticker>
+                      </div>
                     </div>
                   </div>
-                  <p className="font-handwriting plugin-app-summary">
-                    {getIntegrationSummary(integration, language)}
-                  </p>
                 </div>
+
+                <p className="font-handwriting plugin-app-summary">
+                  {getIntegrationSummary(integration, language)}
+                </p>
               </div>
 
               <div className="plugin-app-actions">

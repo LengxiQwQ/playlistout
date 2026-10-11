@@ -68,7 +68,7 @@ export const zhCN: Translations = {
     platformKuwo: '酷我音乐',
     platformKuwoDesc: '公开歌单免登录全量支持',
     kugouLoggedIn: '酷狗音乐（已登录）',
-    kugouNotLoggedIn: '酷狗音乐（需要登录）',
+    kugouNotLoggedIn: '酷狗音乐（未登录）',
     kugouLoginBadge: '扫码登录',
     kugouLoggedInBadge: '酷狗已登录',
     kugouLogoutBtn: '退出',
@@ -94,7 +94,7 @@ export const zhCN: Translations = {
     retry: '重试',
     feedbackButton: '一键反馈',
     feedbackSubmitted: '已反馈 ✓',
-    feedbackNotice: '点击「一键反馈」后会将你的歌单链接发送给作者，用于修复解析问题。',
+    feedbackNotice: '点击「一键反馈」将你的歌单链接发送给作者，用于修复解析问题。',
   },
   result: {
     doneParsingHint: '解析完毕？↓ 你的结果就在这里',
