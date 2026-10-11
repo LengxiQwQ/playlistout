@@ -12,7 +12,7 @@
 
 import { executeD1Query } from './verify-migration-history.js';
 
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui'];
+const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui'];
 const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'];
 const DEFAULT_API_BASE = 'https://playlistout-api.lengxiqwq.com';
 
@@ -126,15 +126,23 @@ export async function collectExpectedPublicStats(options = {}) {
       SUM(CASE WHEN date = date('now') THEN count ELSE 0 END) AS today
     FROM analytics_v2_daily_core
     WHERE metric='playlist_success'
-      AND platform IN ('qqmusic','netease','kugou','qishui')
+      AND platform IN ('qqmusic','netease','kugou','kuwo','qishui')
     GROUP BY platform;
   `, options);
   const platformMap = new Map(platformRows.map((row) => [row.platform, row]));
   const byPlatform = {};
   for (const platform of PUBLIC_PLATFORMS) {
     const row = platformMap.get(platform) || {};
+    const baseline = baselines.get(`platform_success:${platform}`) || {
+      key: `platform_success:${platform}`,
+      baseline_date: state.baseline_date,
+      legacy_total: 0,
+      v2_total: 0,
+      legacy_day: 0,
+      v2_day: 0,
+    };
     const value = bridge(
-      baselines.get(`platform_success:${platform}`),
+      baseline,
       row.total,
       row.today,
       today,

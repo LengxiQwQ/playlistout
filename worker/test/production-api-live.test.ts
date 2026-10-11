@@ -117,6 +117,15 @@ describe('Production Public API live smoke', { timeout: 90000 }, () => {
     expect(playlist.tracks.length).toBeLessThanOrEqual(playlist.trackCount);
   });
 
+  it('resolves a real Kuwo playlist through production', async () => {
+    const { response, body } = await requestJson(
+      resolvePath('https://m.kuwo.cn/newh5app/playlist_detail/2311665489'),
+    );
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    const playlist = assertPlaylistEnvelope(body, 'kuwo');
+    expect(playlist.tracks.length).toBe(playlist.trackCount);
+  });
+
   it('resolves a real Qishui playlist through production', async () => {
     const { response, body } = await requestJson(
       resolvePath('https://www.qishui.com/share/playlist?playlist_id=7087507348697186339'),

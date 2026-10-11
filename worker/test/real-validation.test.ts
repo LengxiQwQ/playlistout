@@ -3,6 +3,7 @@ import { qqMusicProvider } from '../src/providers/qqmusic';
 import { neteaseProvider } from '../src/providers/netease';
 import { kugouProvider } from '../src/providers/kugou';
 import { qishuiProvider } from '../src/providers/qishui';
+import { kuwoProvider } from '../src/providers/kuwo';
 
 // Real-source validation timeout is set to 30s per test to allow real network round-trips
 describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, () => {
@@ -253,6 +254,26 @@ describe('Real Public Qishui Playlist Live Validation', { timeout: 60000 }, () =
     expect(playlist.tracks.length).toBe(playlist.trackCount);
     expect(playlist.channel).toBe('qishui');
     expect(playlist.availableChannels).toContain('qishui');
+
+    playlist.tracks.slice(0, 20).forEach((track, i) => {
+      expect(track.index).toBe(i + 1);
+      expect(track.title.length).toBeGreaterThan(0);
+      expect(typeof track.artist).toBe('string');
+    });
+  });
+});
+
+describe('Real Public Kuwo Playlist Live Validation', { timeout: 60000 }, () => {
+  it('validates public Kuwo playlist via H5 URL', async () => {
+    const playlist = await kuwoProvider.parse(
+      'https://m.kuwo.cn/newh5app/playlist_detail/2311665489',
+    );
+
+    expect(playlist.platform).toBe('kuwo');
+    expect(playlist.id).toBe('2311665489');
+    expect(playlist.name).toBeTruthy();
+    expect(playlist.trackCount).toBeGreaterThanOrEqual(300);
+    expect(playlist.tracks.length).toBe(playlist.trackCount);
 
     playlist.tracks.slice(0, 20).forEach((track, i) => {
       expect(track.index).toBe(i + 1);

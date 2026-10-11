@@ -558,6 +558,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           qqmusic: { totalSuccess: 10, todaySuccess: 1 },
           netease: { totalSuccess: 10, todaySuccess: 1 },
           kugou: { totalSuccess: 10, todaySuccess: 1 },
+          kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
         },
       };
@@ -593,6 +594,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           qqmusic: { totalSuccess: 10, todaySuccess: 1 },
           netease: { totalSuccess: 10, todaySuccess: 1 },
           kugou: { totalSuccess: 10, todaySuccess: 1 },
+          kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
         },
       };

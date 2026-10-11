@@ -1,7 +1,7 @@
 name: Provider Live Acceptance
 #
 # Dedicated live acceptance testing workflow against real upstream music platforms:
-# QQ Music, NetEase Cloud Music, Kugou Music, and Qishui Music, plus the deployed Public API.
+# QQ Music, NetEase Cloud Music, Kugou Music, Kuwo Music, and Qishui Music, plus the deployed Public API.
 #
 # Runs on manual trigger (workflow_dispatch) and weekly schedule.
 # Kept independent of regular commit CI to avoid CI flaky failures due to external network variations.
