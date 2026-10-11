@@ -153,3 +153,29 @@ def test_export_to_json_cover_url():
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
+
+
+def test_resolve_export_formats_and_ui():
+    from qq_music_playlist_export import resolve_export_formats, terminal_link, REPO_URL, AUTHOR_URL
+    assert resolve_export_formats("1") == ["xlsx"]
+    assert resolve_export_formats("2") == ["csv"]
+    assert resolve_export_formats("3") == ["json"]
+    assert resolve_export_formats("4") == ["txt"]
+    assert resolve_export_formats("5") == ["m3u8"]
+    assert resolve_export_formats("0") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("999") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    link = terminal_link(REPO_URL, "PlaylistOut")
+    assert REPO_URL in link and "\033]8;;" in link
+    assert AUTHOR_URL == "https://github.com/LengxiQwQ"
+
+
+def test_perform_export_output_dir(tmp_path):
+    from qq_music_playlist_export import perform_export
+    out_dir = str(tmp_path / "output")
+    sample_songs = [("晴天", "周杰伦", "叶惠美")]
+    files = perform_export(sample_songs, "测试歌单", "Jay", "1001", output_dir=out_dir, formats=["2"], reveal_folder_flag=False)
+    assert len(files) == 1
+    assert files[0].endswith(".csv")
+    assert os.path.exists(files[0])
+

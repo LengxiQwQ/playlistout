@@ -6,6 +6,24 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **Kugou Music CLI Exporter / 酷狗音乐 CLI 导出工具**:
+  - 新增酷狗音乐独立 Python CLI 导出工具（[`cli/kugou/`](cli/kugou/)），全面支持酷狗官方精选/专题歌单、酷狗概念版集合歌单、移动端分享页短链与 H5 分享页（`gcid_...` / `src_cid=...`）以及个人云端自建歌单（Cloudlist / 我喜欢的歌）。
+  - 公开歌单（专题、集合、H5）**100% 免登录**直接导出。
+  - 个人云端自建歌单提供**双轨认证与本地永久保存**：
+    - **方式一（终端扫码）**：运行 `--login` 直接生成酷狗官方登录二维码并自动打开图片，手机酷狗 APP 扫码确认后自动获取 `token` 和 `userid`，并永久保存至 `~/.playlistout/kugou_auth.json`。
+    - **方式二（官网/抓包凭证）**：支持手动输入在 PlaylistOut 官网或抓包获取的 UserID 与 Token，或通过 `--token`/`--userid` 参数传入，自动保存永久复用。
+  - 支持高品与无损音质标记（FLAC / 320kbps / 128kbps）及 VIP 专享状态检测。
+  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
+  - 配套 31 项完整的自动化单元与集成测试（[`cli/kugou/test_kugou_utils.py`](cli/kugou/test_kugou_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
+
+- **Qishui Music CLI Exporter / 汽水音乐 CLI 导出工具**:
+  - 新增汽水音乐独立 Python CLI 导出工具（[`cli/qishui/`](cli/qishui/)），支持分享链接、移动端短链（`qishui.douyin.com/s/`、`qishui.com/s/`）、微信长分享文案与纯数字 ID 智能提取。
+  - 基于官方 Luna API 游标分页（Cursor Pagination）自动拉取全量歌单，突破单页限制。
+  - 支持双通道解析：`qishui`（官方清洁正版通道）与 `douyin`（全量抖音收藏原声通道）。
+  - 支持精细化状态判定（正常、VIP专享、付费专辑、视频、下架/无版权）。
+  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
+  - 配套 13 项完整的自动化单元与集成测试（[`cli/qishui/test_qishui_utils.py`](cli/qishui/test_qishui_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
+
 - **Kuwo Music CLI Exporter / 酷我音乐 CLI 导出工具**:
   - 新增酷我音乐独立 Python CLI 导出工具（[`cli/kuwo/`](cli/kuwo/)），支持歌单 URL、短链与 ID 智能提取。
   - 支持全量多页自动分页与并发拉取拼接，突破单页数量限制。

@@ -168,7 +168,6 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
                 backgroundColor: '#eff6ff',
                 fontSize: '0.75rem',
                 padding: '0.2rem 0.6rem',
-                transform: 'rotate(1deg)',
                 color: '#1d4ed8',
               }}
             >

@@ -34,7 +34,7 @@ The current production baseline includes:
 - abuse/security boundaries (in-memory + durable D1 rate limiting)
 - responsive web UI, privacy information and SEO metadata
 - GitHub Pages + Cloudflare Worker + D1 production deployment with Wrangler native migration safety
-- preserved Python QQ Music, NetEase Cloud Music, and Kuwo Music CLIs
+- preserved Python QQ Music, NetEase Cloud Music, Kuwo Music, Qishui Music, and Kugou Music CLIs
 
 ---
 

@@ -123,6 +123,13 @@
   flex-wrap: wrap;
 }
 
+.plugin-app-badges-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 .plugin-app-name {
   margin: 0;
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);

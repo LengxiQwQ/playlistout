@@ -89,3 +89,29 @@ def test_export_json_cover_url():
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
+
+
+def test_resolve_export_formats_and_ui():
+    from netease_playlist_export import resolve_export_formats, terminal_link, REPO_URL, AUTHOR_URL
+    assert resolve_export_formats("1") == ["xlsx"]
+    assert resolve_export_formats("2") == ["csv"]
+    assert resolve_export_formats("3") == ["json"]
+    assert resolve_export_formats("4") == ["txt"]
+    assert resolve_export_formats("5") == ["m3u8"]
+    assert resolve_export_formats("0") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("other") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    link = terminal_link(REPO_URL, "PlaylistOut")
+    assert REPO_URL in link and "\033]8;;" in link
+    assert AUTHOR_URL == "https://github.com/LengxiQwQ"
+
+
+def test_perform_export_output_dir(tmp_path):
+    from netease_playlist_export import perform_export
+    out_dir = str(tmp_path / "output")
+    sample_tracks = [("晴天", "周杰伦", "叶惠美", "04:29", "正常", "")]
+    files = perform_export("测试歌单", sample_tracks, "作者", "", "12345", output_dir=out_dir, formats=["csv"], reveal_folder_flag=False)
+    assert len(files) == 1
+    assert files[0].endswith(".csv")
+    assert os.path.exists(files[0])
+

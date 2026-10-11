@@ -48,6 +48,8 @@ jobs:
           pip install -r cli/qqmusic/requirements.txt
           pip install -r cli/netease/requirements.txt
           pip install -r cli/kuwo/requirements.txt
+          pip install -r cli/qishui/requirements.txt
+          pip install -r cli/kugou/requirements.txt
           pip install pytest
 
       - name: Syntax check
@@ -55,10 +57,12 @@ jobs:
           python -m compileall cli/qqmusic/
           python -m compileall cli/netease/
           python -m compileall cli/kuwo/
+          python -m compileall cli/qishui/
+          python -m compileall cli/kugou/
 
       - name: Run pytest
         run: |
-          pytest -v cli/qqmusic/ cli/netease/ cli/kuwo/
+          pytest -v cli/qqmusic/ cli/netease/ cli/kuwo/ cli/qishui/ cli/kugou/
           python -m pytest -v scripts/utils/test_insights_authenticity.py
 
   plugins:

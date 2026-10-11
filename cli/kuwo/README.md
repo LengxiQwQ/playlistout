@@ -28,5 +28,5 @@ python kuwo_playlist_export.py
 或使用命令行参数静默导出：
 
 ```bash
-python kuwo_playlist_export.py --id 2311665489 --output-dir ./export --format all
+python kuwo_playlist_export.py --id 2311665489 --output-dir ./output --format all
 ```

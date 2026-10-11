@@ -2,7 +2,7 @@
 
 本文档描述 **Playlist Out 网页版** 当前生成的导出文件结构，以及这些格式各自适合的使用场景。
 
-> 注意：`cli/qqmusic`、`cli/netease` 与 `cli/kuwo` 是独立的命令行实现，历史上有自己的 CSV / Excel 输出结构。本文档只约束 Web 端 `web/src/utils/export.ts` 生成的文件，不应据此推断 CLI 文件结构。
+> 注意：`cli/qqmusic`、`cli/netease`、`cli/kuwo` 与 `cli/qishui` 是独立的命令行实现，历史上有自己的 CSV / Excel 输出结构。本文档只约束 Web 端 `web/src/utils/export.ts` 生成的文件，不应据此推断 CLI 文件结构。
 
 ## 设计原则
 

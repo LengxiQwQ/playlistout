@@ -217,3 +217,30 @@ def test_get_playlist_info_pagination_stitching():
         assert len(tracks) == 2
         assert tracks[0][0] == '歌曲1'
         assert tracks[1][0] == '歌曲2'
+
+
+def test_resolve_export_formats_and_ui():
+    from kuwo_playlist_export import resolve_export_formats, terminal_link, REPO_URL, AUTHOR_URL
+    assert resolve_export_formats("1") == ["xlsx"]
+    assert resolve_export_formats("2") == ["csv"]
+    assert resolve_export_formats("3") == ["json"]
+    assert resolve_export_formats("4") == ["txt"]
+    assert resolve_export_formats("5") == ["m3u8"]
+    assert resolve_export_formats("0") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("xyz") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    link = terminal_link(REPO_URL, "PlaylistOut")
+    assert REPO_URL in link and "\033]8;;" in link
+    assert AUTHOR_URL == "https://github.com/LengxiQwQ"
+
+
+def test_perform_export_output_dir(tmp_path):
+    from kuwo_playlist_export import perform_export
+    out_dir = str(tmp_path / "output")
+    sample_tracks = [("晴天", "周杰伦", "叶惠美", "04:29", "正常", "", "1001", 269000, "2003-07-31")]
+    info = ("酷我测试歌单", sample_tracks, "作者", "", "2311665489")
+    files = perform_export(info, output_dir=out_dir, formats=["2"], reveal_folder=False)
+    assert len(files) == 1
+    assert files[0].endswith(".csv")
+    assert os.path.exists(files[0])
+

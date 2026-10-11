@@ -18,6 +18,17 @@ import platform
 import subprocess
 import requests
 import socket
+import argparse
+
+# 针对 Windows 控制台尽量启用 UTF-8 编码避免特殊字符乱码
+if sys.platform == 'win32':
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # 强制优先使用 IPv4 避免国内部分运营商 IPv6 握手超时 (如 c6.y.qq.com AAAA 解析挂起)
 try:
@@ -25,6 +36,91 @@ try:
     urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
 except Exception:
     pass
+
+# ----------------- 统一品牌与终端交互组件 -----------------
+REPO_URL = "https://github.com/LengxiQwQ/playlistout"
+AUTHOR_URL = "https://github.com/LengxiQwQ"
+AUTHOR_NAME = "lengxiQwQ"
+
+
+def terminal_link(url, text=None):
+    """生成终端可点击超链接 (支持 OSC 8 协议)"""
+    label = text if text else url
+    return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
+
+
+def print_banner(platform_name):
+    """统一线框引导 UI - 头部 Banner"""
+    repo_hyperlink = terminal_link(REPO_URL, REPO_URL)
+    author_hyperlink = terminal_link(AUTHOR_URL, AUTHOR_NAME)
+    title = f"PlaylistOut - {platform_name} 歌单导出工具"
+    print("=" * 64)
+    print(f"        {title}")
+    print(f"  开源仓库: {repo_hyperlink}")
+    print(f"  开发作者: {author_hyperlink} ({AUTHOR_URL})")
+    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("=" * 64)
+
+
+def print_format_menu():
+    """统一线框引导 UI - 导出格式选择菜单"""
+    print("-" * 64)
+    print("请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
+    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
+    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
+    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
+    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
+    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
+    print("-" * 64)
+
+
+def resolve_export_formats(choice):
+    """
+    根据用户输入解析导出格式：
+    1~5 对应单格式；0 或其他任意输入代表全部导出。
+    """
+    choice = str(choice or "").strip().lower()
+    mapping = {
+        "1": ["xlsx"],
+        "xlsx": ["xlsx"],
+        "2": ["csv"],
+        "csv": ["csv"],
+        "3": ["json"],
+        "json": ["json"],
+        "4": ["txt"],
+        "txt": ["txt"],
+        "5": ["m3u8"],
+        "m3u8": ["m3u8"],
+    }
+    if choice in mapping:
+        return mapping[choice]
+    return ["xlsx", "csv", "json", "txt", "m3u8"]
+
+
+def reveal_folder(target_path):
+    """非阻塞打开输出文件夹或在资源管理器中定位文件"""
+    try:
+        abs_path = os.path.abspath(target_path)
+        folder = abs_path if os.path.isdir(abs_path) else os.path.dirname(abs_path)
+        if platform.system() == "Windows":
+            if os.path.isfile(abs_path):
+                subprocess.Popen(['explorer', f'/select,{abs_path}'], shell=False)
+            else:
+                os.startfile(folder)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", folder])
+        else:
+            subprocess.Popen(["xdg-open", folder])
+    except Exception:
+        pass
+
+
+def print_exit_banner():
+    """统一退出提示"""
+    print("\n" + "=" * 64)
+    print("感谢使用 PlaylistOut，程序已安全退出！")
+    print("=" * 64)
 
 # --- 辅助函数 ---
 
@@ -612,91 +708,174 @@ def open_file_location(path):
     except Exception:
         pass
 
+# --- 统一导出执行函数 ---
+def perform_export(songs, playlist_title, author, pid, output_dir="output", formats=None, reveal_folder_flag=True):
+    if not songs:
+        return []
+    if formats is None:
+        resolved_formats = ["xlsx", "csv", "json", "txt", "m3u8"]
+    elif isinstance(formats, str):
+        resolved_formats = resolve_export_formats(formats)
+    else:
+        fmt_list = [str(f).strip().lower() for f in formats if str(f).strip()]
+        if not fmt_list or "all" in fmt_list or "0" in fmt_list:
+            resolved_formats = ["xlsx", "csv", "json", "txt", "m3u8"]
+        elif len(fmt_list) == 1:
+            resolved_formats = resolve_export_formats(fmt_list[0])
+        else:
+            resolved_formats = []
+            for item in fmt_list:
+                for r in resolve_export_formats(item):
+                    if r not in resolved_formats:
+                        resolved_formats.append(r)
+
+    safe_title = sanitize_filename(playlist_title or f"playlist_{pid}")
+    safe_author = sanitize_filename(author or "未知作者")
+    base_name = f"{safe_title} - {safe_author}"
+
+    os.makedirs(output_dir, exist_ok=True)
+    exported_files = []
+
+    print("\n" + "-" * 64)
+    print(f"[*] 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...")
+
+    for fmt in resolved_formats:
+        out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
+        try:
+            if fmt == "xlsx":
+                export_to_xlsx(songs, out_path)
+            elif fmt == "csv":
+                export_to_csv(songs, out_path)
+            elif fmt == "json":
+                export_to_json(songs, out_path, playlist_title=playlist_title, author=author, playlist_id=str(pid) if pid else "")
+            elif fmt == "txt":
+                export_to_txt(songs, out_path)
+            elif fmt == "m3u8":
+                export_to_m3u8(songs, out_path, playlist_title)
+            exported_files.append(out_path)
+            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(out_path)}")
+        except Exception as e:
+            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+
+    print("-" * 64)
+    print(f"[🎉] 导出任务全部完成！共导出 {len(songs)} 首歌曲。")
+    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print("=" * 64)
+
+    if exported_files and reveal_folder_flag:
+        reveal_folder(exported_files[0])
+    return exported_files
+
+
 # --- 批量导出共享函数 ---
-def batch_export_songs(playlists, folder_name, nickname=""):
+def batch_export_songs(playlists, folder_name, nickname="", output_dir="output", formats=None, reveal_folder_flag=True):
     """批量导出歌单列表"""
-    print("\n请选择导出格式（将应用于所有歌单）：")
-    print("  1) .xlsx  - Excel 文件")
-    print("  2) .json  - JSON 文件")
-    print("  3) .txt   - 纯文本格式")
-    print("  4) .csv   - 标准 CSV utf-8-sig")
-    print("  5) .m3u8  - 通用歌单 (M3U8)")
-    fmt_choice = input("选择 (1-5)：").strip() or "1"
-    if fmt_choice not in ("1","2","3","4","5"):
-        print("选择无效，默认使用 xlsx")
-        fmt_choice = "1"
-    # 创建文件夹
-    os.makedirs(folder_name, exist_ok=True)
-    print(f"\n开始批量导出，保存到文件夹：{folder_name}")
+    if formats is None:
+        print_format_menu()
+        fmt_choice = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+        formats = resolve_export_formats(fmt_choice)
+
+    target_dir = os.path.join(output_dir, folder_name)
+    os.makedirs(target_dir, exist_ok=True)
+    print(f"\n开始批量导出，保存到文件夹：{os.path.abspath(target_dir)}")
     exported = 0
     failed = 0
+    all_exported_files = []
+
     for idx, pl in enumerate(playlists):
         pid = pl["id"]
         pname = pl["name"]
-        print(f"  [{idx+1}/{len(playlists)}] 正在获取歌单 [{pid}] {pname}...")
+        print(f"\n  [{idx+1}/{len(playlists)}] 正在获取歌单 [{pid}] {pname}...")
         res = get_playlist_songs(pid)
         if not res or not res[1]:
-            print(f"    ✗ 跳过（无法读取或歌单为空）")
+            print("    ✗ 跳过（无法读取或歌单为空）")
             failed += 1
             continue
         title, songs, author = res
-        safe_title = sanitize_filename(title or pname)
-        safe_author = sanitize_filename(author or nickname or "未知")
-        out_path = None
-        try:
-            if fmt_choice == "1":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.xlsx")
-                export_to_xlsx(songs, out_path)
-            elif fmt_choice == "2":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.json")
-                export_to_json(songs, out_path, playlist_title=title or pname, author=author or nickname, playlist_id=str(pid))
-            elif fmt_choice == "3":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.txt")
-                export_to_txt(songs, out_path)
-            elif fmt_choice == "4":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.csv")
-                export_to_csv(songs, out_path)
-            elif fmt_choice == "5":
-                out_path = os.path.join(folder_name, f"{safe_title} - {safe_author}.m3u8")
-                export_to_m3u8(songs, out_path, title or pname)
-            print(f"    ✓ 已导出（{len(songs)} 首）：{os.path.basename(out_path)}")
+        files = perform_export(
+            songs,
+            title or pname,
+            author or nickname,
+            pid,
+            output_dir=target_dir,
+            formats=formats,
+            reveal_folder_flag=False,
+        )
+        if files:
             exported += 1
-        except ImportError:
-            print(f"    ✗ 导出失败：缺少 openpyxl 库，请运行：pip install openpyxl")
-            failed += 1
-        except Exception as e:
-            print(f"    ✗ 导出失败：{e}")
-            failed += 1
-    print(f"\n{'='*40}")
-    print(f"批量导出完成！成功：{exported}，失败：{failed}")
-    abs_folder = os.path.abspath(folder_name)
-    print(f"文件保存在：{abs_folder}")
-    try:
-        if platform.system() == "Windows":
-            os.startfile(abs_folder)
-        elif platform.system() == "Darwin":
-            subprocess.run(["open", abs_folder])
+            all_exported_files.extend(files)
         else:
-            subprocess.run(["xdg-open", abs_folder])
-    except Exception:
-        pass
+            failed += 1
+
+    print("\n" + "=" * 64)
+    print(f"批量导出完成！成功：{exported} 个歌单，失败：{failed} 个歌单")
+    print(f"文件保存在：{os.path.abspath(target_dir)}")
+    print("=" * 64)
+    if all_exported_files and reveal_folder_flag:
+        reveal_folder(target_dir)
     return (exported, failed)
 
 # --- 主程序入口 ---
 def main():
-    print("============ QQ音乐歌单导出工具 ============")
+    parser = argparse.ArgumentParser(
+        description="QQ音乐歌单导出工具 (PlaylistOut QQ Music Exporter)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("input", nargs="?", help="歌单链接、歌单ID 或 QQ号")
+    parser.add_argument("-i", "--id", dest="opt_id", help="歌单链接、歌单ID 或 QQ号")
+    parser.add_argument("-o", "--output-dir", default="output", help="导出目录 (默认: output)")
+    parser.add_argument(
+        "-f", "--format",
+        default="all",
+        help="导出格式: 1~5 或 all, xlsx, csv, json, txt, m3u8 (默认: all)",
+    )
+    parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
+    args = parser.parse_args()
+
+    raw_input = args.opt_id or args.input
+    output_dir = args.output_dir if args.output_dir else "output"
+    formats = resolve_export_formats(args.format)
+
+    if raw_input:
+        user_input = raw_input.strip()
+        is_just_digits = user_input.isdigit() and len(user_input) >= 4
+        pid = extract_playlist_id(user_input)
+        uin = extract_user_uin(user_input)
+        playlist_info = None
+        qq_info = None
+        if pid:
+            playlist_info = get_playlist_songs(pid)
+        if is_just_digits:
+            qq_info = get_user_playlists(user_input)
+        elif uin and not playlist_info:
+            qq_info = get_user_playlists(uin)
+
+        if playlist_info and playlist_info[1]:
+            title, songs, author = playlist_info
+            perform_export(songs, title, author, pid, output_dir=output_dir, formats=formats, reveal_folder_flag=not args.no_open)
+            return
+        elif qq_info:
+            qq_nickname, qq_playlists = qq_info
+            safe_nick = sanitize_filename(qq_nickname) or "user"
+            batch_export_songs(qq_playlists, f"{safe_nick}的歌单_{user_input}", qq_nickname, output_dir=output_dir, formats=formats, reveal_folder_flag=not args.no_open)
+            return
+        else:
+            print("错误: 无法解析输入的 QQ 音乐链接、歌单 ID 或 QQ 号", file=sys.stderr)
+            sys.exit(1)
+
+    # 交互模式
+    print_banner("QQ 音乐")
     try:
         while True:
             user_input = input("\n请输入歌单链接 或 歌单ID 或 QQ号（输入 0 退出）：").strip()
-            if user_input in ("0", "q", "quit", "exit"):
-                print("\n========== 程序已退出，感谢使用！===========")
+            if not user_input or user_input in ("0", "q", "quit", "exit"):
+                print_exit_banner()
                 break
 
             is_just_digits = user_input.isdigit() and len(user_input) >= 4
             pid = extract_playlist_id(user_input)
             uin = extract_user_uin(user_input)
 
-            # 同时尝试歌单ID和QQ号
             playlist_info = None
             qq_info = None
 
@@ -708,92 +887,47 @@ def main():
             elif uin and not playlist_info:
                 qq_info = get_user_playlists(uin)
 
-            # ── 既是歌单又是QQ号，让用户选择 ──
+            # 既是歌单又是QQ号
             if playlist_info and playlist_info[1] and qq_info:
                 title, songs, author = playlist_info
                 qq_nickname, qq_playlists = qq_info
                 print(f"\n'{user_input}' 既是歌单ID也是QQ号，请选择：")
-                print(f"  1) 导出该歌单 — [{pid}] {title}（{len(songs)} 首）")
-                print(f"  2) 导出该QQ号所有歌单 — {qq_nickname} 共 {len(qq_playlists)} 个歌单")
-                choice = input("请选择 (1/2，默认1)：").strip()
-                if choice == "2":
+                print(f"  [1] 导出该歌单 — [{pid}] {title}（{len(songs)} 首）")
+                print(f"  [2] 导出该QQ号所有歌单 — {qq_nickname} 共 {len(qq_playlists)} 个歌单")
+                c = input("请选择 (1/2，默认1)：").strip()
+                if c == "2":
                     print(f"\n用户：{qq_nickname}，共 {len(qq_playlists)} 个歌单：")
                     for i, pl in enumerate(qq_playlists):
                         print(f"  {i+1:3d}. [{pl['id']}] {pl['name']}")
-                    batch_export_songs(qq_playlists, user_input, qq_nickname)
+                    batch_export_songs(qq_playlists, user_input, qq_nickname, output_dir=output_dir, reveal_folder_flag=not args.no_open)
                     continue
-                # 否则走单歌单导出
 
-            # ── 只是QQ号 ──
             elif qq_info:
                 qq_nickname, qq_playlists = qq_info
                 print(f"\n检测到QQ号，用户：{qq_nickname}，共 {len(qq_playlists)} 个歌单：")
                 for i, pl in enumerate(qq_playlists):
                     print(f"  {i+1:3d}. [{pl['id']}] {pl['name']}")
-                batch_export_songs(qq_playlists, user_input, qq_nickname)
+                batch_export_songs(qq_playlists, user_input, qq_nickname, output_dir=output_dir, reveal_folder_flag=not args.no_open)
                 continue
 
-            # ── 都不匹配 ──
             elif not playlist_info and not qq_info:
                 print("\n无法识别输入，请确认歌单链接/ID 或 QQ号是否正确")
                 continue
 
-            # ── 单歌单导出流程 ──
             title, songs, author = playlist_info
             pid = pid or extract_playlist_id(user_input)
-
             playlist_title = title.strip() if title else f"playlist_{pid}"
-            safe_title = sanitize_filename(playlist_title)
             display_author = author or "未知"
-            safe_author = sanitize_filename(display_author) or "未知作者"
 
             print(f"\n已获取到 {display_author} 的歌单：\n名称：{playlist_title}，共 {len(songs)} 首歌曲")
-            print("=" * 42)
-            print("请选择导出格式：")
-            print(" 1) .xlsx  - (默认) Excel 文件")
-            print(" 2) .json  - JSON 文件，数组")
-            print(" 3) .txt   - 纯文本格式")
-            print(" 4) .csv   - 标准 CSV utf-8-sig")
-            print(" 5) .m3u8  - 通用歌单 (M3U8)")
-            print("=" * 42)
-            choice = input("选择 (1-5，输入 0 退出程序)：").strip() or "1"
-            if choice == "0":
-                print("\n========== 程序已退出，感谢使用！===========")
-                break
-            if choice not in ("1","2","3","4","5"):
-                print("选择无效，默认使用 xlsx")
-                choice = "1"
+            print_format_menu()
+            fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+            sel_formats = resolve_export_formats(fmt_input)
+            perform_export(songs, playlist_title, display_author, pid, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)
 
-            try:
-                out_name = None
-                if choice == "1":
-                    out_name = f"{safe_title} - {safe_author}.xlsx"
-                    try:
-                        export_to_xlsx(songs, out_name)
-                    except ImportError:
-                        print("导出 xlsx 失败：缺少 openpyxl 库，请运行：pip install openpyxl")
-                        out_name = None
-                elif choice == "2":
-                    out_name = f"{safe_title} - {safe_author}.json"
-                    export_to_json(songs, out_name, playlist_title=playlist_title, author=display_author, playlist_id=str(pid) if pid else "")
-                elif choice == "3":
-                    out_name = f"{safe_title} - {safe_author}.txt"
-                    export_to_txt(songs, out_name)
-                elif choice == "4":
-                    out_name = f"{safe_title} - {safe_author}.csv"
-                    export_to_csv(songs, out_name)
-                elif choice == "5":
-                    out_name = f"{safe_title} - {safe_author}.m3u8"
-                    export_to_m3u8(songs, out_name, playlist_title)
-                
-                if out_name:
-                    print(f"\n已保存为: {out_name}")
-                    print("=" * 42)
-                    open_file_location(out_name)
-            except Exception as e:
-                print("保存文件时出错：", e)
     except KeyboardInterrupt:
-        print("\n\n========= 程序被用户终止，感谢使用！=========")
+        print_exit_banner()
+
 
 if __name__ == "__main__":
     main()

@@ -179,36 +179,49 @@
   /* Compact header on mobile: single-row, no overflow */
   .journal-header {
     min-height: calc(var(--ruled-line-height, 38px) * 1.5) !important;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
   }
 
   .header-brand-container {
-    gap: 0.55rem !important;
-    min-width: 0;
-    flex-shrink: 1;
+    gap: 0.45rem !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
   }
 
   .header-logo-img {
-    width: 2.35rem !important;
-    height: 2.35rem !important;
+    width: 2.2rem !important;
+    height: 2.2rem !important;
   }
 
   .header-brand-title {
-    font-size: 1.45rem !important;
+    font-size: 1.35rem !important;
     line-height: 1.1 !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
   }
 
   .header-brand-tagline {
-    font-size: 0.85rem !important;
-    margin-top: 0.1rem !important;
+    font-size: 0.8rem !important;
+    margin-top: 0.05rem !important;
     line-height: 1.1 !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
   }
 
   .header-actions {
-    gap: 0.5rem !important;
-    flex-shrink: 0;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-actions .sticker,
+  .header-drawer-btn {
+    padding: 0.26rem 0.5rem !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
   }
 
   /* Steeper splash tilt animation for mobile */
@@ -224,9 +237,9 @@
   /* Hero doodle for mobile: anchored to top-right of the last word with steeper tilt */
   .hero-doodle-mobile {
     position: absolute !important;
-    right: -3.5rem !important;
+    right: -1.6rem !important;
     top: 0.45rem !important;
-    font-size: 0.95rem !important;
+    font-size: 0.92rem !important;
     height: auto !important;
     line-height: 1 !important;
     z-index: 10;
@@ -239,9 +252,15 @@
   /* English cursive font scale compensation for mobile */
   :lang(en) .hero-doodle-mobile,
   html[lang^="en"] .hero-doodle-mobile {
-    font-size: 1.25rem !important;
-    right: -3.2rem !important;
+    font-size: 1.18rem !important;
+    right: -1.4rem !important;
     font-weight: 600;
+  }
+
+  .note-sparkle {
+    right: 0.5rem !important;
+    top: -1.25rem !important;
+    font-size: 2rem !important;
   }
 
   /* Footer navigation links wrap gracefully without height clipping */
@@ -354,14 +373,88 @@
     overflow-wrap: anywhere;
   }
 
-  /* Reduce rotations to prevent horizontal scrollbars or clipping */
+  /* Mobile card surfaces & interactive blocks: strictly level (0deg) for solid visual stability */
+  *,
+  *::before,
+  *::after {
+    --rot: 0deg !important;
+  }
+
   .hand-drawn-border,
   .hand-drawn-border-alt,
   .paper-shadow,
   .sticker,
+  button.sticker,
+  a.sticker,
+  span.sticker,
+  div.sticker,
   .sticky-note-card,
-  .author-dropup-card {
+  .journal-paper,
+  .marker-button,
+  .marker-button:disabled,
+  .marker-button:hover,
+  .marker-button:focus,
+  .marker-button:active,
+  button.marker-button,
+  button.marker-button:disabled,
+  a.marker-button,
+  .author-dropup-card,
+  .playlist-cover,
+  .cover-placeholder,
+  .brand-badge,
+  .channel-tab-btn,
+  .channel-tab-btn.is-active,
+  .plugin-copy-button,
+  .plugin-copy-button-secondary,
+  .plugin-action-link,
+  .quick-samples-toggle {
+    --rot: 0deg !important;
     transform: none !important;
+  }
+
+  /* All mobile buttons have consistent rounded corners (no asymmetric slope wedges) */
+  .marker-button,
+  .marker-button.hand-drawn-border-alt,
+  .marker-button.hand-drawn-border-subtle,
+  .plugin-copy-button,
+  .plugin-copy-button-secondary,
+  .plugin-action-link {
+    border-radius: 10px !important;
+  }
+
+  /* On mobile narrow viewports, replace high-variance 255px corners with warm, balanced organic curves */
+  .hand-drawn-border,
+  .hand-drawn-border-alt {
+    border-width: 2.5px !important;
+    border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px !important;
+  }
+
+  .hand-drawn-border-subtle {
+    border-width: 2px !important;
+    border-radius: 12px 14px 12px 14px / 14px 12px 14px 12px !important;
+  }
+
+  /* Refined warm stationery drop shadow on mobile */
+  .sticky-note-card,
+  .journal-paper {
+    box-shadow:
+      0 1px 3px rgba(50, 36, 6, 0.12),
+      3px 4.5px 0 0.5px rgba(65, 48, 12, 0.38) !important;
+  }
+
+  /* Mobile Sticky Note Tape Anchor:
+     Center a single washi tape pin cleanly at top-center, remove bottom-right protrusion */
+  .sticky-note-card .tape-top-left {
+    left: 50% !important;
+    top: -0.85rem !important;
+    transform: translateX(-50%) rotate(-1deg) !important;
+    max-width: 5.5rem !important;
+    height: 1.45rem !important;
+    z-index: 25 !important;
+  }
+
+  .sticky-note-card .tape-bottom-right {
+    display: none !important;
   }
 
   .author-dropup-card {
@@ -377,7 +470,7 @@
   }
 
   .sticky-note-card {
-    padding: 1.25rem !important;
+    padding: 1.35rem 1.25rem 1.25rem !important;
   }
 
   .info-notes-section {
@@ -411,6 +504,30 @@
   .search-input-row button[type="submit"] {
     width: 100% !important;
     justify-content: center;
+    border-radius: 10px !important;
+    padding: 0.75rem 1.5rem !important;
+    box-shadow: 2.5px 2.5px 0 var(--ink, #2d3436) !important;
+  }
+
+  /* Mobile platform indicators row: clean, balanced wrap with consistent chip sizing */
+  .search-platforms-row {
+    gap: 0.45rem 0.55rem !important;
+    margin-top: 1rem !important;
+    align-items: center !important;
+  }
+
+  .search-platforms-row .sticker {
+    padding: 0.28rem 0.65rem !important;
+    font-size: 0.92rem !important;
+    border-radius: 6px !important;
+    box-shadow: 2px 2px 0 var(--ink, #2d3436) !important;
+  }
+
+  /* Tactile touch physics for mobile (satisfying pressed down feedback) */
+  .marker-button:not(:disabled):active,
+  button.sticker:not(:disabled):active {
+    transform: translate(1.5px, 1.5px) !important;
+    box-shadow: 1px 1px 0 var(--ink, #2d3436) !important;
   }
 
   /* Playlist Summary Mobile Adaptation */
@@ -659,6 +776,69 @@
     overflow-wrap: anywhere;
   }
 
+  /* Plugin Ecosystem Mobile Polish (Unified Buttons & Wrapped Badges) */
+  .plugin-app-name-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.35rem !important;
+  }
+
+  .plugin-app-badges-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+
+  .plugin-status-sticker {
+    padding: 0.2rem 0.55rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 6px !important;
+  }
+
+  .plugin-app-actions {
+    width: 100% !important;
+    margin-top: 0.75rem !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+
+  .plugin-app-primary-buttons {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+  }
+
+  .plugin-app-primary-buttons .plugin-copy-button,
+  .plugin-app-primary-buttons .plugin-action-link {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 2.65rem !important;
+    font-size: 0.95rem !important;
+    border-radius: 10px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    padding: 0 0.5rem !important;
+    box-shadow: 2px 2px 0 var(--ink, #2d3436) !important;
+  }
+
+  .plugin-app-links {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  .plugin-upcoming-list {
+    width: 100% !important;
+    gap: 0.55rem !important;
+    flex-wrap: wrap !important;
+  }
+
   /* Toolbars and feedback should wrap within the viewport instead of behaving
      like desktop pills. */
   .export-toolbar-container {
@@ -743,6 +923,12 @@
 }
 
 @media (max-width: 480px) {
+  html,
+  body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
   .journal-container {
     padding: 0.75rem 1.05rem 1.5rem !important;
     padding-left: max(1.05rem, env(safe-area-inset-left)) !important;
@@ -754,31 +940,50 @@
   }
 
   .header-brand-title {
-    font-size: 1.3rem !important;
+    font-size: 1.25rem !important;
   }
 
   .header-brand-tagline {
-    font-size: 0.78rem !important;
+    font-size: 0.76rem !important;
   }
 
   .header-actions {
-    gap: 0.35rem !important;
+    gap: 0.3rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-drawer-btn {
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.86rem !important;
+    white-space: nowrap !important;
+  }
+
+  .footer-nav {
+    gap: 0.5rem 0.6rem !important;
+    justify-content: center !important;
+  }
+
+  .footer-nav .sticker {
+    font-size: 0.95rem !important;
+    padding: 0.3rem 0.6rem !important;
   }
 
   .note-sparkle {
-    right: -0.25rem !important;
+    right: 0.5rem !important;
+    top: -1.25rem !important;
+    font-size: 2rem !important;
   }
 
   .hero-doodle-mobile {
-    right: -3.2rem !important;
+    right: -1.4rem !important;
     top: 0.55rem !important;
-    font-size: 0.88rem !important;
+    font-size: 0.86rem !important;
   }
 
   :lang(en) .hero-doodle-mobile,
   html[lang^="en"] .hero-doodle-mobile {
-    font-size: 1.15rem !important;
-    right: -2.8rem !important;
+    font-size: 1.12rem !important;
+    right: -1.2rem !important;
     top: 0.45rem !important;
     font-weight: 600;
   }
@@ -788,13 +993,15 @@
     height: 1.5rem !important;
   }
 
-  .tape-top-left {
-    left: -0.5rem !important;
-    top: -0.65rem !important;
+  .sticky-note-card .tape-top-left {
+    left: 50% !important;
+    top: -0.75rem !important;
+    transform: translateX(-50%) rotate(-1deg) !important;
+    max-width: 4.8rem !important;
+    height: 1.35rem !important;
   }
 
-  .tape-bottom-right {
-    right: -0.5rem !important;
-    bottom: -0.65rem !important;
+  .sticky-note-card .tape-bottom-right {
+    display: none !important;
   }
 }

@@ -158,22 +158,24 @@ export const PluginEcosystem: React.FC = () => {
                 <div className="plugin-app-card-title">
                   <div className="plugin-app-name-row">
                     <h3 className="plugin-app-name">{plugin.name}</h3>
-                    <Sticker
-                      as="span"
-                      color="green"
-                      rotateDeg={0.7}
-                      className="font-handwriting plugin-status-sticker"
-                    >
-                      ✓ {t.ecosystem.statusAvailable}
-                    </Sticker>
-                    <Sticker
-                      as="span"
-                      color="cyan"
-                      rotateDeg={-0.5}
-                      className="font-handwriting plugin-status-sticker"
-                    >
-                      {t.ecosystem.kindPlugin}
-                    </Sticker>
+                    <div className="plugin-app-badges-row">
+                      <Sticker
+                        as="span"
+                        color="green"
+                        rotateDeg={0.7}
+                        className="font-handwriting plugin-status-sticker"
+                      >
+                        ✓ {t.ecosystem.statusAvailable}
+                      </Sticker>
+                      <Sticker
+                        as="span"
+                        color="cyan"
+                        rotateDeg={-0.5}
+                        className="font-handwriting plugin-status-sticker"
+                      >
+                        {t.ecosystem.kindPlugin}
+                      </Sticker>
+                    </div>
                   </div>
                   <p className="font-handwriting plugin-app-summary">
                     {getPluginSummary(plugin, language)}
@@ -277,24 +279,26 @@ export const PluginEcosystem: React.FC = () => {
                 <div className="plugin-app-card-title">
                   <div className="plugin-app-name-row">
                     <h3 className="plugin-app-name">{integration.name}</h3>
-                    <Sticker
-                      as="span"
-                      color="yellow"
-                      rotateDeg={-0.6}
-                      className="font-handwriting plugin-status-sticker"
-                    >
-                      ⏳ {t.ecosystem.statusUpcoming}
-                    </Sticker>
-                    <Sticker
-                      as="span"
-                      color="purple"
-                      rotateDeg={0.5}
-                      className="font-handwriting plugin-status-sticker"
-                    >
-                      {integration.kind === 'builtin'
-                        ? t.ecosystem.kindBuiltin
-                        : t.ecosystem.kindPlugin}
-                    </Sticker>
+                    <div className="plugin-app-badges-row">
+                      <Sticker
+                        as="span"
+                        color="yellow"
+                        rotateDeg={-0.6}
+                        className="font-handwriting plugin-status-sticker"
+                      >
+                        ⏳ {t.ecosystem.statusUpcoming}
+                      </Sticker>
+                      <Sticker
+                        as="span"
+                        color="purple"
+                        rotateDeg={0.5}
+                        className="font-handwriting plugin-status-sticker"
+                      >
+                        {integration.kind === 'builtin'
+                          ? t.ecosystem.kindBuiltin
+                          : t.ecosystem.kindPlugin}
+                      </Sticker>
+                    </div>
                   </div>
                   <p className="font-handwriting plugin-app-summary">
                     {getIntegrationSummary(integration, language)}
@@ -303,17 +307,19 @@ export const PluginEcosystem: React.FC = () => {
               </div>
 
               <div className="plugin-app-actions">
-                {integration.homepageUrl ? (
-                  <a
-                    href={integration.homepageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
-                    style={{ ['--rot' as any]: '-0.3deg' }}
-                  >
-                    {t.ecosystem.officialDownload}
-                  </a>
-                ) : null}
+                <div className="plugin-app-primary-buttons">
+                  {integration.homepageUrl ? (
+                    <a
+                      href={integration.homepageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                      style={{ ['--rot' as any]: '-0.3deg' }}
+                    >
+                      {t.ecosystem.officialDownload}
+                    </a>
+                  ) : null}
+                </div>
 
                 <div className="plugin-app-links">
                   {integration.repositoryUrl ? (

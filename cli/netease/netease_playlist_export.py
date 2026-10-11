@@ -18,7 +18,18 @@ import platform
 import subprocess
 import requests
 import socket
+import argparse
 from datetime import datetime, timezone
+
+# 针对 Windows 控制台尽量启用 UTF-8 编码避免特殊字符乱码
+if sys.platform == 'win32':
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # 强制优先使用 IPv4 避免国内部分运营商 IPv6 握手超时
 try:
@@ -26,6 +37,91 @@ try:
     urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
 except Exception:
     pass
+
+# ----------------- 统一品牌与终端交互组件 -----------------
+REPO_URL = "https://github.com/LengxiQwQ/playlistout"
+AUTHOR_URL = "https://github.com/LengxiQwQ"
+AUTHOR_NAME = "lengxiQwQ"
+
+
+def terminal_link(url, text=None):
+    """生成终端可点击超链接 (支持 OSC 8 协议)"""
+    label = text if text else url
+    return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
+
+
+def print_banner(platform_name):
+    """统一线框引导 UI - 头部 Banner"""
+    repo_hyperlink = terminal_link(REPO_URL, REPO_URL)
+    author_hyperlink = terminal_link(AUTHOR_URL, AUTHOR_NAME)
+    title = f"PlaylistOut - {platform_name} 歌单导出工具"
+    print("=" * 64)
+    print(f"        {title}")
+    print(f"  开源仓库: {repo_hyperlink}")
+    print(f"  开发作者: {author_hyperlink} ({AUTHOR_URL})")
+    print("  核心特性: 100% 本地隐私安全 · 零商业化 · 全格式歌单备份导出")
+    print("=" * 64)
+
+
+def print_format_menu():
+    """统一线框引导 UI - 导出格式选择菜单"""
+    print("-" * 64)
+    print("请选择导出文件格式：")
+    print("  [1] .xlsx  - Excel 表格文件 (首个 Sheet 纯净一歌一行)")
+    print("  [2] .csv   - 标准 CSV 格式 (utf-8-sig 编码，双击无乱码)")
+    print("  [3] .json  - Canonical JSON 标准格式 (供开发者/播放器接入)")
+    print("  [4] .txt   - 纯文本歌单清单 (人类可读文本)")
+    print("  [5] .m3u8  - 通用播放列表 (Extended M3U，支持本地播放器)")
+    print("  [0] 全部导出 (默认 / 推荐，输入 0 或直接回车/其他键导出全部格式)")
+    print("-" * 64)
+
+
+def resolve_export_formats(choice):
+    """
+    根据用户输入解析导出格式：
+    1~5 对应单格式；0 或其他任意输入代表全部导出。
+    """
+    choice = str(choice or "").strip().lower()
+    mapping = {
+        "1": ["xlsx"],
+        "xlsx": ["xlsx"],
+        "2": ["csv"],
+        "csv": ["csv"],
+        "3": ["json"],
+        "json": ["json"],
+        "4": ["txt"],
+        "txt": ["txt"],
+        "5": ["m3u8"],
+        "m3u8": ["m3u8"],
+    }
+    if choice in mapping:
+        return mapping[choice]
+    return ["xlsx", "csv", "json", "txt", "m3u8"]
+
+
+def reveal_folder(target_path):
+    """非阻塞打开输出文件夹或在资源管理器中定位文件"""
+    try:
+        abs_path = os.path.abspath(target_path)
+        folder = abs_path if os.path.isdir(abs_path) else os.path.dirname(abs_path)
+        if platform.system() == "Windows":
+            if os.path.isfile(abs_path):
+                subprocess.Popen(['explorer', f'/select,{abs_path}'], shell=False)
+            else:
+                os.startfile(folder)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", folder])
+        else:
+            subprocess.Popen(["xdg-open", folder])
+    except Exception:
+        pass
+
+
+def print_exit_banner():
+    """统一退出提示"""
+    print("\n" + "=" * 64)
+    print("感谢使用 PlaylistOut，程序已安全退出！")
+    print("=" * 64)
 
 HEADERS = {
     'User-Agent': (
@@ -456,94 +552,194 @@ def export_m3u8(filename, playlist_title, tracks, author):
             f.write(f"#EXTINF:{sec},{disp}\n")
             f.write(f"{fn}.mp3\n")
 
-def open_folder(filepath):
-    abs_path = os.path.abspath(filepath)
-    if platform.system() == 'Windows':
-        subprocess.run(['explorer', f'/select,{abs_path}'], shell=False)
+# --- 统一导出执行函数 ---
+def perform_export(title, tracks, author, playlist_cover="", playlist_id="", output_dir="output", formats=None, reveal_folder_flag=True):
+    if not tracks:
+        return []
+    if formats is None:
+        resolved_formats = ["xlsx", "csv", "json", "txt", "m3u8"]
+    elif isinstance(formats, str):
+        resolved_formats = resolve_export_formats(formats)
+    else:
+        fmt_list = [str(f).strip().lower() for f in formats if str(f).strip()]
+        if not fmt_list or "all" in fmt_list or "0" in fmt_list:
+            resolved_formats = ["xlsx", "csv", "json", "txt", "m3u8"]
+        elif len(fmt_list) == 1:
+            resolved_formats = resolve_export_formats(fmt_list[0])
+        else:
+            resolved_formats = []
+            for item in fmt_list:
+                for r in resolve_export_formats(item):
+                    if r not in resolved_formats:
+                        resolved_formats.append(r)
+
+    safe_title = sanitize_filename(title or f"playlist_{playlist_id}")
+    safe_author = sanitize_filename(author or "未知作者")
+    base_name = f"{safe_title} - {safe_author}"
+
+    os.makedirs(output_dir, exist_ok=True)
+    exported_files = []
+
+    print("\n" + "-" * 64)
+    print(f"[*] 开始导出歌单《{title}》 (共 {len(tracks)} 首歌曲)...")
+
+    for fmt in resolved_formats:
+        out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
+        try:
+            if fmt == "xlsx":
+                export_xlsx(out_path, title, tracks, author)
+            elif fmt == "csv":
+                export_csv(out_path, tracks)
+            elif fmt == "json":
+                export_json(out_path, title, tracks, author, playlist_cover, playlist_id=str(playlist_id))
+            elif fmt == "txt":
+                export_txt(out_path, title, tracks, author)
+            elif fmt == "m3u8":
+                export_m3u8(out_path, title, tracks, author)
+            exported_files.append(out_path)
+            print(f"[✓] 成功生成 {fmt.upper():<5} 文件: {os.path.abspath(out_path)}")
+        except Exception as e:
+            print(f"[✗] 导出 {fmt.upper()} 失败: {e}")
+
+    print("-" * 64)
+    print(f"[🎉] 导出任务全部完成！共导出 {len(tracks)} 首歌曲。")
+    print(f"[*] 文件已存入: {os.path.abspath(output_dir)}")
+    print("=" * 64)
+
+    if exported_files and reveal_folder_flag:
+        reveal_folder(exported_files[0])
+    return exported_files
+
 
 def main():
-    print("============ 网易云音乐歌单导出工具 ============")
-    print("支持：歌单链接 / 歌单ID / 个人主页链接 / 用户UID（批量导出）/ 163cn.tv 短链")
-    while True:
-        user_input = input("\n请输入链接或 ID（输入 0 退出）：").strip()
-        if not user_input or user_input in ('0', 'q', 'quit', 'exit'):
-            break
+    parser = argparse.ArgumentParser(
+        description="网易云音乐歌单导出工具 (PlaylistOut NetEase Exporter)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("input", nargs="?", help="网易云歌单链接、短链、歌单ID 或 用户主页")
+    parser.add_argument("-i", "--id", dest="opt_id", help="网易云歌单链接、短链、歌单ID 或 用户主页")
+    parser.add_argument("-o", "--output-dir", default="output", help="导出目录 (默认: output)")
+    parser.add_argument(
+        "-f", "--format",
+        default="all",
+        help="导出格式: 1~5 或 all, xlsx, csv, json, txt, m3u8 (默认: all)",
+    )
+    parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
+    args = parser.parse_args()
 
-        # Check if it's user profile
+    raw_input = args.opt_id or args.input
+    output_dir = args.output_dir if args.output_dir else "output"
+    formats = resolve_export_formats(args.format)
+
+    if raw_input:
+        user_input = raw_input.strip()
         user_id = extract_user_id(user_input)
         playlist_id = extract_playlist_id(user_input)
 
         if user_id and ('user' in user_input or '163cn.tv' in user_input) and not playlist_id:
-            # Check user playlists
             user_data = get_user_playlists(user_id)
             if user_data:
                 nickname, pls = user_data
-                print(f"\n用户【{nickname}】共发现 {len(pls)} 个歌单：")
                 created_pls = [p for p in pls if p['is_created']]
-                sub_pls = [p for p in pls if not p['is_created']]
-                print(f"  创建的歌单 ({len(created_pls)} 个):")
-                for idx, p in enumerate(created_pls, 1):
-                    print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
-                if sub_pls:
-                    print(f"  收藏的歌单 ({len(sub_pls)} 个):")
-                    for idx, p in enumerate(sub_pls, len(created_pls) + 1):
-                        print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
-
-                sel = input("\n请选择要导出的歌单序号（或输入 all 导出所有，0 返回）：").strip()
-                if sel == '0':
-                    continue
-                to_export = []
-                if sel.lower() == 'all':
-                    to_export = created_pls
-                elif sel.isdigit() and 1 <= int(sel) <= len(pls):
-                    to_export = [pls[int(sel) - 1]]
-
-                for pl in to_export:
+                target_pls = created_pls or pls
+                for pl in target_pls:
                     data = get_playlist_data(pl['id'])
                     if data:
                         t, trks, a = data[:3]
-                        fname = f"{sanitize_filename(t)} - {sanitize_filename(a)}.xlsx"
-                        export_xlsx(fname, t, trks, a)
-                        print(f"✓ 已导出: {fname}")
-                continue
+                        cov = data[3] if len(data) > 3 else ''
+                        perform_export(t, trks, a, cov, pl['id'], output_dir=output_dir, formats=formats, reveal_folder_flag=False)
+                if not args.no_open:
+                    reveal_folder(output_dir)
+                return
+            else:
+                print("错误: 无法获取该用户的歌单列表", file=sys.stderr)
+                sys.exit(1)
 
         if playlist_id:
-            print(f"正在抓取歌单 ID: {playlist_id} ...")
             data = get_playlist_data(playlist_id)
             if not data:
-                print("❌ 获取歌单失败，请检查是否公开或 ID 是否正确。")
-                continue
+                print("错误: 获取歌单失败，请检查是否公开或 ID 是否正确", file=sys.stderr)
+                sys.exit(1)
             title, tracks, author = data[:3]
             playlist_cover = data[3] if len(data) > 3 else ''
-            unavail = sum(1 for t in tracks if t[4] == '下架/无版权')
-            vip_cnt = sum(1 for t in tracks if t[4] == 'VIP专享')
-            print(f"\n歌单：{title}（作者：{author}，共 {len(tracks)} 首）")
-            print(f"状态统计：正常 {len(tracks)-unavail-vip_cnt} 首，下架/无版权 {unavail} 首，VIP专享 {vip_cnt} 首")
-
-            print("\n请选择导出格式：\n 1) .xlsx (默认)\n 2) .json\n 3) .txt\n 4) .csv\n 5) .m3u8 (通用歌单)")
-            choice = input("选择 (1-5): ").strip() or "1"
-            base = f"{sanitize_filename(title)} - {sanitize_filename(author)}"
-
-            if choice == "2":
-                fn = f"{base}.json"
-                export_json(fn, title, tracks, author, playlist_cover, playlist_id=str(playlist_id))
-            elif choice == "3":
-                fn = f"{base}.txt"
-                export_txt(fn, title, tracks, author)
-            elif choice == "4":
-                fn = f"{base}.csv"
-                export_csv(fn, tracks)
-            elif choice == "5":
-                fn = f"{base}.m3u8"
-                export_m3u8(fn, title, tracks, author)
-            else:
-                fn = f"{base}.xlsx"
-                export_xlsx(fn, title, tracks, author)
-
-            print(f"✓ 成功保存为: {fn}")
-            open_folder(fn)
+            perform_export(title, tracks, author, playlist_cover, playlist_id, output_dir=output_dir, formats=formats, reveal_folder_flag=not args.no_open)
+            return
         else:
-            print("❌ 无法识别的输入，请输入网易云歌单链接、短链或 ID。")
+            print("错误: 无法解析输入的网易云链接或歌单 ID", file=sys.stderr)
+            sys.exit(1)
+
+    # 交互模式
+    print_banner("网易云音乐")
+    try:
+        while True:
+            user_input = input("\n请输入链接或 ID（输入 0 退出）：").strip()
+            if not user_input or user_input in ('0', 'q', 'quit', 'exit'):
+                print_exit_banner()
+                break
+
+            user_id = extract_user_id(user_input)
+            playlist_id = extract_playlist_id(user_input)
+
+            if user_id and ('user' in user_input or '163cn.tv' in user_input) and not playlist_id:
+                user_data = get_user_playlists(user_id)
+                if user_data:
+                    nickname, pls = user_data
+                    print(f"\n用户【{nickname}】共发现 {len(pls)} 个歌单：")
+                    created_pls = [p for p in pls if p['is_created']]
+                    sub_pls = [p for p in pls if not p['is_created']]
+                    print(f"  创建的歌单 ({len(created_pls)} 个):")
+                    for idx, p in enumerate(created_pls, 1):
+                        print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
+                    if sub_pls:
+                        print(f"  收藏的歌单 ({len(sub_pls)} 个):")
+                        for idx, p in enumerate(sub_pls, len(created_pls) + 1):
+                            print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
+
+                    sel = input("\n请选择要导出的歌单序号（或输入 all 导出所有，0 返回）：").strip()
+                    if sel == '0':
+                        continue
+                    to_export = []
+                    if sel.lower() == 'all':
+                        to_export = created_pls
+                    elif sel.isdigit() and 1 <= int(sel) <= len(pls):
+                        to_export = [pls[int(sel) - 1]]
+
+                    print_format_menu()
+                    fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+                    sel_formats = resolve_export_formats(fmt_input)
+
+                    for pl in to_export:
+                        data = get_playlist_data(pl['id'])
+                        if data:
+                            t, trks, a = data[:3]
+                            cov = data[3] if len(data) > 3 else ''
+                            perform_export(t, trks, a, cov, pl['id'], output_dir=output_dir, formats=sel_formats, reveal_folder_flag=False)
+                    if to_export and not args.no_open:
+                        reveal_folder(output_dir)
+                    continue
+
+            if playlist_id:
+                print(f"正在抓取歌单 ID: {playlist_id} ...")
+                data = get_playlist_data(playlist_id)
+                if not data:
+                    print("❌ 获取歌单失败，请检查是否公开或 ID 是否正确。")
+                    continue
+                title, tracks, author = data[:3]
+                playlist_cover = data[3] if len(data) > 3 else ''
+                unavail = sum(1 for t in tracks if t[4] == '下架/无版权')
+                vip_cnt = sum(1 for t in tracks if t[4] == 'VIP专享')
+                print(f"\n歌单：{title}（作者：{author}，共 {len(tracks)} 首）")
+                print(f"状态统计：正常 {len(tracks)-unavail-vip_cnt} 首，下架/无版权 {unavail} 首，VIP专享 {vip_cnt} 首")
+
+                print_format_menu()
+                fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+                sel_formats = resolve_export_formats(fmt_input)
+                perform_export(title, tracks, author, playlist_cover, playlist_id, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)
+            else:
+                print("❌ 无法识别的输入，请输入网易云歌单链接、短链或 ID。")
+    except KeyboardInterrupt:
+        print_exit_banner()
+
 
 if __name__ == '__main__':
     main()
