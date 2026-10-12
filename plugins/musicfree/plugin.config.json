@@ -18,8 +18,8 @@
   },
   "web": {
     "summary": {
-      "zh-CN": "在 MusicFree 中使用 Playlist Out 插件导入外部歌单。",
-      "en-US": "Import external playlists in MusicFree with the Playlist Out plugin."
+      "zh-CN": "开源免费的插件化音乐播放器（支持安卓与电脑端），安装音源插件即可聚合畅听全平台歌曲。安装本插件后，点击左侧列表的「导入歌单」按钮并选择「把你的歌单带走」，直接粘贴歌单链接或选择本地 JSON 文件即可导入。",
+      "en-US": "Open-source, plugin-based music player for Android and desktop that streams songs across platforms via source plugins. After installing this plugin, click 'Import Playlist' in the left list, select 'PlaylistOut', and paste a playlist link or choose a local JSON file to import."
     },
     "homepageUrl": "https://musicfree.catcat.work/",
     "repositoryUrl": "https://github.com/maotoumao/MusicFree",

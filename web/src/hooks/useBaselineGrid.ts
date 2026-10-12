@@ -45,10 +45,10 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
         const rem = currentBottom % H;
         const pad = rem === 0 ? 0 : H - rem;
         // Keep 2 grid rows (76px) base margin between major sections, 1 grid row (38px)
-        // when the section already includes trailing decorative space (InfoNotes / StatsJournal), and 0 after last.
+        // when the section already includes trailing decorative space (InfoNotes / RunningDaysStamp), and 0 after last.
         const hasTrailingDecoration =
           Boolean(sec.querySelector('.info-notes-section')) ||
-          Boolean(sec.querySelector('.stats-journal-section'));
+          Boolean(sec.querySelector('.running-days-stamp-wrap'));
         const baseMargin = idx === sections.length - 1 ? 0 : hasTrailingDecoration ? H : H * 2;
         sec.style.marginBottom = `${pad + baseMargin}px`;
       });

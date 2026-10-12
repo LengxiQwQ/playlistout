@@ -8,7 +8,7 @@ describe('DeveloperPanel', () => {
   it('exposes API, JSON, local CLI, and integration entry points', () => {
     const { container } = render(<DeveloperPanel />);
 
-    expect(screen.getByRole('heading', { name: '给开发者 / For Developers' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '给开发者' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '查看 JSON 规范 ↗' })).toHaveAttribute(
       'href',
       'https://github.com/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md',
@@ -28,6 +28,10 @@ describe('DeveloperPanel', () => {
 
     // The section itself is the only paper surface. Inner methods stay flat.
     expect(container.querySelectorAll('#developers .journal-paper')).toHaveLength(0);
+    // Uses system default fonts without decorative handwriting/marker/note/mono classes.
+    expect(
+      container.querySelectorAll('#developers .font-marker, #developers .font-handwriting, #developers .font-note, #developers .font-mono'),
+    ).toHaveLength(0);
   });
 
   it('copies the public API base URL', async () => {

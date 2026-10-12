@@ -239,7 +239,7 @@ export const zhCN: Translations = {
     nextTitle: '下一站',
   },
   developer: {
-    title: '给开发者 / For Developers',
+    title: '给开发者',
     subtitle: '想怎么接都可以：直接调用 Public API、在本地运行 Python CLI，或者按 Canonical JSON 接进自己的播放器、脚本和工具。',
     valueNote: '在线 API · 本地 CLI · JSON 协议 · 播放器接入',
     jsonTitle: 'JSON 数据协议',
@@ -313,7 +313,6 @@ export const zhCN: Translations = {
     licenseUrl: 'https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE',
     disclaimer: '独立开源项目。与任何所提及的音乐平台均无官方从属、赞助或许可关系。',
     githubLink: 'GitHub 仓库',
-    developerDocsLink: '开发者文档',
     authorLink: '作者信息',
     sponsorLink: '赞助支持',
     sponsorMenuTitle: '赞助与支持',

@@ -16,10 +16,7 @@ describe('Footer Component', () => {
       'href',
       'https://github.com/LengxiQwQ/playlistout',
     );
-    expect(screen.getByRole('link', { name: /开发者文档|developer docs/i })).toHaveAttribute(
-      'href',
-      '#developers',
-    );
+    expect(screen.queryByRole('link', { name: /开发者文档|developer docs/i })).not.toBeInTheDocument();
 
     const authorBtn = screen.getByRole('button', { name: /作者信息|author/i });
     expect(authorBtn).toBeInTheDocument();

@@ -59,9 +59,9 @@ export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
     repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
     logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/HEAD/apps/mobile/assets/images/icon_large.png',
     summary: {
-      'zh-CN': '软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入',
-      'en-US': 'Native built-in Playlist Out playlist import, supporting playlist links and local JSON import',
-      default: '软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入',
+      'zh-CN': '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
+      'en-US': "Open-source, free Bilibili music player that streams songs, covers, and live audio from Bilibili. With Playlist Out natively built in, tap the '+' button on the Playlists page and select 'Import External Playlist' to paste a playlist link or import a local JSON file.",
+      default: '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
     },
   },
 ];

@@ -13,7 +13,7 @@ import { UserPlaylistsPaper } from './components/playlist/UserPlaylistsPaper';
 import { InfoNotes } from './components/layout/InfoNotes';
 import { PluginEcosystem } from './components/ecosystem/PluginEcosystem';
 import { DeveloperPanel } from './components/developer/DeveloperPanel';
-import { StatsJournal } from './components/stats/StatsJournal';
+import { StatsJournal, RunningDaysStamp } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
 import { DisambiguationModal, DisambiguationItem } from './components/playlist/DisambiguationModal';
@@ -813,6 +813,7 @@ export const AppContent: React.FC = () => {
           {/* Developer entry points — intentionally last for users who explore the project deeply */}
           <div className="baseline-grid-snap">
             <DeveloperPanel />
+            <RunningDaysStamp />
           </div>
         </main>
 

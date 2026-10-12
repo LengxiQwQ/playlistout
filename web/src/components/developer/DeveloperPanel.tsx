@@ -86,22 +86,22 @@ export const DeveloperPanel: React.FC = () => {
     >
       <div className="developer-heading-row">
         <div className="developer-heading-copy">
-          <h2 id="developers-title" className="font-marker developer-title">
+          <h2 id="developers-title" className="developer-title">
             {t.developer.title}
           </h2>
-          <p className="font-handwriting developer-subtitle">{t.developer.subtitle}</p>
+          <p className="developer-subtitle">{t.developer.subtitle}</p>
         </div>
-        <div className="font-note developer-value-note">{t.developer.valueNote}</div>
+        <div className="developer-value-note">{t.developer.valueNote}</div>
       </div>
 
       <div className="developer-method-grid">
         {methods.map((method) => (
           <article key={method.id} className={`developer-method developer-method-${method.id}`}>
             <div className="developer-method-topline">
-              <span className="font-mono developer-method-mark" aria-hidden="true">
+              <span className="developer-method-mark" aria-hidden="true">
                 {method.mark}
               </span>
-              <span className="font-mono developer-method-meta">{method.meta}</span>
+              <span className="developer-method-meta">{method.meta}</span>
             </div>
 
             <h3 className="developer-method-title">{method.title}</h3>
@@ -112,7 +112,7 @@ export const DeveloperPanel: React.FC = () => {
                 href={method.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-handwriting developer-method-link"
+                className="developer-method-link"
               >
                 {method.action}
               </a>
@@ -121,7 +121,7 @@ export const DeveloperPanel: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCopyApi}
-                  className={`font-handwriting developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
+                  className={`developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
                   aria-label={copyLabel}
                 >
                   {copyLabel}
@@ -132,7 +132,7 @@ export const DeveloperPanel: React.FC = () => {
         ))}
       </div>
 
-      <div className="developer-footer-note font-note">{t.developer.footerNote}</div>
+      <div className="developer-footer-note">{t.developer.footerNote}</div>
     </Paper>
   );
 };

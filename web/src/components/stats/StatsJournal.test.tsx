@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { StatsJournal } from './StatsJournal';
+import { StatsJournal, RunningDaysStamp } from './StatsJournal';
 import * as client from '../../api/client';
 import { LanguageProvider } from '../../i18n';
 
@@ -108,6 +108,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -128,6 +129,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -145,6 +147,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       const { container } = render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -168,6 +171,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       const { container } = render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -191,6 +195,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       const { container } = render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -214,6 +219,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       const { container } = render(
         <LanguageProvider defaultLanguage="zh-CN">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 
@@ -237,6 +243,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       const { container } = render(
         <LanguageProvider defaultLanguage="en-US">
           <StatsJournal today={FIXED_TODAY} />
+          <RunningDaysStamp today={FIXED_TODAY} />
         </LanguageProvider>,
       );
 

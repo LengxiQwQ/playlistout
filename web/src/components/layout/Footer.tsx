@@ -221,27 +221,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             <span style={{ fontSize: '0.85rem' }}>↗</span>
           </a>
 
-          <a
-            href="#developers"
-            className="sticker font-handwriting footer-pill-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              backgroundColor: '#ffffff',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-              color: 'var(--ink, #2d3436)',
-              borderRadius: '6px',
-              lineHeight: 1.2,
-            }}
-          >
-            <span>{t.footer.developerDocsLink}</span>
-            <span style={{ fontSize: '0.85rem' }}>↓</span>
-          </a>
-
           <div
             ref={authorContainerRef}
             className="author-container"

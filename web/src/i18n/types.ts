@@ -313,7 +313,6 @@ export interface Translations {
     licenseUrl: string;
     disclaimer: string;
     githubLink: string;
-    developerDocsLink: string;
     authorLink: string;
     sponsorLink: string;
     sponsorMenuTitle: string;

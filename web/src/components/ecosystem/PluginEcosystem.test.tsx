@@ -150,7 +150,9 @@ describe('PluginEcosystem', () => {
     expect(screen.getByText('软件原生功能')).toBeInTheDocument();
     expect(screen.getAllByText('插件')).toHaveLength(2);
     expect(
-      screen.getByText('软件原生内置 Playlist Out 导入歌单能力，支持歌单链接和本地 JSON 导入'),
+      screen.getByText(
+        '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
+      ),
     ).toBeInTheDocument();
     const downloadLinks = screen.getAllByRole('link', { name: '官网下载' });
     expect(downloadLinks).toHaveLength(2);
