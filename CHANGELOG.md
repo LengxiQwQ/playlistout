@@ -6,6 +6,12 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **Architecture Evolution (P0–P3 Full Milestone Completion / 架构演进全量大版本重构)**:
+  - **P0 基础设施补全与模块化路由**: Worker 引入轻量高性能的 Hono 路由框架，将 700+ 行单体 `index.ts` 瘦身为纯入口适配器（7 行），解耦为 11 个单一职责路由与独立中间件（CORS 分权、安全头、速率限制），严密保持 HTTP 405 Method Not Allowed 语义；建立 `worker/src/providers/platforms.ts` 作为平台类型单一事实来源；强化 `MusicProvider` 自描述接口契约。
+  - **P1 Provider 注册中枢与 Service 解耦**: 建立 `ProviderRegistry` 注册中枢，将 5 大平台（QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐）全面迁移至自描述 `MusicProvider` 契约；三大核心 Service（`resolve-service.ts`、`playlist-service.ts`、`user-service.ts`）消除硬编码 if-else 瀑布，行数暴降 70%+，转为能力开关与注册表驱动；上线 `GET /api/v1/providers` 与 `GET /api/providers` 自描述元数据端点。
+  - **P2 前端解耦与 CLI 共享核心**: 前端 `App.tsx` 从 857 行上帝组件瘦身为 197 行编排层，提炼 4 个领域 Hooks（`usePlaylistParser`, `useDisambiguation`, `useViewMode`, `useChannelCache`）；拆分 `client.ts` 为单一职责 API 客户端门面；超大组件（`KugouAuthModal`, `StatsJournal`, `PlaylistSummary`, `SearchNote`）完成细粒度组件化；建立声明式校验规则表 `VALIDATION_RULES`；提炼 `cli/core/` 共享核心库（`terminal`, `exporters`, `http`, `models`, `cli_runner`），新增统一主入口 `cli/main.py` / `cli/playlistout.py`，各厂商脚本通过 `sys.path` 自适应完美保持独立运行。
+  - **P3 新厂商接入范式与双端扩展管道**: 制定新厂商标准化接入指南 [`docs/PROVIDER-ONBOARDING.md`](docs/PROVIDER-ONBOARDING.md) 并完成即插即用动态注册测试；构建 Worker 端洋葱模型元数据处理管道 `PlaylistPipeline`（包含 `unavailableAnnotator` 失效标注、`vipAnnotator` VIP 标定、`duplicateDetector` 歌曲去重检测中间件）；构建 Web 端插件化导出架构 `web/src/utils/export/`（`ExportPlugin` + `ExportRegistry`），原生支持 6 大导出格式（**全新支持 Markdown `.md` 表格导出**），并通过 `web/src/utils/export.ts` 保持 100% 同步向后兼容。
+
 - **Kugou Music CLI Exporter / 酷狗音乐 CLI 导出工具**:
   - 新增酷狗音乐独立 Python CLI 导出工具（[`cli/kugou/`](cli/kugou/)），全面支持酷狗官方精选/专题歌单、酷狗概念版集合歌单、移动端分享页短链与 H5 分享页（`gcid_...` / `src_cid=...`）以及个人云端自建歌单（Cloudlist / 我喜欢的歌）。
   - 公开歌单（专题、集合、H5）**100% 免登录**直接导出。

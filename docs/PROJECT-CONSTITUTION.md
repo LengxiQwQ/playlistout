@@ -32,12 +32,12 @@ The original QQ Music-only Web MVP shipped with v2.0.0 and is release history. T
 
 Current supported product capabilities are:
 
-- public playlist parsing for **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, and **QiShui Music**
+- public playlist parsing for **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, **QiShui Music**, and **KuWo Music**
 - public user-playlist discovery where a provider exposes a supported, trustworthy path
-- browser-local TXT / CSV / XLSX / JSON / M3U8 export
+- browser-local TXT / CSV / XLSX / JSON / M3U8 / Markdown export via modular plugin pipeline
 - clipboard copy workflows
 - Public API v1 for third-party applications, scripts, and migration tools
-- the MusicFree integration plugin plus a small interoperability lane for other open-source players
+- the MusicFree integration plugin plus an active interoperability lane for other open-source players
 - privacy-preserving aggregate Analytics V2 for public statistics and maintainer diagnostics
 
 The product principle remains:
@@ -97,7 +97,7 @@ The Worker exists only because browsers cannot reliably request every music-plat
 
 ### Python CLI
 
-The QQ Music and NetEase Cloud Music Python exporters remain first-class standalone tools and technical references.
+The standalone Python exporters (QQ Music, NetEase, KuGou, Kuwo, Qishui) and the unified entrypoint (`cli/main.py` / `cli/playlistout.py`) built upon `cli/core/` remain first-class standalone tools and technical references.
 
 They must stay independently testable and must never become a hidden runtime dependency of the Worker.
 
@@ -122,6 +122,7 @@ The frontend is responsible for:
 - XLSX generation
 - JSON generation
 - M3U8 generation
+- Markdown generation
 - clipboard copy operations
 - downloads directly to the user's device
 
@@ -145,7 +146,7 @@ The Worker is responsible for:
 
 The Worker must **not**:
 
-- generate XLSX/CSV/TXT/JSON/M3U8 files
+- generate XLSX/CSV/TXT/JSON/M3U8/Markdown files
 - store exported files
 - store playlist contents
 - store song lists

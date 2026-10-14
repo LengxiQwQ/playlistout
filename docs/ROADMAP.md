@@ -25,16 +25,16 @@ Analytics Foundation R1–R8 and the Analytics V2 migration are **COMPLETE**. Th
 
 The current production baseline includes:
 
-- production playlist parsing for QQ Music, NetEase Cloud Music, KuGou Music, and QiShui Music
+- production playlist parsing for QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, and Kuwo Music
 - normalized platform-independent playlist data
 - bounded pagination including 1000+ track playlists
-- TXT / CSV / XLSX / JSON / M3U8 browser-local export
+- TXT / CSV / XLSX / JSON / M3U8 / Markdown browser-local export via modular plugin pipeline
 - clipboard copy modes
 - anonymous aggregate usage statistics & privacy-preserving dimensional metrics
 - abuse/security boundaries (in-memory + durable D1 rate limiting)
 - responsive web UI, privacy information and SEO metadata
 - GitHub Pages + Cloudflare Worker + D1 production deployment with Wrangler native migration safety
-- preserved Python QQ Music, NetEase Cloud Music, Kuwo Music, Qishui Music, and Kugou Music CLIs
+- unified Python CLI (`cli/main.py` / `cli/playlistout.py`) with shared `cli/core/` and preserved standalone vendor CLIs
 
 ---
 
@@ -177,13 +177,13 @@ This milestone is complete when:
 
 # 3. Product / ecosystem lane
 
-The four primary supported providers are already in production: QQ Music, NetEase Cloud Music, KuGou Music, and QiShui Music.
+The five primary supported providers are in production: QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, and KuWo Music.
 
-The next product work should prioritize **useful interoperability** over adding providers merely for count:
+The next product work should prioritize **useful interoperability** and lightweight integration:
 
-1. harden the existing four providers against upstream changes
+1. harden the existing five providers against upstream changes
 2. expand the open-source player ecosystem around the stable PlaylistOut API/JSON contract
-3. add another provider such as Kuwo or Migu only when there is a concrete user/integration need
+3. add another provider (such as Migu) following [`docs/PROVIDER-ONBOARDING.md`](./PROVIDER-ONBOARDING.md) when backed by real community need
 
 Each provider should be developed as its own scoped milestone. Do not implement several providers at once merely to claim broad compatibility.
 
@@ -208,6 +208,8 @@ A provider is not considered supported merely because one sample playlist works.
 These are possible future improvements, not current commitments:
 
 - M3U / M3U8 export ✅ (Completed in v2.2.0)
+- Markdown (.md) export ✅ (Completed in Phase P3)
+- Modular Architecture Evolution (P0–P3) ✅ (Completed: Hono routing, ProviderRegistry, Hooks/Facade decoupling, Metadata Pipeline, Modular Export Registry, and New Vendor Onboarding Guide; see [`docs/ARCHITECTURE-EVOLUTION.md`](./ARCHITECTURE-EVOLUTION.md))
 - open-source music player ecosystem integration (MusicFree, LX Music, BBPlayer, Listen 1, Moosync; see [`docs/ECOSYSTEM-INTEGRATION.md`](./ECOSYSTEM-INTEGRATION.md))
 - selectable export fields
 - client-side search/filter for parsed tracks

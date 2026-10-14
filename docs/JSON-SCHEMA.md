@@ -35,7 +35,7 @@ PlaylistOut 的核心使命是**“采集和交换通用歌单数据”**，同�
 | `name` | `string` | **必填**。歌单完整名称 |
 | `creator` | `string` | 可选。歌单创建者昵称 |
 | `coverUrl` | `string` | 可选。歌单封面高清图片直链 URL |
-| `platform` | `string` | **必填**。歌单所属音源平台标识（`"qqmusic"` \| `"netease"` \| `"kugou"` \| `"qishui"` \| `"bilibili"`） |
+| `platform` | `string` | **必填**。歌单所属音源平台标识（`"qqmusic"` \| `"netease"` \| `"kugou"` \| `"qishui"` \| `"kuwo"` \| `"bilibili"`） |
 | `id` | `string` | **必填**。歌单唯一标识（在线平台歌单 ID 或宿主本地歌单 ID） |
 | `sourceUrl` | `string` | 条件必填。歌单在来源平台的网页直链 URL。在线平台歌单**必填**；客户端纯本地创建的歌单（如无对应远端网页链接）直接省略 |
 | `trackCount` | `number` | **必填**。歌单包含的曲目条目总数（整型） |

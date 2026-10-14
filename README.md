@@ -21,7 +21,7 @@
 
 ## Playlist Out 是什么？
 
-**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。它会把支持平台中的公开歌单解析成统一的结构化数据：普通用户可以直接在网页里查看、整理并导出为 `Excel`、`JSON`、`TXT`、`CSV`、`M3U8`，也可以通过插件或适配把歌单继续带进支持的开源音乐播放器；开发者则可以通过 Public API、Python CLI 或标准 JSON 数据结构，把这套解析能力接入自己的应用、脚本或迁移工具。
+**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。它会把支持平台中的公开歌单解析成统一的结构化数据：普通用户可以直接在网页里查看、整理并导出为 `Excel`、`JSON`、`TXT`、`CSV`、`M3U8`、`Markdown`，也可以通过插件或适配把歌单继续带进支持的开源音乐播放器；开发者则可以通过 Public API、Python CLI 或标准 JSON 数据结构，把这套解析能力接入自己的应用、脚本或迁移工具。
 
 Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文件。项目只处理歌单与曲目元数据，目标是让歌单更容易备份、迁移和继续使用。
 
@@ -32,7 +32,7 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 不需要安装客户端，直接打开 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/) 即可开始：
 
 1. **解析歌单**：粘贴歌单链接、分享内容或支持的 ID，等待 Playlist Out 完成解析。
-2. **查看与导出**：确认歌曲列表后，选择需要的 Excel、JSON、TXT、CSV 或 M3U8 格式。
+2. **查看与导出**：确认歌曲列表后，选择需要的 Excel、JSON、TXT、CSV、M3U8 或 Markdown 格式。
 3. **继续带走**：如果你使用受支持的开源播放器，还可以通过插件或适配把解析后的歌单继续导入播放器。
 
 ---
@@ -44,7 +44,7 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 | **多平台大歌单解析** | 支持 **QQ 音乐**、**网易云音乐**、**酷狗音乐（含酷狗概念版）**、**酷我音乐**、**汽水音乐**，大歌单自动完整翻页 |
 | **多种输入直接识别** | 支持粘贴 App 分享口令/文本、网页链接、短链、纯数字 ID，以及**酷狗音乐概念版**分享链接与酷狗码，无需手动提取网址 |
 | **按用户批量查歌单** | 输入一个用户（如 QQ 号、网易云用户主页 / UID，或扫码授权酷狗账号），即可查出该用户下的**全部歌单**，支持勾选并批量解析导出 |
-| **多格式纯本地导出** | 浏览器本地直接生成 `Excel`、`JSON`、`CSV`、`M3U8`、`TXT` 文件及剪贴板文本，保留歌曲、歌手、专辑、封面、时长及 VIP / 下架状态 |
+| **多格式纯本地导出** | 浏览器本地插件化生成 `Excel`、`JSON`、`CSV`、`M3U8`、`TXT`、`Markdown` 文件及剪贴板文本，保留歌曲、歌手、专辑、封面、时长及 VIP / 下架状态 |
 | **播放器与迁移互通** | 支持把解析后的歌单直接带进 **MusicFree**、**BBPlayer** 等开源播放器，或通过 **Soundiiz / TuneMyMusic / FreeYourMusic** 跨平台迁移 |
 | **CLI 与开放 API** | 提供可本地运行的 **Python CLI** 命令行批量导出工具，以及面向开发者的 **Public API** 与标准 **JSON 数据协议** |
 
@@ -199,10 +199,11 @@ python kugou_playlist_export.py
 | **TXT** | 阅读、简单备份与文本处理 |
 | **CSV** | 通用歌单迁移与数据交换；使用 `title / artist / album / isrc` 等语言无关标准列名 |
 | **M3U8** | 本地播放器、媒体库以及支持 Extended M3U/M3U8 的迁移工具 |
+| **Markdown (.md)** | 知识库笔记、个人博客与社区分享；生成格式工整的 Markdown 表格与信纸头，完美适配 Obsidian / Notion / GitHub |
 
-导出文件由浏览器本地生成，不需要把导出文件上传到服务器。
+导出文件由浏览器本地通过模块化插件管道（`web/src/utils/export/`）生成，不需要把导出文件上传到服务器。
 
-如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。各格式当前的字段、Sheet 与兼容性约定见 [Web 导出格式规范](docs/EXPORT-FORMATS.md)。
+如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。各格式当前的字段、Sheet 与插件化扩展约定见 [Web 导出格式规范](docs/EXPORT-FORMATS.md)。
 
 ---
 
@@ -285,15 +286,12 @@ Playlist Out 使用 monorepo 管理网页、Worker 与插件代码。
 
 ```text
 playlistout/
-├── web/                  # React / Vite 前端
-├── worker/               # Cloudflare Worker API
-├── cli/                  # Python 命令行导出工具
-│   ├── qqmusic/
-│   └── netease/
-├── plugins/
-│   └── musicfree/        # MusicFree 插件
-├── docs/                 # API、数据协议与项目文档
-└── scripts/              # 开发、检查与维护脚本
+├── web/                  # React / Vite 前端 (模块化 API 门面、领域 Hooks、插件化导出管道)
+├── worker/               # Cloudflare Worker API (Hono 路由、自描述 Provider 注册制、元数据洋葱管道)
+├── cli/                  # Python 命令行统一工具 (cli/core/ 核心与统一入口 + 5 平台独立脚本)
+├── plugins/              # 开源播放器插件生态 (MusicFree 等)
+├── docs/                 # 架构演进路线图、新厂商接入指南、API、数据协议与项目宪法
+└── scripts/              # 本地 8 步 CI 门禁、插件构建与自动化维护脚本
 ```
 
 安装依赖：

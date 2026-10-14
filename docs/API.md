@@ -31,7 +31,7 @@ PlaylistOut officially supports 5 major music platforms:
 ## 3. Global API Invariants & Security Boundaries
 
 1. **Tiered CORS Policy**:
-   - **Public GET Endpoints** (`/api/v1/resolve`, `/api/v1/playlist`, `/api/v1/user/playlists`, `/api/v1/stats`, `/api/v1/health`, and legacy query endpoints):
+   - **Public GET Endpoints** (`/api/v1/resolve`, `/api/v1/playlist`, `/api/v1/user/playlists`, `/api/v1/stats`, `/api/v1/health`, `/api/v1/providers`, `/api/providers`, and legacy query endpoints):
      - `Access-Control-Allow-Origin: *`
      - `Access-Control-Allow-Methods: GET, OPTIONS`
      - `Access-Control-Allow-Headers: Content-Type, Accept, Authorization, X-Kugou-Userid, X-Kugou-Token, X-Sample-Request, X-PlaylistOut-Session, X-PlaylistOut-Client-Type, X-PlaylistOut-Client-Id, X-PlaylistOut-Client-Version, X-PlaylistOut-Host`
@@ -207,7 +207,7 @@ The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side b
 | :--- | :--- | :---: | :---: | :--- |
 | `q` | `string` | — | **Yes** | User input string (up to 2048 characters). Can be a web URL, mobile share link, shortlink, mixed share text, user profile URL, QQ number, NetEase UID, or raw numeric ID. |
 | `type` | `string` | `auto` | No | Intent constraint: `auto`, `playlist` (single playlist), or `user` (user profile collections). |
-| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, or `qishui`. |
+| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, or `kuwo`. |
 
 #### Response: Single Playlist (`kind: "playlist"`)
 
@@ -323,7 +323,7 @@ Parses a single public playlist from a supported music provider and returns the 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
 | `url` / `id` | `string` | **Yes** | Public playlist URL, shortlink, or raw playlist ID. |
-| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
+| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
 
 #### Response (`200 OK`)
 
@@ -444,7 +444,86 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
 
 ---
 
-### 6.5 Health Check
+### 6.5 Provider Registry & Capabilities Metadata
+
+```http
+GET /api/v1/providers
+GET /api/providers
+```
+
+Returns self-describing metadata, visual themes, and capability flags for all registered music providers managed by `ProviderRegistry`. Enables frontend and third-party clients to dynamically render provider switchers, input badges, and feature toggles without hardcoding vendor IDs.
+
+#### Response (`200 OK`)
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "qqmusic",
+      "name": "QQ 音乐",
+      "nameEn": "QQ Music",
+      "themeColor": "#12B886",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": true,
+        "numericId": true
+      }
+    },
+    {
+      "id": "netease",
+      "name": "网易云音乐",
+      "nameEn": "NetEase Cloud Music",
+      "themeColor": "#FA5252",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": true,
+        "numericId": true,
+        "shortLink": true
+      }
+    },
+    {
+      "id": "kugou",
+      "name": "酷狗音乐",
+      "nameEn": "KuGou Music",
+      "themeColor": "#228BE6",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": true,
+        "userProfileRequiresAuth": true,
+        "shortLink": true
+      }
+    },
+    {
+      "id": "qishui",
+      "name": "汽水音乐",
+      "nameEn": "QiShui Music",
+      "themeColor": "#FAB005",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": false,
+        "numericId": true,
+        "shortLink": true
+      }
+    },
+    {
+      "id": "kuwo",
+      "name": "酷我音乐",
+      "nameEn": "KuWo Music",
+      "themeColor": "#FD7E14",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": false,
+        "shortLink": true
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 6.6 Health Check
 
 ```http
 GET /api/v1/health
