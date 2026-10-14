@@ -13,6 +13,7 @@ import { playlistRoutes } from './routes/playlist';
 import { userRoutes } from './routes/user';
 import { kugouAuthRoutes } from './routes/kugouAuth';
 import { statsRoutes } from './routes/stats';
+import { providersRoutes } from './routes/providers';
 import { internalRoutes } from './routes/internal';
 import { handleSoundiizMigration } from './routes/migration';
 import { handleEvent } from './routes/event';
@@ -79,6 +80,7 @@ app.route('/api', playlistRoutes);
 app.route('/api', userRoutes);
 app.route('/api', kugouAuthRoutes);
 app.route('/api', statsRoutes);
+app.route('/api', providersRoutes);
 app.route('/api', internalRoutes);
 
 // 3. Mount standalone route handlers with correct argument signatures

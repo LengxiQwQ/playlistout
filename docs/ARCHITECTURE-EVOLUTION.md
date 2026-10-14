@@ -1,6 +1,6 @@
 # PlaylistOut 架构演进路线图与状态跟踪 (Architecture Evolution Roadmap)
 
-> **当前总体状态**：🟢 **P0 已完成，当前就绪待启动 P1 (Ready for P1)**  
+> **当前总体状态**：🟢 **P1 已完成，当前就绪待启动 P2 (Ready for P2)**  
 > **更新时间**：2026-10-14  
 > **核心目标**：从单体中心化分发向自描述 Provider 注册制与功能管道演进，让“加一个厂商”只需新增 1 个目录，“加一个功能”拥有可插拔管道。  
 > **Agent 自治执行口令**：当用户输入“按照路线图继续重构，继续走。”时，Agent 必须读取本文档的【当前状态】与【执行规矩】，自动识别下一个待执行任务并无缝推进。
@@ -12,8 +12,8 @@
 | 阶段 | 名称 | 预估工作量 | 状态 | 关键交付物 | 验收方式 |
 | :--- | :--- | :---: | :---: | :--- | :--- |
 | **P0** | **基础设施补全** | 2-3 天 | 🟢 **已完成 (PASS)** | Hono 路由解耦、统一 `SupportedPlatform`、强化 `MusicProvider` 类型 | `npm run gate` 8 步全绿 + 子 Agent 独立验收通过 |
-| **P1** | **Provider 注册中枢** | 3-4 天 | ⚪ **就绪待启动** | `ProviderRegistry`、5 大厂商迁移至 `MusicProvider`、三大 Service 瘦身、`/api/providers` 端点 | `npm run gate` 全绿 + 消灭 resolve-service 硬编码 |
-| **P2** | **前端解耦 + CLI 共享核心** | 3-4 天 | ⚪ 未开始 | `App.tsx` Hooks 提取、`api/client.ts` 拆分、组件拆解、`cli/core/` 提取 | `npm run gate` 全绿 + CLI 独立运行正常 |
+| **P1** | **Provider 注册中枢** | 3-4 天 | 🟢 **已完成 (PASS)** | `ProviderRegistry`、5 大厂商迁移至 `MusicProvider`、三大 Service 瘦身、`/api/providers` 端点 | `npm run gate` 全绿 + 子 Agent 独立验收通过 |
+| **P2** | **前端解耦 + CLI 共享核心** | 3-4 天 | ⚪ **就绪待启动** | `App.tsx` Hooks 提取、`api/client.ts` 拆分、组件拆解、`cli/core/` 提取 | `npm run gate` 全绿 + CLI 独立运行正常 |
 | **P3** | **新厂商接入 + 功能管道** | 持续 | ⚪ 未开始 | 新增厂商（如咪咕）、Worker 元数据管道、浏览器端导出插件管道 | 新厂商解析测试通过 + 遵从宪法 §1 非目标 |
 
 ---
@@ -65,14 +65,14 @@
   - [x] 本地运行 `npm run gate` 8 步全绿
   - [x] 派发无上下文独立子 Agent 进行全量审计并出具报告 (PASS)
 
-### 🟠 P1: Provider 注册中枢
-- [ ] **P1.1 建立 `ProviderRegistry`** (`worker/src/providers/registry.ts`)
-- [ ] **P1.2 迁移 5 大厂商至 `MusicProvider` 契约** (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`)
-- [ ] **P1.3 重构 `resolve-service.ts`**（消除硬编码 if-else 瀑布，行数从 1200 → ~300）
-- [ ] **P1.4 重构 `playlist-service.ts` & `user-service.ts`**（完全改为 Registry 与能力驱动）
-- [ ] **P1.5 提供 `GET /api/providers` 端点**
-- [ ] **P1.6 分析维度动态适配 (`dimensions.ts`)**
-- [ ] **P1 质量门禁与子 Agent 验收**
+### 🟠 P1: Provider 注册中枢 (已完成)
+- [x] **P1.1 建立 `ProviderRegistry`** (`worker/src/providers/registry.ts`)
+- [x] **P1.2 迁移 5 大厂商至 `MusicProvider` 契约** (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`)
+- [x] **P1.3 重构 `resolve-service.ts`**（消除硬编码 if-else 瀑布，行数从 1200 → ~350）
+- [x] **P1.4 重构 `playlist-service.ts` & `user-service.ts`**（完全改为 Registry 与能力驱动）
+- [x] **P1.5 提供 `GET /api/providers` 端点**
+- [x] **P1.6 分析维度动态适配 (`dimensions.ts`)**
+- [x] **P1 质量门禁与子 Agent 验收 (100% PASS)**
 
 ### 🟡 P2: 前端解耦 + CLI 共享核心
 - [ ] **P2.1 `App.tsx` 提取业务 Hooks** (`usePlaylistParser`, `useDisambiguation`, `useViewMode`, `useChannelCache`)

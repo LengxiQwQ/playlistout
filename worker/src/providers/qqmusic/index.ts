@@ -1,31 +1,4 @@
-import type { Provider } from '../types';
-import type { Playlist } from '../../models/playlist';
-import { extractQQPlaylistId, extractQQPlaylistIdAsync, matchesQQMusicInput } from './input';
-import { fetchQQPlaylist, fetchQQPlaylistWithMeta } from './client';
-
-/**
- * QQ Music Provider Implementation (Phase 1)
- */
-export const qqMusicProvider: Provider = {
-  name: 'qqmusic',
-
-  matches(input: string): boolean {
-    return matchesQQMusicInput(input);
-  },
-
-  extractId(input: string): string | null {
-    try {
-      return extractQQPlaylistId(input);
-    } catch {
-      return null;
-    }
-  },
-
-  async parse(inputOrId: string): Promise<Playlist> {
-    const playlistId = await extractQQPlaylistIdAsync(inputOrId);
-    return fetchQQPlaylist(playlistId);
-  },
-};
+export { qqMusicProvider, isQQProfile, type DualQQMusicProvider } from './provider';
 
 export * from './input';
 export * from './client';

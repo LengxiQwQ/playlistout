@@ -1,14 +1,10 @@
 /**
  * Shared User Playlists Service
- * Encapsulates user playlist fetching for QQ Music, NetEase Cloud Music, and KuGou Music.
+ * Encapsulates user playlist fetching driven by ProviderRegistry & capabilities.
  */
 
 import { type UserPlaylistsData, ProviderError } from '../models/playlist';
-import { extractQQNumberAsync, fetchQQUserPlaylists } from '../providers/qqmusic';
-import { extractNeteaseUserId, fetchNeteaseUserPlaylists, matchesNeteaseInput } from '../providers/netease';
-import { fetchKugouUserPlaylists, kugouProvider } from '../providers/kugou';
-import { qishuiProvider } from '../providers/qishui';
-import { kuwoProvider } from '../providers/kuwo';
+import { providerRegistry, type MusicProvider, type SupportedPlatform } from '../providers';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 
 export interface UserServiceOptions {
@@ -22,7 +18,7 @@ export interface UserServiceOptions {
 
 export interface UserServiceResult {
   userData: UserPlaylistsData;
-  platform: 'qqmusic' | 'netease' | 'kugou';
+  platform: SupportedPlatform;
 }
 
 export async function fetchUserPlaylistsService(
@@ -43,64 +39,54 @@ export async function fetchUserPlaylistsService(
   }
 
   const cleanInput = extractCleanUrlOrInput(rawInput);
+  const isNumeric = /^\d{4,20}$/.test(cleanInput.trim());
 
-  if (platformParam === 'qishui' || qishuiProvider.matches(cleanInput)) {
-    throw new ProviderError('INVALID_INPUT', 'Qishui Music does not support user playlists export.', 400);
+  let targetProvider: MusicProvider | null = null;
+
+  if (platformParam && platformParam !== 'auto') {
+    targetProvider = providerRegistry.get(platformParam) || null;
+  } else if (!isNumeric) {
+    targetProvider =
+      providerRegistry.resolveUserProfile(cleanInput) ||
+      providerRegistry.resolveByInput(cleanInput);
   }
 
-  if (platformParam === 'kuwo' || kuwoProvider.matches(cleanInput)) {
-    throw new ProviderError('INVALID_INPUT', 'Kuwo Music does not support user playlists export.', 400);
+  // Capability check: reject if provider is resolved and does not support user profiles
+  if (targetProvider && !targetProvider.meta.capabilities.userProfile) {
+    const name = targetProvider.meta.name;
+    throw new ProviderError('INVALID_INPUT', `${name} does not support user profiles or user playlists export.`, 400);
   }
 
-  // Kugou User Playlists branch (requires token & userid via headers)
-  if (platformParam === 'kugou' || kugouProvider.matches(cleanInput)) {
+  // Auth requirement check (e.g. Kugou)
+  if (targetProvider && targetProvider.meta.capabilities.userProfileRequiresAuth) {
     const token = auth?.token;
     const userid = auth?.userid;
     if (!token || !userid) {
       throw new ProviderError(
         'INVALID_INPUT',
-        'Kugou user playlists require both token and userid passed via Authorization / X-Kugou-* headers from QR login.',
+        `${targetProvider.meta.name} user playlists require both token and userid passed via Authorization / X-${targetProvider.meta.id}-* headers from QR login.`,
         400,
-        { authRequired: true, platform: 'kugou' },
+        { authRequired: true, platform: targetProvider.meta.id },
       );
     }
-
-    const userData = await fetchKugouUserPlaylists(token, userid);
-    return { userData, platform: 'kugou' };
   }
 
-  const isNetease = matchesNeteaseInput(cleanInput) || platformParam === 'netease';
-
-  if (isNetease) {
-    const extractedUid = await extractNeteaseUserId(cleanInput);
-    if (!extractedUid) {
-      throw new ProviderError(
-        'INVALID_INPUT',
-        `The provided input is not a valid NetEase user ID or profile URL: "${cleanInput}"`,
-        400,
-      );
-    }
-
-    const userData = await fetchNeteaseUserPlaylists(extractedUid);
-    return { userData, platform: 'netease' };
+  // If a non-numeric provider is identified and supports user playlists, execute directly
+  if (targetProvider && targetProvider.fetchUserPlaylists) {
+    const userData = await targetProvider.fetchUserPlaylists(cleanInput, auth);
+    return { userData, platform: targetProvider.meta.id };
   }
 
-  const extractedUin = await extractQQNumberAsync(cleanInput);
-  if (!extractedUin) {
-    throw new ProviderError(
-      'INVALID_INPUT',
-      `The provided input is not a valid QQ number or profile URL: "${cleanInput}"`,
-      400,
-    );
-  }
-
+  // If numeric ID with no explicit platform, try QQ Music first, fallback to NetEase
+  const qqProvider = providerRegistry.get('qqmusic')!;
   try {
-    const userData = await fetchQQUserPlaylists(extractedUin);
+    const userData = await qqProvider.fetchUserPlaylists!(cleanInput, auth);
     return { userData, platform: 'qqmusic' };
   } catch (err: unknown) {
-    if (!platformParam && /^\d{4,18}$/.test(cleanInput.trim())) {
+    if (!platformParam && isNumeric) {
       try {
-        const neteaseUserData = await fetchNeteaseUserPlaylists(cleanInput.trim());
+        const netease = providerRegistry.get('netease')!;
+        const neteaseUserData = await netease.fetchUserPlaylists!(cleanInput.trim(), auth);
         return { userData: neteaseUserData, platform: 'netease' };
       } catch {
         // Fall through to original error

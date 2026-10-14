@@ -82,7 +82,9 @@ export function isPublicEndpoint(pathname: string): boolean {
     pathname === '/api/kugou/login/stream' ||
     pathname === '/api/v1/user/playlists' ||
     pathname === '/api/v1/stats' ||
-    pathname === '/api/v1/health'
+    pathname === '/api/v1/health' ||
+    pathname === '/api/providers' ||
+    pathname === '/api/v1/providers'
   );
 }
 

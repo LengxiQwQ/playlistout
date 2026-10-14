@@ -18,6 +18,7 @@ import type {
   AnalyticsPlatform,
   ProviderFailurePath,
 } from './types';
+import { isSupportedPlatform } from '../providers/platforms';
 
 /**
  * Classifies the user's input into a coarse input-type category.
@@ -218,14 +219,8 @@ export function classifyResolveRequestedPlatform(
 ): ResolveRequestedPlatform {
   if (!rawPlatform) return 'auto';
   const clean = rawPlatform.trim().toLowerCase();
-  if (
-    clean === 'auto' ||
-    clean === 'qqmusic' ||
-    clean === 'netease' ||
-    clean === 'kugou' ||
-    clean === 'qishui' ||
-    clean === 'kuwo'
-  ) {
+  if (clean === 'auto') return 'auto';
+  if (isSupportedPlatform(clean)) {
     return clean;
   }
   return 'unknown';
@@ -239,7 +234,7 @@ export function classifyAnalyticsPlatform(
 ): AnalyticsPlatform {
   if (!platform) return 'unknown';
   const clean = platform.trim().toLowerCase();
-  if (clean === 'qqmusic' || clean === 'netease' || clean === 'kugou' || clean === 'qishui' || clean === 'kuwo') {
+  if (isSupportedPlatform(clean)) {
     return clean;
   }
   return 'unknown';

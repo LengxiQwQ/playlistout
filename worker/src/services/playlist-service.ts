@@ -5,11 +5,7 @@
  */
 
 import { type Playlist, ProviderError } from '../models/playlist';
-import { qqMusicProvider } from '../providers/qqmusic';
-import { neteaseProvider } from '../providers/netease';
-import { kugouProvider } from '../providers/kugou';
-import { qishuiProvider } from '../providers/qishui';
-import { kuwoProvider } from '../providers/kuwo';
+import { providerRegistry, type MusicProvider, type SupportedPlatform } from '../providers';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { recordResolveV2 } from '../analytics/v2-recorder';
 import { classifyInputType, classifyErrorCategory } from '../analytics/dimensions';
@@ -30,7 +26,7 @@ export interface PlaylistServiceOptions {
 
 export interface PlaylistServiceResult {
   playlist: Playlist;
-  platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo';
+  platform: SupportedPlatform;
 }
 
 export async function parsePlaylistService(
@@ -55,52 +51,30 @@ export async function parsePlaylistService(
   }
 
   const playlistInput = extractCleanUrlOrInput(rawInput);
+  const isNumeric = /^\d{4,20}$/.test(playlistInput.trim());
 
-  // Check provider matching
-  let matchedProvider:
-    | typeof qqMusicProvider
-    | typeof neteaseProvider
-    | typeof kugouProvider
-    | typeof qishuiProvider
-    | typeof kuwoProvider
-    | null = null;
-  let targetPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' = 'qqmusic';
+  let matchedProvider: MusicProvider | null = null;
+  let targetPlatform: SupportedPlatform = 'qqmusic';
 
-  if (kugouProvider.matches(playlistInput)) {
-    matchedProvider = kugouProvider;
-    targetPlatform = 'kugou';
-  } else if (qishuiProvider.matches(playlistInput)) {
-    matchedProvider = qishuiProvider;
-    targetPlatform = 'qishui';
-  } else if (kuwoProvider.matches(playlistInput)) {
-    matchedProvider = kuwoProvider;
-    targetPlatform = 'kuwo';
-  } else if (neteaseProvider.matches(playlistInput)) {
-    matchedProvider = neteaseProvider;
-    targetPlatform = 'netease';
-  } else if (/^\d{4,20}$/.test(playlistInput.trim())) {
-    if (platformParam === 'kugou') {
-      matchedProvider = kugouProvider;
-      targetPlatform = 'kugou';
-    } else if (platformParam === 'qishui') {
-      matchedProvider = qishuiProvider;
-      targetPlatform = 'qishui';
-    } else if (platformParam === 'kuwo') {
-      matchedProvider = kuwoProvider;
-      targetPlatform = 'kuwo';
-    } else if (platformParam === 'netease') {
-      matchedProvider = neteaseProvider;
-      targetPlatform = 'netease';
+  if (!isNumeric) {
+    matchedProvider = providerRegistry.resolveByInput(playlistInput);
+    if (matchedProvider) {
+      targetPlatform = matchedProvider.meta.id;
+    }
+  } else {
+    if (platformParam && platformParam !== 'auto') {
+      const explicit = providerRegistry.get(platformParam);
+      if (explicit) {
+        matchedProvider = explicit;
+        targetPlatform = explicit.meta.id;
+      }
     } else if (playlistInput.trim().length >= 19) {
-      matchedProvider = qishuiProvider;
+      matchedProvider = providerRegistry.get('qishui') || null;
       targetPlatform = 'qishui';
     } else {
-      matchedProvider = qqMusicProvider;
+      matchedProvider = providerRegistry.get('qqmusic') || null;
       targetPlatform = 'qqmusic';
     }
-  } else if (qqMusicProvider.matches(playlistInput)) {
-    matchedProvider = qqMusicProvider;
-    targetPlatform = 'qqmusic';
   }
 
   if (!matchedProvider) {
@@ -115,7 +89,7 @@ export async function parsePlaylistService(
   if (
     platformParam &&
     platformParam !== 'auto' &&
-    !/^\d{4,20}$/.test(playlistInput.trim()) &&
+    !isNumeric &&
     targetPlatform !== platformParam
   ) {
     throw new ProviderError(
@@ -130,37 +104,30 @@ export async function parsePlaylistService(
 
   try {
     let playlist: Playlist;
-    let actualPlatform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' = targetPlatform;
+    let actualPlatform: SupportedPlatform = targetPlatform;
     let providerPath: ('primary' | 'fallback') | undefined;
 
     try {
-      if (matchedProvider === kugouProvider) {
-        playlist = await kugouProvider.parse(playlistInput, {
-          token: auth?.token,
-          userid: auth?.userid,
-        });
-        actualPlatform = 'kugou';
-      } else if (matchedProvider === qishuiProvider) {
-        playlist = await qishuiProvider.parse(playlistInput, {
-          channel: options.channel === 'douyin' ? 'douyin' : 'qishui',
-        });
-        actualPlatform = 'qishui';
-      } else if (matchedProvider === kuwoProvider) {
-        playlist = await kuwoProvider.parse(playlistInput);
-        actualPlatform = 'kuwo';
-      } else {
-        playlist = await matchedProvider.parse(playlistInput);
-        actualPlatform = (playlist.platform as 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo') || targetPlatform;
-        providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
-      }
+      playlist = await matchedProvider.fetchPlaylist(playlistInput, {
+        channel: options.channel || undefined,
+        token: auth?.token,
+        userid: auth?.userid,
+      });
+      actualPlatform = (playlist.platform as SupportedPlatform) || targetPlatform;
+      providerPath = (playlist as any).__providerPath as ('primary' | 'fallback') | undefined;
     } catch (err: unknown) {
       if (
         !platformParam &&
-        /^\d{4,20}$/.test(playlistInput.trim()) &&
-        matchedProvider === qqMusicProvider
+        isNumeric &&
+        targetPlatform === 'qqmusic'
       ) {
-        playlist = await neteaseProvider.parse(playlistInput);
-        actualPlatform = 'netease';
+        const netease = providerRegistry.get('netease');
+        if (netease) {
+          playlist = await netease.fetchPlaylist(playlistInput);
+          actualPlatform = 'netease';
+        } else {
+          throw err;
+        }
       } else {
         throw err;
       }
