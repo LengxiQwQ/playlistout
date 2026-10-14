@@ -41,7 +41,7 @@ Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文
 
 | 核心能力 | 说明 |
 |---|---|
-| **多平台大歌单解析** | 支持 **QQ 音乐**、**网易云音乐**、**酷狗音乐（含酷狗概念版）**、**酷我音乐**、**汽水音乐**，大歌单自动完整翻页 |
+| **多平台大歌单解析** | 支持各大主流音乐平台（QQ 音乐、网易云、酷狗、酷我、汽水等），大歌单自动完整翻页 |
 | **多种输入直接识别** | 支持粘贴 App 分享口令/文本、网页链接、短链、纯数字 ID，以及**酷狗音乐概念版**分享链接与酷狗码，无需手动提取网址 |
 | **按用户批量查歌单** | 输入一个用户（如 QQ 号、网易云用户主页 / UID，或扫码授权酷狗账号），即可查出该用户下的**全部歌单**，支持勾选并批量解析导出 |
 | **多格式纯本地导出** | 浏览器本地插件化生成 `Excel`、`JSON`、`CSV`、`M3U8`、`TXT`、`Markdown` 文件及剪贴板文本，保留歌曲、歌手、专辑、封面、时长及 VIP / 下架状态 |
@@ -104,13 +104,13 @@ BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需
 
 ### ⚡ 全平台统一 CLI (推荐)
 
-当前仓库已将五大平台全面整合成统一 CLI 工具，采用模块化分层与适配器架构开发，支持**智能自动识别平台**与**手动编号锁定**双轨模式，100% 本地隐私安全：
+统一命令行工具支持**智能自动识别平台**与**手动选择锁定**双轨模式，所有数据均在本地处理，无需启动 Web 服务：
 
 ```bash
 # 1. 安装依赖
 pip install -r cli/requirements.txt
 
-# 2. 交互式启动 (直接粘贴任意平台链接自动识别，或输入 1~5 选择指定平台)
+# 2. 交互式启动 (直接粘贴任意平台链接自动识别，或输入数字序号指定平台)
 python cli/main.py
 
 # 3. 命令行静默调用示例
@@ -118,75 +118,28 @@ python cli/main.py "https://music.163.com/playlist?id=2756674066"
 python cli/main.py "9044196528" -p qqmusic -f xlsx,csv
 ```
 
-👉 [查看统一 CLI 完整说明与架构指南](cli/README.md)
+👉 [查看统一 CLI 完整说明与使用指南](cli/README.md)
 
 ---
 
-### 各平台独立 CLI (完整保留)
+### 各平台独立轻量脚本
 
-除了统一主入口外，原有的各平台独立 CLI 及其完整单元测试均得到 100% 完整保留：
-
-| 平台 | 脚本 | 支持内容 |
-|---|---|---|
-| **QQ 音乐** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | 歌单链接 / ID、QQ 号用户歌单、批量导出 |
-| **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 |
-| **酷我音乐** | [`cli/kuwo/kuwo_playlist_export.py`](cli/kuwo/kuwo_playlist_export.py) | 歌单链接 / 移动端短链 / ID、多页自动分页 |
-| **汽水音乐** | [`cli/qishui/qishui_playlist_export.py`](cli/qishui/qishui_playlist_export.py) | 歌单链接 / 短链 / 抖音收藏分享文案 / ID、全量游标分页 |
-| **酷狗音乐** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 官方精选 / 概念版集合 / H5 分享（免登录）、个人云端自建歌单（终端扫码/官网凭证双轨认证） |
-
-五套 CLI 与统一 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
-
-### QQ 音乐 CLI
+除了全平台统一入口外，仓库也提供了各平台独立的轻量级导出脚本。所有独立脚本依赖已统一收录，安装一次即可运行任意平台脚本：
 
 ```bash
-cd cli/qqmusic
-pip install -r requirements.txt
-python qq_music_playlist_export.py
+# 统一安装依赖 (所有独立脚本通用)
+pip install -r cli/requirements.txt
 ```
 
-👉 [QQ 音乐 CLI 完整说明](cli/qqmusic/README.md)
+| 平台 | 脚本路径 | 支持内容 | 详细说明 |
+|---|---|---|---|
+| **QQ 音乐** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | 歌单链接 / ID、QQ 号用户歌单、批量导出 | [说明文档](cli/qqmusic/README.md) |
+| **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 | [说明文档](cli/netease/README.md) |
+| **酷我音乐** | [`cli/kuwo/kuwo_playlist_export.py`](cli/kuwo/kuwo_playlist_export.py) | 歌单链接 / 移动端短链 / ID、多页自动分页 | [说明文档](cli/kuwo/README.md) |
+| **汽水音乐** | [`cli/qishui/qishui_playlist_export.py`](cli/qishui/qishui_playlist_export.py) | 歌单链接 / 短链 / 抖音收藏分享文案 / ID、全量游标分页 | [说明文档](cli/qishui/README.md) |
+| **酷狗音乐** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 官方精选 / 概念版集合 / H5 分享（免登录）、个人云端自建歌单（终端扫码/官网凭证双轨认证） | [说明文档](cli/kugou/README.md) |
 
-### 网易云音乐 CLI
-
-```bash
-cd cli/netease
-pip install -r requirements.txt
-python netease_playlist_export.py
-```
-
-👉 [网易云音乐 CLI 完整说明](cli/netease/README.md)
-
-### 酷我音乐 CLI
-
-```bash
-cd cli/kuwo
-pip install -r requirements.txt
-python kuwo_playlist_export.py
-```
-
-👉 [酷我音乐 CLI 完整说明](cli/kuwo/README.md)
-
-### 汽水音乐 CLI
-
-```bash
-cd cli/qishui
-pip install -r requirements.txt
-python qishui_playlist_export.py
-```
-
-👉 [汽水音乐 CLI 完整说明](cli/qishui/README.md)
-
-### 酷狗音乐 CLI
-
-```bash
-cd cli/kugou
-pip install -r requirements.txt
-python kugou_playlist_export.py
-```
-
-👉 [酷狗音乐 CLI 完整说明](cli/kugou/README.md)
-
-> 当前仓库中的独立 Python CLI 覆盖 QQ 音乐、网易云音乐、酷我音乐、汽水音乐与酷狗音乐五大平台。全平台均可在本地无需启动 Web 服务即可直接运行导出。
+> **运行示例**：`python cli/netease/netease_playlist_export.py`（其他平台脚本以此类推）。全平台均支持 **Excel → JSON → TXT → CSV → M3U8** 纯本地导出。
 
 ---
 
@@ -225,58 +178,77 @@ Playlist Out 尽量保持简单、透明：
 
 ## 开发者接入
 
-Playlist Out 同时提供面向开发者的 **Public API**、可本地运行的 **Python CLI** 和稳定的 **JSON 数据结构**，可用于开源播放器、歌单迁移工具、自动化脚本以及其他第三方客户端。
+如果你正在开发第三方应用、开源音乐播放器、自动化脚本或数据迁移工具，可以通过以下方式直接接入 Playlist Out 的解析能力：
 
-### Public API
+### 1. 免费公共 API（无需搭建，即开即用）
 
-生产环境 API：
+无需注册账号，无需申请 API Key，全端点开放跨域（CORS `*`），可在前端网页、客户端或后端脚本中直接调用：
 
-```text
-https://playlistout-api.lengxiqwq.com
+#### 极速上手：解析歌单
+发起一个简单的 `GET` 请求，传入任意主流平台的歌单链接、短链或分享文本，系统会自动识别平台并返回规范化的曲目列表：
+
+```bash
+# 终端直接调用示例
+curl "https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=https://music.163.com/playlist?id=2756674066"
 ```
 
-最简单的统一解析入口：
-
-```http
-GET /api/v1/resolve?q=<歌单链接或分享内容>
+JavaScript / 浏览器直接调用：
+```javascript
+const res = await fetch("https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=" + encodeURIComponent(playlistUrl));
+const { success, data } = await res.json();
+console.log(data.result.name, data.result.tracks); // 统一包含 title, artist, album, coverUrl 等
 ```
 
-Public API 文档包含：
+#### 核心特性
+- **免认证与开放 CORS**：无需携带任何 Token，浏览器前端可直接发起 `fetch()` 请求。
+- **智能消歧与自动识别**：支持各大主流平台长链接、短链及移动端分享文本，自动提取并解析。
+- **规范化元数据**：抹平各平台字段差异，统一输出标准歌曲 ID、名称、歌手、专辑、封面直链、时长及 VIP/下架状态。
+- **调用频次限制**：公共端点提供单 IP 30 次/分钟的标准限额，完全满足普通个人项目与工具接入。
 
-- 支持的 endpoint 与请求参数
-- CORS 与认证规则
-- 酷狗授权 Header 传递方式
-- 限流规则
-- 标准响应结构与错误码
-- JavaScript / Python / cURL 接入说明
+👉 [查阅完整 API 规范、错误码与端点文档](docs/API.md)
 
-👉 [查看完整 Public API 文档](docs/API.md)
+---
 
-### 数据协议 / JSON Schema
+### 2. 标准 JSON 数据协议（离线文件导入）
 
-如果你的应用不想依赖在线 API，也可以直接读取 Playlist Out 导出的 JSON 文件。
+如果你的应用不想依赖在线网络，也可以直接支持导入 Playlist Out 生成的 `.json` 导出文件。
 
-JSON Schema 文档定义了 Playlist Out 的标准歌单数据结构，包括歌单信息、歌曲字段、平台来源、封面、时长和可用状态等，是第三方播放器做本地导入兼容时最重要的协议文档。
+我们制定了跨平台统一的 Canonical JSON 数据规范，第三方播放器或迁移工具只需解析一套固定 Schema，即可兼容各大主流平台导出的歌单文件：
 
-👉 [查看 JSON 数据格式规范](docs/JSON-SCHEMA.md)
+```json
+{
+  "platform": "netease",
+  "id": "2756674066",
+  "name": "歌单名称",
+  "creator": "创建者昵称",
+  "trackCount": 100,
+  "tracks": [
+    {
+      "index": 1,
+      "title": "歌曲名",
+      "artist": "歌手名（单一字符串）",
+      "album": "专辑名",
+      "durationMs": 240000,
+      "coverUrl": "https://...",
+      "status": "playable"
+    }
+  ]
+}
+```
 
-### Python CLI / 本地解析
+👉 [查阅 JSON 数据格式定义与字段规范](docs/JSON-SCHEMA.md)
 
-如果你不想依赖在线 API，仓库同时提供 **QQ 音乐、网易云音乐、酷狗音乐、酷我音乐、汽水音乐** 五套独立 Python CLI。它们可以直接在本地完成歌单解析与导出，不需要启动 Playlist Out Web 服务，适合自动化脚本、批处理、定时任务和私有工作流。
+---
 
-CLI 与 Public API 是并列的使用方式：需要在线统一接口时用 API；希望把解析能力放在自己机器上运行时，直接使用 CLI。
+### 3. 开源播放器与插件生态
 
-👉 [查看 Python CLI / 命令行使用说明](#python-cli--命令行)
+我们致力于让歌单能够在更多开源播放器中自由流转。如果你是播放器维护者或插件开发者：
 
-### 播放器与插件接入
+- **插件式播放器**（如 [MusicFree](plugins/musicfree/)）：可直接安装或参考我们的插件实现，通过调用 Public API 为播放器增加外部歌单解析能力；
+- **本地播放器**（如 [BBPlayer](https://bbplayer.roitium.com)、LX Music、Listen 1）：可直接在客户端内置对 Playlist Out JSON 格式或 Public API 的导入支持；
+- **新应用适配**：欢迎在 [Issue](https://github.com/LengxiQwQ/playlistout/issues) 中提出播放器接入需求，共同扩充开源生态。
 
-如果你正在维护开源音乐播放器，并希望接入 Playlist Out：
-
-- 有扩展系统的播放器，可以开发独立插件 / Extension；
-- 支持本地文件导入的播放器，可以兼容 Playlist Out JSON；
-- 也可以直接调用 Public API 获取统一结构的歌单数据。
-
-👉 [查看开源播放器生态接入与适配计划](docs/ECOSYSTEM-INTEGRATION.md)
+👉 [查阅开源播放器生态接入与适配计划](docs/ECOSYSTEM-INTEGRATION.md)
 
 ---
 
@@ -288,7 +260,7 @@ Playlist Out 使用 monorepo 管理网页、Worker 与插件代码。
 playlistout/
 ├── web/                  # React / Vite 前端 (模块化 API 门面、领域 Hooks、插件化导出管道)
 ├── worker/               # Cloudflare Worker API (Hono 路由、自描述 Provider 注册制、元数据洋葱管道)
-├── cli/                  # Python 命令行统一工具 (cli/core/ 核心与统一入口 + 5 平台独立脚本)
+├── cli/                  # Python 命令行统一工具 (cli/core/ 核心与统一入口 + 各厂商独立脚本)
 ├── plugins/              # 开源播放器插件生态 (MusicFree 等)
 ├── docs/                 # 架构演进路线图、新厂商接入指南、API、数据协议与项目宪法
 └── scripts/              # 本地 8 步 CI 门禁、插件构建与自动化维护脚本
@@ -328,11 +300,9 @@ README 只保留使用项目所需的核心信息，更详细的协议、接口�
 |---|---|---|
 | [Public API](docs/API.md) | 第三方开发者 | API endpoint、参数、认证、CORS、限流、响应结构与错误码 |
 | [JSON Schema](docs/JSON-SCHEMA.md) | 播放器 / 工具开发者 | Playlist Out 标准 JSON 数据协议与字段定义 |
-| [Web 导出格式规范](docs/EXPORT-FORMATS.md) | 用户 / 迁移工具开发者 | CSV、XLSX、JSON、M3U8、TXT 的当前结构、字段和兼容性约定 |
-| [QQ 音乐 CLI](cli/qqmusic/README.md) | 命令行用户 | QQ 音乐歌单 / 用户歌单导出、安装与使用说明 |
-| [网易云音乐 CLI](cli/netease/README.md) | 命令行用户 | 网易云歌单 / 用户歌单导出、安装与使用说明 |
-| [酷我音乐 CLI](cli/kuwo/README.md) | 命令行用户 | 酷我音乐歌单多页全量导出、安装与使用说明 |
-| [汽水音乐 CLI](cli/qishui/README.md) | 命令行用户 | 汽水音乐歌单全量游标分页导出、安装与使用说明 |
+| [Web 导出格式规范](docs/EXPORT-FORMATS.md) | 用户 / 迁移工具开发者 | CSV、XLSX、JSON、M3U8、TXT、Markdown 的当前结构与扩展约定 |
+| [Python CLI 指南](cli/README.md) | 命令行 / 自动化用户 | 全平台统一 CLI 与各大主流厂商独立导出工具使用说明 |
+| [新厂商接入规范](docs/PROVIDER-ONBOARDING.md) | 开发者 / 架构贡献者 | 标准化 5 步走厂商接入流水线与单测验收规范 |
 | [MusicFree 插件](plugins/musicfree/README.md) | MusicFree 用户与插件开发者 | 插件安装、使用、配置、构建与测试 |
 | [生态接入计划](docs/ECOSYSTEM-INTEGRATION.md) | 开源播放器维护者 | 第三方播放器调研、字段映射、Issue / PR 接入规划 |
 | [项目规范](docs/PROJECT-CONSTITUTION.md) | 贡献者 / 维护者 | 项目架构、安全、隐私、产品边界和长期原则 |
