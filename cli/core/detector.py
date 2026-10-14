@@ -73,7 +73,7 @@ class SmartDetector:
         url_to_check = extracted_url or text
 
         # 4. 如果是短链且允许重定向，先解析重定向
-        is_shortlink = any(s in url_to_check for s in ("163cn.tv", "c6.y.qq.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com", "t.kuwo.cn", "/s/"))
+        is_shortlink = any(s in url_to_check for s in ("163cn.tv", "c6.y.qq.com", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com", "t.kuwo.cn", "v.douyin.com", "/s/"))
         if is_shortlink and resolve_redirect:
             resolved = resolve_shortlink(url_to_check)
             if resolved:

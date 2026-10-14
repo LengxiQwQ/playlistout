@@ -86,6 +86,7 @@ def main():
         """
     )
 
+    parser.add_argument("-v", "--version", action="version", version="PlaylistOut CLI v2.2.0")
     parser.add_argument("input", nargs="?", help="歌单链接、短链、分享文案或纯数字 ID")
     parser.add_argument("-i", "--id", dest="opt_id", help="歌单链接、短链或 ID")
     parser.add_argument("-p", "--platform", help="显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui 等)")

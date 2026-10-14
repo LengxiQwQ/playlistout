@@ -17,6 +17,7 @@ from cli.core.exporter import (
     export_m3u8,
     perform_export,
 )
+from cli.core.ui import resolve_export_formats
 
 
 @pytest.fixture
@@ -159,3 +160,14 @@ def test_perform_export_all_formats(tmp_path, sample_playlist):
     assert len(files) == 5
     for fn in files:
         assert os.path.exists(fn)
+
+
+def test_resolve_export_formats_parsing():
+    assert resolve_export_formats("0") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("all") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("1") == ["xlsx"]
+    assert resolve_export_formats("1, 2") == ["xlsx", "csv"]
+    assert resolve_export_formats("1 2") == ["xlsx", "csv"]
+    assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
+    assert resolve_export_formats("csv m3u8") == ["csv", "m3u8"]

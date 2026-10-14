@@ -109,3 +109,14 @@ def test_cli_auto_detect_success(tmp_path):
             mock_fetch.assert_called_once()
 
     assert (tmp_path / "cli_auto_out" / "QQ测试歌单.txt").exists()
+
+
+def test_cli_version_flag(capsys):
+    test_args = ["main.py", "--version"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "PlaylistOut CLI v2.2.0" in captured.out

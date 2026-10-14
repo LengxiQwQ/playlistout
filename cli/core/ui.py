@@ -98,7 +98,7 @@ def resolve_export_formats(choice: str) -> List[str]:
         "m3u8": "m3u8",
     }
 
-    items = [x.strip() for x in choice.replace("，", ",").split(",") if x.strip()]
+    items = [x.strip() for x in choice.replace("，", ",").replace(" ", ",").split(",") if x.strip()]
     res = []
     for item in items:
         if item in ("0", "all"):
