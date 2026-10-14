@@ -19,88 +19,80 @@
 
 ---
 
-## Playlist Out 是什么？
+## ⚡ 极速上手：只需 3 步
 
-**Playlist Out** 是一个面向歌单备份、导出与迁移的开源工具。它会把支持平台中的公开歌单解析成统一的结构化数据：普通用户可以直接在网页里查看、整理并导出为 `Excel`、`JSON`、`TXT`、`CSV`、`M3U8`、`Markdown`，也可以通过插件或适配把歌单继续带进支持的开源音乐播放器；开发者则可以通过 Public API、Python CLI 或标准 JSON 数据结构，把这套解析能力接入自己的应用、脚本或迁移工具。
+无需下载任何客户端，直接在浏览器中打开：
 
-Playlist Out **不是音乐播放器**，也不提供、存储或代理音频文件。项目只处理歌单与曲目元数据，目标是让歌单更容易备份、迁移和继续使用。
+> 🌐 **在线使用**：[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/)
 
----
-
-## 快速开始
-
-不需要安装客户端，直接打开 [playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/) 即可开始：
-
-1. **解析歌单**：粘贴歌单链接、分享内容或支持的 ID，等待 Playlist Out 完成解析。
-2. **查看与导出**：确认歌曲列表后，选择需要的 Excel、JSON、TXT、CSV、M3U8 或 Markdown 格式。
-3. **继续带走**：如果你使用受支持的开源播放器，还可以通过插件或适配把解析后的歌单继续导入播放器。
+1. **复制歌单链接**：在任意音乐 App 中分享歌单并复制链接（支持直接粘贴微信/抖音长分享文案，系统秒级自动提取，无需手动删减文字）。
+2. **一键智能解析**：粘贴到网页输入框中点击解析，千首大歌单自动翻页抓取，无曲目遗漏。
+3. **随心导出带走**：选择需要的格式（Excel、TXT、Markdown、CSV、M3U8 或 JSON）一键保存到本地，或直接带进支持的开源播放器。
 
 ---
 
-## 主要能力
+## 🎵 支持的主流平台
 
-| 核心能力 | 说明 |
-|---|---|
-| **多平台大歌单解析** | 支持各大主流音乐平台（QQ 音乐、网易云、酷狗、酷我、汽水等），大歌单自动完整翻页 |
-| **多种输入直接识别** | 支持粘贴 App 分享口令/文本、网页链接、短链、纯数字 ID，以及**酷狗音乐概念版**分享链接与酷狗码，无需手动提取网址 |
-| **按用户批量查歌单** | 输入一个用户（如 QQ 号、网易云用户主页 / UID，或扫码授权酷狗账号），即可查出该用户下的**全部歌单**，支持勾选并批量解析导出 |
-| **多格式纯本地导出** | 浏览器本地插件化生成 `Excel`、`JSON`、`CSV`、`M3U8`、`TXT`、`Markdown` 文件及剪贴板文本，保留歌曲、歌手、专辑、封面、时长及 VIP / 下架状态 |
-| **播放器与迁移互通** | 支持把解析后的歌单直接带进 **MusicFree**、**BBPlayer** 等开源播放器，或通过 **Soundiiz / TuneMyMusic / FreeYourMusic** 跨平台迁移 |
-| **CLI 与开放 API** | 提供可本地运行的 **Python CLI** 命令行批量导出工具，以及面向开发者的 **Public API** 与标准 **JSON 数据协议** |
-
----
-
-## 支持的音乐平台
-
-| 平台 | 单歌单解析 | 按用户批量解析 | 说明 |
+| 平台 | 单歌单解析 | 按用户批量查歌单 | 特性说明 |
 |---|:---:|:---:|---|
-| **QQ 音乐** | ✅ | ✅ | 免登录；支持歌单链接 / ID，或输入 QQ 号查出该用户下全部公开歌单并批量导出 |
-| **网易云音乐** | ✅ | ✅ | 免登录；支持歌单链接 / 短链 / ID，或输入用户主页 / UID 查出该用户下全部公开歌单并批量导出 |
-| **酷狗音乐（含概念版）** | ✅ | ✅ | 公开内容可免登录预览歌单 10 首歌曲；扫码授权后可解析完整歌单，并支持查看与批量导出账号下全部歌单 |
+| **QQ 音乐** | ✅ | ✅ | 免登录；支持歌单链接 / ID，或输入 QQ 号一键查出全部公开歌单并批量导出 |
+| **网易云音乐** | ✅ | ✅ | 免登录；支持歌单链接 / 短链 / ID，或输入用户主页 / UID 批量导出全部自建歌单 |
+| **酷狗音乐（含概念版）** | ✅ | ✅ | 公开歌单免登录预览；支持扫码授权完整解析，并可查看与批量导出账号下全部歌单 |
 | **酷我音乐** | ✅ | — | 免登录；支持歌单链接 / ID / 分享口令，自动完整分页获取全部曲目 |
 | **汽水音乐** | ✅ | — | 免登录；支持公开分享歌单，可切换「汽水官方解析」与「抖音全量解析（含视频原声）」 |
 
-> 平台能力依赖上游公开页面与接口，可能随着上游机制变化而调整。
+---
+
+## 📦 导出的格式怎么用？
+
+所有文件均由**你的本地浏览器直接计算生成并下载**，绝不把你的歌单上传到任何服务器。你可以根据需求选择最适合的格式：
+
+| 导出格式 | 常见使用场景与推荐软件 |
+|---|---|
+| **Excel (.xlsx)** | **最推荐！** 电脑直接双击打开，适合曲库整理归档、打印，或导入 FreeYourMusic / Soundiiz 等迁移工具 |
+| **TXT 纯文本** | 干净简洁的歌曲清单（歌名 - 歌手），适合直接复制发群、发朋友圈或存入记事本备忘 |
+| **Markdown (.md)** | 生成带信纸头与精美表格的笔记，完美兼容 **Obsidian / Notion / 个人博客** 建立私人音乐手记 |
+| **CSV 表格** | 标准通用表格数据，使用国际通用列名，方便做二次数据分析或跨平台批量迁移 |
+| **M3U8 播放列表** | 经典播放列表，可直接拖入 **Foobar2000、PotPlayer、VLC** 等本地媒体播放器中播放 |
+| **JSON 数据** | 跨平台标准数据协议，供 **MusicFree、BBPlayer** 等支持外部歌单导入的第三方开源播放器使用 |
 
 ---
 
-## 把歌单带进更多地方
+## 🎧 把歌单带进开源播放器
 
-**Playlist Out 不只帮你把歌单导出来，也能把它继续带进支持的开源播放器。**  
-不同播放器的架构各不相同，Playlist Out 会根据目标应用提供 **独立插件**、**软件原生内置** 或 **通用 JSON 导入兼容** 等接入方式。
+**Playlist Out 不只帮你把歌单导出来，也能把它继续带进你喜爱的开源音乐播放器。**
 
-### 已接入应用
-
-#### 1. [MusicFree](https://musicfree.catcat.work/)（✅ 已支持 · 插件接入）
-
-在 MusicFree 中安装 Playlist Out 插件后，即可通过「导入外部歌单」直接粘贴歌单链接，或填入本地导出的 JSON 文件路径完成导入。
-
-- **插件安装地址**（对应网页端「复制插件地址」按钮）：
-  
+### 1. [MusicFree](https://musicfree.catcat.work/)（✅ 已支持 · 插件接入）
+在 MusicFree 中安装 Playlist Out 插件后，即可在播放器中通过「导入外部歌单」直接粘贴歌单链接或导入导出的 JSON 文件：
+- **插件地址**：在 [网页端](https://playlistout.lengxiqwq.com/) 直接点击「**复制插件地址**」按钮，或复制下方链接到 MusicFree 插件管理中安装：
   ```text
   https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js
   ```
-- **相关入口**：[官网下载](https://musicfree.catcat.work/) · [GitHub 源码](https://github.com/maotoumao/MusicFree) · [插件安装与使用说明](plugins/musicfree/README.md) · [GitHub Discussion](https://github.com/maotoumao/MusicFree/discussions/666)
+- **使用指南**：[MusicFree 插件安装与使用说明](plugins/musicfree/README.md) · [MusicFree 官网](https://musicfree.catcat.work/)
 
-#### 2. [BBPlayer](https://bbplayer.roitium.com)（⏳ 即将可用 · 软件原生功能）
+### 2. [BBPlayer](https://bbplayer.roitium.com)（⏳ 即将上线 · 原生功能内置）
+BBPlayer 已在主程序中原生内置 Playlist Out 歌单导入功能，无需安装任何插件，在新版中直接粘贴链接即可导入。
+- [BBPlayer 官网](https://bbplayer.roitium.com) · [GitHub 仓库](https://github.com/bbplayer-app/BBPlayer)
 
-BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需额外安装插件，支持通过歌单链接在线解析或选择本地 JSON 文件导入。该功能当前为**即将可用（待上线）**状态，将随 BBPlayer 新版本发布上线。
-
-- **相关入口**：[官网下载](https://bbplayer.roitium.com) · [GitHub 源码](https://github.com/bbplayer-app/BBPlayer) · [相关讨论 (Issue #340)](https://github.com/bbplayer-app/BBPlayer/issues/340)
-
-### 下一站（正在推进）
-
-| 应用 | 当前状态 | 规划接入方式 | 进展与入口 |
-|---|---|---|---|
-| **[LX Music](https://lxmusic.toside.cn/)** | 💬 已向上游提案 | 本地 JSON 导入兼容 | [Issue #3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) · [GitHub](https://github.com/lyswhut/lx-music-desktop) |
-| **[Listen 1](https://listen1.github.io/listen1/)** | 💬 已向上游提案 | 本地 JSON 导入兼容 | [Issue #1413](https://github.com/listen1/listen1_desktop/issues/1413) · [GitHub](https://github.com/listen1/listen1_desktop) |
-| **[Moosync](https://moosync.app/)** | 🗓️ 计划中 | Extension 扩展适配 | [GitHub](https://github.com/Moosync/Moosync) |
+### 3. 更多播放器适配中
+我们正积极推进与 **LX Music**、**Listen 1** 等更多优质开源播放器的兼容集成，敬请期待！
 
 ---
 
-## Python CLI / 命令行
+## 🛡️ 隐私与安全承诺
 
-除了网页和第三方播放器，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
+Playlist Out 坚守开源纯粹性与用户数据隐私底线：
+
+- 🟢 **完全免费开源**：无任何收费套路，代码 100% 公开透明（遵循 MIT 开源许可）。
+- 🟢 **无需注册登录**：不搜集账号密码，没有用户中心，不建立任何中心化歌单数据库。
+- 🟢 **纯本地离线计算**：所有的 Excel、TXT、JSON、Markdown 等导出文件均在你的本地浏览器生成直接保存，服务端不存储任何导出的歌曲列表或文件。
+- 🟢 **绝不侵犯版权**：不提供、不存储、也不代理任何音频播放或下载流，仅专注于公开元数据的整理与互通。
+
+---
+
+## 💻 进阶使用：Python CLI 命令行
+
+如果你更喜欢在终端中使用，或者需要做批量离线处理与定时任务，也可以直接运行本地 Python 工具。所有数据同样 100% 在本地运行：
 
 ### ⚡ 全平台统一 CLI (推荐)
 
@@ -140,39 +132,6 @@ pip install -r cli/requirements.txt
 | **酷狗音乐** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 官方精选 / 概念版集合 / H5 分享（免登录）、个人云端自建歌单（终端扫码/官网凭证双轨认证） | [说明文档](cli/kugou/README.md) |
 
 > **运行示例**：`python cli/netease/netease_playlist_export.py`（其他平台脚本以此类推）。全平台均支持 **Excel → JSON → TXT → CSV → M3U8** 纯本地导出。
-
----
-
-## 导出格式
-
-| 格式 | 适合的场景 |
-|---|---|
-| **Excel (.xlsx)** | 通用表格交换、FreeYourMusic / Soundiiz 等文件导入、整理归档；首个 `Tracks` Sheet 为干净的一歌一行结构 |
-| **JSON** | 开发者、脚本、第三方应用和播放器接入；采用统一 Canonical 结构（单一歌手 `artist`、平铺通用、零空值填充） |
-| **TXT** | 阅读、简单备份与文本处理 |
-| **CSV** | 通用歌单迁移与数据交换；使用 `title / artist / album / isrc` 等语言无关标准列名 |
-| **M3U8** | 本地播放器、媒体库以及支持 Extended M3U/M3U8 的迁移工具 |
-| **Markdown (.md)** | 知识库笔记、个人博客与社区分享；生成格式工整的 Markdown 表格与信纸头，完美适配 Obsidian / Notion / GitHub |
-
-导出文件由浏览器本地通过模块化插件管道（`web/src/utils/export/`）生成，不需要把导出文件上传到服务器。
-
-如果你需要稳定的数据结构用于程序读取，请优先使用 **JSON**，并参考 [JSON 数据格式规范](docs/JSON-SCHEMA.md)。需要在不同歌单迁移工具之间交换文件时，优先考虑 **CSV / M3U8 / Excel**。各格式当前的字段、Sheet 与插件化扩展约定见 [Web 导出格式规范](docs/EXPORT-FORMATS.md)。
-
----
-
-## 隐私与项目边界
-
-Playlist Out 尽量保持简单、透明：
-
-- 不提供网站账号体系
-- 不建立用户歌单数据库
-- 导出文件在浏览器本地生成
-- 不存储用户导出的歌曲列表或文件
-- 酷狗授权信息仅保存在用户本地浏览器
-- 服务端仅保留不包含具体歌单内容的匿名聚合统计
-- 不提供、不存储、也不代理任何音频流
-
-网站中的「隐私政策」提供更完整的数据处理说明。
 
 ---
 
@@ -325,28 +284,6 @@ Issue、功能建议和 Pull Request 都欢迎。
 Playlist Out 使用 [MIT License](LICENSE) 开源。
 
 MIT License 允许你在保留原始版权与许可声明的前提下自由使用、复制、修改和分发代码，包括用于商业项目。具体条款以仓库中的 [`LICENSE`](LICENSE) 文件为准。
-
----
-
-<!-- WEBSITE_STATS:START -->
-### 🌐 网站运营与活跃数据看板
-
-> 📊 数据由 [Cloudflare D1 边缘节点](https://playlistout-api.lengxiqwq.com/api/stats) 实时聚合计算，每日自动化同步存档。
-
-#### 📌 核心流量与使用规模
-
-> 💡 👥 累计日独立访问 = 每天匿名去重后的访客数累加；同一访客跨日可能再次计入，PlaylistOut 不进行跨日追踪。
-
-| 👥 累计日独立访问 | 📄 页面浏览 (PV) | 🎵 解析歌单数 | 💿 处理歌曲数 | 📦 文件导出数 | ⏱️ 稳定运行 |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| **1,052**<br><sub>今日独立 +27</sub> | **1,823**<br><sub>今日 +29</sub> | **6,076**<br><sub>今日 +151</sub> | **1,372,916**<br><sub>今日 +26,921</sub> | **1,533**<br><sub>今日 +43</sub> | **33 天**<br><sub>上线于 2026-09-12</sub> |
-
-#### 📊 业务转化与平台偏好
-- **🎵 平台解析份额：** QQ 音乐 **38%** (2,283 次) ｜ 网易云音乐 **48%** (2,896 次) ｜ 酷狗音乐 **12%** (708 次) ｜ 酷我音乐 **0%** (8 次) ｜ 汽水音乐 **3%** (181 次)
-- **📦 导出格式偏好：** Excel 表格 (.xlsx) **64%** ｜ JSON 数据 **11%** ｜ TXT 纯文本 **15%** ｜ CSV 表格 **6%** ｜ M3U8 歌单 **4%**
-
-> 🛡️ **隐私保证**：本统计严格遵循开源宪法规范，所有数据均由边缘节点以粗粒度匿名原子计数存储，**绝不记录真实 IP 地址、私密歌单内容或个人身份凭据**。
-<!-- WEBSITE_STATS:END -->
 
 ---
 
