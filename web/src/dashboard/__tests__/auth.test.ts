@@ -30,7 +30,7 @@ describe('Dashboard Auth Unit Tests', () => {
     expect(getAuthToken()).toBeNull();
     expect(localStorage.getItem('playlistout_admin_token')).toBeNull();
     expect(sessionStorage.getItem('playlistout_admin_token')).toBeNull();
-    expect(isRemembered()).toBe(false);
+    expect(isRemembered()).toBe(true);
   });
 
   it('verifyAuthToken returns true on 200 success response', async () => {

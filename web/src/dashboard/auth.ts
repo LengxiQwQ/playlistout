@@ -33,7 +33,7 @@ export function saveAuthToken(token: string, remember: boolean): void {
     } else {
       sessionStorage.setItem(TOKEN_STORAGE_KEY, clean);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(REMEMBER_STORAGE_KEY);
+      localStorage.setItem(REMEMBER_STORAGE_KEY, '0');
     }
   } catch {
     // Best-effort storage
@@ -52,9 +52,10 @@ export function clearAuthToken(): void {
 
 export function isRemembered(): boolean {
   try {
-    return localStorage.getItem(REMEMBER_STORAGE_KEY) === '1';
+    const val = localStorage.getItem(REMEMBER_STORAGE_KEY);
+    return val === null ? true : val === '1';
   } catch {
-    return false;
+    return true;
   }
 }
 

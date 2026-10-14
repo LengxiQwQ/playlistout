@@ -350,7 +350,7 @@ class DashboardApp {
   private token: string | null = null;
   private snapshot: AnalyticsSnapshot | null = null;
   private currentSlice: AnalyticsSlice | null = null;
-  private excludeMy = true;
+  private excludeMy = false;
   private currentFbStatus = 'pending';
   private currentPage = 'overview';
   private activePreset = 'all';
@@ -421,7 +421,7 @@ class DashboardApp {
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
               <input type="checkbox" id="rememberMe" ${isRemembered() ? 'checked' : ''} style="cursor:pointer">
-              <label for="rememberMe" style="font-size:12px;color:var(--m);cursor:pointer;user-select:none">记住此设备（7 天免登）</label>
+              <label for="rememberMe" style="font-size:12px;color:var(--m);cursor:pointer;user-select:none">记住此设备（永久保持登录，除非主动退出）</label>
             </div>
             <button type="submit" id="loginSubmitBtn" class="login-btn">
               <span>🔐</span>
@@ -534,7 +534,7 @@ class DashboardApp {
               <div class="muted">单日自动显示小时趋势；在客户端内存高速切片，不消耗额外 D1 请求</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-              <label class="toggle-switch" title="一键排除所有来自马来西亚的测试记录（默认开启）">
+              <label class="toggle-switch" title="一键排除所有来自马来西亚的测试记录（默认关闭）">
                 <input type="checkbox" id="switchExcludeMy" ${this.excludeMy ? 'checked' : ''}>
                 <span class="toggle-slider"></span>
                 <span class="toggle-switch-text">排除 MY 测试</span>
@@ -958,9 +958,9 @@ class DashboardApp {
           const el = document.getElementById(id) as HTMLSelectElement;
           if (el) el.value = '';
         });
-        this.excludeMy = true;
+        this.excludeMy = false;
         const sw = document.getElementById('switchExcludeMy') as HTMLInputElement;
-        if (sw) sw.checked = true;
+        if (sw) sw.checked = false;
         this.setPreset('all');
       };
     }
