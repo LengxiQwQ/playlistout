@@ -126,12 +126,122 @@ export function extractUinFromProfileUrl(input: string): string | null {
   return null;
 }
 
+export interface ValidationRule {
+  platform: PlatformType;
+  kind: InputKind;
+  match: (input: string) => boolean;
+  extractUin?: (input: string) => string | null;
+}
+
+export const VALIDATION_RULES: ValidationRule[] = [
+  // 1. Check if it's a numeric ID (4-20 digits)
+  {
+    platform: 'numeric',
+    kind: 'numeric',
+    match: (input) => /^\d{4,20}$/.test(input),
+    extractUin: (input) => input,
+  },
+  // 2. QQ Music short link (e.g. c6.y.qq.com/base/fcgi-bin/u?__=...)
+  {
+    platform: 'qqmusic',
+    kind: 'short_link',
+    match: (input) => /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)\/.*(?:fcgi-bin\/u|\b__=)/i.test(input),
+  },
+  // 3. NetEase short link (163cn.tv)
+  {
+    platform: 'netease',
+    kind: 'short_link',
+    match: (input) => /163cn\.tv/i.test(input),
+  },
+  // 4. Kugou short link (t.kugou.com or t1.kugou.com)
+  {
+    platform: 'kugou',
+    kind: 'short_link',
+    match: (input) => /t\d?\.kugou\.com/i.test(input),
+  },
+  // 5. Kugou raw gcid ID (e.g. gcid_3zr52qfrzaz06a)
+  {
+    platform: 'kugou',
+    kind: 'single_playlist_url',
+    match: (input) => /^gcid_[a-zA-Z0-9]+$/i.test(input),
+  },
+  // 6. Kugou Music user profile URL
+  {
+    platform: 'kugou',
+    kind: 'user_profile_url',
+    match: (input) => {
+      if (!/kugou\.com/i.test(input)) return false;
+      const uid = extractUinFromProfileUrl(input);
+      return Boolean(uid && (input.includes('/user') || input.includes('/profile') || input.includes('/home')));
+    },
+    extractUin: (input) => extractUinFromProfileUrl(input),
+  },
+  // 7. Kugou Music URL
+  {
+    platform: 'kugou',
+    kind: 'single_playlist_url',
+    match: (input) => /kugou\.com/i.test(input),
+  },
+  // 8. NetEase Music user profile URL
+  {
+    platform: 'netease',
+    kind: 'user_profile_url',
+    match: (input) => {
+      if (!/(?:music\.163\.com|y\.music\.163\.com)/i.test(input)) return false;
+      const uid = extractUinFromProfileUrl(input);
+      return Boolean(uid && (input.includes('/user') || input.includes('user/home')));
+    },
+    extractUin: (input) => extractUinFromProfileUrl(input),
+  },
+  // 9. NetEase Music URL
+  {
+    platform: 'netease',
+    kind: 'single_playlist_url',
+    match: (input) => /(?:music\.163\.com|y\.music\.163\.com)/i.test(input),
+  },
+  // 10. QQ Music user profile URL
+  {
+    platform: 'qqmusic',
+    kind: 'user_profile_url',
+    match: (input) => {
+      if (!/(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(input)) return false;
+      const uid = extractUinFromProfileUrl(input);
+      return Boolean(uid);
+    },
+    extractUin: (input) => extractUinFromProfileUrl(input),
+  },
+  // 11. QQ Music URL
+  {
+    platform: 'qqmusic',
+    kind: 'single_playlist_url',
+    match: (input) => /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(input),
+  },
+  // 12. Qishui short link (qishui.douyin.com/s/... or qishui.com/s/...)
+  {
+    platform: 'qishui',
+    kind: 'short_link',
+    match: (input) => /(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(input),
+  },
+  // 13. Qishui / Douyin Music URL
+  {
+    platform: 'qishui',
+    kind: 'single_playlist_url',
+    match: (input) => /(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(input),
+  },
+  // 14. Kuwo Music URL
+  {
+    platform: 'kuwo',
+    kind: 'single_playlist_url',
+    match: (input) => /(?:[a-zA-Z0-9-]+\.)*kuwo\.cn/i.test(input),
+  },
+];
+
 /**
  * Validates user input client-side before sending an API request.
  * Supports:
- * - Public QQ Music, NetEase Cloud Music, KuGou Music & Qishui Music playlist URLs
- * - QQ Music & NetEase user profile URLs (e.g. https://y.qq.com/portal/profile.html?uin=... or https://music.163.com/user/home?id=...)
- * - 163cn.tv & qishui.douyin.com shortlinks
+ * - Public QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music & Kuwo Music playlist URLs
+ * - QQ Music & NetEase user profile URLs
+ * - 163cn.tv, qishui.douyin.com, t.kugou.com shortlinks
  * - Numeric IDs (can be single playlist ID or user ID for batch export)
  */
 export function validatePlaylistInput(input: string): ValidationResult {
@@ -162,152 +272,17 @@ export function validatePlaylistInput(input: string): ValidationResult {
     };
   }
 
-  // 1. Check if it's a numeric ID (4-20 digits)
-  if (/^\d{4,20}$/.test(trimmed)) {
-    return {
-      valid: true,
-      kind: 'numeric',
-      platform: 'numeric',
-      extractedUin: trimmed,
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 2. QQ Music short link (e.g. c6.y.qq.com/base/fcgi-bin/u?__=...)
-  const isQQShortLink =
-    /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)\/.*(?:fcgi-bin\/u|\b__=)/i.test(trimmed);
-  if (isQQShortLink) {
-    return {
-      valid: true,
-      kind: 'short_link',
-      platform: 'qqmusic',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 3. NetEase short link (163cn.tv)
-  if (/163cn\.tv/i.test(trimmed)) {
-    return {
-      valid: true,
-      kind: 'short_link',
-      platform: 'netease',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 4. Kugou short link (t.kugou.com or t1.kugou.com)
-  if (/t\d?\.kugou\.com/i.test(trimmed)) {
-    return {
-      valid: true,
-      kind: 'short_link',
-      platform: 'kugou',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 5. Kugou raw gcid ID (e.g. gcid_3zr52qfrzaz06a)
-  if (/^gcid_[a-zA-Z0-9]+$/i.test(trimmed)) {
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'kugou',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 6. Kugou Music URL
-  const isKugouUrl = /kugou\.com/i.test(trimmed);
-  if (isKugouUrl) {
-    const kugouUid = extractUinFromProfileUrl(trimmed);
-    if (kugouUid && (trimmed.includes('/user') || trimmed.includes('/profile') || trimmed.includes('/home'))) {
+  for (const rule of VALIDATION_RULES) {
+    if (rule.match(trimmed)) {
+      const extractedUin = rule.extractUin ? rule.extractUin(trimmed) || undefined : undefined;
       return {
         valid: true,
-        kind: 'user_profile_url',
-        platform: 'kugou',
-        extractedUin: kugouUid,
+        kind: rule.kind,
+        platform: rule.platform,
+        extractedUin,
         cleanedInput: trimmed,
       };
     }
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'kugou',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 7. NetEase Music URL
-  const isNeteaseUrl = /(?:music\.163\.com|y\.music\.163\.com)/i.test(trimmed);
-  if (isNeteaseUrl) {
-    const neteaseUid = extractUinFromProfileUrl(trimmed);
-    if (neteaseUid && (trimmed.includes('/user') || trimmed.includes('user/home'))) {
-      return {
-        valid: true,
-        kind: 'user_profile_url',
-        platform: 'netease',
-        extractedUin: neteaseUid,
-        cleanedInput: trimmed,
-      };
-    }
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'netease',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 8. QQ Music URL
-  const isQQUrl = /(?:(?:[a-zA-Z0-9-]+\.)*y\.qq\.com|music\.qq\.com)/i.test(trimmed);
-  if (isQQUrl) {
-    const profileUin = extractUinFromProfileUrl(trimmed);
-    if (profileUin) {
-      return {
-        valid: true,
-        kind: 'user_profile_url',
-        platform: 'qqmusic',
-        extractedUin: profileUin,
-        cleanedInput: trimmed,
-      };
-    }
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'qqmusic',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 8. Qishui short link (qishui.douyin.com/s/... or qishui.com/s/...)
-  if (/(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed)) {
-    return {
-      valid: true,
-      kind: 'short_link',
-      platform: 'qishui',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 9. Qishui / Douyin Music URL
-  const isQishuiUrl = /(?:qishui\.douyin\.com|music\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)/i.test(trimmed);
-  if (isQishuiUrl) {
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'qishui',
-      cleanedInput: trimmed,
-    };
-  }
-
-  // 10. Kuwo Music URL
-  const isKuwoUrl = /(?:[a-zA-Z0-9-]+\.)*kuwo\.cn/i.test(trimmed);
-  if (isKuwoUrl) {
-    return {
-      valid: true,
-      kind: 'single_playlist_url',
-      platform: 'kuwo',
-      cleanedInput: trimmed,
-    };
   }
 
   // Not recognized

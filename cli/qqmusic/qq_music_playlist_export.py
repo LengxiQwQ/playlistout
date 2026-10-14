@@ -12,6 +12,15 @@ __author__ = "lengxiQwQ, Dragon水魅"
 import os
 import re
 import sys
+
+# 自适应路径注入，支持无论从何处运行均可正确加载共享模块
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_CLI_DIR = os.path.dirname(_CURRENT_DIR)
+_REPO_ROOT = os.path.dirname(_CLI_DIR)
+for _p in (_REPO_ROOT, _CLI_DIR):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import json
 import csv
 import platform

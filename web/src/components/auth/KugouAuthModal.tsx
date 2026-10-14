@@ -19,6 +19,9 @@ import {
   checkKugouSession,
   type KugouAuthState,
 } from '../../utils/kugouAuth';
+import { KugouApiCredentials } from './KugouApiCredentials';
+import { KugouProfileCard } from './KugouProfileCard';
+import { KugouQrCodeBox } from './KugouQrCodeBox';
 
 export interface KugouAuthModalProps {
   isOpen: boolean;
@@ -39,7 +42,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [authState, setAuthState] = useState<KugouAuthState>('none');
   const [profile, setProfile] = useState<KugouUserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState<boolean>(false);
-  const [copiedKey, setCopiedKey] = useState<'token' | 'userid' | null>(null);
 
   const pollTimerRef = useRef<any>(null);
   const consecutiveErrorsRef = useRef<number>(0);
@@ -51,27 +53,6 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     onClose();
     if (shouldNotifySuccess) {
       onSuccess?.();
-    }
-  };
-
-  const handleCopy = async (key: 'token' | 'userid', text: string) => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-      setCopiedKey(key);
-      setTimeout(() => {
-        setCopiedKey((prev) => (prev === key ? null : prev));
-      }, 2000);
-    } catch {
-      // ignore clipboard error
     }
   };
 
@@ -496,106 +477,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               marginBottom: '1.5rem',
             }}
           >
-            <div
-              data-testid="kugou-profile-card"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.9rem',
-                padding: '0.9rem 1rem',
-                backgroundColor: '#ffffff',
-                border: '1px solid #bfdbfe',
-                borderRadius: '10px',
-                textAlign: 'left',
-                marginBottom: '1rem',
-              }}
-            >
-              <div
-                style={{
-                  position: 'relative',
-                  width: '64px',
-                  height: '64px',
-                  flex: '0 0 64px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'grid',
-                  placeItems: 'center',
-                  backgroundColor: '#dbeafe',
-                  color: '#2563eb',
-                  fontSize: '1.55rem',
-                  fontWeight: 700,
-                  border: '2px solid #93c5fd',
-                }}
-                aria-label={profile?.nickname || t.kugouAuth.profileFallbackName}
-              >
-                ♪
-                {profile?.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={profile.nickname}
-                    referrerPolicy="no-referrer"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                    onError={(event) => {
-                      event.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : null}
-              </div>
-
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    flexWrap: 'wrap',
-                    marginBottom: profile?.signature ? '0.3rem' : '0.15rem',
-                  }}
-                >
-                  <strong
-                    className="font-sans"
-                    style={{
-                      color: '#1e3a8a',
-                      fontSize: '1rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '210px',
-                    }}
-                    title={profile?.nickname}
-                  >
-                    {profileLoading
-                      ? t.kugouAuth.profileLoading
-                      : profile?.nickname || t.kugouAuth.profileFallbackName}
-                  </strong>
-                </div>
-
-                {profile?.signature ? (
-                  <div
-                    className="font-sans"
-                    style={{
-                      color: '#64748b',
-                      fontSize: '0.8rem',
-                      lineHeight: 1.4,
-                      marginBottom: '0.25rem',
-                      overflowWrap: 'anywhere',
-                    }}
-                  >
-                    {profile.signature}
-                  </div>
-                ) : null}
-
-                <div className="font-sans" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                  {t.kugouAuth.profileUserIdLabel}：{profile?.userId || getKugouAuth()?.userid || '—'}
-                </div>
-              </div>
-            </div>
+            <KugouProfileCard profile={profile} profileLoading={profileLoading} />
 
             <p className="font-sans" style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '1.25rem' }}>
               已安全保存本地登录凭证，可直接读取当前账号的完整云歌单。
@@ -633,116 +515,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             </div>
 
             {/* Developer / API Credentials Section */}
-            {(() => {
-              const currentAuth = getKugouAuth();
-              if (!currentAuth) return null;
-              return (
-                <div
-                  data-testid="kugou-api-credentials"
-                  style={{
-                    marginTop: '1.25rem',
-                    padding: '0.85rem 1rem',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '6px',
-                    border: '1px solid #bfdbfe',
-                    textAlign: 'left',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      color: '#1e3a8a',
-                      marginBottom: '0.6rem',
-                    }}
-                  >
-                    {t.kugouAuth.apiCredentialsTitle}
-                  </div>
-
-                  {/* Token row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '0.8rem',
-                      marginBottom: '0.45rem',
-                      backgroundColor: '#f8fafc',
-                      padding: '0.35rem 0.5rem',
-                      borderRadius: '4px',
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: '#475569',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '180px',
-                      }}
-                      title={currentAuth.token}
-                    >
-                      Token: <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>{currentAuth.token.slice(0, 10)}...</span>
-                    </span>
-                    <button
-                      type="button"
-                      data-testid="copy-kugou-token-btn"
-                      onClick={() => handleCopy('token', currentAuth.token)}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '0.2rem 0.55rem',
-                        borderRadius: '4px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: copiedKey === 'token' ? '#dcfce7' : '#ffffff',
-                        color: copiedKey === 'token' ? '#166534' : '#1e293b',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {copiedKey === 'token' ? t.kugouAuth.copied : t.kugouAuth.copyToken}
-                    </button>
-                  </div>
-
-                  {/* User ID row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '0.8rem',
-                      marginBottom: 0,
-                      backgroundColor: '#f8fafc',
-                      padding: '0.35rem 0.5rem',
-                      borderRadius: '4px',
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    <span style={{ color: '#475569' }}>
-                      User ID: <strong style={{ color: '#0f172a' }}>{currentAuth.userid}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      data-testid="copy-kugou-userid-btn"
-                      onClick={() => handleCopy('userid', currentAuth.userid)}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '0.2rem 0.55rem',
-                        borderRadius: '4px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: copiedKey === 'userid' ? '#dcfce7' : '#ffffff',
-                        color: copiedKey === 'userid' ? '#166534' : '#1e293b',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {copiedKey === 'userid' ? t.kugouAuth.copied : t.kugouAuth.copyUserId}
-                    </button>
-                  </div>
-
-                </div>
-              );
-            })()}
+            <KugouApiCredentials />
           </div>
         )}
 
@@ -783,95 +556,13 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             </div>
 
             {/* QR Code Container */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto',
-                width: '210px',
-                height: '210px',
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '2px solid #2563eb',
-                position: 'relative',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                overflow: 'hidden',
-              }}
-            >
-              {loading ? (
-                <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                  <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>⏳</div>
-                  <div>生成中...</div>
-                </div>
-              ) : status === 'expired' ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    padding: '1rem',
-                  }}
-                  onClick={loadQrCode}
-                >
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔄</div>
-                  <div style={{ color: '#ef4444', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                    {t.kugouAuth.loginExpired}
-                  </div>
-                  <MarkerButton variant="paper" onClick={loadQrCode}>
-                    {t.kugouAuth.refreshQr}
-                  </MarkerButton>
-                </div>
-              ) : status === 'scanned' ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '1rem',
-                  }}
-                >
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📱</div>
-                  <div style={{ color: '#2563eb', fontWeight: 700, fontSize: '0.95rem' }}>
-                    {t.kugouAuth.scannedConfirm}
-                  </div>
-                </div>
-              ) : status === 'success' ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '1rem',
-                  }}
-                >
-                  <div style={{ fontSize: '2.5rem', color: '#16a34a', marginBottom: '0.5rem' }}>✓</div>
-                  <div style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.95rem' }}>
-                    {t.kugouAuth.loginSuccess}
-                  </div>
-                </div>
-              ) : qrSession?.qrcodeImg ? (
-                <img
-                  src={qrSession.qrcodeImg}
-                  alt="Kugou Login QR Code"
-                  style={{ width: '190px', height: '190px', objectFit: 'contain' }}
-                />
-              ) : (
-                <div style={{ color: '#ef4444', padding: '1rem', fontSize: '0.85rem' }}>
-                  {errorMessage || '无法载入二维码'}
-                  <div style={{ marginTop: '0.75rem' }}>
-                    <MarkerButton variant="paper" onClick={loadQrCode}>
-                      {t.kugouAuth.refreshQr}
-                    </MarkerButton>
-                  </div>
-                </div>
-              )}
-            </div>
+            <KugouQrCodeBox
+              loading={loading}
+              status={status}
+              qrSession={qrSession}
+              errorMessage={errorMessage}
+              onReload={loadQrCode}
+            />
 
             {/* Status Hint */}
             <div

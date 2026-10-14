@@ -1,10 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { Playlist, UserPlaylistsData, ApiError } from './api/types';
-import { parsePlaylist, fetchUserPlaylists, recordVisit, submitFeedback } from './api/client';
-import { validatePlaylistInput } from './utils/validation';
-import { clearKugouAuth, getKugouAuth } from './utils/kugouAuth';
+import React, { useState, useCallback, useEffect } from 'react';
+import { recordVisit } from './api/client';
 import { LanguageProvider, useTranslation } from './i18n';
-import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from './analytics/clarity';
+import { setClarityTag } from './analytics/clarity';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/layout/Hero';
 import { SearchNote } from './components/playlist/SearchNote';
@@ -16,30 +13,58 @@ import { DeveloperPanel } from './components/developer/DeveloperPanel';
 import { StatsJournal, RunningDaysStamp } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
-import { DisambiguationModal, DisambiguationItem } from './components/playlist/DisambiguationModal';
+import { DisambiguationModal } from './components/playlist/DisambiguationModal';
 import { BinderSpine } from './components/layout/BinderSpine';
 import { BackgroundDecorations } from './components/layout/BackgroundDecorations';
 import { useBaselineGrid } from './hooks/useBaselineGrid';
-
-type AppState = 'idle' | 'loading' | 'success' | 'error';
-type ViewMode = 'single' | 'batch';
+import { useViewMode } from './hooks/useViewMode';
+import { useDisambiguation } from './hooks/useDisambiguation';
+import { useChannelCache } from './hooks/useChannelCache';
+import { usePlaylistParser } from './hooks/usePlaylistParser';
 
 export const AppContent: React.FC = () => {
-  const [inputUrl, setInputUrl] = useState('');
-  const [state, setState] = useState<AppState>('idle');
-  const [viewMode, setViewMode] = useState<ViewMode>('single');
-  const [playlist, setPlaylist] = useState<Playlist | null>(null);
-  const [userPlaylists, setUserPlaylists] = useState<UserPlaylistsData | null>(null);
-  const [hasCollision, setHasCollision] = useState<boolean>(false);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [disambiguationCandidates, setDisambiguationCandidates] = useState<DisambiguationItem[]>([]);
-  const [isDisambiguationOpen, setIsDisambiguationOpen] = useState(false);
-  const [disambiguationQueryId, setDisambiguationQueryId] = useState('');
-  const [channelCache, setChannelCache] = useState<Record<string, Playlist>>({});
-
   const { language } = useTranslation();
+
+  const { viewMode, setViewMode, saveScrollPosition, returnToBatch, resetViewMode } = useViewMode('single');
+  const {
+    isDisambiguationOpen, disambiguationCandidates, disambiguationQueryId,
+    openDisambiguation, closeDisambiguation, resetDisambiguation,
+  } = useDisambiguation();
+  const { getCachedChannel, setCachedChannel, clearChannelCache } = useChannelCache();
+
+  const scrollToTop = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  const scrollToElement = useCallback((elementId: string) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const el = document.getElementById(elementId);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      requestAnimationFrame(() => {
+        const lazyEl = document.getElementById(elementId);
+        if (lazyEl && typeof lazyEl.scrollIntoView === 'function') {
+          lazyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+  }, []);
+
+  const {
+    inputUrl, setInputUrl, state, setState, playlist, userPlaylists,
+    hasCollision, error, feedbackSubmitted, handleParse, handleReload,
+    handleReset, handleQuickSample, handleFeedback, handleSwitchChannel,
+    handleViewAllUserPlaylists, handleDrilldownToSingle,
+    handleSelectDisambiguationPlaylist, handleSelectDisambiguationUser,
+  } = usePlaylistParser({
+    scrollToTop, scrollToElement, setCachedChannel, getCachedChannel,
+    setViewMode, openDisambiguation, closeDisambiguation, resetDisambiguation,
+    resetViewMode, clearChannelCache, saveScrollPosition,
+  });
 
   useEffect(() => {
     recordVisit();
@@ -55,694 +80,10 @@ export const AppContent: React.FC = () => {
     setClarityTag('language', language);
   }, [language]);
 
-  const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
-      setClarityTag('platform', platform);
-    }
-    const bucket = classifyPlaylistSize(trackCount);
-    if (bucket) {
-      setClarityTag('playlist_size_bucket', bucket);
-    }
-    trackClarityEvent('playlist_parse_success');
-  }, []);
-
-  const recordClarityParseFailure = useCallback((platform?: string) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
-      setClarityTag('platform', platform);
-    }
-    trackClarityEvent('playlist_parse_failure');
-  }, []);
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef<number>(0);
-  const lastCollectionScrollPosRef = useRef<number | null>(null);
-
-  const scrollToTop = useCallback(() => {
-    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, []);
-
-  const scrollToElement = useCallback((elementId: string) => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    const el = document.getElementById(elementId);
-    if (el && typeof el.scrollIntoView === 'function') {
-      // Element already in DOM → scroll immediately
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      // Element not yet mounted → wait one animation frame then scroll
-      requestAnimationFrame(() => {
-        const lazyEl = document.getElementById(elementId);
-        if (lazyEl && typeof lazyEl.scrollIntoView === 'function') {
-          lazyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    }
-  }, []);
-
-  const handleParse = useCallback(
-    async (
-      urlToParse?: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
-      modeHint?: 'user' | 'playlist',
-      isSample?: boolean,
-      channelHint?: 'qishui' | 'douyin',
-      skipScroll?: boolean,
-    ) => {
-      const rawTarget = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
-
-      // 1. Client-side fast validation
-      const validation = validatePlaylistInput(rawTarget);
-      if (!validation.valid) {
-        setState('error');
-        setError({
-          code: validation.code || 'INVALID_INPUT',
-          message: validation.error || '请输入有效的歌单链接、QQ 号或主页链接。',
-        });
-        recordClarityParseFailure();
-        return;
-      }
-
-      const targetUrl = validation.cleanedInput || rawTarget;
-      if (urlToParse === undefined && targetUrl !== inputUrl) {
-        setInputUrl(targetUrl);
-      }
-
-      // 2. Cancel any pending in-flight request to prevent race conditions
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-      const currentRequestId = ++requestIdRef.current;
-
-      setState('loading');
-      setError(null);
-      setHasCollision(false);
-      setFeedbackSubmitted(false);
-
-      // Smoothly bring user to top so loading animation in SearchNote is visible
-      if (!skipScroll && typeof window !== 'undefined' && typeof window.scrollY === 'number' && window.scrollY > 80) {
-        scrollToTop();
-      }
-
-      try {
-        // Fast path for explicit user batch mode (e.g. from sample sticker or verified user intent)
-        if (modeHint === 'user') {
-          const platform =
-            platformHint === 'netease'
-              ? 'netease'
-              : platformHint === 'kugou'
-              ? 'kugou'
-              : 'qqmusic';
-          const targetInput = validation.extractedUin || targetUrl;
-          const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (res.success) {
-            setUserPlaylists(res.data);
-            setPlaylist(null);
-            setViewMode('batch');
-            setState('success');
-            scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform);
-          } else {
-            setError(res.error);
-            setState('error');
-            recordClarityParseFailure(platform);
-          }
-          return;
-        }
-
-        // Fast path for explicit single playlist mode (e.g. from sample sticker or channel switch)
-        if (modeHint === 'playlist') {
-          const platform =
-            platformHint === 'netease'
-              ? 'netease'
-              : platformHint === 'kugou'
-              ? 'kugou'
-              : platformHint === 'qishui'
-              ? 'qishui'
-              : platformHint === 'kuwo'
-              ? 'kuwo'
-              : platformHint === 'qqmusic'
-              ? 'qqmusic'
-              : undefined;
-          const res = channelHint
-            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, channelHint)
-            : await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (res.success) {
-            if (res.data.retrieval?.reason === 'auth_invalid') {
-              clearKugouAuth();
-            }
-            setPlaylist(res.data);
-            setChannelCache((prev) => ({
-              ...prev,
-              [`${res.data.id}:${res.data.channel || 'qishui'}`]: res.data,
-            }));
-            setUserPlaylists(null);
-            setViewMode('single');
-            setState('success');
-            if (!skipScroll) {
-              scrollToElement('result');
-            }
-            recordClarityParseSuccess(
-              res.data.platform || platform || 'qqmusic',
-              res.data.trackCount ?? res.data.tracks?.length,
-            );
-          } else {
-            setError(res.error);
-            setState('error');
-            recordClarityParseFailure(platform || 'qqmusic');
-          }
-          return;
-        }
-
-        // Case A: User profile URL -> Fetch user playlists directly
-        if (validation.kind === 'user_profile_url') {
-          const targetInput = validation.extractedUin || targetUrl;
-          const platform =
-            validation.platform === 'netease'
-              ? 'netease'
-              : validation.platform === 'kugou'
-              ? 'kugou'
-              : 'qqmusic';
-          const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (res.success) {
-            setUserPlaylists(res.data);
-            setPlaylist(null);
-            setViewMode('batch');
-            setState('success');
-            scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform);
-          } else {
-            setError(res.error);
-            setState('error');
-            recordClarityParseFailure(platform);
-          }
-          return;
-        }
-
-        // Case B: Short link (e.g. 163cn.tv or t.kugou.com) -> Try single playlist first, fallback to user profile
-        if (validation.kind === 'short_link') {
-          const platform =
-            validation.platform === 'netease'
-              ? 'netease'
-              : validation.platform === 'kugou'
-              ? 'kugou'
-              : validation.platform === 'qishui'
-              ? 'qishui'
-              : validation.platform === 'qqmusic'
-              ? 'qqmusic'
-              : undefined;
-          const singleRes = channelHint
-            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint).catch(() => null)
-            : await parsePlaylist(targetUrl, controller.signal, platform).catch(() => null);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (singleRes && singleRes.success && singleRes.data) {
-            if (singleRes.data.retrieval?.reason === 'auth_invalid') {
-              clearKugouAuth();
-            }
-            setPlaylist(singleRes.data);
-            setChannelCache((prev) => ({
-              ...prev,
-              [`${singleRes.data.id}:${singleRes.data.channel || 'qishui'}`]: singleRes.data,
-            }));
-            setUserPlaylists(null);
-            setViewMode('single');
-            setState('success');
-            if (!skipScroll) {
-              scrollToElement('result');
-            }
-            recordClarityParseSuccess(
-              singleRes.data.platform || platform || 'unknown',
-              singleRes.data.trackCount ?? singleRes.data.tracks?.length,
-            );
-            return;
-          }
-
-          // Fallback to user playlists (e.g. user homepage short link)
-          const userPlatform =
-            platform === 'netease' || platform === 'kugou' || platform === 'qqmusic'
-              ? platform
-              : 'netease';
-          const userRes = await fetchUserPlaylists(targetUrl, controller.signal, userPlatform).catch(() => null);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (userRes && userRes.success && userRes.data && userRes.data.playlists.length > 0) {
-            setUserPlaylists(userRes.data);
-            setPlaylist(null);
-            setViewMode('batch');
-            setState('success');
-            scrollToElement('user-playlists');
-            recordClarityParseSuccess(platform || 'netease');
-            return;
-          }
-
-          setError(
-            (singleRes && !singleRes.success ? singleRes.error : null) ||
-              (userRes && !userRes.success ? userRes.error : null) || {
-                code: 'PLAYLIST_NOT_FOUND',
-                message: '短链接解析失败或未找到对应歌单/主页，请检查链接后重试。',
-              },
-          );
-          setState('error');
-          recordClarityParseFailure(platform || 'unknown');
-          return;
-        }
-
-        // Case C: Explicit single playlist URL -> Parse single playlist directly
-        if (validation.kind === 'single_playlist_url') {
-          const platform =
-            validation.platform === 'netease'
-              ? 'netease'
-              : validation.platform === 'kugou'
-              ? 'kugou'
-              : validation.platform === 'qishui'
-              ? 'qishui'
-              : validation.platform === 'kuwo'
-              ? 'kuwo'
-              : 'qqmusic';
-          const res = channelHint
-            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
-            : await parsePlaylist(targetUrl, controller.signal, platform);
-          if (requestIdRef.current !== currentRequestId) return;
-
-          if (res.success) {
-            if (res.data.retrieval?.reason === 'auth_invalid') {
-              clearKugouAuth();
-            }
-            setPlaylist(res.data);
-            setChannelCache((prev) => ({
-              ...prev,
-              [`${res.data.id}:${res.data.channel || 'qishui'}`]: res.data,
-            }));
-            setUserPlaylists(null);
-            setViewMode('single');
-            setState('success');
-            if (!skipScroll) {
-              scrollToElement('result');
-            }
-            recordClarityParseSuccess(
-              res.data.platform || platform || 'qqmusic',
-              res.data.trackCount ?? res.data.tracks?.length,
-            );
-          } else {
-            setError(res.error);
-            setState('error');
-            recordClarityParseFailure(platform || 'qqmusic');
-          }
-          return;
-        }
-
-        // Case D: Numeric input -> Smart cross-platform & cross-type search
-        if (validation.kind === 'numeric') {
-          const isLikelyQishui = targetUrl.length >= 19;
-          if (isLikelyQishui) {
-            const qishuiRes = channelHint
-              ? await parsePlaylist(targetUrl, controller.signal, 'qishui', undefined, undefined, channelHint).catch(() => null)
-              : await parsePlaylist(targetUrl, controller.signal, 'qishui').catch(() => null);
-
-            if (requestIdRef.current !== currentRequestId) return;
-
-            if (qishuiRes && qishuiRes.success && qishuiRes.data && qishuiRes.data.name) {
-              setPlaylist(qishuiRes.data);
-              setChannelCache((prev) => ({
-                ...prev,
-                [`${qishuiRes.data.id}:${qishuiRes.data.channel || 'qishui'}`]: qishuiRes.data,
-              }));
-              setUserPlaylists(null);
-              setViewMode('single');
-              setState('success');
-              if (!skipScroll) {
-                scrollToElement('result');
-              }
-              recordClarityParseSuccess('qishui', qishuiRes.data.trackCount ?? qishuiRes.data.tracks?.length);
-              return;
-            }
-
-            setError({
-              code: 'PLAYLIST_NOT_FOUND',
-              message: `未找到 ID 为 “${targetUrl}” 的汽水音乐歌单，请检查输入是否正确。`,
-            });
-            setState('error');
-            recordClarityParseFailure('qishui');
-            return;
-          }
-
-          const [qqSingleRes, qqUserRes, neteaseSingleRes, neteaseUserRes] = await Promise.all([
-            parsePlaylist(targetUrl, controller.signal, 'qqmusic').catch(() => null),
-            fetchUserPlaylists(targetUrl, controller.signal, 'qqmusic').catch(() => null),
-            parsePlaylist(targetUrl, controller.signal, 'netease').catch(() => null),
-            fetchUserPlaylists(targetUrl, controller.signal, 'netease').catch(() => null),
-          ]);
-
-          if (requestIdRef.current !== currentRequestId) return;
-
-          const candidates: DisambiguationItem[] = [];
-
-          if (qqSingleRes && qqSingleRes.success && qqSingleRes.data && qqSingleRes.data.name) {
-            candidates.push({
-              id: qqSingleRes.data.id || targetUrl,
-              platform: 'qqmusic',
-              type: 'playlist',
-              title: qqSingleRes.data.name,
-              subtitle: `创建者: ${qqSingleRes.data.creator || '未知'}`,
-              count: qqSingleRes.data.trackCount ?? qqSingleRes.data.tracks?.length ?? 0,
-              coverUrl: qqSingleRes.data.coverUrl,
-              data: qqSingleRes.data,
-            });
-          }
-
-          if (qqUserRes && qqUserRes.success && qqUserRes.data && qqUserRes.data.playlists?.length > 0) {
-            candidates.push({
-              id: qqUserRes.data.userId || targetUrl,
-              platform: 'qqmusic',
-              type: 'user',
-              title: qqUserRes.data.nickname || `QQ 用户 (${targetUrl})`,
-              subtitle: `包含 ${qqUserRes.data.total || qqUserRes.data.playlists.length} 个公开歌单`,
-              count: qqUserRes.data.total || qqUserRes.data.playlists.length,
-              coverUrl: qqUserRes.data.playlists[0]?.coverUrl,
-              data: qqUserRes.data,
-            });
-          }
-
-          if (neteaseSingleRes && neteaseSingleRes.success && neteaseSingleRes.data && neteaseSingleRes.data.name) {
-            candidates.push({
-              id: neteaseSingleRes.data.id || targetUrl,
-              platform: 'netease',
-              type: 'playlist',
-              title: neteaseSingleRes.data.name,
-              subtitle: `创建者: ${neteaseSingleRes.data.creator || '未知'}`,
-              count: neteaseSingleRes.data.trackCount ?? neteaseSingleRes.data.tracks?.length ?? 0,
-              coverUrl: neteaseSingleRes.data.coverUrl,
-              data: neteaseSingleRes.data,
-            });
-          }
-
-          if (neteaseUserRes && neteaseUserRes.success && neteaseUserRes.data && neteaseUserRes.data.playlists?.length > 0) {
-            candidates.push({
-              id: neteaseUserRes.data.userId || targetUrl,
-              platform: 'netease',
-              type: 'user',
-              title: neteaseUserRes.data.nickname || `网易云用户 (${targetUrl})`,
-              subtitle: `包含 ${neteaseUserRes.data.total || neteaseUserRes.data.playlists.length} 个公开歌单`,
-              count: neteaseUserRes.data.total || neteaseUserRes.data.playlists.length,
-              coverUrl: neteaseUserRes.data.playlists[0]?.coverUrl,
-              data: neteaseUserRes.data,
-            });
-          }
-
-          if (candidates.length === 0) {
-            const anyNetworkError = [qqSingleRes, qqUserRes, neteaseSingleRes, neteaseUserRes].find(
-              (r) => r && !r.success && r.error.code === 'NETWORK_ERROR',
-            );
-            if (anyNetworkError && !anyNetworkError.success) {
-              setError(anyNetworkError.error);
-            } else {
-              setError({
-                code: 'PLAYLIST_NOT_FOUND',
-                message: `在 QQ 音乐 与 网易云音乐 中均未找到 ID 为 “${targetUrl}” 的歌单或用户公开主页，请检查输入是否正确。`,
-              });
-            }
-            setState('error');
-            recordClarityParseFailure();
-          } else if (candidates.length === 1) {
-            // Unambiguous! Directly load matched item
-            const only = candidates[0];
-            if (only.type === 'playlist') {
-              const matchedPlaylist = only.data as Playlist;
-              setPlaylist(matchedPlaylist);
-              setChannelCache((prev) => ({
-                ...prev,
-                [`${matchedPlaylist.id}:${matchedPlaylist.channel || 'qishui'}`]: matchedPlaylist,
-              }));
-              setUserPlaylists(null);
-              setViewMode('single');
-              setState('success');
-              scrollToElement('result');
-              recordClarityParseSuccess(only.platform, only.count);
-            } else {
-              setUserPlaylists(only.data as UserPlaylistsData);
-              setPlaylist(null);
-              setViewMode('batch');
-              setState('success');
-              scrollToElement('user-playlists');
-              recordClarityParseSuccess(only.platform);
-            }
-          } else {
-            // Ambiguous: 2 or more targets matched across platforms/types
-            setDisambiguationCandidates(candidates);
-            setDisambiguationQueryId(targetUrl);
-            setIsDisambiguationOpen(true);
-            setState('idle');
-          }
-          return;
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-
-        if (requestIdRef.current === currentRequestId) {
-          setError({
-            code: 'NETWORK_ERROR',
-            message: '网络连接异常，请检查网络连接后重试。',
-          });
-          setState('error');
-          recordClarityParseFailure();
-        }
-      }
-    },
-    [inputUrl, playlist, scrollToElement, scrollToTop, recordClarityParseSuccess, recordClarityParseFailure],
-  );
-
-  const handleReload = useCallback(() => {
-    scrollToTop();
-    handleParse();
-  }, [scrollToTop, handleParse]);
-
-  const handleSwitchChannel = useCallback(
-    async (targetChannel: 'qishui' | 'douyin') => {
-      if (!playlist) return;
-      const currentChannel = playlist.channel || 'qishui';
-      // If clicking the current channel, it is a re-parse request (bypass cache)
-      const isReparse = targetChannel === currentChannel;
-      const cacheKey = `${playlist.id}:${targetChannel}`;
-
-      if (!isReparse && channelCache[cacheKey]) {
-        setPlaylist(channelCache[cacheKey]);
-        return;
-      }
-
-      const targetUrl = playlist.sourceUrl || playlist.id;
-      await handleParse(targetUrl, 'qishui', 'playlist', false, targetChannel, true);
-    },
-    [playlist, channelCache, handleParse],
-  );
-
-  const handleReset = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    setInputUrl('');
-    setPlaylist(null);
-    setUserPlaylists(null);
-    setChannelCache({});
-    setError(null);
-    setHasCollision(false);
-    setFeedbackSubmitted(false);
-    setViewMode('single');
-    setDisambiguationCandidates([]);
-    setIsDisambiguationOpen(false);
-    setDisambiguationQueryId('');
-    setState('idle');
-    lastCollectionScrollPosRef.current = null;
-    scrollToTop();
-  }, [scrollToTop]);
-
-  const handleSelectDisambiguationPlaylist = useCallback(
-    (selectedPlaylist: Playlist) => {
-      setIsDisambiguationOpen(false);
-      setPlaylist(selectedPlaylist);
-      setUserPlaylists(null);
-      setViewMode('single');
-      setState('success');
-      scrollToElement('result');
-      recordClarityParseSuccess(
-        selectedPlaylist.platform || 'qqmusic',
-        selectedPlaylist.trackCount ?? selectedPlaylist.tracks?.length,
-      );
-    },
-    [scrollToElement, recordClarityParseSuccess],
-  );
-
-  const handleSelectDisambiguationUser = useCallback(
-    (selectedUser: UserPlaylistsData) => {
-      setIsDisambiguationOpen(false);
-      setUserPlaylists(selectedUser);
-      setPlaylist(null);
-      setViewMode('batch');
-      setState('success');
-      scrollToElement('user-playlists');
-      recordClarityParseSuccess(selectedUser.platform || 'qqmusic');
-    },
-    [scrollToElement, recordClarityParseSuccess],
-  );
-
-  const handleQuickSample = useCallback(
-    (
-      sampleInput: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
-      modeHint?: 'user' | 'playlist',
-    ) => {
-      setInputUrl(sampleInput);
-      handleParse(sampleInput, platformHint, modeHint, true);
-    },
-    [handleParse],
-  );
-
-  /**
-   * Submits the current failed playlist URL for maintainer review.
-   * Only shown for parse-related errors (not rate-limit or local network errors).
-   */
-  const handleFeedback = useCallback(async () => {
-    if (!error || feedbackSubmitted) return;
-    const result = await submitFeedback(inputUrl, error.code);
-    if (result.success) {
-      setFeedbackSubmitted(true);
-    }
-  }, [error, feedbackSubmitted, inputUrl]);
-
   const handleReturnToBatch = useCallback(() => {
-    if (userPlaylists) {
-      setViewMode('batch');
-      setState('success');
-      // Smoothly preserve/restore scroll offset in the playlist collection without flying to top
-      const savedPos = lastCollectionScrollPosRef.current;
-      setTimeout(() => {
-        if (typeof window !== 'undefined' && savedPos !== null && savedPos > 0 && typeof window.scrollTo === 'function') {
-          window.scrollTo({ top: savedPos, behavior: 'smooth' });
-        } else if (typeof document !== 'undefined') {
-          const el = document.getElementById('user-playlists');
-          if (el && typeof el.scrollIntoView === 'function') {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
-      }, 50);
-    }
-  }, [userPlaylists]);
-
-  const handleViewAllUserPlaylists = useCallback(async () => {
-    const auth = getKugouAuth();
-    if (!auth) return;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const currentRequestId = ++requestIdRef.current;
-
-    setState('loading');
-    setError(null);
-    scrollToTop();
-
-    try {
-      const res = await fetchUserPlaylists(auth.userid, controller.signal, 'kugou', auth);
-      if (requestIdRef.current !== currentRequestId) return;
-      if (res.success) {
-        setUserPlaylists(res.data);
-        setPlaylist(null);
-        setViewMode('batch');
-        setState('success');
-        scrollToElement('user-playlists');
-        recordClarityParseSuccess('kugou');
-      } else {
-        setError(res.error);
-        setState('error');
-        recordClarityParseFailure('kugou');
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      if (requestIdRef.current === currentRequestId) {
-        setError({ code: 'NETWORK_ERROR', message: '网络连接异常，请重试。' });
-        setState('error');
-      }
-    }
-  }, [scrollToTop]);
-
-  const handleDrilldownToSingle = useCallback(
-    async (playlistIdOrUrl: string, platformOverride?: 'qqmusic' | 'netease' | 'kugou') => {
-      // Abort any ongoing request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-      const currentRequestId = ++requestIdRef.current;
-
-      // 1. Remember user's scroll position in the collection
-      if (typeof window !== 'undefined') {
-        lastCollectionScrollPosRef.current = window.scrollY;
-      }
-
-      // 2. Put playlist identifier into search box & enter loading state
-      setInputUrl(playlistIdOrUrl);
-      setState('loading');
-      setError(null);
-
-      // 3. Smoothly jump to top so the user clearly sees the active parsing state
-      scrollToTop();
-
-      try {
-        const platform =
-          platformOverride ||
-          (userPlaylists?.platform === 'netease'
-            ? 'netease'
-            : userPlaylists?.platform === 'kugou'
-            ? 'kugou'
-            : 'qqmusic');
-        const res = await parsePlaylist(playlistIdOrUrl, controller.signal, platform);
-        if (requestIdRef.current !== currentRequestId) return;
-
-        if (res.success) {
-          setPlaylist(res.data);
-          setViewMode('single');
-          setState('success');
-          // 4. Once parsed successfully, smoothly scroll down to the single playlist card
-          scrollToElement('result');
-          recordClarityParseSuccess(
-            res.data.platform || platform || 'qqmusic',
-            res.data.trackCount ?? res.data.tracks?.length,
-          );
-        } else {
-          setError(res.error);
-          setState('error');
-          recordClarityParseFailure(platform);
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        if (requestIdRef.current === currentRequestId) {
-          setError({
-            code: 'NETWORK_ERROR',
-            message: '网络连接异常，请检查网络连接后重试。',
-          });
-          setState('error');
-          recordClarityParseFailure();
-        }
-      }
-    },
-    [userPlaylists, scrollToTop, scrollToElement, recordClarityParseSuccess, recordClarityParseFailure],
-  );
+    setState('success');
+    returnToBatch(Boolean(userPlaylists));
+  }, [setState, returnToBatch, userPlaylists]);
 
   useBaselineGrid([state, playlist, userPlaylists]);
 
@@ -777,9 +118,9 @@ export const AppContent: React.FC = () => {
           {/* Result Paper (Single Playlist) */}
           {(state === 'success' || (state === 'loading' && Boolean(playlist))) && viewMode === 'single' && playlist && (
             <div className="baseline-grid-snap">
-              <ResultPaper 
-                playlist={playlist} 
-                onReset={handleReset} 
+              <ResultPaper
+                playlist={playlist}
+                onReset={handleReset}
                 onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
                 onReload={handleReload}
                 onSwitchChannel={handleSwitchChannel}
@@ -834,7 +175,7 @@ export const AppContent: React.FC = () => {
 
         <DisambiguationModal
           isOpen={isDisambiguationOpen}
-          onClose={() => setIsDisambiguationOpen(false)}
+          onClose={closeDisambiguation}
           queryId={disambiguationQueryId}
           candidates={disambiguationCandidates}
           onSelectPlaylist={handleSelectDisambiguationPlaylist}

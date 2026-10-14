@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import type { Playlist } from '../api/types';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
-import { MarkerButton } from './ui/MarkerButton';
 import { KugouAuthModal } from './auth/KugouAuthModal';
 import { hasKugouAuth } from '../utils/kugouAuth';
 import {
@@ -12,6 +11,8 @@ import {
   getPlatformViewAction,
   getPlatformPlaylistUrl,
 } from '../utils/platform';
+import { QishuiChannelBanner } from './playlist/QishuiChannelBanner';
+import { KugouPreviewBanner } from './playlist/KugouPreviewBanner';
 
 export interface PlaylistSummaryProps {
   playlist: Playlist;
@@ -35,12 +36,6 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
   const { t, format, language } = useTranslation();
   const [coverFailed, setCoverFailed] = useState(false);
   const [isKugouModalOpen, setIsKugouModalOpen] = useState(false);
-
-  const isKugouPreview =
-    playlist.platform === 'kugou' &&
-    (playlist.retrieval?.mode === 'preview' ||
-      (!playlist.retrieval && playlist.tracks.length < playlist.trackCount));
-  const retrievalReason = playlist.retrieval?.reason;
   const isLoggedIn = hasKugouAuth();
 
   const { mainDescription, platformNotice } = useMemo(() => {
@@ -447,245 +442,20 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
         </div>
       </div>
 
-      {/* Qishui / Douyin Channel Sticky Note Banner (Scheme 2 + Scheme 3 Hybrid) */}
-      {playlist.platform === 'qishui' && playlist.availableChannels && playlist.availableChannels.includes('douyin') && (
-        <div
-          className="qishui-channel-banner hand-drawn-border-subtle shadow-cutout-sm"
-          data-testid="qishui-channel-banner"
-        >
-          <div className="qishui-channel-banner-text">
-            <span style={{ fontSize: '1.25rem', lineHeight: 1, userSelect: 'none' }} aria-hidden="true">💡</span>
-            <div>
-              <strong style={{ color: 'var(--ink, #2d3436)', marginRight: '0.35rem' }}>
-                {t.result.channelBannerTitle}:
-              </strong>
-              <span>{t.result.channelBannerTip}</span>
-            </div>
-          </div>
-
-          <div className="qishui-channel-banner-tabs" role="tablist" aria-label={t.result.channelBannerTitle}>
-            <button
-              type="button"
-              role="tab"
-              data-testid="qishui-tab-official"
-              aria-selected={playlist.channel !== 'douyin'}
-              disabled={isSwitchingChannel}
-              onClick={() => playlist.channel === 'douyin' && onSwitchChannel?.('qishui')}
-              className={`font-handwriting channel-tab-btn ${playlist.channel !== 'douyin' ? 'is-active' : ''}`}
-              title={language === 'zh-CN' ? '切换至汽水音乐官方音源解析（纯净真实歌名）' : 'Switch to Soda Music official catalog (clean song titles)'}
-            >
-              <span>🎵</span>
-              <span>{t.result.channelOfficialTracks}</span>
-              {playlist.channel !== 'douyin' && (
-                <span style={{ color: '#16a34a', fontSize: '0.75em' }}>●</span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              data-testid="qishui-tab-douyin"
-              aria-selected={playlist.channel === 'douyin'}
-              disabled={isSwitchingChannel}
-              onClick={() => playlist.channel !== 'douyin' && onSwitchChannel?.('douyin')}
-              className={`font-handwriting channel-tab-btn ${playlist.channel === 'douyin' ? 'is-active' : ''}`}
-              title={language === 'zh-CN' ? '切换至抖音全量原声解析（包含视频原声，约700~800首）' : 'Switch to Douyin full collection (including video soundtracks)'}
-            >
-              <span>🎬</span>
-              <span>{t.result.channelVideoSoundtracks}</span>
-              {playlist.channel === 'douyin' && (
-                <span style={{ color: '#db2777', fontSize: '0.75em' }}>●</span>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Qishui / Douyin Channel Sticky Note Banner */}
+      <QishuiChannelBanner
+        playlist={playlist}
+        isSwitchingChannel={isSwitchingChannel}
+        onSwitchChannel={onSwitchChannel}
+      />
 
       {/* Kugou Preview Notice Banner */}
-      {isKugouPreview && (
-        <div
-          data-testid="kugou-preview-banner"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-            padding: '0.85rem 1.25rem',
-            backgroundColor: retrievalReason === 'auth_invalid' ? '#fef2f2' : '#eff6ff',
-            border: `2px dashed ${retrievalReason === 'auth_invalid' ? '#ef4444' : '#3b82f6'}`,
-            borderRadius: '6px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', minWidth: '240px' }}>
-            <span style={{ fontSize: '1.25rem' }}>
-              {retrievalReason === 'auth_invalid' ? '⚠️' : 'ℹ️'}
-            </span>
-            <span
-              className="font-sans"
-              style={{
-                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                fontSize: '0.92rem',
-                color: retrievalReason === 'auth_invalid' ? '#991b1b' : '#1e40af',
-                fontWeight: 500,
-                lineHeight: 1.4,
-              }}
-            >
-              {retrievalReason === 'auth_required'
-                ? t.result.kugouAuthRequiredNotice
-                : retrievalReason === 'auth_invalid'
-                ? t.result.kugouAuthInvalidNotice
-                : retrievalReason === 'owner_unconfirmed'
-                ? t.result.kugouOwnerUnconfirmedNotice
-                : retrievalReason === 'owner_mismatch'
-                ? format(t.result.kugouOwnerMismatchNotice, {
-                    previewCount: playlist.tracks.length,
-                    totalCount: playlist.trackCount,
-                  })
-                : retrievalReason === 'identity_unresolved'
-                ? format(t.result.kugouIdentityUnresolvedNotice, {
-                    previewCount: playlist.tracks.length,
-                    totalCount: playlist.trackCount,
-                  })
-                : retrievalReason === 'upstream_unavailable'
-                ? t.result.kugouUpstreamUnavailableNotice
-                : isLoggedIn
-                ? format(t.result.kugouLoggedInPreviewNotice, {
-                    previewCount: playlist.tracks.length,
-                    totalCount: playlist.trackCount,
-                  })
-                : format(t.result.kugouPreviewNotice, {
-                    previewCount: playlist.tracks.length,
-                    totalCount: playlist.trackCount,
-                  })}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            {retrievalReason === 'auth_required' && (
-              <MarkerButton
-                variant="ink"
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
-              >
-                {t.result.kugouConnectBtn}
-              </MarkerButton>
-            )}
-
-            {retrievalReason === 'auth_invalid' && (
-              <MarkerButton
-                variant="ink"
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '0.45rem 1rem' }}
-              >
-                {t.result.kugouReLoginBtn}
-              </MarkerButton>
-            )}
-
-            {retrievalReason === 'owner_unconfirmed' && (
-              <>
-                <MarkerButton
-                  variant="paper"
-                  onClick={() => onReload?.()}
-                  style={{ padding: '0.45rem 0.85rem' }}
-                >
-                  {t.result.kugouReparseBtn}
-                </MarkerButton>
-                <MarkerButton
-                  variant="ink"
-                  onClick={() => setIsKugouModalOpen(true)}
-                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
-                >
-                  {t.result.kugouSwitchAccountBtn}
-                </MarkerButton>
-              </>
-            )}
-
-            {retrievalReason === 'owner_mismatch' && (
-              <MarkerButton
-                variant="ink"
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
-              >
-                {t.result.kugouSwitchAccountBtn}
-              </MarkerButton>
-            )}
-
-            {retrievalReason === 'identity_unresolved' && (
-              <>
-                <MarkerButton
-                  variant="paper"
-                  onClick={() => onReload?.()}
-                  style={{ padding: '0.45rem 0.85rem' }}
-                >
-                  {t.result.kugouReparseBtn}
-                </MarkerButton>
-                <MarkerButton
-                  variant="ink"
-                  onClick={() => setIsKugouModalOpen(true)}
-                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
-                >
-                  {t.result.kugouSwitchAccountBtn}
-                </MarkerButton>
-              </>
-            )}
-
-            {retrievalReason === 'upstream_unavailable' && (
-              <>
-                <MarkerButton
-                  variant="paper"
-                  onClick={() => onReload?.()}
-                  style={{ padding: '0.45rem 0.85rem' }}
-                >
-                  {t.errors.retry}
-                </MarkerButton>
-                <MarkerButton
-                  variant="ink"
-                  onClick={() => setIsKugouModalOpen(true)}
-                  style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
-                >
-                  {t.result.kugouReLoginBtn}
-                </MarkerButton>
-              </>
-            )}
-
-            {!retrievalReason && !isLoggedIn && (
-              <MarkerButton
-                variant="ink"
-                onClick={() => setIsKugouModalOpen(true)}
-                style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
-              >
-                {format(t.result.kugouUnlockAllBtn, { totalCount: playlist.trackCount })}
-              </MarkerButton>
-            )}
-
-            {retrievalReason === 'platform_preview' && (
-              <>
-                {onReload && (
-                  <MarkerButton
-                    variant="paper"
-                    onClick={() => onReload?.()}
-                    style={{ padding: '0.45rem 0.85rem' }}
-                  >
-                    {t.result.kugouReparseBtn}
-                  </MarkerButton>
-                )}
-                <MarkerButton
-                  variant={isLoggedIn ? 'paper' : 'ink'}
-                  onClick={() => setIsKugouModalOpen(true)}
-                  style={{
-                    backgroundColor: isLoggedIn ? undefined : '#2563eb',
-                    color: isLoggedIn ? undefined : '#ffffff',
-                    padding: '0.45rem 0.85rem',
-                  }}
-                >
-                  {isLoggedIn ? t.result.kugouSwitchAccountBtn : t.result.kugouConnectBtn}
-                </MarkerButton>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <KugouPreviewBanner
+        playlist={playlist}
+        isLoggedIn={isLoggedIn}
+        onReload={onReload}
+        onOpenModal={() => setIsKugouModalOpen(true)}
+      />
 
       <KugouAuthModal
         isOpen={isKugouModalOpen}
