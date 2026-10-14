@@ -9,6 +9,7 @@ import { providerRegistry, type MusicProvider, type SupportedPlatform } from '..
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { recordResolveV2 } from '../analytics/v2-recorder';
 import { classifyInputType, classifyErrorCategory } from '../analytics/dimensions';
+import { defaultPlaylistPipeline } from '../pipeline';
 
 export interface PlaylistServiceOptions {
   rawInput: string;
@@ -132,6 +133,12 @@ export async function parsePlaylistService(
         throw err;
       }
     }
+
+    // Enrich and standardize playlist metadata through pipeline
+    playlist = await defaultPlaylistPipeline.execute({
+      playlist,
+      platform: actualPlatform,
+    });
 
     const latencyMs = Date.now() - startTime;
 

@@ -1,6 +1,6 @@
 # PlaylistOut 架构演进路线图与状态跟踪 (Architecture Evolution Roadmap)
 
-> **当前总体状态**：🟢 **P2 已完成，当前就绪待启动 P3 (Ready for P3)**  
+> **当前总体状态**：🟢 **P0 ~ P3 核心架构演进已全线大功告成 (100% PASS)**  
 > **更新时间**：2026-10-15  
 > **核心目标**：从单体中心化分发向自描述 Provider 注册制与功能管道演进，让“加一个厂商”只需新增 1 个目录，“加一个功能”拥有可插拔管道。  
 > **Agent 自治执行口令**：当用户输入“按照路线图继续重构，继续走。”时，Agent 必须读取本文档的【当前状态】与【执行规矩】，自动识别下一个待执行任务并无缝推进。
@@ -14,7 +14,7 @@
 | **P0** | **基础设施补全** | 2-3 天 | 🟢 **已完成 (PASS)** | Hono 路由解耦、统一 `SupportedPlatform`、强化 `MusicProvider` 类型 | `npm run gate` 8 步全绿 + 子 Agent 独立验收通过 |
 | **P1** | **Provider 注册中枢** | 3-4 天 | 🟢 **已完成 (PASS)** | `ProviderRegistry`、5 大厂商迁移至 `MusicProvider`、三大 Service 瘦身、`/api/providers` 端点 | `npm run gate` 全绿 + 子 Agent 独立验收通过 |
 | **P2** | **前端解耦 + CLI 共享核心** | 3-4 天 | 🟢 **已完成 (PASS)** | `App.tsx` Hooks 提取、`api/client.ts` 拆分、组件拆解、`cli/core/` 提取 | `npm run gate` 全绿 + CLI 独立运行正常 |
-| **P3** | **新厂商接入 + 功能管道** | 持续 | ⚪ **就绪待启动** | 新增厂商（如咪咕）、Worker 元数据管道、浏览器端导出插件管道 | 新厂商解析测试通过 + 遵从宪法 §1 非目标 |
+| **P3** | **新厂商接入 + 功能管道** | 持续 | 🟢 **已完成 (PASS)** | 新厂商标准接入范式与单测、Worker 元数据洋葱管道、客户端 6 格式插件化导出管道 | `npm run gate` 全绿 + 子 Agent 独立验收通过 |
 
 ---
 
@@ -82,8 +82,8 @@
 - [x] **P2.5 建立 `cli/core/` 共享库与统一入口** (`ui.py`/`terminal.py`, `exporter.py`/`exporters.py`, `http.py`, `models.py`, `detector.py`, `main.py`/`playlistout.py`)
 - [x] **P2 质量门禁与子 Agent 验收 (100% PASS)**
 
-### 🟢 P3: 新厂商 + 功能管道
-- [ ] **P3.1 接入新厂商标准范式落地** (例如接入第 6 家平台)
-- [ ] **P3.2 Worker 元数据处理管道** (失效歌曲标注、VIP 状态标注)
-- [ ] **P3.3 客户端导出管道插件化** (多格式扩展)
-- [ ] **P3 质量门禁与子 Agent 验收**
+### 🟢 P3: 新厂商 + 功能管道 (已完成)
+- [x] **P3.1 接入新厂商标准范式落地** (`docs/PROVIDER-ONBOARDING.md`, `worker/src/providers/registry.test.ts`)
+- [x] **P3.2 Worker 元数据处理管道** (`worker/src/pipeline/` 洋葱模型、失效与 VIP 状态标准化、重复歌曲标定)
+- [x] **P3.3 客户端导出管道插件化** (`web/src/utils/export/` 6 格式插件注册表、Markdown 优雅扩展、Facade 兼容)
+- [x] **P3 质量门禁与子 Agent 验收** (`npm run gate` 8 步 100% 绿灯 + 独立 QA Auditor 验收通过)

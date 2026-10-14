@@ -15,6 +15,10 @@ export class ProviderRegistry {
     return this.providers.get(id as SupportedPlatform);
   }
 
+  has(id: SupportedPlatform | string): boolean {
+    return this.providers.has(id as SupportedPlatform);
+  }
+
   getAll(): MusicProvider[] {
     return Array.from(this.providers.values());
   }
@@ -59,14 +63,14 @@ export class ProviderRegistry {
    * Returns all providers supporting numeric ID disambiguation
    */
   getNumericIdProviders(): MusicProvider[] {
-    return this.getAll().filter((p) => p.meta.capabilities.numericId);
+    return this.getAll().filter((p) => p.meta?.capabilities?.numericId);
   }
 
   /**
    * Returns all providers supporting user public playlists
    */
   getUserProfileProviders(): MusicProvider[] {
-    return this.getAll().filter((p) => p.meta.capabilities.userProfile);
+    return this.getAll().filter((p) => p.meta?.capabilities?.userProfile);
   }
 
   /**
