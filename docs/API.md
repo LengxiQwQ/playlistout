@@ -55,10 +55,10 @@ PlaylistOut officially supports 5 major music platforms:
    - Any attempt to access `/proxy`, `/proxy/*`, or `/api/proxy` is rejected with `403 FORBIDDEN`.
 4. **Rate Limiting & Abuse Boundaries**:
    - Public API sliding window:
-     - `/api/v1/resolve`: **30 requests / minute** per client IP.
-     - `/api/v1/playlist`: **30 requests / minute** per client IP.
-     - `/api/v1/user/playlists`: **30 requests / minute** per client IP.
-     - `/api/v1/stats`: **60 requests / minute** per client IP.
+     - Direct / Unauthenticated Public API callers (cURL, scripts): **6 requests / minute** per client IP.
+     - Registered Player Plugins: **12 requests / minute** per client IP.
+     - Official Web Frontend: **30 requests / minute** per client IP.
+     - Public Statistics (`/api/v1/stats`): **60 requests / minute** per client IP.
    - Telemetry Ingestion (`POST /api/event`):
      - Multi-tier rate limiting: in-memory burst guard + D1-backed durable rate bucket (**60 requests / minute** per client IP).
      - Keys are ephemeral salted one-way hashes (no raw IP stored).
