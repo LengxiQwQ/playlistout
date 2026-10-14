@@ -43,6 +43,12 @@ export const AppContent: React.FC = () => {
 
   useEffect(() => {
     recordVisit();
+    if (typeof window !== 'undefined' && window.location) {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.startsWith('#/dashboard') || hash.startsWith('#dashboard')) {
+        window.location.replace('/dashboard/' + window.location.search);
+      }
+    }
   }, []);
 
   useEffect(() => {

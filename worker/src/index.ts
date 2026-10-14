@@ -23,13 +23,14 @@ export interface Env {
   ENVIRONMENT?: string;
   DB?: D1Database;
   INSIGHTS_ADMIN_TOKEN?: string;
+  DASHBOARD_PASSWORD?: string;
 }
 
 /**
  * Constant-time comparison for token verification using SHA-256 digests.
  * Prevents timing side-channel leaks and never exposes token details.
  */
-async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+export async function constantTimeCompare(a: string, b: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const hashA = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(a)));
   const hashB = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(b)));
@@ -39,6 +40,24 @@ async function constantTimeCompare(a: string, b: string): Promise<boolean> {
     diff |= hashA[i] ^ hashB[i];
   }
   return diff === 0;
+}
+
+/**
+ * Verifies maintainer authorization against configured secrets (INSIGHTS_ADMIN_TOKEN or DASHBOARD_PASSWORD).
+ */
+export async function verifyMaintainerAuth(providedToken: string, env: Env): Promise<boolean> {
+  const cleanToken = providedToken.trim();
+  if (!cleanToken) return false;
+  const configuredSecrets = [env.DASHBOARD_PASSWORD?.trim(), env.INSIGHTS_ADMIN_TOKEN?.trim()].filter(
+    (s): s is string => Boolean(s),
+  );
+  if (configuredSecrets.length === 0) return false;
+  for (const secret of configuredSecrets) {
+    if (await constantTimeCompare(cleanToken, secret)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export default {
@@ -880,6 +899,72 @@ export default {
       return statsResponse;
     }
 
+    // ── Maintainer Auth Verification API ──
+    if (url.pathname === '/api/internal/auth/verify') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Use GET.' } }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json',
+              Allow: 'GET',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const hasConfiguredSecret = Boolean(_env.INSIGHTS_ADMIN_TOKEN?.trim() || _env.DASHBOARD_PASSWORD?.trim());
+      if (!hasConfiguredSecret) {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Maintainer authentication secret is not configured on server.' } }),
+          {
+            status: 503,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      const rawAuth = request.headers.get('authorization') || '';
+      const bearerMatch = rawAuth.match(/^Bearer\s+(.+)$/i);
+      const providedToken = bearerMatch ? bearerMatch[1].trim() : '';
+      if (!providedToken || !(await verifyMaintainerAuth(providedToken, _env))) {
+        return new Response(
+          JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Missing or invalid maintainer authorization token.' } }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache',
+              ...responseHeaders,
+            },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, data: { ok: true, verifiedAt: new Date().toISOString() } }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            Pragma: 'no-cache',
+            ...responseHeaders,
+          },
+        },
+      );
+    }
+
     // ── Analytics V2 Maintainer API ──
     if (
       url.pathname === '/api/internal/analytics/v2' ||
@@ -901,8 +986,8 @@ export default {
         );
       }
 
-      const configuredSecret = _env.INSIGHTS_ADMIN_TOKEN?.trim();
-      if (!configuredSecret) {
+      const hasConfiguredSecret = Boolean(_env.INSIGHTS_ADMIN_TOKEN?.trim() || _env.DASHBOARD_PASSWORD?.trim());
+      if (!hasConfiguredSecret) {
         return new Response(
           JSON.stringify({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Maintainer authentication secret is not configured on server.' } }),
           {
@@ -920,7 +1005,7 @@ export default {
       const rawAuth = request.headers.get('authorization') || '';
       const bearerMatch = rawAuth.match(/^Bearer\s+(.+)$/i);
       const providedToken = bearerMatch ? bearerMatch[1].trim() : '';
-      if (!providedToken || !(await constantTimeCompare(providedToken, configuredSecret))) {
+      if (!providedToken || !(await verifyMaintainerAuth(providedToken, _env))) {
         return new Response(
           JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Missing or invalid maintainer authorization token.' } }),
           {

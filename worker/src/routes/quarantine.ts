@@ -32,8 +32,10 @@ export async function handleInternalQuarantine(
   };
 
   // 1. Token authentication
-  const configuredSecret = env.INSIGHTS_ADMIN_TOKEN?.trim();
-  if (!configuredSecret) {
+  const configuredSecrets = [env.DASHBOARD_PASSWORD?.trim(), env.INSIGHTS_ADMIN_TOKEN?.trim()].filter(
+    (s): s is string => Boolean(s),
+  );
+  if (configuredSecrets.length === 0) {
     return jsonResponse(
       { success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Maintainer authentication secret is not configured.' } },
       503,
@@ -52,7 +54,13 @@ export async function handleInternalQuarantine(
     );
   }
 
-  const isValid = await constantTimeCompare(providedToken, configuredSecret);
+  let isValid = false;
+  for (const secret of configuredSecrets) {
+    if (await constantTimeCompare(providedToken, secret)) {
+      isValid = true;
+      break;
+    }
+  }
   if (!isValid) {
     return jsonResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid maintainer authorization token.' } },

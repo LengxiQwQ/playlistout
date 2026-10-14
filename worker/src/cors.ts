@@ -33,6 +33,11 @@ export function isEventOriginAllowed(origin: string | null): boolean {
   return EVENT_ALLOWED_ORIGINS.has(origin);
 }
 
+export function isMaintainerOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.has(origin);
+}
+
 export function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.has(origin)) return true;
@@ -102,11 +107,23 @@ export function getCorsHeaders(request: Request, pathname?: string): Record<stri
     };
   }
 
-  // Strictly no browser CORS for internal stats endpoint (R6 Requirement 19 & 46)
-  if (path === '/api/internal/analytics/v2' || path === '/api/internal/analytics/v2/snapshot') {
-    return {
+  // Maintainer endpoints: token-protected and origin-restricted to trusted domains
+  if (
+    path === '/api/internal/analytics/v2' ||
+    path === '/api/internal/analytics/v2/snapshot' ||
+    path === '/api/internal/auth/verify'
+  ) {
+    const origin = request.headers.get('Origin');
+    const headers: Record<string, string> = {
       Vary: 'Origin',
     };
+    if (origin && isMaintainerOriginAllowed(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+      headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept, Authorization';
+      headers['Access-Control-Max-Age'] = '86400';
+    }
+    return headers;
   }
 
   // Internal feedback & quarantine endpoints: token-protected, used by local dashboard (file:// origin = "null")
@@ -164,8 +181,19 @@ export function handleOptions(request: Request, pathname?: string): Response {
     }
   })();
 
-  // Strictly reject browser preflight on the maintainer analytics endpoint.
-  if (path === '/api/internal/analytics/v2' || path === '/api/internal/analytics/v2/snapshot') {
+  // Maintainer endpoints: allow preflight only from trusted origins
+  if (
+    path === '/api/internal/analytics/v2' ||
+    path === '/api/internal/analytics/v2/snapshot' ||
+    path === '/api/internal/auth/verify'
+  ) {
+    const origin = request.headers.get('Origin');
+    if (origin && isMaintainerOriginAllowed(origin)) {
+      return new Response(null, {
+        status: 204,
+        headers: getCorsHeaders(request, path),
+      });
+    }
     return new Response(null, {
       status: 403,
       headers: { Vary: 'Origin' },

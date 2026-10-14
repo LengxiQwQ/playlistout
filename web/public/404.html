@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>PlaylistOut</title>
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        if (path.indexOf('/dashboard') === 0) {
+          window.location.replace('/dashboard/' + window.location.search + window.location.hash);
+        } else {
+          window.location.replace('/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to PlaylistOut...</p>
+  </body>
+</html>

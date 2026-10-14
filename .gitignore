@@ -9,7 +9,7 @@ htmlcov/
 venv/
 
 # Local generated files
-dashboard.html
+/dashboard.html
 scratch/
 
 # Never commit production/private D1 dumps

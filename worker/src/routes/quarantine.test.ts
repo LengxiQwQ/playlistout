@@ -177,4 +177,13 @@ describe('handleInternalQuarantine', () => {
     }
   });
 
+  it('authenticates successfully with DASHBOARD_PASSWORD when INSIGHTS_ADMIN_TOKEN is omitted', async () => {
+    const customPassword = 'my-custom-dashboard-pass-2026';
+    const req = new Request('https://api.playlistout.com/api/internal/quarantine', {
+      headers: { Authorization: `Bearer ${customPassword}` },
+    });
+    const env: Env = { DASHBOARD_PASSWORD: customPassword };
+    const res = await handleInternalQuarantine(req, env, {}, mockCompare);
+    expect(res.status).toBe(200);
+  });
 });
