@@ -249,16 +249,12 @@ function validateRepositoryRiskBoundaries() {
 // ── 3. Python Compilation & Pytest ─────────────────────────────────────
 function validatePython() {
   logStep(4, TOTAL_STEPS, 'Validating Python CLI & Authenticity Test Suite');
-  runCommand('python', ['-m', 'compileall', '-q', 'cli/qqmusic/', 'cli/netease/', 'cli/kuwo/', 'cli/qishui/', 'cli/kugou/', 'scripts/']);
+  runCommand('python', ['-m', 'compileall', '-q', 'cli/', 'scripts/']);
   logPass('Python compilation passed (0 syntax errors)');
 
   runCommand('python', [
     '-m', 'pytest', '-q',
-    'cli/qqmusic/',
-    'cli/netease/',
-    'cli/kuwo/',
-    'cli/qishui/',
-    'cli/kugou/',
+    'cli/',
     'scripts/utils/test_insights_authenticity.py'
   ]);
   logPass('Python unit & regression tests passed');

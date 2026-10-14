@@ -65,8 +65,10 @@ export interface ResolveServiceOptions {
   ctx?: ExecutionContext;
 }
 
+import { type ResolvePlatformParam } from '../providers/platforms';
+
 export type SupportedType = 'auto' | 'playlist' | 'user';
-export type SupportedPlatform = 'auto' | 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo';
+export type SupportedPlatform = ResolvePlatformParam;
 
 interface ResolveTracking {
   stage: ResolveFailureStage;

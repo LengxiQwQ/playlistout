@@ -25,3 +25,10 @@ Detailed plugin procedures are maintained in `.agents/skills/player-plugins/SKIL
 - **No "Zero Copyright Risk" Fluff**: Never claim zero copyright risk or lecture developers. Maintain an objective, factual, and modest technical tone.
 - **Technical Strengths**: Describe only capabilities verified by the current implementation.
 - **Mobile Clipboard Limitation**: Do not advise mobile users to paste large raw playlist JSON strings. Use the target integration's supported online/import mechanism instead.
+
+## 4. Architecture Evolution Roadmap & Resumption Rules
+When instructed to "按照路线图继续重构，继续走。" (Continue refactoring per roadmap):
+- Read `docs/ARCHITECTURE-EVOLUTION.md` and `.agents/rules/architecture-evolution.md` as the single source of truth for current phase and pending checklists.
+- Never guess what is completed. Resume sequentially from the current active phase.
+- Run `npm run gate` before completing any phase.
+- Use an independent subagent with no context to verify phase completion before reporting done.

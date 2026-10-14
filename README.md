@@ -102,7 +102,29 @@ BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需
 
 除了网页和第三方播放器，Playlist Out 也保留了可以直接在本地运行的 Python 命令行工具。CLI 适合希望在终端中完成歌单导出、批量处理，或者不想依赖网页界面的用户。
 
-当前仓库内置五套独立 CLI：
+### ⚡ 全平台统一 CLI (推荐)
+
+当前仓库已将五大平台全面整合成统一 CLI 工具，采用模块化分层与适配器架构开发，支持**智能自动识别平台**与**手动编号锁定**双轨模式，100% 本地隐私安全：
+
+```bash
+# 1. 安装依赖
+pip install -r cli/requirements.txt
+
+# 2. 交互式启动 (直接粘贴任意平台链接自动识别，或输入 1~5 选择指定平台)
+python cli/main.py
+
+# 3. 命令行静默调用示例
+python cli/main.py "https://music.163.com/playlist?id=2756674066"
+python cli/main.py "9044196528" -p qqmusic -f xlsx,csv
+```
+
+👉 [查看统一 CLI 完整说明与架构指南](cli/README.md)
+
+---
+
+### 各平台独立 CLI (完整保留)
+
+除了统一主入口外，原有的各平台独立 CLI 及其完整单元测试均得到 100% 完整保留：
 
 | 平台 | 脚本 | 支持内容 |
 |---|---|---|
@@ -112,7 +134,7 @@ BBPlayer 已在主程序中原生内置 Playlist Out 导入歌单能力，无需
 | **汽水音乐** | [`cli/qishui/qishui_playlist_export.py`](cli/qishui/qishui_playlist_export.py) | 歌单链接 / 短链 / 抖音收藏分享文案 / ID、全量游标分页 |
 | **酷狗音乐** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 官方精选 / 概念版集合 / H5 分享（免登录）、个人云端自建歌单（终端扫码/官网凭证双轨认证） |
 
-五套 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
+五套 CLI 与统一 CLI 均支持 **Excel → JSON → TXT → CSV → M3U8** 导出。
 
 ### QQ 音乐 CLI
 

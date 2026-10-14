@@ -53,8 +53,8 @@ export interface PublicStatsResponse {
 
 // ── Event Ingestion Types (POST /api/event) ──
 
-export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'] as const;
-export type SupportedPlatform = typeof SUPPORTED_PLATFORMS[number];
+import { SUPPORTED_PLATFORMS, type SupportedPlatform } from '../providers/platforms';
+export { SUPPORTED_PLATFORMS, type SupportedPlatform };
 
 export const VALID_EXPORT_FORMATS = ['xlsx', 'json', 'txt', 'csv', 'm3u8'] as const;
 export type ExportFormat = typeof VALID_EXPORT_FORMATS[number];
