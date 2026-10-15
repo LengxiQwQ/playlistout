@@ -6,6 +6,11 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **MusicFree plugin v2.1.3 — built-in source interface credits / 内置音源接口署名**:
+  - 内置兜底命中的播放提示与「仅试听30秒」提示会在平台名后附上实际取链的接口服务名：QQ 直链「（VKeys）」、网易云「（GD音乐台）」或「（Meting）」；酷狗为官方公开接口不加后缀（如「内置音源：QQ音乐（VKeys）」「网易云音乐仅试听30秒（Meting）」）。
+  - 插件简介（MusicFree 插件详情页）与插件 README 新增「内置音源接口与致谢」：列出各通道对应服务、作者/文档链接与使用边界（只读、低频、最后兜底；60 秒失败负缓存 + 30 分钟结果复用），并注明与本项目无隶属关系、接口方调整时可随版本同步调整或移除。
+  - 版本号提升至 2.1.3；测试套件扩展至 52 项（新增接口署名与提示文案契约断言）。
+
 - **MusicFree plugin v2.1.2 — NetEase trial-clip detection & simplified playback toasts / 网易云试听片段识别与播放提示文案精简**:
   - 修复网易云 VIP / 受限曲目走兜底链路时可能只播放 30 秒试听片段且毫无提示的问题：内置引擎新增试听片段识别（`jd-musicrep-ts` 直链标记 + 字节数/时长比例校验；Meting 经 Range 探测读取 `Content-Range` 总长，GD Studio 经 `size`/码率反推时长），识别后不再当作完整曲目——先继续严格匹配其它平台的完整版，全部无果时才兜底播放试听并提示「X仅试听30秒」（同一首歌 10 分钟去重）。
   - 播放提示文案精简：去掉 emoji 与歌名，跨插件 / 内置兜底命中的成功提示统一为「音源：X」「内置音源：X」，全部无源为「未找到可用音源，已跳过」。

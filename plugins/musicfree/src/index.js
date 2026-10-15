@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.1.2)
+ * PlaylistOut 官方 MusicFree 插件 (v2.1.3)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.1.2';
+const PLUGIN_VERSION = '2.1.3';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -1991,6 +1991,16 @@ async function autoResolveFallbackLyric(item) {
 }
 
 /**
+ * 内置兜底播放提示文案：平台名 + 实际取链的接口服务名（酷狗为官方接口时不加后缀）；
+ * 试听片段用「X仅试听30秒（服务名）」区分于完整曲目。
+ */
+function embeddedNoticeText(platLabel, source) {
+  var suffix = source && source.provider ? '（' + source.provider + '）' : '';
+  var base = source && source.trial ? platLabel + '仅试听30秒' : '内置音源：' + platLabel;
+  return base + suffix;
+}
+
+/**
  * 兜底取源总入口：跨插件严格匹配换源 -> 内置兜底音源引擎（历史老歌单最后防线）
  */
 async function autoResolveFallbackSource(item, quality) {
@@ -2000,15 +2010,7 @@ async function autoResolveFallbackSource(item, quality) {
   var embedded = await embeddedResolveMedia(item, quality);
   if (embedded && embedded.source) {
     var platLabel = PLATFORM_DISPLAY_NAMES[embedded.platform] || embedded.platform;
-    if (embedded.source.trial) {
-      notifyRescueOnce(getRescueCacheKey(item), platLabel + '仅试听30秒', 'info');
-    } else {
-      notifyRescueOnce(
-        getRescueCacheKey(item),
-        '内置音源：' + platLabel,
-        'info'
-      );
-    }
+    notifyRescueOnce(getRescueCacheKey(item), embeddedNoticeText(platLabel, embedded.source), 'info');
     return embedded.source;
   }
   return null;
@@ -2017,9 +2019,10 @@ async function autoResolveFallbackSource(item, quality) {
 // ============================================================================
 // 内置兜底音源引擎 (Embedded Fallback Sources)
 // 历史版本导入的老歌单兼容层 + 原生音源全灭时的最后防线：
-//   · QQ音乐  : vkeys 直链（无损 / 320k / 128k 自动降级）+ 官方搜索 smartbox 严格匹配
-//   · 网易云  : GD Studio 直链（含无损）+ Meting 302 兜底（128k）
+//   · QQ音乐  : VKeys（落月API）直链（无损 / 320k / 128k 自动降级）+ QQ 官方 smartbox 搜索严格匹配
+//   · 网易云  : GD音乐台 直链（含无损）+ Meting 302 兜底（128k）
 //   · 酷狗音乐: 官方搜索 songsearch + getSongInfo 免费曲直链（付费灰歌自动跳过）
+// 内置层播放提示会附上实际取链的接口服务名（内置音源：X（服务名）/ X仅试听30秒（服务名））。
 // 网易云 VIP/受限曲目只能拿到 30 秒试听片段（jd-musicrep-ts 标记 / 字节数校验）时不会被
 // 误当完整曲：先继续匹配其它平台的完整版，全灭时兜底播放试听并提示「X仅试听30秒」。
 // 跨源搜索一律执行与跨插件兜底同级的 100% 严格匹配（同名 + 同歌手 + 同版本 + 时长吻合），
@@ -2137,7 +2140,7 @@ async function embeddedVkeysQqLink(mid, quality) {
     if (!data || !data.url) continue;
     var url = embeddedHttpsUrl(String(data.url));
     if (!isAllowedEmbeddedMediaUrl(url)) continue;
-    return { url: url, quality: embeddedQualityLabel(data.kbps, url) };
+    return { url: url, quality: embeddedQualityLabel(data.kbps, url), provider: 'VKeys' };
   }
   return null;
 }
@@ -2191,7 +2194,7 @@ async function embeddedGdNeteaseUrl(id, quality, durationSec) {
     var floor = embeddedTrialDurationFloor(durationSec);
     if (estSec > 0 && floor > 0 && estSec < floor) trial = true;
   }
-  return { url: url, quality: embeddedQualityLabel(data.br, url), trial: trial };
+  return { url: url, quality: embeddedQualityLabel(data.br, url), trial: trial, provider: 'GD音乐台' };
 }
 
 /**
@@ -2216,7 +2219,7 @@ async function embeddedMetingNeteaseUrl(id, durationSec) {
     var total = embeddedResponseTotalBytes(res.status, res.headers);
     if (embeddedLooksLikeTrialBytes(total, durationSec)) trial = true;
   }
-  return { url: metingUrl, quality: '128k', trial: trial };
+  return { url: metingUrl, quality: '128k', trial: trial, provider: 'Meting' };
 }
 
 /**
@@ -2760,6 +2763,9 @@ module.exports = {
     '1. 前往官网 (playlistout.lengxiqwq.com) 扫码登录酷狗。',
     '2. 复制 Token 与 UserID（或直接复制插件凭据）。',
     '3. 在本插件「插件设置」填入「酷狗Token」与「酷狗UID」，即可直接粘贴歌单链接全量导入！',
+    '',
+    '### 🎧 内置兜底音源接口',
+    '内置兜底音源接口由 VKeys（落月API）、GD音乐台、Meting 等社区公开服务提供，酷狗通道为酷狗官方公开接口，与本项目均无隶属关系。',
   ].join('\n'),
   hints: {
     importMusicSheet: [
@@ -2797,6 +2803,7 @@ module.exports = {
   _embeddedResolveMedia: embeddedResolveMedia,
   _embeddedResolveLyric: embeddedResolveLyric,
   _embeddedOriginLookup: embeddedOriginLookup,
+  _embeddedNoticeText: embeddedNoticeText,
   _isAllowedEmbeddedMediaUrl: isAllowedEmbeddedMediaUrl,
   _embeddedIsTrialUrl: embeddedIsTrialUrl,
   _embeddedTrialDurationFloor: embeddedTrialDurationFloor,

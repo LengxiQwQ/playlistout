@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.1.2)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.1.3)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -11,7 +11,7 @@
  * 6. Live online NetEase playlist resolution (end-to-end API test, optional RUN_E2E=1)
  * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
  * 8. Exception & invalid input fault tolerance, Hermes syntax integrity
- * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + trial-clip guards + negative caches)
+ * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + trial-clip guards + interface-name notices + negative caches)
  */
 
 const assert = require('assert');
@@ -1185,6 +1185,7 @@ async function runAllTests() {
         'High quality must resolve to the 320k https link'
       );
       assert.strictEqual(res.quality, '320k', 'Quality label must reflect the 320k tier');
+      assert.strictEqual(res.provider, 'VKeys', 'Embedded QQ stream must credit the VKeys interface');
       assert(calls.some((c) => c.url.includes('quality=8')), 'High quality must request the 320k tier');
 
       const res2 = await plugin.getMediaSource(item, 'super');
@@ -1249,6 +1250,7 @@ async function runAllTests() {
       };
       const res = await plugin.getMediaSource(item, 'super');
       assert(res && res.url === 'https://m701.music.126.net/2026/x.flac' && res.quality === 'flac', 'GD Studio lossless link expected');
+      assert.strictEqual(res.provider, 'GD音乐台', 'GD Studio lossless link must carry the GD音乐台 label');
       assert(calls.some((c) => c.url.includes('br=999')), 'Super quality must request the lossless tier');
     } finally {
       delete globalThis.axios;
@@ -1269,6 +1271,7 @@ async function runAllTests() {
       const res = await plugin.getMediaSource(item, 'standard');
       assert(res && res.url.startsWith('https://api.injahow.cn/meting/'), 'Meting fallback URL expected when GD Studio returns nothing');
       assert.strictEqual(res.quality, '128k', 'Meting fallback must be labeled 128k');
+      assert.strictEqual(res.provider, 'Meting', 'Meting fallback must carry the Meting interface label');
       const metingCall = calls.find((c) => c.url.includes('meting'));
       assert(
         metingCall && metingCall.config.headers && metingCall.config.headers.Range === 'bytes=0-0',
@@ -1334,6 +1337,7 @@ async function runAllTests() {
       );
       assert(entry && entry.source.url.startsWith('https://api.injahow.cn/meting/'), 'Trial clip is still delivered as the last resort');
       assert.strictEqual(entry.source.trial, true, 'Trial clip must be flagged for the 「仅试听30秒」 notice');
+      assert.strictEqual(entry.source.provider, 'Meting', 'Trial clip must carry the Meting interface label');
     } finally {
       delete globalThis.axios;
     }
@@ -1352,9 +1356,21 @@ async function runAllTests() {
       );
       assert(entry && entry.platform === 'qq' && entry.source.url.includes('C400full'), 'Full stream from the QQ lane must beat the NetEase trial');
       assert(!entry.source.trial, 'Winning full stream must not carry the trial mark');
+      assert.strictEqual(entry.source.provider, 'VKeys', 'Winning QQ full stream must carry the VKeys interface label');
     } finally {
       delete globalThis.axios;
     }
+  });
+
+  await test('Embedded playback notices append the serving interface name (VKeys / GD音乐台 / Meting)', () => {
+    const notice = plugin._embeddedNoticeText;
+    assert.strictEqual(notice('QQ音乐', { provider: 'VKeys' }), '内置音源：QQ音乐（VKeys）');
+    assert.strictEqual(notice('网易云音乐', { provider: 'GD音乐台' }), '内置音源：网易云音乐（GD音乐台）');
+    assert.strictEqual(
+      notice('网易云音乐', { provider: 'Meting', trial: true }),
+      '网易云音乐仅试听30秒（Meting）'
+    );
+    assert.strictEqual(notice('酷狗音乐', {}), '内置音源：酷狗音乐', 'Official KuGou interface must stay suffix-free');
   });
 
   await test('KuGou embedded channel: free tracks stream, paid tracks are skipped cleanly', async () => {
@@ -1366,6 +1382,7 @@ async function runAllTests() {
       const item = { id: 'kugou_abc123', title: '一路生花', artist: '温奕心', platform: '把你的歌单带走', _originPlatform: 'kugou' };
       const res = await plugin.getMediaSource(item, 'standard');
       assert(res && res.url.includes('kugou.com'), 'Free KuGou track must stream through getSongInfo');
+      assert.strictEqual(res.provider, undefined, 'Official KuGou interface must not carry a third-party label');
     } finally {
       delete globalThis.axios;
     }
