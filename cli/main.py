@@ -37,7 +37,7 @@ from cli.core.ui import (
     print_exit_banner,
     print_divider,
 )
-from cli.core.detector import SmartDetector, PlatformType
+from cli.core.detector import SmartDetector, PlatformType, TargetKind, DetectedTarget
 from cli.core.exporter import perform_export
 from cli.platforms.registry import PlatformRegistry
 
@@ -134,6 +134,7 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
 
     # 平台专属参数透传
+    parser.add_argument("--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用）")
     parser.add_argument("--channel", choices=["qishui", "douyin"], default="qishui", help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
     parser.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
     parser.add_argument("--logout", action="store_true", help="[酷狗] 清除本地保存的登录凭证")
@@ -163,33 +164,30 @@ def main():
     # 模式一：非交互命令行模式
     # ─────────────────────────────────────────────────────────────
     if raw_input:
-        target_text = raw_input.strip()
-        adapter = None
+        target = SmartDetector.resolve_target(
+            raw_input=raw_input,
+            platform=args.platform,
+            is_user=getattr(args, "user", False),
+            resolve_redirect=True
+        )
 
-        if args.platform:
-            adapter = PlatformRegistry.get(args.platform)
-            if not adapter:
-                print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
-                sys.exit(1)
-        else:
-            ptype, detected_text = SmartDetector.detect(target_text)
-            if ptype == PlatformType.AMBIGUOUS_DIGITS:
-                print(
-                    f"× 输入 '{target_text}' 是纯数字 ID，无法自动确定平台。\n"
-                    "请使用 -p/--platform 参数指定平台 (例如: -p netease 或 -p qqmusic)。",
-                    file=sys.stderr
-                )
-                sys.exit(1)
-            elif ptype == PlatformType.UNKNOWN:
-                print("× 无法识别歌单链接。请检查链接，或使用 -p/--platform 指定平台。", file=sys.stderr)
-                sys.exit(1)
-            else:
-                adapter = PlatformRegistry.get(ptype.value)
-                target_text = detected_text
-
-        if not adapter:
-            print("× 未找到对应的平台适配器。", file=sys.stderr)
+        if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
+            print(
+                f"× 输入 '{raw_input}' 是纯数字 ID，无法自动确定平台。\n"
+                "请使用 -p/--platform 参数指定平台 (例如: -p netease 或 -p qqmusic)。",
+                file=sys.stderr
+            )
             sys.exit(1)
+        elif target.kind == TargetKind.UNKNOWN or target.platform == PlatformType.UNKNOWN:
+            print("× 无法识别歌单链接。请检查链接，或使用 -p/--platform 指定平台。", file=sys.stderr)
+            sys.exit(1)
+
+        adapter = PlatformRegistry.get(target.platform.value)
+        if not adapter:
+            print(f"× 不支持的平台 '{target.platform.value}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
+            sys.exit(1)
+
+        target_text = target.value
 
         print(f"✓ 已识别：{adapter.display_name}")
         print("→ 正在获取歌单...")
@@ -255,8 +253,8 @@ def main():
                 target_query = sub_input
 
             if not target_adapter:
-                ptype, detected_text = SmartDetector.detect(target_query)
-                if ptype == PlatformType.AMBIGUOUS_DIGITS:
+                target = SmartDetector.resolve_target(target_query, resolve_redirect=True)
+                if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
                     print(f"! 检测到纯数字 ID：{target_query}")
                     print("  请选择它所属的平台：")
                     for idx, a in enumerate(adapters_list, 1):
@@ -273,9 +271,11 @@ def main():
                     print_divider()
                     target_adapter = adapters_list[int(p_sel) - 1]
                     print(f"✓ 已选择：{target_adapter.display_name}")
-                elif ptype != PlatformType.UNKNOWN:
-                    target_adapter = PlatformRegistry.get(ptype.value)
-                    target_query = detected_text
+                elif target.platform != PlatformType.UNKNOWN:
+                    target_adapter = PlatformRegistry.get(target.platform.value)
+                    target_query = target.value
+                else:
+                    target_query = target.value
                     if target_adapter:
                         print(f"✓ 已识别：{target_adapter.display_name}")
 

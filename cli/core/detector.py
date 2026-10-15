@@ -7,6 +7,7 @@ which music platform the input belongs to.
 """
 
 import re
+from dataclasses import dataclass
 from enum import Enum
 from typing import Tuple, Optional
 from urllib.parse import urlparse
@@ -22,6 +23,22 @@ class PlatformType(str, Enum):
     QISHUI = "qishui"
     AMBIGUOUS_DIGITS = "ambiguous_digits"
     UNKNOWN = "unknown"
+
+
+class TargetKind(str, Enum):
+    PLAYLIST = "playlist"
+    USER = "user"
+    AMBIGUOUS = "ambiguous"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class DetectedTarget:
+    platform: PlatformType
+    kind: TargetKind
+    value: str
+    raw_input: str
+
 
 
 def extract_clean_url_or_input(input_text: str) -> str:
@@ -147,10 +164,8 @@ class SmartDetector:
 
         # 1. 检查是否为纯数字 ID
         if re.fullmatch(r'\d+', text):
-            # 纯数字是天然有歧义的 (可能是网易云歌单、QQ音乐歌单、QQ号、酷我歌单或酷狗ID)
-            # 特殊情况：如果是 18~19 位大整数，通常是汽水音乐的 Snowflake ID
-            if len(text) in (18, 19):
-                return PlatformType.QISHUI, text
+            # 纯数字天然具有歧义 (可能是各平台歌单 ID、用户 ID 或 QQ号)
+            # 18~19 位 Snowflake ID 也不再无条件强判汽水，统一由 resolve_target 结合参数判定
             return PlatformType.AMBIGUOUS_DIGITS, text
 
         # 2. 检查酷狗特有的特殊参数或标识 (gcid_, collection_, src_cid, 或 raw gcid CID)
@@ -169,7 +184,7 @@ class SmartDetector:
             if resolved:
                 url_to_check = resolved
 
-        # 5. 域名特征匹配
+        # 5. 域名特征匹配 (严格收紧域名白名单，杜绝非音乐域名误判)
         parsed = urlparse(url_to_check)
         hostname = (parsed.hostname or "").lower()
 
@@ -177,8 +192,11 @@ class SmartDetector:
         if "163.com" in hostname or "163cn.tv" in hostname or "music.163.com" in url_to_check:
             return PlatformType.NETEASE, url_to_check
 
-        # QQ 音乐
-        if "y.qq.com" in hostname or "music.qq.com" in hostname or "qq.com" in hostname:
+        # QQ 音乐 (收紧：仅匹配音乐专属二级/三级域名，或明确带有音乐路径的 qq.com)
+        qq_music_hosts = ("y.qq.com", "music.qq.com", "i.y.qq.com", "c6.y.qq.com", "c.y.qq.com", "y.gtimg.cn")
+        if any(h in hostname for h in qq_music_hosts):
+            return PlatformType.QQMUSIC, url_to_check
+        if hostname == "qq.com" and any(p in parsed.path for p in ("/music", "/playlist", "/profile", "/taoge")):
             return PlatformType.QQMUSIC, url_to_check
 
         # 酷狗音乐
@@ -189,9 +207,19 @@ class SmartDetector:
         if "kuwo.cn" in hostname:
             return PlatformType.KUWO, url_to_check
 
-        # 汽水音乐 / 抖音音乐
-        if "qishui.douyin.com" in hostname or "qishui.com" in hostname or "music.douyin.com" in hostname or "v.douyin.com" in hostname or "douyin.com" in hostname:
+        # 汽水音乐 / 抖音音乐 (收紧：普通抖音短视频/图文不得误判为汽水歌单)
+        if any(h in hostname for h in ("qishui.douyin.com", "qishui.com", "music.douyin.com", "v.douyin.com")):
             return PlatformType.QISHUI, url_to_check
+        if "douyin.com" in hostname:
+            is_douyin_music = (
+                "/qishui/" in parsed.path
+                or "/music/" in parsed.path
+                or "/playlist" in parsed.path
+                or "/collection" in parsed.path
+                or any(k in parsed.query for k in ("playlist_id=", "music_id="))
+            )
+            if is_douyin_music:
+                return PlatformType.QISHUI, url_to_check
 
         # 6. 文案关键词兜底检测
         raw_strip = raw_input.strip()
@@ -208,4 +236,134 @@ class SmartDetector:
 
         # 无法识别
         return PlatformType.UNKNOWN, text
+
+    @classmethod
+    def resolve_target(
+        cls,
+        raw_input: str,
+        platform: Optional[str] = None,
+        is_user: bool = False,
+        resolve_redirect: bool = True
+    ) -> DetectedTarget:
+        """
+        高层统一目标解析器：识别平台、对象类型 (歌单/用户) 与标准值。
+        """
+        if not raw_input or not isinstance(raw_input, str):
+            return DetectedTarget(
+                platform=PlatformType.UNKNOWN,
+                kind=TargetKind.UNKNOWN,
+                value="",
+                raw_input=raw_input or ""
+            )
+
+        raw_strip = raw_input.strip()
+
+        # 标准化 platform 参数 (兼容别名)
+        explicit_platform: Optional[PlatformType] = None
+        if platform:
+            norm_p = str(platform).strip().lower()
+            if norm_p in ("qqmusic", "qq", "qq-music", "tx", "tencent"):
+                explicit_platform = PlatformType.QQMUSIC
+            elif norm_p in ("netease", "163", "wyy"):
+                explicit_platform = PlatformType.NETEASE
+            elif norm_p in ("kugou", "kg"):
+                explicit_platform = PlatformType.KUGOU
+            elif norm_p in ("kuwo", "kw"):
+                explicit_platform = PlatformType.KUWO
+            elif norm_p in ("qishui", "douyin"):
+                explicit_platform = PlatformType.QISHUI
+
+        # 1. 检查带标签前缀的用户或歌单输入 (保留标签语义)
+        m_qq = re.search(r'(?:qq|uin|qq号)[:：\s]*(\d{4,15})\b', raw_strip, re.I)
+        if m_qq and re.match(r'^[\D\s]{0,10}\d{4,15}[\D\s]{0,10}$', raw_strip):
+            p = explicit_platform or PlatformType.QQMUSIC
+            return DetectedTarget(
+                platform=p,
+                kind=TargetKind.USER,
+                value=m_qq.group(1),
+                raw_input=raw_input
+            )
+
+        m_uid = re.search(r'(?:uid|用户|账号)[:：\s]*(\d{4,18})\b', raw_strip, re.I)
+        if m_uid and re.match(r'^[\D\s]{0,10}\d{4,18}[\D\s]{0,10}$', raw_strip):
+            p = explicit_platform or PlatformType.NETEASE
+            return DetectedTarget(
+                platform=p,
+                kind=TargetKind.USER,
+                value=m_uid.group(1),
+                raw_input=raw_input
+            )
+
+        m_pl = re.search(r'(?:歌单|歌单号|playlist)[:：\s]*(\d{4,20})\b', raw_strip, re.I)
+        if m_pl and re.match(r'^[\D\s]{0,10}\d{4,20}[\D\s]{0,10}$', raw_strip):
+            p = explicit_platform or PlatformType.AMBIGUOUS_DIGITS
+            k = TargetKind.PLAYLIST if explicit_platform else TargetKind.AMBIGUOUS
+            return DetectedTarget(
+                platform=p,
+                kind=k,
+                value=m_pl.group(1),
+                raw_input=raw_input
+            )
+
+        # 2. 检查用户主页 URL
+        prof = extract_user_profile_target(raw_strip)
+        if prof:
+            p = explicit_platform or prof[0]
+            return DetectedTarget(
+                platform=p,
+                kind=TargetKind.USER,
+                value=prof[1],
+                raw_input=raw_input
+            )
+
+        # 3. 检查纯数字输入
+        cleaned = extract_clean_url_or_input(raw_strip)
+        if re.fullmatch(r'\d+', cleaned):
+            if is_user:
+                p = explicit_platform or PlatformType.AMBIGUOUS_DIGITS
+                k = TargetKind.USER if explicit_platform else TargetKind.AMBIGUOUS
+                return DetectedTarget(platform=p, kind=k, value=cleaned, raw_input=raw_input)
+            else:
+                if explicit_platform:
+                    return DetectedTarget(platform=explicit_platform, kind=TargetKind.PLAYLIST, value=cleaned, raw_input=raw_input)
+                else:
+                    return DetectedTarget(platform=PlatformType.AMBIGUOUS_DIGITS, kind=TargetKind.AMBIGUOUS, value=cleaned, raw_input=raw_input)
+
+        # 4. 调用底层 detect 解析 URL / 文案
+        ptype, detected_text = cls.detect(raw_strip, resolve_redirect=resolve_redirect)
+
+        # 检查重定向后的有效链接是否为用户主页
+        if detected_text and (detected_text.startswith("http://") or detected_text.startswith("https://")):
+            prof_after = extract_user_profile_target(detected_text)
+            if prof_after:
+                p = explicit_platform or prof_after[0]
+                return DetectedTarget(
+                    platform=p,
+                    kind=TargetKind.USER,
+                    value=prof_after[1],
+                    raw_input=raw_input
+                )
+
+        if ptype == PlatformType.UNKNOWN:
+            if explicit_platform:
+                k = TargetKind.USER if is_user else TargetKind.PLAYLIST
+                return DetectedTarget(platform=explicit_platform, kind=k, value=detected_text, raw_input=raw_input)
+            return DetectedTarget(platform=PlatformType.UNKNOWN, kind=TargetKind.UNKNOWN, value=detected_text, raw_input=raw_input)
+
+        if ptype == PlatformType.AMBIGUOUS_DIGITS:
+            if explicit_platform:
+                k = TargetKind.USER if is_user else TargetKind.PLAYLIST
+                return DetectedTarget(platform=explicit_platform, kind=k, value=detected_text, raw_input=raw_input)
+            return DetectedTarget(platform=PlatformType.AMBIGUOUS_DIGITS, kind=TargetKind.AMBIGUOUS, value=detected_text, raw_input=raw_input)
+
+        # 识别到了平台，根据 is_user 决定 target kind
+        final_platform = explicit_platform or ptype
+        final_kind = TargetKind.USER if is_user else TargetKind.PLAYLIST
+        return DetectedTarget(
+            platform=final_platform,
+            kind=final_kind,
+            value=detected_text,
+            raw_input=raw_input
+        )
+
 

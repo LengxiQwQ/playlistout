@@ -8,6 +8,8 @@ from unittest.mock import patch, MagicMock
 from cli.core.detector import (
     SmartDetector,
     PlatformType,
+    TargetKind,
+    DetectedTarget,
     extract_url_from_text,
     extract_clean_url_or_input,
     extract_user_profile_target,
@@ -62,10 +64,16 @@ def test_detect_qishui_urls_and_ids():
     p, _ = SmartDetector.detect("https://qishui.com/share/playlist?playlist_id=7087507348697186339", resolve_redirect=False)
     assert p == PlatformType.QISHUI
 
-    # 19 位纯数字 Snowflake ID 判定为汽水音乐
+    # 19 位纯数字 Snowflake ID 默认进入 AMBIGUOUS_DIGITS (不再无条件强判汽水)
     p, text = SmartDetector.detect("7087507348697186339", resolve_redirect=False)
-    assert p == PlatformType.QISHUI
+    assert p == PlatformType.AMBIGUOUS_DIGITS
     assert text == "7087507348697186339"
+
+    # 通过 resolve_target 指定 -p qishui 时明确为汽水歌单
+    t = SmartDetector.resolve_target("7087507348697186339", platform="qishui")
+    assert t.platform == PlatformType.QISHUI
+    assert t.kind == TargetKind.PLAYLIST
+    assert t.value == "7087507348697186339"
 
 
 def test_detect_kugou_urls():
@@ -155,27 +163,114 @@ def test_extract_user_profile_target():
 
 
 # ─────────────────────────────────────────────────────────────
-# Phase 0.2: 缺口记录与行为基线测试 (Gaps targeted for Phase 1)
+# Phase 1: 统一目标识别与域名收紧测试
 # ─────────────────────────────────────────────────────────────
 
-@pytest.mark.xfail(strict=False, reason="Phase 1 gap: generic non-music qq.com domains must not be detected as qqmusic")
 def test_gap_non_music_qq_rejected():
     """非音乐 QQ 链接 (如新闻、文档、空间) 不得被误识别为 QQ 音乐"""
     p, _ = SmartDetector.detect("https://news.qq.com/article/12345", resolve_redirect=False)
     assert p == PlatformType.UNKNOWN
 
 
-@pytest.mark.xfail(strict=False, reason="Phase 1 gap: generic douyin video urls must not be detected as qishui")
 def test_gap_douyin_video_rejected():
     """普通抖音短视频/图文链接不得直接被当作汽水音乐歌单"""
     p, _ = SmartDetector.detect("https://www.douyin.com/video/7123456789012345678", resolve_redirect=False)
     assert p == PlatformType.UNKNOWN
 
 
-@pytest.mark.xfail(strict=False, reason="Phase 1 gap: 19-digit snowflake ID should enter ambiguous digits unless platform is explicit")
 def test_gap_19_digits_not_forced_qishui():
     """18/19 位纯数字 ID 应进入受控歧义处理，而不是无条件强判汽水音乐"""
     p, _ = SmartDetector.detect("7087507348697186339", resolve_redirect=False)
     assert p == PlatformType.AMBIGUOUS_DIGITS
+
+
+def test_resolve_target_comprehensive():
+    """验证 SmartDetector.resolve_target 对所有平台、歌单与用户目标的准确解析"""
+
+    # 1. QQ 歌单 URL -> playlist
+    t = SmartDetector.resolve_target("https://y.qq.com/n/ryqq/playlist/9044196528", resolve_redirect=False)
+    assert t.platform == PlatformType.QQMUSIC
+    assert t.kind == TargetKind.PLAYLIST
+    assert "9044196528" in t.value
+
+    # 2. QQ 用户主页 -> user
+    t = SmartDetector.resolve_target("https://y.qq.com/n/ryqq/profile/3197635836", resolve_redirect=False)
+    assert t.platform == PlatformType.QQMUSIC
+    assert t.kind == TargetKind.USER
+    assert t.value == "3197635836"
+
+    # 3. QQ 号标签输入 -> user
+    t = SmartDetector.resolve_target("QQ号: 1160951354", resolve_redirect=False)
+    assert t.platform == PlatformType.QQMUSIC
+    assert t.kind == TargetKind.USER
+    assert t.value == "1160951354"
+
+    t = SmartDetector.resolve_target("QQ: 1160951354", resolve_redirect=False)
+    assert t.platform == PlatformType.QQMUSIC
+    assert t.kind == TargetKind.USER
+    assert t.value == "1160951354"
+
+    # 4. 网易云歌单 URL -> playlist
+    t = SmartDetector.resolve_target("https://music.163.com/playlist?id=2756674066", resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.PLAYLIST
+
+    # 5. 网易云用户主页 -> user
+    t = SmartDetector.resolve_target("https://music.163.com/user/1825474783", resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.USER
+    assert t.value == "1825474783"
+
+    # 6. UID 标签输入 -> user
+    t = SmartDetector.resolve_target("UID: 1825474783", resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.USER
+    assert t.value == "1825474783"
+
+    t = SmartDetector.resolve_target("用户: 1825474783", resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.USER
+    assert t.value == "1825474783"
+
+    # 7. 酷狗用户主页 -> user
+    t = SmartDetector.resolve_target("https://www.kugou.com/user/detail?uid=12345678", resolve_redirect=False)
+    assert t.platform == PlatformType.KUGOU
+    assert t.kind == TargetKind.USER
+    assert t.value == "12345678"
+
+    # 8. 普通 qq.com / douyin.com 页面 -> unknown
+    t = SmartDetector.resolve_target("https://news.qq.com/article/12345", resolve_redirect=False)
+    assert t.platform == PlatformType.UNKNOWN
+    assert t.kind == TargetKind.UNKNOWN
+
+    t = SmartDetector.resolve_target("https://www.douyin.com/video/7123456789012345678", resolve_redirect=False)
+    assert t.platform == PlatformType.UNKNOWN
+    assert t.kind == TargetKind.UNKNOWN
+
+    # 9. 纯数字 ID 歧义与参数控制
+    # 无平台: ambiguous
+    t = SmartDetector.resolve_target("2756674066", resolve_redirect=False)
+    assert t.platform == PlatformType.AMBIGUOUS_DIGITS
+    assert t.kind == TargetKind.AMBIGUOUS
+    assert t.value == "2756674066"
+
+    # 指定 -p netease: playlist
+    t = SmartDetector.resolve_target("2756674066", platform="netease", resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.PLAYLIST
+    assert t.value == "2756674066"
+
+    # 指定 -p netease + is_user: user
+    t = SmartDetector.resolve_target("1825474783", platform="netease", is_user=True, resolve_redirect=False)
+    assert t.platform == PlatformType.NETEASE
+    assert t.kind == TargetKind.USER
+    assert t.value == "1825474783"
+
+    # 指定 -p qqmusic + is_user: user
+    t = SmartDetector.resolve_target("1160951354", platform="qqmusic", is_user=True, resolve_redirect=False)
+    assert t.platform == PlatformType.QQMUSIC
+    assert t.kind == TargetKind.USER
+    assert t.value == "1160951354"
+
 
 
