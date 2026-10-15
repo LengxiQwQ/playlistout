@@ -143,3 +143,32 @@ class NormalizedPlaylist:
                 seen.add(key)
         return dup_count
 
+
+@dataclass
+class UserPlaylistSummary:
+    """Standardized user playlist summary representation."""
+    id: str
+    name: str
+    track_count: Optional[int] = None
+    source_url: str = ""
+    is_created: bool = True
+
+
+@dataclass
+class NormalizedUserPlaylists:
+    """Standardized collection of user playlists."""
+    platform: str
+    user_id: str
+    nickname: str
+    playlists: List[UserPlaylistSummary] = field(default_factory=list)
+
+    @property
+    def created_playlists(self) -> List[UserPlaylistSummary]:
+        """User's own created playlists."""
+        return [p for p in self.playlists if p.is_created]
+
+    @property
+    def subscribed_playlists(self) -> List[UserPlaylistSummary]:
+        """User's collected / subscribed playlists."""
+        return [p for p in self.playlists if not p.is_created]
+

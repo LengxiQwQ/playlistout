@@ -10,7 +10,12 @@ from typing import Optional
 
 from .base import BasePlatformAdapter
 from .registry import register_platform
-from ..core.models import NormalizedPlaylist, NormalizedTrack
+from ..core.models import (
+    NormalizedPlaylist,
+    NormalizedTrack,
+    UserPlaylistSummary,
+    NormalizedUserPlaylists,
+)
 from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder, print_divider
 from ..core.exporter import perform_export
 
@@ -29,6 +34,8 @@ class QQMusicAdapter(BasePlatformAdapter):
     display_name = "QQ 音乐"
     description = "歌单链接 / 短链 / ID / QQ号"
     aliases = ["qq", "qq-music", "tx", "tencent"]
+    supports_user_playlists = True
+    requires_user_auth = False
 
     def can_handle(self, text: str) -> bool:
         if not text:
@@ -98,64 +105,40 @@ class QQMusicAdapter(BasePlatformAdapter):
             tracks=tracks,
         )
 
+    def fetch_user_playlists(self, user_target: str, **options) -> Optional[NormalizedUserPlaylists]:
+        """抓取 QQ 音乐用户公开自建歌单列表"""
+        text = (user_target or "").strip()
+        uin = extract_user_uin(text)
+        if not uin:
+            digits = "".join(filter(str.isdigit, text))
+            if digits and len(digits) >= 4:
+                uin = digits
+        if not uin:
+            return None
+
+        qq_info = get_user_playlists(uin)
+        if not qq_info:
+            return None
+
+        qq_nickname, qq_playlists = qq_info
+        summaries = [
+            UserPlaylistSummary(
+                id=str(pl.get("id") or ""),
+                name=pl.get("name") or f"QQ音乐歌单_{pl.get('id')}",
+                track_count=pl.get("track_count") or pl.get("song_cnt"),
+                source_url=f"https://y.qq.com/n/ryqq/playlist/{pl.get('id')}",
+                is_created=True,
+            )
+            for pl in qq_playlists
+            if pl.get("id")
+        ]
+
+        return NormalizedUserPlaylists(
+            platform=self.platform_id,
+            user_id=str(uin),
+            nickname=qq_nickname or f"QQ用户_{uin}",
+            playlists=summaries,
+        )
+
     def handle_interactive(self, initial_input: Optional[str] = None, **options) -> bool:
-        """支持 QQ 号公开歌单批量导出的专属交互"""
-        user_input = initial_input
-        output_dir = options.get("output_dir", "output")
-        reveal_flag = not options.get("no_open", False)
-
-        if not user_input:
-            return False
-
-        is_just_digits = user_input.isdigit() and len(user_input) >= 4
-        pid = extract_playlist_id(user_input)
-        uin = extract_user_uin(user_input)
-
-        if (is_just_digits and not pid) or (uin and not pid):
-            target_uin = uin or user_input
-            qq_info = get_user_playlists(target_uin)
-            if qq_info:
-                qq_nickname, qq_playlists = qq_info
-                print(f"\n✓ 找到 QQ 用户 {qq_nickname} 的 {len(qq_playlists)} 个公开歌单")
-                for i, pl in enumerate(qq_playlists, 1):
-                    print(f"  {i:3d}. {pl['name']}  [ID: {pl['id']}]")
-
-                print_format_menu()
-                fmt_input = input("> 选择格式，可多选，例如 (1, 2)：").strip()
-                print_divider()
-                formats = resolve_export_formats(fmt_input)
-                if not formats:
-                    print("已返回，不导出。")
-                    return True
-
-                target_dir = os.path.join(output_dir, str(target_uin))
-                os.makedirs(target_dir, exist_ok=True)
-                exported = 0
-                failed = 0
-                print(f"\n→ 开始导出 {len(qq_playlists)} 个公开歌单...")
-
-                for idx, pl in enumerate(qq_playlists, 1):
-                    print(f"\n  [{idx}/{len(qq_playlists)}] {pl['name']}")
-                    norm_pl = self.fetch_playlist(str(pl["id"]))
-                    if not norm_pl:
-                        print("  × 无法读取这个歌单，已跳过")
-                        failed += 1
-                        continue
-                    files = perform_export(
-                        norm_pl,
-                        output_dir=target_dir,
-                        formats=formats,
-                        reveal_folder_flag=False,
-                    )
-                    if files:
-                        exported += 1
-                    else:
-                        failed += 1
-
-                print(f"\n✓ 批量导出完成：成功 {exported} 个，失败 {failed} 个")
-                print(f"  保存到：{os.path.abspath(target_dir)}")
-                if exported and reveal_flag:
-                    reveal_folder(target_dir)
-                return True
-
         return False

@@ -8,7 +8,7 @@ Abstract base class defining the contract for all music platform integrations.
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 
-from ..core.models import NormalizedPlaylist
+from ..core.models import NormalizedPlaylist, NormalizedUserPlaylists
 
 
 class BasePlatformAdapter(ABC):
@@ -20,6 +20,8 @@ class BasePlatformAdapter(ABC):
     display_name: str = ""
     description: str = ""
     aliases: List[str] = []
+    supports_user_playlists: bool = False
+    requires_user_auth: bool = False
 
     @abstractmethod
     def can_handle(self, text: str) -> bool:
@@ -31,9 +33,19 @@ class BasePlatformAdapter(ABC):
         """抓取并构建标准歌单对象。成功返回 NormalizedPlaylist，失败返回 None。"""
         pass
 
+    def fetch_user_playlists(
+        self, user_target: str, **options
+    ) -> Optional[NormalizedUserPlaylists]:
+        """
+        抓取并构建用户公开/自建歌单集合。
+        子类若支持需设置 supports_user_playlists = True 并实现该方法。
+        成功返回 NormalizedUserPlaylists，不支持或失败返回 None。
+        """
+        return None
+
     def handle_interactive(self, initial_input: Optional[str] = None, **options) -> bool:
         """
-        处理该平台的专属交互流程（如 QQ 用户歌单选择、网易云用户歌单列表、酷狗扫码登录）。
+        处理该平台的专属交互流程（如酷狗扫码登录/凭证管理）。
         子类若未重写，则走标准单歌单抓取流程。
         返回 True 表示已完成处理，False 表示回退到默认流程。
         """

@@ -189,6 +189,52 @@ def main():
 
         target_text = target.value
 
+        # Phase 2: 用户模式统一分发
+        if target.kind == TargetKind.USER:
+            if not adapter.supports_user_playlists:
+                print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
+                sys.exit(1)
+
+            print(f"✓ 已识别：{adapter.display_name} (用户模式)")
+            print(f"→ 正在获取用户歌单列表：{target_text}...")
+            user_playlists = adapter.fetch_user_playlists(
+                target_text,
+                token=args.token,
+                userid=args.userid,
+            )
+            if not user_playlists or not user_playlists.playlists:
+                print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或登录凭证是否有效。", file=sys.stderr)
+                sys.exit(1)
+
+            # Headless 模式默认导出用户自建歌单（或全部歌单）
+            target_pls = user_playlists.created_playlists or user_playlists.playlists
+            print(f"✓ 找到用户 {user_playlists.nickname} 的 {len(target_pls)} 个歌单")
+            target_dir = os.path.join(output_dir, str(user_playlists.user_id))
+            os.makedirs(target_dir, exist_ok=True)
+            exported = 0
+            for idx, pl_item in enumerate(target_pls, 1):
+                print(f"  [{idx}/{len(target_pls)}] {pl_item.name}")
+                norm_pl = adapter.fetch_playlist(pl_item.id, token=args.token, userid=args.userid)
+                if norm_pl and norm_pl.tracks:
+                    norm_pl.mark_duplicates()
+                    files = perform_export(
+                        norm_pl,
+                        output_dir=target_dir,
+                        formats=formats,
+                        reveal_folder_flag=False,
+                    )
+                    if files:
+                        exported += 1
+            if exported == 0:
+                print("× 未能成功导出任何歌单。", file=sys.stderr)
+                sys.exit(1)
+            print(f"\n✓ 批量导出完成：成功 {exported}/{len(target_pls)} 个歌单")
+            print(f"  保存到：{os.path.abspath(target_dir)}")
+            if reveal_folder:
+                from .core.ui import reveal_folder as rf
+                rf(target_dir)
+            return
+
         print(f"✓ 已识别：{adapter.display_name}")
         print("→ 正在获取歌单...")
         playlist = adapter.fetch_playlist(
@@ -198,7 +244,7 @@ def main():
             userid=args.userid,
         )
         if not playlist or not playlist.tracks:
-            # 尝试专属交互流（如用户公开歌单列表、酷狗凭证）
+            # 尝试专属交互流（如酷狗凭证管理等）
             handled = adapter.handle_interactive(
                 target_text,
                 output_dir=output_dir,
@@ -252,18 +298,20 @@ def main():
                 target_adapter = selected_adapter
                 target_query = sub_input
 
-            if not target_adapter:
-                target = SmartDetector.resolve_target(target_query, resolve_redirect=True)
-                if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
+            target = SmartDetector.resolve_target(
+                target_query,
+                platform=target_adapter.platform_id if target_adapter else None,
+                resolve_redirect=True
+            )
+            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
+                if not target_adapter:
                     print(f"! 检测到纯数字 ID：{target_query}")
                     print("  请选择它所属的平台：")
                     for idx, a in enumerate(adapters_list, 1):
                         print(f"  {idx}  {a.display_name}")
                     print("  0  返回")
                     p_sel = input("> 选择平台编号：").strip()
-                    if not p_sel:
-                        continue
-                    if p_sel in ("0", "q", "quit", "exit"):
+                    if not p_sel or p_sel in ("0", "q", "quit", "exit"):
                         continue
                     if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
                         print("! 请输入 1-5 中的有效平台编号。")
@@ -271,13 +319,36 @@ def main():
                     print_divider()
                     target_adapter = adapters_list[int(p_sel) - 1]
                     print(f"✓ 已选择：{target_adapter.display_name}")
-                elif target.platform != PlatformType.UNKNOWN:
+
+                if target_adapter and target_adapter.supports_user_playlists:
+                    print("  这是：")
+                    print("  [1] 歌单 ID (默认)")
+                    print("  [2] 用户 / QQ号 / UID")
+                    k_sel = input("> 选择类型 [1/2]：").strip()
+                    if k_sel == "2":
+                        target = DetectedTarget(
+                            platform=PlatformType(target_adapter.platform_id),
+                            kind=TargetKind.USER,
+                            value=target_query,
+                            raw_input=target_query,
+                        )
+                    else:
+                        target = DetectedTarget(
+                            platform=PlatformType(target_adapter.platform_id),
+                            kind=TargetKind.PLAYLIST,
+                            value=target_query,
+                            raw_input=target_query,
+                        )
+            elif target.platform != PlatformType.UNKNOWN:
+                if not target_adapter:
                     target_adapter = PlatformRegistry.get(target.platform.value)
-                    target_query = target.value
-                else:
-                    target_query = target.value
                     if target_adapter:
                         print(f"✓ 已识别：{target_adapter.display_name}")
+                target_query = target.value
+            else:
+                target_query = target.value
+                if target_adapter:
+                    print(f"✓ 已识别：{target_adapter.display_name}")
 
             if not target_adapter:
                 print("× 没有识别出歌单链接。")
@@ -293,6 +364,90 @@ def main():
                     no_open=args.no_open
                 )
                 if handled:
+                    continue
+
+                if target.kind == TargetKind.USER:
+                    if not target_adapter.supports_user_playlists:
+                        print(f"! 平台 '{target_adapter.display_name}' 暂不支持导出用户歌单列表。")
+                        continue
+
+                    print(f"→ 正在获取用户歌单列表：{target.value}...")
+                    user_pls = target_adapter.fetch_user_playlists(
+                        target.value,
+                        token=args.token,
+                        userid=args.userid,
+                    )
+                    if not user_pls or not user_pls.playlists:
+                        print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。")
+                        continue
+
+                    pls = user_pls.playlists
+                    created_pls = user_pls.created_playlists
+                    sub_pls = user_pls.subscribed_playlists
+
+                    print(f"\n✓ 找到用户 {user_pls.nickname} 的 {len(pls)} 个公开歌单")
+                    if sub_pls:
+                        print(f"  自建歌单（{len(created_pls)} 个）：")
+                        for idx, p in enumerate(created_pls, 1):
+                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+                        print(f"  收藏歌单（{len(sub_pls)} 个）：")
+                        for idx, p in enumerate(sub_pls, len(created_pls) + 1):
+                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+                    else:
+                        for idx, p in enumerate(pls, 1):
+                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+
+                    sel = input("\n> 选择要导出的歌单序号（all 导出全部自建歌单，0 返回）：").strip()
+                    if not sel or sel in ("0", "q", "quit", "exit"):
+                        continue
+                    print_divider()
+
+                    to_export = []
+                    if sel.lower() == "all":
+                        to_export = created_pls or pls
+                    elif sel.isdigit() and 1 <= int(sel) <= len(pls):
+                        to_export = [pls[int(sel) - 1]]
+
+                    if not to_export:
+                        print("! 未选择有效歌单。")
+                        continue
+
+                    print_format_menu()
+                    fmt_input = input("> 选择格式，可多选，例如 (1, 2)：").strip()
+                    print_divider()
+                    active_formats = resolve_export_formats(fmt_input)
+                    if not active_formats:
+                        print("已返回，不导出。")
+                        continue
+
+                    target_dir = os.path.join(output_dir, str(user_pls.user_id))
+                    os.makedirs(target_dir, exist_ok=True)
+                    exported = 0
+                    print(f"\n→ 开始导出 {len(to_export)} 个歌单...")
+                    for idx, pl_item in enumerate(to_export, 1):
+                        print(f"\n  [{idx}/{len(to_export)}] {pl_item.name}")
+                        norm_pl = target_adapter.fetch_playlist(pl_item.id, token=args.token, userid=args.userid)
+                        if not norm_pl or not norm_pl.tracks:
+                            print("  × 无法读取这个歌单，已跳过")
+                            continue
+                        norm_pl.mark_duplicates()
+                        files = perform_export(
+                            norm_pl,
+                            output_dir=target_dir,
+                            formats=active_formats,
+                            reveal_folder_flag=False,
+                        )
+                        if files:
+                            exported += 1
+
+                    print(f"\n✓ 批量导出完成：成功 {exported}/{len(to_export)} 个歌单")
+                    print(f"  保存到：{os.path.abspath(target_dir)}")
+                    if exported and reveal_folder:
+                        from .core.ui import reveal_folder as rf
+                        rf(target_dir)
                     continue
 
                 print("→ 正在获取歌单...")

@@ -23,6 +23,8 @@ class KuwoAdapter(BasePlatformAdapter):
     display_name = "酷我音乐"
     description = "歌单链接 / 短链 / ID"
     aliases = ["kuwo", "kw"]
+    supports_user_playlists = False
+    requires_user_auth = False
 
     def can_handle(self, text: str) -> bool:
         if not text:

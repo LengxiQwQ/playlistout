@@ -23,6 +23,8 @@ class QishuiAdapter(BasePlatformAdapter):
     display_name = "汽水音乐"
     description = "歌单链接 / 分享文案 / ID"
     aliases = ["qishui", "qs", "douyin", "dy"]
+    supports_user_playlists = False
+    requires_user_auth = False
 
     def can_handle(self, text: str) -> bool:
         if not text:
