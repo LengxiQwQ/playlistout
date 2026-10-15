@@ -110,9 +110,14 @@ python cli/main.py
 # 或使用模块入口
 python -m cli
 
-# 3. 命令行直接调用示例
+# 3. 命令行直接调用示例 (单歌单)
 python cli/main.py "https://music.163.com/playlist?id=2756674066"
 python cli/main.py "9044196528" -p qqmusic -f xlsx,csv
+
+# 4. 用户歌单批量导出 (QQ号 / 网易云 UID / 酷狗账号)
+python cli/main.py "1160951354" -p qqmusic --user -f json --no-open
+python cli/main.py "1825474783" -p netease --user -f json,csv --no-open
+python cli/main.py -p kugou --user -f json --no-open
 ```
 
 👉 [查看统一 CLI 完整说明与使用指南](cli/README.md)

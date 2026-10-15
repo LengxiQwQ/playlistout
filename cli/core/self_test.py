@@ -229,6 +229,76 @@ def run_self_test() -> int:
             print(f"[-] M3U8 test failed: {e}", file=sys.stderr)
             return 1
 
+        # F. Unified Batch Export Flow (Offline Synthetic)
+        try:
+            from cli.core.batch import run_batch_flow
+            from cli.core.models import NormalizedUserPlaylists, UserPlaylistSummary
+            from cli.platforms.base import BasePlatformAdapter
+
+            class _SyntheticAdapter(BasePlatformAdapter):
+                platform_id = "synthetic"
+                display_name = "Synthetic Test Platform"
+
+                def fetch_playlist(self, raw_input: str, **options):
+                    if raw_input == "pl_1":
+                        return NormalizedPlaylist(
+                            platform="synthetic",
+                            id="pl_1",
+                            name="Synthetic Playlist Alpha",
+                            tracks=[
+                                NormalizedTrack(index=1, title="Song 1", artist="Artist A", album="Album A", duration_ms=180000),
+                            ]
+                        )
+                    elif raw_input == "pl_2":
+                        return NormalizedPlaylist(
+                            platform="synthetic",
+                            id="pl_2",
+                            name="Synthetic Playlist Beta",
+                            tracks=[
+                                NormalizedTrack(index=1, title="Song 2", artist="Artist B", album="Album B", duration_ms=210000),
+                            ]
+                        )
+                    return None
+
+            user_pls = NormalizedUserPlaylists(
+                platform="synthetic",
+                user_id="synthetic_user_999",
+                nickname="Synthetic User",
+                playlists=[
+                    UserPlaylistSummary(id="pl_1", name="Synthetic Playlist Alpha", track_count=1),
+                    UserPlaylistSummary(id="pl_2", name="Synthetic Playlist Beta", track_count=1),
+                ]
+            )
+
+            batch_dir = os.path.join(tmpdir, "batch_out")
+            batch_result = run_batch_flow(
+                adapter=_SyntheticAdapter(),
+                user_playlists=user_pls,
+                output_dir=batch_dir,
+                formats=["json", "csv"],
+                selection="all",
+                interactive=False,
+                reveal_folder=False,
+            )
+
+            if batch_result.total != 2 or batch_result.success != 2 or batch_result.failed != 0:
+                print(f"[-] Batch export count mismatch: total={batch_result.total}, success={batch_result.success}, failed={batch_result.failed}", file=sys.stderr)
+                return 1
+
+            if len(batch_result.exported_files) != 4:  # 2 playlists * 2 formats
+                print(f"[-] Batch exported files count mismatch: {len(batch_result.exported_files)} != 4", file=sys.stderr)
+                return 1
+
+            for fpath in batch_result.exported_files:
+                if not os.path.isfile(fpath):
+                    print(f"[-] Batch exported file missing: {fpath}", file=sys.stderr)
+                    return 1
+
+            print("  [✓] Unified batch export flow verified (2 synthetic playlists offline)")
+        except Exception as e:
+            print(f"[-] Batch self-test failed: {e}", file=sys.stderr)
+            return 1
+
     print("[✔] All frozen self-tests passed successfully (0 errors)!\n")
     return 0
 
