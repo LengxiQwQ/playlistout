@@ -6,11 +6,12 @@ Integrates Kugou Music (kugou.com) into the unified CLI.
 Supports official special playlists, collection playlists, H5 share pages, and Cloudlists (with QR code auth).
 """
 
+import os
 import sys
 import json
 import time
 import hashlib
-from typing import Optional, List
+from typing import Optional, List, Tuple
 import requests
 
 from .base import BasePlatformAdapter
@@ -21,20 +22,355 @@ from ..core.models import (
     UserPlaylistSummary,
     NormalizedUserPlaylists,
 )
+from ..core.ui import (
+    print_title,
+    prompt_input,
+)
 
 from cli.kugou.kugou_playlist_export import (
     extract_kugou_target,
     _fetch_kugou_playlist_by_target,
-    interactive_login_menu,
-    clear_auth_credentials,
-    save_auth_credentials,
-    load_auth_credentials,
-    sign_kugou_gateway,
-    KUGOU_LITE_APPID,
-    KUGOU_LITE_CLIENTVER,
-    KUGOU_LITE_SALT,
+    run_qr_login_flow,
 )
 
+# ----------------- 常量与加解密参数 -----------------
+KUGOU_LITE_APPID = "3116"
+KUGOU_LITE_CLIENTVER = "11440"
+KUGOU_LITE_SALT = "LnT6xpN3khm36zse0QzvmgTZ3waWdRSA"
+
+# 酷狗 RSA 模数 (1024-bit) 与公钥指数，用于加密 usercenter token
+KUGOU_LITE_RSA_MODULUS = int(
+    "0xc40a2d0da76511f3bb1cc2bbd3afbd8bea83b4d6b05b6c13eb8920c53f1af767"
+    "9b32ba0d0edb843240ef1b836efed3ee240734c14c1399fd6594d16af22f52525d"
+    "14d72e0155c6dcc8638d4f7bb94f3a0b1f4c29f991972f2a160a25eb0a9e724336"
+    "be7f69bbd319ffab1c6dd8470b021dc434f3faba89f4a2a01b33bdbdd08b",
+    16,
+)
+KUGOU_RSA_EXPONENT = 65537
+
+DEFAULT_AUTH_DIR = os.path.expanduser("~/.playlistout")
+DEFAULT_AUTH_FILE = os.path.join(DEFAULT_AUTH_DIR, "kugou_auth.json")
+LOCAL_AUTH_FILE = os.path.abspath(".kugou_auth.json")
+
+
+def sign_kugou_gateway(params: dict, data_str: str = "", salt: str = KUGOU_LITE_SALT) -> str:
+    """酷狗网关（Cloudlist / UserCenter 等）接口签名算法"""
+    pairs = "".join(f"{k}={params[k]}" for k in sorted(params.keys()))
+    return hashlib.md5((salt + pairs + data_str + salt).encode("utf-8")).hexdigest()
+
+
+def encrypt_kugou_lite_rsa(payload: dict) -> str:
+    """使用酷狗 Android Lite 公钥加密 JSON payload (纯原生 1024-bit raw RSA，零外部依赖)"""
+    text = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    padded = text.ljust(128, b"\x00")
+    val = int.from_bytes(padded, byteorder="big")
+    enc = pow(val, KUGOU_RSA_EXPONENT, KUGOU_LITE_RSA_MODULUS)
+    return f"{enc:0256x}".upper()
+
+
+# ----------------- 凭证存储与管理 -----------------
+
+def get_auth_file_path() -> str:
+    """获取凭证存储路径，优先本地，否则默认用户主目录"""
+    if os.path.exists(LOCAL_AUTH_FILE):
+        return LOCAL_AUTH_FILE
+    return DEFAULT_AUTH_FILE
+
+
+def load_auth_credentials() -> Tuple[Optional[str], Optional[str], dict]:
+    """读取已保存的酷狗凭证，返回 (token, userid, data)"""
+    for p in [LOCAL_AUTH_FILE, DEFAULT_AUTH_FILE]:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    token = (data.get("token") or "").strip()
+                    userid = str(data.get("userid") or "").strip()
+                    if token and userid:
+                        return token, userid, data
+            except Exception:
+                pass
+    return None, None, {}
+
+
+def save_auth_credentials(token: str, userid: str, source: str = "manual", nickname: str = "") -> Optional[str]:
+    """持久化保存酷狗凭证到本地配置文件"""
+    target_path = DEFAULT_AUTH_FILE
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    payload = {
+        "token": str(token).strip(),
+        "userid": str(userid).strip(),
+        "nickname": str(nickname).strip() if nickname else "",
+        "source": source,
+        "updated_at": int(time.time()),
+    }
+    try:
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        return target_path
+    except Exception as e:
+        print(f"⚠️ 保存凭证文件失败: {e}", file=sys.stderr)
+        return None
+
+
+def clear_auth_credentials() -> bool:
+    """清除本地保存的凭证文件"""
+    removed = False
+    for p in [LOCAL_AUTH_FILE, DEFAULT_AUTH_FILE]:
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+                removed = True
+            except Exception:
+                pass
+    return removed
+
+
+def verify_kugou_credentials(token: str, userid: str, timeout: int = 10) -> Tuple[bool, str, dict]:
+    """
+    向酷狗官方接口在线校验凭据有效性，并获取用户的真实昵称与自建歌单统计。
+
+    返回: (is_valid: bool, error_msg: str, user_info: dict)
+    user_info 包含:
+      - "userid": str
+      - "nickname": str
+      - "playlist_count": Optional[int]
+    """
+    token = (token or "").strip()
+    userid = (userid or "").strip()
+
+    if not userid:
+        return False, "UserID 不能为空", {}
+    if not userid.isdigit():
+        return False, "UserID 必须为纯数字（例如: 12345678）", {}
+    if not token:
+        return False, "Token 不能为空", {}
+    if len(token) != 32 or not all(c in "0123456789abcdefABCDEF" for c in token):
+        return False, "Token 格式不正确（应为 32 位十六进制字符串）", {}
+
+    clienttime = str(int(time.time()))
+    mid = hashlib.md5(f"verify_profile_{clienttime}_{userid}".encode("utf-8")).hexdigest()
+
+    # 1. 向官方个人中心发起探测获取资料与名字 (带原生 RSA 加密)
+    rsa_payload = {"token": token, "clienttime": int(clienttime)}
+    post_data = {
+        "visit_time": int(clienttime),
+        "usertype": 1,
+        "p": encrypt_kugou_lite_rsa(rsa_payload),
+        "userid": int(userid),
+    }
+    data_str = json.dumps(post_data, separators=(",", ":"))
+
+    query_params = {
+        "dfid": "-",
+        "mid": mid,
+        "uuid": "-",
+        "appid": KUGOU_LITE_APPID,
+        "clientver": KUGOU_LITE_CLIENTVER,
+        "clienttime": clienttime,
+        "token": token,
+        "userid": userid,
+        "plat": "1",
+    }
+    query_params["signature"] = sign_kugou_gateway(query_params, data_str, salt=KUGOU_LITE_SALT)
+
+    headers = {
+        "User-Agent": "Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi",
+        "Content-Type": "application/json",
+        "x-router": "usercenter.kugou.com",
+        "dfid": "-",
+        "clienttime": clienttime,
+        "mid": mid,
+        "kg-rc": "1",
+        "kg-thash": "5d816a0",
+        "kg-rec": "1",
+        "kg-rf": "B9EDA08A64250DEFFBCADDEE00F8F25F",
+    }
+
+    try:
+        resp = requests.post(
+            "https://gateway.kugou.com/v3/get_my_info",
+            params=query_params,
+            headers=headers,
+            data=data_str,
+            timeout=timeout,
+        )
+        if resp.status_code != 200:
+            return False, f"酷狗网关响应异常 (HTTP {resp.status_code})", {}
+
+        res_json = resp.json()
+        if res_json.get("status") != 1:
+            code = res_json.get("error_code")
+            msg = res_json.get("error") or res_json.get("msg") or "Token 无效或已过期"
+            return False, f"{msg} (错误码: {code})", {}
+
+        raw_info = (res_json.get("data") or {}).get("info") or {}
+        nickname = (
+            raw_info.get("nickname")
+            or raw_info.get("username")
+            or (f"酷狗用户_{userid[-4:]}" if len(userid) >= 4 else f"酷狗用户_{userid}")
+        )
+
+        # 2. 轻量探测歌单数量 (获取自建歌单数量)
+        playlist_count = None
+        try:
+            mid_list = hashlib.md5(f"verify_list_{clienttime}_{userid}".encode("utf-8")).hexdigest()
+            pl_post = {"userid": userid, "token": token, "total_ver": 979, "type": 2, "page": 1, "pagesize": 1}
+            pl_data = json.dumps(pl_post, separators=(",", ":"))
+            pl_query = dict(query_params)
+            pl_query["mid"] = mid_list
+            pl_query["signature"] = sign_kugou_gateway(pl_query, pl_data, salt=KUGOU_LITE_SALT)
+            pl_headers = dict(headers)
+            pl_headers["x-router"] = "cloudlist.service.kugou.com"
+            pl_headers["mid"] = mid_list
+
+            pl_resp = requests.post(
+                "https://gateway.kugou.com/v7/get_all_list",
+                params=pl_query,
+                headers=pl_headers,
+                data=pl_data,
+                timeout=5,
+            )
+            if pl_resp.status_code == 200:
+                pl_json = pl_resp.json()
+                if pl_json.get("status") == 1:
+                    total_val = (pl_json.get("data") or {}).get("total")
+                    if total_val is not None:
+                        playlist_count = int(total_val)
+        except Exception:
+            pass  # 歌单数量仅为附属信息，不影响核心验活结论
+
+        return True, "", {
+            "userid": userid,
+            "nickname": nickname,
+            "playlist_count": playlist_count,
+        }
+
+    except requests.exceptions.Timeout:
+        return False, "连接酷狗服务器超时，未能完成在线验活", {}
+    except Exception as e:
+        return False, f"网络请求异常: {e}", {}
+
+
+# ----------------- 交互式登录流程 -----------------
+
+def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
+    """手动输入凭证流程：格式初筛、官方验活、获取真实名字并持久化"""
+    print_title("手动输入凭证", "请输入酷狗账号的 UserID 与 Token（输入 0 返回）：", emoji="🔑")
+    print("")
+
+    try:
+        userid_raw = prompt_input("请输入酷狗 UserID (纯数字)")
+        if not userid_raw or userid_raw.lower() in ("0", "q", "quit", "exit"):
+            print("已取消输入。\n")
+            return None, None
+
+        token_raw = prompt_input("请输入酷狗 Token (32位十六进制字符串)")
+        if not token_raw or token_raw.lower() in ("0", "q", "quit", "exit"):
+            print("已取消输入。\n")
+            return None, None
+
+        userid = userid_raw.strip()
+        token = token_raw.strip()
+
+        # 格式预检
+        if not userid.isdigit():
+            print("❌ UserID 格式错误：必须为纯数字（例如: 12345678）。\n")
+            return None, None
+        if len(token) != 32 or not all(c in "0123456789abcdefABCDEF" for c in token):
+            print("❌ Token 格式错误：必须为 32 位十六进制字符串。\n")
+            return None, None
+
+        print("🚀 正在向酷狗官方接口验证凭证有效性，请稍候...")
+        is_valid, err_msg, user_info = verify_kugou_credentials(token, userid)
+
+        if is_valid:
+            nickname = user_info.get("nickname") or f"酷狗用户_{userid}"
+            pl_cnt = user_info.get("playlist_count")
+
+            print(f"\n✅ 凭证校验成功！已连接账号：{nickname} (UserID: {userid})")
+            if pl_cnt is not None:
+                print(f"   检测到该账号下共有 {pl_cnt} 个自建歌单")
+
+            auth_path = save_auth_credentials(token, userid, source="manual", nickname=nickname)
+            if auth_path:
+                print(f"📁 登录凭证已安全保存至: {auth_path}\n")
+            return token, userid
+        else:
+            print(f"\n❌ 凭证校验失败：{err_msg}")
+            print("💡 提示：凭证未保存。请检查输入的 UserID 与 Token 是否匹配且为最新凭证。\n")
+            return None, None
+
+    except (KeyboardInterrupt, EOFError):
+        print("\n已取消输入。\n")
+        return None, None
+
+
+def interactive_login_menu():
+    """交互式登录菜单：提供状态展示、扫码登录、手动输入、验活与注销"""
+    while True:
+        token, userid, cred_data = load_auth_credentials()
+        has_saved = bool(token and userid)
+
+        if has_saved:
+            nick = cred_data.get("nickname") or (f"酷狗用户_{userid[-4:]}" if len(userid) >= 4 else f"酷狗用户_{userid}")
+            subtitle = f"当前已连接账号：{nick} (UserID: {userid})"
+        else:
+            subtitle = "普通公开歌单无需登录，导出个人自建歌单与「我喜欢」需验证账号。"
+
+        print_title("酷狗音乐登录", subtitle, emoji="🔐")
+        print("")
+        if has_saved:
+            print("  1  重新扫码登录")
+            print("  2  手动输入 UserID 和 Token")
+            print("  3  验证当前凭证有效性")
+            print("  4  退出登录并清除凭证")
+        else:
+            print("  1  扫码登录")
+            print("  2  手动输入 UserID 和 Token")
+        print("  0  返回")
+        print("")
+
+        choice = prompt_input("选择操作" if has_saved else "选择登录方式")
+        if not choice or choice in ("0", "q", "quit", "exit"):
+            break
+
+        if choice == "1":
+            res = run_qr_login_flow()
+            if res and isinstance(res, tuple) and len(res) == 2 and res[0] and res[1]:
+                qr_token, qr_userid = res
+                # 扫码成功后也执行一次资料丰富与真实昵称捕获
+                _, _, qr_info = verify_kugou_credentials(qr_token, qr_userid)
+                qr_nick = qr_info.get("nickname") or f"酷狗用户_{qr_userid}"
+                save_auth_credentials(qr_token, qr_userid, source="qr", nickname=qr_nick)
+                print(f"\n✅ 酷狗账号登录成功！已连接账号：{qr_nick} (UserID: {qr_userid})\n")
+                break
+        elif choice == "2":
+            t, u = run_manual_login_flow()
+            if t and u:
+                break
+        elif choice == "3" and has_saved:
+            print("🚀 正在验证当前凭证有效性，请稍候...")
+            is_valid, err_msg, info = verify_kugou_credentials(token, userid)
+            if is_valid:
+                nick = info.get("nickname") or f"酷狗用户_{userid}"
+                pl_cnt = info.get("playlist_count")
+                print(f"\n✅ 凭证有效！当前账号：{nick} (UserID: {userid})")
+                if pl_cnt is not None:
+                    print(f"   检测到该账号下共有 {pl_cnt} 个自建歌单")
+                save_auth_credentials(token, userid, source=cred_data.get("source", "saved"), nickname=nick)
+                print("")
+            else:
+                print(f"\n❌ 当前凭证已失效：{err_msg}")
+                print("💡 建议：您可以选择重新扫码或手动输入更新凭证。\n")
+        elif choice == "4" and has_saved:
+            clear_auth_credentials()
+            print("✅ 酷狗登录凭证已清除。\n")
+        else:
+            print("⚠️ 请输入有效选项。\n")
+
+
+# ----------------- KugouAdapter -----------------
 
 @register_platform
 class KugouAdapter(BasePlatformAdapter):
@@ -116,11 +452,13 @@ class KugouAdapter(BasePlatformAdapter):
         token = options.get("token")
         userid = options.get("userid")
 
+        saved_nickname = None
         if not token or not userid:
-            saved_token, saved_userid, _ = load_auth_credentials()
+            saved_token, saved_userid, saved_data = load_auth_credentials()
             if saved_token and saved_userid:
                 token = token or saved_token
                 userid = userid or saved_userid
+                saved_nickname = saved_data.get("nickname")
 
         # 若外部指定了纯数字 UID，优先校对或使用
         target_uid = "".join(filter(str.isdigit, (user_target or "").strip()))
@@ -139,7 +477,7 @@ class KugouAdapter(BasePlatformAdapter):
             return None
 
         uid_str = str(userid)
-        nickname = f"酷狗用户_{uid_str[-4:]}" if len(uid_str) >= 4 else f"酷狗用户_{uid_str}"
+        nickname = saved_nickname or (f"酷狗用户_{uid_str[-4:]}" if len(uid_str) >= 4 else f"酷狗用户_{uid_str}")
         return NormalizedUserPlaylists(
             platform=self.platform_id,
             user_id=uid_str,
@@ -261,6 +599,6 @@ class KugouAdapter(BasePlatformAdapter):
             return True
         if initial_input and initial_input.lower() in ("logout", "--logout"):
             clear_auth_credentials()
-            print("✅ 酷狗登录凭证已清除。")
+            print("✅ 酷狗登录凭证已清除。\n")
             return True
         return False
