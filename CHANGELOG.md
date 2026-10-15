@@ -6,6 +6,12 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **MusicFree plugin v2.1.2 — NetEase trial-clip detection & simplified playback toasts / 网易云试听片段识别与播放提示文案精简**:
+  - 修复网易云 VIP / 受限曲目走兜底链路时可能只播放 30 秒试听片段且毫无提示的问题：内置引擎新增试听片段识别（`jd-musicrep-ts` 直链标记 + 字节数/时长比例校验；Meting 经 Range 探测读取 `Content-Range` 总长，GD Studio 经 `size`/码率反推时长），识别后不再当作完整曲目——先继续严格匹配其它平台的完整版，全部无果时才兜底播放试听并提示「X仅试听30秒」（同一首歌 10 分钟去重）。
+  - 播放提示文案精简：去掉 emoji 与歌名，跨插件 / 内置兜底命中的成功提示统一为「音源：X」「内置音源：X」，全部无源为「未找到可用音源，已跳过」。
+  - `httpGet` 记录 302 重定向后的最终地址用于试听识别（不改变任何请求行为）。
+  - 测试套件扩展至 51 项（新增试听识别契约 + 「试听不顶替完整版、仅作最后兜底」行为断言）。
+
 - **MusicFree plugin v2.1.1 — legacy lyric fallback completeness / 历史歌单歌词兜底补全**:
   - 修复极早期导入、原始平台身份完全不可识别（无 `_originPlatform` / 无历史 ID / 无 `_src`）的历史曲目在内置通道恢复播放后仍可能无歌词的问题：取词前先对各平台执行一次严格匹配的「搜索定位」（仅检索接口、不拉取音频流），定位成功即复用该身份取词；仍无果则按原有歌词兜底顺序处理。
   - 测试套件扩展至 49 项（新增「来源不可识别曲目经严格搜索定位补齐歌词」断言）。

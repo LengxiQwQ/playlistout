@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.1.1)
+ * PlaylistOut 官方 MusicFree 插件 (v2.1.2)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.1.1';
+const PLUGIN_VERSION = '2.1.2';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -672,10 +672,20 @@ async function httpGet(url, options = {}) {
       headers,
       validateStatus: () => true,
     });
+    let finalUrl = '';
+    try {
+      const req = res.request;
+      if (req && typeof req.responseURL === 'string' && req.responseURL) {
+        finalUrl = req.responseURL;
+      } else if (req && req.res && typeof req.res.responseUrl === 'string' && req.res.responseUrl) {
+        finalUrl = req.res.responseUrl;
+      }
+    } catch (_) {}
     return {
       status: res.status,
       data: res.data,
       headers: res.headers || {},
+      finalUrl,
     };
   }
 
@@ -703,6 +713,7 @@ async function httpGet(url, options = {}) {
         status: res.status,
         data,
         headers: resHeaders,
+        finalUrl: typeof res.url === 'string' ? res.url : '',
       };
     } finally {
       if (timer) clearTimeout(timer);
@@ -1617,8 +1628,8 @@ function isCandidateStrictlyMatched(candidate, wantTitle, wantRawArtist, wantDur
 
 /**
  * 在 MusicFree 桌面端顶部渲染醒目且不打断听歌的胶囊提示 (Toast)
- * - kind === 'warn': 暖橙警示（暂无原版音源，已自动跳过）
- * - kind === 'info': 翠绿提示（原平台灰歌/无源，已自动匹配同歌手原曲或相似音源）
+ * - kind === 'warn': 暖橙警示（未找到可用音源，已跳过）
+ * - kind === 'info': 翠绿提示（自动匹配换源成功 / 内置兜底音源接管，含仅试听30秒提示）
  */
 async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
   try {
@@ -1899,20 +1910,11 @@ function notifyRescueOnce(key, message, kind) {
 }
 
 /**
- * 统一失败提示：跨插件兜底与内置兜底音源均无果时提示「已自动跳过」（同一首歌 10 分钟去重）
+ * 统一失败提示：跨插件兜底与内置兜底音源均无果时提示「未找到可用音源，已跳过」（同一首歌 10 分钟去重）
  */
 function notifyNoMediaSourceOnce(item) {
   var key = getRescueCacheKey(item) || String((item && item.id) || '');
-  var title = String((item && item.title) || '').trim();
-  var artist = String((item && item.artist) || '')
-    .replace(/未知歌手/g, '')
-    .split(/[,，、/]/)[0]
-    .trim();
-  notifyRescueOnce(
-    key,
-    '⚠️ 未找到《' + (artist ? title + ' - ' + artist : title) + '》的可用音源，已自动跳过',
-    'warn'
-  );
+  notifyRescueOnce(key, '未找到可用音源，已跳过', 'warn');
 }
 
 /**
@@ -1944,11 +1946,7 @@ async function rescueMediaSource(item, quality) {
   }
 
   var platLabel = PLATFORM_DISPLAY_NAMES[match.platform] || match.platform;
-  notifyRescueOnce(
-    key,
-    '🔄 已自动从「' + platLabel + '」为您匹配播放《' + String(item.title || '') + '》',
-    'info'
-  );
+  notifyRescueOnce(key, '音源：' + platLabel, 'info');
   return source;
 }
 
@@ -2002,11 +2000,15 @@ async function autoResolveFallbackSource(item, quality) {
   var embedded = await embeddedResolveMedia(item, quality);
   if (embedded && embedded.source) {
     var platLabel = PLATFORM_DISPLAY_NAMES[embedded.platform] || embedded.platform;
-    notifyRescueOnce(
-      getRescueCacheKey(item),
-      '🔄 已自动调用内置「' + platLabel + '」音源为您匹配播放《' + String(item.title || '') + '》',
-      'info'
-    );
+    if (embedded.source.trial) {
+      notifyRescueOnce(getRescueCacheKey(item), platLabel + '仅试听30秒', 'info');
+    } else {
+      notifyRescueOnce(
+        getRescueCacheKey(item),
+        '内置音源：' + platLabel,
+        'info'
+      );
+    }
     return embedded.source;
   }
   return null;
@@ -2018,6 +2020,8 @@ async function autoResolveFallbackSource(item, quality) {
 //   · QQ音乐  : vkeys 直链（无损 / 320k / 128k 自动降级）+ 官方搜索 smartbox 严格匹配
 //   · 网易云  : GD Studio 直链（含无损）+ Meting 302 兜底（128k）
 //   · 酷狗音乐: 官方搜索 songsearch + getSongInfo 免费曲直链（付费灰歌自动跳过）
+// 网易云 VIP/受限曲目只能拿到 30 秒试听片段（jd-musicrep-ts 标记 / 字节数校验）时不会被
+// 误当完整曲：先继续匹配其它平台的完整版，全灭时兜底播放试听并提示「X仅试听30秒」。
 // 跨源搜索一律执行与跨插件兜底同级的 100% 严格匹配（同名 + 同歌手 + 同版本 + 时长吻合），
 // 匹配不到完全一致的原曲立即跳过——宁可跳过，绝不播放错歌。
 // 全部请求均在用户设备本地直连公开接口，不经任何 PlaylistOut 服务器转发与缓存。
@@ -2048,6 +2052,44 @@ function embeddedQualityLabel(kbps, url) {
   if (u.indexOf('.flac') >= 0 || n >= 900) return 'flac';
   if (n >= 250) return '320k';
   return '128k';
+}
+
+/** 曲目秒数（MusicFree 标准字段；超 1 小时的异常值按未知处理，避免误判试听闸门） */
+function embeddedItemDurationSec(item) {
+  var d = Number(item && item.duration) || 0;
+  return d > 0 && d <= 3600 ? d : 0;
+}
+
+/** 试听片段识别：网易云试听直链带专属路径标记（VIP 未登录/受限时为 30 秒片段） */
+function embeddedIsTrialUrl(url) {
+  return /\/jd-musicrep-ts\//i.test(String(url || ''));
+}
+
+/** 试听时长闸门：容忍 ±12 秒与 40% 的元数据偏差，明显低于闸门的整段视为试听片段 */
+function embeddedTrialDurationFloor(durationSec) {
+  var dur = Number(durationSec) || 0;
+  if (dur <= 0) return 0;
+  return Math.min(dur - 12, dur * 0.6);
+}
+
+/** 从响应头解析完整资源字节数（206 优先 Content-Range 总长；仅 200 才信任 Content-Length） */
+function embeddedResponseTotalBytes(status, headers) {
+  if (!headers) return 0;
+  var cr = String(headers['content-range'] || headers['Content-Range'] || '');
+  var m = cr.match(/\/(\d+)\s*$/);
+  if (m) return Number(m[1]) || 0;
+  if (Number(status) === 200) {
+    return Number(headers['content-length'] || headers['Content-Length'] || 0) || 0;
+  }
+  return 0;
+}
+
+/** 试听片段识别：整段按闸门时长摊下来的等效码率低于 64kbps 视为试听（正常直链最低也在 96kbps 上下） */
+function embeddedLooksLikeTrialBytes(totalBytes, durationSec) {
+  var total = Number(totalBytes) || 0;
+  var floor = embeddedTrialDurationFloor(durationSec);
+  if (total <= 0 || floor <= 0) return false;
+  return total / floor < 8000;
 }
 
 /** 腾讯系 CDN 同时支持 https，统一升级避免 Android 明文流量拦截 */
@@ -2130,9 +2172,9 @@ async function embeddedSearchQqCandidates(keyword) {
 }
 
 /**
- * 网易云：GD Studio 精确取链（br=999/320/128，含无损；仅公开免费曲目可出链）
+ * 网易云：GD Studio 精确取链（br=999/320/128，含无损；试听片段自动标记）
  */
-async function embeddedGdNeteaseUrl(id, quality) {
+async function embeddedGdNeteaseUrl(id, quality, durationSec) {
   if (!id) return null;
   var tier = embeddedQualityTier(quality);
   var br = tier === 'super' ? 999 : tier === 'high' ? 320 : 128;
@@ -2143,13 +2185,20 @@ async function embeddedGdNeteaseUrl(id, quality) {
   var data = res && res.data;
   var url = data && data.url ? embeddedHttpsUrl(String(data.url)) : '';
   if (!url || !isAllowedEmbeddedMediaUrl(url)) return null;
-  return { url: url, quality: embeddedQualityLabel(data.br, url) };
+  var trial = embeddedIsTrialUrl(url);
+  if (!trial) {
+    var estSec = data.size && data.br ? (Number(data.size) * 8) / (Number(data.br) * 1000) : 0;
+    var floor = embeddedTrialDurationFloor(durationSec);
+    if (estSec > 0 && floor > 0 && estSec < floor) trial = true;
+  }
+  return { url: url, quality: embeddedQualityLabel(data.br, url), trial: trial };
 }
 
 /**
- * 网易云：Meting 302 兜底（128k）。先用 Range 探测确认真实可播，避免回传死链
+ * 网易云：Meting 302 兜底（128k）。先用 Range 探测确认真实可播，避免回传死链；
+ * 跳转目标命中试听标记或字节数明显不足原曲时标记试听片段（不再当作完整曲目）
  */
-async function embeddedMetingNeteaseUrl(id) {
+async function embeddedMetingNeteaseUrl(id, durationSec) {
   if (!id) return null;
   var metingUrl = 'https://api.injahow.cn/meting/?server=netease&type=url&id=' + encodeURIComponent(id);
   var res = await httpGet(metingUrl, {
@@ -2162,7 +2211,12 @@ async function embeddedMetingNeteaseUrl(id) {
     typeof res.data === 'string' &&
     res.data.length > 0;
   if (!ok) return null;
-  return { url: metingUrl, quality: '128k' };
+  var trial = embeddedIsTrialUrl(res.finalUrl);
+  if (!trial) {
+    var total = embeddedResponseTotalBytes(res.status, res.headers);
+    if (embeddedLooksLikeTrialBytes(total, durationSec)) trial = true;
+  }
+  return { url: metingUrl, quality: '128k', trial: trial };
 }
 
 /**
@@ -2320,8 +2374,10 @@ async function embeddedLaneSearch(platform, keyword) {
 
 /**
  * 按精确标识取链：QQ -> vkeys / 网易云 -> GD Studio + Meting / 酷狗 -> getSongInfo
+ * 网易云渠道若只能拿到试听片段：先补齐另一条网易云通道，仍无完整版则带 trial 标记返回，
+ * 由调用方继续尝试其它平台，只有在全部无完整版时才兜底播放试听
  */
-async function embeddedResolveLookup(lookup, quality) {
+async function embeddedResolveLookup(lookup, quality, durationSec) {
   if (!lookup || !lookup.platform) return null;
   if (lookup.platform === 'qq' && lookup.mid) {
     var qq = await embeddedVkeysQqLink(lookup.mid, quality);
@@ -2330,14 +2386,16 @@ async function embeddedResolveLookup(lookup, quality) {
   if (lookup.platform === 'netease' && lookup.id) {
     var ne = null;
     try {
-      ne = await embeddedGdNeteaseUrl(lookup.id, quality);
+      ne = await embeddedGdNeteaseUrl(lookup.id, quality, durationSec);
     } catch (_) {}
-    if (!ne) {
-      try {
-        ne = await embeddedMetingNeteaseUrl(lookup.id);
-      } catch (_) {}
-    }
-    if (ne) return { platform: 'netease', info: { id: lookup.id }, source: ne };
+    if (ne && !ne.trial) return { platform: 'netease', info: { id: lookup.id }, source: ne };
+    var mg = null;
+    try {
+      mg = await embeddedMetingNeteaseUrl(lookup.id, durationSec);
+    } catch (_) {}
+    if (mg && !mg.trial) return { platform: 'netease', info: { id: lookup.id }, source: mg };
+    var trialSource = mg || ne;
+    if (trialSource) return { platform: 'netease', info: { id: lookup.id }, source: trialSource };
   }
   if (lookup.platform === 'kugou' && lookup.hash) {
     var kg = await embeddedKugouUrl(lookup, quality);
@@ -2355,6 +2413,7 @@ async function embeddedResolveLookup(lookup, quality) {
 /**
  * 跨平台严格搜索兜底：QQ -> 网易云 -> 酷狗 依次搜索，
  * 仅当候选与原曲 100% 严格匹配（同名 + 同歌手 + 同版本 + 时长吻合）且成功取链才返回。
+ * 若命中的候选只能拿到试听片段，先记下作为最后兜底，继续尝试其它平台的完整版。
  */
 async function embeddedResolveBySearch(item, quality) {
   var title = String(item.title || '').trim();
@@ -2364,6 +2423,8 @@ async function embeddedResolveBySearch(item, quality) {
     .trim();
   var primaryArtist = rawArtist.split(/[,，、/]/)[0].trim();
   var keyword = primaryArtist ? title + ' ' + primaryArtist : title;
+  var durationSec = embeddedItemDurationSec(item);
+  var trialEntry = null;
 
   var lanes = ['qq', 'netease', 'kugou'];
   for (var i = 0; i < lanes.length; i++) {
@@ -2386,16 +2447,17 @@ async function embeddedResolveBySearch(item, quality) {
       var lookup = embeddedLookupFromCandidate(platform, cand);
       var resolved = null;
       try {
-        resolved = await embeddedResolveLookup(lookup, quality);
+        resolved = await embeddedResolveLookup(lookup, quality, durationSec);
       } catch (_) {
         resolved = null;
       }
-      if (resolved) return resolved;
-      // 严格命中的候选取链失败：同平台不再尝试其它候选，直接换下一个平台
+      if (resolved && resolved.source && !resolved.source.trial) return resolved;
+      if (resolved) trialEntry = resolved;
+      // 严格命中的候选只有试听片段或取链失败：同平台不再尝试其它候选，直接换下一个平台
       break;
     }
   }
-  return null;
+  return trialEntry;
 }
 
 /**
@@ -2442,11 +2504,15 @@ async function embeddedLocateBySearch(item) {
  * 内置兜底解析主流程：原平台精确取链 -> 复用历史严格匹配 -> 跨平台严格搜索
  */
 async function embeddedResolveMediaTask(item, quality, key) {
+  var durationSec = embeddedItemDurationSec(item);
+  var trialEntry = null;
+
   var origin = embeddedOriginLookup(item);
   if (origin) {
     try {
-      var exact = await embeddedResolveLookup(origin, quality);
-      if (exact) return exact;
+      var exact = await embeddedResolveLookup(origin, quality, durationSec);
+      if (exact && exact.source && !exact.source.trial) return exact;
+      if (exact) trialEntry = exact;
     } catch (_) {}
   }
 
@@ -2461,12 +2527,16 @@ async function embeddedResolveMediaTask(item, quality, key) {
       sqHash: cached.info.sqHash,
     };
     try {
-      var reused = await embeddedResolveLookup(lookup, quality);
-      if (reused) return reused;
+      var reused = await embeddedResolveLookup(lookup, quality, durationSec);
+      if (reused && reused.source && !reused.source.trial) return reused;
+      if (reused && !trialEntry) trialEntry = reused;
     } catch (_) {}
   }
 
-  return await embeddedResolveBySearch(item, quality);
+  var bySearch = await embeddedResolveBySearch(item, quality);
+  if (bySearch && bySearch.source && !bySearch.source.trial) return bySearch;
+  if (bySearch && !trialEntry) trialEntry = bySearch;
+  return trialEntry;
 }
 
 /**
@@ -2642,11 +2712,7 @@ async function getMediaSource(musicItem, quality) {
     });
     if (exact && isUsableRescuedUrl(exact.url)) {
       var platLabel = PLATFORM_DISPLAY_NAMES[origin] || origin;
-      notifyRescueOnce(
-        getRescueCacheKey(musicItem),
-        '🔄 已自动从「' + platLabel + '」为您匹配播放《' + String(musicItem.title || '') + '》',
-        'info'
-      );
+      notifyRescueOnce(getRescueCacheKey(musicItem), '音源：' + platLabel, 'info');
       return exact;
     }
   }
@@ -2732,4 +2798,8 @@ module.exports = {
   _embeddedResolveLyric: embeddedResolveLyric,
   _embeddedOriginLookup: embeddedOriginLookup,
   _isAllowedEmbeddedMediaUrl: isAllowedEmbeddedMediaUrl,
+  _embeddedIsTrialUrl: embeddedIsTrialUrl,
+  _embeddedTrialDurationFloor: embeddedTrialDurationFloor,
+  _embeddedResponseTotalBytes: embeddedResponseTotalBytes,
+  _embeddedLooksLikeTrialBytes: embeddedLooksLikeTrialBytes,
 };

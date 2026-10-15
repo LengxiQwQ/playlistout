@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.1.1)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.1.2)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -11,7 +11,7 @@
  * 6. Live online NetEase playlist resolution (end-to-end API test, optional RUN_E2E=1)
  * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
  * 8. Exception & invalid input fault tolerance, Hermes syntax integrity
- * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + negative caches)
+ * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + trial-clip guards + negative caches)
  */
 
 const assert = require('assert');
@@ -1274,6 +1274,84 @@ async function runAllTests() {
         metingCall && metingCall.config.headers && metingCall.config.headers.Range === 'bytes=0-0',
         'Meting must be validated with a Range probe before returning'
       );
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('Trial-clip guards: jd-musicrep-ts marker + byte-size gate contracts', () => {
+    const isTrial = plugin._embeddedIsTrialUrl;
+    assert.strictEqual(isTrial('https://m702.music.126.net/2026/x/jd-musicrep-ts/aa/bb/cc.mp3'), true, 'Trial path marker must be detected');
+    assert.strictEqual(isTrial('https://m701.music.126.net/2026/x/jdymusic/obj/wo/x.mp3'), false, 'Full path must not be flagged');
+    assert.strictEqual(isTrial('https://api.injahow.cn/meting/?x=1'), false, 'Gateway URL itself must not be flagged');
+    assert.strictEqual(isTrial(''), false, 'Empty URL must not be flagged');
+
+    const floor = plugin._embeddedTrialDurationFloor;
+    assert.strictEqual(floor(302), Math.min(290, 181.2), 'Floor must tolerate ±12s and 40% metadata drift');
+    assert.strictEqual(floor(0), 0, 'Unknown duration must disable the gate');
+
+    const bytes = plugin._embeddedLooksLikeTrialBytes;
+    assert.strictEqual(bytes(481115, 302), true, '30s/128k clip of a 5min song must be a trial');
+    assert.strictEqual(bytes(4838339, 302), false, 'Full 128k stream must pass');
+    assert.strictEqual(bytes(12095782, 302), false, 'Full 320k stream must pass');
+    assert.strictEqual(bytes(481115, 0), false, 'No duration -> no byte judgement');
+
+    const total = plugin._embeddedResponseTotalBytes;
+    assert.strictEqual(total(206, { 'content-range': 'bytes 0-0/481115' }), 481115, '206 total must come from Content-Range');
+    assert.strictEqual(total(200, { 'content-length': '4838339' }), 4838339, '200 total must come from Content-Length');
+    assert.strictEqual(total(206, { 'content-length': '1' }), 0, '206 without Content-Range must not misread the 1-byte probe');
+    assert.strictEqual(total(200, {}), 0, 'Missing headers -> 0');
+  });
+
+  await test('NetEase trial clips are never mistaken for the full track (continued matching + marked fallback)', async () => {
+    plugin._setHostBridge(null);
+
+    // A. GD Studio gives the full stream -> no Meting probe, no trial mark
+    let calls = installHttpMock([
+      ['gdstudio', { status: 200, data: { url: 'https://m701.music.126.net/2026/jdymusic/obj/wo/full.mp3', br: 128, size: 4838339 } }],
+    ]);
+    try {
+      const entry = await plugin._embeddedResolveMedia(
+        { id: 'netease_trial_a', title: '试听曲', artist: '某', duration: 302, platform: '把你的歌单带走', _originPlatform: 'netease' },
+        'standard'
+      );
+      assert(entry && entry.platform === 'netease' && entry.source.url.includes('jdymusic'), 'Full GD stream expected');
+      assert(!entry.source.trial, 'Full stream must not be marked as trial');
+      assert(!calls.some((c) => c.url.includes('meting')), 'Meting must not be probed when GD delivers the full stream');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    // B. GD empty + Meting only yields a 30s clip (481115 bytes) -> still delivered as last resort, marked trial
+    calls = installHttpMock([
+      ['gdstudio', { status: 200, data: { url: '' } }],
+      ['api.injahow.cn/meting', { status: 206, data: 'x', headers: { 'content-range': 'bytes 0-0/481115', 'content-type': 'audio/mpeg' } }],
+    ]);
+    try {
+      const entry = await plugin._embeddedResolveMedia(
+        { id: 'netease_trial_b', title: '试听曲', artist: '某', duration: 302, platform: '把你的歌单带走', _originPlatform: 'netease' },
+        'standard'
+      );
+      assert(entry && entry.source.url.startsWith('https://api.injahow.cn/meting/'), 'Trial clip is still delivered as the last resort');
+      assert.strictEqual(entry.source.trial, true, 'Trial clip must be flagged for the 「仅试听30秒」 notice');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    // C. Origin channel only offers a trial, but another platform has the full track -> full track wins
+    calls = installHttpMock([
+      ['gdstudio', { status: 200, data: { url: '' } }],
+      ['api.injahow.cn/meting', { status: 206, data: 'x', headers: { 'content-range': 'bytes 0-0/481115' } }],
+      ['smartbox', { status: 200, data: { data: { song: { itemlist: [{ mid: 'midfull1', name: '试听曲', singer: '某' }] } } } }],
+      ['vkeys', { status: 200, data: { code: 0, data: { url: 'https://ws.stream.qqmusic.qq.com/C400full.mp3', kbps: 320 } } }],
+    ]);
+    try {
+      const entry = await plugin._embeddedResolveMedia(
+        { id: 'netease_trial_c', title: '试听曲', artist: '某', duration: 302, platform: '把你的歌单带走', _originPlatform: 'netease' },
+        'standard'
+      );
+      assert(entry && entry.platform === 'qq' && entry.source.url.includes('C400full'), 'Full stream from the QQ lane must beat the NetEase trial');
+      assert(!entry.source.trial, 'Winning full stream must not carry the trial mark');
     } finally {
       delete globalThis.axios;
     }
