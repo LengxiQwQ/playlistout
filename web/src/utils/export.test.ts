@@ -3,6 +3,9 @@ import type { Playlist, Track } from '../api/types';
 import {
   sanitizeFilename,
   sanitizeSpreadsheetCell,
+  buildPlaylistStem,
+  buildExportBaseName,
+  makeUniqueFilename,
   generateTXT,
   generateCSV,
   generateXLSX,
@@ -125,6 +128,46 @@ describe('Filename Sanitization', () => {
     expect(sanitizeFilename('')).toBe('playlist');
     expect(sanitizeFilename('   ')).toBe('playlist');
     expect(sanitizeFilename('???')).toBe('playlist');
+  });
+});
+
+describe('Unified Export Naming', () => {
+  it('builds 【平台】歌单名 - 作者 base names', () => {
+    expect(buildExportBaseName({ platform: 'qqmusic', name: '夜曲精选', creator: '周杰伦' })).toBe(
+      '【QQ 音乐】夜曲精选 - 周杰伦',
+    );
+    expect(buildExportBaseName({ platform: 'netease', name: '华语精选', creator: '音乐研究所' })).toBe(
+      '【网易云音乐】华语精选 - 音乐研究所',
+    );
+  });
+
+  it('omits the creator segment when there is no creator', () => {
+    expect(buildExportBaseName({ platform: 'kugou', name: '酷狗热歌', creator: '' })).toBe(
+      '【酷狗音乐】酷狗热歌',
+    );
+  });
+
+  it('falls back to a generic platform label for unknown platforms', () => {
+    expect(buildExportBaseName({ platform: 'xiami', name: '测试歌单' })).toBe('【音乐平台】测试歌单');
+  });
+
+  it('keeps the platform prefix when the name is very long', () => {
+    const baseName = buildExportBaseName({ platform: 'qishui', name: '长'.repeat(200) });
+    expect(baseName.startsWith('【汽水音乐】')).toBe(true);
+    expect(baseName.length).toBeLessThanOrEqual(100);
+  });
+
+  it('builds archive-internal stems without platform or index', () => {
+    expect(buildPlaylistStem('民谣合集', '歌手A')).toBe('民谣合集 - 歌手A');
+    expect(buildPlaylistStem('民谣合集', undefined)).toBe('民谣合集');
+  });
+
+  it('deduplicates file names Windows-style: (2), (3), ...', () => {
+    const used = new Set<string>();
+    expect(makeUniqueFilename('歌单.csv', used)).toBe('歌单.csv');
+    expect(makeUniqueFilename('歌单.csv', used)).toBe('歌单 (2).csv');
+    expect(makeUniqueFilename('歌单.csv', used)).toBe('歌单 (3).csv');
+    expect(makeUniqueFilename('歌单.json', used)).toBe('歌单.json');
   });
 });
 
@@ -427,14 +470,14 @@ describe('M3U8 Generation', () => {
     expect(m3u8).toContain('Solo Artist - No Album Song.mp3');
   });
 
-  it('triggers m3u8 download with correct mime type in exportPlaylist', () => {
+  it('triggers m3u8 download with platform-prefixed filename and correct mime type', () => {
     const createObjectURLMock = vi.fn(() => 'blob:mock-url');
     const revokeObjectURLMock = vi.fn();
     window.URL.createObjectURL = createObjectURLMock;
     window.URL.revokeObjectURL = revokeObjectURLMock;
 
     const res = exportPlaylist(samplePlaylist, 'm3u8');
-    expect(res.filename).toContain('.m3u8');
+    expect(res.filename).toBe('【QQ 音乐】多语言 特殊字符 重复歌单 🎵 Test - MusicMaster 音乐家.m3u8');
     expect(createObjectURLMock).toHaveBeenCalled();
   });
 });

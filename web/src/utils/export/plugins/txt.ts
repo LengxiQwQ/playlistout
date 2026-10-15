@@ -2,13 +2,13 @@ import type { Playlist } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import { getPlatformPlaylistUrl } from '../../platform';
 import {
+  buildExportBaseName,
   cleanSingleLine,
   formatArtists,
   formatDateTime,
   formatTimestamp,
   formatTotalDuration,
   getTrackStatusText,
-  sanitizeFilename,
 } from '../helpers';
 
 /**
@@ -87,9 +87,7 @@ export const txtExportPlugin: ExportPlugin = {
   mimeType: 'text/plain;charset=utf-8',
   description: '标准纯文本排版，适合阅读与快速记事本备份',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const content = generateTXT(ctx.playlist);
     return {
       filename: `${baseName}.txt`,

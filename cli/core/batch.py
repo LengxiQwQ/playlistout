@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Set, Any
 
 from .models import NormalizedPlaylist, NormalizedUserPlaylists, UserPlaylistSummary
+from .naming import build_export_base_name, ensure_unique_base_name
 from .ui import (
-    sanitize_filename,
     print_format_menu,
     resolve_export_formats,
     reveal_folder,
@@ -84,8 +84,7 @@ def parse_playlist_selection(choice_str: str, max_items: int) -> List[int]:
 
 
 def resolve_collision_safe_base_name(
-    name: str,
-    playlist_id: str,
+    base_name: str,
     existing_names: Set[str],
     output_dir: str,
     formats: Optional[List[str]] = None,
@@ -93,38 +92,16 @@ def resolve_collision_safe_base_name(
     """
     计算碰撞安全的文件基准名。
     原则：
-    - 正常情况下保持干净的歌单名：'歌单名'
-    - 当同批次存在同名歌单，或目标目录下已存在同名文件时，追加稳定标识：'歌单名 [ID]'
+    - 正常情况下保持干净的基准名：'【平台】歌单名 - 作者'
+    - 当同批次存在同名歌单，或目标目录下已存在同名文件时，追加 ' (2)'、' (3)' ……
     - 绝不允许静默覆盖不同歌单。
     """
-    safe_title = sanitize_filename(name) or f"playlist_{playlist_id}"
-    formats = formats or ["xlsx", "json", "csv", "txt", "m3u8"]
-
-    # 检查是否与本批次已使用的文件名冲突
-    collides_with_batch = safe_title in existing_names
-
-    # 检查目标磁盘目录下是否已存在对应格式的文件
-    collides_on_disk = False
-    if os.path.exists(output_dir):
-        for fmt in formats:
-            check_file = os.path.join(output_dir, f"{safe_title}.{fmt}")
-            if os.path.exists(check_file):
-                collides_on_disk = True
-                break
-
-    if collides_with_batch or collides_on_disk:
-        candidate = f"{safe_title} [{playlist_id}]"
-        # 兜底：若候选名依然已被占用，添加自增编号
-        if candidate in existing_names:
-            counter = 2
-            while f"{candidate}_{counter}" in existing_names:
-                counter += 1
-            candidate = f"{candidate}_{counter}"
-    else:
-        candidate = safe_title
-
-    existing_names.add(candidate)
-    return candidate
+    return ensure_unique_base_name(
+        base_name,
+        output_dir,
+        formats=formats,
+        reserved=existing_names,
+    )
 
 
 def preprocess_playlist(playlist: NormalizedPlaylist) -> int:
@@ -265,10 +242,9 @@ def run_batch_flow(
             # 统一预处理：mark_duplicates 与元数据标准化
             preprocess_playlist(norm_pl)
 
-            # 计算防碰撞文件名
+            # 计算防碰撞文件名（统一命名：【平台】歌单名 - 作者，(2)/(3) 递增防覆盖）
             base_name = resolve_collision_safe_base_name(
-                norm_pl.name,
-                norm_pl.id,
+                build_export_base_name(norm_pl.name, norm_pl.creator, norm_pl.platform),
                 used_base_names,
                 target_dir,
                 formats,

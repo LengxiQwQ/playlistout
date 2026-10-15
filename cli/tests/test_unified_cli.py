@@ -77,7 +77,7 @@ def test_cli_explicit_platform_success(tmp_path):
             main()
             mock_fetch.assert_called_once_with("12345", channel="qishui", token=None, userid=None)
 
-    assert (tmp_path / "cli_out" / "测试歌单.csv").exists()
+    assert (tmp_path / "cli_out" / "【网易云音乐】测试歌单 - 作者.csv").exists()
 
 
 def test_cli_auto_detect_success(tmp_path):
@@ -109,7 +109,7 @@ def test_cli_auto_detect_success(tmp_path):
             main()
             mock_fetch.assert_called_once()
 
-    assert (tmp_path / "cli_auto_out" / "QQ测试歌单.txt").exists()
+    assert (tmp_path / "cli_auto_out" / "【QQ 音乐】QQ测试歌单 - QQ用户.txt").exists()
 
 
 def test_cli_version_flag(capsys):
@@ -243,7 +243,7 @@ def test_interactive_export_flow_ui_divider(capsys, tmp_path):
     assert "导出格式" in out
     assert "─" * 64 in out
     assert "正在导出..." in out
-    assert (tmp_path / "interactive_out" / "我喜欢听.json").exists()
+    assert (tmp_path / "interactive_out" / "【酷我音乐】我喜欢听 - kw1982280723.json").exists()
 
 
 def test_print_exit_banner(capsys):
@@ -278,7 +278,7 @@ def test_cli_kugou_explicit_platform_success(tmp_path):
         with patch.object(PlatformRegistry.get("kugou"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
             main()
             mock_fetch.assert_called_once()
-    assert (tmp_path / "kugou_out" / "酷狗测试歌单.json").exists()
+    assert (tmp_path / "kugou_out" / "【酷狗音乐】酷狗测试歌单 - 酷狗作者.json").exists()
 
 
 def test_cli_kuwo_explicit_platform_success(tmp_path):
@@ -295,7 +295,7 @@ def test_cli_kuwo_explicit_platform_success(tmp_path):
         with patch.object(PlatformRegistry.get("kuwo"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
             main()
             mock_fetch.assert_called_once()
-    assert (tmp_path / "kuwo_out" / "酷我测试歌单.txt").exists()
+    assert (tmp_path / "kuwo_out" / "【酷我音乐】酷我测试歌单 - 酷我作者.txt").exists()
 
 
 def test_cli_qishui_explicit_platform_and_channel(tmp_path):
@@ -320,7 +320,7 @@ def test_cli_qishui_explicit_platform_and_channel(tmp_path):
         with patch.object(PlatformRegistry.get("qishui"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
             main()
             mock_fetch.assert_called_once_with("7087507348697186339", channel="douyin", token=None, userid=None)
-    assert (tmp_path / "qishui_out" / "汽水测试歌单.csv").exists()
+    assert (tmp_path / "qishui_out" / "【汽水音乐】汽水测试歌单 - 汽水作者.csv").exists()
 
 
 def test_cli_all_five_formats_exported(tmp_path):
@@ -345,7 +345,7 @@ def test_cli_all_five_formats_exported(tmp_path):
             main()
 
     for ext in ["xlsx", "json", "csv", "txt", "m3u8"]:
-        assert (tmp_path / "all_formats_out" / f"全格式测试.{ext}").exists()
+        assert (tmp_path / "all_formats_out" / f"【网易云音乐】全格式测试 - 全格式作者.{ext}").exists()
 
 
 def test_cli_kugou_login_logout_flags():

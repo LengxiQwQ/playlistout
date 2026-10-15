@@ -48,6 +48,8 @@ except Exception:
     pass
 
 # ----------------- 统一品牌与终端交互组件 -----------------
+from cli.core.naming import build_export_base_name, ensure_unique_base_name
+
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
 WEB_URL = "https://playlistout.lengxiqwq.com"
@@ -889,11 +891,13 @@ def perform_export(songs, playlist_title, author, pid, output_dir="output", form
                     if r not in resolved_formats:
                         resolved_formats.append(r)
 
-    safe_title = sanitize_filename(playlist_title or f"playlist_{pid}")
-    safe_author = sanitize_filename(author or "未知作者")
-    base_name = f"{safe_title} - {safe_author}"
-
     os.makedirs(output_dir, exist_ok=True)
+    # 统一命名：【平台】歌单名 - 作者；重名自动追加 (2)、(3)……
+    base_name = ensure_unique_base_name(
+        build_export_base_name(playlist_title or f"playlist_{pid}", author, "qqmusic"),
+        output_dir,
+        resolved_formats,
+    )
     exported_files = []
 
     print(f"\n→ 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...\n")

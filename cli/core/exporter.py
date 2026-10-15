@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import List, Optional, Any
 
 from .models import NormalizedPlaylist, NormalizedTrack
+from .naming import build_export_base_name, ensure_unique_base_name
 from .ui import sanitize_filename, reveal_folder, WEB_URL
 
 
@@ -303,8 +304,16 @@ def perform_export(
     if not formats:
         return []
 
-    safe_title = sanitize_filename(base_name) if base_name else (sanitize_filename(playlist.name) or "playlist")
     os.makedirs(output_dir, exist_ok=True)
+    if base_name:
+        safe_title = sanitize_filename(base_name)
+    else:
+        # 统一命名：【平台】歌单名 - 作者；重名时自动追加 (2)、(3)……，绝不静默覆盖
+        safe_title = ensure_unique_base_name(
+            build_export_base_name(playlist.name, playlist.creator, playlist.platform),
+            output_dir,
+            formats,
+        )
     labels = {"xlsx": "Excel", "json": "JSON", "csv": "CSV", "txt": "TXT", "m3u8": "M3U8"}
 
     exported_files = []

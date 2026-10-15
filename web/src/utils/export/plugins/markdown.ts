@@ -2,6 +2,7 @@ import type { Playlist } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import { getPlatformPlaylistUrl } from '../../platform';
 import {
+  buildExportBaseName,
   cleanSingleLine,
   formatArtists,
   formatDateTime,
@@ -9,7 +10,6 @@ import {
   formatTotalDuration,
   getTrackDurationSeconds,
   getTrackStatusText,
-  sanitizeFilename,
 } from '../helpers';
 
 /**
@@ -74,9 +74,7 @@ export const markdownExportPlugin: ExportPlugin = {
   mimeType: 'text/markdown;charset=utf-8',
   description: '带格式的 Markdown 文档与表格，适合 Obsidian、Notion 与博客发布',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const content = generateMarkdown(ctx.playlist);
     return {
       filename: `${baseName}.md`,

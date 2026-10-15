@@ -2,12 +2,12 @@ import type { Playlist, Track } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import { getPlatformPlaylistUrl } from '../../platform';
 import {
+  buildExportBaseName,
   formatArtists,
   formatDateTime,
   formatTimestamp,
   formatTotalDuration,
   getTrackStatusText,
-  sanitizeFilename,
 } from '../helpers';
 
 /**
@@ -81,9 +81,7 @@ export const jsonExportPlugin: ExportPlugin = {
   mimeType: 'application/json;charset=utf-8',
   description: '完整机器可读结构化数据，保留全部扩展字段',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const content = generateJSON(ctx.playlist);
     return {
       filename: `${baseName}.json`,

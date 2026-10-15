@@ -54,21 +54,25 @@ def test_resolve_collision_safe_base_name(tmp_path):
     out_dir = str(tmp_path)
 
     # 1. 首次出现：纯净原名
-    name1 = resolve_collision_safe_base_name("我的精选", "1001", existing_names, out_dir)
+    name1 = resolve_collision_safe_base_name("我的精选", existing_names, out_dir)
     assert name1 == "我的精选"
     assert "我的精选" in existing_names
 
-    # 2. 批次内同名歌单（不同 ID）：追加 [ID] 消除歧义
-    name2 = resolve_collision_safe_base_name("我的精选", "1002", existing_names, out_dir)
-    assert name2 == "我的精选 [1002]"
-    assert "我的精选 [1002]" in existing_names
+    # 2. 批次内同名歌单：追加 (2) 消除歧义
+    name2 = resolve_collision_safe_base_name("我的精选", existing_names, out_dir)
+    assert name2 == "我的精选 (2)"
+    assert "我的精选 (2)" in existing_names
 
     # 3. 磁盘已有文件冲突保护
     disk_file = tmp_path / "流行榜单.json"
     disk_file.write_text("{}", encoding="utf-8")
 
-    name3 = resolve_collision_safe_base_name("流行榜单", "2001", existing_names, out_dir, formats=["json"])
-    assert name3 == "流行榜单 [2001]"
+    name3 = resolve_collision_safe_base_name("流行榜单", existing_names, out_dir, formats=["json"])
+    assert name3 == "流行榜单 (2)"
+
+    # 4. 再次碰撞继续递增
+    name4 = resolve_collision_safe_base_name("流行榜单", existing_names, out_dir, formats=["json"])
+    assert name4 == "流行榜单 (3)"
 
 
 def test_preprocess_playlist_duplicates():

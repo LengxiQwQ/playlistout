@@ -1,6 +1,7 @@
 import type { Playlist } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import {
+  buildExportBaseName,
   cleanSingleLine,
   formatArtists,
   sanitizeFilename,
@@ -43,9 +44,7 @@ export const m3u8ExportPlugin: ExportPlugin = {
   mimeType: 'application/x-mpegurl;charset=utf-8',
   description: 'Extended M3U8 格式，兼容各类本地音乐播放器及流媒体服务',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const content = generateM3U8(ctx.playlist);
     return {
       filename: `${baseName}.m3u8`,

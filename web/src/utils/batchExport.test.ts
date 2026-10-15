@@ -79,6 +79,39 @@ describe('batchExport utilities', () => {
       expect(m3u8Res.filename).toContain('(M3U8)');
       expect(m3u8Res.filename).toContain('.zip');
     });
+
+    it('names archive entries 歌单名 - 作者.ext and deduplicates with (2)', async () => {
+      const capturedBlobs: Blob[] = [];
+      window.URL.createObjectURL = vi.fn((blob: Blob) => {
+        capturedBlobs.push(blob);
+        return 'blob:mock-url';
+      });
+
+      const mockPlaylists: Playlist[] = [
+        {
+          platform: 'qqmusic',
+          id: '101',
+          name: '民谣合集',
+          creator: '歌手A',
+          trackCount: 1,
+          tracks: [{ index: 1, title: '南山南', artist: '马頔', durationMs: 240000 }],
+        },
+        {
+          platform: 'qqmusic',
+          id: '102',
+          name: '民谣合集',
+          creator: '歌手A',
+          trackCount: 1,
+          tracks: [{ index: 1, title: '安和桥', artist: '宋冬野', durationMs: 260000 }],
+        },
+      ];
+
+      await exportToZip(mockPlaylists, '测试用户', 'csv');
+
+      const JSZip = (await import('jszip')).default;
+      const zip = await JSZip.loadAsync(await capturedBlobs[0].arrayBuffer());
+      expect(Object.keys(zip.files).sort()).toEqual(['民谣合集 - 歌手A (2).csv', '民谣合集 - 歌手A.csv']);
+    });
   });
 
   describe('fetchMultiplePlaylists', () => {

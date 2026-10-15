@@ -2,6 +2,7 @@ import type { Playlist } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import { getPlatformPlaylistUrl } from '../../platform';
 import {
+  buildExportBaseName,
   cleanSingleLine,
   formatArtists,
   formatDateTime,
@@ -12,7 +13,6 @@ import {
   getTrackIsrc,
   getTrackStatusCode,
   getTrackTypeCode,
-  sanitizeFilename,
   sanitizeSpreadsheetCell,
 } from '../helpers';
 
@@ -99,9 +99,7 @@ export const csvExportPlugin: ExportPlugin = {
   mimeType: 'text/csv;charset=utf-8',
   description: '标准 RFC 4180 CSV，兼容各类迁移工具与表格软件',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const content = generateCSV(ctx.playlist, ctx.options as CsvExportOptions | undefined);
     return {
       filename: `${baseName}.csv`,

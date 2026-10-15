@@ -3,6 +3,7 @@ import type { Playlist, Track } from '../../../api/types';
 import type { ExportPlugin, ExportContext, ExportResult } from '../types';
 import { getPlatformPlaylistUrl } from '../../platform';
 import {
+  buildExportBaseName,
   cleanSingleLine,
   formatArtists,
   formatDateTime,
@@ -13,7 +14,6 @@ import {
   getTrackIsrc,
   getTrackStatusCode,
   getTrackTypeCode,
-  sanitizeFilename,
   sanitizeSpreadsheetCell,
 } from '../helpers';
 
@@ -101,9 +101,7 @@ export const xlsxExportPlugin: ExportPlugin = {
   mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   description: 'Microsoft Excel 多 Sheet 工作簿，含清晰列宽与元数据页',
   export(ctx: ExportContext): ExportResult {
-    const baseName = sanitizeFilename(
-      `${ctx.playlist.name || 'playlist'}${ctx.playlist.creator ? ' - ' + ctx.playlist.creator : ''}`,
-    );
+    const baseName = buildExportBaseName(ctx.playlist);
     const xlsxBytes = generateXLSX(ctx.playlist);
     return {
       filename: `${baseName}.xlsx`,

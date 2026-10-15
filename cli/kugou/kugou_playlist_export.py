@@ -54,6 +54,7 @@ except Exception:
 
 # ----------------- 统一品牌与终端交互组件 -----------------
 from cli.core.ui import print_divider, print_title, prompt_input
+from cli.core.naming import build_export_base_name, ensure_unique_base_name
 
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
@@ -1383,8 +1384,12 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
                         resolved_formats.append(r)
 
     os.makedirs(output_dir, exist_ok=True)
-    safe_name = sanitize_filename(playlist["name"]) or "kugou_playlist"
-    base_filename = f"{safe_name}_{playlist['id']}"
+    # 统一命名：【平台】歌单名 - 作者；重名自动追加 (2)、(3)……
+    base_filename = ensure_unique_base_name(
+        build_export_base_name(playlist.get("name"), playlist.get("creator"), "kugou"),
+        output_dir,
+        resolved_formats,
+    )
 
     exported_files = []
 

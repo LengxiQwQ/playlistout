@@ -3,11 +3,13 @@ import { parsePlaylist } from '../api/client';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import {
+  buildPlaylistStem,
   generateCSV,
   generateJSON,
   generateM3U8,
   generateTXT,
   generateXLSX,
+  makeUniqueFilename,
   sanitizeFilename,
   sanitizeSpreadsheetCell,
   formatArtists,
@@ -233,34 +235,39 @@ export async function exportToZip(
 ): Promise<{ filename: string }> {
   const zip = new JSZip();
   const dateStr = new Date().toISOString().split('T')[0];
+  const usedEntryNames = new Set<string>();
 
-  playlists.forEach((pl, idx) => {
-    const baseName = sanitizeFilename(`${idx + 1}. ${pl.name || 'playlist'}${pl.creator ? ' - ' + pl.creator : ''}`);
+  playlists.forEach((pl) => {
+    // Inside the archive every playlist is an equal peer: `歌单名 - 作者.ext`,
+    // no index prefix and no platform prefix (the archive name already carries it).
+    const baseName = buildPlaylistStem(pl.name, pl.creator);
+    const entryName = (ext: string): string =>
+      makeUniqueFilename(`${baseName}.${ext}`, usedEntryNames);
 
     switch (format) {
       case 'xlsx': {
         const xlsxBytes = generateXLSX(pl);
-        zip.file(`${baseName}.xlsx`, xlsxBytes);
+        zip.file(entryName('xlsx'), xlsxBytes);
         break;
       }
       case 'csv': {
         const csvContent = generateCSV(pl);
-        zip.file(`${baseName}.csv`, csvContent);
+        zip.file(entryName('csv'), csvContent);
         break;
       }
       case 'txt': {
         const txtContent = generateTXT(pl);
-        zip.file(`${baseName}.txt`, txtContent);
+        zip.file(entryName('txt'), txtContent);
         break;
       }
       case 'json': {
         const jsonContent = generateJSON(pl);
-        zip.file(`${baseName}.json`, jsonContent);
+        zip.file(entryName('json'), jsonContent);
         break;
       }
       case 'm3u8': {
         const m3u8Content = generateM3U8(pl);
-        zip.file(`${baseName}.m3u8`, m3u8Content);
+        zip.file(entryName('m3u8'), m3u8Content);
         break;
       }
     }

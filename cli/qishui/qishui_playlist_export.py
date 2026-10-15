@@ -48,6 +48,8 @@ except Exception:
     pass
 
 # ----------------- 统一品牌与终端交互组件 -----------------
+from cli.core.naming import build_export_base_name, ensure_unique_base_name
+
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
 WEB_URL = "https://playlistout.lengxiqwq.com"
@@ -888,15 +890,20 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
                         resolved_formats.append(r)
 
     playlist_title, tracks, author, cover_url, playlist_id = info
-    safe_title = sanitize_filename(playlist_title) or "qishui_playlist"
     os.makedirs(output_dir, exist_ok=True)
+    # 统一命名：【平台】歌单名 - 作者；重名自动追加 (2)、(3)……
+    base_name = ensure_unique_base_name(
+        build_export_base_name(playlist_title, author, "qishui"),
+        output_dir,
+        resolved_formats,
+    )
 
     exported_files = []
 
     print(f"\n→ 开始导出歌单《{playlist_title}》 (共 {len(tracks)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
-        fn = os.path.join(output_dir, f"{safe_title}.{fmt}")
+        fn = os.path.join(output_dir, f"{base_name}.{fmt}")
         try:
             if fmt == 'xlsx':
                 export_xlsx(fn, tracks)

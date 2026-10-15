@@ -1,3 +1,5 @@
+import { getPlatformName } from '../platform';
+
 /**
  * Windows / macOS / Linux filename sanitization.
  * Replaces invalid characters (< > : " / \ | ? *) with empty or space,
@@ -31,6 +33,55 @@ export function sanitizeFilename(name: string, fallback: string = 'playlist'): s
   }
 
   return clean || fallback;
+}
+
+/**
+ * Builds the playlist identity stem without platform info: `歌单名 - 作者`.
+ * Used for files that live inside an already platform-labeled archive.
+ */
+export function buildPlaylistStem(name?: string, creator?: string): string {
+  const safeName = (name || '').trim() || 'playlist';
+  const safeCreator = (creator || '').trim();
+  return sanitizeFilename(safeCreator ? `${safeName} - ${safeCreator}` : safeName);
+}
+
+/**
+ * Builds the unified export base name: `【平台】歌单名 - 作者`.
+ * The platform prefix keeps files from different platforms distinguishable
+ * and survives the length cap.
+ */
+export function buildExportBaseName(playlist: {
+  name?: string;
+  creator?: string;
+  platform?: string;
+}): string {
+  const platformName = getPlatformName(playlist.platform);
+  return sanitizeFilename(`【${platformName}】${buildPlaylistStem(playlist.name, playlist.creator)}`);
+}
+
+/**
+ * Returns a filename that is unique within `used`.
+ * Existing duplicates are suffixed Windows-style: `name (2).ext`, `name (3).ext`, ...
+ * Used inside ZIP archives, where silent overwrites cannot be tolerated.
+ */
+export function makeUniqueFilename(filename: string, used: Set<string>): string {
+  if (!used.has(filename)) {
+    used.add(filename);
+    return filename;
+  }
+
+  const dot = filename.lastIndexOf('.');
+  const stem = dot > 0 ? filename.slice(0, dot) : filename;
+  const ext = dot > 0 ? filename.slice(dot) : '';
+
+  let counter = 2;
+  let candidate = `${stem} (${counter})${ext}`;
+  while (used.has(candidate)) {
+    counter++;
+    candidate = `${stem} (${counter})${ext}`;
+  }
+  used.add(candidate);
+  return candidate;
 }
 
 /**
