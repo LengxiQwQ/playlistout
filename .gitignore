@@ -57,4 +57,6 @@ output/
 
 # Agent / AI local instructions
 GEMINI.md
+AGENTS.md
+.agents/
 
