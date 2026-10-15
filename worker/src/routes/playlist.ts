@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { type ApiResponse, type Playlist, ProviderError } from '../models/playlist';
-import { checkDualTrackRateLimit } from '../security/rate-limit';
+import { checkDualTrackRateLimit, checkRateLimit, type RateLimitResult } from '../security/rate-limit';
+import { verifyBatchTicket } from '../security/batch-ticket';
 import { recordRateLimitEventV2 } from '../analytics/v2-recorder';
 import { parsePlaylistService } from '../services/playlist-service';
 import { buildResponseMetadata } from '../analytics/context';
@@ -22,10 +23,63 @@ const handlePlaylist = async (c: any) => {
 
   const clientIp = getClientIp(request);
   const env: Env = c.env;
-  const ctx: ExecutionContext = c.executionCtx;
+  let ctx: ExecutionContext | undefined;
+  try {
+    ctx = c.executionCtx;
+  } catch {
+    ctx = undefined;
+  }
 
-  // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
-  const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist', env.INSIGHTS_ADMIN_TOKEN || '');
+  const rawPlaylistParam = url.searchParams.get('url') || url.searchParams.get('id');
+
+  if (!rawPlaylistParam || rawPlaylistParam.trim().length === 0) {
+    const errorResponse: ApiResponse<never> = {
+      success: false,
+      error: {
+        code: 'INVALID_INPUT',
+        message: 'Missing or empty required query parameter: url',
+      },
+    };
+    return new Response(JSON.stringify(errorResponse), {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        ...responseHeaders,
+      },
+    });
+  }
+
+  // Rate limit check: Scoped Batch Ticket support with fallback to dual-track rate limit
+  const batchTicketHeader = request.headers.get('x-playlistout-batch')?.trim();
+  let rateCheck: RateLimitResult;
+
+  if (batchTicketHeader) {
+    const ticketResult = await verifyBatchTicket(
+      batchTicketHeader,
+      clientIp,
+      rawPlaylistParam,
+      env.INSIGHTS_ADMIN_TOKEN || '',
+    );
+
+    if (ticketResult.valid && ticketResult.claims) {
+      const claims = ticketResult.claims;
+      const remainingSec = Math.max(1, Math.ceil((claims.exp - Date.now()) / 1000));
+      // Scoped Batch Bucket: allows up to 2x items + 5 requests (capped at 105 per window to enforce max 2 full batches per min)
+      const maxBatchRequests = Math.min(105, Math.max(20, claims.ids.length * 2 + 5));
+      rateCheck = checkRateLimit(
+        claims.ipHash,
+        maxBatchRequests,
+        remainingSec,
+        'batch_playlist',
+      );
+    } else {
+      // Invalid/expired ticket or target playlist not in ticket -> fallback to standard dual-track rate limiter
+      rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist', env.INSIGHTS_ADMIN_TOKEN || '');
+    }
+  } else {
+    rateCheck = await checkDualTrackRateLimit(request, clientIp, 'playlist', env.INSIGHTS_ADMIN_TOKEN || '');
+  }
+
   if (!rateCheck.allowed) {
     const rawPlatformParam = url.searchParams.get('platform') || 'all';
 
@@ -50,25 +104,6 @@ const handlePlaylist = async (c: any) => {
         },
       },
     );
-  }
-
-  const rawPlaylistParam = url.searchParams.get('url') || url.searchParams.get('id');
-
-  if (!rawPlaylistParam || rawPlaylistParam.trim().length === 0) {
-    const errorResponse: ApiResponse<never> = {
-      success: false,
-      error: {
-        code: 'INVALID_INPUT',
-        message: 'Missing or empty required query parameter: url',
-      },
-    };
-    return new Response(JSON.stringify(errorResponse), {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        ...responseHeaders,
-      },
-    });
   }
 
   const platformParam = url.searchParams.get('platform');

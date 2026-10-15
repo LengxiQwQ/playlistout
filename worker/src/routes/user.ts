@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
 import { type ApiResponse, type UserPlaylistsData, ProviderError } from '../models/playlist';
-import { checkDualTrackRateLimit } from '../security/rate-limit';
+import { checkDualTrackRateLimit, checkRateLimit } from '../security/rate-limit';
 import { recordRateLimitEventV2 } from '../analytics/v2-recorder';
 import { fetchUserPlaylistsService } from '../services/user-service';
 import { buildResponseMetadata } from '../analytics/context';
 import { PLAYLISTOUT_VERSION } from '../version';
 import { getStandardResponseHeaders, methodNotAllowed } from '../utils/response';
 import { getClientIp, extractClientAuth } from '../security/client-auth';
+import { generateBatchTicket } from '../security/batch-ticket';
 import type { Env } from '../env';
 
 export const userRoutes = new Hono<{ Bindings: Env }>();
@@ -22,7 +23,12 @@ const handleUserPlaylists = async (c: any) => {
 
   const clientIp = getClientIp(request);
   const env: Env = c.env;
-  const ctx: ExecutionContext = c.executionCtx;
+  let ctx: ExecutionContext | undefined;
+  try {
+    ctx = c.executionCtx;
+  } catch {
+    ctx = undefined;
+  }
 
   // Rate limit check: dual-track rate limit (Web front: 30 req/min, Direct API: 6 req/min)
   const rateCheck = await checkDualTrackRateLimit(request, clientIp, 'user_playlists', env.INSIGHTS_ADMIN_TOKEN || '');
@@ -84,6 +90,34 @@ const handleUserPlaylists = async (c: any) => {
       auth,
     });
 
+    const playlistIds = (userData.playlists || [])
+      .map((p) => p.id)
+      .filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+
+    let batchTicket: string | undefined;
+    let batchCooldownSeconds: number | undefined;
+
+    if (playlistIds.length > 0) {
+      // Rate limit ticket issuance: max 2 batch tickets per 60 seconds per client IP
+      const issueCheck = checkRateLimit(clientIp, 2, 60, 'batch_ticket_issue');
+      if (issueCheck.allowed) {
+        batchTicket = await generateBatchTicket({
+          clientIp,
+          platform: userData.platform,
+          playlistIds,
+          secret: env.INSIGHTS_ADMIN_TOKEN || '',
+        });
+      } else {
+        batchCooldownSeconds = issueCheck.resetSeconds;
+      }
+    }
+
+    const responseUserData: UserPlaylistsData = {
+      ...userData,
+      ...(batchTicket ? { batchTicket } : {}),
+      ...(batchCooldownSeconds ? { batchCooldownSeconds } : {}),
+    };
+
     const meta = buildResponseMetadata(request, {
       resolvedPlatform: userData.platform,
       trackCount: userData.total || (userData.playlists ? userData.playlists.length : undefined),
@@ -91,7 +125,7 @@ const handleUserPlaylists = async (c: any) => {
 
     const successResponse: ApiResponse<UserPlaylistsData> = {
       success: true,
-      data: userData,
+      data: responseUserData,
       ...(meta ? { meta } : {}),
     };
     return new Response(JSON.stringify(successResponse), {
@@ -99,6 +133,8 @@ const handleUserPlaylists = async (c: any) => {
       headers: {
         'Content-Type': 'application/json',
         'X-PlaylistOut-Server-Version': PLAYLISTOUT_VERSION,
+        ...(batchTicket ? { 'X-PlaylistOut-Batch-Ticket': batchTicket } : {}),
+        ...(batchCooldownSeconds ? { 'X-PlaylistOut-Batch-Cooldown': String(batchCooldownSeconds) } : {}),
         ...(meta?.client?.deviceClass ? { 'X-PlaylistOut-Client-Device': meta.client.deviceClass } : {}),
         ...(meta?.client?.id ? { 'X-PlaylistOut-Client-Id': meta.client.id } : {}),
         ...responseHeaders,

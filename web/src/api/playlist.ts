@@ -17,6 +17,7 @@ export async function parsePlaylist(
   authOptions?: { token?: string; userid?: string },
   isSample?: boolean,
   channel?: 'qishui' | 'douyin',
+  batchTicket?: string,
 ): Promise<ApiResponse<Playlist>> {
   const platformParam = platform ? `&platform=${encodeURIComponent(platform)}` : '';
   const channelParam = channel ? `&channel=${encodeURIComponent(channel)}` : '';
@@ -53,6 +54,9 @@ export async function parsePlaylist(
   if (sessionToken) {
     requestHeaders['X-PlaylistOut-Session'] = sessionToken;
   }
+  if (batchTicket) {
+    requestHeaders['X-PlaylistOut-Batch'] = batchTicket;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/playlist?${queryString}`, {
@@ -68,6 +72,11 @@ export async function parsePlaylist(
           kind: 'parse',
           trackCount: data.data?.trackCount ?? data.data?.tracks?.length,
         });
+      } else if (response.status === 429 && data.error) {
+        const retryAfter = response.headers.get('retry-after');
+        if (retryAfter) {
+          (data.error as any).retryAfter = parseInt(retryAfter, 10) || 5;
+        }
       }
       return data;
     }

@@ -39,6 +39,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     testTimeout: 15000,
+    pool: 'threads',
   },
   server: {
     host: '0.0.0.0',

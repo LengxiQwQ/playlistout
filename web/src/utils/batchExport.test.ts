@@ -80,4 +80,40 @@ describe('batchExport utilities', () => {
       expect(m3u8Res.filename).toContain('.zip');
     });
   });
+
+  describe('fetchMultiplePlaylists', () => {
+    it('passes batchTicket to parsePlaylist and collects successful playlists', async () => {
+      const { fetchMultiplePlaylists } = await import('./batchExport');
+      const client = await import('../api/client');
+
+      const parseSpy = vi.spyOn(client, 'parsePlaylist').mockResolvedValue({
+        success: true,
+        data: {
+          platform: 'qqmusic',
+          id: '101',
+          name: '民谣合集',
+          trackCount: 1,
+          tracks: [],
+        } as any,
+      });
+
+      const summaries = [
+        { id: '101', name: '民谣合集', trackCount: 1, sourceUrl: 'https://test.com/101' },
+      ];
+
+      const res = await fetchMultiplePlaylists(summaries, undefined, undefined, 'qqmusic', 'mock_batch_ticket_123');
+
+      expect(res.successfulPlaylists.length).toBe(1);
+      expect(res.failedCount).toBe(0);
+      expect(parseSpy).toHaveBeenCalledWith(
+        'https://test.com/101',
+        undefined,
+        'qqmusic',
+        undefined,
+        false,
+        undefined,
+        'mock_batch_ticket_123',
+      );
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { UserPlaylistsData, UserPlaylistSummary } from '../../api/types';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
@@ -33,9 +33,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
 }) => {
   const { t, format: formatString, language } = useTranslation();
 
-  // Selected playlist IDs
+  // Selected playlist IDs (capped at 50 for optimal batch stability)
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    userData.playlists.map((p) => p.id),
+    userData.playlists.slice(0, 50).map((p) => p.id),
   );
 
   // Selected batch format
@@ -56,13 +56,29 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
     }, 3000);
   };
 
+  // Cooldown countdown state (max 2 batch operations per minute)
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(() => userData.batchCooldownSeconds || 0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownSeconds]);
+
+  const isCooldownActive = cooldownSeconds > 0 && !userData.batchTicket;
+
   const totalTracks = userData.playlists.reduce((acc, p) => acc + p.trackCount, 0);
 
   const handleToggleSelectAll = () => {
     if (selectedIds.length === userData.playlists.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(userData.playlists.map((p) => p.id));
+      setSelectedIds(userData.playlists.slice(0, 50).map((p) => p.id));
+      if (userData.playlists.length > 50) {
+        showToast('为保障导出稳定性，已自动勾选前 50 个歌单');
+      }
     }
   };
 
@@ -83,10 +99,20 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
   };
 
   const handleStartBatchExport = async () => {
-    const targets = userData.playlists.filter((p) => selectedIds.includes(p.id));
+    if (isCooldownActive) {
+      showToast(`批量通道冷却中（1分钟内最多2次），请等待 ${cooldownSeconds} 秒后再试`);
+      return;
+    }
+
+    let targets = userData.playlists.filter((p) => selectedIds.includes(p.id));
     if (targets.length === 0) {
       showToast('请至少选择一个歌单');
       return;
+    }
+
+    if (targets.length > 50) {
+      showToast('单次最多支持批量导出 50 个歌单，已自动选取前 50 个');
+      targets = targets.slice(0, 50);
     }
 
     const controller = new AbortController();
@@ -100,6 +126,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
         (p) => setProgress(p),
         controller.signal,
         platform,
+        userData.batchTicket,
       );
 
       if (successfulPlaylists.length === 0) {
@@ -428,15 +455,22 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <MarkerButton
                   variant="ink"
                   onClick={handleStartBatchExport}
-                  disabled={selectedIds.length === 0}
+                  disabled={selectedIds.length === 0 || isCooldownActive}
                   style={{ padding: '0.65rem 1.5rem', fontSize: '1.05rem' }}
                 >
-                  {formatString(t.userPlaylists.batchExportBtn, { count: selectedIds.length })}
+                  {isCooldownActive
+                    ? `批量通道冷却中 (${cooldownSeconds}s)`
+                    : formatString(t.userPlaylists.batchExportBtn, { count: selectedIds.length })}
                 </MarkerButton>
+                {isCooldownActive && (
+                  <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 500 }}>
+                    ✦ 1分钟内最多支持2次批量操作，稍候即可自动恢复
+                  </span>
+                )}
               </div>
             )}
           </div>

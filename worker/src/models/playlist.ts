@@ -85,6 +85,8 @@ export interface UserPlaylistsData {
   nickname: string;
   total: number;
   playlists: UserPlaylistSummary[];
+  batchTicket?: string;
+  batchCooldownSeconds?: number;
 }
 
 export interface ResponseClientMetadata {

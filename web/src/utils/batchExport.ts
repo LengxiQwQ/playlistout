@@ -52,6 +52,7 @@ export async function fetchMultiplePlaylists(
   onProgress?: (progress: BatchFetchProgress) => void,
   signal?: AbortSignal,
   platform?: 'qqmusic' | 'netease' | 'kugou',
+  batchTicket?: string,
 ): Promise<{ successfulPlaylists: Playlist[]; failedCount: number }> {
   const successfulPlaylists: Playlist[] = [];
   let failedCount = 0;
@@ -88,7 +89,17 @@ export async function fetchMultiplePlaylists(
           : summary.id
           ? (platform === 'kugou' ? `https://m.kugou.com/songlist/?listid=${summary.id}` : summary.id)
           : summary.sourceUrl || summary.id;
-      const res = await parsePlaylist(targetUrl, signal, platform);
+      let res = await parsePlaylist(targetUrl, signal, platform, undefined, false, undefined, batchTicket);
+
+      // Self-healing retry if rate-limited
+      if (!res.success && res.error?.code === 'RATE_LIMITED' && !signal?.aborted) {
+        const retryAfterSec = Math.min(10, Math.max(1, (res.error as any).retryAfter || 5));
+        await new Promise((resolve) => setTimeout(resolve, retryAfterSec * 1000));
+        if (!signal?.aborted) {
+          res = await parsePlaylist(targetUrl, signal, platform, undefined, false, undefined, batchTicket);
+        }
+      }
+
       if (res.success && res.data) {
         successfulPlaylists.push(res.data);
       } else {
@@ -101,9 +112,10 @@ export async function fetchMultiplePlaylists(
       failedCount++;
     }
 
-    // Small courteous pause between items to prevent upstream congestion
+    // Courteous smooth pause between items to prevent upstream congestion (450ms + 0~50ms jitter)
     if (i < total - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      const jitter = Math.floor(Math.random() * 50);
+      await new Promise((resolve) => setTimeout(resolve, 450 + jitter));
     }
   }
 
