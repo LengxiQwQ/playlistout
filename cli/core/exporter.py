@@ -284,7 +284,8 @@ def perform_export(
     playlist: NormalizedPlaylist,
     output_dir: str = "output",
     formats: Optional[List[str]] = None,
-    reveal_folder_flag: bool = True
+    reveal_folder_flag: bool = True,
+    base_name: Optional[str] = None,
 ) -> List[str]:
     """统一执行导出，并以简洁一致的方式反馈结果"""
     if formats is None:
@@ -292,7 +293,7 @@ def perform_export(
     if not formats:
         return []
 
-    safe_title = sanitize_filename(playlist.name) or "playlist"
+    safe_title = sanitize_filename(base_name) if base_name else (sanitize_filename(playlist.name) or "playlist")
     os.makedirs(output_dir, exist_ok=True)
     labels = {"xlsx": "Excel", "json": "JSON", "csv": "CSV", "txt": "TXT", "m3u8": "M3U8"}
 

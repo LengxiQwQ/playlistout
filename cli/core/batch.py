@@ -1,0 +1,317 @@
+# -*- coding: utf-8 -*-
+"""
+PlaylistOut Unified Batch Playlist Export Flow
+==============================================
+Standardized user playlist selection, preprocessing, collision-safe naming,
+batch progress tracking, and structured result aggregation across all adapters.
+"""
+
+import os
+import re
+from dataclasses import dataclass, field
+from typing import List, Optional, Set, Any
+
+from .models import NormalizedPlaylist, NormalizedUserPlaylists, UserPlaylistSummary
+from .ui import (
+    sanitize_filename,
+    print_format_menu,
+    resolve_export_formats,
+    reveal_folder,
+    print_divider,
+)
+from .exporter import perform_export
+
+
+@dataclass
+class BatchFailure:
+    """Details of a single failed playlist in a batch operation."""
+    playlist_id: str
+    playlist_name: str
+    error: str
+
+
+@dataclass
+class BatchResult:
+    """Structured summary of a batch export operation."""
+    total: int
+    success: int
+    failed: int
+    exported_files: List[str] = field(default_factory=list)
+    failures: List[BatchFailure] = field(default_factory=list)
+
+
+def parse_playlist_selection(choice_str: str, max_items: int) -> List[int]:
+    """
+    解析用户选择的歌单序号字符串。
+    支持：
+    - 'all' / '全部': 所有歌单 (1 到 max_items)
+    - 单选: '3' -> [3]
+    - 多选 (逗号分隔，中英文逗号皆可): '1, 3, 5' -> [1, 3, 5]
+    - 连续范围: '1-3' -> [1, 2, 3], '2-4, 7' -> [2, 3, 4, 7]
+    - '0' 或空: [] (表示取消/返回)
+    返回去重且升序排序的 1-indexed 序号列表。
+    """
+    raw = str(choice_str or "").strip()
+    if not raw or raw in ("0", "q", "quit", "exit"):
+        return []
+
+    if raw.lower() in ("all", "全部", "*"):
+        return list(range(1, max_items + 1))
+
+    # 标准化分隔符（中英文逗号、分号、空格）
+    normalized = raw.replace("，", ",").replace("；", ",").replace(";", ",")
+    tokens = [t.strip() for t in re.split(r"[\s,]+", normalized) if t.strip()]
+
+    selected: Set[int] = set()
+    for tok in tokens:
+        # 检查是否为范围格式，如 1-5 或 1~5
+        range_match = re.match(r"^(\d+)\s*[-~至]\s*(\d+)$", tok)
+        if range_match:
+            start, end = int(range_match.group(1)), int(range_match.group(2))
+            if start > end:
+                start, end = end, start
+            for idx in range(start, end + 1):
+                if 1 <= idx <= max_items:
+                    selected.add(idx)
+        elif tok.isdigit():
+            idx = int(tok)
+            if 1 <= idx <= max_items:
+                selected.add(idx)
+
+    return sorted(list(selected))
+
+
+def resolve_collision_safe_base_name(
+    name: str,
+    playlist_id: str,
+    existing_names: Set[str],
+    output_dir: str,
+    formats: Optional[List[str]] = None,
+) -> str:
+    """
+    计算碰撞安全的文件基准名。
+    原则：
+    - 正常情况下保持干净的歌单名：'歌单名'
+    - 当同批次存在同名歌单，或目标目录下已存在同名文件时，追加稳定标识：'歌单名 [ID]'
+    - 绝不允许静默覆盖不同歌单。
+    """
+    safe_title = sanitize_filename(name) or f"playlist_{playlist_id}"
+    formats = formats or ["xlsx", "json", "csv", "txt", "m3u8"]
+
+    # 检查是否与本批次已使用的文件名冲突
+    collides_with_batch = safe_title in existing_names
+
+    # 检查目标磁盘目录下是否已存在对应格式的文件
+    collides_on_disk = False
+    if os.path.exists(output_dir):
+        for fmt in formats:
+            check_file = os.path.join(output_dir, f"{safe_title}.{fmt}")
+            if os.path.exists(check_file):
+                collides_on_disk = True
+                break
+
+    if collides_with_batch or collides_on_disk:
+        candidate = f"{safe_title} [{playlist_id}]"
+        # 兜底：若候选名依然已被占用，添加自增编号
+        if candidate in existing_names:
+            counter = 2
+            while f"{candidate}_{counter}" in existing_names:
+                counter += 1
+            candidate = f"{candidate}_{counter}"
+    else:
+        candidate = safe_title
+
+    existing_names.add(candidate)
+    return candidate
+
+
+def preprocess_playlist(playlist: NormalizedPlaylist) -> int:
+    """
+    统一歌单数据预处理管道。
+    对齐单歌单导出与批量导出的 duplicate 标记与元数据校验，
+    无论单歌单还是批量导出均执行完全一致的处理。
+    """
+    return playlist.mark_duplicates()
+
+
+def print_user_playlists_menu(user_playlists: NormalizedUserPlaylists) -> None:
+    """打印用户公开歌单列表（支持区分自建与收藏歌单）"""
+    pls = user_playlists.playlists
+    created_pls = user_playlists.created_playlists
+    sub_pls = user_playlists.subscribed_playlists
+
+    print(f"\n✓ 找到用户 {user_playlists.nickname} 的 {len(pls)} 个公开歌单")
+    if sub_pls:
+        print(f"  自建歌单（{len(created_pls)} 个）：")
+        for idx, p in enumerate(created_pls, 1):
+            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+        print(f"  收藏歌单（{len(sub_pls)} 个）：")
+        for idx, p in enumerate(sub_pls, len(created_pls) + 1):
+            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+    else:
+        for idx, p in enumerate(pls, 1):
+            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
+            print(f"  {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+
+
+def run_batch_flow(
+    adapter: Any,
+    user_playlists: NormalizedUserPlaylists,
+    output_dir: str = "output",
+    formats: Optional[List[str]] = None,
+    interactive: bool = False,
+    reveal_folder_flag: bool = True,
+    selection_input: Optional[str] = None,
+    **fetch_options
+) -> BatchResult:
+    """
+    统一批量导出调度入口。
+    QQ 音乐、网易云音乐、酷狗音乐等所有平台共用此流程。
+    """
+    if not user_playlists or not user_playlists.playlists:
+        return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+
+    all_pls = user_playlists.playlists
+    target_pls: List[UserPlaylistSummary] = []
+
+    # ─────────────────────────────────────────────────────────────
+    # 步骤 1：确定要导出的歌单子集
+    # ─────────────────────────────────────────────────────────────
+    if interactive:
+        print_user_playlists_menu(user_playlists)
+        sel_prompt = (
+            "\n> 选择要导出的歌单序号（all 导出自建歌单，可多选如 1,3,5 或 1-3，0 返回）："
+        )
+        sel_str = input(sel_prompt).strip()
+        if not sel_str or sel_str in ("0", "q", "quit", "exit"):
+            return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+        print_divider()
+
+        if sel_str.lower() in ("all", "全部"):
+            target_pls = user_playlists.created_playlists or all_pls
+        else:
+            indices = parse_playlist_selection(sel_str, len(all_pls))
+            if not indices:
+                print("! 未选择有效歌单。")
+                return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+            target_pls = [all_pls[i - 1] for i in indices]
+
+        # 交互模式确认格式
+        print_format_menu()
+        fmt_choice = input("> 选择格式，可多选，例如 (1, 2)：").strip()
+        print_divider()
+        formats = resolve_export_formats(fmt_choice)
+        if not formats:
+            print("已返回，不导出。")
+            return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+    else:
+        # 非交互 (Headless) 模式：严格使用传入参数，不发起任何 input()
+        if selection_input:
+            if selection_input.lower() in ("all", "全部"):
+                target_pls = user_playlists.created_playlists or all_pls
+            else:
+                indices = parse_playlist_selection(selection_input, len(all_pls))
+                target_pls = [all_pls[i - 1] for i in indices] if indices else (user_playlists.created_playlists or all_pls)
+        else:
+            # 默认导出用户创建的全部歌单（若无自建则全量）
+            target_pls = user_playlists.created_playlists or all_pls
+
+        if formats is None:
+            formats = ["xlsx", "json", "csv", "txt", "m3u8"]
+
+    if not target_pls:
+        print("! 没有可导出的歌单。")
+        return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+
+    # ─────────────────────────────────────────────────────────────
+    # 步骤 2：批量执行抓取、预处理与碰撞安全导出
+    # ─────────────────────────────────────────────────────────────
+    target_dir = os.path.join(output_dir, str(user_playlists.user_id))
+    os.makedirs(target_dir, exist_ok=True)
+
+    print(f"\n→ 开始批量导出 {len(target_pls)} 个歌单...")
+    exported_files: List[str] = []
+    failures: List[BatchFailure] = []
+    used_base_names: Set[str] = set()
+
+    for idx, pl_item in enumerate(target_pls, 1):
+        print(f"\n  [{idx}/{len(target_pls)}] {pl_item.name} (ID: {pl_item.id})")
+        try:
+            norm_pl = adapter.fetch_playlist(pl_item.id, **fetch_options)
+            if not norm_pl or not norm_pl.tracks:
+                failures.append(
+                    BatchFailure(
+                        playlist_id=pl_item.id,
+                        playlist_name=pl_item.name,
+                        error="无法读取歌单或歌单歌曲为空",
+                    )
+                )
+                print("  × 无法读取这个歌单或歌单为空，已跳过")
+                continue
+
+            # 统一预处理：mark_duplicates 与元数据标准化
+            preprocess_playlist(norm_pl)
+
+            # 计算防碰撞文件名
+            base_name = resolve_collision_safe_base_name(
+                norm_pl.name,
+                norm_pl.id,
+                used_base_names,
+                target_dir,
+                formats,
+            )
+
+            # 执行多格式安全导出
+            files = perform_export(
+                norm_pl,
+                output_dir=target_dir,
+                formats=formats,
+                reveal_folder_flag=False,
+                base_name=base_name,
+            )
+            if files:
+                exported_files.extend(files)
+            else:
+                failures.append(
+                    BatchFailure(
+                        playlist_id=pl_item.id,
+                        playlist_name=pl_item.name,
+                        error="所有格式导出均失败",
+                    )
+                )
+        except Exception as e:
+            failures.append(
+                BatchFailure(
+                    playlist_id=pl_item.id,
+                    playlist_name=pl_item.name,
+                    error=str(e),
+                )
+            )
+            print(f"  × 处理出错：{e}")
+
+    # ─────────────────────────────────────────────────────────────
+    # 步骤 3：汇系统计与反馈
+    # ─────────────────────────────────────────────────────────────
+    success_count = len(target_pls) - len(failures)
+    failed_count = len(failures)
+
+    print(f"\n✓ 批量导出完成：成功 {success_count}/{len(target_pls)} 个歌单")
+    if failures:
+        print(f"  ! 共有 {failed_count} 个歌单导出失败：")
+        for f in failures:
+            print(f"    - {f.playlist_name} [ID: {f.playlist_id}]: {f.error}")
+
+    print(f"  保存到：{os.path.abspath(target_dir)}")
+
+    if success_count > 0 and reveal_folder_flag:
+        reveal_folder(target_dir)
+
+    return BatchResult(
+        total=len(target_pls),
+        success=success_count,
+        failed=failed_count,
+        exported_files=exported_files,
+        failures=failures,
+    )

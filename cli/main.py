@@ -39,12 +39,13 @@ from cli.core.ui import (
 )
 from cli.core.detector import SmartDetector, PlatformType, TargetKind, DetectedTarget
 from cli.core.exporter import perform_export
+from cli.core.batch import run_batch_flow, preprocess_playlist
 from cli.platforms.registry import PlatformRegistry
 
 
 def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_formats: list, reveal_folder: bool, interactive: bool):
     """展示简洁歌单摘要并执行导出"""
-    dup_count = playlist.mark_duplicates()
+    dup_count = preprocess_playlist(playlist)
     tracks = playlist.tracks
     unavail = sum(1 for t in tracks if not t.is_available)
     vip_cnt = sum(1 for t in tracks if t.is_vip)
@@ -189,7 +190,7 @@ def main():
 
         target_text = target.value
 
-        # Phase 2: 用户模式统一分发
+        # Phase 3: 统一用户模式批量导出
         if target.kind == TargetKind.USER:
             if not adapter.supports_user_playlists:
                 print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
@@ -206,33 +207,19 @@ def main():
                 print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或登录凭证是否有效。", file=sys.stderr)
                 sys.exit(1)
 
-            # Headless 模式默认导出用户自建歌单（或全部歌单）
-            target_pls = user_playlists.created_playlists or user_playlists.playlists
-            print(f"✓ 找到用户 {user_playlists.nickname} 的 {len(target_pls)} 个歌单")
-            target_dir = os.path.join(output_dir, str(user_playlists.user_id))
-            os.makedirs(target_dir, exist_ok=True)
-            exported = 0
-            for idx, pl_item in enumerate(target_pls, 1):
-                print(f"  [{idx}/{len(target_pls)}] {pl_item.name}")
-                norm_pl = adapter.fetch_playlist(pl_item.id, token=args.token, userid=args.userid)
-                if norm_pl and norm_pl.tracks:
-                    norm_pl.mark_duplicates()
-                    files = perform_export(
-                        norm_pl,
-                        output_dir=target_dir,
-                        formats=formats,
-                        reveal_folder_flag=False,
-                    )
-                    if files:
-                        exported += 1
-            if exported == 0:
+            batch_res = run_batch_flow(
+                adapter=adapter,
+                user_playlists=user_playlists,
+                output_dir=output_dir,
+                formats=formats,
+                interactive=False,
+                reveal_folder_flag=reveal_folder,
+                token=args.token,
+                userid=args.userid,
+            )
+            if batch_res.success == 0:
                 print("× 未能成功导出任何歌单。", file=sys.stderr)
                 sys.exit(1)
-            print(f"\n✓ 批量导出完成：成功 {exported}/{len(target_pls)} 个歌单")
-            print(f"  保存到：{os.path.abspath(target_dir)}")
-            if reveal_folder:
-                from .core.ui import reveal_folder as rf
-                rf(target_dir)
             return
 
         print(f"✓ 已识别：{adapter.display_name}")
@@ -381,73 +368,16 @@ def main():
                         print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。")
                         continue
 
-                    pls = user_pls.playlists
-                    created_pls = user_pls.created_playlists
-                    sub_pls = user_pls.subscribed_playlists
-
-                    print(f"\n✓ 找到用户 {user_pls.nickname} 的 {len(pls)} 个公开歌单")
-                    if sub_pls:
-                        print(f"  自建歌单（{len(created_pls)} 个）：")
-                        for idx, p in enumerate(created_pls, 1):
-                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
-                        print(f"  收藏歌单（{len(sub_pls)} 个）：")
-                        for idx, p in enumerate(sub_pls, len(created_pls) + 1):
-                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
-                    else:
-                        for idx, p in enumerate(pls, 1):
-                            cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-                            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
-
-                    sel = input("\n> 选择要导出的歌单序号（all 导出全部自建歌单，0 返回）：").strip()
-                    if not sel or sel in ("0", "q", "quit", "exit"):
-                        continue
-                    print_divider()
-
-                    to_export = []
-                    if sel.lower() == "all":
-                        to_export = created_pls or pls
-                    elif sel.isdigit() and 1 <= int(sel) <= len(pls):
-                        to_export = [pls[int(sel) - 1]]
-
-                    if not to_export:
-                        print("! 未选择有效歌单。")
-                        continue
-
-                    print_format_menu()
-                    fmt_input = input("> 选择格式，可多选，例如 (1, 2)：").strip()
-                    print_divider()
-                    active_formats = resolve_export_formats(fmt_input)
-                    if not active_formats:
-                        print("已返回，不导出。")
-                        continue
-
-                    target_dir = os.path.join(output_dir, str(user_pls.user_id))
-                    os.makedirs(target_dir, exist_ok=True)
-                    exported = 0
-                    print(f"\n→ 开始导出 {len(to_export)} 个歌单...")
-                    for idx, pl_item in enumerate(to_export, 1):
-                        print(f"\n  [{idx}/{len(to_export)}] {pl_item.name}")
-                        norm_pl = target_adapter.fetch_playlist(pl_item.id, token=args.token, userid=args.userid)
-                        if not norm_pl or not norm_pl.tracks:
-                            print("  × 无法读取这个歌单，已跳过")
-                            continue
-                        norm_pl.mark_duplicates()
-                        files = perform_export(
-                            norm_pl,
-                            output_dir=target_dir,
-                            formats=active_formats,
-                            reveal_folder_flag=False,
-                        )
-                        if files:
-                            exported += 1
-
-                    print(f"\n✓ 批量导出完成：成功 {exported}/{len(to_export)} 个歌单")
-                    print(f"  保存到：{os.path.abspath(target_dir)}")
-                    if exported and reveal_folder:
-                        from .core.ui import reveal_folder as rf
-                        rf(target_dir)
+                    run_batch_flow(
+                        adapter=target_adapter,
+                        user_playlists=user_pls,
+                        output_dir=output_dir,
+                        formats=None,
+                        interactive=True,
+                        reveal_folder_flag=reveal_folder,
+                        token=args.token,
+                        userid=args.userid,
+                    )
                     continue
 
                 print("→ 正在获取歌单...")

@@ -12,4 +12,12 @@ from .models import (
     UserPlaylistSummary,
     NormalizedUserPlaylists,
 )
+from .batch import (
+    BatchResult,
+    BatchFailure,
+    run_batch_flow,
+    parse_playlist_selection,
+    resolve_collision_safe_base_name,
+    preprocess_playlist,
+)
 

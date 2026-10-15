@@ -177,7 +177,7 @@ def test_cli_user_mode_qqmusic_end_to_end(tmp_path):
     qq_adapter = PlatformRegistry.get("qqmusic")
     with patch.object(qq_adapter, "fetch_user_playlists", return_value=mock_user_pls) as mock_fetch_user, \
          patch.object(qq_adapter, "fetch_playlist", return_value=mock_pl_obj) as mock_fetch_pl, \
-         patch("cli.main.perform_export", return_value=["dummy.json"]) as mock_export:
+         patch("cli.core.batch.perform_export", return_value=["dummy.json"]) as mock_export:
 
         test_args = [
             "main.py",
