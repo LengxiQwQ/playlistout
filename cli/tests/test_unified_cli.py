@@ -191,3 +191,25 @@ def test_export_format_selection_semantics():
     assert resolve_export_formats("3") == ["csv"]
     assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
     assert resolve_export_formats("0") == []
+
+
+def test_home_banner_and_menu_copy(capsys):
+    from cli.core.ui import print_banner, print_main_menu
+
+    print_banner()
+    print_main_menu([
+        {"name": "网易云音乐", "desc": "歌单链接 / 短链 / ID / 用户歌单"},
+        {"name": "QQ 音乐", "desc": "歌单链接 / 短链 / ID / QQ号"},
+    ])
+
+    out = capsys.readouterr().out
+    assert "Playlist Out CLI - 把你的歌单带走" in out
+    assert "你的歌单，不应该只困在一个音乐平台里。" in out
+    assert "解析、导出，并把歌单继续带进支持的开源播放器。" in out
+    assert "作者：LengxiQwQ" in out
+    assert "GitHub 开源仓库" in out
+    assert "在线网页版" in out
+    assert "直接粘贴链接或分享文案即可自动识别平台。" in out
+    assert "只有歌单 ID？先输入平台编号。" in out
+    assert "当前已接入平台" not in out
+    assert "使用方式：" not in out

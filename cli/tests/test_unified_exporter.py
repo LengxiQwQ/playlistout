@@ -179,11 +179,11 @@ def test_perform_export_all_formats(tmp_path, sample_playlist):
 
 
 def test_resolve_export_formats_parsing():
-    assert resolve_export_formats("0") == ["xlsx", "csv", "json", "txt", "m3u8"]
-    assert resolve_export_formats("") == ["xlsx", "csv", "json", "txt", "m3u8"]
-    assert resolve_export_formats("all") == ["xlsx", "csv", "json", "txt", "m3u8"]
+    assert resolve_export_formats("0") == []
+    assert resolve_export_formats("") == ["xlsx", "json", "csv", "txt", "m3u8"]
+    assert resolve_export_formats("all") == ["xlsx", "json", "csv", "txt", "m3u8"]
     assert resolve_export_formats("1") == ["xlsx"]
-    assert resolve_export_formats("1, 2") == ["xlsx", "csv"]
-    assert resolve_export_formats("1 2") == ["xlsx", "csv"]
+    assert resolve_export_formats("1, 2") == ["xlsx", "json"]
+    assert resolve_export_formats("1 2") == ["xlsx", "json"]
     assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
     assert resolve_export_formats("csv m3u8") == ["csv", "m3u8"]

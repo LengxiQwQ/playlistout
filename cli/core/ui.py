@@ -33,35 +33,49 @@ def sanitize_filename(name: str) -> str:
     return cleaned or "playlist"
 
 
+def _terminal_display_width(text: str) -> int:
+    """计算终端显示宽度，保证中英文混排的平台名称视觉对齐。"""
+    import unicodedata
+    return sum(2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1 for ch in str(text))
+
+
+def _pad_terminal_text(text: str, width: int) -> str:
+    """按终端显示宽度补空格。"""
+    text = str(text)
+    return text + " " * max(0, width - _terminal_display_width(text))
+
+
 def print_banner(platform_name: str = None):
-    """统一线框引导 UI - 头部 Banner"""
-    author_link = terminal_link(AUTHOR_URL, f"作者: {AUTHOR_NAME}")
+    """统一 CLI 品牌头部。"""
+    author_link = terminal_link(AUTHOR_URL, f"作者：{AUTHOR_NAME}")
     repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
     web_link = terminal_link(WEB_URL, "在线网页版")
-    
-    if platform_name:
-        title = f"Playlist Out - {platform_name} 歌单导出工具"
-    else:
-        title = "Playlist Out - 全平台音乐歌单导出工具"
 
-    print("=" * 64)
-    print(f"           {title}")
+    if platform_name:
+        title = f"Playlist Out CLI - {platform_name} 歌单导出工具"
+    else:
+        title = "Playlist Out CLI - 把你的歌单带走"
+
+    print(title)
     print("")
-    print(f"  {author_link} · {repo_link} · {web_link}")
+    print("你的歌单，不应该只困在一个音乐平台里。")
+    print("解析、导出，并把歌单继续带进支持的开源播放器。")
     print("")
-    print("  核心特性: 本地运行 · 本地导出 · 不上传 Playlist Out 服务器 · 全格式备份导出")
-    print("=" * 64)
+    print(f"{author_link} · {repo_link} · {web_link}")
+    print("")
+    print("─" * 64)
+    print("")
 
 
 def print_main_menu(platforms: list):
-    """主菜单界面：只展示用户需要知道的平台能力与使用方式"""
-    print("\n当前已接入平台：")
+    """主菜单界面：平台入口 + 最简使用提示。"""
     for idx, p in enumerate(platforms, 1):
-        print(f"  {idx}  {p['name']}  ·  {p['desc']}")
-    print("\n使用方式：")
-    print("  直接粘贴歌单链接、短链或分享文案，会自动识别平台。")
-    print("  只有歌单 ID 时，可以先输入平台编号。")
-    print("  输入 0 或 q 退出。\n")
+        name = _pad_terminal_text(p["name"], 12)
+        print(f"  {idx}  {name}{p['desc']}")
+    print("")
+    print("直接粘贴链接或分享文案即可自动识别平台。")
+    print("只有歌单 ID？先输入平台编号。")
+    print("")
 
 
 def print_format_menu():

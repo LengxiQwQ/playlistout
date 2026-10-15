@@ -49,12 +49,12 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     vip_cnt = sum(1 for t in tracks if t.is_vip)
 
     print("\n✓ 获取成功\n")
-    print(f"  歌单  {playlist.name}")
-    print(f"  作者  {playlist.creator or '未知'}")
+    print(f"  歌单：{playlist.name}")
+    print(f"  作者：{playlist.creator or '未知'}")
     expected_count = playlist.track_count if playlist.track_count and playlist.track_count > len(tracks) else len(tracks)
-    print(f"  歌曲  {len(tracks)} / {expected_count} 首" if expected_count > len(tracks) else f"  歌曲  {len(tracks)} 首")
+    print(f"  歌曲：{len(tracks)} / {expected_count} 首" if expected_count > len(tracks) else f"  歌曲：{len(tracks)} 首")
     if playlist.formatted_duration:
-        print(f"  时长  {playlist.formatted_duration}")
+        print(f"  时长：{playlist.formatted_duration}")
 
     status_parts = []
     if vip_cnt:
@@ -63,7 +63,7 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
         status_parts.append(f"无版权/下架 {unavail}")
     if dup_count:
         status_parts.append(f"重复 {dup_count}")
-    print(f"  状态  {' · '.join(status_parts) if status_parts else '全部正常'}")
+    print(f"  状态：{' · '.join(status_parts) if status_parts else '全部正常'}")
 
     formats = default_formats
     if interactive:
