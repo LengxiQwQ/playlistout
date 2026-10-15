@@ -21,7 +21,7 @@ from cli.qishui.qishui_playlist_export import (
 class QishuiAdapter(BasePlatformAdapter):
     platform_id = "qishui"
     display_name = "汽水音乐"
-    description = "歌单链接 / 分享文案 / ID"
+    description = "歌单链接 / 抖音分享文案 / 歌单 ID"
     aliases = ["qishui", "qs", "douyin", "dy"]
     supports_playlist = True
     supports_user_playlists = False

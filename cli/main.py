@@ -342,7 +342,18 @@ def main():
             if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
                 selected_adapter = adapters_list[int(user_input) - 1]
                 print(f"✓ 已选择：{selected_adapter.display_name}")
-                hint = "粘贴歌单链接、短链或输入 ID / QQ号 / UID（0 返回）：" if selected_adapter.supports_user_playlists else "粘贴歌单链接、短链或输入歌单 ID（0 返回）："
+                if selected_adapter.platform_id == "qqmusic":
+                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 QQ号（输入 0 返回）："
+                elif selected_adapter.platform_id == "netease":
+                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
+                elif selected_adapter.platform_id == "kugou":
+                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 login 扫码登录，输入 0 返回）："
+                elif selected_adapter.platform_id == "kuwo":
+                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
+                elif selected_adapter.platform_id == "qishui":
+                    hint = "粘贴歌单链接、抖音分享文案，或输入歌单 ID（输入 0 返回）："
+                else:
+                    hint = "粘贴歌单链接或输入歌单 ID（输入 0 返回）："
                 sub_input = input(f"> {hint}").strip()
                 if not sub_input:
                     continue
@@ -357,13 +368,14 @@ def main():
                 platform=target_adapter.platform_id if target_adapter else None,
                 resolve_redirect=True
             )
-            # 交互模式纯数字消歧：如果输入是纯数字且无显式标签前缀，且目标平台支持用户歌单，主动询问是歌单还是用户/QQ号/UID
+            # 交互模式纯数字消歧：仅当目标平台支持免登用户歌单查询 (QQ 音乐 QQ号 / 网易云 UID) 时，才询问是歌单 ID 还是用户标识
             is_pure_digit = bool(re.fullmatch(r'\d+', extract_clean_url_or_input(target_query)))
             has_explicit_tag = bool(re.search(r'(?:qq|uin|uid|账号|用户|歌单|playlist)[:：\s]*\d+', target_query, re.I))
+            supports_public_user_query = bool(target_adapter and target_adapter.platform_id in ("qqmusic", "netease"))
 
-            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS or (is_pure_digit and not has_explicit_tag and target_adapter and target_adapter.supports_user_playlists):
+            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS or (is_pure_digit and not has_explicit_tag and supports_public_user_query):
                 if not target_adapter:
-                    print(f"! 检测到纯数字 ID：{target_query}")
+                    print(f"! 检测到纯数字：{target_query}")
                     print("  请选择它所属的平台：")
                     for idx, a in enumerate(adapters_list, 1):
                         print(f"  {idx}  {a.display_name}")
@@ -378,10 +390,13 @@ def main():
                     target_adapter = adapters_list[int(p_sel) - 1]
                     print(f"✓ 已选择：{target_adapter.display_name}")
 
-                if target_adapter and target_adapter.supports_user_playlists:
-                    print("  这是：")
+                if target_adapter and target_adapter.platform_id in ("qqmusic", "netease"):
+                    print("  检测到纯数字，请确认类型：")
                     print("  [1] 歌单 ID (默认)")
-                    print("  [2] 用户 / QQ号 / UID")
+                    if target_adapter.platform_id == "qqmusic":
+                        print("  [2] 用户 QQ号 (一键导出该用户全部公开歌单)")
+                    else:
+                        print("  [2] 用户 UID (一键导出该用户全部自建/公开歌单)")
                     k_sel = input("> 选择类型 [1/2]：").strip()
                     if k_sel == "2":
                         target = DetectedTarget(

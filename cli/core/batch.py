@@ -187,9 +187,10 @@ def run_batch_flow(
     # ─────────────────────────────────────────────────────────────
     if interactive:
         print_user_playlists_menu(user_playlists)
-        sel_prompt = (
-            "\n> 选择要导出的歌单序号（all 导出自建歌单，可多选如 1,3,5 或 1-3，0 返回）："
-        )
+        if user_playlists.subscribed_playlists:
+            sel_prompt = "\n> 选择要导出的歌单序号（输入 all 导出全部自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
+        else:
+            sel_prompt = "\n> 选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）："
         sel_str = input(sel_prompt).strip()
         if not sel_str or sel_str in ("0", "q", "quit", "exit"):
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])

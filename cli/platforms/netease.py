@@ -30,7 +30,7 @@ from cli.netease.netease_playlist_export import (
 class NetEaseAdapter(BasePlatformAdapter):
     platform_id = "netease"
     display_name = "网易云音乐"
-    description = "歌单链接 / 短链 / ID / 用户歌单"
+    description = "歌单链接 / 分享短链 / 歌单 ID / 用户 UID"
     aliases = ["163", "netease", "wyy", "cloudmusic"]
     supports_playlist = True
     supports_user_playlists = True

@@ -21,7 +21,7 @@ from cli.kuwo.kuwo_playlist_export import (
 class KuwoAdapter(BasePlatformAdapter):
     platform_id = "kuwo"
     display_name = "酷我音乐"
-    description = "歌单链接 / 短链 / ID"
+    description = "歌单链接 / 分享短链 / 歌单 ID"
     aliases = ["kuwo", "kw"]
     supports_playlist = True
     supports_user_playlists = False

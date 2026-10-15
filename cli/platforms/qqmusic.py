@@ -32,7 +32,7 @@ from cli.qqmusic.qq_music_playlist_export import (
 class QQMusicAdapter(BasePlatformAdapter):
     platform_id = "qqmusic"
     display_name = "QQ 音乐"
-    description = "歌单链接 / 短链 / ID / QQ号"
+    description = "歌单链接 / 分享短链 / 歌单 ID / 用户 QQ号"
     aliases = ["qq", "qq-music", "tx", "tencent"]
     supports_playlist = True
     supports_user_playlists = True
