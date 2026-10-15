@@ -70,7 +70,7 @@ function build() {
     const subscriptionPath = resolveDistArtifact(subscriptionArtifact);
     const entryUrl = `${publicBaseUrl}/${entryArtifact.publicPath}`;
     const descriptor = {
-      desc: `把你的歌单带走 官方 ${config.displayName} 歌单导入与原版音源桥接插件订阅源`,
+      desc: `把你的歌单带走 官方 ${config.displayName} 歌单解析与导入插件订阅源`,
       plugins: [
         {
           name: '把你的歌单带走',

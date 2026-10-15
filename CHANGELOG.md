@@ -6,6 +6,13 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **MusicFree plugin v2.0.0 — pure playlist parser with native platform routing & strict auto-rescue / 纯歌单解析 + 原生音源路由与严格自动兜底**:
+  - 插件回归单一职责：只解析歌单，不再内置、不硬编码任何音源直链；解析出的曲目一律按原曲自然平台归属（qq / netease / kugou / kuwo / qishui / migu / bilibili）并注入 `_originPlatform` 与原生取链字段，播放与歌词交由设备上已安装的原生插件完成。
+  - 新增 `platform` 访问器保护：拦截 MusicFree 三端宿主导入后 `resetMediaItem(item, plugin.name)` 的品牌名覆写，曲目平台归属在 JSON/IPC 持久化后依然保持原生平台。
+  - 桌面稳定版新增自动兜底换源：拦截宿主插件调用通道 `@shared/plugin-manager/call-plugin-method`，在原平台插件缺失或取源/取词失败时按「原平台 → 主流平台 → 其余已安装插件」严格匹配原曲（歌名归一化相等 + 版本标签一致 + 歌手精确相等 + 时长偏差 ≤ 12 秒）后自动换源续播；匹配不到则跳过并提示，宁可跳过绝不播放错歌；匹配与失败均带缓存，音质切换复用结果。
+  - 移除全部内置音源通道、同级插件文件加载器、文件热补丁、「相似音源」宽松匹配与「音源通道 / 换源策略」设置项；插件设置仅保留酷狗 Token 凭据。
+  - 测试套件同步重构为 39 项（原生路由、跨端一致性、防覆写、严格匹配、兜底换源/换词、零内置音源断言、Hermes 语法完整性）。
+
 - **Architecture Evolution (P0–P3 Full Milestone Completion / 架构演进全量大版本重构)**:
   - **P0 基础设施补全与模块化路由**: Worker 引入轻量高性能的 Hono 路由框架，将 700+ 行单体 `index.ts` 瘦身为纯入口适配器（7 行），解耦为 11 个单一职责路由与独立中间件（CORS 分权、安全头、速率限制），严密保持 HTTP 405 Method Not Allowed 语义；建立 `worker/src/providers/platforms.ts` 作为平台类型单一事实来源；强化 `MusicProvider` 自描述接口契约。
   - **P1 Provider 注册中枢与 Service 解耦**: 建立 `ProviderRegistry` 注册中枢，将 5 大平台（QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐）全面迁移至自描述 `MusicProvider` 契约；三大核心 Service（`resolve-service.ts`、`playlist-service.ts`、`user-service.ts`）消除硬编码 if-else 瀑布，行数暴降 70%+，转为能力开关与注册表驱动；上线 `GET /api/v1/providers` 与 `GET /api/providers` 自描述元数据端点。

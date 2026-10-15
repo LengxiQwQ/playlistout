@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner
+ * MusicFree PlaylistOut Plugin Test Runner (v2.0.0)
  * 
  * Simulates MusicFree host runtime to validate:
- * 1. Contract & metadata specification (v1.2.0, userVariables, hints)
+ * 1. Contract & metadata specification (userVariables, hints)
  * 2. Current UI/import guidance contract
- * 3. Local JSON file path import & native platform bridge dispatching (netease, 20, WebFilter, kuwo, qishui, bilibili, migu)
- * 4. UserVariables configuration override (auto vs forced platform)
- * 5. Interception & friendly guidance when pasting direct JSON strings
- * 6. Live online NetEase playlist resolution (end-to-end API test with native netease dispatch)
- * 7. getMediaSource pure placeholder contract (instant null return, zero network overhead)
- * 8. Exception & invalid input fault tolerance
+ * 3. Local JSON file path import & native platform routing (netease, qq, kugou, kuwo, qishui, bilibili, migu)
+ * 4. userVariables configuration (KuGou Token credentials only)
+ * 5. Direct JSON string / large-sheet import support
+ * 6. Live online NetEase playlist resolution (end-to-end API test, optional RUN_E2E=1)
+ * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
+ * 8. Exception & invalid input fault tolerance, Hermes syntax integrity, zero embedded sources
  */
 
 const assert = require('assert');
@@ -78,10 +78,14 @@ async function runAllTests() {
       'description must provide clickable markdown link to website'
     );
     assert(Array.isArray(plugin.hints?.importMusicSheet), 'hints.importMusicSheet must be an array');
-    assert.strictEqual(plugin.hints.importMusicSheet.length, 4, 'hints must provide 4 concise lines');
+    assert.strictEqual(plugin.hints.importMusicSheet.length, 5, 'hints must provide 5 concise lines');
     assert(
       plugin.hints.importMusicSheet[0].includes('【支持平台】'),
       'first hint must list supported platforms'
+    );
+    assert(
+      plugin.hints.importMusicSheet.some((h) => h.includes('【播放说明】')),
+      'hints must explain playback depends on installed source plugins'
     );
     assert(
       plugin.hints.importMusicSheet.some((h) => h.includes('【酷狗限制】')),
@@ -96,21 +100,10 @@ async function runAllTests() {
       'hints must include official website'
     );
     assert(Array.isArray(plugin.userVariables), 'userVariables must be an array');
-    assert(
-      plugin.userVariables.some((v) => v.key === 'targetPlatform'),
-      'userVariables must include targetPlatform option'
-    );
-    assert(
-      plugin.userVariables.some((v) => v.key === 'fallbackMode'),
-      'userVariables must include fallbackMode option'
-    );
-    assert(
-      plugin.userVariables.some((v) => v.key === 'kugouToken'),
-      'userVariables must include kugouToken option'
-    );
-    assert(
-      plugin.userVariables.some((v) => v.key === 'kugouUserid'),
-      'userVariables must include kugouUserid option'
+    assert.deepStrictEqual(
+      plugin.userVariables.map((v) => v.key),
+      ['kugouToken', 'kugouUserid'],
+      'userVariables must stay slim: only KuGou credentials (no targetPlatform / fallbackMode)'
     );
     assert.strictEqual(typeof plugin.importMusicSheet, 'function', 'importMusicSheet must be a function');
     assert.strictEqual(typeof plugin.getMediaSource, 'function', 'getMediaSource must be a function');
@@ -310,7 +303,7 @@ async function runAllTests() {
   try {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
 
-    await test('Parses generic local .json into compliant IMusicItem[] with PlaylistOut platform', async () => {
+    await test('Parses generic local .json with native platform routing (netease inferred)', async () => {
       const items = await plugin.importMusicSheet(tempGenericPath);
       assert(Array.isArray(items), 'Output must be an array');
       assert.strictEqual(items.length, 2, 'Should map exactly 2 tracks');
@@ -323,7 +316,9 @@ async function runAllTests() {
       assert.strictEqual(item1.album, '叶惠美');
       assert.strictEqual(item1.artwork, 'https://p1.music.126.net/jay-cover.jpg');
       assert.strictEqual(item1.duration, 269, 'Duration should be converted to seconds');
-      assert.strictEqual(item1.platform, '把你的歌单带走');
+      assert.strictEqual(item1.platform, 'netease', 'Native platform inferred from 126.net cover URL');
+      assert.strictEqual(item1._originPlatform, 'netease');
+      assert.strictEqual(item1._src.netease.id, '186016');
       assert.strictEqual(item1.url, undefined, 'Must not inject pirate audio URL');
 
       // Second track verification (multi-artist comma joining)
@@ -333,23 +328,23 @@ async function runAllTests() {
       assert.strictEqual(item2.artist, '五月天, 阿信', 'Multi-artists must be joined by comma');
       assert.strictEqual(item2.album, '人生无限公司');
       assert.strictEqual(item2.duration, 275, 'Duration rounded to 275s');
-      assert.strictEqual(item2.platform, '把你的歌单带走');
+      assert.strictEqual(item2.platform, 'netease');
     });
 
-    await test('Correctly bridges NetEase playlist preserving brand platform and attaching _src', async () => {
+    await test('Correctly routes NetEase playlist to native netease platform with _src metadata', async () => {
       const items = await plugin.importMusicSheet(tempNeteasePath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'netease');
       assert.strictEqual(items[0]._originPlatform, 'netease');
       assert.strictEqual(items[0].id, '1973665667');
       assert.strictEqual(items[0]._src?.netease?.id, '1973665667');
       assert.deepStrictEqual(items[0]._srcOrder, ['netease']);
     });
 
-    await test('Correctly bridges QQ Music playlist preserving brand platform with _src & songmid', async () => {
+    await test('Correctly routes QQ Music playlist to native qq platform with _src & songmid', async () => {
       const items = await plugin.importMusicSheet(tempQqPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'qq');
       assert.strictEqual(items[0]._originPlatform, 'qq');
       assert.strictEqual(items[0].id, '0039MnYb0qxYAc');
       assert.strictEqual(items[0].songmid, '0039MnYb0qxYAc');
@@ -357,44 +352,59 @@ async function runAllTests() {
       assert.deepStrictEqual(items[0]._srcOrder, ['qq']);
     });
 
-    await test('Correctly bridges KuGou playlist preserving brand platform with _src.kugou.hash', async () => {
+    await test('Correctly routes KuGou playlist to native kugou platform with _src.kugou.hash', async () => {
       const items = await plugin.importMusicSheet(tempKugouPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'kugou');
       assert.strictEqual(items[0]._originPlatform, 'kugou');
       assert.strictEqual(items[0]._src?.kugou?.hash, 'hash12345');
       assert.deepStrictEqual(items[0]._srcOrder, ['kugou']);
     });
 
-    await test('Correctly bridges KuWo playlist preserving brand platform', async () => {
+    await test('Correctly routes KuWo playlist to native kuwo platform', async () => {
       const items = await plugin.importMusicSheet(tempKuwoPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'kuwo');
       assert.strictEqual(items[0]._originPlatform, 'kuwo');
       assert.strictEqual(items[0]._src?.kuwo?.id, '123456');
     });
 
-    await test('Correctly bridges QiShui playlist preserving brand platform', async () => {
+    await test('Correctly routes QiShui playlist to native qishui platform', async () => {
       const items = await plugin.importMusicSheet(tempQishuiPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'qishui');
       assert.strictEqual(items[0]._originPlatform, 'qishui');
       assert.strictEqual(items[0]._src?.qishui?.trackId, '7100000000');
     });
 
-    await test('Correctly bridges Bilibili playlist preserving brand platform', async () => {
+    await test('Correctly routes Bilibili playlist to native bilibili platform', async () => {
       const items = await plugin.importMusicSheet(tempBilibiliPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'bilibili');
       assert.strictEqual(items[0]._originPlatform, 'bilibili');
     });
 
-    await test('Correctly bridges Migu playlist preserving brand platform', async () => {
+    await test('Correctly routes Migu playlist to native migu platform', async () => {
       const items = await plugin.importMusicSheet(tempMiguPath);
       assert.strictEqual(items.length, 1);
-      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].platform, 'migu');
       assert.strictEqual(items[0]._originPlatform, 'migu');
       assert.strictEqual(items[0]._src?.migu?.contentId, 'migu600001');
+    });
+
+    await test('Protects native platform against host resetMediaItem overwrite & survives JSON round-trip', async () => {
+      const items = await plugin.importMusicSheet(tempQqPath);
+      const item = items[0];
+
+      // Simulate MusicFree host resetMediaItem(item, this.plugin.name) brand rewrite
+      item.platform = '把你的歌单带走';
+      assert.strictEqual(item.platform, 'qq', 'Brand rewrite must be rejected');
+      item.platform = 'PlaylistOut';
+      assert.strictEqual(item.platform, 'qq', 'Legacy brand rewrite must be rejected');
+
+      // Serialization always persists the native platform (survives DB reload / IPC)
+      const roundTrip = JSON.parse(JSON.stringify(item));
+      assert.strictEqual(roundTrip.platform, 'qq', 'JSON round-trip must keep native platform');
     });
 
     await test('Parses file:/// URI formatted local path into compliant IMusicItem[]', async () => {
@@ -442,13 +452,13 @@ async function runAllTests() {
     } catch (_) {}
   }
 
-  // ── 3.5. Mobile Native Platform Delegation & Isolation ────────────
-  logSection('3.5. Mobile Native Platform Delegation & Isolation');
+  // ── 3.5. Cross-Host Native Routing Consistency & Overwrite Guard ──
+  logSection('3.5. Cross-Host Native Routing Consistency & Overwrite Guard');
 
   try {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
 
-    await test('Mobile mode: Default delegates tracks to respective native platforms with full metadata', async () => {
+    await test('Mobile mode: delegates tracks to respective native platforms with full metadata', async () => {
       const neteaseItems = await plugin.importMusicSheet(sampleNeteaseJson);
       assert.strictEqual(neteaseItems[0].platform, 'netease');
       assert.strictEqual(neteaseItems[0]._originPlatform, 'netease');
@@ -477,35 +487,41 @@ async function runAllTests() {
       assert.strictEqual(miguItems[0].platform, 'migu');
     });
 
-    await test('Mobile mode: targetPlatform="auto" maintains unified platform contract "把你的歌单带走"', async () => {
-      globalThis.env = {
-        getUserVariables: () => ({ targetPlatform: 'auto' }),
-      };
-      try {
-        const neteaseItems = await plugin.importMusicSheet(sampleNeteaseJson);
-        assert.strictEqual(neteaseItems[0].platform, '把你的歌单带走');
-        assert.strictEqual(neteaseItems[0]._originPlatform, 'netease');
+    await test('Desktop & mobile produce identical native routing (unified across hosts)', async () => {
+      const samples = [sampleNeteaseJson, sampleQqJson, sampleKugouJson, sampleKuwoJson, sampleQishuiJson, sampleBilibiliJson, sampleMiguJson];
 
-        const qqItems = await plugin.importMusicSheet(sampleQqJson);
-        assert.strictEqual(qqItems[0].platform, '把你的歌单带走');
-        assert.strictEqual(qqItems[0]._originPlatform, 'qq');
+      globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
+      const desktopPlatforms = [];
+      try {
+        for (let i = 0; i < samples.length; i++) {
+          const items = await plugin.importMusicSheet(samples[i]);
+          desktopPlatforms.push(items[0].platform);
+        }
       } finally {
-        delete globalThis.env;
+        delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
       }
+
+      globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
+      const mobilePlatforms = [];
+      try {
+        for (let i = 0; i < samples.length; i++) {
+          const items = await plugin.importMusicSheet(samples[i]);
+          mobilePlatforms.push(items[0].platform);
+        }
+      } finally {
+        delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
+      }
+
+      assert.deepStrictEqual(desktopPlatforms, ['netease', 'qq', 'kugou', 'kuwo', 'qishui', 'bilibili', 'migu']);
+      assert.deepStrictEqual(desktopPlatforms, mobilePlatforms, 'Desktop and mobile must route identically');
     });
 
-    await test('Mobile mode: userVariables targetPlatform overrides track platform on mobile', async () => {
-      globalThis.env = {
-        getUserVariables: () => ({ targetPlatform: 'kuwo' }),
-      };
-      try {
-        const items = await plugin.importMusicSheet(sampleNeteaseJson);
-        assert.strictEqual(items.length, 1);
-        assert.strictEqual(items[0].platform, 'kuwo', 'targetPlatform must override track platform on mobile');
-        assert.strictEqual(items[0]._originPlatform, 'netease', 'Track natural platform preserved in _originPlatform');
-      } finally {
-        delete globalThis.env;
-      }
+    await test('Mobile mode: host brand rewrite is rejected, native platform survives serialization', async () => {
+      const items = await plugin.importMusicSheet(sampleNeteaseJson);
+      const item = items[0];
+      item.platform = '把你的歌单带走';
+      assert.strictEqual(item.platform, 'netease', 'Brand rewrite must be rejected on mobile');
+      assert.strictEqual(JSON.parse(JSON.stringify(item)).platform, 'netease');
     });
 
     await test('Mobile mode: File picker trigger rejects with mobile-friendly guidance', async () => {
@@ -529,61 +545,8 @@ async function runAllTests() {
     delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
   }
 
-  // ── 4. userVariables Configuration Override ───────────────────────
-  logSection('4. userVariables Configuration Override');
-
-  await test('Respects userVariables to prioritize audio routing while preserving brand platform', async () => {
-    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
-    try {
-      // 1. Mock MusicFree environment env.getUserVariables() returning targetPlatform='kuwo'
-      globalThis.env = {
-        getUserVariables: () => ({ targetPlatform: 'kuwo' }),
-      };
-
-      const tempTestPath = path.join(os.tmpdir(), `playlistout_test_forced_${Date.now()}.json`);
-      try {
-        fs.writeFileSync(tempTestPath, sampleNeteaseJson, 'utf-8');
-        const items = await plugin.importMusicSheet(tempTestPath);
-        assert.strictEqual(items.length, 1);
-        assert.strictEqual(items[0].platform, '把你的歌单带走', 'Platform displayed to user must always be plugin brand');
-        assert.strictEqual(items[0]._originPlatform, 'netease', 'Track origin platform preserved');
-
-        // 2. Reset to auto
-        globalThis.env = {
-          getUserVariables: () => ({ targetPlatform: 'auto' }),
-        };
-        const items2 = await plugin.importMusicSheet(tempTestPath);
-        assert.strictEqual(items2[0].platform, '把你的歌单带走');
-        assert.strictEqual(items2[0]._originPlatform, 'netease');
-      } finally {
-        delete globalThis.env;
-        try {
-          if (fs.existsSync(tempTestPath)) fs.unlinkSync(tempTestPath);
-        } catch (_) {}
-      }
-    } finally {
-      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
-    }
-  });
-
-  await test('Correctly parses fallbackMode userVariables (strict, similar, silent_skip)', async () => {
-    // 1. Default when unset
-    globalThis.env = { getUserVariables: () => ({}) };
-    const resStrict = await plugin.getMediaSource({ id: 'test_1', title: '不存在的歌_test', artist: '未知' });
-    assert.strictEqual(resStrict, null);
-
-    // 2. Similar mode
-    globalThis.env = { getUserVariables: () => ({ fallbackMode: 'similar' }) };
-    const resSimilar = await plugin.getMediaSource({ id: 'test_2', title: '不存在的歌_test', artist: '未知' });
-    assert.strictEqual(resSimilar, null);
-
-    // 3. Silent skip mode
-    globalThis.env = { getUserVariables: () => ({ fallbackMode: 'silent_skip' }) };
-    const resSilent = await plugin.getMediaSource({ id: 'test_3', title: '不存在的歌_test', artist: '未知' });
-    assert.strictEqual(resSilent, null);
-
-    delete globalThis.env;
-  });
+  // ── 4. userVariables Configuration (KuGou credentials) ────────────
+  logSection('4. userVariables Configuration (KuGou credentials)');
 
   await test('Correctly parses kugouToken & kugouUserid userVariables formats', async () => {
     // 1. Composite "token:userid" in kugouToken
@@ -689,7 +652,9 @@ async function runAllTests() {
       const desktopItems = await plugin.importMusicSheet(largeJsonStr);
       assert.strictEqual(desktopItems.length, 500);
       assert.strictEqual(desktopItems[0].title, '酷狗金曲_1');
+      assert.strictEqual(desktopItems[0].platform, 'kugou');
       assert.strictEqual(desktopItems[499].title, '酷狗金曲_500');
+      assert.strictEqual(desktopItems[499].platform, 'kugou');
     } finally {
       delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
     }
@@ -733,7 +698,7 @@ async function runAllTests() {
     }
   }
 
-  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) and maps platform to "把你的歌单带走" in Desktop mode`, async () => {
+  await test(`Resolves live NetEase playlist (${realNeteaseUrl}) with native netease routing in Desktop mode`, async () => {
     globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = true;
     try {
       const items = await retryOnRateLimit(() => plugin.importMusicSheet(realNeteaseUrl));
@@ -753,7 +718,7 @@ async function runAllTests() {
           typeof it.duration === 'number' && it.duration >= 0,
           `Track ${i + 1} duration must be non-negative number`
         );
-        assert.strictEqual(it.platform, '把你的歌单带走', `Track ${i + 1} platform must be 把你的歌单带走`);
+        assert.strictEqual(it.platform, 'netease', `Track ${i + 1} platform must route to native netease`);
         assert.strictEqual(it._originPlatform, 'netease', `Track ${i + 1} _originPlatform must bridge to netease`);
         assert(Boolean(it._src?.netease?.id), `Track ${i + 1} must include _src.netease.id`);
         assert.strictEqual(it.url, undefined, 'Must not inject pirate audio URL');
@@ -778,10 +743,11 @@ async function runAllTests() {
   });
   }
 
-  // ── 7. getMediaSource & getLyric Bridge Specification ──────────────
-  logSection('7. getMediaSource & getLyric Bridge Specification');
+  // ── 7. getMediaSource & getLyric Host-Channel Contract ────────────
+  logSection('7. getMediaSource & getLyric Host-Channel Contract');
 
-  await test('getMediaSource & getLyric cleanly return safe defaults in bare test host', async () => {
+  await test('getMediaSource & getLyric cleanly return safe defaults in bare test host (no bridge)', async () => {
+    plugin._setHostBridge(null);
     const start = Date.now();
     const res1 = await plugin.getMediaSource({ title: '晴天', artist: '周杰伦' });
     const duration1 = Date.now() - start;
@@ -792,8 +758,24 @@ async function runAllTests() {
     const res2 = await plugin.getMediaSource(null);
     assert.strictEqual(res2, null);
 
+    const res3 = await plugin.getMediaSource({
+      id: 'test_1',
+      title: '晴天',
+      artist: '周杰伦',
+      platform: '把你的歌单带走',
+    });
+    assert.strictEqual(res3, null, 'No embedded sources: bare host must yield null');
+
     const lrc1 = await plugin.getLyric(null);
     assert.strictEqual(typeof lrc1?.rawLrc, 'string', 'getLyric must always return object with rawLrc string');
+
+    const lrc2 = await plugin.getLyric({
+      id: 'test_2',
+      title: '晴天',
+      artist: '周杰伦',
+      platform: '把你的歌单带走',
+    });
+    assert.deepStrictEqual(lrc2, { rawLrc: '' }, 'No host bridge: lyric must degrade to empty object');
   });
 
   // ── 8. Exception & Invalid Input Fault Tolerance ──────────────────
@@ -909,83 +891,249 @@ async function runAllTests() {
     assert.strictEqual(aaErrors.length, 0, `Found forbidden async arrow in source:\n${aaErrors.join('\n')}`);
   });
 
-  // ── 8.6. Online Stream & Lyric Resolution Engine ───────────────────
-  logSection('8.6. Online Stream & Lyric Resolution Engine');
+  // ── 8.6. Auto Rescue Engine: Strict Cross-Plugin Matching ─────────
+  logSection('8.6. Auto Rescue Engine: Strict Cross-Plugin Matching');
 
-  await test('Mobile & Standalone mode: getMediaSource resolves online stream for valid tracks or returns null gracefully', async () => {
-    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
-    try {
-      // 1. QQ track with mid
-      const qqItem = {
-        id: 'qq_0039MnYb0qxYhV',
-        title: '晴天',
-        artist: '周杰伦',
-        platform: '把你的歌单带走',
-        _originPlatform: 'qq',
-        _src: { qq: { mid: '0039MnYb0qxYhV' } },
-      };
-      const qqRes = await plugin.getMediaSource(qqItem, 'standard');
-      if (qqRes) {
-        assert(typeof qqRes.url === 'string' && qqRes.url.startsWith('http'), 'QQ stream URL must be valid HTTP');
-        assert(qqRes.quality, 'QQ stream must specify quality');
-      }
+  await test('Strictly matches the same original song across plugins and returns a playable source', async () => {
+    const calls = [];
+    plugin._setHostBridge({
+      getAllPlugins: async () => [
+        { platform: 'netease', supportedMethod: ['search', 'getMediaSource', 'getLyric'] },
+        { platform: 'qq', supportedMethod: ['search', 'getMediaSource', 'getLyric'] },
+      ],
+      callPluginMethod: async (event, payload) => {
+        calls.push({ platform: payload.platform, method: payload.method, args: payload.args });
+        if (payload.method === 'getMediaSource' && payload.platform === 'netease') {
+          return { url: 'https://m10.music.126.net/audio/123.mp3' };
+        }
+        if (payload.method === 'search' && payload.platform === 'netease') {
+          return {
+            isEnd: true,
+            data: [
+              { id: 'wrong_1', title: '晴天', artist: '别的歌手', platform: 'netease' },
+              { id: 'wrong_2', title: '晴天 (Live)', artist: '周杰伦', platform: 'netease' },
+              { id: 'right_1', title: '晴天', artist: '周杰伦', album: '叶惠美', duration: 269, platform: 'netease' },
+            ],
+          };
+        }
+        return null;
+      },
+    });
 
-      // 2. NetEase track with id
-      const neteaseItem = {
-        id: 'netease_1357375695',
-        title: '海阔天空',
-        artist: 'Beyond',
-        platform: '把你的歌单带走',
-        _originPlatform: 'netease',
-        _src: { netease: { id: '1357375695' } },
-      };
-      const nRes = await plugin.getMediaSource(neteaseItem, 'standard');
-      if (nRes) {
-        assert(typeof nRes.url === 'string' && nRes.url.startsWith('http'), 'NetEase stream URL must be valid HTTP');
-      }
+    const item = {
+      id: 'legacy_brand_1',
+      title: '晴天',
+      artist: '周杰伦',
+      duration: 269,
+      platform: '把你的歌单带走',
+      _originPlatform: 'qq',
+      _src: { qq: { mid: '0039MnYb0qxYhV' } },
+    };
 
-      // 3. Fake non-existent track returns null without crashing
-      const fakeItem = {
-        id: 'fake_nonexistent_track_999999',
-        title: '完全不存在的随机歌曲标题_xyz',
-        artist: '未知无名',
-        platform: '把你的歌单带走',
-      };
-      const fakeRes = await plugin.getMediaSource(fakeItem, 'standard');
-      assert.strictEqual(fakeRes, null, 'Non-existent song must return null');
-    } finally {
-      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
-    }
+    const res = await plugin.getMediaSource(item, 'standard');
+    assert(res && res.url === 'https://m10.music.126.net/audio/123.mp3', 'Must return the rescued source');
+
+    assert(calls.some((c) => c.method === 'getMediaSource' && c.platform === 'qq'), 'Historical items must attempt exact origin lookup first');
+    assert(calls.some((c) => c.method === 'search' && c.platform === 'qq'), 'Must retry the origin platform (qq) via search after exact miss');
+    assert(calls.some((c) => c.method === 'search' && c.platform === 'netease'), 'Must fall back to other installed platforms');
+
+    const neMediaCalls = () => calls.filter((c) => c.method === 'getMediaSource' && c.platform === 'netease').length;
+    assert.strictEqual(neMediaCalls(), 1, 'Exactly one media request for the matched candidate');
+    const matchedMediaCall = calls.filter((c) => c.method === 'getMediaSource' && c.platform === 'netease')[0];
+    assert.strictEqual(matchedMediaCall.args[0].id, 'right_1', 'Must request media for the strictly matched candidate only');
+
+    // Quality switch must reuse the cached match without re-searching
+    const searchCallsBefore = calls.filter((c) => c.method === 'search').length;
+    const res2 = await plugin.getMediaSource(item, 'high');
+    assert(res2 && res2.url === 'https://m10.music.126.net/audio/123.mp3', 'Quality switch must reuse the cached match');
+    assert.strictEqual(calls.filter((c) => c.method === 'search').length, searchCallsBefore, 'Cached match must not trigger another search');
+    assert.strictEqual(neMediaCalls(), 2, 'Quality switch requests media once for the new quality');
+
+    plugin._setHostBridge(null);
   });
 
-  await test('getLyric returns non-null { rawLrc: string } across mobile & desktop environments', async () => {
-    globalThis.__PLAYLISTOUT_MOCK_ELECTRON__ = false;
-    try {
-      const qqItem = {
-        id: 'qq_0039MnYb0qxYhV',
-        title: '晴天',
-        artist: '周杰伦',
-        platform: '把你的歌单带走',
-        _originPlatform: 'qq',
-        _src: { qq: { mid: '0039MnYb0qxYhV' } },
-      };
-      const lrcRes = await plugin.getLyric(qqItem);
-      assert(lrcRes && typeof lrcRes.rawLrc === 'string', 'getLyric must always return rawLrc string');
+  await test('Historical brand-era items resolve via exact origin lookup without searching', async () => {
+    const calls = [];
+    plugin._setHostBridge({
+      getAllPlugins: async () => [],
+      callPluginMethod: async (event, payload) => {
+        calls.push({ platform: payload.platform, method: payload.method });
+        if (payload.method === 'getMediaSource' && payload.platform === 'netease') {
+          return { url: 'https://m10.music.126.net/exact.mp3' };
+        }
+        return null;
+      },
+    });
 
-      // Empty/invalid item
-      const emptyRes = await plugin.getLyric(null);
-      assert.deepStrictEqual(emptyRes, { rawLrc: '' }, 'Empty item must return empty lyric');
-    } finally {
-      delete globalThis.__PLAYLISTOUT_MOCK_ELECTRON__;
-    }
+    const item = {
+      id: 'legacy_brand_2',
+      title: '海屿你',
+      artist: '马也_Crabbit',
+      platform: '把你的歌单带走',
+      _originPlatform: 'netease',
+      _src: { netease: { id: '1973665667' } },
+    };
+
+    const res = await plugin.getMediaSource(item, 'standard');
+    assert(res && res.url === 'https://m10.music.126.net/exact.mp3', 'Exact origin lookup must win');
+    assert(!calls.some((c) => c.method === 'search'), 'Exact hit must not fall back to search');
+    plugin._setHostBridge(null);
   });
 
-  await test('Guarantees KuWo source is completely excised from mobile online ladder and blocklisted', () => {
+  await test('Rescues lyrics through the strictly matched candidate', async () => {
+    const calls = [];
+    plugin._setHostBridge({
+      getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search', 'getMediaSource', 'getLyric'] }],
+      callPluginMethod: async (event, payload) => {
+        calls.push({ platform: payload.platform, method: payload.method });
+        if (payload.method === 'search') {
+          return { isEnd: true, data: [{ id: 'lrc_1', title: '海屿你', artist: '马也_Crabbit', duration: 296, platform: 'netease' }] };
+        }
+        if (payload.method === 'getLyric') {
+          return { rawLrc: '[00:01.00]测试歌词' };
+        }
+        return null;
+      },
+    });
+
+    const item = {
+      id: 'legacy_brand_3',
+      title: '海屿你',
+      artist: '马也_Crabbit',
+      duration: 296,
+      platform: '把你的歌单带走',
+      _originPlatform: 'netease',
+    };
+
+    const lrc = await plugin.getLyric(item);
+    assert(lrc && lrc.rawLrc === '[00:01.00]测试歌词', 'Must rescue lyric from the matched platform');
+    assert(calls.some((c) => c.method === 'search' && c.platform === 'netease'), 'Lyric rescue must search the origin platform first');
+    plugin._setHostBridge(null);
+  });
+
+  await test('Refuses to play wrong songs: skips when no strict match exists', async () => {
+    let mediaCalled = 0;
+    plugin._setHostBridge({
+      getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search', 'getMediaSource'] }],
+      callPluginMethod: async (event, payload) => {
+        if (payload.method === 'search') {
+          return {
+            isEnd: true,
+            data: [
+              { id: 'wrong_1', title: '晴天 (Live)', artist: '周杰伦', platform: 'netease' },
+              { id: 'wrong_2', title: '晴天', artist: '周杰伦(翻唱)', platform: 'netease' },
+              { id: 'wrong_3', title: '晴天 (伴奏)', artist: '周杰伦', platform: 'netease' },
+            ],
+          };
+        }
+        if (payload.method === 'getMediaSource') {
+          mediaCalled++;
+          return { url: 'https://should-never-be-used.example.com/x.mp3' };
+        }
+        return null;
+      },
+    });
+
+    const item = {
+      id: 'legacy_brand_4',
+      title: '晴天',
+      artist: '周杰伦',
+      duration: 269,
+      platform: '把你的歌单带走',
+    };
+
+    const res = await plugin.getMediaSource(item, 'standard');
+    assert.strictEqual(res, null, 'Wrong-song candidates must never be played');
+    assert.strictEqual(mediaCalled, 0, 'No media request must be issued when no strict match exists');
+    plugin._setHostBridge(null);
+  });
+
+  await test('Hook interceptor glues rescue into the host plugin channel (maybeRescueResult)', async () => {
+    plugin._setHostBridge({
+      getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search', 'getMediaSource', 'getLyric'] }],
+      callPluginMethod: async (event, payload) => {
+        if (payload.method === 'search') {
+          return { isEnd: true, data: [{ id: 'hook_1', title: '夜曲', artist: '周杰伦', duration: 227, platform: 'netease' }] };
+        }
+        if (payload.method === 'getMediaSource') {
+          return { url: 'https://m10.music.126.net/audio/hook.mp3' };
+        }
+        if (payload.method === 'getLyric') {
+          return { rawLrc: '[00:01.00]夜曲' };
+        }
+        return null;
+      },
+    });
+
+    const importedItem = {
+      id: 'hook_item_1',
+      title: '夜曲',
+      artist: '周杰伦',
+      duration: 227,
+      platform: 'qq',
+      _originPlatform: 'qq',
+      _src: { qq: { mid: '0039MnYb0qxYAc' } },
+    };
+
+    // 1. Failed native lookup -> rescue kicks in and replaces the empty result
+    const rescued = await plugin._maybeRescueResult(
+      { platform: 'qq', method: 'getMediaSource', args: [importedItem, 'standard'] },
+      null
+    );
+    assert(rescued && rescued.url === 'https://m10.music.126.net/audio/hook.mp3', 'Hook must return the rescued source');
+
+    // 2. Successful native lookup -> untouched
+    const okResult = { url: 'https://y.qq.com/original.mp3' };
+    const passthrough = await plugin._maybeRescueResult(
+      { platform: 'qq', method: 'getMediaSource', args: [importedItem, 'standard'] },
+      okResult
+    );
+    assert.strictEqual(passthrough, okResult, 'Successful lookups must pass through untouched');
+
+    // 3. Items not imported by PlaylistOut -> untouched
+    const foreignItem = { id: 'foreign_1', title: '夜曲', artist: '周杰伦', platform: 'qq' };
+    const foreign = await plugin._maybeRescueResult(
+      { platform: 'qq', method: 'getMediaSource', args: [foreignItem, 'standard'] },
+      null
+    );
+    assert.strictEqual(foreign, null, 'Foreign items must not be hijacked by rescue');
+
+    // 4. Lyric rescue through the same host channel
+    const lrc = await plugin._maybeRescueResult(
+      { platform: 'qq', method: 'getLyric', args: [importedItem] },
+      null
+    );
+    assert(lrc && lrc.rawLrc === '[00:01.00]夜曲', 'Hook must rescue lyric');
+    plugin._setHostBridge(null);
+  });
+
+  await test('Strict matcher unit contract: same title + artist + version + duration only', () => {
+    const match = plugin._isCandidateStrictlyMatched;
+
+    assert(match({ title: '晴天', artist: '周杰伦', duration: 266 }, '晴天', '周杰伦', 269), 'Same song within tolerance must match');
+    assert(match({ title: '晴天', artist: '周杰伦', album: '叶惠美', duration: 269 }, '晴天', '周杰伦', 269), 'Exact song must match');
+    assert(!match({ title: '晴天', artist: '别的歌手', duration: 266 }, '晴天', '周杰伦', 269), 'Wrong singer must not match');
+    assert(!match({ title: '晴天', artist: '周杰伦乐队', duration: 266 }, '晴天', '周杰伦', 269), 'Fuzzy artist substring must not match');
+    assert(!match({ title: '晴天 (Live)', artist: '周杰伦', duration: 269 }, '晴天', '周杰伦', 269), 'Live version must not match');
+    assert(!match({ title: '晴天 (伴奏)', artist: '周杰伦', duration: 269 }, '晴天', '周杰伦', 269), 'Instrumental must not match');
+    assert(!match({ title: '晴天', artist: '周杰伦', duration: 320 }, '晴天', '周杰伦', 269), 'Duration drift > 12s must not match');
+    assert(!match({ title: '雨天', artist: '周杰伦', duration: 269 }, '晴天', '周杰伦', 269), 'Different title must not match');
+  });
+
+  await test('Guarantees zero embedded audio sources and no legacy bridge leftovers in source', () => {
     const code = fs.readFileSync(pluginPath, 'utf-8');
-    assert(!code.includes('resolveKuwoStream'), 'Must not define resolveKuwoStream');
-    assert(!code.includes("standardOrder = ['qq', 'kuwo'"), 'standardOrder must not contain kuwo');
-    assert(code.includes("u.includes('kuwo.cn')"), 'isValidCleanMediaUrl must explicitly block kuwo.cn');
-    assert(code.includes("u.includes('antiserver')"), 'isValidCleanMediaUrl must explicitly block antiserver');
+    assert(!code.includes('s01s.cn'), 'Must not contain s01s embedded source channel');
+    assert(!code.includes('api.vkeys.cn'), 'Must not contain vkeys embedded source channel');
+    assert(!code.includes('injahow.cn'), 'Must not contain Meting embedded source channel');
+    assert(!code.includes('loadInstalledSiblingPlugins'), 'Must not contain sibling plugin file loader');
+    assert(!code.includes('resolveQqStream'), 'Must not contain legacy QQ stream resolver');
+    assert(!code.includes('resolveNeteaseStream'), 'Must not contain legacy NetEase stream resolver');
+    assert(!code.includes('resolveOnlineMediaSource'), 'Must not contain legacy online media resolver');
+    assert(!code.includes('resolveOnlineLyric'), 'Must not contain legacy online lyric resolver');
+    assert(!code.includes('isValidCleanMediaUrl'), 'Must not contain legacy source blocklist');
+    assert(!code.includes('isCandidateSimilarMatched'), 'Must not contain loose similar matching');
+    assert(code.includes('installHostBridge'), 'Must install the host plugin bridge');
+    assert(code.includes('findStrictMatch'), 'Must provide strict cross-plugin matching');
   });
 
   // ── Test Summary ──────────────────────────────────────────────────

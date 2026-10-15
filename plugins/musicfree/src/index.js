@@ -1,16 +1,12 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v1.4.1)
+ * PlaylistOut 官方 MusicFree 插件 (v2.0.0)
  *
- * 遵循 MusicFree 插件开发规范 (CommonJS)
- * 支持双端双模驱动：
- *   1. 桌面端 (Desktop/Electron)：
- *      - 本地离线 JSON 歌单文件导入（一键浏览选文件弹窗 + 拖拽 + 本地绝对路径导入，零网络请求）
- *      - 优雅的桌面 Toast 播放提示与 Sibling Bridge 原生音源桥接
- *   2. 移动端 (Mobile/Android/React Native/Hermes)：
- *      - 纯净全曲秒播直连梯队：与电脑版逻辑与音源体验完全统一，涵盖周杰伦/林俊杰等 VIP 曲目极速秒播
- *      - 坚决杜绝任何酷我防盗链语音干扰、爱坤音源、卡密广告，毫秒级返回纯净正版直链
- *      - 离线歌单全量支持：直接粘贴官网导出的 JSON 文本导入，或输入在线 JSON 直链导入
- *   3. 生产 API 在线毫秒级万能解析（QQ音乐 / 网易云 / 酷狗 / 汽水）
+ * 定位：纯歌单解析器 + 原生音源路由（本插件不自带、不内置任何音源直链）
+ *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
+ *   2. 平台路由：每首曲目按「原曲自然平台」归属（qq / netease / kugou / kuwo / qishui / migu / bilibili），
+ *      播放与歌词由宿主调度用户设备上已安装的对应原生插件，直接复用其音源与歌词能力
+ *   3. 自动兜底（桌面稳定版）：原平台插件缺失或取源失败时，通过宿主插件通道在其它已安装插件中
+ *      严格匹配「同名 + 同歌手 + 同版本 + 时长吻合」的原曲并自动换源续播，宁可跳过绝不播放错歌
  *   4. Android Hermes 引擎全语法兼容（杜绝 ?., ??, async arrow 语法）
  */
 
@@ -212,7 +208,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '1.4.1';
+const PLUGIN_VERSION = '2.0.0';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -520,54 +516,55 @@ const RENDERER_FILE_PICKER_SCRIPT = `
 })();
 `;
 
+/**
+ * 安装宿主插件桥接通道（仅 Electron 桌面稳定版可用）
+ * 1. 拦截 @shared/plugin-manager/call-plugin-method：任意平台曲目取源/取词失败时，
+ *    自动在其它已安装插件中严格匹配同一首原曲并回传结果（自动兜底换源）；
+ * 2. 记录 @shared/plugin-manager/get-all-plugins 句柄：枚举设备上已安装的音源插件。
+ * 手机端与桌面测试版宿主不提供该通道，将安全地跳过（本插件只剩纯歌单解析能力）。
+ */
+function installHostBridge(electron) {
+  try {
+    const ipcMain = electron.ipcMain;
+    const handlers = ipcMain && ipcMain._invokeHandlers;
+    if (!handlers || typeof handlers.get !== 'function') return;
+
+    const callChannel = '@shared/plugin-manager/call-plugin-method';
+    if (handlers.has(callChannel)) {
+      const origHandler = handlers.get(callChannel);
+      if (typeof origHandler === 'function' && !origHandler.__playlistoutWrapped) {
+        _hostCallPluginMethod = origHandler;
+        const wrapped = async function (event, payload) {
+          const res = await origHandler.call(this, event, payload);
+          try {
+            return await maybeRescueResult(payload, res);
+          } catch (_) {
+            return res;
+          }
+        };
+        wrapped.__playlistoutWrapped = true;
+        handlers.set(callChannel, wrapped);
+      }
+    }
+
+    if (!_hostGetAllPlugins) {
+      const listChannel = '@shared/plugin-manager/get-all-plugins';
+      if (handlers.has(listChannel)) {
+        const listHandler = handlers.get(listChannel);
+        if (typeof listHandler === 'function') {
+          _hostGetAllPlugins = listHandler;
+        }
+      }
+    }
+  } catch (_) {}
+}
+
 function injectRendererFilePicker() {
   ensureHostModulesAsync()
     .then(({ electron }) => {
       if (!electron) return;
 
-      // 拦截主进程 call-plugin-method：当任何平台的曲目无音源时，根据用户配置的 fallbackMode 执行原版匹配、相似音源匹配或提示跳过
-      try {
-        const ipcMain = electron.ipcMain;
-        const handlers = ipcMain && ipcMain._invokeHandlers;
-        const channel = '@shared/plugin-manager/call-plugin-method';
-        if (handlers && typeof handlers.get === 'function' && handlers.has(channel)) {
-          const origHandler = handlers.get(channel);
-          if (typeof origHandler === 'function' && !origHandler.__playlistoutWrapped) {
-            const wrapped = async function (event, payload) {
-              if (payload && payload.method === 'getMediaSource' && Array.isArray(payload.args)) {
-                const item = payload.args[0];
-                if (item && item.id) {
-                  const title = String(item.title || '').trim();
-                  const primaryArtist = String(item.artist || '')
-                    .replace(/未知歌手/g, '')
-                    .split(/[,，、/]/)[0]
-                    .trim();
-                  const mode = getUserFallbackMode();
-                  const cacheKey = `${item.id}_${title}_${primaryArtist}_${mode}`;
-                  const cachedFailAt = _noSourceCache.get(cacheKey);
-                  if (cachedFailAt && Date.now() - cachedFailAt < NO_SOURCE_TTL_MS) {
-                    return null;
-                  }
-                }
-              }
-              const res = await origHandler.call(this, event, payload);
-              if (
-                payload &&
-                payload.method === 'getMediaSource' &&
-                payload.platform !== PLUGIN_PLATFORM &&
-                (!res || !res.url) &&
-                Array.isArray(payload.args) &&
-                payload.args[0]
-              ) {
-                return await getMediaSource(payload.args[0], payload.args[1] || 'standard');
-              }
-              return res;
-            };
-            wrapped.__playlistoutWrapped = true;
-            handlers.set(channel, wrapped);
-          }
-        }
-      } catch (_) {}
+      installHostBridge(electron);
 
       if (!electron.BrowserWindow) return;
       const injectToWin = (win) => {
@@ -598,7 +595,7 @@ function injectRendererFilePicker() {
     .catch(() => {});
 }
 
-// 插件加载时自动在 Electron 宿主中预热模块并注入浏览按钮（仅在 Electron 环境中执行，不阻塞 Node 测试进程退出）
+// 插件加载时自动在 Electron 宿主中预热模块并注入频道桥接与浏览按钮（仅在 Electron 环境中执行，不阻塞 Node 测试进程退出）
 try {
   const realProc = new Function('return typeof process !== "undefined" ? process : null')();
   if (realProc && realProc.versions && realProc.versions.electron) {
@@ -794,40 +791,6 @@ function getRawUserVariables() {
     }
   } catch (_) {}
   return {};
-}
-
-/**
- * 获取用户配置的音源路由通道 (targetPlatform)
- */
-function getUserTargetPlatform() {
-  try {
-    const userVars = getRawUserVariables();
-    const target = userVars && userVars.targetPlatform;
-    if (typeof target === 'string' && target.trim()) {
-      return target.trim();
-    }
-  } catch (_) {}
-  return 'native';
-}
-
-/**
- * 获取用户配置的无原版音源处理策略 (fallbackMode):
- * - 'strict' (默认，或 '1' / 留空): 仅播放 100% 原版原唱，无原版时顶部弹窗提示并跳过
- * - 'similar' (或 '2' / '相似' / '翻唱'): 优先播放原版；若无原版，允许寻找最相似音源（如翻唱/Live/同名曲）并弹窗提示
- * - 'silent_skip' (或 '3' / '静默'): 仅播放 100% 原版原唱，无原版时静默跳过（不弹窗打扰）
- */
-function getUserFallbackMode() {
-  try {
-    const userVars = getRawUserVariables();
-    const raw = String((userVars && userVars.fallbackMode) || '').trim().toLowerCase();
-    if (raw === 'similar' || raw === '2' || raw.includes('相似') || raw.includes('翻唱')) {
-      return 'similar';
-    }
-    if (raw === 'silent_skip' || raw === 'silent' || raw === '3' || raw.includes('静默')) {
-      return 'silent_skip';
-    }
-  } catch (_) {}
-  return 'strict';
 }
 
 /**
@@ -1060,25 +1023,13 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     naturalPlatform = resolveMusicPlatformFromTrackFields(track, { id, title, artwork });
   }
 
-  // 8. 平台归属策略 (Platform Routing Strategy)：
-  // 移动端默认策略 (native)：将 platform 自动分流至原曲自然平台（qq / netease / kugou / bilibili / migu / qishui），
-  // 由用户手机上安装的各原生音乐插件直接解析播放，与电脑端使用体验完全一致！
-  // 若用户显式配置特定平台（如 'qq' / 'netease' / 'kugou'）或 'auto' (由本插件全权解析)，则尊重用户设置。
-  const isDesktop = isHostElectron();
-  const userTarget = getUserTargetPlatform();
+  // 8. 平台归属策略 (Native Platform Routing)：
+  // 所有曲目一律按「原曲自然平台」归属（qq / netease / kugou / kuwo / qishui / migu / bilibili），
+  // 播放与歌词由宿主自动调度用户设备上已安装的对应原生插件，本插件不再内置任何音源。
+  // 无法识别来源的曲目回退为本插件平台，桌面端将由跨插件严格匹配兜底链尝试自动搜源。
   let finalPlatform = PLUGIN_PLATFORM;
-
-  if (!isDesktop) {
-    const ut = (userTarget || 'native').toLowerCase();
-    if (ut === 'native' || ut === 'split' || ut === 'origin') {
-      if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
-        finalPlatform = naturalPlatform;
-      }
-    } else if (ut === 'auto' || isSelfPlatform(ut)) {
-      finalPlatform = PLUGIN_PLATFORM;
-    } else {
-      finalPlatform = ut;
-    }
+  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
+    finalPlatform = naturalPlatform;
   }
 
   const item = {
@@ -1091,7 +1042,7 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
     platform: finalPlatform,
   };
 
-  if (naturalPlatform && naturalPlatform !== 'PlaylistOut') {
+  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
     item._originPlatform = naturalPlatform;
   }
 
@@ -1099,6 +1050,12 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   const targetForSource = finalPlatform !== PLUGIN_PLATFORM ? finalPlatform : naturalPlatform;
   if (targetForSource && targetForSource !== 'PlaylistOut') {
     attachNativeSourceMetadata(item, track, targetForSource);
+  }
+
+  // 10. 防改写保护：宿主导入后会以 resetMediaItem(item, this.plugin.name) 强行覆写 platform，
+  //     通过访问器拦截自身平台名的写入，确保播放/歌词始终分发给正确的原生插件。
+  if (finalPlatform !== PLUGIN_PLATFORM) {
+    defineProtectedPlatform(item, finalPlatform);
   }
 
   return item;
@@ -1159,6 +1116,35 @@ function resolveMusicPlatformFromTrackFields(track, item) {
     return 'netease';
   }
   return 'PlaylistOut';
+}
+
+/**
+ * 保护 IMusicItem.platform 不被宿主 resetMediaItem(item, this.plugin.name) 覆盖。
+ *
+ * MusicFree 三端（电脑稳定版 / 电脑测试版 / 手机版）在导入歌单后都会把曲目的 platform
+ * 强行刷写为当前插件名；这里以访问器拦截「本插件平台名」的写入（含历史名称 PlaylistOut），
+ * 其余合法赋值照常接受，确保曲目始终保留原始平台归属，从而让宿主把播放与歌词请求
+ * 分发给正确的原生音源插件。访问器在 JSON / IPC 序列化时自动转为普通值，跨端存储安全。
+ */
+function defineProtectedPlatform(item, initialPlatform) {
+  let currentPlatform = initialPlatform || PLUGIN_PLATFORM;
+  try {
+    Object.defineProperty(item, 'platform', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return currentPlatform;
+      },
+      set(val) {
+        if (!val) return;
+        if (isSelfPlatform(val)) return;
+        currentPlatform = val;
+      },
+    });
+  } catch (_) {
+    item.platform = currentPlatform;
+  }
+  return item;
 }
 
 /**
@@ -1519,141 +1505,6 @@ async function importMusicSheet(urlLike) {
   return items;
 }
 
-// ============================================================================
-// 本地同级插件动态桥接器 (Sibling Plugin Delegator)
-// 用于兼容用户历史已导入到数据库中、platform 仍为 "PlaylistOut" 的歌单曲目，
-// 在播放和加载歌词时直接委派给用户本地安装的 qq / netease / kugou / qishui / migu 插件。
-// ============================================================================
-
-let _siblingPluginsLoaded = false;
-const _siblingPluginMap = new Map();
-
-async function loadInstalledSiblingPlugins() {
-  if (_siblingPluginsLoaded) return _siblingPluginMap;
-  _siblingPluginsLoaded = true;
-
-  try {
-    const { fs: fsMod, path: pathMod, electron } = await ensureHostModulesAsync();
-    if (!fsMod || !pathMod) return _siblingPluginMap;
-
-    const realProc = new Function('return typeof process !== "undefined" ? process : null')();
-    let pluginDir = null;
-    if (electron && electron.app && typeof electron.app.getPath === 'function') {
-      try {
-        pluginDir = pathMod.resolve(electron.app.getPath('userData'), './musicfree-plugins');
-      } catch (_) {}
-    }
-    if (!pluginDir && realProc && realProc.env && realProc.env.APPDATA) {
-      pluginDir = pathMod.join(realProc.env.APPDATA, 'MusicFree', 'musicfree-plugins');
-    }
-    if (!pluginDir || !fsMod.existsSync(pluginDir)) return _siblingPluginMap;
-
-    const files = fsMod.readdirSync(pluginDir);
-    for (const file of files) {
-      if (!file.endsWith('.js')) continue;
-      const fullPath = pathMod.join(pluginDir, file);
-      try {
-        let code = fsMod.readFileSync(fullPath, 'utf-8');
-        // 跳过自身插件
-        if (
-          code.includes("platform: 'PlaylistOut'") ||
-          code.includes('platform:"PlaylistOut"') ||
-          code.includes('把你的歌单带走')
-        ) {
-          continue;
-        }
-        // 自动热修补本地 qq / agg 插件中长青通道 ?ID= 大小写错误（该错误会导致服务端无法识别 ID 而恒定返回周杰伦《晴天》测试曲）
-        if (code.includes('qq.php?ID=')) {
-          code = code.replace(/qq\.php\?ID=/g, 'qq.php?id=');
-          try {
-            fsMod.writeFileSync(fullPath, code, 'utf-8');
-          } catch (_) {}
-        }
-        const mod = { exports: {}, loaded: false };
-        const procPlat = (realProc && realProc.platform) || 'win32';
-        const hostEnv =
-          typeof env !== 'undefined'
-            ? env
-            : {
-                getUserVariables: () => ({}),
-                os: procPlat,
-                appVersion: '0.0.8',
-                lang: 'zh-CN',
-              };
-        const hostProc = {
-          platform: procPlat,
-          version: '0.0.8',
-          env: hostEnv,
-        };
-        const fn = new Function(
-          'require',
-          '__musicfree_require',
-          'module',
-          'exports',
-          'console',
-          'env',
-          'process',
-          code
-        );
-        fn(require, require, mod, mod.exports, console, hostEnv, hostProc);
-        const instance = (mod.exports && mod.exports.default) || mod.exports;
-        if (instance && typeof instance.platform === 'string' && !isSelfPlatform(instance.platform)) {
-          if (!_siblingPluginMap.has(instance.platform)) {
-            _siblingPluginMap.set(instance.platform, instance);
-          }
-        }
-      } catch (_) {}
-    }
-  } catch (_) {}
-
-  return _siblingPluginMap;
-}
-
-/**
- * 拦截第三方音源接口默认回退的假《晴天》测试音频 (M500000bYDlc2XxKLs.mp3 / 0039MnYb0qxYhV)
- */
-function isFakeQingtianUrl(url, title) {
-  if (!url || typeof url !== 'string') return false;
-  const cleanTitle = String(title || '').trim();
-  if (cleanTitle.includes('晴天')) return false;
-  return url.includes('M500000bYDlc2XxKLs') || url.includes('0039MnYb0qxYhV');
-}
-
-/**
- * 严格校验并过滤恶意虚假音源直链 (拦截卡密充值、广告反代、诈骗音频劫持及假《晴天》)
- */
-function isValidCleanMediaUrl(url, title) {
-  if (!url || typeof url !== 'string') return false;
-  var u = url.trim().toLowerCase();
-  if (!u.startsWith('http://') && !u.startsWith('https://')) return false;
-  // 严格拦截卡密广告劫持、恶意反向代理等特征域名与路径 (坚决剔除 c.wwwweb.top 爱坤音源等)
-  if (
-    u.includes('wwwweb.top') ||
-    u.includes('gitcode.com/db/ee') ||
-    u.includes('ikun') ||
-    u.includes('kami')
-  ) {
-    return false;
-  }
-  // 严格拦截酷我防盗链语音播报与错误域名 (杜绝“请前往酷我音乐客户端收听完整版”语音干扰)
-  if (
-    u.includes('kuwo.cn') ||
-    u.includes('antiserver') ||
-    u.includes('sycdn')
-  ) {
-    return false;
-  }
-  // 严格拦截包含购买/卡密推广特征的虚假音源
-  if (u.includes('card') && u.includes('buy')) {
-    return false;
-  }
-  // 拦截非《晴天》却返回测试歌曲音频
-  if (isFakeQingtianUrl(url, title)) {
-    return false;
-  }
-  return true;
-}
-
 const PLATFORM_DISPLAY_NAMES = {
   qq: 'QQ音乐',
   netease: '网易云音乐',
@@ -1700,9 +1551,9 @@ function isCandidateStrictlyMatched(candidate, wantTitle, wantRawArtist, wantDur
   const wTitleRaw = String(wantTitle || '').trim();
   if (!cTitleRaw || !wTitleRaw) return false;
 
-  // 1. 版本标签必须 100% 一致（原曲无 Live/DJ/伴奏/翻唱/xx版 时，候选曲目或专辑绝不允许带这些标签）
-  const wTags = extractVersionTags(wTitleRaw);
-  const cTags = extractVersionTags(`${cTitleRaw} ${cAlbumRaw}`);
+  // 1. 版本标签必须 100% 一致（原曲无 Live/DJ/伴奏/翻唱/xx版 时，候选曲目 / 专辑 / 歌手字段绝不允许带这些标签）
+  const wTags = extractVersionTags(`${wTitleRaw} ${String(wantRawArtist || '')}`);
+  const cTags = extractVersionTags(`${cTitleRaw} ${cAlbumRaw} ${String(candidate.artist || '')}`);
   if (wTags !== cTags) {
     return false;
   }
@@ -1751,36 +1602,6 @@ function isCandidateStrictlyMatched(candidate, wantTitle, wantRawArtist, wantDur
   }
 
   return true;
-}
-
-/**
- * 相似音源匹配（仅当用户在插件设置中主动选择 fallbackMode = 'similar' 时启用）：
- * 允许翻唱、Live、DJ、伴奏或不同歌手演绎的同歌名曲目作为兜底，但核心歌名必须匹配。
- */
-function isCandidateSimilarMatched(candidate, wantTitle) {
-  if (!candidate || typeof candidate !== 'object') return false;
-  const cTitleRaw = String(candidate.title || '').trim();
-  const wTitleRaw = String(wantTitle || '').trim();
-  if (!cTitleRaw || !wTitleRaw) return false;
-
-  const norm = (s) =>
-    String(s || '')
-      .toLowerCase()
-      .replace(/[\s\-_~·•,，.。!！?？:：;；'"“”‘’《》〈〉【】\[\]()（）/\\]/g, '');
-  const stripBracket = (s) =>
-    String(s || '')
-      .replace(/[\(（\[【].*?[\)）\]】]/g, '')
-      .trim();
-
-  const cNormBase = norm(stripBracket(cTitleRaw)) || norm(cTitleRaw);
-  const wNormBase = norm(stripBracket(wTitleRaw)) || norm(wTitleRaw);
-  if (!cNormBase || !wNormBase) return false;
-
-  return (
-    cNormBase === wNormBase ||
-    (wNormBase.length >= 2 && cNormBase.includes(wNormBase)) ||
-    (cNormBase.length >= 2 && wNormBase.includes(cNormBase))
-  );
 }
 
 /**
@@ -1841,530 +1662,373 @@ async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
   } catch (_) {}
 }
 
-// 负缓存：当某首歌已经走完全部插件确认无原版音源后，缓存 6 秒，
-// 防止 MusicFree 宿主对同一首歌连续轮询 low/high/super 4 个音质档位造成卡顿
-const _noSourceCache = new Map();
-const NO_SOURCE_TTL_MS = 6000;
+// ============================================================================
+// 自动兜底换源引擎 (Auto Rescue)
+// 当某首曲目的原平台插件缺失或取源失败时，通过宿主自身的插件调用通道，在设备上其它
+// 已安装插件中严格匹配「同名 + 同歌手 + 同版本 + 时长吻合」的原曲并回传音源：
+// 找到即无缝续播，找不到则自动跳过——宁可跳过，绝不播放错歌。
+// 仅桌面稳定版宿主提供该通道；手机端 / 桌面测试版将安全地返回空。
+// ============================================================================
+
+let _hostCallPluginMethod = null;
+let _hostGetAllPlugins = null;
+
+const _matchCache = new Map(); // 曲目键 -> { platform, item, at }（30 分钟内复用，音质切换秒回）
+const MATCH_TTL_MS = 30 * 60 * 1000;
+const _noMatchCache = new Map(); // 全平台严格匹配为空 -> 60 秒内不重复搜索
+const NO_MATCH_TTL_MS = 60 * 1000;
+const _noSourceCache = new Map(); // 已匹配到曲目但该音质取链失败 -> 8 秒内不重复请求
+const NO_SOURCE_TTL_MS = 8000;
+const _noLyricCache = new Map(); // 歌词获取失败 -> 60 秒内不重复请求
+const NO_LYRIC_TTL_MS = 60 * 1000;
+const _toastCache = new Map(); // 同一首歌的兜底提示 10 分钟内只弹一次
+const TOAST_TTL_MS = 10 * 60 * 1000;
+const _rescuesInFlight = new Map(); // 并发去重：同一首歌同时触发取源/取词时只搜索一次
+
+// 兜底搜索平台优先级：原平台优先，其余按主流平台顺序，最后补上其余已安装插件
+const RESCUE_PLATFORM_ORDER = ['netease', 'qq', 'kugou', 'kuwo', 'migu', 'qishui', 'bilibili'];
+const _pluginsCache = { at: 0, list: null };
+const PLUGINS_CACHE_TTL_MS = 60000;
 
 /**
- * QQ 音乐解析通道 (官方直连流媒体 / 次合代开放接口 / 落月免鉴权直链)
- * 全面支持 VIP 曲目 (周杰伦 / 林俊杰 / 陈奕迅等) 免登录完整秒播
+ * 测试专用：注入模拟的宿主插件桥接通道（会同时重置所有兜底缓存）
  */
-async function resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, songDuration) {
-  var vq = q === 'high' || q === 'super' ? '8' : '6';
-
-  // 辅助函数：尝试通过 mid 从 s01s 开放接口获取原生全量音频流 (涵盖标准 / 高清 / 无损 FLAC)
-  async function fetchStreamFromS01s(targetMid) {
-    if (!targetMid || typeof targetMid !== 'string') return null;
-    try {
-      var s01sRes = await httpGet(
-        'https://tang.api.s01s.cn/music_open_api.php?mid=' + encodeURIComponent(targetMid),
-        { timeout: 4500 }
-      );
-      if (s01sRes && s01sRes.data && typeof s01sRes.data === 'object') {
-        var d = s01sRes.data;
-        var streamUrl = null;
-        var actualQ = '128k';
-        if (q === 'super') {
-          streamUrl = d.song_play_url_sq || d.song_play_url_hq || d.song_play_url_standard || d.song_play_url;
-          actualQ = d.song_play_url_sq ? 'flac' : (d.song_play_url_hq ? '320k' : '128k');
-        } else if (q === 'high') {
-          streamUrl = d.song_play_url_hq || d.song_play_url_standard || d.song_play_url;
-          actualQ = d.song_play_url_hq ? '320k' : '128k';
-        } else {
-          streamUrl = d.song_play_url_standard || d.song_play_url || d.song_play_url_hq;
-          actualQ = '128k';
-        }
-        if (isValidCleanMediaUrl(streamUrl, title)) {
-          return {
-            url: String(streamUrl),
-            quality: actualQ,
-          };
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  // 辅助函数：从 vkeys 接口获取试听/免费流
-  async function fetchStreamFromVkeys(targetMid) {
-    if (!targetMid || typeof targetMid !== 'string') return null;
-    try {
-      var res = await httpGet(
-        'https://api.vkeys.cn/music/tencent/song/link?mid=' +
-          encodeURIComponent(targetMid) +
-          '&quality=' +
-          vq,
-        { timeout: 4000 }
-      );
-      if (
-        res &&
-        res.data &&
-        res.data.code === 0 &&
-        res.data.data &&
-        res.data.data.url &&
-        isValidCleanMediaUrl(res.data.data.url, title)
-      ) {
-        return {
-          url: String(res.data.data.url),
-          quality: vq === '8' ? '320k' : '128k',
-        };
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  // 1. 优先使用精确 mid 直接取链 (s01s 高速全量通道优先，vkeys 备用)
-  var rawMid =
-    (musicItem._src && musicItem._src.qq && musicItem._src.qq.mid) ||
-    musicItem.songmid ||
-    musicItem.mid ||
-    (musicItem.id && String(musicItem.id).replace(/^qq_/i, ''));
-
-  if (rawMid && typeof rawMid === 'string' && rawMid.length > 5 && !/^\d+$/.test(rawMid)) {
-    var midStream = await fetchStreamFromS01s(rawMid);
-    if (midStream) return midStream;
-    var vkeysStream = await fetchStreamFromVkeys(rawMid);
-    if (vkeysStream) return vkeysStream;
-  }
-
-  // 2. QQ 音乐免鉴权轻量 Smartbox 搜索 (用于其他平台歌曲跨源匹配或缺失 mid 的曲目)
-  if (title) {
-    var query = primaryArtist ? title + ' ' + primaryArtist : title;
-    try {
-      var sRes = await httpGet(
-        'https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg?key=' +
-          encodeURIComponent(query) +
-          '&format=json',
-        {
-          timeout: 4000,
-          headers: { Referer: 'https://y.qq.com' },
-        }
-      );
-      var songList =
-        sRes &&
-        sRes.data &&
-        sRes.data.data &&
-        sRes.data.data.song &&
-        sRes.data.data.song.itemlist;
-      if (Array.isArray(songList) && songList.length > 0) {
-        // 第一轮：严格原版匹配
-        for (var i = 0; i < songList.length; i++) {
-          var s = songList[i];
-          if (!s || !s.mid) continue;
-          var cand = {
-            title: s.name,
-            artist: s.singer,
-          };
-          if (isCandidateStrictlyMatched(cand, title, rawArtist, songDuration)) {
-            var sStream = await fetchStreamFromS01s(s.mid);
-            if (sStream) return sStream;
-            var svStream = await fetchStreamFromVkeys(s.mid);
-            if (svStream) return svStream;
-          }
-        }
-
-        // 第二轮：若用户配置允许相似音源 (fallbackMode === 'similar')
-        var fbMode = getUserFallbackMode();
-        if (fbMode === 'similar') {
-          for (var j = 0; j < songList.length; j++) {
-            var simItem = songList[j];
-            if (!simItem || !simItem.mid) continue;
-            var simCand = {
-              title: simItem.name,
-              artist: simItem.singer,
-            };
-            if (isCandidateSimilarMatched(simCand, title)) {
-              var simStream = await fetchStreamFromS01s(simItem.mid);
-              if (simStream) return simStream;
-              var simvStream = await fetchStreamFromVkeys(simItem.mid);
-              if (simvStream) return simvStream;
-            }
-          }
-        }
-      }
-    } catch (_) {}
-  }
-
-  return null;
+function _setHostBridge(bridge) {
+  _hostCallPluginMethod =
+    bridge && typeof bridge.callPluginMethod === 'function' ? bridge.callPluginMethod : null;
+  _hostGetAllPlugins =
+    bridge && typeof bridge.getAllPlugins === 'function' ? bridge.getAllPlugins : null;
+  _pluginsCache.at = 0;
+  _pluginsCache.list = null;
+  _matchCache.clear();
+  _noMatchCache.clear();
+  _noSourceCache.clear();
+  _noLyricCache.clear();
+  _toastCache.clear();
+  _rescuesInFlight.clear();
 }
 
 /**
- * 网易云音乐解析通道 (Meting 302 直链 / 163 outer 官方直链)
+ * 通过宿主通道同步调用其它插件方法（与宿主行为完全一致的标准化包装）
  */
-async function resolveNeteaseStream(musicItem, q, title, rawArtist, primaryArtist, songDuration) {
-  var rawId =
-    (musicItem._src && musicItem._src.netease && musicItem._src.netease.id) ||
-    (musicItem.id && String(musicItem.id).replace(/^netease_/i, ''));
+function hostCallPluginMethod(payload) {
+  return Promise.resolve()
+    .then(function () {
+      if (!_hostCallPluginMethod) return null;
+      return _hostCallPluginMethod.call(null, {}, payload);
+    })
+    .catch(function () {
+      return null;
+    });
+}
 
-  if (rawId && /^\d+$/.test(String(rawId).trim())) {
-    var cleanId = String(rawId).trim();
-    var metingUrl = 'https://api.injahow.cn/meting/?type=url&id=' + cleanId;
-    if (isValidCleanMediaUrl(metingUrl, title)) {
-      return { url: metingUrl, quality: '128k' };
+/**
+ * 判断该曲目是否由本插件导入（带有 _originPlatform / _src 原生标识）
+ */
+function isPlaylistOutImportedItem(item) {
+  if (!item || typeof item !== 'object') return false;
+  if (item._originPlatform && !isSelfPlatform(item._originPlatform)) return true;
+  if (item._src && typeof item._src === 'object' && Object.keys(item._src).length > 0) return true;
+  return false;
+}
+
+/**
+ * 兜底缓存键：平台 + ID + 歌名 + 主歌手
+ */
+function getRescueCacheKey(item) {
+  if (!item || typeof item !== 'object') return '';
+  var title = String(item.title || '').trim();
+  var artist = String(item.artist || '').replace(/未知歌手/g, '').trim();
+  if (!title) return '';
+  return String(item.platform || '') + '|' + String(item.id || '') + '|' + title + '|' + artist;
+}
+
+/**
+ * 枚举设备上已安装的音源插件平台（需同时具备 search + getMediaSource 能力）
+ */
+async function getInstalledMediaPlatforms() {
+  var now = Date.now();
+  if (_hostGetAllPlugins) {
+    if (_pluginsCache.list && now - _pluginsCache.at < PLUGINS_CACHE_TTL_MS) {
+      return _pluginsCache.list;
     }
+    try {
+      var list = await _hostGetAllPlugins.call(null);
+      var found = [];
+      if (Array.isArray(list)) {
+        for (var i = 0; i < list.length; i++) {
+          var p = list[i];
+          if (!p || typeof p.platform !== 'string' || !p.platform) continue;
+          if (isSelfPlatform(p.platform)) continue;
+          var methods = p.supportedMethod;
+          if (
+            Array.isArray(methods) &&
+            (methods.indexOf('search') < 0 || methods.indexOf('getMediaSource') < 0)
+          ) {
+            continue;
+          }
+          if (found.indexOf(p.platform) < 0) found.push(p.platform);
+        }
+      }
+      if (found.length > 0) {
+        _pluginsCache.list = found;
+        _pluginsCache.at = now;
+        return found;
+      }
+    } catch (_) {}
   }
-
-  return null;
+  return RESCUE_PLATFORM_ORDER.slice();
 }
 
 /**
- * 在线多音源智能回退解析 (Mobile 端核心 & Desktop 端独立兜底通道)
- * 严格按照 PC 电脑端音源梯队优先级 (首选/原平台 -> QQ音乐全量秒播 -> 网易云音乐) 进行智能轮询
- * 坚决杜绝任何酷我防盗链语音播报、爱坤音源、卡密广告，毫秒级返回纯净正版音频直链
+ * 构建兜底搜索平台顺序：原平台优先 -> 主流平台 -> 其余已安装插件
  */
-async function resolveOnlineMediaSource(musicItem, quality) {
-  if (!musicItem || typeof musicItem !== 'object') return null;
+async function buildRescuePlatformOrder(item) {
+  var order = [];
+  var push = function (p) {
+    if (p && !isSelfPlatform(p) && order.indexOf(p) < 0) order.push(p);
+  };
+  if (item && item._originPlatform && !isSelfPlatform(item._originPlatform)) {
+    push(String(item._originPlatform));
+  } else if (item && typeof item.platform === 'string') {
+    push(item.platform);
+  }
+  for (var i = 0; i < RESCUE_PLATFORM_ORDER.length; i++) push(RESCUE_PLATFORM_ORDER[i]);
+  var installed = await getInstalledMediaPlatforms();
+  for (var j = 0; j < installed.length; j++) push(installed[j]);
+  return order;
+}
 
-  var q = quality || 'standard';
-  var title = String(musicItem.title || '').trim();
-  var rawArtist = String(musicItem.artist || '')
+/**
+ * 校验兜底音源直链：仅接受 http(s) 链接
+ */
+function isUsableRescuedUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
+/**
+ * 在全部已安装插件中严格搜索原曲（并发去重 + 匹配缓存）
+ * @returns {Promise<{platform: string, item: object, at: number}|null>}
+ */
+async function findStrictMatch(item) {
+  var key = getRescueCacheKey(item);
+  if (!key) return null;
+
+  var cached = _matchCache.get(key);
+  if (cached && Date.now() - cached.at < MATCH_TTL_MS) return cached;
+
+  var noMatchAt = _noMatchCache.get(key);
+  if (noMatchAt && Date.now() - noMatchAt < NO_MATCH_TTL_MS) return null;
+
+  var inFlight = _rescuesInFlight.get(key);
+  if (inFlight) return inFlight;
+
+  var task = searchStrictMatchAcrossPlatforms(item).then(
+    function (entry) {
+      if (entry) {
+        _matchCache.set(key, entry);
+      } else {
+        _noMatchCache.set(key, Date.now());
+      }
+      _rescuesInFlight.delete(key);
+      return entry;
+    },
+    function () {
+      _rescuesInFlight.delete(key);
+      return null;
+    }
+  );
+  _rescuesInFlight.set(key, task);
+  return task;
+}
+
+/**
+ * 按平台顺序逐一搜索并执行 100% 严格匹配（同名同歌手同版本 + 时长吻合）
+ */
+async function searchStrictMatchAcrossPlatforms(item) {
+  var title = String(item.title || '').trim();
+  if (!title) return null;
+  var rawArtist = String(item.artist || '')
     .replace(/未知歌手/g, '')
     .trim();
   var primaryArtist = rawArtist.split(/[,，、/]/)[0].trim();
-  var songDuration = musicItem.duration || 0;
+  var keyword = primaryArtist ? title + ' ' + primaryArtist : title;
 
-  var originPlat =
-    musicItem._originPlatform ||
-    (musicItem._src && Object.keys(musicItem._src)[0]) ||
-    '';
-  if (!originPlat && musicItem.id && String(musicItem.id).startsWith('qq_')) {
-    originPlat = 'qq';
-  }
-  if (!originPlat && musicItem.id && String(musicItem.id).startsWith('netease_')) {
-    originPlat = 'netease';
-  }
-  if (!originPlat) {
-    originPlat = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-  }
-
-  var userTarget = getUserTargetPlatform();
-  var preferred =
-    userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)
-      ? userTarget.toLowerCase()
-      : (originPlat && !isSelfPlatform(originPlat) ? originPlat : null);
-
-  // 构建多音源智能回退梯队 (剔除酷我，QQ 全量秒播 -> 网易云)
-  var ladder = [];
-  if (preferred && preferred !== 'native' && preferred !== 'split' && preferred !== 'kuwo') {
-    ladder.push(preferred);
-  }
-  var standardOrder = ['qq', 'netease'];
-  for (var i = 0; i < standardOrder.length; i++) {
-    var plat = standardOrder[i];
-    if (!ladder.includes(plat)) ladder.push(plat);
-  }
-
-  for (var pIdx = 0; pIdx < ladder.length; pIdx++) {
-    var currentPlat = ladder[pIdx];
-    var res = null;
-    try {
-      if (currentPlat === 'qq') {
-        res = await resolveQqStream(musicItem, q, title, rawArtist, primaryArtist, songDuration);
-      } else if (currentPlat === 'netease') {
-        res = await resolveNeteaseStream(musicItem, q, title, rawArtist, primaryArtist, songDuration);
+  var order = await buildRescuePlatformOrder(item);
+  for (var i = 0; i < order.length; i++) {
+    var plat = order[i];
+    var res = await hostCallPluginMethod({
+      platform: plat,
+      method: 'search',
+      args: [keyword, 1, 'music'],
+    });
+    var candidates = Array.isArray(res) ? res : res && Array.isArray(res.data) ? res.data : [];
+    for (var j = 0; j < candidates.length; j++) {
+      var cand = candidates[j];
+      if (isCandidateStrictlyMatched(cand, title, rawArtist, item.duration)) {
+        return { platform: plat, item: cand, at: Date.now() };
       }
-    } catch (_) {}
-
-    if (res && res.url && isValidCleanMediaUrl(res.url, title)) {
-      return res;
     }
   }
-
   return null;
 }
 
 /**
- * 在线万能歌词解析 (Mobile 端核心 & Desktop 端独立兜底通道)
+ * 同一首歌的兜底提示 10 分钟内只弹一次（成功 / 失败各自独立去重）
  */
-async function resolveOnlineLyric(musicItem) {
-  var emptyLyric = { rawLrc: '' };
-  if (!musicItem || typeof musicItem !== 'object') return emptyLyric;
-
-  var inferredPlatform =
-    musicItem._originPlatform ||
-    (musicItem._src && Object.keys(musicItem._src)[0]) ||
-    resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-
-  // 1. QQ 音乐官方免费直连歌词及开放接口歌词
-  if (inferredPlatform === 'qq' || (musicItem._src && musicItem._src.qq)) {
-    var rawMid =
-      (musicItem._src && musicItem._src.qq && musicItem._src.qq.mid) ||
-      musicItem.songmid ||
-      musicItem.mid ||
-      (musicItem.id && String(musicItem.id).replace(/^qq_/i, ''));
-    if (rawMid && typeof rawMid === 'string' && rawMid.length > 5) {
-      // 1a. s01s 开放接口歌词
-      try {
-        var s01sLrcRes = await httpGet(
-          'https://tang.api.s01s.cn/music_open_api.php?mid=' + encodeURIComponent(rawMid),
-          { timeout: 3500 }
-        );
-        var sLrc =
-          s01sLrcRes &&
-          s01sLrcRes.data &&
-          (s01sLrcRes.data.song_lyric || s01sLrcRes.data.lyric);
-        if (typeof sLrc === 'string' && sLrc.trim()) {
-          return { rawLrc: sLrc.trim() };
-        }
-      } catch (_) {}
-
-      // 1b. 官方 QQ 歌词接口
-      try {
-        var lrcUrl =
-          'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=' +
-          encodeURIComponent(rawMid) +
-          '&format=json&nobase64=1';
-        var res = await httpGet(lrcUrl, {
-          timeout: 4000,
-          headers: { Referer: 'https://y.qq.com' },
-        });
-        if (
-          res &&
-          res.data &&
-          typeof res.data.lyric === 'string' &&
-          res.data.lyric.trim()
-        ) {
-          return { rawLrc: res.data.lyric.trim() };
-        }
-      } catch (_) {}
-    }
-  }
-
-  // 2. 网易云音乐官方直连歌词
-  if (inferredPlatform === 'netease' || (musicItem._src && musicItem._src.netease)) {
-    var rawId =
-      (musicItem._src && musicItem._src.netease && musicItem._src.netease.id) ||
-      (musicItem.id && String(musicItem.id).replace(/^netease_/i, ''));
-    if (rawId && /^\d+$/.test(String(rawId).trim())) {
-      var cleanId = String(rawId).trim();
-      try {
-        var nLrcUrl =
-          'https://music.163.com/api/song/lyric?id=' +
-          encodeURIComponent(cleanId) +
-          '&lv=1&kv=1&tv=-1';
-        var nRes = await httpGet(nLrcUrl, { timeout: 4000 });
-        if (
-          nRes &&
-          nRes.data &&
-          nRes.data.lrc &&
-          typeof nRes.data.lrc.lyric === 'string' &&
-          nRes.data.lrc.lyric.trim()
-        ) {
-          return { rawLrc: nRes.data.lrc.lyric.trim() };
-        }
-      } catch (_) {}
-    }
-  }
-
-  return emptyLyric;
+function notifyRescueOnce(key, message, kind) {
+  var toastKey = key + '|' + kind;
+  var last = _toastCache.get(toastKey);
+  if (last && Date.now() - last < TOAST_TTL_MS) return;
+  _toastCache.set(toastKey, Date.now());
+  showPlaybackToast(message, kind);
 }
 
 /**
- * 为历史遗留曲目或无源曲目补齐 _src 并委派给本地已安装的原生插件或在线兜底通道播放
+ * 自动兜底取源：先在其它已安装插件中严格匹配原曲，再向命中插件请求音源。
+ * 命中即返回并将曲目写入匹配缓存（后续音质切换直接复用），未命中返回 null 并给出提示。
+ */
+async function rescueMediaSource(item, quality) {
+  if (!item || typeof item !== 'object' || !_hostCallPluginMethod) return null;
+  var key = getRescueCacheKey(item);
+  if (!key) return null;
+
+  var q = quality || 'standard';
+  var noSourceAt = _noSourceCache.get(key + '|' + q);
+  if (noSourceAt && Date.now() - noSourceAt < NO_SOURCE_TTL_MS) return null;
+
+  var match = await findStrictMatch(item);
+  if (!match) {
+    var title = String(item.title || '').trim();
+    var artist = String(item.artist || '')
+      .replace(/未知歌手/g, '')
+      .split(/[,，、/]/)[0]
+      .trim();
+    notifyRescueOnce(
+      key,
+      '⚠️ 未找到《' + (artist ? title + ' - ' + artist : title) + '》的可用音源，已自动跳过',
+      'warn'
+    );
+    return null;
+  }
+
+  var source = await hostCallPluginMethod({
+    platform: match.platform,
+    method: 'getMediaSource',
+    args: [match.item, q],
+  });
+  if (!source || !isUsableRescuedUrl(source.url)) {
+    _noSourceCache.set(key + '|' + q, Date.now());
+    return null;
+  }
+
+  var platLabel = PLATFORM_DISPLAY_NAMES[match.platform] || match.platform;
+  notifyRescueOnce(
+    key,
+    '🔄 已自动从「' + platLabel + '」为您匹配播放《' + String(item.title || '') + '》',
+    'info'
+  );
+  return source;
+}
+
+/**
+ * 自动兜底歌词：复用已匹配到的曲目（或重新严格匹配）获取原生歌词
+ */
+async function rescueLyric(item) {
+  if (!item || typeof item !== 'object' || !_hostCallPluginMethod) return null;
+  var key = getRescueCacheKey(item);
+  if (!key) return null;
+
+  var noLyricAt = _noLyricCache.get(key);
+  if (noLyricAt && Date.now() - noLyricAt < NO_LYRIC_TTL_MS) return null;
+
+  var match = await findStrictMatch(item);
+  if (!match) return null;
+
+  var lrc = await hostCallPluginMethod({
+    platform: match.platform,
+    method: 'getLyric',
+    args: [match.item],
+  });
+  if (lrc && typeof lrc.rawLrc === 'string' && lrc.rawLrc.trim()) {
+    return lrc;
+  }
+  _noLyricCache.set(key, Date.now());
+  return null;
+}
+
+/**
+ * 宿主插件调用拦截：取源 / 取词失败且曲目由本插件导入时，自动兜底换源 / 换词
+ */
+async function maybeRescueResult(payload, res) {
+  if (!payload || !Array.isArray(payload.args) || !payload.args[0]) return res;
+  var pl = payload.platform;
+  if (pl && isSelfPlatform(pl)) return res;
+  if (!_hostCallPluginMethod) return res;
+
+  var item = payload.args[0];
+  if (payload.method === 'getMediaSource') {
+    if (res && res.url) return res;
+    if (!isPlaylistOutImportedItem(item)) return res;
+    var rescued = await rescueMediaSource(item, payload.args[1] || 'standard');
+    return rescued || res;
+  }
+  if (payload.method === 'getLyric') {
+    if (res && typeof res.rawLrc === 'string' && res.rawLrc.trim()) return res;
+    if (!isPlaylistOutImportedItem(item)) return res;
+    var rescuedLrc = await rescueLyric(item);
+    return rescuedLrc || res;
+  }
+  return res;
+}
+
+/**
+ * 获取音源 (getMediaSource)
+ * 本插件不内置任何音源，只在桌面稳定版上作为「自动兜底」入口服务两类曲目：
+ *   1. 历史版本导入的曲目（platform 仍是本插件名）：优先按原平台原生标识精确取源；
+ *   2. 未知来源曲目：直接进入跨插件严格匹配兜底链。
+ * 手机端 / 桌面测试版宿主无插件通道，将安全地返回 null（由宿主按既有机制跳过）。
  */
 async function getMediaSource(musicItem, quality) {
-  var q = quality || 'standard';
   if (!musicItem || typeof musicItem !== 'object' || !musicItem.id) {
     return null;
   }
+  var q = quality || 'standard';
 
-  var title = String(musicItem.title || '').trim();
-  var rawArtist = String(musicItem.artist || '')
-    .replace(/未知歌手/g, '')
-    .trim();
-  var primaryArtist = rawArtist.split(/[,，、/]/)[0].trim();
-  var songLabel = primaryArtist ? title + ' - ' + primaryArtist : title || String(musicItem.id);
-  var fallbackMode = getUserFallbackMode();
-
-  // 检查 6 秒短期无音源负缓存（避免 MusicFree 同一首歌轮询 4 个音质档位时重复耗时）
-  var cacheKey = String(musicItem.id) + '_' + title + '_' + primaryArtist + '_' + fallbackMode;
-  var cachedFailAt = _noSourceCache.get(cacheKey);
-  if (cachedFailAt && Date.now() - cachedFailAt < NO_SOURCE_TTL_MS) {
-    return null;
-  }
-
-  // 1. 若宿主为桌面端 Electron 且具备文件系统，优先通过本地同级插件桥接
-  if (isHostElectron() || globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
-    try {
-      var plugins = await loadInstalledSiblingPlugins();
-      if (plugins && plugins.size > 0) {
-        var inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-        var userTarget = getUserTargetPlatform();
-        var prioritizedPlatform =
-          userTarget && userTarget.toLowerCase() !== 'auto' && userTarget.toLowerCase() !== 'native' && !isSelfPlatform(userTarget)
-            ? userTarget.toLowerCase()
-            : (inferredPlatform && !isSelfPlatform(inferredPlatform) ? inferredPlatform : null);
-
-        // 优先通过精确 ID / 原生字段从首选平台取链
-        if (prioritizedPlatform && plugins.has(prioritizedPlatform)) {
-          var targetPlugin = plugins.get(prioritizedPlatform);
-          if (targetPlugin && typeof targetPlugin.getMediaSource === 'function') {
-            try {
-              var cloned = Object.assign({}, musicItem, {
-                platform: prioritizedPlatform,
-                artist: primaryArtist || musicItem.artist,
-              });
-              attachNativeSourceMetadata(cloned, musicItem, prioritizedPlatform);
-              var res = await targetPlugin.getMediaSource(cloned, q);
-              if (res && res.url && isValidCleanMediaUrl(res.url, title)) {
-                return res;
-              }
-            } catch (_) {}
-          }
-        }
-
-        // 跨同级插件严格匹配搜索
-        if (title) {
-          var keyword = primaryArtist ? title + ' ' + primaryArtist : title;
-          var allPlatforms = ['qq', 'netease', 'kugou', 'qishui', 'migu'];
-          var fallbackOrder = [];
-          if (userTarget && userTarget.toLowerCase() !== 'auto' && !isSelfPlatform(userTarget)) {
-            fallbackOrder.push(userTarget.toLowerCase());
-          }
-          if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !fallbackOrder.includes(inferredPlatform)) {
-            fallbackOrder.push(inferredPlatform);
-          }
-          for (var pIdx = 0; pIdx < allPlatforms.length; pIdx++) {
-            var plat = allPlatforms[pIdx];
-            if (!fallbackOrder.includes(plat)) fallbackOrder.push(plat);
-          }
-
-          var cachedCandidatesByPlat = new Map();
-          for (var fIdx = 0; fIdx < fallbackOrder.length; fIdx++) {
-            var fPlat = fallbackOrder[fIdx];
-            var p = plugins.get(fPlat);
-            if (!p || typeof p.search !== 'function' || typeof p.getMediaSource !== 'function') continue;
-            try {
-              var searchRes = await p.search(keyword, 1, 'music');
-              var candidates = searchRes && searchRes.data;
-              if (Array.isArray(candidates) && candidates.length > 0) {
-                cachedCandidatesByPlat.set(fPlat, candidates);
-                var matched = candidates.find(function (c) {
-                  return isCandidateStrictlyMatched(c, title, rawArtist, musicItem.duration);
-                });
-                if (matched) {
-                  var media = await p.getMediaSource(matched, q);
-                  if (media && media.url && isValidCleanMediaUrl(media.url, title)) {
-                    if (fallbackMode !== 'silent_skip') {
-                      var platLabel = PLATFORM_DISPLAY_NAMES[fPlat] || fPlat;
-                      showPlaybackToast(
-                        '🔄 原平台无源，已从「' + platLabel + '」为您匹配同歌手原版《' + title + '》',
-                        'info'
-                      );
-                    }
-                    return media;
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          if (fallbackMode === 'similar') {
-            for (var sIdx = 0; sIdx < fallbackOrder.length; sIdx++) {
-              var sPlat = fallbackOrder[sIdx];
-              var sp = plugins.get(sPlat);
-              var sCandidates = cachedCandidatesByPlat.get(sPlat);
-              if (!sp || !Array.isArray(sCandidates) || sCandidates.length === 0) continue;
-              try {
-                var simMatched = sCandidates.find(function (c) {
-                  return isCandidateSimilarMatched(c, title);
-                });
-                if (simMatched) {
-                  var simMedia = await sp.getMediaSource(simMatched, q);
-                  if (simMedia && simMedia.url && isValidCleanMediaUrl(simMedia.url, title)) {
-                    var sPlatLabel = PLATFORM_DISPLAY_NAMES[sPlat] || sPlat;
-                    var simArtist = simMatched.artist ? ' - ' + simMatched.artist : '';
-                    showPlaybackToast(
-                      '💡 暂无原版，已从「' + sPlatLabel + '」播放最相似音源：《' + simMatched.title + simArtist + '》',
-                      'info'
-                    );
-                    return simMedia;
-                  }
-                }
-              } catch (_) {}
-            }
-          }
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 2. 移动端 (Mobile) 及桌面端无同级插件时的在线通用取链解析
-  try {
-    var onlineMedia = await resolveOnlineMediaSource(musicItem, q);
-    if (onlineMedia && onlineMedia.url && isValidCleanMediaUrl(onlineMedia.url, title)) {
-      return onlineMedia;
+  // 历史导入兼容：若曲目带原平台显式标识，先在原平台插件上精确取源（免搜索、最精准）
+  var origin = musicItem._originPlatform;
+  if (origin && !isSelfPlatform(origin) && _hostCallPluginMethod) {
+    var exact = await hostCallPluginMethod({
+      platform: String(origin),
+      method: 'getMediaSource',
+      args: [musicItem, q],
+    });
+    if (exact && isUsableRescuedUrl(exact.url)) {
+      var platLabel = PLATFORM_DISPLAY_NAMES[origin] || origin;
+      notifyRescueOnce(
+        getRescueCacheKey(musicItem),
+        '🔄 已自动从「' + platLabel + '」为您匹配播放《' + String(musicItem.title || '') + '》',
+        'info'
+      );
+      return exact;
     }
-  } catch (_) {}
-
-  // 3. 没有任何匹配音源时，记录负缓存并根据设置弹出明确提示后跳过
-  _noSourceCache.set(cacheKey, Date.now());
-  if (fallbackMode !== 'silent_skip') {
-    showPlaybackToast(
-      '⚠️ 暂无《' + songLabel + '》原版音源，已自动跳过（可在插件设置切换为相似音源）',
-      'warn'
-    );
   }
-  return null;
+
+  return rescueMediaSource(musicItem, q);
 }
 
 /**
  * 获取歌词 (getLyric)
- * 优先桥接本地同级插件歌词，移动端及独立运行时在线解析，且保证绝不返回 null，防止 MusicFree 宿主读取 rawLrc 崩溃。
+ * 先尝试跨插件严格匹配兜底获取原生歌词；获取不到时返回空歌词对象，
+ * 保证绝不返回 null，防止 MusicFree 宿主读取 rawLrc 崩溃。
  */
 async function getLyric(musicItem) {
   var emptyLyric = { rawLrc: '' };
   if (!musicItem || typeof musicItem !== 'object' || !musicItem.id) {
     return emptyLyric;
   }
-
-  // 1. 若宿主为桌面端 Electron 且具备文件系统，优先通过本地同级插件桥接
-  if (isHostElectron() || globalThis.__PLAYLISTOUT_ENABLE_SIBLING_BRIDGE__) {
-    try {
-      var plugins = await loadInstalledSiblingPlugins();
-      if (plugins && plugins.size > 0) {
-        var userTarget = getUserTargetPlatform();
-        var inferredPlatform = resolveMusicPlatformFromTrackFields(musicItem, musicItem);
-        var candidatePlatforms = [];
-        if (userTarget && userTarget.toLowerCase() !== 'auto' && userTarget.toLowerCase() !== 'native' && !isSelfPlatform(userTarget)) {
-          candidatePlatforms.push(userTarget.toLowerCase());
-        }
-        if (inferredPlatform && !isSelfPlatform(inferredPlatform) && !candidatePlatforms.includes(inferredPlatform)) {
-          candidatePlatforms.push(inferredPlatform);
-        }
-        var allPlatforms = ['qq', 'netease', 'kugou', 'migu'];
-        for (var i = 0; i < allPlatforms.length; i++) {
-          var p = allPlatforms[i];
-          if (!candidatePlatforms.includes(p)) candidatePlatforms.push(p);
-        }
-
-        for (var j = 0; j < candidatePlatforms.length; j++) {
-          var plat = candidatePlatforms[j];
-          if (!plugins.has(plat)) continue;
-          var targetPlugin = plugins.get(plat);
-          if (!targetPlugin || typeof targetPlugin.getLyric !== 'function') continue;
-          try {
-            var cloned = Object.assign({}, musicItem, { platform: plat });
-            attachNativeSourceMetadata(cloned, musicItem, plat);
-            var lrc = await targetPlugin.getLyric(cloned);
-            if (lrc && typeof lrc.rawLrc === 'string' && lrc.rawLrc.trim()) {
-              return lrc;
-            }
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 2. 移动端 (Mobile) 及桌面端无同级插件时的在线歌词解析
-  try {
-    var onlineLrc = await resolveOnlineLyric(musicItem);
-    if (onlineLrc && typeof onlineLrc.rawLrc === 'string' && onlineLrc.rawLrc.trim()) {
-      return onlineLrc;
-    }
-  } catch (_) {}
-
+  var rescued = await rescueLyric(musicItem);
+  if (rescued) return rescued;
   return emptyLyric;
 }
 
@@ -2379,6 +2043,7 @@ module.exports = {
     '## 把你的歌单带走 官方插件',
     '',
     '支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等主流平台歌单在线解析与导入。',
+    '导入的曲目会自动归属原平台，由您设备上已安装的原生音源插件负责播放；桌面端在原平台插件缺失或取源失败时，会跨插件严格匹配同一首原曲自动换源（绝不播放错歌）。',
     '',
     '### 🌐 官方网站（点击可直接在浏览器打开）',
     '- [👉 点击一键前往官网 (playlistout.lengxiqwq.com)](https://playlistout.lengxiqwq.com)',
@@ -2392,22 +2057,13 @@ module.exports = {
   hints: {
     importMusicSheet: [
       '【支持平台】QQ音乐、网易云音乐、酷狗音乐、汽水音乐',
+      '【播放说明】本插件只解析歌单，播放依赖已安装的原生音源插件；桌面端缺源时自动跨插件匹配换源',
       '【酷狗限制】酷狗官方限制免登录仅解析前10首',
       '【完整解析】在官网登录复制Token填入插件设置即可全量导入',
       '【官方网站】playlistout.lengxiqwq.com',
     ],
   },
   userVariables: [
-    {
-      key: 'targetPlatform',
-      name: '音源通道',
-      hint: 'native(默认) / qq / netease',
-    },
-    {
-      key: 'fallbackMode',
-      name: '换源策略',
-      hint: 'strict(默认) / similar(翻唱)',
-    },
     {
       key: 'kugouToken',
       name: '酷狗Token',
@@ -2428,4 +2084,7 @@ module.exports = {
   _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
   _detectClientEnvironment: detectClientEnvironment,
   _getPlaylistOutHeaders: getPlaylistOutHeaders,
+  _setHostBridge: _setHostBridge,
+  _isCandidateStrictlyMatched: isCandidateStrictlyMatched,
+  _maybeRescueResult: maybeRescueResult,
 };
