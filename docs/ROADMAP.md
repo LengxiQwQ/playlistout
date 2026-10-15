@@ -4,7 +4,7 @@
 
 ## Current status
 
-**PlaylistOut v2.2.0 release: SHIPPED — four-platform Web/API baseline**
+**PlaylistOut v2.2.0 release: SHIPPED — five-platform Web/API baseline**
 **Current main: v2.2.x maintenance + interoperability work**
 **Analytics V2 + Dashboard V3: COMPLETE — V2-only analytics, V1 physically retired, continuity-safe public stats, production reconciliation, data-quality gates, and localhost dashboard**
 

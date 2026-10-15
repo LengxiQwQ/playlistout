@@ -15,9 +15,9 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 - **Kugou Music CLI Exporter / 酷狗音乐 CLI 导出工具**:
   - 新增酷狗音乐独立 Python CLI 导出工具（[`cli/kugou/`](cli/kugou/)），全面支持酷狗官方精选/专题歌单、酷狗概念版集合歌单、移动端分享页短链与 H5 分享页（`gcid_...` / `src_cid=...`）以及个人云端自建歌单（Cloudlist / 我喜欢的歌）。
   - 公开歌单（专题、集合、H5）**100% 免登录**直接导出。
-  - 个人云端自建歌单提供**双轨认证与本地永久保存**：
-    - **方式一（终端扫码）**：运行 `--login` 直接生成酷狗官方登录二维码并自动打开图片，手机酷狗 APP 扫码确认后自动获取 `token` 和 `userid`，并永久保存至 `~/.playlistout/kugou_auth.json`。
-    - **方式二（官网/抓包凭证）**：支持手动输入在 PlaylistOut 官网或抓包获取的 UserID 与 Token，或通过 `--token`/`--userid` 参数传入，自动保存永久复用。
+  - 个人云端自建歌单提供**双轨认证与本地持久化保存**：
+    - **方式一（终端扫码）**：运行 `--login` 直接生成酷狗官方登录二维码并自动打开图片，手机酷狗 APP 扫码确认后自动获取 `token` 和 `userid`，并保存至 `~/.playlistout/kugou_auth.json`。
+    - **方式二（官网/抓包凭证）**：支持手动输入在 PlaylistOut 官网或抓包获取的 UserID 与 Token，或通过 `--token`/`--userid` 参数传入，自动保存复用。
   - 支持高品与无损音质标记（FLAC / 320kbps / 128kbps）及 VIP 专享状态检测。
   - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
   - 配套 31 项完整的自动化单元与集成测试（[`cli/kugou/test_kugou_utils.py`](cli/kugou/test_kugou_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
