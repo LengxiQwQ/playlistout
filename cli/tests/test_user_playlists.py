@@ -225,9 +225,9 @@ def test_interactive_preselected_platform_pure_digits_user_disambiguation(tmp_pa
     # 2. 纯数字: '3197635836'
     # 3. 类型选择: '2' (用户 / QQ号 / UID)
     # 4. 歌单范围: 'all' (全部导出)
-    # 5. 导出格式: '3' (JSON)
-    # 6. 下一轮主循环退出: '0'
-    inputs = iter(["2", "3197635836", "2", "all", "3", "0"])
+    # 6. 停留在 QQ 音乐平台，输入 '0' 返回主菜单
+    # 7. 主菜单输入 '0' 退出程序
+    inputs = iter(["2", "3197635836", "2", "all", "3", "0", "0"])
 
     with patch.object(qq_adapter, "fetch_user_playlists", return_value=mock_user_pls) as mock_fetch_user, \
          patch.object(qq_adapter, "fetch_playlist", return_value=mock_pl_obj) as mock_fetch_pl, \

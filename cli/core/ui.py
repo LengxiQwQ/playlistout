@@ -68,17 +68,38 @@ def sanitize_filename(name: str, max_length: int = 150) -> str:
     return cleaned
 
 
+_COLOR_ENABLED_OVERRIDE = None
+
+
+def set_color_enabled(enabled):
+    """
+    显式设置或重置终端颜色启用状态。
+    当处于命令行参数脚本运行模式时，设置为 False，彻底杜绝任何 ANSI 颜色码输出。
+    """
+    global _COLOR_ENABLED_OVERRIDE
+    _COLOR_ENABLED_OVERRIDE = enabled
+
+
+def is_color_enabled() -> bool:
+    """获取当前是否启用彩色输出。"""
+    return supports_color()
+
+
 def supports_color() -> bool:
     """检测当前输出环境是否支持/启用 ANSI 彩色转义码。"""
     if os.environ.get("NO_COLOR") or os.environ.get("PLAYLISTOUT_NO_COLOR"):
         return False
     if os.environ.get("FORCE_COLOR") or os.environ.get("PLAYLISTOUT_FORCE_COLOR"):
         return True
+    if _COLOR_ENABLED_OVERRIDE is False:
+        return False
+    if _COLOR_ENABLED_OVERRIDE is True:
+        return True
     return bool(sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty())
 
 
 def color_cyan(text: str) -> str:
-    """青色加粗文本，用于各级标题"""
+    """青色加粗文本，用于各级标题、识别成功的平台与操作提示"""
     if supports_color():
         return f"\033[1;36m{text}\033[0m"
     return text
@@ -88,6 +109,67 @@ def color_amber(text: str) -> str:
     """暖橙黄色加粗文本，用于品牌软件名称"""
     if supports_color():
         return f"\033[1;33m{text}\033[0m"
+    return text
+
+
+def color_green(text: str) -> str:
+    """绿色加粗文本，用于成功、完成、正常状态"""
+    if supports_color():
+        return f"\033[1;32m{text}\033[0m"
+    return text
+
+
+def color_yellow(text: str) -> str:
+    """黄色加粗文本，用于 VIP 提示、警示、部分加载"""
+    if supports_color():
+        return f"\033[1;33m{text}\033[0m"
+    return text
+
+
+def color_red(text: str) -> str:
+    """红色加粗文本，用于无版权/下架、失败、错误"""
+    if supports_color():
+        return f"\033[1;31m{text}\033[0m"
+    return text
+
+
+def color_bold(text: str) -> str:
+    """加粗亮白文本，用于菜单选项序号"""
+    if supports_color():
+        return f"\033[1m{text}\033[0m"
+    return text
+
+
+def color_blue(text: str) -> str:
+    """蓝色加粗文本，用于酷狗音乐品牌色"""
+    if supports_color():
+        return f"\033[1;34m{text}\033[0m"
+    return text
+
+
+def get_platform_brand_color(platform_id: str = None, text: str = "") -> str:
+    """
+    根据平台 ID 或别名返回带品牌专属主题色的文本 (无色彩环境原样返回)。
+    - 网易云音乐 (netease / 163 / wyy): 红色 (Bold Red)
+    - QQ 音乐 (qqmusic / qq): 绿色 (Bold Green)
+    - 酷狗音乐 (kugou / kg): 蓝色 (Bold Blue)
+    - 酷我音乐 (kuwo / kw): 黄色 (Bold Yellow)
+    - 汽水音乐 (qishui / qs / douyin): 青色 (Bold Cyan)
+    """
+    if not supports_color() or not platform_id or not text:
+        return text
+
+    pid = str(platform_id).strip().lower()
+    if pid in ("netease", "163", "wyy"):
+        return color_red(text)
+    elif pid in ("qqmusic", "qq"):
+        return color_green(text)
+    elif pid in ("kugou", "kg"):
+        return color_blue(text)
+    elif pid in ("kuwo", "kw"):
+        return color_yellow(text)
+    elif pid in ("qishui", "qs", "douyin"):
+        return color_cyan(text)
     return text
 
 
@@ -123,7 +205,8 @@ def prompt_input(prompt_text: str = "", divider_after: bool = True, divider_on_e
             clean_prompt = clean_prompt[:-1] + "："
         print(clean_prompt)
 
-    val = input("> ").strip()
+    prompt_symbol = color_cyan("> ") if supports_color() else "> "
+    val = input(prompt_symbol).strip()
     if divider_after and (val or divider_on_empty):
         print_divider()
     return val
@@ -173,8 +256,11 @@ def print_banner(platform_name: str = None):
 def print_main_menu(platforms: list):
     """主菜单界面：平台入口 + 最简使用提示。"""
     for idx, p in enumerate(platforms, 1):
-        name = _pad_terminal_text(p["name"], 12)
-        print(f"  {idx}  {name}{p['desc']}")
+        num_str = color_bold(str(idx)) if supports_color() else str(idx)
+        raw_name = p.get("name", "")
+        pad_spaces = " " * max(0, 12 - _terminal_display_width(raw_name))
+        colored_name = get_platform_brand_color(p.get("id"), raw_name)
+        print(f"  {num_str}  {colored_name}{pad_spaces}{p.get('desc', '')}")
     print("")
     print("💡 直接粘贴链接或分享文案即可自动识别平台。")
     print("💡 只有歌单 ID？先输入平台编号。")
@@ -184,14 +270,22 @@ def print_main_menu(platforms: list):
 def print_format_menu():
     """统一导出格式菜单：描述用途，不暴露实现细节"""
     print_title("导出格式", emoji="📦")
-    print("  1  Excel (.xlsx)  适合查看、整理和备份")
-    print("  2  JSON  (.json)  适合第三方工具和程序导入")
-    print("  3  CSV   (.csv)   适合表格软件和迁移工具")
-    print("  4  TXT   (.txt)   简单的歌曲清单")
-    print("  5  M3U8  (.m3u8)  通用播放列表")
+    k1 = color_bold("1") if supports_color() else "1"
+    k2 = color_bold("2") if supports_color() else "2"
+    k3 = color_bold("3") if supports_color() else "3"
+    k4 = color_bold("4") if supports_color() else "4"
+    k5 = color_bold("5") if supports_color() else "5"
+    k_enter = color_bold("Enter") if supports_color() else "Enter"
+    k0 = color_bold("0") if supports_color() else "0"
+
+    print(f"  {k1}  Excel (.xlsx)  适合查看、整理和备份")
+    print(f"  {k2}  JSON  (.json)  适合第三方工具和程序导入")
+    print(f"  {k3}  CSV   (.csv)   适合表格软件和迁移工具")
+    print(f"  {k4}  TXT   (.txt)   简单的歌曲清单")
+    print(f"  {k5}  M3U8  (.m3u8)  通用播放列表")
     print("")
-    print("  Enter  全部导出")
-    print("  0      返回")
+    print(f"  {k_enter}  全部导出")
+    print(f"  {k0}      返回")
     print("")
 
 
@@ -256,11 +350,25 @@ def reveal_folder(target_path: str):
         pass
 
 
-def print_exit_banner(include_divider: bool = True):
-    """退出提示"""
+_EXIT_BANNER_PRINTED = False
+
+
+def reset_exit_banner_state():
+    """重置退出横幅打印标记 (测试专用)"""
+    global _EXIT_BANNER_PRINTED
+    _EXIT_BANNER_PRINTED = False
+
+
+def print_exit_banner(include_divider: bool = True, force: bool = False):
+    """退出提示 (幂等保障，单次进程运行中严格只输出一次)"""
+    global _EXIT_BANNER_PRINTED
+    if _EXIT_BANNER_PRINTED and not force:
+        return
+    _EXIT_BANNER_PRINTED = True
+
     github_link = terminal_link(REPO_URL, "GitHub")
     if include_divider:
         print_divider()
-    print(f"感谢使用！欢迎在 {github_link} 给个 Star ⭐️")
+    print(f"感谢使用！欢迎在 {github_link} 点个 Star ⭐️")
     print("Playlist Out - Paste. Parse. Export.")
     print()

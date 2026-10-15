@@ -3,7 +3,7 @@
 PlaylistOut Kugou Music Platform Adapter
 ========================================
 Integrates Kugou Music (kugou.com) into the unified CLI.
-Supports official special playlists, collection playlists, H5 share pages, and Cloudlists (with QR code auth).
+Supports official special playlists, collection playlists, H5 share pages, and Cloudlists (with terminal QR code auth).
 """
 
 import os
@@ -11,6 +11,9 @@ import sys
 import json
 import time
 import hashlib
+import base64
+import zlib
+import struct
 from typing import Optional, List, Tuple
 import requests
 
@@ -24,13 +27,22 @@ from ..core.models import (
 )
 from ..core.ui import (
     print_title,
+    print_divider,
     prompt_input,
+    terminal_link,
+    supports_color,
+    color_green,
+    color_red,
+    color_yellow,
+    color_cyan,
+    color_bold,
 )
 
 from cli.kugou.kugou_playlist_export import (
     extract_kugou_target,
     _fetch_kugou_playlist_by_target,
-    run_qr_login_flow,
+    request_kugou_qr,
+    poll_kugou_qr_status,
 )
 
 # ----------------- 常量与加解密参数 -----------------
@@ -66,6 +78,102 @@ def encrypt_kugou_lite_rsa(payload: dict) -> str:
     val = int.from_bytes(padded, byteorder="big")
     enc = pow(val, KUGOU_RSA_EXPONENT, KUGOU_LITE_RSA_MODULUS)
     return f"{enc:0256x}".upper()
+
+
+# ----------------- 终端纯字符二维码渲染器 -----------------
+
+def render_qr_to_ansi(b64_png: str) -> Optional[str]:
+    """
+    纯原生解析酷狗官方 1-bit 二维码 PNG 图片，采用半块字符 (Half-Block) 渲染技术。
+    一个字符行纵向合并 2 行像素模块，每个模块水平占 1 个字符宽度。
+    将整体占用尺寸由 94x52 紧凑缩减至约 51x26，精致优雅，杜绝占满屏幕，手机极易对焦扫描。
+    """
+    try:
+        clean_b64 = b64_png.split(",")[-1]
+        raw = base64.b64decode(clean_b64)
+        if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+            return None
+
+        pos = 8
+        idat_chunks = []
+        w, h = 0, 0
+        while pos < len(raw):
+            length, chunk_type = struct.unpack(">I4s", raw[pos:pos+8])
+            pos += 8
+            data = raw[pos:pos+length]
+            pos += length + 4
+            if chunk_type == b"IHDR":
+                w, h = struct.unpack(">II", data[:8])
+            elif chunk_type == b"IDAT":
+                idat_chunks.append(data)
+
+        if not idat_chunks or w == 0 or h == 0:
+            return None
+
+        decompressed = zlib.decompress(b"".join(idat_chunks))
+        stride = 1 + (w + 7) // 8
+        grid = []
+        for y in range(h):
+            line = decompressed[y * stride : (y + 1) * stride]
+            bits = []
+            for b in line[1:]:
+                for bit_idx in range(7, -1, -1):
+                    bits.append((b >> bit_idx) & 1)
+            grid.append(bits[:w])
+
+        # 自动探测 Quiet Zone 后的第一个黑色像素行，推算模块大小
+        start_row = 0
+        while start_row < h and all(grid[start_row][x] == 1 for x in range(w)):
+            start_row += 1
+
+        if start_row >= h:
+            return None
+
+        # 测出第一个黑色连续块长度 (QR Finder Pattern 严格为 7 个模块宽度)
+        black_len = 0
+        for val in grid[start_row]:
+            if val == 0:
+                black_len += 1
+            elif black_len > 0:
+                break
+
+        module_size = max(1, black_len // 7)
+        num_modules = w // module_size
+
+        # 采样模块矩阵 (0 为黑，1 为白)，外加 2 模块宽度的白色静区
+        quiet = 2
+        total_w = num_modules + quiet * 2
+        matrix = []
+        for _ in range(quiet):
+            matrix.append([1] * total_w)
+        for r in range(num_modules):
+            y = int((r + 0.5) * module_size)
+            row = [1] * quiet
+            for c in range(num_modules):
+                x = int((c + 0.5) * module_size)
+                row.append(grid[y][x])
+            row.extend([1] * quiet)
+            matrix.append(row)
+        for _ in range(quiet):
+            matrix.append([1] * total_w)
+
+        total_rows = len(matrix)
+        lines = []
+        # 纵向每 2 个像素模块合并为 1 行字符单元 (使用 U+2580 '▀'，前景色控制上半像素，背景色控制下半像素)
+        for r in range(0, total_rows, 2):
+            row_top = matrix[r]
+            row_bot = matrix[r + 1] if r + 1 < total_rows else [1] * total_w
+            line_parts = ["  "]
+            for top, bot in zip(row_top, row_bot):
+                # 0 为黑色 (Dark)，1 为白色 (Light)
+                fg = "30" if top == 0 else "37"
+                bg = "40" if bot == 0 else "47"
+                line_parts.append(f"\033[{fg};{bg}m\u2580\033[0m")
+            lines.append("".join(line_parts))
+
+        return "\n".join(lines)
+    except Exception:
+        return None
 
 
 # ----------------- 凭证存储与管理 -----------------
@@ -145,8 +253,9 @@ def verify_kugou_credentials(token: str, userid: str, timeout: int = 10) -> Tupl
         return False, "UserID 必须为纯数字（例如: 12345678）", {}
     if not token:
         return False, "Token 不能为空", {}
-    if len(token) != 32 or not all(c in "0123456789abcdefABCDEF" for c in token):
-        return False, "Token 格式不正确（应为 32 位十六进制字符串）", {}
+    # 酷狗 Token 在移动端扫码为 64 位 Hex，网页端或历史 Token 为 32 位 Hex，支持 16~128 位十六进制
+    if not (16 <= len(token) <= 128 and all(c in "0123456789abcdefABCDEF" for c in token)):
+        return False, "Token 格式不正确（应为十六进制字符串）", {}
 
     clienttime = str(int(time.time()))
     mid = hashlib.md5(f"verify_profile_{clienttime}_{userid}".encode("utf-8")).hexdigest()
@@ -204,9 +313,12 @@ def verify_kugou_credentials(token: str, userid: str, timeout: int = 10) -> Tupl
             msg = res_json.get("error") or res_json.get("msg") or "Token 无效或已过期"
             return False, f"{msg} (错误码: {code})", {}
 
-        raw_info = (res_json.get("data") or {}).get("info") or {}
+        raw_data = res_json.get("data") or {}
+        raw_info = raw_data.get("info") if isinstance(raw_data.get("info"), dict) else {}
         nickname = (
-            raw_info.get("nickname")
+            raw_data.get("nickname")
+            or raw_info.get("nickname")
+            or raw_data.get("username")
             or raw_info.get("username")
             or (f"酷狗用户_{userid[-4:]}" if len(userid) >= 4 else f"酷狗用户_{userid}")
         )
@@ -254,6 +366,87 @@ def verify_kugou_credentials(token: str, userid: str, timeout: int = 10) -> Tupl
 
 # ----------------- 交互式登录流程 -----------------
 
+def run_qr_login_flow() -> Tuple[Optional[str], Optional[str]]:
+    """
+    纯终端二维码扫码登录流程：
+    在控制台中直接打印色块二维码，绝不弹出外部图片查看器，绝不创建临时文件。
+    """
+    print_title("酷狗 APP 扫码登录", emoji="📱")
+    print("🚀 正在向官方接口申请登录二维码，请稍候...\n")
+
+    try:
+        qrcode, qrcode_img_b64, login_url = request_kugou_qr()
+    except Exception as e:
+        err_msg = f"❌ 申请二维码失败：{e}\n"
+        print(color_red(err_msg) if supports_color() else err_msg)
+        return None, None
+
+    # 在终端直接以 ANSI 色块渲染二维码
+    rendered_qr = render_qr_to_ansi(qrcode_img_b64)
+    if rendered_qr and supports_color():
+        print(rendered_qr)
+        print("")
+    else:
+        # 非彩色终端 fallback
+        print("💡 终端色彩模式受限，未能直接渲染字符二维码。")
+
+    web_btn = terminal_link(login_url, "移动端点击在酷狗音乐中打开")
+    print("📱 手机端操作指南：")
+    print("  1. 打开手机【酷狗音乐】APP ➜ 点击右上角「扫一扫」➜ 扫描终端上方二维码")
+    print(f"  2. 移动端专属：若在手机端运行脚本无法扫码，请在浏览器中打开：{web_btn}（将自动跳转至手机酷狗音乐 APP 登录；电脑端运行无需点击，直接扫码即可）\n")
+
+    last_msg = ""
+    start_time = time.time()
+    max_wait = 300  # 5分钟超时
+
+    try:
+        while time.time() - start_time < max_wait:
+            status, token, userid, msg = poll_kugou_qr_status(qrcode)
+            if msg != last_msg:
+                print(f"🚀 {msg}")
+                last_msg = msg
+
+            if status == "success":
+                token = str(token).strip()
+                userid = str(userid).strip()
+
+                # 扫码成功后，通过官方接口获取真实昵称并保存
+                _, _, qr_info = verify_kugou_credentials(token, userid)
+                nickname = qr_info.get("nickname") or f"酷狗用户_{userid}"
+                playlist_count = qr_info.get("playlist_count")
+
+                auth_path = save_auth_credentials(token, userid, source="qr", nickname=nickname)
+
+                print_divider()
+                succ_header = f"✅ 酷狗账号登录成功！已连接账号：{nickname} (UserID: {userid})"
+                print(color_green(succ_header) if supports_color() else succ_header)
+                if playlist_count is not None:
+                    print(f"   检测到该账号下共有 {playlist_count} 个自建歌单")
+                if auth_path:
+                    print(f"📁 登录凭证已安全保存至: {auth_path}\n")
+                return token, userid
+
+            elif status == "expired":
+                warn_msg = "⚠️ 二维码已超时过期，请重新登录。\n"
+                print(color_yellow(warn_msg) if supports_color() else warn_msg)
+                return None, None
+
+            elif status == "failed":
+                fail_msg = f"❌ 登录异常：{msg}\n"
+                print(color_red(fail_msg) if supports_color() else fail_msg)
+                return None, None
+
+            time.sleep(1.5)
+
+        timeout_msg = "⚠️ 扫码登录已超时，请重试。\n"
+        print(color_yellow(timeout_msg) if supports_color() else timeout_msg)
+        return None, None
+
+    except (KeyboardInterrupt, EOFError):
+        print("\n🚀 已取消扫码登录。\n")
+        return None, None
+
+
 def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
     """手动输入凭证流程：格式初筛、官方验活、获取真实名字并持久化"""
     print_title("手动输入凭证", "请输入酷狗账号的 UserID 与 Token（输入 0 返回）：", emoji="🔑")
@@ -265,7 +458,7 @@ def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
             print("已取消输入。\n")
             return None, None
 
-        token_raw = prompt_input("请输入酷狗 Token (32位十六进制字符串)")
+        token_raw = prompt_input("请输入酷狗 Token (十六进制字符串)")
         if not token_raw or token_raw.lower() in ("0", "q", "quit", "exit"):
             print("已取消输入。\n")
             return None, None
@@ -275,10 +468,12 @@ def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
 
         # 格式预检
         if not userid.isdigit():
-            print("❌ UserID 格式错误：必须为纯数字（例如: 12345678）。\n")
+            err_digit = "❌ UserID 格式错误：必须为纯数字（例如: 12345678）。\n"
+            print(color_red(err_digit) if supports_color() else err_digit)
             return None, None
-        if len(token) != 32 or not all(c in "0123456789abcdefABCDEF" for c in token):
-            print("❌ Token 格式错误：必须为 32 位十六进制字符串。\n")
+        if not (16 <= len(token) <= 128 and all(c in "0123456789abcdefABCDEF" for c in token)):
+            err_tok = "❌ Token 格式错误：必须为十六进制字符串（通常为 32 位或 64 位）。\n"
+            print(color_red(err_tok) if supports_color() else err_tok)
             return None, None
 
         print("🚀 正在向酷狗官方接口验证凭证有效性，请稍候...")
@@ -288,7 +483,8 @@ def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
             nickname = user_info.get("nickname") or f"酷狗用户_{userid}"
             pl_cnt = user_info.get("playlist_count")
 
-            print(f"\n✅ 凭证校验成功！已连接账号：{nickname} (UserID: {userid})")
+            succ_msg = f"\n✅ 凭证校验成功！已连接账号：{nickname} (UserID: {userid})"
+            print(color_green(succ_msg) if supports_color() else succ_msg)
             if pl_cnt is not None:
                 print(f"   检测到该账号下共有 {pl_cnt} 个自建歌单")
 
@@ -297,8 +493,10 @@ def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
                 print(f"📁 登录凭证已安全保存至: {auth_path}\n")
             return token, userid
         else:
-            print(f"\n❌ 凭证校验失败：{err_msg}")
-            print("💡 提示：凭证未保存。请检查输入的 UserID 与 Token 是否匹配且为最新凭证。\n")
+            fail_text = f"\n❌ 凭证校验失败：{err_msg}"
+            print(color_red(fail_text) if supports_color() else fail_text)
+            hint_text = "💡 提示：凭证未保存。请检查输入的 UserID 与 Token 是否匹配且为最新凭证。\n"
+            print(color_yellow(hint_text) if supports_color() else hint_text)
             return None, None
 
     except (KeyboardInterrupt, EOFError):
@@ -307,7 +505,7 @@ def run_manual_login_flow() -> Tuple[Optional[str], Optional[str]]:
 
 
 def interactive_login_menu():
-    """交互式登录菜单：提供状态展示、扫码登录、手动输入、验活与注销"""
+    """交互式登录菜单：提供状态展示、终端扫码登录、手动输入、验活与注销"""
     while True:
         token, userid, cred_data = load_auth_credentials()
         has_saved = bool(token and userid)
@@ -331,19 +529,18 @@ def interactive_login_menu():
         print("  0  返回")
         print("")
 
-        choice = prompt_input("选择操作" if has_saved else "选择登录方式")
+        try:
+            choice = prompt_input("选择操作" if has_saved else "选择登录方式")
+        except (KeyboardInterrupt, EOFError):
+            print("\n已返回。\n")
+            break
+
         if not choice or choice in ("0", "q", "quit", "exit"):
             break
 
         if choice == "1":
-            res = run_qr_login_flow()
-            if res and isinstance(res, tuple) and len(res) == 2 and res[0] and res[1]:
-                qr_token, qr_userid = res
-                # 扫码成功后也执行一次资料丰富与真实昵称捕获
-                _, _, qr_info = verify_kugou_credentials(qr_token, qr_userid)
-                qr_nick = qr_info.get("nickname") or f"酷狗用户_{qr_userid}"
-                save_auth_credentials(qr_token, qr_userid, source="qr", nickname=qr_nick)
-                print(f"\n✅ 酷狗账号登录成功！已连接账号：{qr_nick} (UserID: {qr_userid})\n")
+            t, u = run_qr_login_flow()
+            if t and u:
                 break
         elif choice == "2":
             t, u = run_manual_login_flow()
@@ -355,19 +552,24 @@ def interactive_login_menu():
             if is_valid:
                 nick = info.get("nickname") or f"酷狗用户_{userid}"
                 pl_cnt = info.get("playlist_count")
-                print(f"\n✅ 凭证有效！当前账号：{nick} (UserID: {userid})")
+                succ_text = f"\n✅ 凭证有效！当前账号：{nick} (UserID: {userid})"
+                print(color_green(succ_text) if supports_color() else succ_text)
                 if pl_cnt is not None:
                     print(f"   检测到该账号下共有 {pl_cnt} 个自建歌单")
                 save_auth_credentials(token, userid, source=cred_data.get("source", "saved"), nickname=nick)
                 print("")
             else:
-                print(f"\n❌ 当前凭证已失效：{err_msg}")
-                print("💡 建议：您可以选择重新扫码或手动输入更新凭证。\n")
+                fail_text = f"\n❌ 当前凭证已失效：{err_msg}"
+                print(color_red(fail_text) if supports_color() else fail_text)
+                hint_text = "💡 建议：您可以选择重新扫码或手动输入更新凭证。\n"
+                print(color_yellow(hint_text) if supports_color() else hint_text)
         elif choice == "4" and has_saved:
             clear_auth_credentials()
-            print("✅ 酷狗登录凭证已清除。\n")
+            succ_clear = "✅ 酷狗登录凭证已清除。\n"
+            print(color_green(succ_clear) if supports_color() else succ_clear)
         else:
-            print("⚠️ 请输入有效选项。\n")
+            warn_choice = "⚠️ 请输入有效选项。\n"
+            print(color_yellow(warn_choice) if supports_color() else warn_choice)
 
 
 # ----------------- KugouAdapter -----------------
@@ -599,6 +801,7 @@ class KugouAdapter(BasePlatformAdapter):
             return True
         if initial_input and initial_input.lower() in ("logout", "--logout"):
             clear_auth_credentials()
-            print("✅ 酷狗登录凭证已清除。\n")
+            succ_clear = "✅ 酷狗登录凭证已清除。\n"
+            print(color_green(succ_clear) if supports_color() else succ_clear)
             return True
         return False

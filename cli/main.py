@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import argparse
+from typing import Optional, List
 
 # 确保项目根目录与 cli 目录在 sys.path 中
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +40,15 @@ from cli.core.ui import (
     print_divider,
     print_title,
     prompt_input,
+    set_color_enabled,
+    supports_color,
+    color_green,
+    color_yellow,
+    color_red,
+    color_cyan,
+    color_bold,
+    color_blue,
+    get_platform_brand_color,
 )
 from cli.core.detector import (
     SmartDetector,
@@ -66,7 +76,10 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     print(f"  作者：{playlist.creator or '未知'}")
     expected_count = playlist.track_count if (playlist.track_count and playlist.track_count > len(tracks)) else len(tracks)
     if playlist.is_partial or expected_count > len(tracks):
-        print(f"  歌曲：{len(tracks)} / {expected_count} 首 (部分已加载)")
+        partial_msg = f"{len(tracks)} / {expected_count} 首 (部分已加载)"
+        if supports_color():
+            partial_msg = color_yellow(partial_msg)
+        print(f"  歌曲：{partial_msg}")
         if playlist.platform == "kugou":
             print("  💡 提示：酷狗普通歌单未登录受官方接口限制仅返回前 10 首；扫码登录后即可导出完整歌单（输入 login 登录；概念版集合歌单免登全量）。")
     else:
@@ -76,26 +89,57 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
 
     status_parts = []
     if vip_cnt:
-        status_parts.append(f"VIP {vip_cnt}")
+        vip_text = f"VIP {vip_cnt}"
+        status_parts.append(color_yellow(vip_text) if supports_color() else vip_text)
     if unavail:
-        status_parts.append(f"无版权/下架 {unavail}")
+        unavail_text = f"无版权/下架 {unavail}"
+        status_parts.append(color_red(unavail_text) if supports_color() else unavail_text)
     if dup_count:
         status_parts.append(f"重复 {dup_count}")
-    print(f"  状态：{' · '.join(status_parts) if status_parts else '全部正常'}")
+
+    if status_parts:
+        print(f"  状态：{' · '.join(status_parts)}")
+    else:
+        normal_msg = color_green("全部正常") if supports_color() else "全部正常"
+        print(f"  状态：{normal_msg}")
 
     formats = default_formats
     if interactive:
         print("")
         print_format_menu()
-        fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)", divider_on_empty=True)
-        formats = resolve_export_formats(fmt_choice)
-        if not formats:
-            print("已返回，不导出。")
+        try:
+            fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)", divider_on_empty=True)
+            formats = resolve_export_formats(fmt_choice)
+            if not formats:
+                print("已返回，不导出。")
+                return []
+        except (KeyboardInterrupt, EOFError):
+            print("\n已取消导出。\n")
             return []
     else:
         print("")
 
     return perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
+
+
+def get_platform_prompt_hint(adapter) -> str:
+    """根据当前选定平台返回对应的交互输入提示语 (包含品牌主题色徽标)"""
+    if not adapter:
+        return "粘贴歌单链接，或输入平台编号："
+    pid = adapter.platform_id
+    badge = f"[{adapter.display_name}]"
+    colored_badge = get_platform_brand_color(pid, badge)
+    if pid == "qqmusic":
+        return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID、用户 QQ号（输入 0 返回）："
+    elif pid == "netease":
+        return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
+    elif pid == "kugou":
+        return f"{colored_badge} 粘贴歌单链接/分享短链或输入歌单 ID（普通版输入 login 登录，概念版免登全量，输入 0 返回）："
+    elif pid == "kuwo":
+        return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
+    elif pid == "qishui":
+        return f"{colored_badge} 粘贴歌单链接、抖音分享文案，或输入歌单 ID（输入 0 返回）："
+    return f"{colored_badge} 粘贴歌单链接或输入歌单 ID（输入 0 返回）："
 
 
 def get_cli_invocation_name(is_frozen: bool = None, sys_platform: str = None) -> str:
@@ -222,9 +266,11 @@ def main():
     reveal_folder = not args.no_open
 
     # ─────────────────────────────────────────────────────────────
-    # 模式一：非交互命令行模式
+    # 模式一：非交互命令行模式 (通过输入参数跑脚本)
     # ─────────────────────────────────────────────────────────────
     if raw_input:
+        # 严格铁律：通过输入参数跑脚本时，严禁使用任何颜色，防止影响脚本解析与运行
+        set_color_enabled(False)
         target = SmartDetector.resolve_target(
             raw_input=raw_input,
             platform=args.platform,
@@ -322,19 +368,31 @@ def main():
     # ─────────────────────────────────────────────────────────────
     # 模式二：交互式终端模式
     # ─────────────────────────────────────────────────────────────
+    set_color_enabled(None)
     print_banner()
     adapters_list = PlatformRegistry.list_all()
-    print_main_menu(PlatformRegistry.get_summary_list())
+    summary_list = PlatformRegistry.get_summary_list()
+    print_main_menu(summary_list)
+
+    current_adapter = None
 
     try:
         while True:
-            user_input = prompt_input("粘贴歌单链接，或输入平台编号：")
+            hint = get_platform_prompt_hint(current_adapter)
+            user_input = prompt_input(hint)
+
             if not user_input:
                 print("")
                 continue
+
             if user_input.lower() in ("0", "q", "quit", "exit"):
-                print_exit_banner(include_divider=False)
-                break
+                if current_adapter is not None:
+                    current_adapter = None
+                    print_main_menu(summary_list)
+                    continue
+                else:
+                    print_exit_banner(include_divider=False)
+                    break
 
             if user_input.lower() in ("login", "logout"):
                 kg = PlatformRegistry.get("kugou")
@@ -343,95 +401,113 @@ def main():
                 print("")
                 continue
 
+            # 根菜单下输入 1~5 选择平台
+            if current_adapter is None and user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
+                selected_adapter = adapters_list[int(user_input) - 1]
+                current_adapter = selected_adapter
+                sel_name = get_platform_brand_color(selected_adapter.platform_id, selected_adapter.display_name)
+                print(f"✅ 已选择：{sel_name}\n")
+                continue
+
             target_adapter = None
             target_query = user_input
 
-            if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
-                selected_adapter = adapters_list[int(user_input) - 1]
-                print(f"✅ 已选择：{selected_adapter.display_name}\n")
-                if selected_adapter.platform_id == "qqmusic":
-                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 QQ号（输入 0 返回）："
-                elif selected_adapter.platform_id == "netease":
-                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
-                elif selected_adapter.platform_id == "kugou":
-                    hint = "粘贴歌单链接/分享短链或输入歌单 ID（普通版输入 login 登录，概念版免登全量，输入 0 返回）："
-                elif selected_adapter.platform_id == "kuwo":
-                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
-                elif selected_adapter.platform_id == "qishui":
-                    hint = "粘贴歌单链接、抖音分享文案，或输入歌单 ID（输入 0 返回）："
-                else:
-                    hint = "粘贴歌单链接或输入歌单 ID（输入 0 返回）："
-                sub_input = prompt_input(hint)
-                if not sub_input:
-                    continue
-                if sub_input in ("0", "q", "quit", "exit"):
-                    continue
-                target_adapter = selected_adapter
-                target_query = sub_input
+            # 检测输入是否包含明确的特定平台特征 (例如 URL 域名、酷狗特有参数等)
+            detected_ptype, _ = SmartDetector.detect(target_query)
+            if detected_ptype not in (PlatformType.UNKNOWN, PlatformType.AMBIGUOUS_DIGITS):
+                target_adapter = PlatformRegistry.get(detected_ptype.value)
+            else:
+                target_adapter = current_adapter
 
-            target = SmartDetector.resolve_target(
-                target_query,
-                platform=target_adapter.platform_id if target_adapter else None,
-                resolve_redirect=True
-            )
+            # 若根菜单下未指定平台且为纯数字，提示纯数字所属平台选择
+            if not target_adapter and (detected_ptype == PlatformType.AMBIGUOUS_DIGITS or target_query.isdigit()):
+                print_title("纯数字平台选择", f"检测到纯数字：{target_query}，请选择它所属的平台：", emoji="🧭")
+                for idx, a in enumerate(adapters_list, 1):
+                    num_str = color_bold(str(idx)) if supports_color() else str(idx)
+                    colored_name = get_platform_brand_color(a.platform_id, a.display_name)
+                    print(f"  {num_str}  {colored_name}")
+                k0 = color_bold("0") if supports_color() else "0"
+                print(f"  {k0}  返回")
+                try:
+                    p_sel = prompt_input("选择平台编号")
+                except (KeyboardInterrupt, EOFError):
+                    print("\n已返回。\n")
+                    continue
+                if not p_sel or p_sel in ("0", "q", "quit", "exit"):
+                    print_main_menu(summary_list)
+                    continue
+                if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
+                    warn_invalid = "⚠️ 请输入 1-5 中的有效平台编号。"
+                    print(color_yellow(warn_invalid) if supports_color() else warn_invalid)
+                    print("")
+                    continue
+                target_adapter = adapters_list[int(p_sel) - 1]
+                sel_name = get_platform_brand_color(target_adapter.platform_id, target_adapter.display_name)
+                print(f"✅ 已选择：{sel_name}\n")
+
+            if not target_adapter:
+                print(color_red("❌ 没有识别出歌单链接。") if supports_color() else "❌ 没有识别出歌单链接。")
+                print("  💡 可以尝试：")
+                print("  • 直接粘贴完整歌单链接或分享文案")
+                print("  • 如果只有歌单 ID，先输入平台编号")
+                print("")
+                continue
+
+            # 锁定当前平台为目标平台，后续轮次继续默认该平台
+            was_locked = (current_adapter == target_adapter)
+            current_adapter = target_adapter
+
+            # 仅当输入了明确的 URL/文案且之前未锁定该平台时，提示已识别平台
+            if detected_ptype not in (PlatformType.UNKNOWN, PlatformType.AMBIGUOUS_DIGITS) and not was_locked:
+                rec_name = get_platform_brand_color(target_adapter.platform_id, target_adapter.display_name)
+                print(f"✅ 已识别：{rec_name}")
+
             # 交互模式纯数字消歧：仅当目标平台支持免登用户歌单查询 (QQ 音乐 QQ号 / 网易云 UID) 时，才询问是歌单 ID 还是用户标识
             is_pure_digit = bool(re.fullmatch(r'\d+', extract_clean_url_or_input(target_query)))
             has_explicit_tag = bool(re.search(r'(?:qq|uin|uid|账号|用户|歌单|playlist)[:：\s]*\d+', target_query, re.I))
             supports_public_user_query = bool(target_adapter and target_adapter.platform_id in ("qqmusic", "netease"))
 
-            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS or (is_pure_digit and not has_explicit_tag and supports_public_user_query):
-                if not target_adapter:
-                    print_title("纯数字平台选择", f"检测到纯数字：{target_query}，请选择它所属的平台：", emoji="🧭")
-                    for idx, a in enumerate(adapters_list, 1):
-                        print(f"  {idx}  {a.display_name}")
-                    print("  0  返回")
-                    print("")
-                    p_sel = prompt_input("选择平台编号")
-                    if not p_sel or p_sel in ("0", "q", "quit", "exit"):
-                        continue
-                    if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
-                        print("⚠️ 请输入 1-5 中的有效平台编号。")
-                        print("")
-                        continue
-                    target_adapter = adapters_list[int(p_sel) - 1]
-                    print(f"✅ 已选择：{target_adapter.display_name}\n")
-
-                if target_adapter and target_adapter.platform_id in ("qqmusic", "netease"):
-                    print_title("纯数字类型确认", "检测到纯数字，请确认查询目标：", emoji="🔍")
-                    print("  1  歌单 ID (默认)")
-                    if target_adapter.platform_id == "qqmusic":
-                        print("  2  用户 QQ号 (一键导出该用户全部公开歌单)")
-                    else:
-                        print("  2  用户 UID (一键导出该用户全部自建/公开歌单)")
-                    print("")
+            if is_pure_digit and not has_explicit_tag and supports_public_user_query:
+                print_title("纯数字类型确认", "检测到纯数字，请确认查询目标：", emoji="🔍")
+                k1 = color_bold("1") if supports_color() else "1"
+                k2 = color_bold("2") if supports_color() else "2"
+                print(f"  {k1}  歌单 ID (默认)")
+                if target_adapter.platform_id == "qqmusic":
+                    print(f"  {k2}  用户 QQ号 (一键导出该用户全部公开歌单)")
+                else:
+                    print(f"  {k2}  用户 UID (一键导出该用户全部自建/公开歌单)")
+                print("")
+                try:
                     k_sel = prompt_input("选择类型 [1/2]", divider_on_empty=True)
-                    if k_sel == "2":
-                        target = DetectedTarget(
-                            platform=PlatformType(target_adapter.platform_id),
-                            kind=TargetKind.USER,
-                            value=target_query,
-                            raw_input=target_query,
-                        )
-                    else:
-                        target = DetectedTarget(
-                            platform=PlatformType(target_adapter.platform_id),
-                            kind=TargetKind.PLAYLIST,
-                            value=target_query,
-                            raw_input=target_query,
-                        )
-            elif target.platform != PlatformType.UNKNOWN:
-                if not target_adapter:
-                    target_adapter = PlatformRegistry.get(target.platform.value)
-                    if target_adapter:
-                        print(f"✅ 已识别：{target_adapter.display_name}")
-                target_query = target.value
+                except (KeyboardInterrupt, EOFError):
+                    print("\n已返回。\n")
+                    continue
+                if k_sel in ("0", "q", "quit", "exit"):
+                    print("已返回。\n")
+                    continue
+                if k_sel == "2":
+                    target = DetectedTarget(
+                        platform=PlatformType(target_adapter.platform_id),
+                        kind=TargetKind.USER,
+                        value=target_query,
+                        raw_input=target_query,
+                    )
+                else:
+                    target = DetectedTarget(
+                        platform=PlatformType(target_adapter.platform_id),
+                        kind=TargetKind.PLAYLIST,
+                        value=target_query,
+                        raw_input=target_query,
+                    )
             else:
-                target_query = target.value
-                if target_adapter:
-                    print(f"✅ 已识别：{target_adapter.display_name}")
+                target = SmartDetector.resolve_target(
+                    target_query,
+                    platform=target_adapter.platform_id if target_adapter else None,
+                    resolve_redirect=True
+                )
 
             if not target_adapter:
-                print("❌ 没有识别出歌单链接。")
+                print(color_red("❌ 没有识别出歌单链接。") if supports_color() else "❌ 没有识别出歌单链接。")
                 print("  💡 可以尝试：")
                 print("  • 直接粘贴完整歌单链接或分享文案")
                 print("  • 如果只有歌单 ID，先输入平台编号")
@@ -449,18 +525,21 @@ def main():
 
                 if target.kind == TargetKind.USER:
                     if not target_adapter.supports_user_playlists:
-                        print(f"⚠️ 平台 '{target_adapter.display_name}' 暂不支持导出用户歌单列表。")
+                        warn_not_support = f"⚠️ 平台 '{target_adapter.display_name}' 暂不支持导出用户歌单列表。"
+                        print(color_yellow(warn_not_support) if supports_color() else warn_not_support)
                         print("")
                         continue
 
-                    print(f"🚀 正在获取用户歌单列表：{target.value}...")
+                    fetch_user_msg = f"🚀 正在获取用户歌单列表：{target.value}..."
+                    print(color_cyan(fetch_user_msg) if supports_color() else fetch_user_msg)
                     user_pls = target_adapter.fetch_user_playlists(
                         target.value,
                         token=args.token,
                         userid=args.userid,
                     )
                     if not user_pls or not user_pls.playlists:
-                        print("❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。")
+                        err_user_msg = "❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。"
+                        print(color_red(err_user_msg) if supports_color() else err_user_msg)
                         print("")
                         continue
 
@@ -476,7 +555,8 @@ def main():
                     )
                     continue
 
-                print("🚀 正在获取歌单...")
+                fetch_msg = "🚀 正在获取歌单..."
+                print(color_cyan(fetch_msg) if supports_color() else fetch_msg)
                 playlist = target_adapter.fetch_playlist(
                     target_query,
                     channel=args.channel,
@@ -484,7 +564,8 @@ def main():
                     userid=args.userid,
                 )
                 if not playlist or not playlist.tracks:
-                    print("\n❌ 获取歌单失败。")
+                    fail_fetch_msg = "\n❌ 获取歌单失败。"
+                    print(color_red(fail_fetch_msg) if supports_color() else fail_fetch_msg)
                     print("  💡 请检查链接是否有效、歌单是否公开，或稍后重试。")
                     print("")
                     continue
@@ -492,17 +573,20 @@ def main():
                 run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
                 print("")
             except (KeyboardInterrupt, EOFError):
-                raise
+                print("\n已取消。\n")
+                continue
             except Exception as loop_err:
                 if args.debug or os.environ.get("PLAYLISTOUT_DEBUG"):
                     import traceback
                     traceback.print_exc()
                 else:
-                    print(f"\n❌ 处理歌单时出错：{loop_err}")
+                    err_msg = f"\n❌ 处理歌单时出错：{loop_err}"
+                    print(color_red(err_msg) if supports_color() else err_msg)
                     print("")
 
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
+        sys.exit(0)
 
 
 def run_cli_entry():

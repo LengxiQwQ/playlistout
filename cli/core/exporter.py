@@ -14,7 +14,17 @@ from typing import List, Optional, Any
 
 from .models import NormalizedPlaylist, NormalizedTrack
 from .naming import build_export_base_name, ensure_unique_base_name
-from .ui import sanitize_filename, reveal_folder, WEB_URL
+from .ui import (
+    sanitize_filename,
+    reveal_folder,
+    WEB_URL,
+    supports_color,
+    color_green,
+    color_red,
+    color_yellow,
+    color_cyan,
+    color_bold,
+)
 
 
 def sanitize_spreadsheet_cell(value: Any) -> str:
@@ -319,7 +329,8 @@ def perform_export(
     exported_files = []
     failed_count = 0
     if show_header:
-        print("🚀 正在导出...\n")
+        header_text = "🚀 正在导出..."
+        print(color_cyan(header_text) if supports_color() else header_text)
     for fmt in formats:
         target_path = os.path.join(output_dir, f"{safe_title}.{fmt}")
         label = labels.get(fmt, fmt.upper())
@@ -337,19 +348,24 @@ def perform_export(
             else:
                 continue
             exported_files.append(target_path)
-            print(f"{indent}✅ {label:<6} {os.path.basename(target_path)}")
+            tag = color_green("✅") if supports_color() else "✅"
+            fmt_lbl = color_bold(f"{label:<6}") if supports_color() else f"{label:<6}"
+            print(f"{indent}{tag} {fmt_lbl} {os.path.basename(target_path)}")
         except Exception as e:
             failed_count += 1
-            print(f"{indent}❌ {label:<6} 导出失败：{e}")
+            tag = color_red("❌") if supports_color() else "❌"
+            err_msg = color_red(f"导出失败：{e}") if supports_color() else f"导出失败：{e}"
+            print(f"{indent}{tag} {label:<6} {err_msg}")
 
     if show_summary:
         if exported_files:
-            print(f"\n✅ 导出完成，共 {len(exported_files)} 个文件")
-            print(f"  📁 保存到：{os.path.abspath(output_dir)}")
+            summary_count = f" (共 {len(exported_files)} 个文件)" if len(exported_files) > 1 else ""
             if failed_count:
-                print(f"  ⚠️ 另有 {failed_count} 个格式导出失败")
+                summary_count = f" (成功 {len(exported_files)} 个，失败 {failed_count} 个)"
+            print(f"{indent}📁 保存到：{os.path.abspath(output_dir)}{summary_count}")
         else:
-            print("\n❌ 没有文件导出成功")
+            fail_msg = f"{indent}❌ 没有文件导出成功"
+            print(color_red(fail_msg) if supports_color() else fail_msg)
 
         if exported_files and reveal_folder_flag:
             reveal_folder(exported_files[0])

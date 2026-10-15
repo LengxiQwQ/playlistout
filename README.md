@@ -121,26 +121,7 @@ python cli/main.py -p kugou --user -f json --no-open
 
 👉 [查看统一 CLI 完整说明与使用指南](cli/README.md)
 
----
-
-### 各平台独立轻量脚本
-
-除了统一入口外，仓库也提供了各平台的独立导出脚本，依赖同样位于 requirements.txt：
-
-```bash
-# 统一安装依赖 (所有独立脚本通用)
-pip install -r cli/requirements.txt
-```
-
-| 平台 | 脚本路径 | 支持内容 | 详细说明 |
-|---|---|---|---|
-| **QQ 音乐** | [`cli/qqmusic/qq_music_playlist_export.py`](cli/qqmusic/qq_music_playlist_export.py) | 歌单链接 / ID、QQ 号用户歌单、批量导出 | [说明文档](cli/qqmusic/README.md) |
-| **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 | [说明文档](cli/netease/README.md) |
-| **酷我音乐** | [`cli/kuwo/kuwo_playlist_export.py`](cli/kuwo/kuwo_playlist_export.py) | 歌单链接 / 移动端短链 / ID、多页自动分页 | [说明文档](cli/kuwo/README.md) |
-| **汽水音乐** | [`cli/qishui/qishui_playlist_export.py`](cli/qishui/qishui_playlist_export.py) | 歌单链接 / 短链 / 抖音收藏分享文案 / ID、全量游标分页 | [说明文档](cli/qishui/README.md) |
-| **酷狗音乐 / 酷狗概念版** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 酷狗普通歌单与账号歌单（免登限10首，必须登录完整导出）；概念版集合歌单（完全免登全量） | [说明文档](cli/kugou/README.md) |
-
-> **运行示例**：`python cli/netease/netease_playlist_export.py`（其他平台脚本以此类推）。全平台均支持 **Excel → JSON → TXT → CSV → M3U8** 纯本地导出。
+> **注**：仓库 `cli/<平台>/` 目录下仍保留了早期各平台的独立脚本，仅供历史兼容，不作推荐，日常请统一使用上述 CLI 入口。
 
 ---
 

@@ -20,6 +20,12 @@ from .ui import (
     print_divider,
     print_title,
     prompt_input,
+    supports_color,
+    color_green,
+    color_yellow,
+    color_red,
+    color_cyan,
+    color_bold,
 )
 from .exporter import perform_export
 
@@ -131,15 +137,18 @@ def print_user_playlists_menu(user_playlists: NormalizedUserPlaylists) -> None:
         print(f"  自建歌单（{len(created_pls)} 个）：")
         for idx, p in enumerate(created_pls, 1):
             cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+            num_str = color_bold(f"{idx:3d}.") if supports_color() else f"{idx:3d}."
+            print(f"    {num_str} {p.name}{cnt_str}  [ID: {p.id}]")
         print(f"  收藏歌单（{len(sub_pls)} 个）：")
         for idx, p in enumerate(sub_pls, len(created_pls) + 1):
             cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-            print(f"    {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+            num_str = color_bold(f"{idx:3d}.") if supports_color() else f"{idx:3d}."
+            print(f"    {num_str} {p.name}{cnt_str}  [ID: {p.id}]")
     else:
         for idx, p in enumerate(pls, 1):
             cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
-            print(f"  {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+            num_str = color_bold(f"{idx:3d}.") if supports_color() else f"{idx:3d}."
+            print(f"  {num_str} {p.name}{cnt_str}  [ID: {p.id}]")
     print("")
 
 
@@ -172,7 +181,11 @@ def run_batch_flow(
             sel_prompt = "选择要导出的歌单序号（输入 all 导出全部自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
         else:
             sel_prompt = "选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）："
-        sel_str = prompt_input(sel_prompt)
+        try:
+            sel_str = prompt_input(sel_prompt)
+        except (KeyboardInterrupt, EOFError):
+            print("\n已返回。\n")
+            return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
         if not sel_str or sel_str in ("0", "q", "quit", "exit"):
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
 
@@ -181,18 +194,23 @@ def run_batch_flow(
         else:
             indices = parse_playlist_selection(sel_str, len(all_pls))
             if not indices:
-                print("⚠️ 未选择有效歌单。")
+                warn_msg = "⚠️ 未选择有效歌单。"
+                print(color_yellow(warn_msg) if supports_color() else warn_msg)
                 return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
             target_pls = [all_pls[i - 1] for i in indices]
 
         # 交互模式确认格式
         print_format_menu()
-        fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)：", divider_on_empty=True)
-        formats = resolve_export_formats(fmt_choice)
-        if not formats:
-            print("已返回，不导出。")
-            if interactive:
-                print("")
+        try:
+            fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)：", divider_on_empty=True)
+            formats = resolve_export_formats(fmt_choice)
+            if not formats:
+                print("已返回，不导出。")
+                if interactive:
+                    print("")
+                return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+        except (KeyboardInterrupt, EOFError):
+            print("\n已取消批量导出。\n")
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
     else:
         # 非交互 (Headless) 模式：严格使用传入参数，不发起任何 input()
@@ -210,7 +228,8 @@ def run_batch_flow(
             formats = ["xlsx", "json", "csv", "txt", "m3u8"]
 
     if not target_pls:
-        print("⚠️ 没有可导出的歌单。")
+        warn_msg = "⚠️ 没有可导出的歌单。"
+        print(color_yellow(warn_msg) if supports_color() else warn_msg)
         return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
 
     # ─────────────────────────────────────────────────────────────
@@ -219,13 +238,15 @@ def run_batch_flow(
     target_dir = os.path.join(output_dir, str(user_playlists.user_id))
     os.makedirs(target_dir, exist_ok=True)
 
-    print(f"\n🚀 开始批量导出 {len(target_pls)} 个歌单...")
+    batch_start = f"\n🚀 开始批量导出 {len(target_pls)} 个歌单..."
+    print(color_cyan(batch_start) if supports_color() else batch_start)
     exported_files: List[str] = []
     failures: List[BatchFailure] = []
     used_base_names: Set[str] = set()
 
     for idx, pl_item in enumerate(target_pls, 1):
-        print(f"\n  [{idx}/{len(target_pls)}] {pl_item.name} (ID: {pl_item.id})")
+        idx_tag = color_bold(f"[{idx}/{len(target_pls)}]") if supports_color() else f"[{idx}/{len(target_pls)}]"
+        print(f"\n  {idx_tag} {pl_item.name} (ID: {pl_item.id})")
         try:
             norm_pl = adapter.fetch_playlist(pl_item.id, **fetch_options)
             if not norm_pl or not norm_pl.tracks:
@@ -236,7 +257,8 @@ def run_batch_flow(
                         error="无法读取歌单或歌单歌曲为空",
                     )
                 )
-                print("    ❌ 无法读取这个歌单或歌单为空，已跳过")
+                skip_msg = "    ❌ 无法读取这个歌单或歌单为空，已跳过"
+                print(color_red(skip_msg) if supports_color() else skip_msg)
                 continue
 
             # 统一预处理：mark_duplicates 与元数据标准化
@@ -279,7 +301,8 @@ def run_batch_flow(
                     error=str(e),
                 )
             )
-            print(f"    ❌ 处理出错：{e}")
+            err_msg = f"    ❌ 处理出错：{e}"
+            print(color_red(err_msg) if supports_color() else err_msg)
 
     # ─────────────────────────────────────────────────────────────
     # 步骤 3：汇系统计与反馈
@@ -287,11 +310,14 @@ def run_batch_flow(
     success_count = len(target_pls) - len(failures)
     failed_count = len(failures)
 
-    print(f"\n✅ 批量导出完成：成功 {success_count}/{len(target_pls)} 个歌单")
+    success_line = f"\n✅ 批量导出完成：成功 {success_count}/{len(target_pls)} 个歌单"
+    print(color_green(success_line) if supports_color() else success_line)
     if failures:
-        print(f"  ⚠️ 共有 {failed_count} 个歌单导出失败：")
+        warn_line = f"  ⚠️ 共有 {failed_count} 个歌单导出失败："
+        print(color_yellow(warn_line) if supports_color() else warn_line)
         for f in failures:
-            print(f"    - {f.playlist_name} [ID: {f.playlist_id}]: {f.error}")
+            fail_line = f"    - {f.playlist_name} [ID: {f.playlist_id}]: {f.error}"
+            print(color_red(fail_line) if supports_color() else fail_line)
 
     print(f"  📁 保存到：{os.path.abspath(target_dir)}")
 

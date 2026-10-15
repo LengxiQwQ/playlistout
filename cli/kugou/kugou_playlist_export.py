@@ -26,6 +26,8 @@ import json
 import csv
 import time
 import base64
+import zlib
+import struct
 import tempfile
 import hashlib
 import platform
@@ -308,78 +310,125 @@ def poll_kugou_qr_status(qrcode_key):
         return "failed", None, None, json_data.get("error") or "检查登录异常"
 
 
+
+def _render_qr_ansi_legacy(b64_png):
+    try:
+        clean_b64 = b64_png.split(",")[-1]
+        raw = base64.b64decode(clean_b64)
+        if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+            return None
+        pos = 8
+        idat_chunks = []
+        w, h = 0, 0
+        while pos < len(raw):
+            length, chunk_type = struct.unpack(">I4s", raw[pos:pos+8])
+            pos += 8
+            data = raw[pos:pos+length]
+            pos += length + 4
+            if chunk_type == b"IHDR":
+                w, h = struct.unpack(">II", data[:8])
+            elif chunk_type == b"IDAT":
+                idat_chunks.append(data)
+        if not idat_chunks or w == 0 or h == 0:
+            return None
+        decompressed = zlib.decompress(b"".join(idat_chunks))
+        stride = 1 + (w + 7) // 8
+        grid = []
+        for y in range(h):
+            line = decompressed[y * stride : (y + 1) * stride]
+            bits = []
+            for b in line[1:]:
+                for bit_idx in range(7, -1, -1):
+                    bits.append((b >> bit_idx) & 1)
+            grid.append(bits[:w])
+        start_row = 0
+        while start_row < h and all(grid[start_row][x] == 1 for x in range(w)):
+            start_row += 1
+        if start_row >= h:
+            return None
+        black_len = 0
+        for val in grid[start_row]:
+            if val == 0:
+                black_len += 1
+            elif black_len > 0:
+                break
+        module_size = max(1, black_len // 7)
+        num_modules = w // module_size
+        quiet = 2
+        total_w = num_modules + quiet * 2
+        matrix = []
+        for _ in range(quiet):
+            matrix.append([1] * total_w)
+        for r in range(num_modules):
+            y = int((r + 0.5) * module_size)
+            row = [1] * quiet
+            for c in range(num_modules):
+                x = int((c + 0.5) * module_size)
+                row.append(grid[y][x])
+            row.extend([1] * quiet)
+            matrix.append(row)
+        for _ in range(quiet):
+            matrix.append([1] * total_w)
+        total_rows = len(matrix)
+        lines = []
+        for r in range(0, total_rows, 2):
+            row_top = matrix[r]
+            row_bot = matrix[r + 1] if r + 1 < total_rows else [1] * total_w
+            line_parts = ["  "]
+            for top, bot in zip(row_top, row_bot):
+                fg = "30" if top == 0 else "37"
+                bg = "40" if bot == 0 else "47"
+                line_parts.append(f"\033[{fg};{bg}m\u2580\033[0m")
+            lines.append("".join(line_parts))
+        return "\n".join(lines)
+    except Exception:
+        return None
+
+
 def run_qr_login_flow(no_open=False):
-    """执行二维码扫码登录流程"""
+    """执行二维码扫码登录流程（纯终端色块，无外部弹窗）"""
     print_title("酷狗 APP 扫码登录", emoji="📱")
-    print("🚀 正在申请官方登录二维码，请稍候...")
+    print("🚀 正在申请官方登录二维码，请稍候...\n")
     qrcode, qrcode_img_b64, login_url = request_kugou_qr()
 
-    qr_temp_file = None
-    if qrcode_img_b64:
-        try:
-            # 去除前缀 data:image/png;base64,
-            clean_b64 = re.sub(r"^data:image/\w+;base64,", "", qrcode_img_b64)
-            img_bytes = base64.b64decode(clean_b64)
-            fd, qr_temp_file = tempfile.mkstemp(prefix="kugou_qr_", suffix=".png")
-            os.close(fd)
-            with open(qr_temp_file, "wb") as f:
-                f.write(img_bytes)
+    rendered = _render_qr_ansi_legacy(qrcode_img_b64)
+    if rendered:
+        print(rendered)
+        print("")
 
-            print(f"📁 二维码图片已生成: {qr_temp_file}")
-            if not no_open:
-                try:
-                    if platform.system() == "Windows":
-                        os.startfile(qr_temp_file)
-                    elif platform.system() == "Darwin":
-                        subprocess.Popen(["open", qr_temp_file])
-                    else:
-                        subprocess.Popen(["xdg-open", qr_temp_file])
-                    print("🚀 已尝试调用系统默认图片查看器打开二维码。")
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"⚠️ 保存二维码图片失败: {e}")
-
-    qr_btn = terminal_link(login_url, "点击在浏览器打开二维码")
-    print("\n📱 手机端操作指南：")
-    print("  1. 打开手机【酷狗音乐】APP -> 点击右上角扫一扫 -> 扫描弹出的图片")
-    print(f"  2. 若未弹出图片，请点击：{qr_btn}\n")
+    qr_btn = terminal_link(login_url, "移动端点击在酷狗音乐中打开")
+    print("📱 手机端操作指南：")
+    print("  1. 打开手机【酷狗音乐】APP ➜ 点击右上角「扫一扫」➜ 扫描终端上方二维码")
+    print(f"  2. 移动端专属：若在手机端运行脚本无法扫码，请在浏览器中打开：{qr_btn}（将自动跳转至手机酷狗音乐 APP 登录；电脑端运行无需点击，直接扫码即可）\n")
 
     last_msg = ""
     start_time = time.time()
     max_wait = 300  # 5分钟超时
 
-    try:
-        while time.time() - start_time < max_wait:
-            status, token, userid, msg = poll_kugou_qr_status(qrcode)
-            if msg != last_msg:
-                print(f"🚀 {msg}")
-                last_msg = msg
+    while time.time() - start_time < max_wait:
+        status, token, userid, msg = poll_kugou_qr_status(qrcode)
+        if msg != last_msg:
+            print(f"🚀 {msg}")
+            last_msg = msg
 
-            if status == "success":
-                print(f"✅ 酷狗账号登录成功！UserID: {userid}")
-                save_auth_credentials(token, userid, source="qr")
-                print_divider()
-                return token, userid
-            elif status == "expired":
-                print("⚠️ 二维码已超时过期，请重新登录。")
-                print_divider()
-                return None, None
-            elif status == "failed":
-                print(f"❌ 登录异常: {msg}")
-                print_divider()
-                return None, None
+        if status == "success":
+            print(f"\n✅ 酷狗账号登录成功！UserID: {userid}")
+            save_auth_credentials(token, userid, source="qr")
+            print_divider()
+            return token, userid
+        elif status == "expired":
+            print("⚠️ 二维码已超时过期，请重新登录。")
+            print_divider()
+            return None, None
+        elif status == "failed":
+            print(f"❌ 登录异常: {msg}")
+            print_divider()
+            return None, None
 
-            time.sleep(1.5)
-        print("⚠️ 扫码超时，请重试。")
-        print_divider()
-        return None, None
-    finally:
-        if qr_temp_file and os.path.exists(qr_temp_file):
-            try:
-                os.remove(qr_temp_file)
-            except Exception:
-                pass
+        time.sleep(1.5)
+    print("⚠️ 扫码超时，请重试。")
+    print_divider()
+    return None, None
 
 
 def run_manual_login_flow():
