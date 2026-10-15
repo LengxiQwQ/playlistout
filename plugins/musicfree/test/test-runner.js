@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.1.0)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.1.1)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -1426,6 +1426,31 @@ async function runAllTests() {
     }
   });
 
+  await test('Embedded lyric search fallback: origin-less legacy items are located strictly, without stream fetches', async () => {
+    plugin._setHostBridge(null);
+    const calls = installHttpMock([
+      [
+        'smartbox_new',
+        { status: 200, data: { data: { song: { itemlist: [{ mid: '0039MnYb0qxYhV', name: '晴天', singer: '周杰伦' }] } } } },
+      ],
+      ['s01s.cn', { status: 200, data: { song_lyric: '[00:05.00]搜索兜底歌词' } }],
+    ]);
+    try {
+      const item = { id: 'lrc_originless_1', title: '晴天', artist: '周杰伦', duration: 269, platform: '把你的歌单带走' };
+      const lrc = await plugin.getLyric(item);
+      assert(
+        lrc && lrc.rawLrc === '[00:05.00]搜索兜底歌词',
+        'Origin-less legacy items must still load lyrics via strict search locate'
+      );
+      assert(calls.some((c) => c.url.includes('smartbox_new')), 'Must locate via the strict search lane');
+      const lyricCall = calls.find((c) => c.url.includes('s01s.cn'));
+      assert(lyricCall && lyricCall.url.includes('0039MnYb0qxYhV'), 'Lyric must use the strictly matched mid');
+      assert(!calls.some((c) => c.url.includes('vkeys')), 'Locate-only: must not fetch streams for lyrics');
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
   await test('Hook fallback chain: native fail -> cross-plugin miss -> embedded engine delivers', async () => {
     plugin._setHostBridge({
       getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search'] }],
@@ -1476,7 +1501,7 @@ async function runAllTests() {
   await test('Embedded source contract: allowlisted channels present, legacy hybrids fully removed', () => {
     const code = fs.readFileSync(pluginPath, 'utf-8');
 
-    // v2.1.0: 内置兜底引擎必须存在且只走白名单公开接口 + 严格匹配
+    // v2.1.1: 内置兜底引擎必须存在且只走白名单公开接口 + 严格匹配
     assert(code.includes('embeddedResolveMedia'), 'Must provide the embedded fallback engine');
     assert(code.includes('api.vkeys.cn'), 'QQ embedded channel (vkeys) must be present');
     assert(code.includes('music-api.gdstudio.xyz'), 'NetEase embedded channel (GD Studio) must be present');

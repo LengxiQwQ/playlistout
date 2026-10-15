@@ -6,6 +6,10 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **MusicFree plugin v2.1.1 — legacy lyric fallback completeness / 历史歌单歌词兜底补全**:
+  - 修复极早期导入、原始平台身份完全不可识别（无 `_originPlatform` / 无历史 ID / 无 `_src`）的历史曲目在内置通道恢复播放后仍可能无歌词的问题：取词前先对各平台执行一次严格匹配的「搜索定位」（仅检索接口、不拉取音频流），定位成功即复用该身份取词；仍无果则按原有歌词兜底顺序处理。
+  - 测试套件扩展至 49 项（新增「来源不可识别曲目经严格搜索定位补齐歌词」断言）。
+
 - **MusicFree plugin v2.1.0 — embedded fallback sources return as the last-resort playback layer / 内置兜底音源回归（历史歌单兼容 + 原生全灭最后防线）**:
   - **内置兜底音源引擎**：在原平台插件缺失、跨插件严格匹配无果（或宿主不提供跨插件通道，如手机端）时，自动调用内置兜底通道严格匹配原曲恢复播放 —— QQ音乐（vkeys 直链，无损 / 320k / 128k 按请求音质自动降级）、网易云音乐（GD Studio 直链含无损 + Meting 302 兜底）、酷狗音乐（官方搜索 + getSongInfo 免费曲直链，付费灰歌自动跳过）。
   - **与跨插件兜底同级的最严匹配**：所有内置候选一律执行「同名 + 同歌手 + 同版本 + 时长偏差 ≤ 12 秒」100% 严格匹配，任何一级匹配不到完全一致的原曲立即跳过；媒体直链一律经过域名白名单（QQ音乐 / 网易云 / 酷狗 CDN 与 Meting 跳转地址）校验，绝不回传未知来源音源。

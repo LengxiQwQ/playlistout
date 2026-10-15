@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.1.0)
+ * PlaylistOut 官方 MusicFree 插件 (v2.1.1)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.1.0';
+const PLUGIN_VERSION = '2.1.1';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -2399,6 +2399,46 @@ async function embeddedResolveBySearch(item, quality) {
 }
 
 /**
+ * 跨平台严格搜索定位（不取链）：为「来源无法识别的极老曲目」的取词通道提供原平台标识。
+ * 与取源通道使用完全相同的严格匹配标准（同名 + 同歌手 + 同版本 + 时长吻合）。
+ */
+async function embeddedLocateBySearch(item) {
+  var title = String(item.title || '').trim();
+  if (!title) return null;
+  var rawArtist = String(item.artist || '')
+    .replace(/未知歌手/g, '')
+    .trim();
+  var primaryArtist = rawArtist.split(/[,，、/]/)[0].trim();
+  var keyword = primaryArtist ? title + ' ' + primaryArtist : title;
+
+  var lanes = ['qq', 'netease', 'kugou'];
+  for (var i = 0; i < lanes.length; i++) {
+    var platform = lanes[i];
+    var candidates = [];
+    try {
+      candidates = await embeddedLaneSearch(platform, keyword);
+    } catch (_) {
+      continue;
+    }
+    for (var j = 0; j < candidates.length; j++) {
+      var cand = candidates[j];
+      var matched = isCandidateStrictlyMatched(
+        { title: cand.title, artist: cand.artist, album: cand.album || '', duration: cand.duration || 0 },
+        title,
+        rawArtist,
+        item.duration
+      );
+      if (!matched) continue;
+      // 歌词通道仅支持 QQ / 网易云；酷狗严格命中说明前两个通道均无匹配，直接返回空
+      if (platform === 'qq' && cand.mid) return { platform: 'qq', mid: cand.mid };
+      if (platform === 'netease' && cand.id) return { platform: 'netease', id: cand.id };
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
  * 内置兜底解析主流程：原平台精确取链 -> 复用历史严格匹配 -> 跨平台严格搜索
  */
 async function embeddedResolveMediaTask(item, quality, key) {
@@ -2508,7 +2548,8 @@ async function embeddedNeteaseLyric(id) {
 }
 
 /**
- * 内置兜底歌词解析：优先原平台标识，其次复用内置取源时记住的严格匹配结果
+ * 内置兜底歌词解析：优先原平台标识，其次复用内置取源时记住的严格匹配结果；
+ * 均无时（来源无法识别的极老曲目）跨平台严格搜索定位后再取词
  */
 async function embeddedResolveLyric(item) {
   if (!item || typeof item !== 'object') return null;
@@ -2520,6 +2561,17 @@ async function embeddedResolveLyric(item) {
   var cached = key ? _embeddedMatchCache.get(key) : null;
   if (cached && Date.now() - cached.at < MATCH_TTL_MS && cached.info) {
     lookups.push({ platform: cached.platform, mid: cached.info.mid, id: cached.info.id });
+  }
+
+  // 无任何原平台标识（来源无法识别的极老曲目）：先跨平台严格搜索定位，再取词
+  if (!lookups.length && item.title) {
+    var located = null;
+    try {
+      located = await embeddedLocateBySearch(item);
+    } catch (_) {
+      located = null;
+    }
+    if (located) lookups.push(located);
   }
 
   var seen = {};
