@@ -95,15 +95,20 @@ def print_format_menu():
     print("  0      返回\n")
 
 
-def resolve_export_formats(choice: str) -> List[str]:
-    """解析导出格式；空输入/all 代表全部，0 代表返回。兼容 (1, 2) 等带括号输入。"""
+def resolve_export_formats(choice: str, strict: bool = False) -> List[str]:
+    """
+    解析导出格式。空输入/all 代表全部，0 代表返回/取消。兼容 (1, 2) 等带括号输入。
+    strict=True 时遇到未知格式或无效输入抛出 ValueError。
+    """
     choice = str(choice or "").strip().lower()
     # 兼容用户输入的各种括号 (中英文小括号、方括号等)
     choice = re.sub(r'[()（）\[\]]', '', choice).strip()
     all_formats = ["xlsx", "json", "csv", "txt", "m3u8"]
-    if not choice or choice == "all":
+    if not choice or choice in ("all", "全部"):
         return all_formats
     if choice == "0":
+        if strict:
+            raise ValueError("导出格式 '0' 仅用于交互菜单返回，命令行模式请指定具体格式或留空 (默认全部)")
         return []
 
     mapping = {
@@ -116,13 +121,21 @@ def resolve_export_formats(choice: str) -> List[str]:
     items = [x.strip() for x in choice.replace("，", ",").replace(" ", ",").split(",") if x.strip()]
     res = []
     for item in items:
-        if item == "all":
+        if item in ("all", "全部"):
             return all_formats
         if item == "0":
+            if strict:
+                raise ValueError("导出格式 '0' 仅用于交互菜单返回，命令行模式请指定具体格式或留空 (默认全部)")
             return []
-        if item in mapping and mapping[item] not in res:
-            res.append(mapping[item])
-    return res if res else all_formats
+        if item in mapping:
+            fmt = mapping[item]
+            if fmt not in res:
+                res.append(fmt)
+        else:
+            if strict:
+                raise ValueError(f"不支持的导出格式 '{item}'。有效格式: 1~5 或 xlsx, json, csv, txt, m3u8, all")
+            return []
+    return res if res else ([] if strict else all_formats)
 
 
 def reveal_folder(target_path: str):

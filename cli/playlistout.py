@@ -14,7 +14,7 @@ for _p in (_REPO_ROOT, _CURRENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from cli.main import main
+from cli.main import main, run_cli_entry
 
 if __name__ == "__main__":
-    main()
+    run_cli_entry()

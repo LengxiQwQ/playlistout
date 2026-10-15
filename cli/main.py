@@ -43,7 +43,7 @@ from cli.core.batch import run_batch_flow, preprocess_playlist
 from cli.platforms.registry import PlatformRegistry
 
 
-def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_formats: list, reveal_folder: bool, interactive: bool):
+def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_formats: list, reveal_folder: bool, interactive: bool) -> List[str]:
     """展示简洁歌单摘要并执行导出"""
     dup_count = preprocess_playlist(playlist)
     tracks = playlist.tracks
@@ -75,11 +75,11 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
         formats = resolve_export_formats(fmt_choice)
         if not formats:
             print("已返回，不导出。")
-            return
+            return []
     else:
         print("")
 
-    perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
+    return perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
 
 
 def get_cli_invocation_name(is_frozen: bool = None, sys_platform: str = None) -> str:
@@ -136,9 +136,10 @@ def main():
 
     # 平台专属参数透传
     parser.add_argument("--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用）")
-    parser.add_argument("--channel", choices=["qishui", "douyin"], default="qishui", help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
-    parser.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
-    parser.add_argument("--logout", action="store_true", help="[酷狗] 清除本地保存的登录凭证")
+    parser.add_argument("--channel", choices=["qishui", "douyin"], default=None, help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
+    login_group = parser.add_mutually_exclusive_group()
+    login_group.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
+    login_group.add_argument("--logout", action="store_true", help="[酷狗] 清除本地保存的登录凭证")
     parser.add_argument("--token", help="[酷狗] 手动传入 Token")
     parser.add_argument("--userid", help="[酷狗] 手动传入 UserID")
 
@@ -147,6 +148,46 @@ def main():
     if args.self_test:
         from cli.core.self_test import run_self_test
         sys.exit(run_self_test())
+
+    # 导出格式严格校验 (非交互或命令行传参模式)
+    try:
+        formats = resolve_export_formats(args.format, strict=True)
+        if not formats:
+            print("× 导出格式无效。请指定有效格式 (例如: -f json 或 -f xlsx,csv)。", file=sys.stderr)
+            sys.exit(2)
+    except ValueError as ve:
+        print(f"× {ve}", file=sys.stderr)
+        sys.exit(2)
+
+    # 平台专属参数有效性校验
+    plt_id = None
+    if args.platform:
+        plt_norm = args.platform.lower().strip()
+        reg_entry = PlatformRegistry.get(plt_norm)
+        if not reg_entry:
+            print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
+            sys.exit(2)
+        plt_id = reg_entry.platform_id
+
+    if args.channel is not None:
+        if plt_id and plt_id != "qishui":
+            print(f"× 参数 --channel 仅适用于汽水音乐平台 (qishui)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
+            sys.exit(2)
+        if not plt_id and not (args.opt_id or args.input):
+            print("× 参数 --channel 仅适用于汽水音乐平台 (qishui)，请配合 -p qishui 或汽水链接使用。", file=sys.stderr)
+            sys.exit(2)
+
+    kugou_auth_args = [arg_name for arg_name, val in [("--token", args.token), ("--userid", args.userid), ("--login", args.login), ("--logout", args.logout)] if val]
+    if kugou_auth_args:
+        if plt_id and plt_id != "kugou":
+            print(f"× 参数 {', '.join(kugou_auth_args)} 仅适用于酷狗音乐平台 (kugou)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
+            sys.exit(2)
+
+    if args.user and plt_id:
+        adapter = PlatformRegistry.get(plt_id)
+        if adapter and not adapter.supports_user_playlists:
+            print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
+            sys.exit(2)
 
     # 处理全局平台专属快捷操作 (如酷狗登录/注销)
     if args.login or args.logout:
@@ -158,7 +199,6 @@ def main():
 
     raw_input = args.opt_id or args.input
     output_dir = args.output_dir if args.output_dir else "output"
-    formats = resolve_export_formats(args.format)
     reveal_folder = not args.no_open
 
     # ─────────────────────────────────────────────────────────────
@@ -186,7 +226,16 @@ def main():
         adapter = PlatformRegistry.get(target.platform.value)
         if not adapter:
             print(f"× 不支持的平台 '{target.platform.value}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
-            sys.exit(1)
+            sys.exit(2)
+
+        # 平台专属参数与识别出的目标平台校验 (针对未传 -p 但通过 URL 识别的情况)
+        if args.channel is not None and target.platform.value != "qishui":
+            print(f"× 参数 --channel 仅适用于汽水音乐平台 (qishui)，当前目标平台为 '{target.platform.value}'。", file=sys.stderr)
+            sys.exit(2)
+
+        if kugou_auth_args and target.platform.value != "kugou":
+            print(f"× 参数 {', '.join(kugou_auth_args)} 仅适用于酷狗音乐平台 (kugou)，当前目标平台为 '{target.platform.value}'。", file=sys.stderr)
+            sys.exit(2)
 
         target_text = target.value
 
@@ -194,7 +243,7 @@ def main():
         if target.kind == TargetKind.USER:
             if not adapter.supports_user_playlists:
                 print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
-                sys.exit(1)
+                sys.exit(2)
 
             print(f"✓ 已识别：{adapter.display_name} (用户模式)")
             print(f"→ 正在获取用户歌单列表：{target_text}...")
@@ -226,7 +275,7 @@ def main():
         print("→ 正在获取歌单...")
         playlist = adapter.fetch_playlist(
             target_text,
-            channel=args.channel,
+            channel=args.channel or "qishui",
             token=args.token,
             userid=args.userid,
         )
@@ -243,7 +292,10 @@ def main():
             print("× 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
             sys.exit(1)
 
-        run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
+        exported_files = run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
+        if not exported_files:
+            print("× 未能成功导出任何文件。", file=sys.stderr)
+            sys.exit(1)
         return
 
 
@@ -407,9 +459,19 @@ def main():
         print_exit_banner()
 
 
-if __name__ == "__main__":
+def run_cli_entry():
+    """统一最外层入口封装，集中处理退出码、未捕获异常与终端暂停"""
     try:
         main()
+    except SystemExit as se:
+        code = se.code if isinstance(se.code, int) else (0 if se.code is None else 1)
+        if sys.platform == "win32" and sys.stdin and sys.stdin.isatty():
+            if len(sys.argv) <= 1 and code != 0:
+                try:
+                    input("\n按回车键关闭窗口...")
+                except Exception:
+                    pass
+        sys.exit(code)
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
         sys.exit(0)
@@ -428,3 +490,7 @@ if __name__ == "__main__":
                 except Exception:
                     pass
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    run_cli_entry()

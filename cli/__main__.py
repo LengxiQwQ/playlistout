@@ -5,7 +5,7 @@ PlaylistOut CLI Module Entry Point
 Enables executing `python -m cli`.
 """
 
-from .main import main
+from .main import main, run_cli_entry
 
 if __name__ == "__main__":
-    main()
+    run_cli_entry()
