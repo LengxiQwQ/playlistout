@@ -74,7 +74,7 @@ def print_banner(platform_name):
     print("")
     print(f"  {author_link} · {repo_link} · {web_link}")
     print("")
-    print("  核心特性: 100% 本地隐私安全 · 全格式歌单备份导出")
+    print("  核心特性: 本地运行 · 本地导出 · 不上传 Playlist Out 服务器 · 全格式歌单备份导出")
     print("=" * 64)
 
 

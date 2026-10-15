@@ -1,6 +1,6 @@
 # PlaylistOut Unified CLI (全平台统一导出工具)
 
-PlaylistOut 统一命令行工具，集成网易云音乐、QQ 音乐、酷狗音乐、酷我音乐与汽水音乐五大平台，支持链接智能识别与手动选择双轨模式，100% 本地隐私安全，无惧网络泄露。
+PlaylistOut 统一命令行工具，集成网易云音乐、QQ 音乐、酷狗音乐、酷我音乐与汽水音乐五大平台，支持链接智能识别与手动选择双轨模式，本地运行与本地导出，不上传任何数据至 Playlist Out 服务器。
 
 ---
 
@@ -16,16 +16,18 @@ PlaylistOut 统一命令行工具，集成网易云音乐、QQ 音乐、酷狗�
 
 ## 🚀 快速上手
 
-### 方式 A：独立免安装运行 (推荐，无需安装 Python)
+### 方式 A：独立免安装运行 (免安装 Python)
 
-前往 [GitHub Releases](https://github.com/LengxiQwQ/playlistout/releases) 下载对应系统的独立构建版本，解压/双击即可使用，**无需安装 Python 或 pip**：
+> ⏳ **发行状态说明**：跨平台独立构建已全面通过 GitHub Actions 4 平台编译与真机 Smoke Test 验证，**独立 Release 二进制资产将随下一正式版本发布上架**至 [GitHub Releases](https://github.com/LengxiQwQ/playlistout/releases)（当前可在 Actions 构建产物中下载试用）。
+
+解压/双击即可使用，**无需安装 Python 或 pip**：
 
 - **Windows x64**：下载 `PlaylistOut-v{version}-windows-x64.exe`，直接双击运行进入交互界面，或在终端传入参数调用。
 - **macOS Apple Silicon (M1/M2/M3/M4)**：下载 `PlaylistOut-v{version}-macos-arm64.tar.gz`，解压后双击 `PlaylistOut.command` 或在终端运行 `./PlaylistOut`。
 - **macOS Intel (x86_64)**：下载 `PlaylistOut-v{version}-macos-x64.tar.gz`，解压后双击 `PlaylistOut.command` 或在终端运行 `./PlaylistOut`。
 - **Linux x64**：下载 `PlaylistOut-v{version}-linux-x64.tar.gz`，在终端运行 `tar -xzf PlaylistOut-*.tar.gz && ./PlaylistOut`。
 
-> **说明**：当前 macOS 构建为未签名版本，首次打开若遇系统提示，可在「系统设置 → 隐私与安全性」中点击「仍要打开」；Linux 构建基于 Ubuntu 22.04 LTS，兼容标准 glibc 环境。
+> **说明**：当前 macOS 构建为未签名版本，首次打开若遇系统提示，可在「系统设置 → 隐私与安全性」中点击「仍要打开」；Linux 构建基于 Ubuntu 22.04 LTS，兼容标准 glibc 环境。每个正式发布均提供 `CLI-SHA256SUMS.txt` 与 `cli-release-manifest.json` 供完整性校验。
 
 ---
 

@@ -49,7 +49,7 @@ def print_banner(platform_name: str = None):
     print("")
     print(f"  {author_link} · {repo_link} · {web_link}")
     print("")
-    print("  核心特性: 100% 本地隐私安全 · 全平台智能识别 · 全格式备份导出")
+    print("  核心特性: 本地运行 · 本地导出 · 不上传 Playlist Out 服务器 · 全格式备份导出")
     print("=" * 64)
 
 

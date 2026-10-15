@@ -70,6 +70,53 @@ def detect_host_target() -> str:
         raise RuntimeError(f"Unsupported operating system: {system}")
 
 
+def generate_windows_version_file(version: str, target_path: Path):
+    """Generate PyInstaller Windows VSVersionInfo file dynamically from single version source."""
+    import re
+    from PyInstaller.utils.win32.versioninfo import (
+        VSVersionInfo, FixedFileInfo, StringFileInfo, StringTable, StringStruct, VarFileInfo, VarStruct
+    )
+
+    nums = [int(x) for x in re.findall(r'\d+', version)]
+    while len(nums) < 4:
+        nums.append(0)
+    ver_tuple = tuple(nums[:4])
+
+    vi = VSVersionInfo(
+        ffi=FixedFileInfo(
+            filevers=ver_tuple,
+            prodvers=ver_tuple,
+            mask=0x3F,
+            flags=0x0,
+            OS=0x40004,
+            fileType=0x1,
+            subtype=0x0,
+            date=(0, 0)
+        ),
+        kids=[
+            StringFileInfo([
+                StringTable(
+                    '040904b0',
+                    [
+                        StringStruct('CompanyName', 'LengxiQwQ'),
+                        StringStruct('FileDescription', 'Playlist Out CLI'),
+                        StringStruct('FileVersion', version),
+                        StringStruct('InternalName', 'PlaylistOut'),
+                        StringStruct('LegalCopyright', 'Copyright (c) 2026 LengxiQwQ. Released under MIT License.'),
+                        StringStruct('OriginalFilename', 'PlaylistOut.exe'),
+                        StringStruct('ProductName', 'Playlist Out'),
+                        StringStruct('ProductVersion', version),
+                    ]
+                )
+            ]),
+            VarFileInfo([VarStruct('Translation', [1033, 1200])])
+        ]
+    )
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(str(vi), encoding='utf-8')
+    print(f"[✓] Generated Windows VERSIONINFO resource at: {target_path}")
+
+
 def clean_cli_build_dirs(work_dir: Path, dist_dir: Path, staging_dir: Path, artifacts_dir: Path):
     """Clean only CLI-owned build and staging directories."""
     for path in (work_dir, dist_dir, staging_dir, artifacts_dir):
@@ -109,6 +156,11 @@ def build_cli(target: str, expected_version: str = None) -> Path:
     artifacts_dir = REPO_ROOT / "dist" / "cli" / "artifacts"
 
     clean_cli_build_dirs(work_dir, dist_dir, staging_dir, artifacts_dir)
+
+    # For Windows targets, generate native VSVersionInfo resource dynamically
+    if target == "windows-x64":
+        version_file = cli_build_base / "version_info.txt"
+        generate_windows_version_file(version, version_file)
 
     spec_file = REPO_ROOT / "cli" / "packaging" / "playlistout.spec"
     if not spec_file.is_file():

@@ -66,11 +66,29 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
 
 
 
+def get_cli_invocation_name(is_frozen: bool = None, sys_platform: str = None) -> str:
+    """Determine user-facing command invocation string based on runtime mode."""
+    if is_frozen is None:
+        is_frozen = getattr(sys, "frozen", False)
+    if sys_platform is None:
+        sys_platform = sys.platform
+
+    if not is_frozen:
+        return "python cli/main.py"
+    if sys_platform == "win32":
+        return "PlaylistOut.exe"
+    return "./PlaylistOut"
+
+
 def main():
+    cli_ver = get_version()
+    inv_cmd = get_cli_invocation_name()
+
     parser = argparse.ArgumentParser(
+        prog=inv_cmd,
         description="PlaylistOut 全平台音乐歌单统一导出工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 支持平台：
   - 网易云音乐 (163 / netease)
   - QQ 音乐   (qq / qqmusic)
@@ -80,17 +98,16 @@ def main():
 
 使用模式示例：
   1. 智能自动识别模式：
-     python cli/main.py "https://music.163.com/playlist?id=2756674066"
-     python cli/main.py "https://y.qq.com/n/ryqq/playlist/9044196528"
+     {inv_cmd} "https://music.163.com/playlist?id=2756674066"
+     {inv_cmd} "https://y.qq.com/n/ryqq/playlist/9044196528"
   2. 显式指定平台模式 (适用于纯数字 ID)：
-     python cli/main.py "2756674066" -p netease
-     python cli/main.py "9044196528" -p qq -f xlsx,csv
+     {inv_cmd} "2756674066" -p netease
+     {inv_cmd} "9044196528" -p qq -f xlsx,csv
   3. 交互模式 (无参数直接运行)：
-     python cli/main.py
+     {inv_cmd}
         """
     )
 
-    cli_ver = get_version()
     parser.add_argument("-v", "--version", action="version", version=f"PlaylistOut CLI v{cli_ver}")
     parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--debug", action="store_true", help="显示详细错误堆栈信息 (调试模式)")

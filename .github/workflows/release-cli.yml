@@ -16,7 +16,7 @@ on:
       dry_run:
         description: 'Dry run: build, smoke-test, package, and aggregate artifacts without touching GitHub Release'
         required: false
-        default: false
+        default: true
         type: boolean
 
 concurrency:
@@ -108,7 +108,11 @@ jobs:
       - name: Register dry run state
         id: check-dryrun
         run: |
-          echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ -z "$DRY_RUN" ]; then
+            DRY_RUN="true"
+          fi
+          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build (${{ matrix.target }})
@@ -246,13 +250,13 @@ jobs:
             echo "  ✔ Found: $asset ($(stat -c%s "$asset") bytes)"
           done
 
-      - name: Generate SHA256SUMS.txt
+      - name: Generate CLI-SHA256SUMS.txt
         run: |
           cd dist/release-assets
-          sha256sum PlaylistOut-v${{ needs.preflight.outputs.version }}-* > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+          sha256sum PlaylistOut-v${{ needs.preflight.outputs.version }}-* > CLI-SHA256SUMS.txt
+          cat CLI-SHA256SUMS.txt
 
-      - name: Generate release-manifest.json
+      - name: Generate cli-release-manifest.json
         run: |
           python - << 'EOF'
           import hashlib
@@ -284,7 +288,7 @@ jobs:
               "assets": assets
           }
           
-          out_file = assets_dir / "release-manifest.json"
+          out_file = assets_dir / "cli-release-manifest.json"
           out_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
           print(json.dumps(manifest, indent=2))
           EOF
@@ -333,7 +337,7 @@ jobs:
           echo "  - Linux x64:        built and passed frozen smoke test"
           echo "  - macOS arm64:      built and passed frozen smoke test"
           echo "  - macOS Intel x64:  built and passed frozen smoke test"
-          echo "  - SHA256SUMS.txt & release-manifest.json generated"
+          echo "  - CLI-SHA256SUMS.txt & cli-release-manifest.json generated"
           echo "  - Artifacts published to GitHub Actions run bundle"
           echo "  - GitHub Release was untouched as requested (dry_run: true)"
           echo "================================================================"

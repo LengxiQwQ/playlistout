@@ -130,3 +130,54 @@ def test_cli_self_test_flag():
         with pytest.raises(SystemExit) as exc:
             main()
         assert exc.value.code == 0
+
+
+def test_get_cli_invocation_name():
+    from cli.main import get_cli_invocation_name
+
+    # Source mode
+    assert get_cli_invocation_name(is_frozen=False, sys_platform="win32") == "python cli/main.py"
+    assert get_cli_invocation_name(is_frozen=False, sys_platform="linux") == "python cli/main.py"
+    assert get_cli_invocation_name(is_frozen=False, sys_platform="darwin") == "python cli/main.py"
+
+    # Frozen Windows mode
+    assert get_cli_invocation_name(is_frozen=True, sys_platform="win32") == "PlaylistOut.exe"
+
+    # Frozen POSIX mode (Linux / macOS)
+    assert get_cli_invocation_name(is_frozen=True, sys_platform="linux") == "./PlaylistOut"
+    assert get_cli_invocation_name(is_frozen=True, sys_platform="darwin") == "./PlaylistOut"
+
+
+def test_cli_help_flag_source_and_frozen(capsys):
+    # Test help output in source mode
+    with patch("sys.frozen", False, create=True):
+        with patch.object(sys, "argv", ["main.py", "--help"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+            assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage: python cli/main.py" in out
+    assert 'python cli/main.py "https://music.163.com/playlist?id=2756674066"' in out
+
+    # Test help output in frozen Windows mode
+    with patch("sys.frozen", True, create=True):
+        with patch("sys.platform", "win32"):
+            with patch.object(sys, "argv", ["main.py", "--help"]):
+                with pytest.raises(SystemExit) as exc:
+                    main()
+                assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage: PlaylistOut.exe" in out
+    assert 'PlaylistOut.exe "https://music.163.com/playlist?id=2756674066"' in out
+
+    # Test help output in frozen Linux mode
+    with patch("sys.frozen", True, create=True):
+        with patch("sys.platform", "linux"):
+            with patch.object(sys, "argv", ["main.py", "--help"]):
+                with pytest.raises(SystemExit) as exc:
+                    main()
+                assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage: ./PlaylistOut" in out
+    assert './PlaylistOut "https://music.163.com/playlist?id=2756674066"' in out
+

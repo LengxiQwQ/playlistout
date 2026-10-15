@@ -27,10 +27,14 @@ excludes = [
     "scripts.utils.test_insights_authenticity",
 ]
 
-# Windows executable icon
+# Windows executable icon and version resource
 icon_path = os.path.join(REPO_ROOT, "web", "public", "favicon.ico")
 if not (sys.platform == "win32" and os.path.isfile(icon_path)):
     icon_path = None
+
+version_file = os.path.join(REPO_ROOT, ".build", "cli", "version_info.txt")
+if not (sys.platform == "win32" and os.path.isfile(version_file)):
+    version_file = None
 
 a = Analysis(
     [os.path.join(REPO_ROOT, "cli", "playlistout.py")],
@@ -67,4 +71,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_path,
+    version=version_file,
 )
