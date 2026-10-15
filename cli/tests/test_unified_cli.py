@@ -260,3 +260,120 @@ def test_print_exit_banner(capsys):
     assert out.endswith("\n\n")
 
 
+# ─────────────────────────────────────────────────────────────
+# Phase 0.1: 行为基线保护测试 (Baseline Protection Tests)
+# ─────────────────────────────────────────────────────────────
+
+def test_cli_kugou_explicit_platform_success(tmp_path):
+    mock_playlist = NormalizedPlaylist(
+        platform="kugou",
+        id="546903",
+        name="酷狗测试歌单",
+        creator="酷狗作者",
+        tracks=[NormalizedTrack(index=1, title="酷狗歌曲", artist="酷狗歌手")]
+    )
+    out_dir = str(tmp_path / "kugou_out")
+    test_args = ["main.py", "546903", "-p", "kugou", "-o", out_dir, "-f", "json", "--no-open"]
+    with patch.object(sys, "argv", test_args):
+        with patch.object(PlatformRegistry.get("kugou"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
+            main()
+            mock_fetch.assert_called_once()
+    assert (tmp_path / "kugou_out" / "酷狗测试歌单.json").exists()
+
+
+def test_cli_kuwo_explicit_platform_success(tmp_path):
+    mock_playlist = NormalizedPlaylist(
+        platform="kuwo",
+        id="2311665489",
+        name="酷我测试歌单",
+        creator="酷我作者",
+        tracks=[NormalizedTrack(index=1, title="酷我歌曲", artist="酷我歌手")]
+    )
+    out_dir = str(tmp_path / "kuwo_out")
+    test_args = ["main.py", "2311665489", "-p", "kuwo", "-o", out_dir, "-f", "txt", "--no-open"]
+    with patch.object(sys, "argv", test_args):
+        with patch.object(PlatformRegistry.get("kuwo"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
+            main()
+            mock_fetch.assert_called_once()
+    assert (tmp_path / "kuwo_out" / "酷我测试歌单.txt").exists()
+
+
+def test_cli_qishui_explicit_platform_and_channel(tmp_path):
+    mock_playlist = NormalizedPlaylist(
+        platform="qishui",
+        id="7087507348697186339",
+        name="汽水测试歌单",
+        creator="汽水作者",
+        tracks=[NormalizedTrack(index=1, title="汽水歌曲", artist="汽水歌手")]
+    )
+    out_dir = str(tmp_path / "qishui_out")
+    test_args = [
+        "main.py",
+        "7087507348697186339",
+        "-p", "qishui",
+        "--channel", "douyin",
+        "-o", out_dir,
+        "-f", "csv",
+        "--no-open"
+    ]
+    with patch.object(sys, "argv", test_args):
+        with patch.object(PlatformRegistry.get("qishui"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
+            main()
+            mock_fetch.assert_called_once_with("7087507348697186339", channel="douyin", token=None, userid=None)
+    assert (tmp_path / "qishui_out" / "汽水测试歌单.csv").exists()
+
+
+def test_cli_all_five_formats_exported(tmp_path):
+    mock_playlist = NormalizedPlaylist(
+        platform="netease",
+        id="99999",
+        name="全格式测试",
+        creator="全格式作者",
+        tracks=[NormalizedTrack(index=1, title="全格式歌", artist="全格式歌手")]
+    )
+    out_dir = str(tmp_path / "all_formats_out")
+    test_args = [
+        "main.py",
+        "99999",
+        "-p", "netease",
+        "-o", out_dir,
+        "-f", "xlsx,json,csv,txt,m3u8",
+        "--no-open"
+    ]
+    with patch.object(sys, "argv", test_args):
+        with patch.object(PlatformRegistry.get("netease"), "fetch_playlist", return_value=mock_playlist):
+            main()
+
+    for ext in ["xlsx", "json", "csv", "txt", "m3u8"]:
+        assert (tmp_path / "all_formats_out" / f"全格式测试.{ext}").exists()
+
+
+def test_cli_kugou_login_logout_flags():
+    # 测试 --login
+    test_args_login = ["main.py", "--login", "-p", "kugou"]
+    with patch.object(sys, "argv", test_args_login):
+        with patch.object(PlatformRegistry.get("kugou"), "handle_interactive") as mock_interactive:
+            main()
+            mock_interactive.assert_called_once_with("login")
+
+    # 测试 --logout
+    test_args_logout = ["main.py", "--logout", "-p", "kugou"]
+    with patch.object(sys, "argv", test_args_logout):
+        with patch.object(PlatformRegistry.get("kugou"), "handle_interactive") as mock_interactive:
+            main()
+            mock_interactive.assert_called_once_with("logout")
+
+
+def test_cli_module_execution():
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, "-m", "cli", "--version"],
+        capture_output=True,
+        text=True,
+        check=False
+    )
+    assert result.returncode == 0
+    assert "PlaylistOut CLI v" in result.stdout
+
+
+

@@ -3,6 +3,7 @@
 Tests for Smart Link & Platform Detector
 """
 
+import pytest
 from unittest.mock import patch, MagicMock
 from cli.core.detector import (
     SmartDetector,
@@ -151,4 +152,30 @@ def test_extract_user_profile_target():
     # 普通歌单链接不应被判定为用户主页
     assert extract_user_profile_target("https://music.163.com/playlist?id=2756674066") is None
     assert extract_user_profile_target("https://y.qq.com/n/ryqq/playlist/9044196528") is None
+
+
+# ─────────────────────────────────────────────────────────────
+# Phase 0.2: 缺口记录与行为基线测试 (Gaps targeted for Phase 1)
+# ─────────────────────────────────────────────────────────────
+
+@pytest.mark.xfail(strict=False, reason="Phase 1 gap: generic non-music qq.com domains must not be detected as qqmusic")
+def test_gap_non_music_qq_rejected():
+    """非音乐 QQ 链接 (如新闻、文档、空间) 不得被误识别为 QQ 音乐"""
+    p, _ = SmartDetector.detect("https://news.qq.com/article/12345", resolve_redirect=False)
+    assert p == PlatformType.UNKNOWN
+
+
+@pytest.mark.xfail(strict=False, reason="Phase 1 gap: generic douyin video urls must not be detected as qishui")
+def test_gap_douyin_video_rejected():
+    """普通抖音短视频/图文链接不得直接被当作汽水音乐歌单"""
+    p, _ = SmartDetector.detect("https://www.douyin.com/video/7123456789012345678", resolve_redirect=False)
+    assert p == PlatformType.UNKNOWN
+
+
+@pytest.mark.xfail(strict=False, reason="Phase 1 gap: 19-digit snowflake ID should enter ambiguous digits unless platform is explicit")
+def test_gap_19_digits_not_forced_qishui():
+    """18/19 位纯数字 ID 应进入受控歧义处理，而不是无条件强判汽水音乐"""
+    p, _ = SmartDetector.detect("7087507348697186339", resolve_redirect=False)
+    assert p == PlatformType.AMBIGUOUS_DIGITS
+
 
