@@ -278,7 +278,7 @@ def run_self_test() -> int:
                 formats=["json", "csv"],
                 selection="all",
                 interactive=False,
-                reveal_folder=False,
+                reveal_folder_flag=False,
             )
 
             if batch_result.total != 2 or batch_result.success != 2 or batch_result.failed != 0:
