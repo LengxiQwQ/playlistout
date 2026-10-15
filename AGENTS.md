@@ -5,7 +5,7 @@ Before running or proposing any `git push` command, the agent MUST run:
 ```bash
 npm run gate
 ```
-All 7 automated checks must pass locally. Never push if `npm run gate` fails.
+All 8 automated checks must pass locally. Never push if `npm run gate` fails.
 
 ## 2. Multi-Player Plugin Architecture
 - **Namespace Isolation**: Every player integration lives in `plugins/<player-id>/` and is self-described by `plugin.config.json` plus `package.json`.
@@ -32,3 +32,7 @@ When instructed to "按照路线图继续重构，继续走。" (Continue refact
 - Never guess what is completed. Resume sequentially from the current active phase.
 - Run `npm run gate` before completing any phase.
 - Use an independent subagent with no context to verify phase completion before reporting done.
+
+## 5. System Architecture, CLI & Vendor Extension Rules
+For the comprehensive project architecture map, local CLI workflows, multi-platform release SOP, and vendor onboarding steps:
+- Read and follow `.agents/rules/system-architecture.md` as the single source of truth for repository mental model and expansion rules.
