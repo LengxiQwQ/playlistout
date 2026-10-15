@@ -40,7 +40,7 @@ from cli.kugou.kugou_playlist_export import (
 class KugouAdapter(BasePlatformAdapter):
     platform_id = "kugou"
     display_name = "酷狗音乐"
-    description = "歌单链接 / 分享短链 / 歌单 ID (支持扫码登录)"
+    description = "歌单链接 / 分享短链 / 歌单 ID (免登限10首，需扫码登录)"
     aliases = ["kugou", "kg"]
     supports_playlist = True
     supports_user_playlists = True

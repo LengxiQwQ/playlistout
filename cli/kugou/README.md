@@ -8,11 +8,12 @@
 
 ### 功能特性
 
-- **广泛支持酷狗各类歌单输入**：
-  - 官方精选/专题歌单（如 `https://www.kugou.com/yy/special/single/546903.html` 或 ID `546903`）—— **100% 免登录**
-  - 酷狗概念版 / 新版集合歌单（如 `global_specialid=collection_3_1504683618_2_0`）—— **100% 免登录**
-  - 移动端分享页短链（`t1.kugou.com/xxx`）与 H5 分享页（`gcid_...` / `src_cid=...`）—— **100% 免登录**
-  - 个人云端自建歌单 / 我喜欢的歌（`listid=4` 或纯数字歌单 ID）—— **支持本地凭证持久化保存**
+- **支持酷狗各类歌单输入（免登录限前 10 首预览，必须登录完整导出）**：
+  - 官方精选/专题歌单（如 `https://www.kugou.com/yy/special/single/546903.html` 或 ID `546903`）
+  - 酷狗概念版 / 新版集合歌单（如 `global_specialid=collection_3_1504683618_2_0`）
+  - 移动端分享页短链（`t1.kugou.com/xxx`）与 H5 分享页（`gcid_...` / `src_cid=...`）
+  - 个人云端自建歌单 / 我喜欢的歌（`listid=4` 或纯数字歌单 ID）
+  - **⚠️ 权限与曲目完整性说明**：受酷狗官方接口限制，**未登录状态下任何歌单仅能解析前 10 首**；若需完整解析全量歌单或批量导出个人歌单，**必须通过终端扫码登录**。
 - **双轨登录认证方案（针对个人云端歌单）**：
   - **方式一：终端扫码登录（无需访问网站）**
     - 运行 `python kugou_playlist_export.py --login` 选择 `[1]`；
@@ -41,7 +42,7 @@ python kugou_playlist_export.py
 或使用命令行参数静默导出：
 
 ```bash
-# 导出公开专题歌单 (免登录，默认保存至 ./output 目录)
+# 导出公开专题歌单 (免登录仅限前 10 首预览，默认保存至 ./output 目录)
 python kugou_playlist_export.py --id https://www.kugou.com/yy/special/single/546903.html --output-dir ./output --format all
 
 # 导出个人自建歌单 (自动使用已保存凭证，若首次运行会引导扫码或输入)

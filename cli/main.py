@@ -63,6 +63,8 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     expected_count = playlist.track_count if (playlist.track_count and playlist.track_count > len(tracks)) else len(tracks)
     if playlist.is_partial or expected_count > len(tracks):
         print(f"  歌曲：{len(tracks)} / {expected_count} 首 (部分已加载)")
+        if playlist.platform == "kugou":
+            print("  ! 提示：酷狗官方接口未登录仅返回前 10 首；扫码登录后即可导出完整歌单（输入 login 登录）。")
     else:
         print(f"  歌曲：{len(tracks)} 首")
     if playlist.formatted_duration:
@@ -347,7 +349,7 @@ def main():
                 elif selected_adapter.platform_id == "netease":
                     hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
                 elif selected_adapter.platform_id == "kugou":
-                    hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 login 扫码登录，输入 0 返回）："
+                    hint = "粘贴歌单链接/分享短链或输入歌单 ID（免登限10首，输入 login 扫码登录，输入 0 返回）："
                 elif selected_adapter.platform_id == "kuwo":
                     hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
                 elif selected_adapter.platform_id == "qishui":
