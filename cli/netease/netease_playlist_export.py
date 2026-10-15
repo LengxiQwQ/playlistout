@@ -176,28 +176,36 @@ def resolve_shortlink(text):
 def extract_playlist_id(text):
     if not text:
         return None
-    resolved = resolve_shortlink(text.strip())
-    # Try query param id=...
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(text)
+    if re.fullmatch(r'\d{4,18}', cleaned.strip()):
+        return cleaned.strip()
+    resolved = resolve_shortlink(cleaned)
+    # 严格排除用户主页链接，避免将用户 UID 误判为歌单 ID
+    if ('/user' in resolved or '/home' in resolved) and '/playlist' not in resolved:
+        return None
+    # Try query param id=... or restful path /playlist/<id>
     m = re.search(r'(?:[?&]id=|\/playlist\/)(\d{4,18})', resolved)
     if m:
         return m.group(1)
-    if re.fullmatch(r'\d{4,18}', text.strip()):
-        return text.strip()
     return None
 
 def extract_user_id(text):
     if not text:
         return None
-    resolved = resolve_shortlink(text.strip())
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(text)
+    if re.fullmatch(r'\d{4,18}', cleaned.strip()):
+        return cleaned.strip()
+    resolved = resolve_shortlink(cleaned)
     if '/playlist' in resolved:
         return None
-    if '/user' in resolved or 'user/home' in resolved or 'user?id=' in resolved:
-        m = re.search(r'(?:[?&]id=|\/user\/)(\d{4,18})', resolved)
+    if '/user' in resolved or 'user/home' in resolved or 'user?id=' in resolved or 'home' in resolved:
+        m = re.search(r'(?:[?&]id=|\/user\/(?:home\/)?)(\d{4,18})', resolved)
         if m:
             return m.group(1)
-    if re.fullmatch(r'\d{4,18}', text.strip()):
-        return text.strip()
     return None
+
 
 def determine_track_status(song, priv):
     st = priv.get('st') if priv else None

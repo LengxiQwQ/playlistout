@@ -37,48 +37,51 @@ def get_default_headers(mobile: bool = False) -> dict:
     }
 
 
-def resolve_shortlink(url_or_text: str, timeout: int = 8) -> str:
+def resolve_shortlink(url_or_text: str, timeout: int = 8, max_hops: int = 3) -> str:
     """
     解析短链接重定向，返回展开后的真实 URL。
+    支持最多 3 跳重定向（如 c6.y.qq.com -> taoge -> ryqq，或 163cn.tv，或 qishui /s/）。
     若非短链或解析超时则原样返回。
     """
     if not url_or_text:
         return ""
     text = url_or_text.strip()
 
-    # 尝试提取文本中可能存在的 URL
-    m = re.search(r'https?://[^\s<>"]+', text)
+    # 尝试提取文本中可能存在的 URL（优先在非汉字/非标点处截断）
+    m = re.search(r'https?://[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+', text)
     if not m:
         # 支持无协议前缀的常见短链
         m_bare = re.search(
-            r'(?:^|[^\w.-])((?:[a-zA-Z0-9-]+\.)*(?:y\.qq\.com|163cn\.tv|kugou\.com|kuwo\.cn|douyin\.com|qishui\.com)/\S*)',
+            r'(?:^|[^\w.-])((?:(?:[a-zA-Z0-9-]+\.)*(?:y\.qq\.com|163cn\.tv|kugou\.com|kuwo\.cn|douyin\.com|qishui\.com))[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
             text
         )
         if m_bare:
-            target_url = f"https://{m_bare.group(1)}"
+            target_url = f"https://{m_bare.group(1)}".rstrip('.,;:!?，。！？@')
         else:
             return text
     else:
-        target_url = m.group(0)
+        target_url = m.group(0).rstrip('.,;:!?，。！？@')
 
-    try:
-        resp = requests.get(
-            target_url,
-            headers=get_default_headers(mobile=True),
-            allow_redirects=False,
-            timeout=timeout
-        )
-        if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
-            loc = resp.headers["Location"]
-            if loc.startswith("/"):
-                # 拼接完整域名
-                from urllib.parse import urlparse
-                parsed = urlparse(target_url)
-                loc = f"{parsed.scheme}://{parsed.netloc}{loc}"
-            return loc
-        elif resp.status_code == 200:
-            return resp.url or target_url
-    except Exception:
-        pass
+    current_url = target_url
+    for _ in range(max_hops):
+        try:
+            resp = requests.get(
+                current_url,
+                headers=get_default_headers(mobile=True),
+                allow_redirects=False,
+                timeout=timeout
+            )
+            if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
+                from urllib.parse import urljoin
+                loc = resp.headers["Location"].strip()
+                current_url = urljoin(current_url, loc)
+                # 如果已经到达明确的目标落地页且不再是短链路径，可以提前退出
+                if not any(s in current_url for s in ("163cn.tv", "fcgi-bin/u", "/s/", "t.kuwo.cn", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com")):
+                    break
+            else:
+                break
+        except Exception:
+            break
 
-    return target_url
+    return current_url
+

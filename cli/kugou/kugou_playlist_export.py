@@ -504,7 +504,9 @@ def extract_kugou_target(input_text):
     """
     if not input_text:
         return None
-    text = resolve_shortlink(input_text.strip())
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(input_text)
+    text = resolve_shortlink(cleaned.strip())
 
     # 1. 官方精选/专题歌单 (如 https://www.kugou.com/yy/special/single/546903.html)
     special_match = re.search(r'special/single/(\d+)', text, re.IGNORECASE)
@@ -535,13 +537,19 @@ def extract_kugou_target(input_text):
             "original_url": text,
         }
 
-    # 4. 未加 gcid_ 前缀的 10-20 位 src_cid
+    # 4. 未加 gcid_ 前缀的 10-20 位 src_cid 或 raw 14位字符 CID
     raw_cid_match = re.search(r'src_cid=([a-zA-Z0-9]{10,20})', text, re.IGNORECASE)
     if raw_cid_match:
         cid = raw_cid_match.group(1)
         return {
             "type": "songlist",
             "id": cid if cid.startswith("gcid_") else f"gcid_{cid}",
+            "original_url": text,
+        }
+    if re.fullmatch(r'[a-zA-Z0-9]{14}', text):
+        return {
+            "type": "songlist",
+            "id": f"gcid_{text}",
             "original_url": text,
         }
 
@@ -567,6 +575,7 @@ def extract_kugou_target(input_text):
         }
 
     return None
+
 
 
 # ----------------- 数据标准化 -----------------

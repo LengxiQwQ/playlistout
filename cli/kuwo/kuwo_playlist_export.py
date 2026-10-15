@@ -173,19 +173,21 @@ def resolve_shortlink(text):
 def extract_playlist_id(text):
     if not text:
         return None
-    text = text.strip()
-    if re.fullmatch(r'\d{4,18}', text):
-        return text
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(text).strip()
+    if re.fullmatch(r'\d{4,18}', cleaned):
+        return cleaned
 
     # 1. 优先直接匹配常见 URL 路径: /playlist_detail/<id> 或 /playlist/<id>
-    m = re.search(r'/(?:playlist_detail|playlist)/(\d{4,18})', text)
+    m = re.search(r'/(?:playlist_detail|playlist)/(\d{4,18})', cleaned)
     if m:
         return m.group(1)
 
     # 2. 匹配常见 Query 参数: pid=..., id=..., playlistId=...
-    m = re.search(r'[?&](?:pid|id|playlistId)=(\d{4,18})', text)
+    m = re.search(r'[?&](?:pid|id|playlistId)=(\d{4,18})', cleaned)
     if m:
         return m.group(1)
+
 
     # 3. 若未命中且疑似短链，尝试解析短链重定向
     resolved = resolve_shortlink(text)

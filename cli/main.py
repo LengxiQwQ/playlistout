@@ -42,13 +42,15 @@ from cli.platforms.registry import PlatformRegistry
 
 def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_formats: list, reveal_folder: bool, interactive: bool):
     """展示歌单统计并执行导出"""
+    dup_count = playlist.mark_duplicates()
     tracks = playlist.tracks
     unavail = sum(1 for t in tracks if not t.is_available)
     vip_cnt = sum(1 for t in tracks if t.is_vip)
     normal_cnt = len(tracks) - unavail - vip_cnt
 
     print(f"\n歌单：{playlist.name}（作者：{playlist.creator or '未知'}，共 {len(tracks)} 首）")
-    print(f"状态统计：正常 {normal_cnt} 首，VIP专享 {vip_cnt} 首，下架/无版权 {unavail} 首")
+    dup_msg = f"，发现重复单曲 {dup_count} 首" if dup_count > 0 else ""
+    print(f"状态统计：正常 {normal_cnt} 首，VIP专享 {vip_cnt} 首，下架/无版权 {unavail} 首{dup_msg}")
     if playlist.formatted_duration:
         print(f"总计播放时长：{playlist.formatted_duration}")
 
@@ -60,6 +62,7 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
         formats = resolve_export_formats(fmt_input)
 
     perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
+
 
 
 def main():
@@ -156,11 +159,21 @@ def main():
             userid=args.userid,
         )
         if not playlist or not playlist.tracks:
+            # 尝试专属交互流（如用户公开歌单列表、酷狗凭证）
+            handled = adapter.handle_interactive(
+                target_text,
+                output_dir=output_dir,
+                no_open=args.no_open
+            )
+            if handled:
+                return
+
             print("错误: 获取歌单数据失败，请检查链接有效性或网络连接。", file=sys.stderr)
             sys.exit(1)
 
         run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
         return
+
 
     # ─────────────────────────────────────────────────────────────
     # 模式二：交互式终端模式

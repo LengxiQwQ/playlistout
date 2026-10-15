@@ -221,7 +221,8 @@ def extract_playlist_id(text):
     """
     if not text:
         return None
-    trimmed = text.strip()
+    from cli.core.detector import extract_clean_url_or_input
+    trimmed = extract_clean_url_or_input(text).strip()
 
     # 1. 直接输入纯数字 ID (通常 16~20 位)
     if re.fullmatch(r'\d{4,20}', trimmed):
@@ -229,6 +230,7 @@ def extract_playlist_id(text):
 
     # 2. 从已有 URL Query 参数或路径中快速提取无需走网络
     m = re.search(r'(?:[?&](?:playlist_id|playlistId|id)=|\/(?:share\/)?playlist\/)(\d{4,20})', trimmed, flags=re.I)
+
     if m:
         return m.group(1)
 

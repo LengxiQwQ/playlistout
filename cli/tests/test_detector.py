@@ -4,7 +4,13 @@ Tests for Smart Link & Platform Detector
 """
 
 from unittest.mock import patch, MagicMock
-from cli.core.detector import SmartDetector, PlatformType, extract_url_from_text
+from cli.core.detector import (
+    SmartDetector,
+    PlatformType,
+    extract_url_from_text,
+    extract_clean_url_or_input,
+    extract_user_profile_target,
+)
 
 
 def test_extract_url_from_text():
@@ -100,3 +106,49 @@ def test_detect_with_mocked_redirect():
         p, resolved_url = SmartDetector.detect("https://163cn.tv/bhsHbRfW", resolve_redirect=True)
         assert p == PlatformType.NETEASE
         assert "music.163.com" in resolved_url
+
+
+def test_extract_clean_url_or_input_app_share_texts():
+    # 模拟各类移动端 App 分享文案污染
+    netease_share = "分享网易云歌单：https://music.163.com/playlist?id=2756674066 来自网易云音乐客户端"
+    assert extract_clean_url_or_input(netease_share) == "https://music.163.com/playlist?id=2756674066"
+
+    qq_share = "【周杰伦精选】https://y.qq.com/n/ryqq/playlist/9044196528 (分享自QQ音乐)"
+    assert extract_clean_url_or_input(qq_share) == "https://y.qq.com/n/ryqq/playlist/9044196528"
+
+    # 无协议头的裸域名
+    bare_domain = "来听听我的歌单 y.qq.com/n/ryqq/playlist/9044196528 超好听"
+    assert extract_clean_url_or_input(bare_domain) == "https://y.qq.com/n/ryqq/playlist/9044196528"
+
+    # 标号纯数字前缀清洗
+    assert extract_clean_url_or_input("QQ: 3197635836") == "3197635836"
+    assert extract_clean_url_or_input("歌单：2756674066") == "2756674066"
+    assert extract_clean_url_or_input("UID: 1825474783") == "1825474783"
+
+
+def test_extract_user_profile_target():
+    # QQ 音乐用户主页检测
+    qq_profile_1 = "https://y.qq.com/n/ryqq/profile/3197635836"
+    assert extract_user_profile_target(qq_profile_1) == (PlatformType.QQMUSIC, "3197635836")
+
+    qq_profile_2 = "https://y.qq.com/portal/profile.html?uin=3197635836"
+    assert extract_user_profile_target(qq_profile_2) == (PlatformType.QQMUSIC, "3197635836")
+
+    qq_share_profile = "https://i.y.qq.com/n2/m/share/profile_duo/index.html?uin=3197635836"
+    assert extract_user_profile_target(qq_share_profile) == (PlatformType.QQMUSIC, "3197635836")
+
+    # 网易云音乐用户主页检测
+    netease_profile_1 = "https://music.163.com/#/user/home?id=1825474783"
+    assert extract_user_profile_target(netease_profile_1) == (PlatformType.NETEASE, "1825474783")
+
+    netease_profile_2 = "https://music.163.com/user/1825474783"
+    assert extract_user_profile_target(netease_profile_2) == (PlatformType.NETEASE, "1825474783")
+
+    # 酷狗音乐用户主页检测
+    kugou_profile = "https://www.kugou.com/user/detail?uid=12345678"
+    assert extract_user_profile_target(kugou_profile) == (PlatformType.KUGOU, "12345678")
+
+    # 普通歌单链接不应被判定为用户主页
+    assert extract_user_profile_target("https://music.163.com/playlist?id=2756674066") is None
+    assert extract_user_profile_target("https://y.qq.com/n/ryqq/playlist/9044196528") is None
+

@@ -117,15 +117,28 @@ def test_export_csv_utf8_bom(tmp_path, sample_playlist):
     with open(out_file, "r", encoding="utf-8-sig") as f:
         lines = f.readlines()
     assert len(lines) == 3
+    assert "title,artist,album,isrc,duration,url,index,type,vip,status" in lines[0]
     assert "晴天" in lines[1]
-    assert "下架/无版权" in lines[2]
+    assert "playable" in lines[1]
+    assert "七里香" in lines[2]
+    assert "unplayable" in lines[2]
 
 
 def test_export_xlsx(tmp_path, sample_playlist):
+    import openpyxl
+
     out_file = str(tmp_path / "test.xlsx")
     export_xlsx(sample_playlist, out_file)
     assert os.path.exists(out_file)
     assert os.path.getsize(out_file) > 1000
+
+    wb = openpyxl.load_workbook(out_file)
+    assert "Tracks" in wb.sheetnames
+    assert "Playlist Info" in wb.sheetnames
+    ws_tracks = wb["Tracks"]
+    assert ws_tracks.max_row == 3
+    assert ws_tracks.cell(row=1, column=1).value == "title"
+    assert ws_tracks.cell(row=2, column=1).value == "晴天"
 
 
 def test_export_txt(tmp_path, sample_playlist):
@@ -134,8 +147,11 @@ def test_export_txt(tmp_path, sample_playlist):
     assert os.path.exists(out_file)
     with open(out_file, "r", encoding="utf-8") as f:
         content = f.read()
-    assert "1. 晴天 - 周杰伦" in content
-    assert "2. 七里香 - 周杰伦" in content
+    assert "==================================================" in content
+    assert "歌单名称: 测试杰伦歌单" in content
+    assert "导出工具: Playlist Out" in content
+    assert "晴天 - 周杰伦 - 叶惠美" in content
+    assert "七里香 - 周杰伦 - 七里香 [下架/无版权]" in content
 
 
 def test_export_m3u8(tmp_path, sample_playlist):

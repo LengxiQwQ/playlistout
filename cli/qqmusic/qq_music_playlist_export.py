@@ -185,38 +185,53 @@ def resolve_shortlink(text):
 def extract_playlist_id(text):
     if not text:
         return None
-    text = text.strip()
-    if re.fullmatch(r'\d+', text):
-        return text
-    resolved = resolve_shortlink(text)
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(text)
+    if re.fullmatch(r'\d{5,18}', cleaned.strip()):
+        return cleaned.strip()
+
+    resolved = resolve_shortlink(cleaned)
+
+    # 严格排除用户主页特征，避免将用户 UIN 误识别为歌单 ID
+    is_playlist_path = any(p in resolved for p in ('/playlist', '/taoge', '/playsquare'))
+    is_playlist_query = any(k in resolved for k in ('disstid', 'dissid', 'tid', 'playlist_id', 'diss_id', 'playlistid'))
+    if ('/profile' in resolved or 'hostuin=' in resolved or 'uin=' in resolved) and not (is_playlist_path or is_playlist_query):
+        return None
+
     # 1. 优先从 URL 路径匹配: /playlist/<id>, /taoge/<id>, /playsquare/<id>
     m = re.search(r'/(?:playlist|taoge|playsquare)(?:_v\d+)?/(\d{5,18})', resolved)
     if m:
         return m.group(1)
     # 2. 匹配 Query 参数: id=..., disstid=..., dissid=..., tid=..., playlist_id=...
-    m = re.search(r'[?&#](?:id|disstid|dissid|tid|playlist_id)=(\d{5,18})', resolved)
+    m = re.search(r'[?&#](?:id|disstid|dissid|tid|playlist_id|diss_id|playlistid)=(\d{5,18})', resolved)
     if m:
         return m.group(1)
-    # 3. 兜底匹配任意 5-18 位连续数字
-    m = re.search(r'(\d{5,18})', resolved)
-    if m:
-        return m.group(1)
+    # 3. 针对明确的 QQ 音乐歌单页面兜底匹配数字
+    if 'y.qq.com' in resolved and any(k in resolved for k in ('detail', 'taoge', 'playlist', 'playsquare')):
+        m = re.search(r'(\d{5,18})', resolved)
+        if m:
+            return m.group(1)
     return None
 
 # 从用户输入中提取用户 QQ号 (uin)
 def extract_user_uin(text):
     if not text:
         return None
-    text = text.strip()
-    if re.fullmatch(r'\d{5,12}', text):
-        return text
-    resolved = resolve_shortlink(text)
+    from cli.core.detector import extract_clean_url_or_input
+    cleaned = extract_clean_url_or_input(text)
+    if re.fullmatch(r'\d{5,12}', cleaned.strip()):
+        return cleaned.strip()
+    resolved = resolve_shortlink(cleaned)
     if '/playlist' in resolved or '/taoge' in resolved or '/playsquare' in resolved:
         return None
     m = re.search(r'[?&#](?:uin|hostuin)=(\d{5,12})', resolved)
     if m:
         return m.group(1)
+    m_path = re.search(r'/profile/(\d{5,12})', resolved)
+    if m_path:
+        return m_path.group(1)
     return None
+
 
 def normalize_qq_release_date(value):
     raw = str(value or "").strip()

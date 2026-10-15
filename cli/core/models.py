@@ -30,6 +30,10 @@ class NormalizedTrack:
     status_text: str = "正常"          # 正常, VIP专享, 下架/无版权, 付费专辑, 仅海外受限
     max_quality: Optional[str] = None  # FLAC, Hi-Res, 320kbps, etc.
     source_url: Optional[str] = None
+    playback_url: Optional[str] = None
+    isrc: Optional[str] = None
+    is_original_sound: Optional[bool] = None
+    is_duplicate: bool = False
     mv_id: Optional[str] = None
     mv_url: Optional[str] = None
     raw_extra: Dict[str, Any] = field(default_factory=dict)
@@ -45,6 +49,8 @@ class NormalizedTrack:
             entry["album"] = str(self.album).strip()
         if self.id and str(self.id).strip():
             entry["id"] = str(self.id).strip()
+        if self.isrc and str(self.isrc).strip():
+            entry["isrc"] = str(self.isrc).strip().upper()
         if self.duration_ms is not None and self.duration_ms > 0:
             entry["durationMs"] = int(self.duration_ms)
         if self.release_date and str(self.release_date).strip():
@@ -55,8 +61,14 @@ class NormalizedTrack:
             entry["discNumber"] = self.disc_number
         if self.source_url and str(self.source_url).strip():
             entry["sourceUrl"] = str(self.source_url).strip()
+        if self.playback_url and str(self.playback_url).strip():
+            entry["playbackUrl"] = str(self.playback_url).strip()
         if self.cover_url and str(self.cover_url).strip():
             entry["coverUrl"] = str(self.cover_url).strip()
+        if self.is_original_sound is not None:
+            entry["isOriginalSound"] = bool(self.is_original_sound)
+        if self.is_duplicate:
+            entry["isDuplicate"] = True
 
         entry["isVip"] = bool(self.is_vip)
         entry["isAvailable"] = bool(self.is_available)
@@ -84,6 +96,11 @@ class NormalizedPlaylist:
     description: str = ""
     source_url: str = ""
     track_count: Optional[int] = None
+    create_time: Optional[int] = None
+    update_time: Optional[int] = None
+    play_count: Optional[int] = None
+    tags: List[str] = field(default_factory=list)
+    is_partial: bool = False
     tracks: List[NormalizedTrack] = field(default_factory=list)
     raw_extra: Dict[str, Any] = field(default_factory=dict)
 
@@ -107,3 +124,22 @@ class NormalizedPlaylist:
         if hours > 0:
             return f"{hours} 小时 {rem_min} 分钟" if rem_min > 0 else f"{hours} 小时"
         return f"{minutes} 分钟"
+
+    def mark_duplicates(self) -> int:
+        """
+        标定歌单中的重复歌曲（对标 Worker pipeline duplicate-detector）。
+        返回重复歌曲总数。
+        """
+        seen = set()
+        dup_count = 0
+        for track in self.tracks:
+            norm_title = str(track.title or "").strip().lower()
+            norm_artist = str(track.artist or "").strip().lower()
+            key = (norm_title, norm_artist)
+            if key in seen:
+                track.is_duplicate = True
+                dup_count += 1
+            else:
+                seen.add(key)
+        return dup_count
+
