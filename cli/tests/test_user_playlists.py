@@ -194,3 +194,50 @@ def test_cli_user_mode_qqmusic_end_to_end(tmp_path):
         assert mock_fetch_user.called
         assert mock_fetch_pl.call_count == 2
         assert mock_export.call_count == 2
+
+
+def test_interactive_preselected_platform_pure_digits_user_disambiguation(tmp_path):
+    """
+    验证交互模式下：用户先选平台（如 2 -> QQ 音乐），再输入纯数字（如 3197635836）时，
+    系统会主动提示 [1] 歌单 ID / [2] 用户 / QQ号 / UID，选 2 后能正确进入用户批量流程。
+    """
+    from cli.main import main
+
+    mock_user_pls = NormalizedUserPlaylists(
+        platform="qqmusic",
+        user_id="3197635836",
+        nickname="琴心月满",
+        playlists=[
+            UserPlaylistSummary(id="pl_101", name="我的歌单", is_created=True),
+        ],
+    )
+    mock_track = NormalizedTrack(index=1, title="晴天", artist="周杰伦")
+    mock_pl_obj = NormalizedPlaylist(
+        platform="qqmusic",
+        id="pl_101",
+        name="我的歌单",
+        tracks=[mock_track],
+    )
+
+    qq_adapter = PlatformRegistry.get("qqmusic")
+    # 模拟用户交互输入：
+    # 1. 平台编号: '2' (QQ 音乐)
+    # 2. 纯数字: '3197635836'
+    # 3. 类型选择: '2' (用户 / QQ号 / UID)
+    # 4. 歌单范围: 'all' (全部导出)
+    # 5. 导出格式: '3' (JSON)
+    # 6. 下一轮主循环退出: '0'
+    inputs = iter(["2", "3197635836", "2", "all", "3", "0"])
+
+    with patch.object(qq_adapter, "fetch_user_playlists", return_value=mock_user_pls) as mock_fetch_user, \
+         patch.object(qq_adapter, "fetch_playlist", return_value=mock_pl_obj) as mock_fetch_pl, \
+         patch("cli.core.batch.perform_export", return_value=["dummy.json"]) as mock_export, \
+         patch("builtins.input", lambda *args: next(inputs)), \
+         patch.object(sys, "argv", ["main.py", "--no-open", "-o", str(tmp_path)]):
+
+        main()
+
+        assert mock_fetch_user.called
+        mock_fetch_user.assert_called_with("3197635836", token=None, userid=None)
+        assert mock_fetch_pl.called
+

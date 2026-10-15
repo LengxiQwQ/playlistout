@@ -7,6 +7,7 @@ Kugou Music, Kuwo Music, and Qishui (Douyin) Music.
 """
 
 import os
+import re
 import sys
 import argparse
 
@@ -37,7 +38,13 @@ from cli.core.ui import (
     print_exit_banner,
     print_divider,
 )
-from cli.core.detector import SmartDetector, PlatformType, TargetKind, DetectedTarget
+from cli.core.detector import (
+    SmartDetector,
+    PlatformType,
+    TargetKind,
+    DetectedTarget,
+    extract_clean_url_or_input,
+)
 from cli.core.exporter import perform_export
 from cli.core.batch import run_batch_flow, preprocess_playlist
 from cli.platforms.registry import PlatformRegistry
@@ -335,7 +342,8 @@ def main():
             if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
                 selected_adapter = adapters_list[int(user_input) - 1]
                 print(f"✓ 已选择：{selected_adapter.display_name}")
-                sub_input = input("> 粘贴歌单链接、短链或输入歌单 ID（0 返回）：").strip()
+                hint = "粘贴歌单链接、短链或输入 ID / QQ号 / UID（0 返回）：" if selected_adapter.supports_user_playlists else "粘贴歌单链接、短链或输入歌单 ID（0 返回）："
+                sub_input = input(f"> {hint}").strip()
                 if not sub_input:
                     continue
                 if sub_input in ("0", "q", "quit", "exit"):
@@ -349,7 +357,11 @@ def main():
                 platform=target_adapter.platform_id if target_adapter else None,
                 resolve_redirect=True
             )
-            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
+            # 交互模式纯数字消歧：如果输入是纯数字且无显式标签前缀，且目标平台支持用户歌单，主动询问是歌单还是用户/QQ号/UID
+            is_pure_digit = bool(re.fullmatch(r'\d+', extract_clean_url_or_input(target_query)))
+            has_explicit_tag = bool(re.search(r'(?:qq|uin|uid|账号|用户|歌单|playlist)[:：\s]*\d+', target_query, re.I))
+
+            if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS or (is_pure_digit and not has_explicit_tag and target_adapter and target_adapter.supports_user_playlists):
                 if not target_adapter:
                     print(f"! 检测到纯数字 ID：{target_query}")
                     print("  请选择它所属的平台：")
