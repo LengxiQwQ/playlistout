@@ -8,10 +8,16 @@ export interface SamplePresetsGridProps {
     platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
     modeHint?: 'user' | 'playlist',
   ) => void;
+  hasKugouAuth?: boolean;
+  onRequireKugouLogin?: () => void;
 }
 
-export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({ onSelectSample }) => {
-  const { t } = useTranslation();
+export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
+  onSelectSample,
+  hasKugouAuth = false,
+  onRequireKugouLogin,
+}) => {
+  const { t, language } = useTranslation();
   const [isSamplesExpanded, setIsSamplesExpanded] = useState<boolean>(false);
 
   return (
@@ -168,9 +174,12 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({ onSelectSa
           type="button"
           color="white"
           rotateDeg={-1}
-          onClick={() =>
-            onSelectSample('https://m.kugou.com/user?uid=1425711902', 'kugou', 'user')
-          }
+          onClick={() => {
+            onSelectSample('https://m.kugou.com/user?uid=1425711902', 'kugou', 'user');
+            if (!hasKugouAuth && onRequireKugouLogin) {
+              onRequireKugouLogin();
+            }
+          }}
           className="font-handwriting"
           style={{
             padding: '0.35rem 0.9rem',
@@ -179,6 +188,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({ onSelectSa
             fontFamily: 'var(--font-handwriting, cursive)',
             cursor: 'pointer',
           }}
+          title={!hasKugouAuth ? (language === 'zh-CN' ? '需先扫码连接酷狗账号' : 'Requires KuGou sign-in') : undefined}
         >
           {t.search.sampleKugouBatch}
         </Sticker>

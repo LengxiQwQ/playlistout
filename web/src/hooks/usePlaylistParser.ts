@@ -122,6 +122,16 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               : platformHint === 'kugou'
               ? 'kugou'
               : 'qqmusic';
+          if (platform === 'kugou' && !getKugouAuth()) {
+            setState('error');
+            setError({
+              code: 'FORBIDDEN',
+              message: '酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。',
+              details: { authRequired: true, platform: 'kugou' },
+            });
+            recordClarityParseFailure('kugou');
+            return;
+          }
           const targetInput = validation.extractedUin || targetUrl;
           const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
@@ -193,6 +203,16 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               : validation.platform === 'kugou'
               ? 'kugou'
               : 'qqmusic';
+          if (platform === 'kugou' && !getKugouAuth()) {
+            setState('error');
+            setError({
+              code: 'FORBIDDEN',
+              message: '酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。',
+              details: { authRequired: true, platform: 'kugou' },
+            });
+            recordClarityParseFailure('kugou');
+            return;
+          }
           const res = await fetchUserPlaylists(targetInput, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 

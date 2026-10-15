@@ -91,6 +91,8 @@ export const zhCN: Translations = {
     networkError: '网络连接异常，请检查网络连接后重试。',
     internalError: '服务器处理歌单时出现异常，请稍后重试。',
     genericError: '发生未知错误，请稍后重试。',
+    kugouAuthRequired: '酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。',
+    kugouAuthAction: '📱 立即扫码连接',
     retry: '重试',
     feedbackButton: '一键反馈',
     feedbackSubmitted: '已反馈 ✓',

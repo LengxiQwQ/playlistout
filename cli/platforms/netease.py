@@ -10,7 +10,7 @@ from typing import Optional
 from .base import BasePlatformAdapter
 from .registry import register_platform
 from ..core.models import NormalizedPlaylist, NormalizedTrack
-from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder
+from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder, print_divider
 from ..core.exporter import perform_export
 
 from cli.netease.netease_playlist_export import (
@@ -151,6 +151,7 @@ class NetEaseAdapter(BasePlatformAdapter):
             sel = input("\n> 选择要导出的歌单序号（all 导出自己创建的全部歌单，0 返回）：").strip()
             if not sel or sel == "0":
                 return True
+            print_divider()
 
             to_export = []
             if sel.lower() == "all":
@@ -163,10 +164,11 @@ class NetEaseAdapter(BasePlatformAdapter):
                 return True
 
             print_format_menu()
-            fmt_input = input("> 选择格式，可多选，例如 1,2：").strip()
+            fmt_input = input("> 选择格式，可多选，例如 (1, 2)：").strip()
+            print_divider()
             formats = resolve_export_formats(fmt_input)
             if not formats:
-                print("\n已返回，不导出。")
+                print("已返回，不导出。")
                 return True
 
             for pl in to_export:

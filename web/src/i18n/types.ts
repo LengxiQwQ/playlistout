@@ -91,6 +91,8 @@ export interface Translations {
     networkError: string;
     internalError: string;
     genericError: string;
+    kugouAuthRequired: string;
+    kugouAuthAction: string;
     retry: string;
     feedbackButton: string;
     feedbackSubmitted: string;

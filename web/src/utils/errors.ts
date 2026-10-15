@@ -6,6 +6,15 @@ import type { ApiErrorCode } from '../api/types';
 export function getFriendlyErrorMessage(code?: ApiErrorCode | string, fallbackMessage?: string): string {
   switch (code) {
     case 'INVALID_INPUT':
+      if (
+        fallbackMessage &&
+        fallbackMessage.toLowerCase().includes('kugou') &&
+        (fallbackMessage.toLowerCase().includes('authorization') ||
+          fallbackMessage.toLowerCase().includes('token') ||
+          fallbackMessage.includes('扫码'))
+      ) {
+        return '酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。';
+      }
       if (fallbackMessage && !fallbackMessage.toLowerCase().includes('url') && !fallbackMessage.toLowerCase().includes('parameter')) {
         return fallbackMessage;
       }
@@ -24,7 +33,11 @@ export function getFriendlyErrorMessage(code?: ApiErrorCode | string, fallbackMe
     case 'UPSTREAM_ERROR':
       return '音乐平台服务响应异常，请稍后重试。';
     case 'METHOD_NOT_ALLOWED':
+      return '请求被拒绝，请刷新页面后重试。';
     case 'FORBIDDEN':
+      if (fallbackMessage && fallbackMessage.toLowerCase().includes('kugou')) {
+        return '酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。';
+      }
       return '请求被拒绝，请刷新页面后重试。';
     case 'RATE_LIMITED':
       return '请求过于频繁，请稍候再试。';

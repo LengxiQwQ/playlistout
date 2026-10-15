@@ -91,6 +91,8 @@ export const enUS: Translations = {
     networkError: 'Network connection error. Please check your network and try again.',
     internalError: 'Server error occurred while processing the playlist. Please try again.',
     genericError: 'An unknown error occurred. Please try again later.',
+    kugouAuthRequired: 'KuGou batch export requires connecting your KuGou account. Please click "Sign In Now" below to scan the QR code and try again.',
+    kugouAuthAction: '📱 Sign In Now',
     retry: 'Retry',
     feedbackButton: 'Report this',
     feedbackSubmitted: 'Reported ✓',

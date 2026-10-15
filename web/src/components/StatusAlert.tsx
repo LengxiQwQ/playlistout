@@ -7,6 +7,8 @@ export interface StatusAlertProps {
   onRetry?: () => void;
   title?: string;
   retryLabel?: string;
+  onAction?: () => void;
+  actionLabel?: string;
   onFeedback?: () => void;
   feedbackLabel?: string;
   feedbackSubmittedLabel?: string;
@@ -18,6 +20,8 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
   type,
   message,
   onRetry,
+  onAction,
+  actionLabel,
   onFeedback,
   feedbackLabel = '一键反馈',
   feedbackSubmittedLabel = '已反馈 ✓',
@@ -26,7 +30,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
   retryLabel = '重试',
 }) => {
   const isError = type === 'error';
-  const hasActions = onRetry || onFeedback;
+  const hasActions = onRetry || onFeedback || Boolean(onAction && actionLabel);
 
   return (
     <div
@@ -88,6 +92,25 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
             </span>
           )}
           <span style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
+            {onAction && actionLabel && (
+              <button
+                type="button"
+                onClick={onAction}
+                className="btn-action sticker font-handwriting"
+                style={{
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  padding: '0.35rem 1rem',
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  border: 'none',
+                }}
+              >
+                {actionLabel}
+              </button>
+            )}
             {onRetry && (
               <button
                 type="button"

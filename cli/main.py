@@ -35,6 +35,7 @@ from cli.core.ui import (
     print_format_menu,
     resolve_export_formats,
     print_exit_banner,
+    print_divider,
 )
 from cli.core.detector import SmartDetector, PlatformType
 from cli.core.exporter import perform_export
@@ -68,10 +69,14 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     formats = default_formats
     if interactive:
         print_format_menu()
-        formats = resolve_export_formats(input("> 选择格式，可多选，例如 1,2：").strip())
+        fmt_choice = input("> 选择格式，可多选，例如 (1, 2)：").strip()
+        print_divider()
+        formats = resolve_export_formats(fmt_choice)
         if not formats:
-            print("\n已返回，不导出。")
+            print("已返回，不导出。")
             return
+    else:
+        print("")
 
     perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
 
@@ -226,6 +231,7 @@ def main():
             if user_input in ("0", "q", "quit", "exit"):
                 print_exit_banner()
                 break
+            print_divider()
 
             if user_input.lower() in ("login", "logout"):
                 kg = PlatformRegistry.get("kugou")
@@ -238,37 +244,43 @@ def main():
 
             if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
                 selected_adapter = adapters_list[int(user_input) - 1]
-                print(f"\n✓ 已选择：{selected_adapter.display_name}")
+                print(f"✓ 已选择：{selected_adapter.display_name}")
                 sub_input = input("> 粘贴歌单链接、短链或输入歌单 ID（0 返回）：").strip()
-                if not sub_input or sub_input in ("0", "q", "quit", "exit"):
+                if not sub_input:
                     continue
+                if sub_input in ("0", "q", "quit", "exit"):
+                    continue
+                print_divider()
                 target_adapter = selected_adapter
                 target_query = sub_input
 
             if not target_adapter:
                 ptype, detected_text = SmartDetector.detect(target_query)
                 if ptype == PlatformType.AMBIGUOUS_DIGITS:
-                    print(f"\n! 检测到纯数字 ID：{target_query}")
+                    print(f"! 检测到纯数字 ID：{target_query}")
                     print("  请选择它所属的平台：")
                     for idx, a in enumerate(adapters_list, 1):
                         print(f"  {idx}  {a.display_name}")
                     print("  0  返回")
                     p_sel = input("> 选择平台编号：").strip()
+                    if not p_sel:
+                        continue
                     if p_sel in ("0", "q", "quit", "exit"):
                         continue
                     if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
-                        print("\n! 请输入 1-5 中的有效平台编号。")
+                        print("! 请输入 1-5 中的有效平台编号。")
                         continue
+                    print_divider()
                     target_adapter = adapters_list[int(p_sel) - 1]
                     print(f"✓ 已选择：{target_adapter.display_name}")
                 elif ptype != PlatformType.UNKNOWN:
                     target_adapter = PlatformRegistry.get(ptype.value)
                     target_query = detected_text
                     if target_adapter:
-                        print(f"\n✓ 已识别：{target_adapter.display_name}")
+                        print(f"✓ 已识别：{target_adapter.display_name}")
 
             if not target_adapter:
-                print("\n× 没有识别出歌单链接。")
+                print("× 没有识别出歌单链接。")
                 print("  可以尝试：")
                 print("  • 直接粘贴完整歌单链接或分享文案")
                 print("  • 如果只有歌单 ID，先输入平台编号")

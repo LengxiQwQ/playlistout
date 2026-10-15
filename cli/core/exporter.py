@@ -298,7 +298,7 @@ def perform_export(
 
     exported_files = []
     failed_count = 0
-    print("\n→ 正在导出...\n")
+    print("→ 正在导出...\n")
     for fmt in formats:
         target_path = os.path.join(output_dir, f"{safe_title}.{fmt}")
         label = labels.get(fmt, fmt.upper())

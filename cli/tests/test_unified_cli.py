@@ -188,9 +188,15 @@ def test_export_format_selection_semantics():
     assert resolve_export_formats("") == ["xlsx", "json", "csv", "txt", "m3u8"]
     assert resolve_export_formats("all") == ["xlsx", "json", "csv", "txt", "m3u8"]
     assert resolve_export_formats("1,2") == ["xlsx", "json"]
+    assert resolve_export_formats("1, 2") == ["xlsx", "json"]
+    assert resolve_export_formats("(1, 2)") == ["xlsx", "json"]
+    assert resolve_export_formats("(1,2)") == ["xlsx", "json"]
+    assert resolve_export_formats("（1，2）") == ["xlsx", "json"]
+    assert resolve_export_formats("(2)") == ["json"]
     assert resolve_export_formats("3") == ["csv"]
     assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
     assert resolve_export_formats("0") == []
+    assert resolve_export_formats("(0)") == []
 
 
 def test_home_banner_and_menu_copy(capsys):
@@ -203,7 +209,7 @@ def test_home_banner_and_menu_copy(capsys):
     ])
 
     out = capsys.readouterr().out
-    assert "Playlist Out CLI - 把你的歌单带走" in out
+    assert "Playlist Out CLI · 把你的歌单带走" in out
     assert "你的歌单，不应该只困在一个音乐平台里。" in out
     assert "解析、导出，并把歌单继续带进支持的开源播放器。" in out
     assert "作者：LengxiQwQ" in out
@@ -211,5 +217,46 @@ def test_home_banner_and_menu_copy(capsys):
     assert "在线网页版" in out
     assert "直接粘贴链接或分享文案即可自动识别平台。" in out
     assert "只有歌单 ID？先输入平台编号。" in out
+    assert "─" * 64 in out
     assert "当前已接入平台" not in out
     assert "使用方式：" not in out
+
+
+def test_interactive_export_flow_ui_divider(capsys, tmp_path):
+    from cli.main import run_export_flow
+    playlist = NormalizedPlaylist(
+        platform="kuwo",
+        id="2311665489",
+        name="我喜欢听",
+        creator="kw1982280723",
+        tracks=[
+            NormalizedTrack(index=1, title="歌曲1", artist="歌手1")
+        ]
+    )
+
+    out_dir = str(tmp_path / "interactive_out")
+    # Simulate user inputting "(2)" for format choice
+    with patch("builtins.input", return_value="(2)"):
+        run_export_flow(playlist, output_dir=out_dir, default_formats=["all"], reveal_folder=False, interactive=True)
+
+    out = capsys.readouterr().out
+    assert "导出格式" in out
+    assert "─" * 64 in out
+    assert "→ 正在导出..." in out
+    assert (tmp_path / "interactive_out" / "我喜欢听.json").exists()
+
+
+def test_print_exit_banner(capsys):
+    from cli.core.ui import print_exit_banner, REPO_URL
+
+    print_exit_banner()
+    out = capsys.readouterr().out
+    assert "─" * 64 in out
+    assert "感谢使用！欢迎在 " in out
+    assert "GitHub" in out
+    assert " 给个 Star ⭐️" in out
+    assert REPO_URL in out
+    assert "Playlist Out - Paste. Parse. Export." in out
+    assert out.endswith("\n\n")
+
+

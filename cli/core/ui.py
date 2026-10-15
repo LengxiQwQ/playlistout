@@ -45,6 +45,13 @@ def _pad_terminal_text(text: str, width: int) -> str:
     return text + " " * max(0, width - _terminal_display_width(text))
 
 
+def print_divider(width: int = 64):
+    """打印横线分隔符 (默认 64 字符宽度，上下各留空一行)。"""
+    print()
+    print("─" * width)
+    print()
+
+
 def print_banner(platform_name: str = None):
     """统一 CLI 品牌头部。"""
     author_link = terminal_link(AUTHOR_URL, f"作者：{AUTHOR_NAME}")
@@ -54,7 +61,7 @@ def print_banner(platform_name: str = None):
     if platform_name:
         title = f"Playlist Out CLI - {platform_name} 歌单导出工具"
     else:
-        title = "Playlist Out CLI - 把你的歌单带走"
+        title = "Playlist Out CLI · 把你的歌单带走"
 
     print(title)
     print("")
@@ -62,9 +69,7 @@ def print_banner(platform_name: str = None):
     print("解析、导出，并把歌单继续带进支持的开源播放器。")
     print("")
     print(f"{author_link} · {repo_link} · {web_link}")
-    print("")
-    print("─" * 64)
-    print("")
+    print_divider()
 
 
 def print_main_menu(platforms: list):
@@ -91,8 +96,10 @@ def print_format_menu():
 
 
 def resolve_export_formats(choice: str) -> List[str]:
-    """解析导出格式；空输入/all 代表全部，0 代表返回。"""
+    """解析导出格式；空输入/all 代表全部，0 代表返回。兼容 (1, 2) 等带括号输入。"""
     choice = str(choice or "").strip().lower()
+    # 兼容用户输入的各种括号 (中英文小括号、方括号等)
+    choice = re.sub(r'[()（）\[\]]', '', choice).strip()
     all_formats = ["xlsx", "json", "csv", "txt", "m3u8"]
     if not choice or choice == "all":
         return all_formats
@@ -138,6 +145,8 @@ def reveal_folder(target_path: str):
 
 def print_exit_banner():
     """退出提示"""
-    print("\n" + "=" * 64)
-    print("  感谢使用 Playlist Out，保护你的数字音乐资产！再见。")
-    print("=" * 64)
+    github_link = terminal_link(REPO_URL, "GitHub")
+    print_divider()
+    print(f"感谢使用！欢迎在 {github_link} 给个 Star ⭐️")
+    print("Playlist Out - Paste. Parse. Export.")
+    print()

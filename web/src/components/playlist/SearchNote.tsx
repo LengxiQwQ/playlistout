@@ -88,6 +88,16 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
   };
 
   const getErrorMessage = (err: ApiError): string => {
+    const isKugouAuth =
+      Boolean((err.details as any)?.authRequired) ||
+      ((err.details as any)?.platform === 'kugou') ||
+      (err.code === 'FORBIDDEN' && (err.message?.toLowerCase().includes('kugou') || (err.details as any)?.platform === 'kugou')) ||
+      (err.code === 'INVALID_INPUT' && err.message?.toLowerCase().includes('kugou') && (err.message?.toLowerCase().includes('authorization') || err.message?.toLowerCase().includes('token')));
+
+    if (isKugouAuth) {
+      return t.errors.kugouAuthRequired;
+    }
+
     switch (err.code) {
       case 'INVALID_INPUT':
         return t.errors.invalidInput;
@@ -311,26 +321,40 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
         {isLoading && <LoadingNote />}
 
         {/* Error Feedback */}
-        {error && !isLoading && (
-          <StatusAlert
-            type="error"
-            message={getErrorMessage(error)}
-            onRetry={onRetry}
-            retryLabel={t.errors.retry}
-            onFeedback={
-              onFeedback && error.code !== 'RATE_LIMITED' && error.code !== 'NETWORK_ERROR'
-                ? onFeedback
-                : undefined
-            }
-            feedbackLabel={t.errors.feedbackButton}
-            feedbackSubmittedLabel={t.errors.feedbackSubmitted}
-            feedbackNotice={t.errors.feedbackNotice}
-            feedbackSubmitted={feedbackSubmitted}
-          />
-        )}
+        {error && !isLoading && (() => {
+          const isKugouAuth =
+            Boolean((error.details as any)?.authRequired) ||
+            ((error.details as any)?.platform === 'kugou') ||
+            (error.code === 'FORBIDDEN' && (error.message?.toLowerCase().includes('kugou') || (error.details as any)?.platform === 'kugou')) ||
+            (error.code === 'INVALID_INPUT' && error.message?.toLowerCase().includes('kugou') && (error.message?.toLowerCase().includes('authorization') || error.message?.toLowerCase().includes('token')));
+
+          return (
+            <StatusAlert
+              type="error"
+              message={getErrorMessage(error)}
+              onAction={isKugouAuth ? () => setIsKugouModalOpen(true) : undefined}
+              actionLabel={isKugouAuth ? t.errors.kugouAuthAction : undefined}
+              onRetry={isKugouAuth ? undefined : onRetry}
+              retryLabel={t.errors.retry}
+              onFeedback={
+                onFeedback && error.code !== 'RATE_LIMITED' && error.code !== 'NETWORK_ERROR' && !isKugouAuth
+                  ? onFeedback
+                  : undefined
+              }
+              feedbackLabel={t.errors.feedbackButton}
+              feedbackSubmittedLabel={t.errors.feedbackSubmitted}
+              feedbackNotice={t.errors.feedbackNotice}
+              feedbackSubmitted={feedbackSubmitted}
+            />
+          );
+        })()}
 
         {/* Quick Samples Section */}
-        <SamplePresetsGrid onSelectSample={onSelectSample} />
+        <SamplePresetsGrid
+          onSelectSample={onSelectSample}
+          hasKugouAuth={hasKugou}
+          onRequireKugouLogin={() => setIsKugouModalOpen(true)}
+        />
       </StickyNote>
       <KugouAuthModal
         isOpen={isKugouModalOpen}

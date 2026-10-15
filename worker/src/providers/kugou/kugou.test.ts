@@ -1466,5 +1466,13 @@ describe('Kugou Provider Unit Tests', () => {
       expect(playlist.tracks[1].title).toBe('漩涡');
       expect(playlist.tracks[1].artist).toBe('孙燕姿');
     });
+
+    it('rejects fetchUserPlaylists with INVALID_INPUT 400 and authRequired when unauthenticated', async () => {
+      await expect(kugouProvider.fetchUserPlaylists!('1425711902')).rejects.toMatchObject({
+        code: 'INVALID_INPUT',
+        statusCode: 400,
+        details: { authRequired: true, platform: 'kugou' },
+      });
+    });
   });
 });

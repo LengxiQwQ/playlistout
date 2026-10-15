@@ -11,7 +11,7 @@ from typing import Optional
 from .base import BasePlatformAdapter
 from .registry import register_platform
 from ..core.models import NormalizedPlaylist, NormalizedTrack
-from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder
+from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder, print_divider
 from ..core.exporter import perform_export
 
 # 引入已验证的底层 QQ 音乐核心抓取函数
@@ -121,10 +121,11 @@ class QQMusicAdapter(BasePlatformAdapter):
                     print(f"  {i:3d}. {pl['name']}  [ID: {pl['id']}]")
 
                 print_format_menu()
-                fmt_input = input("> 选择格式，可多选，例如 1,2：").strip()
+                fmt_input = input("> 选择格式，可多选，例如 (1, 2)：").strip()
+                print_divider()
                 formats = resolve_export_formats(fmt_input)
                 if not formats:
-                    print("\n已返回，不导出。")
+                    print("已返回，不导出。")
                     return True
 
                 target_dir = os.path.join(output_dir, str(target_uin))

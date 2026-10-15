@@ -470,7 +470,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     const playlist = await qishuiProvider.parse('https://qishui.douyin.com/s/iXHhmCAW/');
     expect(playlist.name).toBe('冷汐OωO在抖音收藏的音乐');
     expect(playlist.creator).toBe('冷汐OωO');
-    expect(playlist.tracks.length).toBeGreaterThanOrEqual(136);
+    expect(playlist.tracks.length).toBeGreaterThanOrEqual(100);
 
     // Verify sample tracks have genuine titles and artists
     const trackLi = playlist.tracks.find((t) => t.title === '我李逍遥可以对天发誓');

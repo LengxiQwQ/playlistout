@@ -187,3 +187,8 @@ def test_resolve_export_formats_parsing():
     assert resolve_export_formats("1 2") == ["xlsx", "json"]
     assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
     assert resolve_export_formats("csv m3u8") == ["csv", "m3u8"]
+    assert resolve_export_formats("(1, 2)") == ["xlsx", "json"]
+    assert resolve_export_formats("(1,2)") == ["xlsx", "json"]
+    assert resolve_export_formats("（1，2）") == ["xlsx", "json"]
+    assert resolve_export_formats("(2)") == ["json"]
+    assert resolve_export_formats("[1, 3]") == ["xlsx", "csv"]

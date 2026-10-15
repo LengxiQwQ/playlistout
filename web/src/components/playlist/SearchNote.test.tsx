@@ -158,4 +158,82 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.location.search).toBe('');
   });
+
+  it('renders Kugou auth required error with action button and opens login modal', () => {
+    vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
+      success: true,
+      data: {
+        qrcode: 'test-qr-key',
+        qrcodeImg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+        loginUrl: 'https://h5.kugou.com/test',
+        expiresAt: Date.now() + 300000,
+      },
+    });
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl="https://m.kugou.com/user?uid=1425711902"
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={{
+            code: 'FORBIDDEN',
+            message: 'KuGou user playlists require both token and userid passed via Authorization / X-kugou-* headers from QR login.',
+            details: { authRequired: true, platform: 'kugou' },
+          }}
+          onRetry={vi.fn()}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText('酷狗音乐批量导出需要先扫码连接酷狗账号。请点击下方「立即扫码连接」登录后重试。')).toBeInTheDocument();
+    const actionBtn = screen.getByRole('button', { name: '📱 立即扫码连接' });
+    expect(actionBtn).toBeInTheDocument();
+
+    fireEvent.click(actionBtn);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐 · 扫码解锁')).toBeInTheDocument();
+  });
+
+  it('opens Kugou login modal when clicking Kugou batch sample without login', () => {
+    vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
+      success: true,
+      data: {
+        qrcode: 'test-qr-key',
+        qrcodeImg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+        loginUrl: 'https://h5.kugou.com/test',
+        expiresAt: Date.now() + 300000,
+      },
+    });
+
+    const handleSelectSample = vi.fn();
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl=""
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={null}
+          onRetry={vi.fn()}
+          onSelectSample={handleSelectSample}
+        />
+      </LanguageProvider>,
+    );
+
+    const kugouBatchSample = screen.getByText('酷狗音乐批量');
+    fireEvent.click(kugouBatchSample);
+
+    expect(handleSelectSample).toHaveBeenCalledWith(
+      'https://m.kugou.com/user?uid=1425711902',
+      'kugou',
+      'user',
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('酷狗音乐 · 扫码解锁')).toBeInTheDocument();
+  });
 });
