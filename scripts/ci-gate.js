@@ -258,6 +258,9 @@ function validatePython() {
     'scripts/utils/test_insights_authenticity.py'
   ]);
   logPass('Python unit & regression tests passed');
+
+  runCommand('python', ['cli/main.py', '--self-test']);
+  logPass('Python CLI self-test passed (0 errors)');
 }
 
 // ── 4. Monorepo TypeScript Typecheck ────────────────────────────────────

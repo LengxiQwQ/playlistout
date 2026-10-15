@@ -14,49 +14,40 @@ PlaylistOut 统一命令行工具，集成网易云音乐、QQ 音乐、酷狗�
 
 ---
 
-## 🚀 快速开始
+## 🚀 快速上手
 
-### 1. 安装依赖
+### 方式 A：独立免安装运行 (推荐，无需安装 Python)
 
-```bash
-pip install -r cli/requirements.txt
-```
+前往 [GitHub Releases](https://github.com/LengxiQwQ/playlistout/releases) 下载对应系统的独立构建版本，解压/双击即可使用，**无需安装 Python 或 pip**：
 
-### 2. 交互式启动 (推荐)
+- **Windows x64**：下载 `PlaylistOut-v{version}-windows-x64.exe`，直接双击运行进入交互界面，或在终端传入参数调用。
+- **macOS Apple Silicon (M1/M2/M3/M4)**：下载 `PlaylistOut-v{version}-macos-arm64.tar.gz`，解压后双击 `PlaylistOut.command` 或在终端运行 `./PlaylistOut`。
+- **macOS Intel (x86_64)**：下载 `PlaylistOut-v{version}-macos-x64.tar.gz`，解压后双击 `PlaylistOut.command` 或在终端运行 `./PlaylistOut`。
+- **Linux x64**：下载 `PlaylistOut-v{version}-linux-x64.tar.gz`，在终端运行 `tar -xzf PlaylistOut-*.tar.gz && ./PlaylistOut`。
 
-直接运行统一入口，进入双轨线框交互界面：
-
-```bash
-python cli/main.py
-# 或以模块方式启动：
-python -m cli
-```
-
-**交互示例：**
-- 直接粘贴网易云链接：`https://music.163.com/playlist?id=2756674066`（自动识别为网易云并导出）
-- 直接粘贴汽水音乐抖音分享文案（自动提取 URL 并识别）
-- 输入 `2` 锁定 QQ 音乐，再输入纯数字歌单 ID 或 QQ 号
-- 输入 `login` 调出酷狗音乐终端扫码/凭证登录
-
-### 3. 命令行静默/自动化调用
-
-支持单行命令直接执行导出，适合脚本批处理：
-
-```bash
-# 智能自动识别链接并导出全部格式
-python cli/main.py "https://music.163.com/playlist?id=2756674066"
-
-# 显式指定平台并指定纯数字 ID 与输出目录
-python cli/main.py "9044196528" -p qqmusic -o ./my_exports -f xlsx,csv --no-open
-
-# 汽水音乐切换到全量原声双通道
-python cli/main.py "https://qishui.douyin.com/s/xxx" --channel douyin
-
-# 酷狗音乐登录配置
-python cli/main.py -p kugou --login
-```
+> **说明**：当前 macOS 构建为未签名版本，首次打开若遇系统提示，可在「系统设置 → 隐私与安全性」中点击「仍要打开」；Linux 构建基于 Ubuntu 22.04 LTS，兼容标准 glibc 环境。
 
 ---
+
+### 方式 B：Python 源码运行 (开发者模式)
+
+如果你已具备 Python 3.14 环境，可以克隆仓库并直接从源码运行：
+
+```bash
+# 1. 安装核心运行时依赖
+pip install -r cli/requirements.txt
+
+# 2. 交互式启动 (双轨菜单 + 智能识别)
+python cli/main.py
+# 或以模块形式启动
+python -m cli
+
+# 3. 命令行静默/自动化调用示例
+python cli/main.py "https://music.163.com/playlist?id=2756674066"
+python cli/main.py "9044196528" -p qqmusic -o ./my_exports -f xlsx,csv --no-open
+python cli/main.py "https://qishui.douyin.com/s/xxx" --channel douyin
+python cli/main.py -p kugou --login
+```
 
 ## 📁 模块架构设计
 

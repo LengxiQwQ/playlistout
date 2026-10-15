@@ -1,0 +1,339 @@
+name: Release CLI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 2.2.0; defaults to root package.json)'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Publish as GitHub Pre-release'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Dry run: build, smoke-test, package, and aggregate artifacts without touching GitHub Release'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-cli-${{ inputs.version || 'default' }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight & Version Verification
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check-ver.outputs.version }}
+      tag_exists: ${{ steps.check-tag.outputs.tag_exists }}
+      dry_run: ${{ steps.check-dryrun.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          cache: 'pip'
+
+      - name: Install verification dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cli/requirements-release.txt
+          pip install pytest
+
+      - name: Check version source of truth
+        id: check-ver
+        run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          INPUT_VER="${{ inputs.version }}"
+          INPUT_VER="${INPUT_VER#v}"
+          
+          if [ -n "$INPUT_VER" ] && [ "$INPUT_VER" != "$PKG_VER" ]; then
+            echo "::error::Input version '$INPUT_VER' does not match root package.json version '$PKG_VER'"
+            exit 1
+          fi
+          
+          CLI_VER=$(python -c "from cli.core.version import get_version; print(get_version(strict=True))")
+          if [ "$CLI_VER" != "$PKG_VER" ]; then
+            echo "::error::CLI version '$CLI_VER' does not match root package.json '$PKG_VER'"
+            exit 1
+          fi
+          
+          echo "version=$PKG_VER" >> "$GITHUB_OUTPUT"
+          echo "Resolved target version: v$PKG_VER"
+
+      - name: Run preflight CLI tests and self-test
+        run: |
+          python -m compileall cli/ scripts/
+          pytest -v cli/
+          python cli/main.py --self-test
+
+      - name: Check tag and commit consistency
+        id: check-tag
+        run: |
+          TARGET_VER="${{ steps.check-ver.outputs.version }}"
+          TAG_NAME="v$TARGET_VER"
+          CURRENT_COMMIT="${{ github.sha }}"
+          IS_DRY_RUN="${{ inputs.dry_run }}"
+          
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            TAG_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
+            echo "Tag $TAG_NAME already exists pointing to commit $TAG_COMMIT"
+            echo "Current target commit is $CURRENT_COMMIT"
+            
+            if [ "$TAG_COMMIT" != "$CURRENT_COMMIT" ]; then
+              if [ "$IS_DRY_RUN" = "true" ]; then
+                echo "Notice: Tag points to different commit, but continuing because dry_run=true"
+                echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "::error::Tag $TAG_NAME already points to commit $TAG_COMMIT, which differs from current commit $CURRENT_COMMIT. Refusing to publish or overwrite."
+                exit 1
+              fi
+            else
+              echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Register dry run state
+        id: check-dryrun
+        run: |
+          echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: preflight
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x64
+            os: windows-2022
+            binary_name: PlaylistOut.exe
+            asset_pattern: PlaylistOut-*-windows-x64.exe
+          - target: linux-x64
+            os: ubuntu-22.04
+            binary_name: PlaylistOut
+            asset_pattern: PlaylistOut-*-linux-x64.tar.gz
+          - target: macos-arm64
+            os: macos-14
+            binary_name: PlaylistOut
+            asset_pattern: PlaylistOut-*-macos-arm64.tar.gz
+          - target: macos-x64
+            os: macos-15-intel
+            binary_name: PlaylistOut
+            asset_pattern: PlaylistOut-*-macos-x64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.14.7
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          cache: 'pip'
+
+      - name: Install pinned release dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cli/requirements-release.txt
+          pip install pytest
+
+      - name: Run pre-build unit tests on target runner
+        run: |
+          pytest -q cli/tests/
+
+      - name: Build standalone executable via build-cli.py
+        run: |
+          python scripts/release/build-cli.py --target ${{ matrix.target }} --version ${{ needs.preflight.outputs.version }}
+
+      - name: Smoke test staged binary (--version)
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./dist/cli/staging/PlaylistOut.exe --version
+          else
+            ./dist/cli/staging/PlaylistOut --version
+          fi
+
+      - name: Smoke test staged binary (--self-test)
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./dist/cli/staging/PlaylistOut.exe --self-test
+          else
+            ./dist/cli/staging/PlaylistOut --self-test
+          fi
+
+      - name: Smoke test staged binary (--help)
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./dist/cli/staging/PlaylistOut.exe --help
+          else
+            ./dist/cli/staging/PlaylistOut --help
+          fi
+
+      - name: Verify release asset created
+        shell: bash
+        run: |
+          ls -lh dist/cli/artifacts/${{ matrix.asset_pattern }}
+
+      - name: Upload target build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-build-${{ matrix.target }}
+          path: dist/cli/artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Release Aggregation & Publishing
+    needs: [preflight, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+
+      - name: Create release staging directory
+        run: mkdir -p dist/release-assets
+
+      - name: Download all matrix build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/matrix-downloads
+
+      - name: Consolidate and verify all platform assets
+        run: |
+          VERSION="${{ needs.preflight.outputs.version }}"
+          echo "Consolidating release assets for v$VERSION..."
+          
+          find dist/matrix-downloads -type f \( -name "PlaylistOut-v$VERSION-*.exe" -o -name "PlaylistOut-v$VERSION-*.tar.gz" \) -exec cp {} dist/release-assets/ \;
+          
+          cd dist/release-assets
+          
+          EXPECTED_ASSETS=(
+            "PlaylistOut-v$VERSION-windows-x64.exe"
+            "PlaylistOut-v$VERSION-linux-x64.tar.gz"
+            "PlaylistOut-v$VERSION-macos-arm64.tar.gz"
+            "PlaylistOut-v$VERSION-macos-x64.tar.gz"
+          )
+          
+          for asset in "${EXPECTED_ASSETS[@]}"; do
+            if [ ! -f "$asset" ]; then
+              echo "::error::Missing expected release asset: $asset"
+              exit 1
+            fi
+            echo "  ✔ Found: $asset ($(stat -c%s "$asset") bytes)"
+          done
+
+      - name: Generate SHA256SUMS.txt
+        run: |
+          cd dist/release-assets
+          sha256sum PlaylistOut-v${{ needs.preflight.outputs.version }}-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Generate release-manifest.json
+        run: |
+          python - << 'EOF'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          
+          assets_dir = Path("dist/release-assets")
+          version = "${{ needs.preflight.outputs.version }}"
+          commit = "${{ github.sha }}"
+          
+          assets = []
+          for f in sorted(assets_dir.glob("PlaylistOut-*")):
+              if f.is_file():
+                  sha256 = hashlib.sha256(f.read_bytes()).hexdigest()
+                  assets.append({
+                      "name": f.name,
+                      "size_bytes": f.stat().st_size,
+                      "sha256": sha256
+                  })
+          
+          manifest = {
+              "project": "PlaylistOut",
+              "version": version,
+              "commit": commit,
+              "python_version": "3.14.7",
+              "pyinstaller_version": "6.22.3",
+              "targets": ["windows-x64", "linux-x64", "macos-arm64", "macos-x64"],
+              "assets": assets
+          }
+          
+          out_file = assets_dir / "release-manifest.json"
+          out_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+          print(json.dumps(manifest, indent=2))
+          EOF
+
+      - name: Upload consolidated release bundle to Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: playlistout-cli-release-v${{ needs.preflight.outputs.version }}
+          path: dist/release-assets/*
+          retention-days: 14
+
+      - name: Publish to GitHub Release
+        if: needs.preflight.outputs.dry_run != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.version }}"
+          TAG_NAME="v$VERSION"
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          cd dist/release-assets
+          
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME exists. Uploading/updating CLI assets..."
+            gh release upload "$TAG_NAME" * --clobber
+          else
+            echo "Creating new GitHub Release $TAG_NAME explicitly bound to commit ${{ github.sha }}..."
+            gh release create "$TAG_NAME" \
+              --target "${{ github.sha }}" \
+              --title "PlaylistOut $TAG_NAME" \
+              --notes "PlaylistOut $TAG_NAME Standalone Cross-Platform CLI Release" \
+              $PRERELEASE_FLAG \
+              *
+          fi
+          echo "✔ GitHub Release updated successfully."
+
+      - name: Report Dry-Run Success
+        if: needs.preflight.outputs.dry_run == 'true'
+        run: |
+          echo "================================================================"
+          echo "✔ DRY-RUN SUCCESS: All 4 platforms built and verified!"
+          echo "  - Windows x64:      built and passed frozen smoke test"
+          echo "  - Linux x64:        built and passed frozen smoke test"
+          echo "  - macOS arm64:      built and passed frozen smoke test"
+          echo "  - macOS Intel x64:  built and passed frozen smoke test"
+          echo "  - SHA256SUMS.txt & release-manifest.json generated"
+          echo "  - Artifacts published to GitHub Actions run bundle"
+          echo "  - GitHub Release was untouched as requested (dry_run: true)"
+          echo "================================================================"

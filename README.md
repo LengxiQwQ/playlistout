@@ -78,22 +78,37 @@ BBPlayer 已在主程序中原生内置 Playlist Out 歌单导入功能，无需
 
 ---
 
-## 💻 进阶使用：Python CLI 命令行
+## 💻 进阶使用：CLI 命令行与跨平台独立发行版
 
-如果你更喜欢在终端中使用，或者需要做批量离线处理与定时任务，也可以直接运行本地 Python 工具。所有数据同样 100% 在本地运行：
+如果你更喜欢在终端中使用，或者需要做批量离线处理与定时任务，可以直接使用 Playlist Out CLI。所有数据同样 100% 在本地运行：
 
-### ⚡ 全平台统一 CLI (推荐)
+### 1. 跨平台独立可执行文件 (推荐，无需安装 Python)
 
-统一命令行工具支持**智能自动识别平台**与**手动选择锁定**双轨模式，所有数据均在本地处理，无需启动 Web 服务：
+最终用户**无需安装 Python、无需 pip、无需配置任何依赖**，直接前往 [GitHub Releases](https://github.com/LengxiQwQ/playlistout/releases) 下载对应系统的独立发行版即可使用：
+
+| 操作系统 / 架构 | 下载文件 | 运行方式 | 说明 |
+|---|---|---|---|
+| **Windows x64** | `PlaylistOut-v{version}-windows-x64.exe` | 直接双击运行，或在终端传参调用 | 自动调出控制台交互菜单；支持命令行参数 |
+| **macOS Apple Silicon** (M1/M2/M3/M4) | `PlaylistOut-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command` 或运行 `./PlaylistOut` | 包含一键终端启动脚本；当前为未签名构建（首次启动需在系统设置中允许） |
+| **macOS Intel** (x86_64) | `PlaylistOut-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command` 或运行 `./PlaylistOut` | 包含一键终端启动脚本；当前为未签名构建（首次启动需在系统设置中允许） |
+| **Linux x64** | `PlaylistOut-v{version}-linux-x64.tar.gz` | `tar -xzf PlaylistOut-*.tar.gz && ./PlaylistOut` | 基于 Ubuntu 22.04 构建，兼容标准 glibc Linux 环境 |
+
+> **提示**：每个正式发布均提供 `SHA256SUMS.txt` 与 `release-manifest.json`，供用户核验文件完整性。
+
+### 2. 源码运行模式 (开发者)
+
+如果你已拥有 Python 3.14 环境，可以直接运行仓库源码：
 
 ```bash
-# 1. 安装依赖
+# 1. 安装运行时依赖
 pip install -r cli/requirements.txt
 
 # 2. 交互式启动 (直接粘贴任意平台链接自动识别，或输入数字序号指定平台)
 python cli/main.py
+# 或使用模块入口
+python -m cli
 
-# 3. 命令行静默调用示例
+# 3. 命令行直接调用示例
 python cli/main.py "https://music.163.com/playlist?id=2756674066"
 python cli/main.py "9044196528" -p qqmusic -f xlsx,csv
 ```

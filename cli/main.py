@@ -28,6 +28,7 @@ if sys.platform == 'win32':
         pass
 
 from cli.core.models import NormalizedPlaylist
+from cli.core.version import get_version
 from cli.core.ui import (
     print_banner,
     print_main_menu,
@@ -89,7 +90,10 @@ def main():
         """
     )
 
-    parser.add_argument("-v", "--version", action="version", version="PlaylistOut CLI v2.2.0")
+    cli_ver = get_version()
+    parser.add_argument("-v", "--version", action="version", version=f"PlaylistOut CLI v{cli_ver}")
+    parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--debug", action="store_true", help="显示详细错误堆栈信息 (调试模式)")
     parser.add_argument("input", nargs="?", help="歌单链接、短链、分享文案或纯数字 ID")
     parser.add_argument("-i", "--id", dest="opt_id", help="歌单链接、短链或 ID")
     parser.add_argument("-p", "--platform", help="显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui 等)")
@@ -105,6 +109,10 @@ def main():
     parser.add_argument("--userid", help="[酷狗] 手动传入 UserID")
 
     args = parser.parse_args()
+
+    if args.self_test:
+        from cli.core.self_test import run_self_test
+        sys.exit(run_self_test())
 
     # 处理全局平台专属快捷操作 (如酷狗登录/注销)
     if args.login or args.logout:
@@ -238,33 +246,62 @@ def main():
                 print("=" * 64)
                 continue
 
-            # 检查平台特有交互流 (例如 QQ/网易云用户公开歌单列表批量)
-            handled = target_adapter.handle_interactive(
-                target_query,
-                output_dir=output_dir,
-                no_open=args.no_open
-            )
-            if handled:
-                continue
+            try:
+                # 检查平台特有交互流 (例如 QQ/网易云用户公开歌单列表批量)
+                handled = target_adapter.handle_interactive(
+                    target_query,
+                    output_dir=output_dir,
+                    no_open=args.no_open
+                )
+                if handled:
+                    continue
 
-            # 标准歌单抓取流程
-            print(f"正在抓取歌单数据...")
-            playlist = target_adapter.fetch_playlist(
-                target_query,
-                channel=args.channel,
-                token=args.token,
-                userid=args.userid,
-            )
-            if not playlist or not playlist.tracks:
-                print("❌ 获取歌单失败，请检查链接有效性、是否为公开歌单或重试。")
+                # 标准歌单抓取流程
+                print(f"正在抓取歌单数据...")
+                playlist = target_adapter.fetch_playlist(
+                    target_query,
+                    channel=args.channel,
+                    token=args.token,
+                    userid=args.userid,
+                )
+                if not playlist or not playlist.tracks:
+                    print("❌ 获取歌单失败，请检查链接有效性、是否为公开歌单或重试。")
+                    print("=" * 64)
+                    continue
+
+                run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
+            except (KeyboardInterrupt, EOFError):
+                raise
+            except Exception as loop_err:
+                if args.debug or os.environ.get("PLAYLISTOUT_DEBUG"):
+                    import traceback
+                    traceback.print_exc()
+                else:
+                    print(f"❌ 处理歌单时出现异常: {loop_err}")
                 print("=" * 64)
-                continue
-
-            run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
 
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (KeyboardInterrupt, EOFError):
+        print_exit_banner()
+        sys.exit(0)
+    except Exception as e:
+        is_debug = "--debug" in sys.argv or bool(os.environ.get("PLAYLISTOUT_DEBUG"))
+        if is_debug:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"\n❌ 程序发生异常: {e}", file=sys.stderr)
+
+        if sys.platform == "win32" and sys.stdin and sys.stdin.isatty():
+            if len(sys.argv) <= 1:
+                try:
+                    input("\n按回车键关闭窗口...")
+                except Exception:
+                    pass
+        sys.exit(1)

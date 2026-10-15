@@ -11,6 +11,7 @@ venv/
 # Local generated files
 /dashboard.html
 scratch/
+.build/
 
 # Never commit production/private D1 dumps
 /insights/backups/*.sql
@@ -44,7 +45,7 @@ output/
 1160951354/
 *.txt
 !web/public/robots.txt
-!**/requirements.txt
+!**/requirements*.txt
 *.csv
 *.xlsx
 # Specific JSON outputs from exports while preserving config JSONs
