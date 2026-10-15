@@ -24,13 +24,48 @@ def terminal_link(url: str, text: str = None) -> str:
     return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
 
 
-def sanitize_filename(name: str) -> str:
-    """过滤文件名中的非法字符"""
+WINDOWS_RESERVED_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+}
+
+
+def sanitize_filename(name: str, max_length: int = 150) -> str:
+    """
+    过滤文件名中的非法字符，并遵守 Windows 文件名规范：
+    1. 过滤保留字符: \\ / : * ? " < > |
+    2. 过滤 ASCII 控制字符 (0x00-0x1F, 0x7F)
+    3. 剥离尾部空格与句点 (. )
+    4. 截断超长文件名至 max_length (默认 150 字符)
+    5. Windows 保留设备名称避让 (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    6. 空标题安全兜底为 'playlist'
+    """
     if not name:
         return "playlist"
-    cleaned = re.sub(r'[\\/:*?"<>|]', '_', str(name))
+
+    # 1. 过滤控制字符与非法字符
+    cleaned = re.sub(r'[\x00-\x1f\x7f]', '', str(name))
+    cleaned = re.sub(r'[\\/:*?"<>|]', '_', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    return cleaned or "playlist"
+
+    # 2. 剥离尾部点与空格 (Windows 不支持尾部点或空格)
+    cleaned = cleaned.rstrip('. ')
+
+    # 3. 限制文件名长度
+    if len(cleaned) > max_length:
+        cleaned = cleaned[:max_length].rstrip('. ')
+
+    # 4. 空名兜底
+    if not cleaned:
+        return "playlist"
+
+    # 5. Windows 保留名称避让 (如 CON -> _CON)
+    base_stem = cleaned.split('.')[0].strip().upper()
+    if base_stem in WINDOWS_RESERVED_NAMES or cleaned.upper() in WINDOWS_RESERVED_NAMES:
+        cleaned = f"_{cleaned}"
+
+    return cleaned
 
 
 def _terminal_display_width(text: str) -> int:

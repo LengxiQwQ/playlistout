@@ -403,6 +403,15 @@ def get_user_playlists(uin):
     
     return None
 
+class QQPlaylistResult(tuple):
+    """Backwards-compatible 3-tuple (title, songs, author) with rich extra_meta."""
+    def __new__(cls, title, songs, author, extra_meta=None):
+        return super().__new__(cls, (title, songs, author))
+
+    def __init__(self, title, songs, author, extra_meta=None):
+        self.extra_meta = extra_meta or {}
+
+
 # 老接口: c.y.qq.com 获取歌单信息 返回 (title, song_list, author) 或 None
 def try_c_y_qq(disstid):
     url = "https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg"
@@ -432,12 +441,23 @@ def try_c_y_qq(disstid):
 
     title = None
     author = ""
+    extra_meta = {}
     if isinstance(j, dict):
         if "cdlist" in j and isinstance(j["cdlist"], list) and j["cdlist"]:
             cd = j["cdlist"][0]
             title = cd.get("dissname") or cd.get("diss_name") or cd.get("title") or cd.get("cdtitle") or cd.get("name")
             author = cd.get("data_signer") or cd.get("nickname") or cd.get("nick") or cd.get("username") or cd.get("uname") or ""
             songlist = cd.get("songlist") or cd.get("list") or []
+            desc_raw = cd.get("desc") or ""
+            clean_desc = re.sub(r'<[^>]+>', '', desc_raw).strip() if desc_raw else ""
+            extra_meta = {
+                "track_count": int(cd.get("songnum") or cd.get("total_song_num") or len(songlist)),
+                "create_time": int(cd.get("ctime")) if cd.get("ctime") and str(cd.get("ctime")).isdigit() and int(cd.get("ctime")) > 0 else None,
+                "update_time": int(cd.get("mtime")) if cd.get("mtime") and str(cd.get("mtime")).isdigit() and int(cd.get("mtime")) > 0 else None,
+                "play_count": int(cd.get("visitnum")) if cd.get("visitnum") and str(cd.get("visitnum")).isdigit() else None,
+                "tags": [t.get("name") for t in cd.get("tags", []) if isinstance(t, dict) and t.get("name")] if isinstance(cd.get("tags"), list) else [],
+                "description": clean_desc,
+            }
         else:
             title = j.get("dissname") or j.get("title") or j.get("name")
             author = j.get("data_signer") or j.get("nickname") or j.get("nick") or ""
@@ -462,7 +482,10 @@ def try_c_y_qq(disstid):
         status_text, max_quality = extract_qq_song_status_and_quality(s)
         results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id, status_text, max_quality))
 
-    return (title or "", results, author)
+    if not extra_meta.get("track_count"):
+        extra_meta["track_count"] = len(results)
+
+    return QQPlaylistResult(title or "", results, author, extra_meta)
 
 # 新接口: u.y.qq.com 的 GetPlaylistDetail 返回 (title, song_list, author) 或 None
 def try_u_y_qq_playlist_detail(playlist_id):
@@ -540,7 +563,15 @@ def try_u_y_qq_playlist_detail(playlist_id):
         release_date, track_number, disc_number, mv_id = extract_qq_song_metadata(s)
         status_text, max_quality = extract_qq_song_status_and_quality(s)
         results.append((name, singers, album, cover_url, mid, duration_ms, release_date, track_number, disc_number, mv_id, status_text, max_quality))
-    return (title or "", results, author)
+
+    dirinfo = (pl.get("data") or {}).get("dirinfo") or {}
+    extra_meta = {
+        "track_count": int(dirinfo.get("songnum") or (pl.get("data") or {}).get("total_song_num") or pl.get("songnum") or len(results)),
+        "create_time": int(dirinfo.get("ctime") or (pl.get("data") or {}).get("ctime") or pl.get("ctime") or 0) or None,
+        "tags": [t.get("name") for t in dirinfo.get("tag", []) if isinstance(t, dict) and t.get("name")],
+        "description": str(dirinfo.get("desc") or (pl.get("data") or {}).get("desc") or pl.get("desc") or "").strip(),
+    }
+    return QQPlaylistResult(title or "", results, author, extra_meta)
 
 def get_playlist_songs(playlist_id):
 

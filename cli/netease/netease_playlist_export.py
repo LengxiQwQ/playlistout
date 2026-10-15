@@ -288,6 +288,15 @@ def fetch_song_details(track_ids):
 
     return all_songs, all_privileges
 
+class NetEasePlaylistResult(tuple):
+    """Backwards-compatible 4-tuple (title, tracks, author, playlist_cover) with rich extra_meta."""
+    def __new__(cls, title, tracks, author, playlist_cover, extra_meta=None):
+        return super().__new__(cls, (title, tracks, author, playlist_cover))
+
+    def __init__(self, title, tracks, author, playlist_cover, extra_meta=None):
+        self.extra_meta = extra_meta or {}
+
+
 def get_playlist_data(playlist_id):
     post_headers = {**HEADERS, 'Content-Type': 'application/x-www-form-urlencoded'}
     post_data = {'id': str(playlist_id), 'n': '100000', 's': '8'}
@@ -386,12 +395,20 @@ def get_playlist_data(playlist_id):
                 str(mv_id) if mv_id and str(mv_id) != "0" else None,
                 max_quality,
             ))
-
         playlist_cover = pl.get('coverImgUrl') or ''
         if playlist_cover and playlist_cover.startswith('http://'):
             playlist_cover = 'https://' + playlist_cover[7:]
 
-        return title, tracks, author, playlist_cover
+        extra_meta = {
+            "track_count": int(pl.get('trackCount') or len(track_ids)),
+            "create_time": int(pl['createTime'] // 1000) if pl.get('createTime') and isinstance(pl.get('createTime'), (int, float)) and pl.get('createTime') > 0 else None,
+            "update_time": int(pl['updateTime'] // 1000) if pl.get('updateTime') and isinstance(pl.get('updateTime'), (int, float)) and pl.get('updateTime') > 0 else None,
+            "play_count": int(pl['playCount']) if pl.get('playCount') and isinstance(pl.get('playCount'), (int, float)) else None,
+            "tags": list(pl.get('tags') or []),
+            "description": str(pl.get('description') or "").strip(),
+        }
+
+        return NetEasePlaylistResult(title, tracks, author, playlist_cover, extra_meta)
     except Exception as e:
         print(f"解析歌单异常: {e}")
         return None

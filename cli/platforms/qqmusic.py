@@ -96,12 +96,24 @@ class QQMusicAdapter(BasePlatformAdapter):
                 )
             )
 
+        extra = getattr(playlist_info, "extra_meta", {}) if hasattr(playlist_info, "extra_meta") else (playlist_info[3] if len(playlist_info) > 3 and isinstance(playlist_info[3], dict) else {})
+        track_count = extra.get("track_count")
+        loaded_count = len(tracks)
+        is_partial = bool(track_count and loaded_count < track_count)
+
         return NormalizedPlaylist(
             platform=self.platform_id,
             id=pid,
             name=title.strip() if title else f"QQ音乐歌单_{pid}",
             creator=author or "QQ音乐用户",
+            description=extra.get("description") or "",
             source_url=f"https://y.qq.com/n/ryqq/playlist/{pid}",
+            track_count=track_count,
+            create_time=extra.get("create_time"),
+            update_time=extra.get("update_time"),
+            play_count=extra.get("play_count"),
+            tags=extra.get("tags") or [],
+            is_partial=is_partial,
             tracks=tracks,
         )
 

@@ -109,6 +109,13 @@ class NormalizedPlaylist:
         return len(self.tracks)
 
     @property
+    def is_partial_export(self) -> bool:
+        """统一判定歌单是否为部分导出 (loaded_count < track_count 或显式标定)"""
+        if self.track_count is not None and self.track_count > 0:
+            return len(self.tracks) < self.track_count
+        return bool(self.is_partial)
+
+    @property
     def total_duration_ms(self) -> int:
         return sum(t.duration_ms or 0 for t in self.tracks if (t.duration_ms or 0) > 0)
 

@@ -235,6 +235,15 @@ def fetch_kuwo_page(playlist_id, page=1, page_size=PAGE_SIZE):
     return None
 
 
+class KuwoPlaylistResult(tuple):
+    """Backwards-compatible 5-tuple (playlist_title, tracks, author, cover_url, playlist_id) with rich extra_meta."""
+    def __new__(cls, playlist_title, tracks, author, cover_url, playlist_id, extra_meta=None):
+        return super().__new__(cls, (playlist_title, tracks, author, cover_url, playlist_id))
+
+    def __init__(self, playlist_title, tracks, author, cover_url, playlist_id, extra_meta=None):
+        self.extra_meta = extra_meta or {}
+
+
 def get_playlist_info(playlist_id):
     """
     获取酷我歌单元数据与完整歌曲列表（自动多页拉取拼接）。
@@ -295,8 +304,13 @@ def get_playlist_info(playlist_id):
             release_date,
             max_quality,
         ))
-
-    return (playlist_title, tracks, author, cover_url, playlist_id)
+    extra_meta = {
+        "track_count": raw_total,
+        "play_count": int(data.get("playnum")) if data.get("playnum") and str(data.get("playnum")).isdigit() else None,
+        "tags": [str(data.get("tag")).strip()] if data.get("tag") else [],
+        "description": unescape_html(data.get("info") or ""),
+    }
+    return KuwoPlaylistResult(playlist_title, tracks, author, cover_url, playlist_id, extra_meta)
 
 
 def format_total_duration(total_ms):

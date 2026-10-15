@@ -77,12 +77,22 @@ class KuwoAdapter(BasePlatformAdapter):
                 )
             )
 
+        extra = getattr(info, "extra_meta", {}) if hasattr(info, "extra_meta") else (info[5] if len(info) > 5 and isinstance(info[5], dict) else {})
+        track_count = extra.get("track_count")
+        loaded_count = len(tracks)
+        is_partial = bool(track_count and loaded_count < track_count)
+
         return NormalizedPlaylist(
             platform=self.platform_id,
             id=str(playlist_id or pid),
             name=playlist_title.strip() if playlist_title else f"酷我歌单_{pid}",
             creator=author or "酷我用户",
             cover_url=cover_url or "",
+            description=extra.get("description") or "",
             source_url=f"https://www.kuwo.cn/playlist_detail/{pid}",
+            track_count=track_count,
+            play_count=extra.get("play_count"),
+            tags=extra.get("tags") or [],
+            is_partial=is_partial,
             tracks=tracks,
         )

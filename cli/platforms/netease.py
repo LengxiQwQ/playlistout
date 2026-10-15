@@ -115,13 +115,25 @@ class NetEaseAdapter(BasePlatformAdapter):
                 )
             )
 
+        extra = getattr(data, "extra_meta", {}) if hasattr(data, "extra_meta") else (data[4] if len(data) > 4 and isinstance(data[4], dict) else {})
+        track_count = extra.get("track_count")
+        loaded_count = len(tracks)
+        is_partial = bool(track_count and loaded_count < track_count)
+
         return NormalizedPlaylist(
             platform=self.platform_id,
             id=pid,
             name=title.strip() if title else f"网易云歌单_{pid}",
             creator=author or "网易云用户",
             cover_url=playlist_cover,
+            description=extra.get("description") or "",
             source_url=f"https://music.163.com/#/playlist?id={pid}",
+            track_count=track_count,
+            create_time=extra.get("create_time"),
+            update_time=extra.get("update_time"),
+            play_count=extra.get("play_count"),
+            tags=extra.get("tags") or [],
+            is_partial=is_partial,
             tracks=tracks,
         )
 

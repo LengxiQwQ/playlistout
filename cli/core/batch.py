@@ -128,10 +128,16 @@ def resolve_collision_safe_base_name(
 def preprocess_playlist(playlist: NormalizedPlaylist) -> int:
     """
     统一歌单数据预处理管道。
-    对齐单歌单导出与批量导出的 duplicate 标记与元数据校验，
+    对齐单歌单导出与批量导出的 duplicate 标记与 partial 元数据校验，
     无论单歌单还是批量导出均执行完全一致的处理。
     """
-    return playlist.mark_duplicates()
+    dup_count = playlist.mark_duplicates()
+    if playlist.track_count is not None and playlist.track_count > 0:
+        if len(playlist.tracks) < playlist.track_count:
+            playlist.is_partial = True
+        elif len(playlist.tracks) >= playlist.track_count:
+            playlist.is_partial = False
+    return dup_count
 
 
 def print_user_playlists_menu(user_playlists: NormalizedUserPlaylists) -> None:

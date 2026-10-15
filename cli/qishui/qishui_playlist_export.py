@@ -520,6 +520,15 @@ def fetch_aweme_music_collection(owner_id):
     return all_tracks
 
 
+class QishuiPlaylistResult(tuple):
+    """Backwards-compatible 5-tuple (playlist_title, tracks, author, cover_url, playlist_id) with rich extra_meta."""
+    def __new__(cls, playlist_title, tracks, author, cover_url, playlist_id, extra_meta=None):
+        return super().__new__(cls, (playlist_title, tracks, author, cover_url, playlist_id))
+
+    def __init__(self, playlist_title, tracks, author, cover_url, playlist_id, extra_meta=None):
+        self.extra_meta = extra_meta or {}
+
+
 def get_playlist_info(playlist_id, channel="qishui"):
     """
     通过官方 Luna 接口分页拉取歌单元数据与全量音乐资源列表。
@@ -575,7 +584,11 @@ def get_playlist_info(playlist_id, channel="qishui"):
         owner_id = str(playlist_meta['owner']['id']).strip()
         print(f"检测到抖音同步歌单，正在通过抖音全量收藏通道拉取 (用户 UID: {owner_id})...")
         tracks = fetch_aweme_music_collection(owner_id)
-        return (playlist_title, tracks, author, cover_url, playlist_id)
+        extra_meta = {
+            "track_count": len(tracks),
+            "description": str(playlist_meta.get('description') or "").strip(),
+        }
+        return QishuiPlaylistResult(playlist_title, tracks, author, cover_url, playlist_id, extra_meta)
 
     # 3. 官方 Luna 通道 (正版清洁音频流)
     first_medias = data.get('media_resources') or []
@@ -619,7 +632,11 @@ def get_playlist_info(playlist_id, channel="qishui"):
         next_cursor = str(page_data.get('next_cursor') or '')
 
     tracks = [normalize_media_resource(m, idx + 1) for idx, m in enumerate(all_media_resources)]
-    return (playlist_title, tracks, author, cover_url, playlist_id)
+    extra_meta = {
+        "track_count": declared_total if declared_total > 0 else len(tracks),
+        "description": str(playlist_meta.get('description') or "").strip(),
+    }
+    return QishuiPlaylistResult(playlist_title, tracks, author, cover_url, playlist_id, extra_meta)
 
 
 def export_xlsx(filename, tracks):

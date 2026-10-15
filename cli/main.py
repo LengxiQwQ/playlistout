@@ -53,8 +53,11 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     print("\n✓ 获取成功\n")
     print(f"  歌单：{playlist.name}")
     print(f"  作者：{playlist.creator or '未知'}")
-    expected_count = playlist.track_count if playlist.track_count and playlist.track_count > len(tracks) else len(tracks)
-    print(f"  歌曲：{len(tracks)} / {expected_count} 首" if expected_count > len(tracks) else f"  歌曲：{len(tracks)} 首")
+    expected_count = playlist.track_count if (playlist.track_count and playlist.track_count > len(tracks)) else len(tracks)
+    if playlist.is_partial or expected_count > len(tracks):
+        print(f"  歌曲：{len(tracks)} / {expected_count} 首 (部分已加载)")
+    else:
+        print(f"  歌曲：{len(tracks)} 首")
     if playlist.formatted_duration:
         print(f"  时长：{playlist.formatted_duration}")
 

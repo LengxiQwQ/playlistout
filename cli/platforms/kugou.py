@@ -98,6 +98,10 @@ class KugouAdapter(BasePlatformAdapter):
                 )
             )
 
+        track_count = playlist_data.get("track_count")
+        loaded_count = len(tracks)
+        is_partial = bool(playlist_data.get("is_partial")) or bool(track_count and loaded_count < track_count)
+
         return NormalizedPlaylist(
             platform=self.platform_id,
             id=str(playlist_data.get("id") or target.get("id") or ""),
@@ -106,6 +110,12 @@ class KugouAdapter(BasePlatformAdapter):
             cover_url=playlist_data.get("cover_url") or "",
             description=playlist_data.get("description") or "",
             source_url=playlist_data.get("source_url") or target.get("original_url") or "",
+            track_count=track_count,
+            create_time=playlist_data.get("create_time"),
+            update_time=playlist_data.get("update_time"),
+            play_count=playlist_data.get("play_count"),
+            tags=playlist_data.get("tags") or [],
+            is_partial=is_partial,
             tracks=tracks,
         )
 
