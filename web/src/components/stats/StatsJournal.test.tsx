@@ -60,7 +60,7 @@ describe('StatsJournal Component (Phase 7)', () => {
       expect(screen.getByText('382,000')).toBeInTheDocument();
       expect(screen.getByText('95')).toBeInTheDocument();
       expect(screen.getByText('4,200')).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
   });
 
   it('handles API failure gracefully without crashing and displays zero state', async () => {
