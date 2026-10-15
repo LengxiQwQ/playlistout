@@ -23,13 +23,10 @@ class KuwoAdapter(BasePlatformAdapter):
     display_name = "酷我音乐"
     description = "歌单链接 / 短链 / ID"
     aliases = ["kuwo", "kw"]
+    supports_playlist = True
     supports_user_playlists = False
     requires_user_auth = False
-
-    def can_handle(self, text: str) -> bool:
-        if not text:
-            return False
-        return "kuwo.cn" in text.lower()
+    supported_channels = ()
 
     def fetch_playlist(self, raw_input: str, **options) -> Optional[NormalizedPlaylist]:
         text = (raw_input or "").strip()

@@ -34,13 +34,10 @@ class QQMusicAdapter(BasePlatformAdapter):
     display_name = "QQ 音乐"
     description = "歌单链接 / 短链 / ID / QQ号"
     aliases = ["qq", "qq-music", "tx", "tencent"]
+    supports_playlist = True
     supports_user_playlists = True
     requires_user_auth = False
-
-    def can_handle(self, text: str) -> bool:
-        if not text:
-            return False
-        return "qq.com" in text.lower() or "c6.y.qq.com" in text.lower()
+    supported_channels = ()
 
     def fetch_playlist(self, raw_input: str, **options) -> Optional[NormalizedPlaylist]:
         text = (raw_input or "").strip()

@@ -173,18 +173,22 @@ def main():
         plt_id = reg_entry.platform_id
 
     if args.channel is not None:
-        if plt_id and plt_id != "qishui":
-            print(f"× 参数 --channel 仅适用于汽水音乐平台 (qishui)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
-            sys.exit(2)
+        if plt_id:
+            adapter = PlatformRegistry.get(plt_id)
+            if adapter and not adapter.supported_channels:
+                print(f"× 参数 --channel 仅适用于汽水音乐平台 (qishui)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
+                sys.exit(2)
         if not plt_id and not (args.opt_id or args.input):
             print("× 参数 --channel 仅适用于汽水音乐平台 (qishui)，请配合 -p qishui 或汽水链接使用。", file=sys.stderr)
             sys.exit(2)
 
     kugou_auth_args = [arg_name for arg_name, val in [("--token", args.token), ("--userid", args.userid), ("--login", args.login), ("--logout", args.logout)] if val]
     if kugou_auth_args:
-        if plt_id and plt_id != "kugou":
-            print(f"× 参数 {', '.join(kugou_auth_args)} 仅适用于酷狗音乐平台 (kugou)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
-            sys.exit(2)
+        if plt_id:
+            adapter = PlatformRegistry.get(plt_id)
+            if adapter and not adapter.requires_user_auth:
+                print(f"× 参数 {', '.join(kugou_auth_args)} 仅适用于酷狗音乐平台 (kugou)，当前指定平台为 '{args.platform}'。", file=sys.stderr)
+                sys.exit(2)
 
     if args.user and plt_id:
         adapter = PlatformRegistry.get(plt_id)
@@ -232,11 +236,11 @@ def main():
             sys.exit(2)
 
         # 平台专属参数与识别出的目标平台校验 (针对未传 -p 但通过 URL 识别的情况)
-        if args.channel is not None and target.platform.value != "qishui":
+        if args.channel is not None and not adapter.supported_channels:
             print(f"× 参数 --channel 仅适用于汽水音乐平台 (qishui)，当前目标平台为 '{target.platform.value}'。", file=sys.stderr)
             sys.exit(2)
 
-        if kugou_auth_args and target.platform.value != "kugou":
+        if kugou_auth_args and not adapter.requires_user_auth:
             print(f"× 参数 {', '.join(kugou_auth_args)} 仅适用于酷狗音乐平台 (kugou)，当前目标平台为 '{target.platform.value}'。", file=sys.stderr)
             sys.exit(2)
 

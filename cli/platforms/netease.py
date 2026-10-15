@@ -32,14 +32,10 @@ class NetEaseAdapter(BasePlatformAdapter):
     display_name = "网易云音乐"
     description = "歌单链接 / 短链 / ID / 用户歌单"
     aliases = ["163", "netease", "wyy", "cloudmusic"]
+    supports_playlist = True
     supports_user_playlists = True
     requires_user_auth = False
-
-    def can_handle(self, text: str) -> bool:
-        if not text:
-            return False
-        lower = text.lower()
-        return "163.com" in lower or "163cn.tv" in lower
+    supported_channels = ()
 
     def fetch_playlist(self, raw_input: str, **options) -> Optional[NormalizedPlaylist]:
         text = (raw_input or "").strip()

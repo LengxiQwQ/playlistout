@@ -42,18 +42,10 @@ class KugouAdapter(BasePlatformAdapter):
     display_name = "酷狗音乐"
     description = "歌单链接 / 分享链接 / 登录后获取更多"
     aliases = ["kugou", "kg"]
+    supports_playlist = True
     supports_user_playlists = True
     requires_user_auth = True
-
-    def can_handle(self, text: str) -> bool:
-        if not text:
-            return False
-        lower = text.lower()
-        if "kugou.com" in lower:
-            return True
-        if "global_specialid=collection_" in lower or "gcid_" in lower or "src_cid=" in lower:
-            return True
-        return False
+    supported_channels = ()
 
     def fetch_playlist(self, raw_input: str, **options) -> Optional[NormalizedPlaylist]:
         text = (raw_input or "").strip()
