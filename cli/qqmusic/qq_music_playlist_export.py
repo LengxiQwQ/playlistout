@@ -865,7 +865,7 @@ def perform_export(songs, playlist_title, author, pid, output_dir="output", form
     os.makedirs(output_dir, exist_ok=True)
     exported_files = []
 
-    print(f"\n[*] 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...\n")
+    print(f"\n→ 开始导出歌单《{playlist_title}》 (共 {len(songs)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
@@ -881,9 +881,9 @@ def perform_export(songs, playlist_title, author, pid, output_dir="output", form
             elif fmt == "m3u8":
                 export_to_m3u8(songs, out_path, playlist_title)
             exported_files.append(out_path)
-            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_path)}")
+            print(f"  ✓ {fmt.upper():<5} -> {os.path.abspath(out_path)}")
         except Exception as e:
-            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
+            print(f"  × {fmt.upper():<5} 导出失败: {e}")
 
     print(f"\n[🎉] 导出完成！共 {len(songs)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)

@@ -194,10 +194,10 @@ def save_auth_credentials(token, userid, source="manual"):
     try:
         with open(target_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
-        print(f"[*] 登录凭证已永久保存至: {target_path}")
+        print(f"→ 登录凭证已永久保存至: {target_path}")
         return True
     except Exception as e:
-        print(f"[!] 保存凭证失败: {e}")
+        print(f"! 保存凭证失败: {e}")
         return False
 
 
@@ -209,11 +209,11 @@ def clear_auth_credentials():
             try:
                 os.remove(p)
                 removed = True
-                print(f"[*] 已清除凭证文件: {p}")
+                print(f"→ 已清除凭证文件: {p}")
             except Exception as e:
-                print(f"[!] 清除凭证文件失败 {p}: {e}")
+                print(f"! 清除凭证文件失败 {p}: {e}")
     if not removed:
-        print("[*] 本地未找到已保存的凭证。")
+        print("→ 本地未找到已保存的凭证。")
 
 
 # ----------------- 酷狗扫码与手动登录流 -----------------
@@ -322,7 +322,7 @@ def run_qr_login_flow(no_open=False):
             with open(qr_temp_file, "wb") as f:
                 f.write(img_bytes)
 
-            print(f"[*] 二维码图片已生成: {qr_temp_file}")
+            print(f"→ 二维码图片已生成: {qr_temp_file}")
             if not no_open:
                 try:
                     if platform.system() == "Windows":
@@ -331,11 +331,11 @@ def run_qr_login_flow(no_open=False):
                         subprocess.Popen(["open", qr_temp_file])
                     else:
                         subprocess.Popen(["xdg-open", qr_temp_file])
-                    print("[*] 已尝试调用系统默认图片查看器打开二维码。")
+                    print("→ 已尝试调用系统默认图片查看器打开二维码。")
                 except Exception:
                     pass
         except Exception as e:
-            print(f"[!] 保存二维码图片失败: {e}")
+            print(f"! 保存二维码图片失败: {e}")
 
     qr_btn = terminal_link(login_url, "点击在浏览器打开二维码")
     print("\n手机端操作指南：")
@@ -350,25 +350,25 @@ def run_qr_login_flow(no_open=False):
         while time.time() - start_time < max_wait:
             status, token, userid, msg = poll_kugou_qr_status(qrcode)
             if msg != last_msg:
-                print(f"[*] {msg}")
+                print(f"→ {msg}")
                 last_msg = msg
 
             if status == "success":
-                print(f"[✓] 酷狗账号登录成功！UserID: {userid}")
+                print(f"✓ 酷狗账号登录成功！UserID: {userid}")
                 save_auth_credentials(token, userid, source="qr")
                 print("=" * 64)
                 return token, userid
             elif status == "expired":
-                print("[!] 二维码已超时过期，请重新登录。")
+                print("! 二维码已超时过期，请重新登录。")
                 print("=" * 64)
                 return None, None
             elif status == "failed":
-                print(f"[!] 登录异常: {msg}")
+                print(f"! 登录异常: {msg}")
                 print("=" * 64)
                 return None, None
 
             time.sleep(1.5)
-        print("[!] 扫码超时，请重试。")
+        print("! 扫码超时，请重试。")
         print("=" * 64)
         return None, None
     finally:
@@ -389,41 +389,39 @@ def run_manual_login_flow():
         userid_input = input("请输入 酷狗 UserID (如: 12345678): ").strip()
         print("=" * 64)
         if not userid_input:
-            print("[!] UserID 不能为空！")
+            print("! UserID 不能为空！")
             print("=" * 64)
             return None, None
 
         token_input = input("请输入 酷狗 Token (32位十六进制字符串): ").strip()
         print("=" * 64)
         if not token_input:
-            print("[!] Token 不能为空！")
+            print("! Token 不能为空！")
             print("=" * 64)
             return None, None
 
         save_auth_credentials(token_input, userid_input, source="manual")
-        print(f"[✓] 凭证配置成功！UserID: {userid_input}")
+        print(f"✓ 凭证配置成功！UserID: {userid_input}")
         print("=" * 64)
         return token_input, userid_input
     except (KeyboardInterrupt, EOFError):
-        print("\n[*] 已取消输入。")
+        print("\n→ 已取消输入。")
         print("=" * 64)
         return None, None
 
 
 def interactive_login_menu():
-    """交互式登录菜单，提供两种选择与说明"""
-    print("\n酷狗音乐凭证配置 / 登录认证")
-    print("  • 官方精选、概念版集合、H5 分享歌单 100% 免登录直接导出")
-    print("  • 仅导出「个人自建歌单 / 我喜欢」时需要凭证\n")
-    print("请选择认证方式：")
-    print("  [1] 扫码登录 (在终端生成二维码扫码，永久保存)")
-    print("  [2] 手动输入 (使用官网扫码获得的 UserID 与 Token，永久保存)")
-    print("  [0] 返回 / 取消\n")
+    """交互式登录菜单，提供扫码与手动凭证两种方式"""
+    print("\n酷狗音乐登录")
+    print("  普通公开歌单无需登录。")
+    print("  只有个人歌单和「我喜欢」需要登录。\n")
+    print("  1  扫码登录")
+    print("  2  手动输入 UserID 和 Token")
+    print("  0  返回\n")
 
     while True:
         try:
-            choice = input("请输入选项 [1/2/0]: ").strip()
-            print("=" * 64)
+            choice = input("> 选择登录方式：").strip()
             if choice == "1":
                 return run_qr_login_flow()
             elif choice == "2":
@@ -431,11 +429,9 @@ def interactive_login_menu():
             elif choice in ("0", "q", "exit"):
                 return None, None
             else:
-                print("无效选项，请输入 1、2 或 0")
-                print("=" * 64)
+                print("! 请输入 1、2 或 0。")
         except (KeyboardInterrupt, EOFError):
-            print("\n[*] 已退出。")
-            print("=" * 64)
+            print("\n已取消登录。")
             return None, None
 
 
@@ -713,7 +709,7 @@ def fetch_special_playlist(special_id, original_url=None):
     抓取酷狗官方精选/专题歌单 (specialid)
     完全无需登录，公开调用 mobilecdn.kugou.com
     """
-    print(f"[*] 正在获取官方专题歌单元数据 (specialid: {special_id})...")
+    print(f"→ 正在获取官方专题歌单元数据 (specialid: {special_id})...")
     info_url = f"http://mobilecdn.kugou.com/api/v3/special/info?specialid={special_id}"
     list_info = {}
     try:
@@ -721,7 +717,7 @@ def fetch_special_playlist(special_id, original_url=None):
         if r.status_code == 200:
             list_info = r.json().get("data") or {}
     except Exception as e:
-        print(f"[!] 获取歌单元数据轻微失败，继续获取歌曲: {e}")
+        print(f"! 获取歌单元数据轻微失败，继续获取歌曲: {e}")
 
     playlist_name = (list_info.get("specialname") or "酷狗专题歌单").strip()
     creator = (list_info.get("nickname") or list_info.get("username") or "酷狗音乐").strip()
@@ -729,8 +725,8 @@ def fetch_special_playlist(special_id, original_url=None):
     description = (list_info.get("intro") or "").strip()
     expected_total = int(list_info.get("songcount") or list_info.get("count") or 0)
 
-    print(f"[*] 歌单名称: {playlist_name}")
-    print(f"[*] 预计歌曲数: {expected_total or '未知'}")
+    print(f"→ 歌单名称: {playlist_name}")
+    print(f"→ 预计歌曲数: {expected_total or '未知'}")
 
     page_size = 300
     page = 1
@@ -756,7 +752,7 @@ def fetch_special_playlist(special_id, original_url=None):
 
         fingerprint = ";".join(f"{s.get('hash', '')}:{s.get('filename', '')}" for s in batch)
         if fingerprint in seen_fingerprints:
-            print("[!] 检测到重复页面，分页结束。")
+            print("! 检测到重复页面，分页结束。")
             break
         seen_fingerprints.add(fingerprint)
 
@@ -764,7 +760,7 @@ def fetch_special_playlist(special_id, original_url=None):
             expected_total = int(data["total"])
 
         raw_songs.extend(batch)
-        print(f"[*] 已抓取第 {page} 页，当前累计 {len(raw_songs)} 首...")
+        print(f"→ 已抓取第 {page} 页，当前累计 {len(raw_songs)} 首...")
 
         if expected_total > 0 and len(raw_songs) >= expected_total:
             break
@@ -791,7 +787,7 @@ def fetch_collection_playlist(collection_id, specialid=0, original_url=None):
     抓取酷狗概念版 / 新版集合歌单 (collection_...)
     完全无需登录，通过 pubsongscdn.kugou.com 批量分页获取
     """
-    print(f"[*] 正在获取概念版集合歌单 (ID: {collection_id})...")
+    print(f"→ 正在获取概念版集合歌单 (ID: {collection_id})...")
 
     # 1. 尝试获取元数据
     list_name = None
@@ -838,7 +834,7 @@ def fetch_collection_playlist(collection_id, specialid=0, original_url=None):
         parts = collection_id.split("_")
         creator = f"酷狗用户_{parts[2]}" if len(parts) > 2 else "酷狗用户"
 
-    print(f"[*] 歌单名称: {list_name}")
+    print(f"→ 歌单名称: {list_name}")
 
     # 2. 批量分页抓取歌曲列表
     page = 1
@@ -892,7 +888,7 @@ def fetch_collection_playlist(collection_id, specialid=0, original_url=None):
             cover_url = normalize_cover_url(batch[0].get("cover") or (batch[0].get("trans_param") or {}).get("union_cover"))
 
         all_songs.extend(batch)
-        print(f"[*] 已抓取第 {page} 页，当前累计 {len(all_songs)}/{total_count} 首...")
+        print(f"→ 已抓取第 {page} 页，当前累计 {len(all_songs)}/{total_count} 首...")
 
         if len(all_songs) >= total_count or len(batch) < page_size:
             break
@@ -917,7 +913,7 @@ def fetch_songlist_h5(gcid, original_url=None):
     抓取移动端 H5 分享页歌单 (gcid_...)
     无需登录，解析 SSR HTML 中注入的 window.$output 数据
     """
-    print(f"[*] 正在抓取酷狗移动端分享页 (GCID: {gcid})...")
+    print(f"→ 正在抓取酷狗移动端分享页 (GCID: {gcid})...")
     url = f"https://m.kugou.com/songlist/{gcid}/"
     resp = requests.get(
         url,
@@ -947,18 +943,18 @@ def fetch_songlist_h5(gcid, original_url=None):
     # 如果有集合ID且提供了更多歌曲，可以尝试调用 collection 接口获取完整曲目
     encode_gic = output_data.get("encode_gic")
     if encode_gic and encode_gic.startswith("collection_") and len(songs) < int(list_info.get("count") or 0):
-        print(f"[*] 发现集合标识 {encode_gic}，尝试获取完整曲目...")
+        print(f"→ 发现集合标识 {encode_gic}，尝试获取完整曲目...")
         try:
             return fetch_collection_playlist(encode_gic, original_url=original_url)
         except Exception as e:
-            print(f"[!] 尝试完整抓取略过: {e}")
+            print(f"! 尝试完整抓取略过: {e}")
 
     playlist_name = (list_info.get("name") or "酷狗歌单").strip()
     creator = (list_info.get("nickname") or list_info.get("list_create_username") or "酷狗用户").strip()
     cover_url = normalize_cover_url(list_info.get("pic"))
     description = (list_info.get("intro") or "").strip()
 
-    print(f"[*] 歌单名称: {playlist_name} (共 {len(songs)} 首歌曲)")
+    print(f"→ 歌单名称: {playlist_name} (共 {len(songs)} 首歌曲)")
     tracks = [normalize_kugou_track(s, i + 1) for i, s in enumerate(songs)]
 
     return {
@@ -979,7 +975,7 @@ def fetch_cloudlist_playlist(listid, token, userid, original_url=None):
     抓取个人自建歌单 / 云端歌单 (需登录凭证 token 和 userid)
     调用 gateway.kugou.com/v4/get_list_all_file 接口
     """
-    print(f"[*] 正在抓取个人云端歌单 (listid: {listid}, userid: {userid})...")
+    print(f"→ 正在抓取个人云端歌单 (listid: {listid}, userid: {userid})...")
     page_size = 300
     page = 1
     max_pages = 50
@@ -1063,12 +1059,12 @@ def fetch_cloudlist_playlist(listid, token, userid, original_url=None):
 
         fingerprint = ";".join(f"{s.get('hash', '')}:{s.get('name', '')}" for s in batch)
         if fingerprint in seen_fingerprints:
-            print("[!] 检测到重复页面，分页结束。")
+            print("! 检测到重复页面，分页结束。")
             break
         seen_fingerprints.add(fingerprint)
 
         all_songs.extend(batch)
-        print(f"[*] 已抓取第 {page} 页，当前累计 {len(all_songs)} 首...")
+        print(f"→ 已抓取第 {page} 页，当前累计 {len(all_songs)} 首...")
 
         if expected_total > 0 and len(all_songs) >= expected_total:
             break
@@ -1389,7 +1385,7 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
 
     exported_files = []
 
-    print(f"\n[*] 开始导出歌单《{playlist['name']}》 (共 {len(playlist['tracks'])} 首歌曲)...\n")
+    print(f"\n→ 开始导出歌单《{playlist['name']}》 (共 {len(playlist['tracks'])} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_file = os.path.join(output_dir, f"{base_filename}.{fmt}")
@@ -1405,9 +1401,9 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
             elif fmt == "m3u8":
                 export_m3u8(playlist, out_file)
             exported_files.append(out_file)
-            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_file)}")
+            print(f"  ✓ {fmt.upper():<5} -> {os.path.abspath(out_file)}")
         except Exception as e:
-            print(f"  [✗] {fmt.upper():<5} 失败: {e}")
+            print(f"  × {fmt.upper():<5} 失败: {e}")
 
     print(f"\n[🎉] 导出完成！共 {len(playlist['tracks'])} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
@@ -1420,7 +1416,7 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
 def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None):
     target_type = target["type"]
     target_id = target["id"]
-    print(f"[*] 成功识别目标类型: {target_type.upper()}, ID: {target_id}")
+    print(f"→ 成功识别目标类型: {target_type.upper()}, ID: {target_id}")
 
     playlist = None
 
@@ -1447,17 +1443,17 @@ def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None):
             userid = userid or saved_userid
 
         if not token or not userid:
-            print("\n[!] 提示：您正在导出个人自建歌单 (Cloudlist)，该歌单需要酷狗登录凭证。")
+            print("\n! 提示：您正在导出个人自建歌单 (Cloudlist)，该歌单需要酷狗登录凭证。")
             token, userid = interactive_login_menu()
             if not token or not userid:
-                print("[!] 未获取到有效凭证，无法导出个人自建歌单。")
+                print("! 未获取到有效凭证，无法导出个人自建歌单。")
                 return None
 
         try:
             playlist = fetch_cloudlist_playlist(target_id, token, userid, target["original_url"])
         except PermissionError as pe:
-            print(f"\n[!] 凭证认证失败: {pe}")
-            print("[*] 正在引导重新登录...")
+            print(f"\n! 凭证认证失败: {pe}")
+            print("→ 正在引导重新登录...")
             token, userid = interactive_login_menu()
             if token and userid:
                 playlist = fetch_cloudlist_playlist(target_id, token, userid, target["original_url"])
@@ -1512,7 +1508,7 @@ def main():
     # 处理手动保存凭证
     if args.save_auth and args.token and args.userid:
         save_auth_credentials(args.token, args.userid, source="manual")
-        print("[✓] 凭证已保存。")
+        print("✓ 凭证已保存。")
         if not args.input and not args.opt_id:
             return
 
@@ -1545,9 +1541,9 @@ def main():
     print("\n支持：官方精选歌单 / 概念版集合歌单 / H5分享短链 / 个人自建歌单")
     token, userid, _ = load_auth_credentials()
     if token and userid:
-        print(f"[*] 检测到已保存的酷狗登录凭证 (UserID: {userid})")
+        print(f"→ 检测到已保存的酷狗登录凭证 (UserID: {userid})")
     else:
-        print("[*] 当前未保存登录凭证 (公开歌单无需登录，个人自建歌单可输入 login 配置)")
+        print("→ 当前未保存登录凭证 (公开歌单无需登录，个人自建歌单可输入 login 配置)")
 
     try:
         while True:
@@ -1563,13 +1559,13 @@ def main():
 
             target = extract_kugou_target(user_input)
             if not target:
-                print("❌ 无法识别输入的酷狗链接或歌单 ID，请检查输入格式！")
+                print("× 无法识别输入的酷狗链接或歌单 ID，请检查输入格式！")
                 print("=" * 64)
                 continue
 
             playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid)
             if not playlist or not playlist.get("tracks"):
-                print("❌ 未能获取到任何有效歌曲数据，请检查歌单是否有效或重试。")
+                print("× 未能获取到任何有效歌曲数据，请检查歌单是否有效或重试。")
                 print("=" * 64)
                 continue
 

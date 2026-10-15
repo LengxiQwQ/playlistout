@@ -25,7 +25,7 @@ from cli.netease.netease_playlist_export import (
 class NetEaseAdapter(BasePlatformAdapter):
     platform_id = "netease"
     display_name = "网易云音乐"
-    description = "歌单链接 / 短链 (163cn.tv) / ID / 用户公开歌单"
+    description = "歌单链接 / 短链 / ID / 用户歌单"
     aliases = ["163", "netease", "wyy", "cloudmusic"]
 
     def can_handle(self, text: str) -> bool:
@@ -139,16 +139,16 @@ class NetEaseAdapter(BasePlatformAdapter):
             created_pls = [p for p in pls if p.get('is_created')]
             sub_pls = [p for p in pls if not p.get('is_created')]
 
-            print(f"\n用户【{nickname}】共发现 {len(pls)} 个歌单：")
-            print(f"  创建的歌单 ({len(created_pls)} 个):")
+            print(f"\n✓ 找到用户 {nickname} 的 {len(pls)} 个公开歌单")
+            print(f"  创建的歌单（{len(created_pls)} 个）：")
             for idx, p in enumerate(created_pls, 1):
                 print(f"    {idx}. {p['name']} ({p.get('track_count', 0)}首) [ID: {p['id']}]")
             if sub_pls:
-                print(f"  收藏的歌单 ({len(sub_pls)} 个):")
+                print(f"  收藏的歌单（{len(sub_pls)} 个）：")
                 for idx, p in enumerate(sub_pls, len(created_pls) + 1):
                     print(f"    {idx}. {p['name']} ({p.get('track_count', 0)}首) [ID: {p['id']}]")
 
-            sel = input("\n请选择要导出的歌单序号（输入 all 导出创建的所有歌单，0 返回）：").strip()
+            sel = input("\n> 选择要导出的歌单序号（all 导出自己创建的全部歌单，0 返回）：").strip()
             if not sel or sel == "0":
                 return True
 
@@ -158,9 +158,16 @@ class NetEaseAdapter(BasePlatformAdapter):
             elif sel.isdigit() and 1 <= int(sel) <= len(pls):
                 to_export = [pls[int(sel) - 1]]
 
+            if not to_export:
+                print("! 没有选择有效的歌单。")
+                return True
+
             print_format_menu()
-            fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
+            fmt_input = input("> 选择格式，可多选，例如 1,2：").strip()
             formats = resolve_export_formats(fmt_input)
+            if not formats:
+                print("\n已返回，不导出。")
+                return True
 
             for pl in to_export:
                 norm_pl = self.fetch_playlist(pl['id'])

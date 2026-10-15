@@ -5,13 +5,13 @@ PlaylistOut QQ Music Platform Adapter
 Integrates QQ Music (y.qq.com) into the unified CLI.
 """
 
-import sys
+import os
 from typing import Optional
 
 from .base import BasePlatformAdapter
 from .registry import register_platform
 from ..core.models import NormalizedPlaylist, NormalizedTrack
-from ..core.ui import print_format_menu, resolve_export_formats, print_exit_banner
+from ..core.ui import print_format_menu, resolve_export_formats, reveal_folder
 from ..core.exporter import perform_export
 
 # 引入已验证的底层 QQ 音乐核心抓取函数
@@ -20,7 +20,6 @@ from cli.qqmusic.qq_music_playlist_export import (
     extract_user_uin,
     get_playlist_songs,
     get_user_playlists,
-    batch_export_songs,
 )
 
 
@@ -28,7 +27,7 @@ from cli.qqmusic.qq_music_playlist_export import (
 class QQMusicAdapter(BasePlatformAdapter):
     platform_id = "qqmusic"
     display_name = "QQ 音乐"
-    description = "歌单链接 / 短链 (c6.y.qq.com) / ID / QQ号批量导出"
+    description = "歌单链接 / 短链 / ID / QQ号"
     aliases = ["qq", "qq-music", "tx", "tencent"]
 
     def can_handle(self, text: str) -> bool:
@@ -100,7 +99,7 @@ class QQMusicAdapter(BasePlatformAdapter):
         )
 
     def handle_interactive(self, initial_input: Optional[str] = None, **options) -> bool:
-        """支持 QQ 号多歌单批量导出的专属交互"""
+        """支持 QQ 号公开歌单批量导出的专属交互"""
         user_input = initial_input
         output_dir = options.get("output_dir", "output")
         reveal_flag = not options.get("no_open", False)
@@ -112,22 +111,50 @@ class QQMusicAdapter(BasePlatformAdapter):
         pid = extract_playlist_id(user_input)
         uin = extract_user_uin(user_input)
 
-        # 如果同时匹配或专指 QQ 号
         if (is_just_digits and not pid) or (uin and not pid):
             target_uin = uin or user_input
             qq_info = get_user_playlists(target_uin)
             if qq_info:
                 qq_nickname, qq_playlists = qq_info
-                print(f"\n检测到QQ号，用户：{qq_nickname}，共发现 {len(qq_playlists)} 个公开歌单：")
+                print(f"\n✓ 找到 QQ 用户 {qq_nickname} 的 {len(qq_playlists)} 个公开歌单")
                 for i, pl in enumerate(qq_playlists, 1):
-                    print(f"  {i:3d}. [{pl['id']}] {pl['name']}")
-                batch_export_songs(
-                    qq_playlists,
-                    target_uin,
-                    qq_nickname,
-                    output_dir=output_dir,
-                    reveal_folder_flag=reveal_flag
-                )
+                    print(f"  {i:3d}. {pl['name']}  [ID: {pl['id']}]")
+
+                print_format_menu()
+                fmt_input = input("> 选择格式，可多选，例如 1,2：").strip()
+                formats = resolve_export_formats(fmt_input)
+                if not formats:
+                    print("\n已返回，不导出。")
+                    return True
+
+                target_dir = os.path.join(output_dir, str(target_uin))
+                os.makedirs(target_dir, exist_ok=True)
+                exported = 0
+                failed = 0
+                print(f"\n→ 开始导出 {len(qq_playlists)} 个公开歌单...")
+
+                for idx, pl in enumerate(qq_playlists, 1):
+                    print(f"\n  [{idx}/{len(qq_playlists)}] {pl['name']}")
+                    norm_pl = self.fetch_playlist(str(pl["id"]))
+                    if not norm_pl:
+                        print("  × 无法读取这个歌单，已跳过")
+                        failed += 1
+                        continue
+                    files = perform_export(
+                        norm_pl,
+                        output_dir=target_dir,
+                        formats=formats,
+                        reveal_folder_flag=False,
+                    )
+                    if files:
+                        exported += 1
+                    else:
+                        failed += 1
+
+                print(f"\n✓ 批量导出完成：成功 {exported} 个，失败 {failed} 个")
+                print(f"  保存到：{os.path.abspath(target_dir)}")
+                if exported and reveal_flag:
+                    reveal_folder(target_dir)
                 return True
 
         return False

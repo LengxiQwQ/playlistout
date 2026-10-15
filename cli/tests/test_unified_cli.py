@@ -10,6 +10,7 @@ import pytest
 from cli.platforms.registry import PlatformRegistry
 from cli.core.models import NormalizedPlaylist, NormalizedTrack
 from cli.main import main
+from cli.core.ui import resolve_export_formats
 
 
 def test_registry_registration_and_aliases():
@@ -181,3 +182,12 @@ def test_cli_help_flag_source_and_frozen(capsys):
     assert "usage: ./PlaylistOut" in out
     assert './PlaylistOut "https://music.163.com/playlist?id=2756674066"' in out
 
+
+
+def test_export_format_selection_semantics():
+    assert resolve_export_formats("") == ["xlsx", "json", "csv", "txt", "m3u8"]
+    assert resolve_export_formats("all") == ["xlsx", "json", "csv", "txt", "m3u8"]
+    assert resolve_export_formats("1,2") == ["xlsx", "json"]
+    assert resolve_export_formats("3") == ["csv"]
+    assert resolve_export_formats("xlsx,json") == ["xlsx", "json"]
+    assert resolve_export_formats("0") == []

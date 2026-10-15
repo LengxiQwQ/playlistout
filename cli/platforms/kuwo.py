@@ -21,7 +21,7 @@ from cli.kuwo.kuwo_playlist_export import (
 class KuwoAdapter(BasePlatformAdapter):
     platform_id = "kuwo"
     display_name = "酷我音乐"
-    description = "歌单链接 / 移动端短链 (t.kuwo.cn) / ID / 自动全量分页抓取"
+    description = "歌单链接 / 短链 / ID"
     aliases = ["kuwo", "kw"]
 
     def can_handle(self, text: str) -> bool:

@@ -648,7 +648,7 @@ def perform_export(title, tracks, author, playlist_cover="", playlist_id="", out
     os.makedirs(output_dir, exist_ok=True)
     exported_files = []
 
-    print(f"\n[*] 开始导出歌单《{title}》 (共 {len(tracks)} 首歌曲)...\n")
+    print(f"\n→ 开始导出歌单《{title}》 (共 {len(tracks)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
@@ -664,9 +664,9 @@ def perform_export(title, tracks, author, playlist_cover="", playlist_id="", out
             elif fmt == "m3u8":
                 export_m3u8(out_path, title, tracks, author)
             exported_files.append(out_path)
-            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(out_path)}")
+            print(f"  ✓ {fmt.upper():<5} -> {os.path.abspath(out_path)}")
         except Exception as e:
-            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
+            print(f"  × {fmt.upper():<5} 导出失败: {e}")
 
     print(f"\n[🎉] 导出完成！共 {len(tracks)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
@@ -790,7 +790,7 @@ def main():
                 print(f"正在抓取歌单 ID: {playlist_id} ...")
                 data = get_playlist_data(playlist_id)
                 if not data:
-                    print("❌ 获取歌单失败，请检查是否公开或 ID 是否正确。")
+                    print("× 获取歌单失败，请检查是否公开或 ID 是否正确。")
                     print("=" * 64)
                     continue
                 title, tracks, author = data[:3]
@@ -806,7 +806,7 @@ def main():
                 sel_formats = resolve_export_formats(fmt_input)
                 perform_export(title, tracks, author, playlist_cover, playlist_id, output_dir=output_dir, formats=sel_formats, reveal_folder_flag=not args.no_open)
             else:
-                print("❌ 无法识别的输入，请输入网易云歌单链接、短链或 ID。")
+                print("× 无法识别的输入，请输入网易云歌单链接、短链或 ID。")
                 print("=" * 64)
     except KeyboardInterrupt:
         print_exit_banner()

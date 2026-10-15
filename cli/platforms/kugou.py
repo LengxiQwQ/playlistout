@@ -26,7 +26,7 @@ from cli.kugou.kugou_playlist_export import (
 class KugouAdapter(BasePlatformAdapter):
     platform_id = "kugou"
     display_name = "酷狗音乐"
-    description = "官方精选 / 概念版集合 / H5分享短链 / 个人云端扫码登录"
+    description = "歌单链接 / 分享链接 / 登录后获取更多"
     aliases = ["kugou", "kg"]
 
     def can_handle(self, text: str) -> bool:
@@ -100,6 +100,6 @@ class KugouAdapter(BasePlatformAdapter):
             return True
         if initial_input and initial_input.lower() in ("logout", "--logout"):
             clear_auth_credentials()
-            print("[✓] 酷狗登录凭证已成功清除。")
+            print("✓ 酷狗登录凭证已清除。")
             return True
         return False

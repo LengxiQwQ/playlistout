@@ -286,16 +286,22 @@ def perform_export(
     formats: Optional[List[str]] = None,
     reveal_folder_flag: bool = True
 ) -> List[str]:
-    """统一执行导出并格式化打印结果"""
-    formats = formats or ["xlsx", "csv", "json", "txt", "m3u8"]
+    """统一执行导出，并以简洁一致的方式反馈结果"""
+    if formats is None:
+        formats = ["xlsx", "json", "csv", "txt", "m3u8"]
+    if not formats:
+        return []
+
     safe_title = sanitize_filename(playlist.name) or "playlist"
     os.makedirs(output_dir, exist_ok=True)
+    labels = {"xlsx": "Excel", "json": "JSON", "csv": "CSV", "txt": "TXT", "m3u8": "M3U8"}
 
     exported_files = []
-    print(f"\n[*] 开始导出歌单《{playlist.name}》 (共 {len(playlist.tracks)} 首歌曲)...\n")
-
+    failed_count = 0
+    print("\n→ 正在导出...\n")
     for fmt in formats:
         target_path = os.path.join(output_dir, f"{safe_title}.{fmt}")
+        label = labels.get(fmt, fmt.upper())
         try:
             if fmt == "xlsx":
                 export_xlsx(playlist, target_path)
@@ -310,15 +316,19 @@ def perform_export(
             else:
                 continue
             exported_files.append(target_path)
-            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(target_path)}")
+            print(f"  ✓ {label:<6} {os.path.basename(target_path)}")
         except Exception as e:
-            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
+            failed_count += 1
+            print(f"  × {label:<6} 导出失败：{e}")
 
-    print(f"\n[🎉] 导出完成！共 {len(playlist.tracks)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
-    print("=" * 64)
+    if exported_files:
+        print(f"\n✓ 导出完成，共 {len(exported_files)} 个文件")
+        print(f"  保存到：{os.path.abspath(output_dir)}")
+        if failed_count:
+            print(f"  ! 另有 {failed_count} 个格式导出失败")
+    else:
+        print("\n× 没有文件导出成功")
 
     if exported_files and reveal_folder_flag:
         reveal_folder(exported_files[0])
-
     return exported_files
-

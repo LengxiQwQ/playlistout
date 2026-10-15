@@ -42,28 +42,38 @@ from cli.platforms.registry import PlatformRegistry
 
 
 def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_formats: list, reveal_folder: bool, interactive: bool):
-    """展示歌单统计并执行导出"""
+    """展示简洁歌单摘要并执行导出"""
     dup_count = playlist.mark_duplicates()
     tracks = playlist.tracks
     unavail = sum(1 for t in tracks if not t.is_available)
     vip_cnt = sum(1 for t in tracks if t.is_vip)
-    normal_cnt = len(tracks) - unavail - vip_cnt
 
-    print(f"\n歌单：{playlist.name}（作者：{playlist.creator or '未知'}，共 {len(tracks)} 首）")
-    dup_msg = f"，发现重复单曲 {dup_count} 首" if dup_count > 0 else ""
-    print(f"状态统计：正常 {normal_cnt} 首，VIP专享 {vip_cnt} 首，下架/无版权 {unavail} 首{dup_msg}")
+    print("\n✓ 获取成功\n")
+    print(f"  歌单  {playlist.name}")
+    print(f"  作者  {playlist.creator or '未知'}")
+    expected_count = playlist.track_count if playlist.track_count and playlist.track_count > len(tracks) else len(tracks)
+    print(f"  歌曲  {len(tracks)} / {expected_count} 首" if expected_count > len(tracks) else f"  歌曲  {len(tracks)} 首")
     if playlist.formatted_duration:
-        print(f"总计播放时长：{playlist.formatted_duration}")
+        print(f"  时长  {playlist.formatted_duration}")
+
+    status_parts = []
+    if vip_cnt:
+        status_parts.append(f"VIP {vip_cnt}")
+    if unavail:
+        status_parts.append(f"无版权/下架 {unavail}")
+    if dup_count:
+        status_parts.append(f"重复 {dup_count}")
+    print(f"  状态  {' · '.join(status_parts) if status_parts else '全部正常'}")
 
     formats = default_formats
     if interactive:
         print_format_menu()
-        fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()
-        print("=" * 64)
-        formats = resolve_export_formats(fmt_input)
+        formats = resolve_export_formats(input("> 选择格式，可多选，例如 1,2：").strip())
+        if not formats:
+            print("\n已返回，不导出。")
+            return
 
     perform_export(playlist, output_dir=output_dir, formats=formats, reveal_folder_flag=reveal_folder)
-
 
 
 def get_cli_invocation_name(is_frozen: bool = None, sys_platform: str = None) -> str:
@@ -154,29 +164,30 @@ def main():
         if args.platform:
             adapter = PlatformRegistry.get(args.platform)
             if not adapter:
-                print(f"错误: 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
+                print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
                 sys.exit(1)
         else:
             ptype, detected_text = SmartDetector.detect(target_text)
             if ptype == PlatformType.AMBIGUOUS_DIGITS:
                 print(
-                    f"错误: 输入 '{target_text}' 为纯数字 ID，无法自动确定平台。\n"
+                    f"× 输入 '{target_text}' 是纯数字 ID，无法自动确定平台。\n"
                     "请使用 -p/--platform 参数指定平台 (例如: -p netease 或 -p qqmusic)。",
                     file=sys.stderr
                 )
                 sys.exit(1)
             elif ptype == PlatformType.UNKNOWN:
-                print(f"错误: 无法识别输入的目标平台，请检查链接或使用 -p 显式指定。", file=sys.stderr)
+                print("× 无法识别歌单链接。请检查链接，或使用 -p/--platform 指定平台。", file=sys.stderr)
                 sys.exit(1)
             else:
                 adapter = PlatformRegistry.get(ptype.value)
                 target_text = detected_text
 
         if not adapter:
-            print("错误: 未找到对应的平台适配器。", file=sys.stderr)
+            print("× 未找到对应的平台适配器。", file=sys.stderr)
             sys.exit(1)
 
-        print(f"[*] 目标平台: {adapter.display_name}")
+        print(f"✓ 已识别：{adapter.display_name}")
+        print("→ 正在获取歌单...")
         playlist = adapter.fetch_playlist(
             target_text,
             channel=args.channel,
@@ -193,7 +204,7 @@ def main():
             if handled:
                 return
 
-            print("错误: 获取歌单数据失败，请检查链接有效性或网络连接。", file=sys.stderr)
+            print("× 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
             sys.exit(1)
 
         run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
@@ -205,18 +216,17 @@ def main():
     # ─────────────────────────────────────────────────────────────
     print_banner()
     adapters_list = PlatformRegistry.list_all()
+    print_main_menu(PlatformRegistry.get_summary_list())
 
     try:
         while True:
-            print_main_menu(PlatformRegistry.get_summary_list())
-            user_input = input("请输入歌单链接、短链，或选择平台编号 [1-5] (输入 0 退出)：").strip()
-            print("=" * 64)
-
-            if not user_input or user_input in ("0", "q", "quit", "exit"):
+            user_input = input("> 粘贴歌单链接，或输入平台编号：").strip()
+            if not user_input:
+                continue
+            if user_input in ("0", "q", "quit", "exit"):
                 print_exit_banner()
                 break
 
-            # 专属指令处理 (如酷狗登录)
             if user_input.lower() in ("login", "logout"):
                 kg = PlatformRegistry.get("kugou")
                 if kg:
@@ -226,45 +236,45 @@ def main():
             target_adapter = None
             target_query = user_input
 
-            # A. 用户直接输入了平台序号 1~5 预选平台
             if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
                 selected_adapter = adapters_list[int(user_input) - 1]
-                print(f"\n[已锁定平台: {selected_adapter.display_name}]")
-                sub_input = input(f"请输入 {selected_adapter.display_name} 的歌单链接、短链或 ID (输入 0 返回主菜单)：").strip()
-                print("=" * 64)
+                print(f"\n✓ 已选择：{selected_adapter.display_name}")
+                sub_input = input("> 粘贴歌单链接、短链或输入歌单 ID（0 返回）：").strip()
                 if not sub_input or sub_input in ("0", "q", "quit", "exit"):
                     continue
                 target_adapter = selected_adapter
                 target_query = sub_input
 
-            # B. 智能自动识别用户粘贴的链接/文案
             if not target_adapter:
                 ptype, detected_text = SmartDetector.detect(target_query)
                 if ptype == PlatformType.AMBIGUOUS_DIGITS:
-                    print(f"\n[?] 检测到纯数字 ID '{target_query}'，无法自动唯一确定平台。")
-                    print("请选择对应的音乐平台：")
+                    print(f"\n! 检测到纯数字 ID：{target_query}")
+                    print("  请选择它所属的平台：")
                     for idx, a in enumerate(adapters_list, 1):
-                        print(f"  [{idx}] {a.display_name}")
-                    print("  [0] 取消返回\n")
-                    p_sel = input("请选择平台编号 [1-5] (默认: 1): ").strip()
-                    print("=" * 64)
-                    if p_sel in ("0", "q"):
+                        print(f"  {idx}  {a.display_name}")
+                    print("  0  返回")
+                    p_sel = input("> 选择平台编号：").strip()
+                    if p_sel in ("0", "q", "quit", "exit"):
                         continue
-                    p_idx = int(p_sel) - 1 if p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list) else 0
-                    target_adapter = adapters_list[p_idx]
+                    if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
+                        print("\n! 请输入 1-5 中的有效平台编号。")
+                        continue
+                    target_adapter = adapters_list[int(p_sel) - 1]
+                    print(f"✓ 已选择：{target_adapter.display_name}")
                 elif ptype != PlatformType.UNKNOWN:
                     target_adapter = PlatformRegistry.get(ptype.value)
                     target_query = detected_text
                     if target_adapter:
-                        print(f"\n[⚡ 智能识别] 目标平台: 【{target_adapter.display_name}】")
+                        print(f"\n✓ 已识别：{target_adapter.display_name}")
 
             if not target_adapter:
-                print("❌ 无法识别输入的格式或链接，请重试或先输入 1-5 锁定平台。")
-                print("=" * 64)
+                print("\n× 没有识别出歌单链接。")
+                print("  可以尝试：")
+                print("  • 直接粘贴完整歌单链接或分享文案")
+                print("  • 如果只有歌单 ID，先输入平台编号")
                 continue
 
             try:
-                # 检查平台特有交互流 (例如 QQ/网易云用户公开歌单列表批量)
                 handled = target_adapter.handle_interactive(
                     target_query,
                     output_dir=output_dir,
@@ -273,8 +283,7 @@ def main():
                 if handled:
                     continue
 
-                # 标准歌单抓取流程
-                print(f"正在抓取歌单数据...")
+                print("→ 正在获取歌单...")
                 playlist = target_adapter.fetch_playlist(
                     target_query,
                     channel=args.channel,
@@ -282,11 +291,12 @@ def main():
                     userid=args.userid,
                 )
                 if not playlist or not playlist.tracks:
-                    print("❌ 获取歌单失败，请检查链接有效性、是否为公开歌单或重试。")
-                    print("=" * 64)
+                    print("\n× 获取歌单失败。")
+                    print("  请检查链接是否有效、歌单是否公开，或稍后重试。")
                     continue
 
                 run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
+                print()
             except (KeyboardInterrupt, EOFError):
                 raise
             except Exception as loop_err:
@@ -294,8 +304,7 @@ def main():
                     import traceback
                     traceback.print_exc()
                 else:
-                    print(f"❌ 处理歌单时出现异常: {loop_err}")
-                print("=" * 64)
+                    print(f"\n× 处理歌单时出错：{loop_err}")
 
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
@@ -313,7 +322,7 @@ if __name__ == "__main__":
             import traceback
             traceback.print_exc()
         else:
-            print(f"\n❌ 程序发生异常: {e}", file=sys.stderr)
+            print(f"\n× 程序发生异常：{e}", file=sys.stderr)
 
         if sys.platform == "win32" and sys.stdin and sys.stdin.isatty():
             if len(sys.argv) <= 1:

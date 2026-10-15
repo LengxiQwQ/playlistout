@@ -54,59 +54,54 @@ def print_banner(platform_name: str = None):
 
 
 def print_main_menu(platforms: list):
-    """主菜单界面，列出支持平台并展示双轨使用提示"""
-    print("\n当前已接入平台与特性：")
+    """主菜单界面：只展示用户需要知道的平台能力与使用方式"""
+    print("\n当前已接入平台：")
     for idx, p in enumerate(platforms, 1):
-        print(f"  [{idx}] {p['name']:<10} - {p['desc']}")
-    print("\n💡 使用提示：")
-    print("  • 直接粘贴【任何平台的歌单链接、短链或分享文案】，系统将自动识别并解析！")
-    print("  • 也可以直接输入平台序号 [1-5] 锁定平台，再粘贴链接或纯数字歌单 ID。")
-    print("  • 输入 0 或 q 退出程序。\n")
+        print(f"  {idx}  {p['name']}  ·  {p['desc']}")
+    print("\n使用方式：")
+    print("  直接粘贴歌单链接、短链或分享文案，会自动识别平台。")
+    print("  只有歌单 ID 时，可以先输入平台编号。")
+    print("  输入 0 或 q 退出。\n")
 
 
 def print_format_menu():
-    """统一线框引导 UI - 导出格式选择菜单"""
-    print("\n请选择导出文件格式：")
-    print("  [1] .xlsx  - Excel 表格文件 (排版美化)")
-    print("  [2] .csv   - 标准 CSV 表格 (带 UTF-8 BOM)")
-    print("  [3] .json  - Canonical JSON 标准格式")
-    print("  [4] .txt   - 纯文本歌单清单")
-    print("  [5] .m3u8  - 通用播放列表 (M3U8)")
-    print("  [0] 全部导出 (默认，直接回车即可)\n")
+    """统一导出格式菜单：描述用途，不暴露实现细节"""
+    print("\n导出格式")
+    print("  1  Excel (.xlsx)  适合查看、整理和备份")
+    print("  2  JSON  (.json)  适合第三方工具和程序导入")
+    print("  3  CSV   (.csv)   适合表格软件和迁移工具")
+    print("  4  TXT   (.txt)   简单的歌曲清单")
+    print("  5  M3U8  (.m3u8)  通用播放列表")
+    print("\n  Enter  全部导出")
+    print("  0      返回\n")
 
 
 def resolve_export_formats(choice: str) -> List[str]:
-    """
-    根据用户输入解析导出格式：
-    支持单个 (1~5 / xlsx), 逗号分隔 (1,2 / xlsx,csv), 0 或空代表全部导出。
-    """
+    """解析导出格式；空输入/all 代表全部，0 代表返回。"""
     choice = str(choice or "").strip().lower()
-    if not choice or choice in ("0", "all"):
-        return ["xlsx", "csv", "json", "txt", "m3u8"]
+    all_formats = ["xlsx", "json", "csv", "txt", "m3u8"]
+    if not choice or choice == "all":
+        return all_formats
+    if choice == "0":
+        return []
 
     mapping = {
-        "1": "xlsx",
-        "xlsx": "xlsx",
-        "excel": "xlsx",
-        "2": "csv",
-        "csv": "csv",
-        "3": "json",
-        "json": "json",
-        "4": "txt",
-        "txt": "txt",
-        "5": "m3u8",
-        "m3u8": "m3u8",
+        "1": "xlsx", "xlsx": "xlsx", "excel": "xlsx",
+        "2": "json", "json": "json",
+        "3": "csv", "csv": "csv",
+        "4": "txt", "txt": "txt",
+        "5": "m3u8", "m3u8": "m3u8",
     }
-
     items = [x.strip() for x in choice.replace("，", ",").replace(" ", ",").split(",") if x.strip()]
     res = []
     for item in items:
-        if item in ("0", "all"):
-            return ["xlsx", "csv", "json", "txt", "m3u8"]
+        if item == "all":
+            return all_formats
+        if item == "0":
+            return []
         if item in mapping and mapping[item] not in res:
             res.append(mapping[item])
-
-    return res if res else ["xlsx", "csv", "json", "txt", "m3u8"]
+    return res if res else all_formats
 
 
 def reveal_folder(target_path: str):

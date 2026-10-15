@@ -21,7 +21,7 @@ from cli.qishui.qishui_playlist_export import (
 class QishuiAdapter(BasePlatformAdapter):
     platform_id = "qishui"
     display_name = "汽水音乐"
-    description = "歌单链接 / 短链 / 微信抖音文案提取 / 全量游标分页 / 抖音双通道"
+    description = "歌单链接 / 分享文案 / ID"
     aliases = ["qishui", "qs", "douyin", "dy"]
 
     def can_handle(self, text: str) -> bool:

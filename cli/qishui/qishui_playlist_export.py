@@ -876,7 +876,7 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
 
     exported_files = []
 
-    print(f"\n[*] 开始导出歌单《{playlist_title}》 (共 {len(tracks)} 首歌曲)...\n")
+    print(f"\n→ 开始导出歌单《{playlist_title}》 (共 {len(tracks)} 首歌曲)...\n")
 
     for fmt in resolved_formats:
         fn = os.path.join(output_dir, f"{safe_title}.{fmt}")
@@ -892,9 +892,9 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
             elif fmt == 'm3u8':
                 export_m3u8(fn, playlist_title, tracks, author)
             exported_files.append(fn)
-            print(f"  [✓] {fmt.upper():<5} -> {os.path.abspath(fn)}")
+            print(f"  ✓ {fmt.upper():<5} -> {os.path.abspath(fn)}")
         except Exception as e:
-            print(f"  [✗] {fmt.upper():<5} 导出失败: {e}")
+            print(f"  × {fmt.upper():<5} 导出失败: {e}")
 
     print(f"\n[🎉] 导出完成！共 {len(tracks)} 首歌曲，已存入: {os.path.abspath(output_dir)}")
     print("=" * 64)
@@ -953,14 +953,14 @@ def main():
 
             playlist_id = extract_playlist_id(user_input)
             if not playlist_id:
-                print("❌ 未能识别到有效的汽水音乐歌单 ID，请检查输入！")
+                print("× 未能识别到有效的汽水音乐歌单 ID，请检查输入！")
                 print("=" * 64)
                 continue
 
             print(f"正在获取歌单 (ID: {playlist_id}) 信息...")
             info = get_playlist_info(playlist_id, channel=args.channel)
             if not info:
-                print("❌ 获取歌单信息失败，请重试。")
+                print("× 获取歌单信息失败，请重试。")
                 print("=" * 64)
                 continue
 
