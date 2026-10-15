@@ -201,6 +201,10 @@ For every new provider:
 
 A provider is not considered supported merely because one sample playlist works.
 
+### Client-side player fallback layer (approved 2026-10-16)
+
+Per the constitution's player-integration boundary (§2), the MusicFree plugin (v2.1.0) ships a **client-side, last-resort fallback** for items the plugin itself imported: strict-matched public sources (QQ Music / NetEase / KuGou) resolved locally on the user's device, only after native plugins and cross-plugin rescue fail. This capability is intentionally scoped to the plugin lane only — the hosted surfaces (web, Worker, CLI) remain parse-only. See [`plugins/musicfree/README.md`](../plugins/musicfree/README.md) and [`CHANGELOG.md`](../CHANGELOG.md).
+
 ---
 
 # 4. Product improvements — later / optional
@@ -210,7 +214,7 @@ These are possible future improvements, not current commitments:
 - M3U / M3U8 export ✅ (Completed in v2.2.0)
 - Markdown (.md) export ✅ (Completed in Phase P3)
 - Modular Architecture Evolution (P0–P3) ✅ (Completed: Hono routing, ProviderRegistry, Hooks/Facade decoupling, Metadata Pipeline, Modular Export Registry, and New Vendor Onboarding Guide; see [`docs/ARCHITECTURE-EVOLUTION.md`](./ARCHITECTURE-EVOLUTION.md))
-- open-source music player ecosystem integration (MusicFree, LX Music, BBPlayer, Listen 1, Moosync; see [`docs/ECOSYSTEM-INTEGRATION.md`](./ECOSYSTEM-INTEGRATION.md))
+- open-source music player ecosystem integration (MusicFree ✅ plugin shipped, incl. the client-side strict-matched fallback layer registered in constitution §2; LX Music, BBPlayer, Listen 1, Moosync pending; see [`docs/ECOSYSTEM-INTEGRATION.md`](./ECOSYSTEM-INTEGRATION.md))
 - selectable export fields
 - client-side search/filter for parsed tracks
 - batch playlist parsing

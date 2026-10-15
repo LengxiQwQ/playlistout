@@ -6,6 +6,15 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **MusicFree plugin v2.1.0 — embedded fallback sources return as the last-resort playback layer / 内置兜底音源回归（历史歌单兼容 + 原生全灭最后防线）**:
+  - **内置兜底音源引擎**：在原平台插件缺失、跨插件严格匹配无果（或宿主不提供跨插件通道，如手机端）时，自动调用内置兜底通道严格匹配原曲恢复播放 —— QQ音乐（vkeys 直链，无损 / 320k / 128k 按请求音质自动降级）、网易云音乐（GD Studio 直链含无损 + Meting 302 兜底）、酷狗音乐（官方搜索 + getSongInfo 免费曲直链，付费灰歌自动跳过）。
+  - **与跨插件兜底同级的最严匹配**：所有内置候选一律执行「同名 + 同歌手 + 同版本 + 时长偏差 ≤ 12 秒」100% 严格匹配，任何一级匹配不到完全一致的原曲立即跳过；媒体直链一律经过域名白名单（QQ音乐 / 网易云 / 酷狗 CDN 与 Meting 跳转地址）校验，绝不回传未知来源音源。
+  - **历史歌单免重导**：v1.4.1 及更早版本导入的品牌曲目（`platform` 仍为插件名）在播放时自动识别原平台身份（`_originPlatform` / 历史 ID 前缀 / `_src` 凭证）并恢复播放；歌词同样支持内置兜底（s01s / QQ 官方歌词接口 / 网易云官方接口），复用内置取源匹配结果。
+  - **提示体系整合**：跨插件与内置兜底全部失败后统一提示「已自动跳过」；内置通道命中时提示「已自动调用内置「X」音源为您匹配播放」。全部请求都在用户设备本地直连公开接口，不经 PlaylistOut 服务器转发；失败 60 秒负缓存、严格匹配结果 30 分钟复用（含并发去重）。
+  - **边界如实说明**：内置兜底覆盖 QQ音乐 / 网易云音乐 / 酷狗音乐三家公开接口；酷我（风控与广告音源风险）、咪咕 / 汽水（上游接口不可用）、B站（Referer 反爬）暂无内置通道，缺源曲目自动跳过；各平台 VIP / 付费曲目视公开接口返回情况而定，取不到时同样跳过。
+  - 测试套件扩展至 48 项（新增内置兜底取源/取词行为、严格匹配拒播、直链白名单、负缓存与跨插件优先级断言）。
+  - 治理记录：按《项目宪法》§16 变更控制流程，`docs/PROJECT-CONSTITUTION.md` §2 已登记本次「客户端播放器集成边界」例外（仅客户端本地、仅本插件导入的曲目、严格匹配、无下载功能、无服务器转发），并在 `docs/ROADMAP.md` 同步。
+
 - **MusicFree plugin v2.0.0 — pure playlist parser with native platform routing & strict auto-rescue / 纯歌单解析 + 原生音源路由与严格自动兜底**:
   - 插件回归单一职责：只解析歌单，不再内置、不硬编码任何音源直链；解析出的曲目一律按原曲自然平台归属（qq / netease / kugou / kuwo / qishui / migu / bilibili）并注入 `_originPlatform` 与原生取链字段，播放与歌词交由设备上已安装的原生插件完成。
   - 新增 `platform` 访问器保护：拦截 MusicFree 三端宿主导入后 `resetMediaItem(item, plugin.name)` 的品牌名覆写，曲目平台归属在 JSON/IPC 持久化后依然保持原生平台。

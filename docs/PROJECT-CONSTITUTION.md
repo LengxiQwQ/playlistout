@@ -62,6 +62,16 @@ Do not add any of the following unless a later roadmap phase explicitly approves
 
 Third-party platform authentication is allowed only when required to access content the user is already authorized to view. KuGou optional QR authorization is the current example: credentials stay in the user's browser, are transmitted only in request headers when needed for the upstream request, and must never be persisted to D1, analytics, logs, or repository files.
 
+**Player-integration boundary (deliberate revision, 2026-10-16).** The non-goals above scope every **PlaylistOut-hosted surface** — website, Worker API, CLI, analytics: those stay parse-only and never stream, proxy, download, or persist media. The **client-side player integration** (`plugins/musicfree/`) runs entirely inside the user's own player on the user's own device and is a consumer of this project, not a hosted service. To keep playlists that the plugin itself imported playable after its native-platform routing migration, that integration may resolve playback and lyric sources for those imported items from public third-party endpoints, strictly as a last-resort fallback after native plugins and cross-plugin rescue, and only under all of these limits:
+
+- client-side only: nothing is proxied, cached, or stored by PlaylistOut servers; no generic `/proxy?url=...` endpoint exists;
+- scoped to items the plugin itself imported (marked via `_originPlatform` / `_src`); no bulk crawling of catalogs;
+- strict matching only: same title + artist + version + duration; anything else is skipped rather than played;
+- media URLs are validated against a fixed host allowlist; unknown or fabricated source hosts are never returned;
+- no download, export, or offline-media features are added on this boundary.
+
+This deliberately restores (and upgrades) the client-side fallback capability that plugin v2.0.0 had temporarily removed, and supersedes the blanket reading of the "music streaming/playback" and "lyrics scraping" bullets **for this client-side plugin lane only**. Roadmap sync: [`docs/ROADMAP.md`](./ROADMAP.md) §3.
+
 ---
 
 ## 3. Locked Technical Direction

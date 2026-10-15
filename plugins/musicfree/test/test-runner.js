@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.0.0)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.1.0)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -10,7 +10,8 @@
  * 5. Direct JSON string / large-sheet import support
  * 6. Live online NetEase playlist resolution (end-to-end API test, optional RUN_E2E=1)
  * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
- * 8. Exception & invalid input fault tolerance, Hermes syntax integrity, zero embedded sources
+ * 8. Exception & invalid input fault tolerance, Hermes syntax integrity
+ * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + negative caches)
  */
 
 const assert = require('assert');
@@ -748,34 +749,40 @@ async function runAllTests() {
 
   await test('getMediaSource & getLyric cleanly return safe defaults in bare test host (no bridge)', async () => {
     plugin._setHostBridge(null);
-    const start = Date.now();
-    const res1 = await plugin.getMediaSource({ title: '晴天', artist: '周杰伦' });
-    const duration1 = Date.now() - start;
+    // 模拟内置兜底通道全部不可用：裸宿主下必须安全降级，绝不抛错
+    globalThis.axios = { get: async () => ({ status: 200, data: null, headers: {} }) };
+    try {
+      const start = Date.now();
+      const res1 = await plugin.getMediaSource({ title: '晴天', artist: '周杰伦' });
+      const duration1 = Date.now() - start;
 
-    assert.strictEqual(res1, null, 'getMediaSource must return null in bare test environment');
-    assert(duration1 < 20, `Must return in <20ms, took ${duration1}ms`);
+      assert.strictEqual(res1, null, 'getMediaSource must return null in bare test environment');
+      assert(duration1 < 20, `Must return in <20ms, took ${duration1}ms`);
 
-    const res2 = await plugin.getMediaSource(null);
-    assert.strictEqual(res2, null);
+      const res2 = await plugin.getMediaSource(null);
+      assert.strictEqual(res2, null);
 
-    const res3 = await plugin.getMediaSource({
-      id: 'test_1',
-      title: '晴天',
-      artist: '周杰伦',
-      platform: '把你的歌单带走',
-    });
-    assert.strictEqual(res3, null, 'No embedded sources: bare host must yield null');
+      const res3 = await plugin.getMediaSource({
+        id: 'test_1',
+        title: '晴天',
+        artist: '周杰伦',
+        platform: '把你的歌单带走',
+      });
+      assert.strictEqual(res3, null, 'Embedded channels unavailable: bare host must yield null');
 
-    const lrc1 = await plugin.getLyric(null);
-    assert.strictEqual(typeof lrc1?.rawLrc, 'string', 'getLyric must always return object with rawLrc string');
+      const lrc1 = await plugin.getLyric(null);
+      assert.strictEqual(typeof lrc1?.rawLrc, 'string', 'getLyric must always return object with rawLrc string');
 
-    const lrc2 = await plugin.getLyric({
-      id: 'test_2',
-      title: '晴天',
-      artist: '周杰伦',
-      platform: '把你的歌单带走',
-    });
-    assert.deepStrictEqual(lrc2, { rawLrc: '' }, 'No host bridge: lyric must degrade to empty object');
+      const lrc2 = await plugin.getLyric({
+        id: 'test_2',
+        title: '晴天',
+        artist: '周杰伦',
+        platform: '把你的歌单带走',
+      });
+      assert.deepStrictEqual(lrc2, { rawLrc: '' }, 'No host bridge: lyric must degrade to empty object');
+    } finally {
+      delete globalThis.axios;
+    }
   });
 
   // ── 8. Exception & Invalid Input Fault Tolerance ──────────────────
@@ -1013,39 +1020,54 @@ async function runAllTests() {
 
   await test('Refuses to play wrong songs: skips when no strict match exists', async () => {
     let mediaCalled = 0;
-    plugin._setHostBridge({
-      getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search', 'getMediaSource'] }],
-      callPluginMethod: async (event, payload) => {
-        if (payload.method === 'search') {
-          return {
-            isEnd: true,
-            data: [
-              { id: 'wrong_1', title: '晴天 (Live)', artist: '周杰伦', platform: 'netease' },
-              { id: 'wrong_2', title: '晴天', artist: '周杰伦(翻唱)', platform: 'netease' },
-              { id: 'wrong_3', title: '晴天 (伴奏)', artist: '周杰伦', platform: 'netease' },
-            ],
-          };
-        }
-        if (payload.method === 'getMediaSource') {
-          mediaCalled++;
-          return { url: 'https://should-never-be-used.example.com/x.mp3' };
-        }
-        return null;
+    const httpCalls = [];
+    globalThis.axios = {
+      get: async (url) => {
+        httpCalls.push(String(url));
+        return { status: 200, data: null, headers: {} };
       },
-    });
-
-    const item = {
-      id: 'legacy_brand_4',
-      title: '晴天',
-      artist: '周杰伦',
-      duration: 269,
-      platform: '把你的歌单带走',
     };
+    try {
+      plugin._setHostBridge({
+        getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search', 'getMediaSource'] }],
+        callPluginMethod: async (event, payload) => {
+          if (payload.method === 'search') {
+            return {
+              isEnd: true,
+              data: [
+                { id: 'wrong_1', title: '晴天 (Live)', artist: '周杰伦', platform: 'netease' },
+                { id: 'wrong_2', title: '晴天', artist: '周杰伦(翻唱)', platform: 'netease' },
+                { id: 'wrong_3', title: '晴天 (伴奏)', artist: '周杰伦', platform: 'netease' },
+              ],
+            };
+          }
+          if (payload.method === 'getMediaSource') {
+            mediaCalled++;
+            return { url: 'https://should-never-be-used.example.com/x.mp3' };
+          }
+          return null;
+        },
+      });
 
-    const res = await plugin.getMediaSource(item, 'standard');
-    assert.strictEqual(res, null, 'Wrong-song candidates must never be played');
-    assert.strictEqual(mediaCalled, 0, 'No media request must be issued when no strict match exists');
-    plugin._setHostBridge(null);
+      const item = {
+        id: 'legacy_brand_4',
+        title: '晴天',
+        artist: '周杰伦',
+        duration: 269,
+        platform: '把你的歌单带走',
+      };
+
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert.strictEqual(res, null, 'Wrong-song candidates must never be played');
+      assert.strictEqual(mediaCalled, 0, 'No media request must be issued when no strict match exists');
+      assert(
+        httpCalls.every((u) => !u.includes('vkeys') && !u.includes('getSongInfo')),
+        'Embedded engine must never request streams without a strict match'
+      );
+    } finally {
+      plugin._setHostBridge(null);
+      delete globalThis.axios;
+    }
   });
 
   await test('Hook interceptor glues rescue into the host plugin channel (maybeRescueResult)', async () => {
@@ -1120,11 +1142,357 @@ async function runAllTests() {
     assert(!match({ title: '雨天', artist: '周杰伦', duration: 269 }, '晴天', '周杰伦', 269), 'Different title must not match');
   });
 
-  await test('Guarantees zero embedded audio sources and no legacy bridge leftovers in source', () => {
+  // ── 8.7. Embedded Fallback Sources (QQ / NetEase / KuGou) ─────────
+  logSection('8.7. Embedded Fallback Sources: Legacy Playback Guarantee');
+
+  // 模拟内置兜底通道：按 URL 规则派发响应，未命中请求返回空数据（测试绝不触网）
+  const installHttpMock = (handlers) => {
+    const calls = [];
+    globalThis.axios = {
+      get: async (url, config) => {
+        const u = String(url);
+        calls.push({ url: u, config: config || {} });
+        for (const [pattern, handler] of handlers) {
+          const hit = pattern instanceof RegExp ? pattern.test(u) : u.includes(pattern);
+          if (hit) {
+            return typeof handler === 'function' ? await handler(u, config || {}) : handler;
+          }
+        }
+        return { status: 200, data: null, headers: {} };
+      },
+    };
+    return calls;
+  };
+
+  await test('Legacy QQ brand item (v1.x id prefix) plays through embedded vkeys after https upgrade', async () => {
+    plugin._setHostBridge(null);
+    const calls = installHttpMock([
+      [/quality=10/, { status: 200, data: { code: 0, data: { kbps: '1644kbps', url: 'http://ws.stream.qqmusic.qq.com/F0000004jPDk2eB2dt.flac?vkey=flac' } } }],
+      [/quality=8/, { status: 200, data: { code: 0, data: { kbps: '320kbps', url: 'http://ws.stream.qqmusic.qq.com/M8000004jPDk2eB2dt.mp3?vkey=320' } } }],
+      [/quality=6/, { status: 200, data: { code: 110000, data: null } }],
+    ]);
+    try {
+      const item = {
+        id: 'qq_0004jPDk2eB2dt',
+        title: '起风了',
+        artist: '买辣椒也用券',
+        platform: '把你的歌单带走',
+        _originPlatform: 'qq',
+      };
+      const res = await plugin.getMediaSource(item, 'high');
+      assert(
+        res && res.url === 'https://ws.stream.qqmusic.qq.com/M8000004jPDk2eB2dt.mp3?vkey=320',
+        'High quality must resolve to the 320k https link'
+      );
+      assert.strictEqual(res.quality, '320k', 'Quality label must reflect the 320k tier');
+      assert(calls.some((c) => c.url.includes('quality=8')), 'High quality must request the 320k tier');
+
+      const res2 = await plugin.getMediaSource(item, 'super');
+      assert(
+        res2 && res2.quality === 'flac' && res2.url.startsWith('https://'),
+        'Super quality must return an https lossless link when available'
+      );
+      assert(calls.some((c) => c.url.includes('quality=10')), 'Super quality must request the lossless tier first');
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('Embedded cross-lane search strictly matches: wrong candidates never get a stream request', async () => {
+    plugin._setHostBridge(null);
+    const calls = installHttpMock([
+      [
+        'smartbox_new',
+        {
+          status: 200,
+          data: {
+            data: {
+              song: {
+                itemlist: [
+                  { mid: 'wrong_mid', name: '晴天', singer: '别的歌手' },
+                  { mid: '0039MnYb0qxYhV', name: '晴天', singer: '周杰伦' },
+                ],
+              },
+            },
+          },
+        },
+      ],
+      ['api.vkeys.cn', { status: 200, data: { code: 0, data: { kbps: '320kbps', url: 'http://ws.stream.qqmusic.qq.com/M8000039MnYb0qxYhV.mp3?vkey=ok' } } }],
+    ]);
+    try {
+      const item = { id: 'legacy_search_1', title: '晴天', artist: '周杰伦', duration: 269, platform: '把你的歌单带走' };
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert(res && res.url.includes('0039MnYb0qxYhV'), 'Must stream the strictly matched candidate');
+      assert(!calls.some((c) => c.url.includes('wrong_mid')), 'Wrong-artist candidate must never receive a stream request');
+      assert(calls.some((c) => c.url.includes('smartbox_new')), 'Must search via the QQ smartbox lane first');
+      assert(
+        !calls.some((c) => c.url.includes('gdstudio') || c.url.includes('songsearch')),
+        'First strict hit must short-circuit the remaining lanes'
+      );
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('NetEase embedded channels: GD Studio lossless direct link, Meting Range-probe fallback', async () => {
+    plugin._setHostBridge(null);
+    let calls = installHttpMock([
+      ['gdstudio', { status: 200, data: { url: 'https://m701.music.126.net/2026/x.flac', br: 797, size: 1 } }],
+    ]);
+    try {
+      const item = {
+        id: 'netease_347230',
+        title: '海屿你',
+        artist: '马也_Crabbit',
+        platform: '把你的歌单带走',
+        _originPlatform: 'netease',
+      };
+      const res = await plugin.getMediaSource(item, 'super');
+      assert(res && res.url === 'https://m701.music.126.net/2026/x.flac' && res.quality === 'flac', 'GD Studio lossless link expected');
+      assert(calls.some((c) => c.url.includes('br=999')), 'Super quality must request the lossless tier');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    calls = installHttpMock([
+      ['gdstudio', { status: 200, data: { url: '' } }],
+      ['api.injahow.cn/meting', { status: 206, data: 'x', headers: { 'content-type': 'audio/mpeg' } }],
+    ]);
+    try {
+      const item = {
+        id: 'netease_347231',
+        title: '晴天 (cover)',
+        artist: '某歌手',
+        platform: '把你的歌单带走',
+        _originPlatform: 'netease',
+      };
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert(res && res.url.startsWith('https://api.injahow.cn/meting/'), 'Meting fallback URL expected when GD Studio returns nothing');
+      assert.strictEqual(res.quality, '128k', 'Meting fallback must be labeled 128k');
+      const metingCall = calls.find((c) => c.url.includes('meting'));
+      assert(
+        metingCall && metingCall.config.headers && metingCall.config.headers.Range === 'bytes=0-0',
+        'Meting must be validated with a Range probe before returning'
+      );
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('KuGou embedded channel: free tracks stream, paid tracks are skipped cleanly', async () => {
+    plugin._setHostBridge(null);
+    let calls = installHttpMock([
+      ['getSongInfo.php', { status: 0, data: { url: 'http://fsandroid.kugou.com/track/free.mp3', fileName: 'free.mp3' } }],
+    ]);
+    try {
+      const item = { id: 'kugou_abc123', title: '一路生花', artist: '温奕心', platform: '把你的歌单带走', _originPlatform: 'kugou' };
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert(res && res.url.includes('kugou.com'), 'Free KuGou track must stream through getSongInfo');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    calls = installHttpMock([['getSongInfo.php', { status: 0, data: { url: '', err: '需要付费' } }]]);
+    try {
+      const item = {
+        id: 'kugou_paid_1',
+        title: '付费歌曲',
+        artist: '某歌手',
+        platform: '把你的歌单带走',
+        _originPlatform: 'kugou',
+        _src: { kugou: { hash: 'paidhash', hqHash: 'paidhq' } },
+      };
+      const res = await plugin.getMediaSource(item, 'high');
+      assert.strictEqual(res, null, 'Paid KuGou tracks must be skipped: no playable public link exists');
+      assert(!calls.some((c) => c.url.includes('vkeys')), 'No stream must ever be fabricated from invalid data');
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('Fallback order: cross-plugin rescue wins; embedded engine only runs as the last resort', async () => {
+    plugin._setHostBridge({
+      getAllPlugins: async () => [{ platform: 'qq', supportedMethod: ['search', 'getMediaSource'] }],
+      callPluginMethod: async (event, payload) => {
+        if (payload.method === 'search') {
+          return { isEnd: true, data: [{ id: 'origin_hit', title: '起风了', artist: '买辣椒也用券', duration: 325, platform: 'qq' }] };
+        }
+        if (payload.method === 'getMediaSource') {
+          return { url: 'https://isure.stream.qqmusic.qq.com/plugin-rescued.mp3' };
+        }
+        return null;
+      },
+    });
+    const calls = installHttpMock([]);
+    try {
+      const item = { id: 'order_1', title: '起风了', artist: '买辣椒也用券', duration: 325, platform: '把你的歌单带走' };
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert(res && res.url.includes('plugin-rescued'), 'Cross-plugin rescue must win over the embedded engine');
+      assert.strictEqual(calls.length, 0, 'Embedded third-party channels must not be touched when rescue succeeds');
+    } finally {
+      delete globalThis.axios;
+      plugin._setHostBridge(null);
+    }
+  });
+
+  await test('Embedded failures are cached for 60s; hosts never re-hammer third-party channels', async () => {
+    plugin._setHostBridge(null);
+    const calls = installHttpMock([]);
+    try {
+      const item = { id: 'negcache_1', title: '无名之歌', artist: '无名', platform: '把你的歌单带走' };
+      const res1 = await plugin.getMediaSource(item, 'standard');
+      assert.strictEqual(res1, null, 'No strict match anywhere -> null');
+      const afterFirst = calls.length;
+      assert.strictEqual(afterFirst, 3, `All three embedded search lanes must run once, got ${afterFirst} calls`);
+
+      const res2 = await plugin.getMediaSource(item, 'standard');
+      assert.strictEqual(res2, null);
+      assert.strictEqual(calls.length, afterFirst, 'Second attempt within TTL must not hit the network again');
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('Embedded lyrics: QQ via s01s/QQ-official, NetEase official, and reuse of embedded media match', async () => {
+    plugin._setHostBridge(null);
+
+    let calls = installHttpMock([['s01s.cn', { status: 200, data: { song_lyric: '[00:01.00]起风了' } }]]);
+    try {
+      const item = {
+        id: 'lrc_qq_1',
+        title: '起风了',
+        artist: '买辣椒也用券',
+        platform: '把你的歌单带走',
+        _originPlatform: 'qq',
+        _src: { qq: { mid: '0004jPDk2eB2dt' } },
+      };
+      const lrc = await plugin.getLyric(item);
+      assert(lrc && lrc.rawLrc === '[00:01.00]起风了', 'QQ lyric must come from the embedded s01s channel');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    calls = installHttpMock([
+      ['s01s.cn', { status: 200, data: { song_lyric: '' } }],
+      ['fcg_query_lyric_new', { status: 200, data: { lyric: '[00:02.00]官方' } }],
+    ]);
+    try {
+      const item = {
+        id: 'lrc_qq_2',
+        title: '起风了',
+        artist: '买辣椒也用券',
+        platform: '把你的歌单带走',
+        _originPlatform: 'qq',
+        _src: { qq: { mid: '0004jPDk2eB2dt' } },
+      };
+      const lrc = await plugin.getLyric(item);
+      assert(lrc && lrc.rawLrc === '[00:02.00]官方', 'QQ official lyric API must back up s01s');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    calls = installHttpMock([['music.163.com/api/song/lyric', { status: 200, data: { lrc: { lyric: '[00:03.00]网易' } } }]]);
+    try {
+      const item = {
+        id: 'lrc_ne_1',
+        title: '海屿你',
+        artist: '马也_Crabbit',
+        platform: '把你的歌单带走',
+        _originPlatform: 'netease',
+        _src: { netease: { id: '1973665667' } },
+      };
+      const lrc = await plugin.getLyric(item);
+      assert(lrc && lrc.rawLrc === '[00:03.00]网易', 'NetEase official lyric must work');
+    } finally {
+      delete globalThis.axios;
+    }
+
+    calls = installHttpMock([
+      [
+        'smartbox_new',
+        { status: 200, data: { data: { song: { itemlist: [{ mid: '0039MnYb0qxYhV', name: '晴天', singer: '周杰伦' }] } } } },
+      ],
+      ['api.vkeys.cn', { status: 200, data: { code: 0, data: { kbps: '320kbps', url: 'http://ws.stream.qqmusic.qq.com/M8000039MnYb0qxYhV.mp3?vkey=ok' } } }],
+      ['s01s.cn', { status: 200, data: { song_lyric: '[00:04.00]晴天' } }],
+    ]);
+    try {
+      const item = { id: 'lrc_reuse_1', title: '晴天', artist: '周杰伦', duration: 269, platform: '把你的歌单带走' };
+      const media = await plugin.getMediaSource(item, 'standard');
+      assert(media && media.url, 'Media must resolve via the embedded search lane first');
+      const lrc = await plugin.getLyric(item);
+      assert(lrc && lrc.rawLrc === '[00:04.00]晴天', 'Lyric must reuse the embedded media match (qq mid)');
+    } finally {
+      delete globalThis.axios;
+    }
+  });
+
+  await test('Hook fallback chain: native fail -> cross-plugin miss -> embedded engine delivers', async () => {
+    plugin._setHostBridge({
+      getAllPlugins: async () => [{ platform: 'netease', supportedMethod: ['search'] }],
+      callPluginMethod: async (event, payload) => {
+        if (payload.method === 'search') return { isEnd: true, data: [] };
+        return null;
+      },
+    });
+    const calls = installHttpMock([
+      ['api.vkeys.cn', { status: 200, data: { code: 0, data: { kbps: '320kbps', url: 'http://ws.stream.qqmusic.qq.com/M8000039MnYb0qxYhV.mp3?vkey=ok' } } }],
+    ]);
+    try {
+      const item = {
+        id: 'hook_embedded_1',
+        title: '晴天',
+        artist: '周杰伦',
+        duration: 269,
+        platform: 'qq',
+        _originPlatform: 'qq',
+        _src: { qq: { mid: '0039MnYb0qxYhV' } },
+      };
+      const res = await plugin._maybeRescueResult(
+        { platform: 'qq', method: 'getMediaSource', args: [item, 'standard'] },
+        null
+      );
+      assert(res && res.url.includes('ws.stream.qqmusic.qq.com'), 'Embedded engine must back up the hook when all plugins fail');
+      assert(calls.some((c) => c.url.includes('api.vkeys.cn')), 'Must resolve through the embedded QQ channel');
+    } finally {
+      delete globalThis.axios;
+      plugin._setHostBridge(null);
+    }
+  });
+
+  await test('Embedded media URL allowlist rejects unknown hosts and protocol spoofing', () => {
+    const allowed = plugin._isAllowedEmbeddedMediaUrl;
+    assert(allowed('https://ws.stream.qqmusic.qq.com/a.mp3'), 'QQ CDN must be allowed');
+    assert(allowed('http://ws.stream.qqmusic.qq.com/a.mp3'), 'QQ CDN http must be allowed for https upgrade');
+    assert(allowed('https://m701.music.126.net/a.flac'), 'NetEase CDN must be allowed');
+    assert(allowed('https://fsandroid.kugou.com/a.mp3'), 'KuGou CDN must be allowed');
+    assert(allowed('https://api.injahow.cn/meting/?x=1'), 'Meting gateway must be allowed');
+    assert(!allowed('https://evil.example.com/a.mp3'), 'Unknown hosts must be rejected');
+    assert(!allowed('https://qqmusic.qq.com.evil.com/a.mp3'), 'Suffix spoofing must be rejected');
+    assert(!allowed('https://notqqmusic.qq.com/a.mp3'), 'Near-miss domains must be rejected');
+    assert(!allowed('ftp://ws.stream.qqmusic.qq.com/a.mp3'), 'Non-http protocols must be rejected');
+    assert(!allowed(''), 'Empty URLs must be rejected');
+  });
+
+  await test('Embedded source contract: allowlisted channels present, legacy hybrids fully removed', () => {
     const code = fs.readFileSync(pluginPath, 'utf-8');
-    assert(!code.includes('s01s.cn'), 'Must not contain s01s embedded source channel');
-    assert(!code.includes('api.vkeys.cn'), 'Must not contain vkeys embedded source channel');
-    assert(!code.includes('injahow.cn'), 'Must not contain Meting embedded source channel');
+
+    // v2.1.0: 内置兜底引擎必须存在且只走白名单公开接口 + 严格匹配
+    assert(code.includes('embeddedResolveMedia'), 'Must provide the embedded fallback engine');
+    assert(code.includes('api.vkeys.cn'), 'QQ embedded channel (vkeys) must be present');
+    assert(code.includes('music-api.gdstudio.xyz'), 'NetEase embedded channel (GD Studio) must be present');
+    assert(code.includes('songsearch.kugou.com'), 'KuGou search channel must be present');
+    assert(code.includes('getSongInfo.php'), 'KuGou stream channel must be present');
+    assert(code.includes('isAllowedEmbeddedMediaUrl'), 'Must validate media URLs against the allowlist');
+    assert(
+      code.includes("'qqmusic.qq.com'") && code.includes("'music.126.net'") && code.includes("'kugou.com'"),
+      'Allowlist must cover the three media CDNs'
+    );
+    assert(code.includes('isCandidateStrictlyMatched'), 'Embedded search must reuse the strict matcher');
+    assert(code.includes('EMBEDDED_NO_SOURCE_TTL_MS'), 'Must keep the negative cache for dead sources');
+    assert(code.includes('installHostBridge'), 'Must install the host plugin bridge');
+    assert(code.includes('findStrictMatch'), 'Must provide strict cross-plugin matching');
+
+    // 历史遗留：兄弟插件文件加载器 / 旧版取源取词实现 / 宽松匹配必须彻底移除
     assert(!code.includes('loadInstalledSiblingPlugins'), 'Must not contain sibling plugin file loader');
     assert(!code.includes('resolveQqStream'), 'Must not contain legacy QQ stream resolver');
     assert(!code.includes('resolveNeteaseStream'), 'Must not contain legacy NetEase stream resolver');
@@ -1132,8 +1500,6 @@ async function runAllTests() {
     assert(!code.includes('resolveOnlineLyric'), 'Must not contain legacy online lyric resolver');
     assert(!code.includes('isValidCleanMediaUrl'), 'Must not contain legacy source blocklist');
     assert(!code.includes('isCandidateSimilarMatched'), 'Must not contain loose similar matching');
-    assert(code.includes('installHostBridge'), 'Must install the host plugin bridge');
-    assert(code.includes('findStrictMatch'), 'Must provide strict cross-plugin matching');
   });
 
   // ── Test Summary ──────────────────────────────────────────────────
