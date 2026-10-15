@@ -18,6 +18,8 @@ from .ui import (
     resolve_export_formats,
     reveal_folder,
     print_divider,
+    print_title,
+    prompt_input,
 )
 from .exporter import perform_export
 
@@ -146,7 +148,8 @@ def print_user_playlists_menu(user_playlists: NormalizedUserPlaylists) -> None:
     created_pls = user_playlists.created_playlists
     sub_pls = user_playlists.subscribed_playlists
 
-    print(f"\n✓ 找到用户 {user_playlists.nickname} 的 {len(pls)} 个公开歌单")
+    print("")
+    print_title("公开歌单列表", f"找到用户 {user_playlists.nickname} 的 {len(pls)} 个公开歌单", emoji="📂")
     if sub_pls:
         print(f"  自建歌单（{len(created_pls)} 个）：")
         for idx, p in enumerate(created_pls, 1):
@@ -160,6 +163,7 @@ def print_user_playlists_menu(user_playlists: NormalizedUserPlaylists) -> None:
         for idx, p in enumerate(pls, 1):
             cnt_str = f" ({p.track_count}首)" if p.track_count is not None else ""
             print(f"  {idx:3d}. {p.name}{cnt_str}  [ID: {p.id}]")
+    print("")
 
 
 def run_batch_flow(
@@ -188,30 +192,30 @@ def run_batch_flow(
     if interactive:
         print_user_playlists_menu(user_playlists)
         if user_playlists.subscribed_playlists:
-            sel_prompt = "\n> 选择要导出的歌单序号（输入 all 导出全部自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
+            sel_prompt = "选择要导出的歌单序号（输入 all 导出全部自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
         else:
-            sel_prompt = "\n> 选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）："
-        sel_str = input(sel_prompt).strip()
+            sel_prompt = "选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）："
+        sel_str = prompt_input(sel_prompt)
         if not sel_str or sel_str in ("0", "q", "quit", "exit"):
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
-        print_divider()
 
         if sel_str.lower() in ("all", "全部"):
             target_pls = user_playlists.created_playlists or all_pls
         else:
             indices = parse_playlist_selection(sel_str, len(all_pls))
             if not indices:
-                print("! 未选择有效歌单。")
+                print("⚠️ 未选择有效歌单。")
                 return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
             target_pls = [all_pls[i - 1] for i in indices]
 
         # 交互模式确认格式
         print_format_menu()
-        fmt_choice = input("> 选择格式，可多选，例如 (1, 2)：").strip()
-        print_divider()
+        fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)：", divider_on_empty=True)
         formats = resolve_export_formats(fmt_choice)
         if not formats:
             print("已返回，不导出。")
+            if interactive:
+                print("")
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
     else:
         # 非交互 (Headless) 模式：严格使用传入参数，不发起任何 input()
@@ -229,7 +233,7 @@ def run_batch_flow(
             formats = ["xlsx", "json", "csv", "txt", "m3u8"]
 
     if not target_pls:
-        print("! 没有可导出的歌单。")
+        print("⚠️ 没有可导出的歌单。")
         return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
 
     # ─────────────────────────────────────────────────────────────
@@ -238,7 +242,7 @@ def run_batch_flow(
     target_dir = os.path.join(output_dir, str(user_playlists.user_id))
     os.makedirs(target_dir, exist_ok=True)
 
-    print(f"\n→ 开始批量导出 {len(target_pls)} 个歌单...")
+    print(f"\n🚀 开始批量导出 {len(target_pls)} 个歌单...")
     exported_files: List[str] = []
     failures: List[BatchFailure] = []
     used_base_names: Set[str] = set()
@@ -255,7 +259,7 @@ def run_batch_flow(
                         error="无法读取歌单或歌单歌曲为空",
                     )
                 )
-                print("  × 无法读取这个歌单或歌单为空，已跳过")
+                print("    ❌ 无法读取这个歌单或歌单为空，已跳过")
                 continue
 
             # 统一预处理：mark_duplicates 与元数据标准化
@@ -270,13 +274,16 @@ def run_batch_flow(
                 formats,
             )
 
-            # 执行多格式安全导出
+            # 执行多格式安全导出（批量模式静默局部摘要，格式项缩进 4 格）
             files = perform_export(
                 norm_pl,
                 output_dir=target_dir,
                 formats=formats,
                 reveal_folder_flag=False,
                 base_name=base_name,
+                show_header=False,
+                show_summary=False,
+                indent="    ",
             )
             if files:
                 exported_files.extend(files)
@@ -296,7 +303,7 @@ def run_batch_flow(
                     error=str(e),
                 )
             )
-            print(f"  × 处理出错：{e}")
+            print(f"    ❌ 处理出错：{e}")
 
     # ─────────────────────────────────────────────────────────────
     # 步骤 3：汇系统计与反馈
@@ -304,16 +311,19 @@ def run_batch_flow(
     success_count = len(target_pls) - len(failures)
     failed_count = len(failures)
 
-    print(f"\n✓ 批量导出完成：成功 {success_count}/{len(target_pls)} 个歌单")
+    print(f"\n✅ 批量导出完成：成功 {success_count}/{len(target_pls)} 个歌单")
     if failures:
-        print(f"  ! 共有 {failed_count} 个歌单导出失败：")
+        print(f"  ⚠️ 共有 {failed_count} 个歌单导出失败：")
         for f in failures:
             print(f"    - {f.playlist_name} [ID: {f.playlist_id}]: {f.error}")
 
-    print(f"  保存到：{os.path.abspath(target_dir)}")
+    print(f"  📁 保存到：{os.path.abspath(target_dir)}")
 
     if success_count > 0 and reveal_folder_flag:
         reveal_folder(target_dir)
+
+    if interactive:
+        print("")
 
     return BatchResult(
         total=len(target_pls),

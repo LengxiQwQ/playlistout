@@ -40,7 +40,7 @@ from cli.kugou.kugou_playlist_export import (
 class KugouAdapter(BasePlatformAdapter):
     platform_id = "kugou"
     display_name = "酷狗音乐"
-    description = "歌单链接 / 分享短链 / 歌单 ID (免登限10首，需扫码登录)"
+    description = "歌单链接 / 分享短链 / 歌单 ID (普通版需登录，概念版免登全量)"
     aliases = ["kugou", "kg"]
     supports_playlist = True
     supports_user_playlists = True
@@ -261,6 +261,6 @@ class KugouAdapter(BasePlatformAdapter):
             return True
         if initial_input and initial_input.lower() in ("logout", "--logout"):
             clear_auth_credentials()
-            print("✓ 酷狗登录凭证已清除。")
+            print("✅ 酷狗登录凭证已清除。")
             return True
         return False

@@ -37,6 +37,8 @@ from cli.core.ui import (
     resolve_export_formats,
     print_exit_banner,
     print_divider,
+    print_title,
+    prompt_input,
 )
 from cli.core.detector import (
     SmartDetector,
@@ -57,14 +59,16 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     unavail = sum(1 for t in tracks if not t.is_available)
     vip_cnt = sum(1 for t in tracks if t.is_vip)
 
-    print("\n✓ 获取成功\n")
+    if interactive:
+        print("")
+    print_title("歌单详情", emoji="🎵")
     print(f"  歌单：{playlist.name}")
     print(f"  作者：{playlist.creator or '未知'}")
     expected_count = playlist.track_count if (playlist.track_count and playlist.track_count > len(tracks)) else len(tracks)
     if playlist.is_partial or expected_count > len(tracks):
         print(f"  歌曲：{len(tracks)} / {expected_count} 首 (部分已加载)")
         if playlist.platform == "kugou":
-            print("  ! 提示：酷狗官方接口未登录仅返回前 10 首；扫码登录后即可导出完整歌单（输入 login 登录）。")
+            print("  💡 提示：酷狗普通歌单未登录受官方接口限制仅返回前 10 首；扫码登录后即可导出完整歌单（输入 login 登录；概念版集合歌单免登全量）。")
     else:
         print(f"  歌曲：{len(tracks)} 首")
     if playlist.formatted_duration:
@@ -81,9 +85,9 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
 
     formats = default_formats
     if interactive:
+        print("")
         print_format_menu()
-        fmt_choice = input("> 选择格式，可多选，例如 (1, 2)：").strip()
-        print_divider()
+        fmt_choice = prompt_input("选择格式，可多选，例如 (1, 2)", divider_on_empty=True)
         formats = resolve_export_formats(fmt_choice)
         if not formats:
             print("已返回，不导出。")
@@ -258,18 +262,18 @@ def main():
         # Phase 3: 统一用户模式批量导出
         if target.kind == TargetKind.USER:
             if not adapter.supports_user_playlists:
-                print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
+                print(f"❌ 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
                 sys.exit(2)
 
-            print(f"✓ 已识别：{adapter.display_name} (用户模式)")
-            print(f"→ 正在获取用户歌单列表：{target_text}...")
+            print(f"✅ 已识别：{adapter.display_name} (用户模式)")
+            print(f"🚀 正在获取用户歌单列表：{target_text}...")
             user_playlists = adapter.fetch_user_playlists(
                 target_text,
                 token=args.token,
                 userid=args.userid,
             )
             if not user_playlists or not user_playlists.playlists:
-                print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或登录凭证是否有效。", file=sys.stderr)
+                print("❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或登录凭证是否有效。", file=sys.stderr)
                 sys.exit(1)
 
             batch_res = run_batch_flow(
@@ -283,12 +287,12 @@ def main():
                 userid=args.userid,
             )
             if batch_res.success == 0:
-                print("× 未能成功导出任何歌单。", file=sys.stderr)
+                print("❌ 未能成功导出任何歌单。", file=sys.stderr)
                 sys.exit(1)
             return
 
-        print(f"✓ 已识别：{adapter.display_name}")
-        print("→ 正在获取歌单...")
+        print(f"✅ 已识别：{adapter.display_name}")
+        print("🚀 正在获取歌单...")
         playlist = adapter.fetch_playlist(
             target_text,
             channel=args.channel or "qishui",
@@ -305,12 +309,12 @@ def main():
             if handled:
                 return
 
-            print("× 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
+            print("❌ 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
             sys.exit(1)
 
         exported_files = run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
         if not exported_files:
-            print("× 未能成功导出任何文件。", file=sys.stderr)
+            print("❌ 未能成功导出任何文件。", file=sys.stderr)
             sys.exit(1)
         return
 
@@ -324,18 +328,19 @@ def main():
 
     try:
         while True:
-            user_input = input("> 粘贴歌单链接，或输入平台编号：").strip()
+            user_input = prompt_input("粘贴歌单链接，或输入平台编号：")
             if not user_input:
+                print("")
                 continue
-            if user_input in ("0", "q", "quit", "exit"):
-                print_exit_banner()
+            if user_input.lower() in ("0", "q", "quit", "exit"):
+                print_exit_banner(include_divider=False)
                 break
-            print_divider()
 
             if user_input.lower() in ("login", "logout"):
                 kg = PlatformRegistry.get("kugou")
                 if kg:
                     kg.handle_interactive(user_input.lower())
+                print("")
                 continue
 
             target_adapter = None
@@ -343,25 +348,24 @@ def main():
 
             if user_input.isdigit() and 1 <= int(user_input) <= len(adapters_list):
                 selected_adapter = adapters_list[int(user_input) - 1]
-                print(f"✓ 已选择：{selected_adapter.display_name}")
+                print(f"✅ 已选择：{selected_adapter.display_name}\n")
                 if selected_adapter.platform_id == "qqmusic":
                     hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 QQ号（输入 0 返回）："
                 elif selected_adapter.platform_id == "netease":
                     hint = "粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
                 elif selected_adapter.platform_id == "kugou":
-                    hint = "粘贴歌单链接/分享短链或输入歌单 ID（免登限10首，输入 login 扫码登录，输入 0 返回）："
+                    hint = "粘贴歌单链接/分享短链或输入歌单 ID（普通版输入 login 登录，概念版免登全量，输入 0 返回）："
                 elif selected_adapter.platform_id == "kuwo":
                     hint = "粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
                 elif selected_adapter.platform_id == "qishui":
                     hint = "粘贴歌单链接、抖音分享文案，或输入歌单 ID（输入 0 返回）："
                 else:
                     hint = "粘贴歌单链接或输入歌单 ID（输入 0 返回）："
-                sub_input = input(f"> {hint}").strip()
+                sub_input = prompt_input(hint)
                 if not sub_input:
                     continue
                 if sub_input in ("0", "q", "quit", "exit"):
                     continue
-                print_divider()
                 target_adapter = selected_adapter
                 target_query = sub_input
 
@@ -377,29 +381,30 @@ def main():
 
             if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS or (is_pure_digit and not has_explicit_tag and supports_public_user_query):
                 if not target_adapter:
-                    print(f"! 检测到纯数字：{target_query}")
-                    print("  请选择它所属的平台：")
+                    print_title("纯数字平台选择", f"检测到纯数字：{target_query}，请选择它所属的平台：", emoji="🧭")
                     for idx, a in enumerate(adapters_list, 1):
                         print(f"  {idx}  {a.display_name}")
                     print("  0  返回")
-                    p_sel = input("> 选择平台编号：").strip()
+                    print("")
+                    p_sel = prompt_input("选择平台编号")
                     if not p_sel or p_sel in ("0", "q", "quit", "exit"):
                         continue
                     if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
-                        print("! 请输入 1-5 中的有效平台编号。")
+                        print("⚠️ 请输入 1-5 中的有效平台编号。")
+                        print("")
                         continue
-                    print_divider()
                     target_adapter = adapters_list[int(p_sel) - 1]
-                    print(f"✓ 已选择：{target_adapter.display_name}")
+                    print(f"✅ 已选择：{target_adapter.display_name}\n")
 
                 if target_adapter and target_adapter.platform_id in ("qqmusic", "netease"):
-                    print("  检测到纯数字，请确认类型：")
-                    print("  [1] 歌单 ID (默认)")
+                    print_title("纯数字类型确认", "检测到纯数字，请确认查询目标：", emoji="🔍")
+                    print("  1  歌单 ID (默认)")
                     if target_adapter.platform_id == "qqmusic":
-                        print("  [2] 用户 QQ号 (一键导出该用户全部公开歌单)")
+                        print("  2  用户 QQ号 (一键导出该用户全部公开歌单)")
                     else:
-                        print("  [2] 用户 UID (一键导出该用户全部自建/公开歌单)")
-                    k_sel = input("> 选择类型 [1/2]：").strip()
+                        print("  2  用户 UID (一键导出该用户全部自建/公开歌单)")
+                    print("")
+                    k_sel = prompt_input("选择类型 [1/2]", divider_on_empty=True)
                     if k_sel == "2":
                         target = DetectedTarget(
                             platform=PlatformType(target_adapter.platform_id),
@@ -418,18 +423,19 @@ def main():
                 if not target_adapter:
                     target_adapter = PlatformRegistry.get(target.platform.value)
                     if target_adapter:
-                        print(f"✓ 已识别：{target_adapter.display_name}")
+                        print(f"✅ 已识别：{target_adapter.display_name}")
                 target_query = target.value
             else:
                 target_query = target.value
                 if target_adapter:
-                    print(f"✓ 已识别：{target_adapter.display_name}")
+                    print(f"✅ 已识别：{target_adapter.display_name}")
 
             if not target_adapter:
-                print("× 没有识别出歌单链接。")
-                print("  可以尝试：")
+                print("❌ 没有识别出歌单链接。")
+                print("  💡 可以尝试：")
                 print("  • 直接粘贴完整歌单链接或分享文案")
                 print("  • 如果只有歌单 ID，先输入平台编号")
+                print("")
                 continue
 
             try:
@@ -443,17 +449,19 @@ def main():
 
                 if target.kind == TargetKind.USER:
                     if not target_adapter.supports_user_playlists:
-                        print(f"! 平台 '{target_adapter.display_name}' 暂不支持导出用户歌单列表。")
+                        print(f"⚠️ 平台 '{target_adapter.display_name}' 暂不支持导出用户歌单列表。")
+                        print("")
                         continue
 
-                    print(f"→ 正在获取用户歌单列表：{target.value}...")
+                    print(f"🚀 正在获取用户歌单列表：{target.value}...")
                     user_pls = target_adapter.fetch_user_playlists(
                         target.value,
                         token=args.token,
                         userid=args.userid,
                     )
                     if not user_pls or not user_pls.playlists:
-                        print("× 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。")
+                        print("❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。")
+                        print("")
                         continue
 
                     run_batch_flow(
@@ -468,7 +476,7 @@ def main():
                     )
                     continue
 
-                print("→ 正在获取歌单...")
+                print("🚀 正在获取歌单...")
                 playlist = target_adapter.fetch_playlist(
                     target_query,
                     channel=args.channel,
@@ -476,12 +484,13 @@ def main():
                     userid=args.userid,
                 )
                 if not playlist or not playlist.tracks:
-                    print("\n× 获取歌单失败。")
-                    print("  请检查链接是否有效、歌单是否公开，或稍后重试。")
+                    print("\n❌ 获取歌单失败。")
+                    print("  💡 请检查链接是否有效、歌单是否公开，或稍后重试。")
+                    print("")
                     continue
 
                 run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
-                print()
+                print("")
             except (KeyboardInterrupt, EOFError):
                 raise
             except Exception as loop_err:
@@ -489,7 +498,8 @@ def main():
                     import traceback
                     traceback.print_exc()
                 else:
-                    print(f"\n× 处理歌单时出错：{loop_err}")
+                    print(f"\n❌ 处理歌单时出错：{loop_err}")
+                    print("")
 
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()

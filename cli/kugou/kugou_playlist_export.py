@@ -53,6 +53,8 @@ except Exception:
     pass
 
 # ----------------- 统一品牌与终端交互组件 -----------------
+from cli.core.ui import print_divider, print_title, prompt_input
+
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
 WEB_URL = "https://playlistout.lengxiqwq.com"
@@ -307,8 +309,8 @@ def poll_kugou_qr_status(qrcode_key):
 
 def run_qr_login_flow(no_open=False):
     """执行二维码扫码登录流程"""
-    print("\n【方式一：酷狗 APP 扫码登录】")
-    print("正在申请官方登录二维码，请稍候...")
+    print_title("酷狗 APP 扫码登录", emoji="📱")
+    print("🚀 正在申请官方登录二维码，请稍候...")
     qrcode, qrcode_img_b64, login_url = request_kugou_qr()
 
     qr_temp_file = None
@@ -322,7 +324,7 @@ def run_qr_login_flow(no_open=False):
             with open(qr_temp_file, "wb") as f:
                 f.write(img_bytes)
 
-            print(f"→ 二维码图片已生成: {qr_temp_file}")
+            print(f"📁 二维码图片已生成: {qr_temp_file}")
             if not no_open:
                 try:
                     if platform.system() == "Windows":
@@ -331,14 +333,14 @@ def run_qr_login_flow(no_open=False):
                         subprocess.Popen(["open", qr_temp_file])
                     else:
                         subprocess.Popen(["xdg-open", qr_temp_file])
-                    print("→ 已尝试调用系统默认图片查看器打开二维码。")
+                    print("🚀 已尝试调用系统默认图片查看器打开二维码。")
                 except Exception:
                     pass
         except Exception as e:
-            print(f"! 保存二维码图片失败: {e}")
+            print(f"⚠️ 保存二维码图片失败: {e}")
 
     qr_btn = terminal_link(login_url, "点击在浏览器打开二维码")
-    print("\n手机端操作指南：")
+    print("\n📱 手机端操作指南：")
     print("  1. 打开手机【酷狗音乐】APP -> 点击右上角扫一扫 -> 扫描弹出的图片")
     print(f"  2. 若未弹出图片，请点击：{qr_btn}\n")
 
@@ -350,26 +352,26 @@ def run_qr_login_flow(no_open=False):
         while time.time() - start_time < max_wait:
             status, token, userid, msg = poll_kugou_qr_status(qrcode)
             if msg != last_msg:
-                print(f"→ {msg}")
+                print(f"🚀 {msg}")
                 last_msg = msg
 
             if status == "success":
-                print(f"✓ 酷狗账号登录成功！UserID: {userid}")
+                print(f"✅ 酷狗账号登录成功！UserID: {userid}")
                 save_auth_credentials(token, userid, source="qr")
-                print("=" * 64)
+                print_divider()
                 return token, userid
             elif status == "expired":
-                print("! 二维码已超时过期，请重新登录。")
-                print("=" * 64)
+                print("⚠️ 二维码已超时过期，请重新登录。")
+                print_divider()
                 return None, None
             elif status == "failed":
-                print(f"! 登录异常: {msg}")
-                print("=" * 64)
+                print(f"❌ 登录异常: {msg}")
+                print_divider()
                 return None, None
 
             time.sleep(1.5)
-        print("! 扫码超时，请重试。")
-        print("=" * 64)
+        print("⚠️ 扫码超时，请重试。")
+        print_divider()
         return None, None
     finally:
         if qr_temp_file and os.path.exists(qr_temp_file):
@@ -382,46 +384,46 @@ def run_qr_login_flow(no_open=False):
 def run_manual_login_flow():
     """手动输入从官网获取的 ID 和 Token"""
     web_link = terminal_link(WEB_URL, "在线网页版")
-    print(f"\n【手动输入 Playlist Out 官网或抓包凭证】")
-    print(f"您可以点击访问 Playlist Out {web_link} 登录酷狗后粘贴 UserID 与 Token：\n")
+    print_title("手动输入凭证", f"您可以访问 Playlist Out {web_link} 登录酷狗后粘贴 UserID 与 Token：", emoji="🔑")
+    print("")
 
     try:
-        userid_input = input("请输入 酷狗 UserID (如: 12345678): ").strip()
-        print("=" * 64)
+        userid_input = prompt_input("请输入酷狗 UserID (如: 12345678)")
         if not userid_input:
-            print("! UserID 不能为空！")
-            print("=" * 64)
+            print("⚠️ UserID 不能为空！")
+            print("")
             return None, None
 
-        token_input = input("请输入 酷狗 Token (32位十六进制字符串): ").strip()
-        print("=" * 64)
+        token_input = prompt_input("请输入酷狗 Token (32位十六进制字符串)")
         if not token_input:
-            print("! Token 不能为空！")
-            print("=" * 64)
+            print("⚠️ Token 不能为空！")
+            print("")
             return None, None
 
-        save_auth_credentials(token_input, userid_input, source="manual")
-        print(f"✓ 凭证配置成功！UserID: {userid_input}")
-        print("=" * 64)
+        auth_path = save_auth_credentials(token_input, userid_input, source="manual")
+        if auth_path:
+            print(f"📁 登录凭证已永久保存至: {auth_path}")
+        print(f"✅ 凭证配置成功！UserID: {userid_input}")
+        print("")
         return token_input, userid_input
     except (KeyboardInterrupt, EOFError):
-        print("\n→ 已取消输入。")
-        print("=" * 64)
+        print("\n🚀 已取消输入。")
+        print("")
         return None, None
 
 
 def interactive_login_menu():
     """交互式登录菜单，提供扫码与手动凭证两种方式"""
-    print("\n酷狗音乐登录")
-    print("  普通公开歌单无需登录。")
-    print("  只有个人歌单和「我喜欢」需要登录。\n")
+    print_title("酷狗音乐登录", "普通公开歌单无需登录，只有个人歌单和「我喜欢」需要登录。", emoji="🔐")
+    print("")
     print("  1  扫码登录")
     print("  2  手动输入 UserID 和 Token")
-    print("  0  返回\n")
+    print("  0  返回")
+    print("")
 
     while True:
         try:
-            choice = input("> 选择登录方式：").strip()
+            choice = prompt_input("选择登录方式")
             if choice == "1":
                 return run_qr_login_flow()
             elif choice == "2":
@@ -429,7 +431,8 @@ def interactive_login_menu():
             elif choice in ("0", "q", "exit"):
                 return None, None
             else:
-                print("! 请输入 1、2 或 0。")
+                print("⚠️ 请输入 1、2 或 0。")
+                print("")
         except (KeyboardInterrupt, EOFError):
             print("\n已取消登录。")
             return None, None
@@ -1471,11 +1474,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 支持链接类型：
-  1. 酷狗官方精选/专题歌单: https://www.kugou.com/yy/special/single/546903.html (100%免登录)
-  2. 酷狗概念版集合歌单: global_specialid=collection_3_1504683618_2_0 (100%免登录)
-  3. 移动端分享页短链: https://t1.kugou.com/xxx (100%免登录)
-  4. 移动端分享页 H5: https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/ (100%免登录)
-  5. 个人自建歌单 (Cloudlist/我喜欢): listid=4 或 纯数字歌单ID (需要登录凭证)
+  1. 酷狗官方精选/专题歌单: https://www.kugou.com/yy/special/single/546903.html (免登录限前10首，必须登录完整导出)
+  2. 移动端分享页短链: https://t1.kugou.com/xxx (普通版免登限前10首，概念版免登全量)
+  3. 移动端分享页 H5: https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/ (免登限前10首)
+  4. 个人自建歌单 (Cloudlist/我喜欢): listid=4 或 纯数字歌单ID (需要登录凭证)
+  5. 酷狗概念版集合歌单: global_specialid=collection_3_1504683618_2_0 (100%免登录全量抓取)
 
 登录认证方式（支持永久本地保存）：
   方式一：终端扫码登录 (运行 --login 选择 [1]，生成二维码图片扫码即可)
@@ -1538,12 +1541,12 @@ def main():
 
     # 交互模式
     print_banner("酷狗音乐")
-    print("\n支持：官方精选歌单 / 概念版集合歌单 / H5分享短链 / 个人自建歌单")
+    print("\n支持：官方精选歌单 / 个人自建歌单 / H5分享短链 / 概念版集合歌单")
     token, userid, _ = load_auth_credentials()
     if token and userid:
         print(f"→ 检测到已保存的酷狗登录凭证 (UserID: {userid})")
     else:
-        print("→ 当前未保存登录凭证 (公开歌单无需登录，个人自建歌单可输入 login 配置)")
+        print("→ 当前未保存登录凭证 (普通歌单免登限前10首预览，完整导出需输入 login 登录；概念版免登全量)")
 
     try:
         while True:

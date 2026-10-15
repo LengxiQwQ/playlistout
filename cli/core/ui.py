@@ -68,6 +68,68 @@ def sanitize_filename(name: str, max_length: int = 150) -> str:
     return cleaned
 
 
+def supports_color() -> bool:
+    """检测当前输出环境是否支持/启用 ANSI 彩色转义码。"""
+    if os.environ.get("NO_COLOR") or os.environ.get("PLAYLISTOUT_NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR") or os.environ.get("PLAYLISTOUT_FORCE_COLOR"):
+        return True
+    return bool(sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty())
+
+
+def color_cyan(text: str) -> str:
+    """青色加粗文本，用于各级标题"""
+    if supports_color():
+        return f"\033[1;36m{text}\033[0m"
+    return text
+
+
+def color_amber(text: str) -> str:
+    """暖橙黄色加粗文本，用于品牌软件名称"""
+    if supports_color():
+        return f"\033[1;33m{text}\033[0m"
+    return text
+
+
+def format_title(title: str, emoji: str = "📌") -> str:
+    """统一格式化区块标题 (支持情境 Emoji 与青色高亮)"""
+    raw_title = f"{emoji} {title}" if emoji else title
+    return color_cyan(raw_title)
+
+
+def print_title(title: str, subtitle: str = None, emoji: str = "📌"):
+    """
+    统一打印区块标题组件。
+    前导零多余空行 (由上层分隔符或输入回车提供)，后随可选副标题。
+    """
+    print(format_title(title, emoji=emoji))
+    if subtitle:
+        print(f"  {subtitle}")
+
+
+def prompt_input(prompt_text: str = "", divider_after: bool = True, divider_on_empty: bool = False) -> str:
+    """
+    统一交互式输入：
+    1. 提示语文本独占一行；
+    2. 用户在下一行 '> ' 处输入内容；
+    3. 用户按回车后，自动打印严格规范的分隔符 (上下各空一行)；
+    4. 默认若输入为空不打印分隔符；若 divider_on_empty=True (例如回车选用默认选项) 则回车依然触发标准分隔符。
+    """
+    if prompt_text:
+        clean_prompt = prompt_text.strip()
+        if not clean_prompt.endswith("：") and not clean_prompt.endswith(":"):
+            clean_prompt = f"{clean_prompt}："
+        elif clean_prompt.endswith(":"):
+            clean_prompt = clean_prompt[:-1] + "："
+        print(clean_prompt)
+
+    val = input("> ").strip()
+    if divider_after and (val or divider_on_empty):
+        print_divider()
+    return val
+
+
+
 def _terminal_display_width(text: str) -> int:
     """计算终端显示宽度，保证中英文混排的平台名称视觉对齐。"""
     import unicodedata
@@ -98,7 +160,8 @@ def print_banner(platform_name: str = None):
     else:
         title = "Playlist Out CLI · 把你的歌单带走"
 
-    print(title)
+    # 使用暖橙色加粗渲染软件名称 (非交互模式无色彩)
+    print(color_amber(title))
     print("")
     print("你的歌单，不应该只困在一个音乐平台里。")
     print("解析、导出，并把歌单继续带进支持的开源播放器。")
@@ -113,21 +176,23 @@ def print_main_menu(platforms: list):
         name = _pad_terminal_text(p["name"], 12)
         print(f"  {idx}  {name}{p['desc']}")
     print("")
-    print("直接粘贴链接或分享文案即可自动识别平台。")
-    print("只有歌单 ID？先输入平台编号。")
+    print("💡 直接粘贴链接或分享文案即可自动识别平台。")
+    print("💡 只有歌单 ID？先输入平台编号。")
     print("")
 
 
 def print_format_menu():
     """统一导出格式菜单：描述用途，不暴露实现细节"""
-    print("\n导出格式")
+    print_title("导出格式", emoji="📦")
     print("  1  Excel (.xlsx)  适合查看、整理和备份")
     print("  2  JSON  (.json)  适合第三方工具和程序导入")
     print("  3  CSV   (.csv)   适合表格软件和迁移工具")
     print("  4  TXT   (.txt)   简单的歌曲清单")
     print("  5  M3U8  (.m3u8)  通用播放列表")
-    print("\n  Enter  全部导出")
-    print("  0      返回\n")
+    print("")
+    print("  Enter  全部导出")
+    print("  0      返回")
+    print("")
 
 
 def resolve_export_formats(choice: str, strict: bool = False) -> List[str]:
@@ -191,10 +256,11 @@ def reveal_folder(target_path: str):
         pass
 
 
-def print_exit_banner():
+def print_exit_banner(include_divider: bool = True):
     """退出提示"""
     github_link = terminal_link(REPO_URL, "GitHub")
-    print_divider()
+    if include_divider:
+        print_divider()
     print(f"感谢使用！欢迎在 {github_link} 给个 Star ⭐️")
     print("Playlist Out - Paste. Parse. Export.")
     print()

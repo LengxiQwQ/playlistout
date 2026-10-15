@@ -21,7 +21,7 @@ PlaylistOut officially supports 5 major music platforms:
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | `qqmusic` | QQ 音乐 | QQ Music | ✅ Yes (100% full) | ✅ Yes (QQ Number / Profile) | ❌ Not needed |
 | `netease` | 网易云音乐 | NetEase Cloud Music | ✅ Yes (100% full) | ✅ Yes (UID / Profile) | ❌ Not needed |
-| `kugou` | 酷狗音乐 | KuGou Music | ⚠️ 10-track preview (Zero-login)<br/>✅ 100% full (With Token Header) | ✅ Yes (Requires Token & Userid) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
+| `kugou` | 酷狗音乐 / 概念版 | KuGou Music / Kugou Lite | • 普通版: ⚠️ 10-track preview (Zero-login) / ✅ 100% full (With Token Header)<br/>• 概念版 (Collection): ✅ Yes (100% full, zero-login) | ✅ Yes (Requires Token & Userid) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
 | `kuwo` | 酷我音乐 | Kuwo Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web user export) | ❌ Not needed |
 | `qishui` | 汽水音乐 | Soda Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web profiles) | ❌ Not needed |
 

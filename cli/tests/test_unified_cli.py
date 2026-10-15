@@ -242,7 +242,7 @@ def test_interactive_export_flow_ui_divider(capsys, tmp_path):
     out = capsys.readouterr().out
     assert "导出格式" in out
     assert "─" * 64 in out
-    assert "→ 正在导出..." in out
+    assert "正在导出..." in out
     assert (tmp_path / "interactive_out" / "我喜欢听.json").exists()
 
 
@@ -374,6 +374,76 @@ def test_cli_module_execution():
     )
     assert result.returncode == 0
     assert "PlaylistOut CLI v" in result.stdout
+
+
+def test_ui_color_and_banner_amber(capsys, monkeypatch):
+    from cli.core.ui import print_banner, supports_color
+
+    # In capsys non-tty, supports_color should be False by default
+    assert supports_color() is False
+    print_banner()
+    out = capsys.readouterr().out
+    assert "Playlist Out CLI · 把你的歌单带走" in out
+    assert "\033[1;33m" not in out
+
+    # Forced color test
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    assert supports_color() is True
+    print_banner()
+    out_colored = capsys.readouterr().out
+    assert "\033[1;33mPlaylist Out CLI · 把你的歌单带走\033[0m" in out_colored
+
+
+def test_ui_title_formatting_and_cyan(capsys, monkeypatch):
+    from cli.core.ui import print_title, format_title
+
+    # Non-color mode
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    monkeypatch.setenv("NO_COLOR", "1")
+    print_title("测试标题", subtitle="辅助提示说明", emoji="🎵")
+    out = capsys.readouterr().out
+    assert "🎵 测试标题" in out
+    assert "  辅助提示说明" in out
+    assert "\033[1;36m" not in out
+
+    # Color mode
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    print_title("测试标题", subtitle="辅助提示说明", emoji="🎵")
+    out_colored = capsys.readouterr().out
+    assert "\033[1;36m🎵 测试标题\033[0m" in out_colored
+
+
+def test_ui_prompt_input_newline_and_divider(capsys):
+    from cli.core.ui import prompt_input
+
+    # Verify prompt_input outputs prompt text on line 1, reads input with '> ', and outputs divider
+    with patch("builtins.input", return_value="test_input"):
+        val = prompt_input("请输入测试项目：")
+        assert val == "test_input"
+
+    out = capsys.readouterr().out
+    # Check prompt on its own line followed by divider with empty lines
+    assert "请输入测试项目：" in out
+    assert "\n\n─" in out or "\n─" in out
+    assert "─" * 64 in out
+
+    # Verify default empty input does not output divider
+    with patch("builtins.input", return_value=""):
+        val = prompt_input("回车测试：")
+        assert val == ""
+
+    out_empty = capsys.readouterr().out
+    assert "─" * 64 not in out_empty
+
+    # Verify divider_on_empty=True outputs divider even on empty input
+    with patch("builtins.input", return_value=""):
+        val = prompt_input("默认全部测试：", divider_on_empty=True)
+        assert val == ""
+
+    out_default = capsys.readouterr().out
+    assert "─" * 64 in out_default
+
 
 
 

@@ -37,7 +37,8 @@
 |---|:---:|:---:|---|
 | **QQ 音乐** | ✅ | ✅ | 支持歌单链接 / 分享短链 / 歌单 ID，或输入 QQ 号一键查出全部公开歌单并批量导出 |
 | **网易云音乐** | ✅ | ✅ | 支持歌单链接 / 分享短链 / 歌单 ID，或输入用户主页 / UID 批量导出全部自建与公开歌单 |
-| **酷狗音乐（含概念版）** | ⚠️ 仅前10首预览 (登录后完整) | ✅ (需登录) | 免登录受官方限制仅解析前 10 首预览；完整解析与批量导出账号歌单必须扫码登录 |
+| **酷狗音乐** | ⚠️ 仅前10首预览 (登录后完整) | ✅ (需登录) | 普通歌单免登录受官方接口限制仅解析前 10 首；必须扫码登录才能完整导出及批量查询账号歌单 |
+| **酷狗概念版** | ✅ | — | 概念版集合歌单完全免登录，支持链接与分享短链，自动全量分页获取无截断 |
 | **酷我音乐** | ✅ | — | 支持歌单链接 / 分享短链 / 歌单 ID，自动完整分页获取全部曲目 |
 | **汽水音乐** | ✅ | — | 支持歌单链接 / 抖音分享文案 / 歌单 ID，可切换「汽水官方解析」与「抖音全量解析（含视频原声）」 |
 
@@ -139,7 +140,7 @@ pip install -r cli/requirements.txt
 | **网易云音乐** | [`cli/netease/netease_playlist_export.py`](cli/netease/netease_playlist_export.py) | 歌单链接 / 短链 / ID、用户公开歌单 | [说明文档](cli/netease/README.md) |
 | **酷我音乐** | [`cli/kuwo/kuwo_playlist_export.py`](cli/kuwo/kuwo_playlist_export.py) | 歌单链接 / 移动端短链 / ID、多页自动分页 | [说明文档](cli/kuwo/README.md) |
 | **汽水音乐** | [`cli/qishui/qishui_playlist_export.py`](cli/qishui/qishui_playlist_export.py) | 歌单链接 / 短链 / 抖音收藏分享文案 / ID、全量游标分页 | [说明文档](cli/qishui/README.md) |
-| **酷狗音乐** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 官方精选 / 概念版集合 / H5 分享（免登录）、个人云端自建歌单（终端扫码/官网凭证双轨认证） | [说明文档](cli/kugou/README.md) |
+| **酷狗音乐 / 酷狗概念版** | [`cli/kugou/kugou_playlist_export.py`](cli/kugou/kugou_playlist_export.py) | 酷狗普通歌单与账号歌单（免登限10首，必须登录完整导出）；概念版集合歌单（完全免登全量） | [说明文档](cli/kugou/README.md) |
 
 > **运行示例**：`python cli/netease/netease_playlist_export.py`（其他平台脚本以此类推）。全平台均支持 **Excel → JSON → TXT → CSV → M3U8** 纯本地导出。
 
