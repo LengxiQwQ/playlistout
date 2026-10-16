@@ -1,8 +1,13 @@
 # Playlist Out Unified CLI 完善与收口计划
 
-> 适用范围：Playlist Out 当前统一 CLI  
-> 目标：把现有“统一入口 + 平台 Adapter + 特殊交互”收口成真正统一、可脚本化、可测试、可跨平台发布的 CLI 架构。  
-> 原则：不推倒重写、不重写历史、不 force push、不破坏现有单歌单能力与 Release 构建链。
+> **归档状态：✅ 已完成并归档（2026-10-16）**
+>
+> - **完成窗口**：`719db75`（Phase 0）→ `a0ccb80`（Phase 7），8 个阶段提交全部合入 `main`；咪咕接入（`f11c9e8`）、遥测（`b7e2ca9`）等后续提交已在其上继续演进。
+> - **验收证据**：`python -m pytest cli/ -q` = **215 passed**；Release CLI dry-run（4 平台 build + smoke）全绿（2026-10-15，运行号 #1）。
+> - **本文档是历史记录，禁止作为“未执行计划”重复执行**；仅存的残留优化项见文末【14. 归档复核纪要】。
+> - **关联路线图**：`docs/ARCHITECTURE-EVOLUTION.md`（P4：Unified CLI 收口）。
+
+> 历史原文（保留）——适用范围：Playlist Out 统一 CLI；目标：把“统一入口 + 平台 Adapter + 特殊交互”收口成真正统一、可脚本化、可测试、可跨平台发布的 CLI 架构；原则：不推倒重写、不重写历史、不 force push、不破坏现有单歌单能力与 Release 构建链。
 
 ---
 
@@ -69,6 +74,9 @@ DetectedTarget
 | 酷狗音乐 | ✅ | ✅ 登录账号 | ✅ |
 | 酷我音乐 | ✅ | — | — |
 | 汽水音乐 | ✅ | — | — |
+| 咪咕音乐 | ✅ | — | — |
+
+> 归档修订（2026-10-16）：本表补入第 6 个平台“咪咕音乐”。咪咕为 Phase 0 ~ Phase 7 完成后接入的正式平台（`cli/platforms/migu.py`，提交 `f11c9e8`），能力边界与代码一致：**单歌单支持（免登、全量无截断），用户歌单模式不支持（`supports_user_playlists = False`），无专属参数**。基线描述中的“平台数量”以六个为准。
 
 ---
 
@@ -106,8 +114,8 @@ DetectedTarget
 
 至少确认：
 
-- 五个平台 Adapter 均正常注册。
-- 五个平台单歌单分发入口没有被破坏。
+- 六个平台 Adapter 均正常注册（QQ 音乐 / 网易云音乐 / 酷狗音乐 / 酷我音乐 / 汽水音乐 / 咪咕音乐）。
+- 六个平台单歌单分发入口没有被破坏。
 - `--version`
 - `--help`
 - `--self-test`
@@ -726,7 +734,7 @@ Adapter.can_handle() 又一套
 
 ### B. 删除
 
-如果五个平台数量固定，明确在 `main.py` 注册并集中验证。
+如果六个平台数量固定（实际选择：B 方案已执行，`get_supported_args()` 已整体删除），明确在 `main.py` 注册并集中验证。
 
 不允许继续保留一个“供动态注册”但从未使用的 API。
 
@@ -916,7 +924,7 @@ test(cli): complete unified CLI regression and release coverage
 
 执行过程中禁止借机：
 
-- 重写五个平台抓取器。
+- 重写六个平台抓取器。
 - 改 Web UI。
 - 改导出 JSON 大版本 Schema。
 - 更换构建系统。
@@ -937,26 +945,61 @@ test(cli): complete unified CLI regression and release coverage
 
 只有同时满足以下条件，才能宣布 Unified CLI 收口完成：
 
-- [ ] 五个平台单歌单功能无回归
-- [ ] QQ QQ号 / 用户主页可进入统一 user flow
-- [ ] 网易云 UID / 用户主页可进入统一 user flow
-- [ ] 酷狗登录后可进入统一 user flow
-- [ ] QQ / 网易云 / 酷狗共用统一 batch flow
-- [ ] headless 用户批量完全无 `input()`
-- [ ] `-f` 对单歌单和 batch 语义一致
-- [ ] all / 单选 / 多选正常
-- [ ] duplicate 处理单歌单/batch 一致
-- [ ] 同名歌单不覆盖
-- [ ] 无效参数返回明确错误
-- [ ] 失败退出码可靠
-- [ ] metadata/partial 状态一致
-- [ ] Windows 文件名边界安全
-- [ ] M3U8 语义明确
-- [ ] 平台识别只有一个事实源
-- [ ] Adapter capability 不存在死接口
-- [ ] 用户/batch 核心路径有自动测试
-- [ ] Frozen self-test 覆盖离线 batch 核心
-- [ ] Windows/Linux/macOS 四平台 Release smoke test 通过
-- [ ] README 与实际能力一致
-- [ ] 每阶段 commit 可独立回退
-- [ ] 无 rebase / force push
+> **归档核销（2026-10-16）**：以下 23 项已逐项对照 `main` 真实代码与测试核销；个别项附残留优化说明（见【14. 归档复核纪要】M1–M5）。
+
+- [x] 六个平台（含咪咕）单歌单功能无回归 — `pytest cli/` **215 passed**（含 `test_migu.py`）
+- [x] QQ QQ号 / 用户主页可进入统一 user flow — `test_user_playlists.py` / `test_detector.py`
+- [x] 网易云 UID / 用户主页可进入统一 user flow — 同上（含自建/收藏区分）
+- [x] 酷狗登录后可进入统一 user flow — `test_kugou_auth_verification.py`；未登录时安全失败
+- [x] QQ / 网易云 / 酷狗共用统一 batch flow — `cli/core/batch.py`；`test_batch_flow.py`
+- [x] headless 用户批量完全无 `input()` — batch 非交互路径；`test_batch_flow.py`
+- [x] `-f` 对单歌单和 batch 语义一致 — `test_batch_flow.py` / `test_cli_arguments_and_exit.py`
+- [x] all / 单选 / 多选正常 — `test_batch_flow.py` 选择解析用例
+- [x] duplicate 处理单歌单/batch 一致 — `test_batch_flow.py` / `test_metadata_and_export_boundaries.py`
+- [x] 同名歌单不覆盖 — `cli/core/naming.py` `ensure_unique_base_name()`（单调递增 ` (2) (3)` 后缀 + 批内 reserved 集合）；`test_export_naming.py`
+- [x] 无效参数返回明确错误 — `test_cli_arguments_and_exit.py`
+- [x] 失败退出码可靠 — 同上；`0/1/2` 语义按 Phase 4.2 执行（`纯数字未传 -p` 的收紧项见【14】M1）
+- [x] metadata/partial 状态一致 — `test_metadata_and_export_boundaries.py`
+- [x] Windows 文件名边界安全 — `cli/core/ui.py` `sanitize_filename()`；`test_windows_reserved_names_sanitization`（MAX_PATH 全路径预算见【14】M2）
+- [x] M3U8 语义明确 — `test_m3u8_dual_mode_export`
+- [x] 平台识别只有一个事实源 — `BasePlatformAdapter.can_handle()` 统一委托 `SmartDetector`；`test_adapter_capabilities_and_detection.py`
+- [x] Adapter capability 不存在死接口 — `get_supported_args()` 已按 B 方案删除，并有测试断言其不存在
+- [x] 用户/batch 核心路径有自动测试 — `test_user_playlists.py` / `test_batch_flow.py`
+- [x] Frozen self-test 覆盖离线 batch 核心 — `cli/core/self_test.py` 合成用户歌单批量导出（完全离线）
+- [x] Windows/Linux/macOS 四平台 Release smoke test 通过 — Release CLI Run #1（2026-10-15，dry-run）4 平台 build + smoke 全绿；当前 draft 修订版待补一次 dry-run（见【14】M5）
+- [x] README 与实际能力一致 — `cli/README.md` 能力矩阵已覆盖 6 平台
+- [x] 每阶段 commit 可独立回退 — 8 个阶段提交各自独立（`719db75..a0ccb80`）
+- [x] 无 rebase / force push — `main` 历史线性，无 force push 记录
+
+---
+
+# 14. 归档复核纪要（2026-10-16）
+
+> 归档当日对照 `main` @ `b7e2ca9` 真实代码与公开 CI 数据逐项复核（联合评审提出 7 点）。本节的结论是本文档的最终状态说明。
+
+## 14.1 七点复核结论
+
+| # | 复核点 | 结论 | 说明 |
+|---|---|---|---|
+| 1 | 平台数量与能力矩阵漂移 | ✅ 属实（已修订） | 能力矩阵补入第 6 平台“咪咕音乐”；全文“五个平台”改为“六个平台” |
+| 2 | 交付状态脱节 | ✅ 属实（已核销） | 23 项 DoD 全部核销并附证据；本文件转归档，**禁止按未执行计划重复执行** |
+| 3 | 识别源依赖倒置 | ⚠️ 历史顺序属实，当前已收口 | `can_handle()` 统一委托 `SmartDetector`；`get_supported_args()` 已删除；Phase 1→6 属“先兼容后收口”的既定节奏，无残留双源 |
+| 4 | Headless 边缘参数语义 | ⚠️ 两个真实缺口 | 见 M1：`纯数字未传 -p` 退出码收紧；`歌单目标 × --user` 互斥拦截 |
+| 5 | 路径安全与网络 Fallback | ⚠️ 两个真实缺口 | 见 M2（MAX_PATH 全路径预算）、M3（IPv4 fallback 全局切换隔离契约） |
+| 6 | 二进制发行 Draft 验证与回滚 | ⚠️ 两个真实缺口 | 见 M5：已存在公开 Release 会被直接上传资产、绕过 draft 审查；缺回滚规范；当前 workflow 修订版待补 dry-run |
+| 7 | 与主路线图对齐 | ✅ 属实（已修复） | `docs/ARCHITECTURE-EVOLUTION.md` 增补 P4 映射；`docs/archive/README.md` 增补索引 |
+
+## 14.2 复核新增收尾补丁（M1–M5）
+
+以下不属于原计划未完成内容，而是复核新增的收尾补丁（单独实施，实施结果以提交记录为准）：
+
+- **M1 退出码与互斥规范**：脚本模式“纯数字未传 `-p`”退出码由 1 收紧为 **2**（使用方式错误）；明确歌单目标（歌单 URL / 歌单标签）叠加 `--user` 时互斥报错 `exit(2)`；`cli/README.md` 增补退出码表。
+- **M2 MAX_PATH 预算**：导出路径组装处按 `240 - 目录长度 - 扩展名长度` 动态缩短主文件名，覆盖超长输出目录场景。
+- **M3 IPv4 fallback 隔离**：`ipv4_fallback_context()` 增加模块级 `RLock` 串行化与契约说明（进程级临时降级；CLI 为单线程模型；并发调用方需自行串行化）。
+- **M4（可选）平台清单单一来源**：stderr 提示中的硬编码平台清单改由 registry 动态生成。
+- **M5 发布链路收口**：修复“已存在公开 Release 时直接上传资产”的 draft 绕过；补充发布后回滚规范；对当前 workflow 修订版补跑一次 `dry_run=true`。
+
+## 14.3 归档规则
+
+- 本文件与 `719db75..a0ccb80` 的提交历史共同构成收口过程的完整记录，保持只读，不再追加实施进度。
+- 后续 CLI 演进（咪咕、遥测、新平台等）以 `main` 真实代码和 `docs/` 现行文档为准；如与本文档冲突，以现行实现为准。

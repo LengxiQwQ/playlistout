@@ -1,7 +1,7 @@
 # PlaylistOut 架构演进路线图与状态跟踪 (Architecture Evolution Roadmap)
 
-> **当前总体状态**：🟢 **P0 ~ P3 核心架构演进已全线大功告成 (100% PASS)**  
-> **更新时间**：2026-10-15  
+> **当前总体状态**：🟢 **P0 ~ P4 核心架构演进与 Unified CLI 收口已全线完成 (100% PASS)**  
+> **更新时间**：2026-10-16  
 > **核心目标**：从单体中心化分发向自描述 Provider 注册制与功能管道演进，让“加一个厂商”只需新增 1 个目录，“加一个功能”拥有可插拔管道。  
 > **Agent 自治执行口令**：当用户输入“按照路线图继续重构，继续走。”时，Agent 必须读取本文档的【当前状态】与【执行规矩】，自动识别下一个待执行任务并无缝推进。
 
@@ -15,6 +15,7 @@
 | **P1** | **Provider 注册中枢** | 3-4 天 | 🟢 **已完成 (PASS)** | `ProviderRegistry`、5 大厂商迁移至 `MusicProvider`、三大 Service 瘦身、`/api/providers` 端点 | `npm run gate` 全绿 + 子 Agent 独立验收通过 |
 | **P2** | **前端解耦 + CLI 共享核心** | 3-4 天 | 🟢 **已完成 (PASS)** | `App.tsx` Hooks 提取、`api/client.ts` 拆分、组件拆解、`cli/core/` 提取 | `npm run gate` 全绿 + CLI 独立运行正常 |
 | **P3** | **新厂商接入 + 功能管道** | 持续 | 🟢 **已完成 (PASS)** | 新厂商标准接入范式与单测、Worker 元数据洋葱管道、客户端 6 格式插件化导出管道 | `npm run gate` 全绿 + 子 Agent 独立验收通过 |
+| **P4** | **Unified CLI 完善与收口** | 8 阶段 | 🟢 **已完成 (PASS)** | Phase 0–7 统一 CLI 收口（目标解析、用户批量、退出码语义、导出边界、识别源收口、发行链） | `pytest cli/` 215 passed + Release CLI dry-run 全绿；归档于 `docs/archive/UNIFIED-CLI-HARDENING-PLAN.md` |
 
 ---
 
@@ -87,3 +88,14 @@
 - [x] **P3.2 Worker 元数据处理管道** (`worker/src/pipeline/` 洋葱模型、失效与 VIP 状态标准化、重复歌曲标定)
 - [x] **P3.3 客户端导出管道插件化** (`web/src/utils/export/` 6 格式插件注册表、Markdown 优雅扩展、Facade 兼容)
 - [x] **P3 质量门禁与子 Agent 验收** (`npm run gate` 8 步 100% 绿灯 + 独立 QA Auditor 验收通过)
+
+### 🔵 P4: Unified CLI 完善与收口 (已完成)
+- [x] **P4.1 Phase 0 — 行为基线与回归保护**（`719db75`）
+- [x] **P4.2 Phase 1 — 统一输入目标识别**（`f8daba2`）
+- [x] **P4.3 Phase 2 — 用户歌单 Adapter 正式能力**（`6cfa529`）
+- [x] **P4.4 Phase 3 — 统一 Batch Flow**（`dec3a64`）
+- [x] **P4.5 Phase 4 — 参数与退出码语义**（`5799747`）
+- [x] **P4.6 Phase 5 — 数据模型与导出边界**（`68e70d2`）
+- [x] **P4.7 Phase 6 — 识别源与能力字段收口**（`68aa996`）
+- [x] **P4.8 Phase 7 — 测试、Self-test 与发布覆盖**（`a0ccb80`）
+- [x] **P4 验收**：`pytest cli/` 215 passed + Release CLI 4 平台 dry-run 全绿；完整归档记录见 [`docs/archive/UNIFIED-CLI-HARDENING-PLAN.md`](archive/UNIFIED-CLI-HARDENING-PLAN.md)（含 2026-10-16 复核纪要与 M1–M5 收尾补丁）
