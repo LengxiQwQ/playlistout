@@ -140,7 +140,7 @@ export async function getPublicStatsV2Cutover(
       SUM(count) AS total,
       SUM(CASE WHEN date = ?1 THEN count ELSE 0 END) AS today
     FROM analytics_v2_daily_core
-    WHERE metric IN ('page_view','visitor_unique','playlist_success','tracks_processed','export')
+    WHERE metric IN ('page_view','visitor_unique','active_user','playlist_success','tracks_processed','export')
     GROUP BY metric, platform
   `).bind(today).all<MetricRow>();
 
@@ -202,6 +202,11 @@ export async function getPublicStatsV2Cutover(
     today === state.baseline_date ? baselineDateMetric('export') : sumMetric('export', 'today'),
     today,
   );
+
+  // Cross-client daily-active users (plugin / CLI) have no legacy baseline:
+  // they are summed directly and are monotonic by construction.
+  const activeTotal = sumMetric('active_user', 'total');
+  const activeToday = sumMetric('active_user', 'today');
 
   const byPlatform: Record<string, PlatformBreakdown> = {};
   for (const platform of PUBLIC_PLATFORMS) {
@@ -322,9 +327,9 @@ export async function getPublicStatsV2Cutover(
 
   return {
     launchedAt: LAUNCHED_AT,
-    cumulativeDailyVisitors: visitors.total,
-    totalVisitors: visitors.total,
-    visitorsToday: visitors.day,
+    cumulativeDailyVisitors: visitors.total + activeTotal,
+    totalVisitors: visitors.total + activeTotal,
+    visitorsToday: visitors.day + activeToday,
     totalPageViews: pageView.total,
     pageViewsToday: pageView.day,
     totalPlaylistsParsed: parses.total,

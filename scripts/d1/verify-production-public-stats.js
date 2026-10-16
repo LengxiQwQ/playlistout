@@ -84,7 +84,7 @@ export async function collectExpectedPublicStats(options = {}) {
       SUM(count) AS total,
       SUM(CASE WHEN date = date('now') THEN count ELSE 0 END) AS today
     FROM analytics_v2_daily_core
-    WHERE metric IN ('page_view','visitor_unique','playlist_success','tracks_processed','export')
+    WHERE metric IN ('page_view','visitor_unique','active_user','playlist_success','tracks_processed','export')
     GROUP BY metric;
   `, options);
   const metricMap = new Map(metricRows.map((row) => [row.metric, row]));
@@ -119,6 +119,11 @@ export async function collectExpectedPublicStats(options = {}) {
     metricMap.get('export')?.today,
     today,
   );
+
+  // Cross-client daily-active users (plugin / CLI) are summed directly; they
+  // have no legacy cutover baseline and are monotonic by construction.
+  const activeTotal = Number(metricMap.get('active_user')?.total || 0);
+  const activeToday = Number(metricMap.get('active_user')?.today || 0);
 
   const platformRows = await query(`
     SELECT platform,
@@ -177,9 +182,9 @@ export async function collectExpectedPublicStats(options = {}) {
   return {
     totalPageViews: pageView.total,
     pageViewsToday: pageView.day,
-    cumulativeDailyVisitors: visitors.total,
-    totalVisitors: visitors.total,
-    visitorsToday: visitors.day,
+    cumulativeDailyVisitors: visitors.total + activeTotal,
+    totalVisitors: visitors.total + activeTotal,
+    visitorsToday: visitors.day + activeToday,
     totalPlaylistsParsed: parses.total,
     playlistsParsedToday: parses.day,
     totalTracksProcessed: tracks.total,

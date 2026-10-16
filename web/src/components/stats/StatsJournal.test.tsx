@@ -323,7 +323,7 @@ describe('StatsJournal Component (Phase 7)', () => {
         expect(screen.getByText('123')).toBeInTheDocument();
       });
       // Label must still use authentic cumulative wording even via fallback path
-      expect(screen.getByText(/累计日独立访问/)).toBeInTheDocument();
+      expect(screen.getByText(/全端活跃人次/)).toBeInTheDocument();
     });
 
     it('renders correct visitor semantics and prevents misleading all-time unique claims in Chinese (Test 29a)', async () => {
@@ -339,10 +339,10 @@ describe('StatsJournal Component (Phase 7)', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/累计日独立访问人次/)).toBeInTheDocument();
+        expect(screen.getByText(/全端活跃人次（按天去重）/)).toBeInTheDocument();
       });
 
-      const tipElement = screen.getByTitle('每天匿名去重后累加；同一访客不同日期可能再次计入，不进行跨日追踪。');
+      const tipElement = screen.getByTitle('每天匿名去重后累加：覆盖网页访客、插件（加载即计）与命令行（使用即计）的每日去重活跃；同一人不同日期可能再次计入，不进行跨日追踪。');
       expect(tipElement).toBeInTheDocument();
 
       // Must NOT contain misleading all-time global uniqueness claims
@@ -366,11 +366,11 @@ describe('StatsJournal Component (Phase 7)', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/Cumulative Daily Unique Visits/)).toBeInTheDocument();
+        expect(screen.getByText(/All-client Active Users/)).toBeInTheDocument();
       });
 
       const tipElement = screen.getByTitle(
-        'Sum of daily unique visitors. The same visitor may be counted again on another day; no cross-day tracking is performed.',
+        'Sum of daily deduplicated active users across web visitors, plugins (counted on load) and CLI (counted on use). The same person may be counted again on another day; no cross-day tracking is performed.',
       );
       expect(tipElement).toBeInTheDocument();
 

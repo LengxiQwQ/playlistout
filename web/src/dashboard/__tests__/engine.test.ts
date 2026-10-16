@@ -303,4 +303,84 @@ describe('Analytics Dashboard In-Memory Slice Engine', () => {
     expect(qSlice.quarantine[0].id).toBe(11);
     expect(qSlice.totalEvents).toBe(12);
   });
+
+  it('aggregates cross-channel DAU with per-client rows, deltas and DAU-scoped geo', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const snapshot: AnalyticsSnapshot = {
+      ...mockSnapshot,
+      dailyCore: [
+        { date: yesterday, channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 40 },
+        { date: today, channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 50 },
+        { date: yesterday, channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 9 },
+        { date: today, channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 12 },
+        { date: today, channel: 'plugin', client_id: 'bbplayer', platform: 'none', metric: 'active_user', count: 3 },
+        { date: today, channel: 'cli', client_id: 'official_cli', platform: 'none', metric: 'active_user', count: 5 },
+      ],
+      hourlyCore: [
+        { date: today, hour: 10, metric: 'visitor_unique', count: 5 },
+        { date: today, hour: 11, metric: 'active_user', count: 2 },
+        { date: today, hour: 11, metric: 'resolve_request', count: 99 },
+      ],
+      geo: [
+        { date: today, channel: 'web', client_id: 'official_web', platform: 'none', country: 'CN', region: 'Guangdong', metric: 'visitor_unique', count: 30 },
+        { date: today, channel: 'plugin', client_id: 'musicfree', platform: 'none', country: 'CN', region: 'Zhejiang', metric: 'active_user', count: 4 },
+        { date: today, channel: 'web', client_id: 'official_web', platform: 'none', country: 'US', region: 'California', metric: 'resolve_request', count: 77 },
+      ],
+      breakdowns: [],
+      clientEnv: [],
+    };
+
+    const slice = buildAnalyticsSlice(snapshot, { from: yesterday, to: today, exclude_my: false });
+
+    expect(slice.overview.visitor_unique).toBe(90);
+    expect(slice.overview.active_user).toBe(29);
+    expect(slice.dau.today).toEqual({ total: 70, web: 50, plugin: 15, cli: 5 });
+    expect(slice.dau.yesterday).toEqual({ total: 49, web: 40, plugin: 9, cli: 0 });
+    expect(slice.dau.series).toHaveLength(2);
+
+    expect(slice.dau.clients.find((c) => c.client === 'musicfree')).toMatchObject({
+      channel: 'plugin',
+      total: 21,
+      today: 12,
+      yesterday: 9,
+    });
+    expect(slice.dau.clients.find((c) => c.client === 'bbplayer')).toMatchObject({
+      channel: 'plugin',
+      total: 3,
+      today: 3,
+      yesterday: 0,
+    });
+    expect(slice.dau.clients.find((c) => c.client === 'official_cli')).toMatchObject({
+      channel: 'cli',
+      total: 5,
+      today: 5,
+    });
+
+    // DAU geography only includes activity metrics (web visitor_unique + active_user)
+    expect(slice.dau.countries.map((c) => c.name)).toEqual(['CN']);
+    expect(slice.dau.countries[0].count).toBe(34);
+    expect(slice.dau.regions.map((r) => r.name).sort()).toEqual(['Guangdong', 'Zhejiang']);
+
+    // Single-day filter exposes the hourly DAU distribution (non-DAU metrics excluded)
+    const singleDay = buildAnalyticsSlice(snapshot, { from: today, to: today, exclude_my: false });
+    expect(singleDay.dau.hours).toEqual([
+      { hour: 10, total: 5 },
+      { hour: 11, total: 2 },
+    ]);
+  });
+
+  it('defaults missing DAU fields to zero for older snapshots', () => {
+    const slice = buildAnalyticsSlice(mockSnapshot, { from: '2026-10-04', to: '2026-10-05', exclude_my: false });
+    expect(slice.overview.active_user).toBe(0);
+    expect(slice.dau).toEqual({
+      today: { total: 0, web: 0, plugin: 0, cli: 0 },
+      yesterday: { total: 0, web: 0, plugin: 0, cli: 0 },
+      series: [],
+      hours: [],
+      clients: [],
+      countries: [],
+      regions: [],
+    });
+  });
 });

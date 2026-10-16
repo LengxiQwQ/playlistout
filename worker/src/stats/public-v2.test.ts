@@ -39,6 +39,7 @@ function createPublicStatsMock(frozen = true): D1Database {
   const metricRows = [
     { metric: 'page_view', platform: 'none', total: 2, today: 2 },
     { metric: 'visitor_unique', platform: 'none', total: 1, today: 1 },
+    { metric: 'active_user', platform: 'none', total: 3, today: 2 },
     { metric: 'playlist_success', platform: 'qqmusic', total: 1, today: 1 },
     { metric: 'playlist_success', platform: 'netease', total: 1, today: 1 },
     { metric: 'tracks_processed', platform: 'qqmusic', total: 20, today: 20 },
@@ -119,8 +120,9 @@ describe('Analytics V2 public stats after V1 retirement', () => {
 
     expect(stats.totalPageViews).toBe(102);
     expect(stats.pageViewsToday).toBe(12);
-    expect(stats.totalVisitors).toBe(51);
-    expect(stats.visitorsToday).toBe(6);
+    expect(stats.totalVisitors).toBe(54);
+    expect(stats.cumulativeDailyVisitors).toBe(54);
+    expect(stats.visitorsToday).toBe(8);
     expect(stats.totalPlaylistsParsed).toBe(42);
     expect(stats.playlistsParsedToday).toBe(6);
     expect(stats.totalTracksProcessed).toBe(420);

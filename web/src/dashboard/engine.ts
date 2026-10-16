@@ -16,6 +16,10 @@ import type {
   SnapshotClientEnvRow,
   CountItem,
   QualityCheck,
+  DauChannelTotals,
+  DauDailyPoint,
+  DauHourlyPoint,
+  DauClientRow,
 } from './types';
 
 export const CORE_METRICS = [
@@ -28,6 +32,7 @@ export const CORE_METRICS = [
   'clipboard',
   'page_view',
   'visitor_unique',
+  'active_user',
   'rate_limited',
   'migration_handoff',
 ] as const;
@@ -482,6 +487,44 @@ export function matchesFilter<
   return true;
 }
 
+// ── Cross-channel Daily Active Users (DAU) aggregation ──
+// Web activity is `visitor_unique` on channel `web`; plugin / CLI activity is
+// `active_user` recorded per UTC day and scope. Missing metrics default to 0 so
+// older snapshots without DAU rows render naturally.
+
+const DAU_METRICS = new Set(['visitor_unique', 'active_user']);
+
+type DauChannelSlot = 'web' | 'plugin' | 'cli';
+
+function dauChannelFor(metric: string, channel: string): DauChannelSlot | null {
+  const ch = String(channel || '').trim();
+  if (metric === 'visitor_unique' && ch === 'web') return 'web';
+  if (metric === 'active_user' && ch === 'plugin') return 'plugin';
+  if (metric === 'active_user' && ch === 'cli') return 'cli';
+  return null;
+}
+
+function emptyDauTotals(): DauChannelTotals {
+  return { total: 0, web: 0, plugin: 0, cli: 0 };
+}
+
+function addDauCount(
+  totals: DauChannelTotals,
+  metric: string,
+  channel: string,
+  count: number,
+): void {
+  const slot = dauChannelFor(metric, channel);
+  if (!slot || !Number.isFinite(count) || count <= 0) return;
+  totals[slot] += count;
+  totals.total += count;
+}
+
+function utcDayKey(offsetDays = 0): string {
+  const d = new Date(Date.now() + offsetDays * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
 export function buildAnalyticsSlice(
   snapshot: AnalyticsSnapshot,
   query: FilterParams,
@@ -666,6 +709,75 @@ export function buildAnalyticsSlice(
     'region',
   ).slice(0, 80);
 
+  // ── DAU slice: per-day channel series, today/yesterday totals, clients, geo ──
+  const dauByDate = new Map<string, DauChannelTotals>();
+  const dauClientTotals = new Map<string, DauClientRow>();
+  for (const row of filteredSource) {
+    const metric = String(row.metric || '').trim();
+    if (!DAU_METRICS.has(metric)) continue;
+    const date = String(row.date || '');
+    if (!date) continue;
+    const count = Number(row.count || 0);
+
+    let dayTotals = dauByDate.get(date);
+    if (!dayTotals) {
+      dayTotals = emptyDauTotals();
+      dauByDate.set(date, dayTotals);
+    }
+    addDauCount(dayTotals, metric, String(row.channel || ''), count);
+
+    if (metric === 'active_user') {
+      const channel = String(row.channel || '').trim();
+      const client = String(row.client_id || '').trim();
+      if ((channel === 'plugin' || channel === 'cli') && client) {
+        let clientEntry = dauClientTotals.get(client);
+        if (!clientEntry) {
+          clientEntry = { client, channel, total: 0, today: 0, yesterday: 0 };
+          dauClientTotals.set(client, clientEntry);
+        }
+        clientEntry.total += count;
+        if (date === utcDayKey(0)) clientEntry.today += count;
+        if (date === utcDayKey(-1)) clientEntry.yesterday += count;
+      }
+    }
+  }
+
+  const dauSeries: DauDailyPoint[] = Array.from(dauByDate.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, totals]) => ({ date, ...totals }));
+  const dauToday = dauByDate.get(utcDayKey(0)) || emptyDauTotals();
+  const dauYesterday = dauByDate.get(utcDayKey(-1)) || emptyDauTotals();
+  const dauClients = Array.from(dauClientTotals.values()).sort(
+    (a, b) => b.total - a.total || a.client.localeCompare(b.client),
+  );
+
+  let dauHours: DauHourlyPoint[] = [];
+  if (!geoActive && fromDate === toDate) {
+    const dauByHour = new Map<number, number>();
+    for (const row of hourly) {
+      const metric = String(row.metric || '').trim();
+      if (metric !== 'visitor_unique' && metric !== 'active_user') continue;
+      if (!matchesFilter(row, filters)) continue;
+      const h = Number(row.hour || 0);
+      dauByHour.set(h, (dauByHour.get(h) || 0) + Number(row.count || 0));
+    }
+    dauHours = Array.from(dauByHour.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([hour, total]) => ({ hour, total }));
+  }
+
+  const dauGeoRows = filteredGeo.filter(
+    (row) => dauChannelFor(String(row.metric || '').trim(), String(row.channel || '')) !== null,
+  );
+  const dauCountries = sumBy(
+    dauGeoRows.filter((r) => r.country !== 'UNKNOWN'),
+    'country',
+  ).slice(0, 10);
+  const dauRegions = sumBy(
+    dauGeoRows.filter((r) => r.region !== 'UNKNOWN'),
+    'region',
+  ).slice(0, 10);
+
   function filterOptionRows(omit: 'channel' | 'client' | 'platform', metrics: Set<string>) {
     return source.filter(
       (row) =>
@@ -795,6 +907,7 @@ export function buildAnalyticsSlice(
       clipboard: overviewRaw['clipboard'] || 0,
       page_view: overviewRaw['page_view'] || 0,
       visitor_unique: overviewRaw['visitor_unique'] || 0,
+      active_user: overviewRaw['active_user'] || 0,
       rate_limited: overviewRaw['rate_limited'] || 0,
       migration_handoff: overviewRaw['migration_handoff'] || 0,
       success_rate:
@@ -803,6 +916,15 @@ export function buildAnalyticsSlice(
           : 0,
       active_clients: matchedClients.filter((it) => it.count > 0).length,
       pending_feedback: fbPending,
+    },
+    dau: {
+      today: dauToday,
+      yesterday: dauYesterday,
+      series: dauSeries,
+      hours: dauHours,
+      clients: dauClients,
+      countries: dauCountries,
+      regions: dauRegions,
     },
     timeseries,
     hourlyTimeseries,

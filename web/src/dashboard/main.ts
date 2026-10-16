@@ -514,6 +514,10 @@ class DashboardApp {
                 <span class="tab-icon">🔒</span>
                 <span class="tab-text"><span class="tab-title">安全风控</span><span class="tab-sub">Security</span></span>
               </button>
+              <button class="tab ${this.currentPage === 'dau' ? 'active' : ''}" data-page="dau">
+                <span class="tab-icon">📈</span>
+                <span class="tab-text"><span class="tab-title">日活 DAU</span><span class="tab-sub">Daily Active</span></span>
+              </button>
             </nav>
             <div class="headright">
               <div id="healthBadge" class="health good">● Healthy</div>
@@ -846,6 +850,74 @@ class DashboardApp {
           </div>
         </section>
 
+        <!-- 7. 日活 DAU (Daily Active Users) -->
+        <section class="page ${this.currentPage === 'dau' ? 'active' : ''}" id="page-dau">
+          <div class="section">
+            <div><h2>全端日活与触达 DAU</h2><div class="muted">Web 去重访客 + 插件 / CLI 每日去重活跃 · 按 UTC 日期统计（北京时间约等于 UTC+8，清晨计入新一天）。</div></div>
+          </div>
+          <div id="dauKpis" class="kpis"></div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>📈 全端日活趋势 (DAU Trend)</h3>
+                <div class="muted" style="font-size:11px">柱状为分端堆叠（Web / 插件 / CLI），折线为全端合计；最多展示最近 30 个数据日。</div>
+              </div>
+              <div class="trend-legend">
+                <span><span class="legend-dot" style="background:#0284c7"></span>Web</span>
+                <span><span class="legend-dot" style="background:#8b5cf6"></span>插件</span>
+                <span><span class="legend-dot" style="background:#10b981"></span>CLI</span>
+                <span><span class="legend-dot" style="background:#f97316"></span>全端合计</span>
+              </div>
+            </div>
+            <div class="trend-box" id="dauTrendBox">
+              <canvas id="dauTrendCanvas"></canvas>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:12px">
+            <div class="panel">
+              <div class="panel-head"><h3>🧩 分端接入明细 Clients</h3><span class="muted" style="font-size:11px">插件 / CLI 声明客户端</span></div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>客户端 Client</th>
+                      <th style="width:70px">渠道</th>
+                      <th style="text-align:right;width:80px">今日</th>
+                      <th style="text-align:right;width:80px">昨日</th>
+                      <th style="text-align:right;width:96px">窗口累计</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dauClientRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>🕐 当日小时分布 (UTC)</h3><span class="muted" style="font-size:11px">选中单日时展示 · 北京时间 +8h</span></div>
+              <div id="dauHourBars" class="bars"></div>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:12px">
+            <div class="panel">
+              <div class="panel-head"><h3>🌍 活跃来源国家 Top 10</h3><span class="muted" style="font-size:11px">Country</span></div>
+              <div id="dauCountryBars" class="bars"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>🏙️ 活跃来源地区 Top 10</h3><span class="muted" style="font-size:11px">Region</span></div>
+              <div id="dauRegionBars" class="bars"></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:12px;border-left:3px solid var(--a)">
+            <div class="panel-head"><h3>📐 口径说明 Metric Semantics</h3></div>
+            <div class="muted" style="font-size:12px;line-height:1.9">
+              <div>• <strong>Web</strong>：每日去重访客（服务端匿名哈希去重，渠道 web）。</div>
+              <div>• <strong>插件</strong>：插件被加载即计（新版本：每日一次加载心跳；旧版本：当天首次使用行为由服务端派生计入；升级过渡期两种口径混排）。</div>
+              <div>• <strong>CLI</strong>：实际使用即计（解析 / 导出时由服务端派生计入；<code>--no-telemetry</code> 用户不计入）。</div>
+              <div>• 去重键：UTC 日期 × 渠道 × 客户端 × 匿名截断哈希；同一人同日在不同渠道可各计一次，跨天不保持身份（不做跨天追踪）。</div>
+              <div>• 已知边界：NAT / 共享出口可能低估；移动端冷启动跨 IP 可能轻微高估。插件升级当天已按「去版本号」归一，不会把同一人重复计入。</div>
+            </div>
+          </div>
+        </section>
+
         <!-- 取证报文模态框 -->
         <div id="forensicModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99;align-items:center;justify-content:center">
           <div style="background:var(--p);border:1px solid var(--l);border-radius:10px;max-width:640px;width:92%;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);max-height:85vh;display:flex;flex-direction:column">
@@ -1023,6 +1095,8 @@ class DashboardApp {
     window.addEventListener('resize', () => {
       if (this.currentPage === 'overview') {
         this.drawCanvasChart();
+      } else if (this.currentPage === 'dau') {
+        this.drawDauChart();
       }
     });
   }
@@ -1046,6 +1120,8 @@ class DashboardApp {
       this.renderFeedbackView();
     } else if (page === 'security') {
       this.renderSecurityView();
+    } else if (page === 'dau') {
+      requestAnimationFrame(() => this.drawDauChart());
     }
   }
 
@@ -1145,11 +1221,14 @@ class DashboardApp {
     this.renderWebTab();
     this.renderReliabilityTab();
     this.renderIntegrationsTab();
+    this.renderDauTab();
     this.renderFeedbackView();
     this.renderSecurityView();
 
     if (this.currentPage === 'overview') {
       requestAnimationFrame(() => this.drawCanvasChart());
+    } else if (this.currentPage === 'dau') {
+      requestAnimationFrame(() => this.drawDauChart());
     }
   }
 
@@ -1215,12 +1294,14 @@ class DashboardApp {
   private renderOverviewTab(): void {
     if (!this.currentSlice) return;
     const ov = this.currentSlice.overview;
+    const dau = this.currentSlice.dau;
 
     const kpiItems = [
       { label: '解析请求量', val: fmt(ov.resolve_request), sub: 'Resolve Request', color: 'var(--t)' },
       { label: '成功解析', val: fmt(ov.playlist_success + ov.user_success), sub: 'Success Rate', color: 'var(--g)' },
       { label: '终端成功率', val: pct(ov.success_rate), sub: `${fmt(ov.resolve_failure)} 失败`, color: ov.success_rate >= 80 ? 'var(--g)' : 'var(--w)' },
       { label: '导出 / 复制', val: fmt(ov.export + ov.clipboard), sub: `${fmt(ov.export)} 导出 · ${fmt(ov.clipboard)} 剪贴`, color: 'var(--a)' },
+      { label: '今日活跃', val: fmt(dau.today.total), sub: `Web ${fmt(dau.today.web)} · 插件 ${fmt(dau.today.plugin)} · CLI ${fmt(dau.today.cli)}`, color: 'var(--a)' },
       { label: '活跃接入端', val: fmt(ov.active_clients), sub: 'Active Clients', color: 'var(--t)' },
       { label: '待审歌单', val: fmt(ov.pending_feedback), sub: 'Pending Review', color: ov.pending_feedback > 0 ? 'var(--w)' : 'var(--g)' },
     ];
@@ -1426,6 +1507,211 @@ class DashboardApp {
     this.renderBars('hostBars', b['musicfree_host'] || b['host_platform'] || []);
     this.renderBars('bbplayerVersionBars', b['bbplayer_version'] || []);
     this.renderBars('bbplayerHostBars', b['bbplayer_host'] || []);
+  }
+
+  private renderDauTab(): void {
+    if (!this.currentSlice) return;
+    const dau = this.currentSlice.dau;
+
+    const delta = (today: number, yesterday: number): string => {
+      if (yesterday <= 0) return today > 0 ? '昨日无数据' : '较昨日持平';
+      const d = Math.round(((today - yesterday) / yesterday) * 1000) / 10;
+      return `较昨日 ${d >= 0 ? '+' : ''}${d.toFixed(1)}%`;
+    };
+
+    const recent = dau.series.slice(-30);
+    const peak = recent.reduce((acc, p) => Math.max(acc, p.total), 0);
+
+    const kpiItems = [
+      {
+        label: '今日全端活跃',
+        val: fmt(dau.today.total),
+        sub: `昨日 ${fmt(dau.yesterday.total)} · ${delta(dau.today.total, dau.yesterday.total)}`,
+        color: 'var(--t)',
+      },
+      { label: '今日 Web 访客', val: fmt(dau.today.web), sub: delta(dau.today.web, dau.yesterday.web), color: '#0284c7' },
+      { label: '今日插件活跃', val: fmt(dau.today.plugin), sub: delta(dau.today.plugin, dau.yesterday.plugin), color: '#8b5cf6' },
+      { label: '今日 CLI 活跃', val: fmt(dau.today.cli), sub: delta(dau.today.cli, dau.yesterday.cli), color: 'var(--g)' },
+      { label: '窗口内客户端', val: fmt(dau.clients.length), sub: 'Distinct Active Clients', color: 'var(--a)' },
+      { label: '近 30 天峰值', val: fmt(peak), sub: '30-day Peak', color: 'var(--w)' },
+    ];
+
+    const kpiEl = document.getElementById('dauKpis');
+    if (kpiEl) {
+      kpiEl.innerHTML = kpiItems
+        .map(
+          (k) => `
+          <div class="card kpi-card">
+            <div class="kpi-label">${esc(k.label)}</div>
+            <div class="kpi-val" style="color:${k.color}">${esc(k.val)}</div>
+            <div class="kpi-sub">${esc(k.sub)}</div>
+          </div>
+        `,
+        )
+        .join('');
+    }
+
+    const tbody = document.getElementById('dauClientRows');
+    if (tbody) {
+      if (dau.clients.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--m)">当前筛选无插件 / CLI 活跃记录（等待心跳与使用遥测上报）</td></tr>';
+      } else {
+        tbody.innerHTML = dau.clients
+          .map(
+            (c) => `
+          <tr>
+            <td>
+              <span style="font-weight:600;color:${getBrandColor(c.client)}">${esc(formatHumanLabel(c.client))}</span>
+              <div class="muted" style="font-size:11px;font-family:var(--mono)">${esc(c.client)}</div>
+            </td>
+            <td><span class="badge" style="background:var(--l)">${c.channel === 'plugin' ? '插件' : 'CLI'}</span></td>
+            <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(c.today)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(c.yesterday)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(c.total)}</td>
+          </tr>
+        `,
+          )
+          .join('');
+      }
+    }
+
+    this.renderBars('dauCountryBars', dau.countries);
+    this.renderBars('dauRegionBars', dau.regions);
+    this.renderDauHourBars();
+  }
+
+  private renderDauHourBars(): void {
+    const el = document.getElementById('dauHourBars');
+    if (!el || !this.currentSlice) return;
+    const hours = this.currentSlice.dau.hours;
+    if (hours.length === 0) {
+      el.innerHTML = '<div style="color:var(--m);padding:8px 0;font-size:12px">筛选「单日」时展示该日的小时分布</div>';
+      return;
+    }
+    const max = Math.max(...hours.map((h) => h.total), 1);
+    el.innerHTML = hours
+      .map((h) => {
+        const p = Math.min(100, Math.round((h.total / max) * 1000) / 10);
+        return `
+          <div class="bar">
+            <div class="bn"><span>${String(h.hour).padStart(2, '0')}:00</span></div>
+            <div class="track"><div class="fill" style="width:${p}%;background:var(--a)"></div></div>
+            <div class="num">${fmt(h.total)}</div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  private drawDauChart(): void {
+    if (!this.currentSlice) return;
+    const canvas = document.getElementById('dauTrendCanvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const data = this.currentSlice.dau.series.slice(-30);
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    if (data.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('当前筛选无日活数据', w / 2, h / 2);
+      return;
+    }
+
+    const padLeft = 40;
+    const padRight = 20;
+    const padTop = 20;
+    const padBottom = 30;
+
+    let maxVal = 1;
+    for (const d of data) {
+      if (d.total > maxVal) maxVal = d.total;
+    }
+    maxVal = Math.ceil(maxVal * 1.15);
+
+    const plotW = w - padLeft - padRight;
+    const plotH = h - padTop - padBottom;
+
+    // Grid + Y-axis labels
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) {
+      const y = padTop + (plotH / 4) * i;
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(w - padRight, y);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(Math.round(maxVal * (1 - i / 4))), padLeft - 6, y + 3);
+    }
+    ctx.stroke();
+
+    const stepX = plotW / data.length;
+    const barW = Math.max(3, Math.min(22, stepX * 0.62));
+    const stackOrder: Array<{ key: 'cli' | 'plugin' | 'web'; color: string }> = [
+      { key: 'cli', color: '#10b981' },
+      { key: 'plugin', color: '#8b5cf6' },
+      { key: 'web', color: '#0284c7' },
+    ];
+
+    // Stacked channel bars
+    const totalPoints: Array<{ x: number; y: number }> = [];
+    data.forEach((d, i) => {
+      const cx = padLeft + stepX * i + stepX / 2;
+      const x0 = cx - barW / 2;
+      let yBase = padTop + plotH;
+      for (const seg of stackOrder) {
+        const val = Number(d[seg.key] || 0);
+        if (val <= 0) continue;
+        const segH = (val / maxVal) * plotH;
+        ctx.fillStyle = seg.color;
+        ctx.fillRect(x0, yBase - segH, barW, segH);
+        yBase -= segH;
+      }
+      totalPoints.push({ x: cx, y: padTop + plotH - (Number(d.total || 0) / maxVal) * plotH });
+    });
+
+    // Total DAU line
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    totalPoints.forEach((pt, i) => {
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = '#f97316';
+    for (const pt of totalPoints) {
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // X-axis labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    const step = Math.ceil(data.length / 8);
+    data.forEach((d, i) => {
+      if (i % step === 0 || i === data.length - 1) {
+        ctx.fillText(String(d.date || '').slice(5), padLeft + stepX * i + stepX / 2, h - 8);
+      }
+    });
   }
 
   private renderFeedbackView(): void {

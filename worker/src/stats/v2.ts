@@ -42,6 +42,7 @@ const CORE_METRICS = [
   'clipboard',
   'page_view',
   'visitor_unique',
+  'active_user',
   'rate_limited',
   'migration_handoff',
 ] as const;

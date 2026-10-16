@@ -120,6 +120,40 @@ export interface QualityCheck {
   note: string;
 }
 
+export interface DauChannelTotals {
+  total: number;
+  web: number;
+  plugin: number;
+  cli: number;
+}
+
+export interface DauDailyPoint extends DauChannelTotals {
+  date: string;
+}
+
+export interface DauHourlyPoint {
+  hour: number;
+  total: number;
+}
+
+export interface DauClientRow {
+  client: string;
+  channel: string;
+  total: number;
+  today: number;
+  yesterday: number;
+}
+
+export interface DauSummary {
+  today: DauChannelTotals;
+  yesterday: DauChannelTotals;
+  series: DauDailyPoint[];
+  hours: DauHourlyPoint[];
+  clients: DauClientRow[];
+  countries: CountItem[];
+  regions: CountItem[];
+}
+
 export interface AnalyticsSlice {
   version: number;
   filters: Record<string, string>;
@@ -138,12 +172,14 @@ export interface AnalyticsSlice {
     clipboard: number;
     page_view: number;
     visitor_unique: number;
+    active_user: number;
     rate_limited: number;
     migration_handoff: number;
     success_rate: number;
     active_clients: number;
     pending_feedback: number;
   };
+  dau: DauSummary;
   timeseries: Array<Record<string, string | number>>;
   hourlyTimeseries: Array<Record<string, string | number>>;
   breakdowns: Record<string, CountItem[]>;
