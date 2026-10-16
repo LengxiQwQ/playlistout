@@ -207,17 +207,7 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.getByText('酷狗音乐 · 扫码解锁')).toBeInTheDocument();
   });
 
-  it('opens Kugou login modal when clicking Kugou batch sample without login', () => {
-    vi.spyOn(apiClient, 'fetchKugouQrCode').mockResolvedValue({
-      success: true,
-      data: {
-        qrcode: 'test-qr-key',
-        qrcodeImg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
-        loginUrl: 'https://h5.kugou.com/test',
-        expiresAt: Date.now() + 300000,
-      },
-    });
-
+  it('selects Kugou sample when clicking Kugou sample sticker', () => {
     const handleSelectSample = vi.fn();
     render(
       <LanguageProvider defaultLanguage="zh-CN">
@@ -234,15 +224,13 @@ describe('SearchNote Component (Phase 4)', () => {
       </LanguageProvider>,
     );
 
-    const kugouBatchSample = screen.getByText('酷狗音乐批量');
-    fireEvent.click(kugouBatchSample);
+    const kugouSample = screen.getByText('酷狗音乐示例');
+    fireEvent.click(kugouSample);
 
     expect(handleSelectSample).toHaveBeenCalledWith(
-      'https://m.kugou.com/user?uid=1425711902',
+      'https://m.kugou.com/songlist/gcid_3zr52qfrz2z063/?src_cid=3zr52qfrz2z063&uid=1425711902&chl=message&cover=http://imge.kugou.com/stdmusic/20210314/20210314100214878628.jpg&iszlist=1',
       'kugou',
-      'user',
+      'playlist',
     );
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('酷狗音乐 · 扫码解锁')).toBeInTheDocument();
   });
 });

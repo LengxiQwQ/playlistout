@@ -363,11 +363,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
         })()}
 
         {/* Quick Samples Section */}
-        <SamplePresetsGrid
-          onSelectSample={onSelectSample}
-          hasKugouAuth={hasKugou}
-          onRequireKugouLogin={() => setIsKugouModalOpen(true)}
-        />
+        <SamplePresetsGrid onSelectSample={onSelectSample} />
       </StickyNote>
       <KugouAuthModal
         isOpen={isKugouModalOpen}

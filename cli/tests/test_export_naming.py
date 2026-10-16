@@ -31,11 +31,13 @@ def test_platform_display_names_match_adapters():
 def test_build_export_base_name_with_creator():
     assert build_export_base_name("夜曲精选", "周杰伦", "qqmusic") == "【QQ 音乐】夜曲精选 - 周杰伦"
     assert build_export_base_name("华语精选", "音乐研究所", "netease") == "【网易云音乐】华语精选 - 音乐研究所"
+    assert build_export_base_name("动感地带", "咪咕音乐人", "migu") == "【咪咕音乐】动感地带 - 咪咕音乐人"
 
 
 def test_build_export_base_name_without_creator():
     assert build_export_base_name("酷狗热歌", None, "kugou") == "【酷狗音乐】酷狗热歌"
     assert build_export_base_name("酷我榜单", "", "kuwo") == "【酷我音乐】酷我榜单"
+    assert build_export_base_name("咪咕榜单", "", "migu") == "【咪咕音乐】咪咕榜单"
 
 
 def test_build_export_base_name_fallbacks():
@@ -50,6 +52,7 @@ def test_build_export_base_name_fallbacks():
 def test_get_platform_display_name():
     assert get_platform_display_name("QQMusic") == "QQ 音乐"
     assert get_platform_display_name("qishui") == "汽水音乐"
+    assert get_platform_display_name("migu") == "咪咕音乐"
     assert get_platform_display_name(None) == "音乐平台"
 
 

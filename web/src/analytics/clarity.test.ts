@@ -200,6 +200,12 @@ describe('Microsoft Clarity Adapter', () => {
       setClarityTag('platform', 'kugou');
       expect(Clarity.setTag).toHaveBeenCalledWith('platform', 'kugou');
 
+      setClarityTag('platform', 'kuwo');
+      expect(Clarity.setTag).toHaveBeenCalledWith('platform', 'kuwo');
+
+      setClarityTag('platform', 'migu');
+      expect(Clarity.setTag).toHaveBeenCalledWith('platform', 'migu');
+
       setClarityTag('playlist_size_bucket', '51-200');
       expect(Clarity.setTag).toHaveBeenCalledWith('playlist_size_bucket', '51-200');
 

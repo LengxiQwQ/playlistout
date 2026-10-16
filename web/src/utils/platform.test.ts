@@ -15,6 +15,10 @@ describe('platform utilities and defensive URL resolution', () => {
     expect(getPlatformPlaylistUrl('qishui', '7435123456')).toBe('https://music.douyin.com/qishui/share/playlist?playlist_id=7435123456');
 
     expect(getPlatformPlaylistUrl('kugou', 'https://m.kugou.com/songlist/gcid_123/')).toBe('https://m.kugou.com/songlist/gcid_123/');
+    expect(getPlatformPlaylistUrl('kuwo', 'https://www.kuwo.cn/playlist_detail/2311665489')).toBe('https://www.kuwo.cn/playlist_detail/2311665489');
+    expect(getPlatformPlaylistUrl('kuwo', '2311665489')).toBe('https://www.kuwo.cn/playlist_detail/2311665489');
+    expect(getPlatformPlaylistUrl('migu', 'https://c.migu.cn/0mp9YM')).toBe('https://c.migu.cn/0mp9YM');
+    expect(getPlatformPlaylistUrl('migu', '236858196')).toBe('https://music.migu.cn/v5/#/playlist/236858196');
   });
 
   it('prefers sourceUrl when valid URL is supplied', () => {
@@ -23,6 +27,7 @@ describe('platform utilities and defensive URL resolution', () => {
     expect(getPlatformPlaylistUrl('kugou', '4', 'https://www.kugou.com/songlist/')).toBe('https://m.kugou.com/songlist/?listid=4');
     expect(getPlatformPlaylistUrl('kugou', '4')).toBe('https://m.kugou.com/songlist/?listid=4');
     expect(getPlatformPlaylistUrl('kugou', 'gcid_12345')).toBe('https://m.kugou.com/songlist/gcid_12345/');
+    expect(getPlatformPlaylistUrl('migu', '236858196', 'https://music.migu.cn/custom')).toBe('https://music.migu.cn/custom');
   });
 
   it('provides correct brand colors and metadata for all supported platforms', () => {
@@ -30,5 +35,7 @@ describe('platform utilities and defensive URL resolution', () => {
     expect(getPlatformConfig('netease').color).toBe('red');
     expect(getPlatformConfig('qishui').color).toBe('lime');
     expect(getPlatformConfig('kugou').color).toBe('blue');
+    expect(getPlatformConfig('kuwo').color).toBe('yellow');
+    expect(getPlatformConfig('migu').color).toBe('pink');
   });
 });

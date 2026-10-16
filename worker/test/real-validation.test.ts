@@ -4,6 +4,7 @@ import { neteaseProvider } from '../src/providers/netease';
 import { kugouProvider } from '../src/providers/kugou';
 import { qishuiProvider } from '../src/providers/qishui';
 import { kuwoProvider } from '../src/providers/kuwo';
+import { miguProvider } from '../src/providers/migu';
 
 // Real-source validation timeout is set to 30s per test to allow real network round-trips
 describe('Real Public QQ Music Playlist Live Validation', { timeout: 30000 }, () => {
@@ -282,3 +283,24 @@ describe('Real Public Kuwo Playlist Live Validation', { timeout: 60000 }, () => 
     });
   });
 });
+
+describe('Real Public Migu Playlist Live Validation', { timeout: 60000 }, () => {
+  it('validates public Migu playlist via share shortlink or web URL', async () => {
+    const playlist = await miguProvider.parse(
+      'https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172',
+    );
+
+    expect(playlist.platform).toBe('migu');
+    expect(playlist.id).toBe('236858196');
+    expect(playlist.name).toBeTruthy();
+    expect(playlist.trackCount).toBeGreaterThan(0);
+    expect(playlist.tracks.length).toBe(playlist.trackCount);
+
+    playlist.tracks.slice(0, 20).forEach((track, i) => {
+      expect(track.index).toBe(i + 1);
+      expect(track.title.length).toBeGreaterThan(0);
+      expect(typeof track.artist).toBe('string');
+    });
+  });
+});
+

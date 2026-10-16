@@ -139,6 +139,12 @@ describe('Unified Export Naming', () => {
     expect(buildExportBaseName({ platform: 'netease', name: '华语精选', creator: '音乐研究所' })).toBe(
       '【网易云音乐】华语精选 - 音乐研究所',
     );
+    expect(buildExportBaseName({ platform: 'kuwo', name: '经典老歌', creator: '酷我DJ' })).toBe(
+      '【酷我音乐】经典老歌 - 酷我DJ',
+    );
+    expect(buildExportBaseName({ platform: 'migu', name: '动感地带', creator: '咪咕音乐人' })).toBe(
+      '【咪咕音乐】动感地带 - 咪咕音乐人',
+    );
   });
 
   it('omits the creator segment when there is no creator', () => {

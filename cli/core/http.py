@@ -96,7 +96,7 @@ def resolve_shortlink(url_or_text: str, timeout: int = 8, max_hops: int = 3) -> 
     if not m:
         # 支持无协议前缀的常见短链
         m_bare = re.search(
-            r'(?:^|[^\w.-])((?:(?:[a-zA-Z0-9-]+\.)*(?:y\.qq\.com|163cn\.tv|kugou\.com|kuwo\.cn|douyin\.com|qishui\.com))[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
+            r'(?:^|[^\w.-])((?:(?:[a-zA-Z0-9-]+\.)*(?:y\.qq\.com|163cn\.tv|kugou\.com|kuwo\.cn|douyin\.com|qishui\.com|migu\.cn))[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
             text
         )
         if m_bare:
@@ -121,7 +121,7 @@ def resolve_shortlink(url_or_text: str, timeout: int = 8, max_hops: int = 3) -> 
                 loc = resp.headers["Location"].strip()
                 current_url = urljoin(current_url, loc)
                 # 如果已经到达明确的目标落地页且不再是短链路径，可以提前退出
-                if not any(s in current_url for s in ("163cn.tv", "fcgi-bin/u", "/s/", "t.kuwo.cn", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com")):
+                if not any(s in current_url for s in ("163cn.tv", "fcgi-bin/u", "/s/", "t.kuwo.cn", "c.migu.cn", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com")):
                     break
             else:
                 break

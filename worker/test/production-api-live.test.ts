@@ -134,4 +134,14 @@ describe('Production Public API live smoke', { timeout: 90000 }, () => {
     const playlist = assertPlaylistEnvelope(body, 'qishui');
     expect(playlist.tracks.length).toBe(playlist.trackCount);
   });
+
+  it('resolves a real Migu playlist through production', async () => {
+    const { response, body } = await requestJson(
+      resolvePath('https://music.migu.cn/v5/#/playlist/236858196'),
+    );
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    const playlist = assertPlaylistEnvelope(body, 'migu');
+    expect(playlist.tracks.length).toBe(playlist.trackCount);
+  });
 });
+

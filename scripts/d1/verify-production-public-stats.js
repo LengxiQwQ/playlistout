@@ -12,7 +12,7 @@
 
 import { executeD1Query } from './verify-migration-history.js';
 
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui'];
+const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui', 'migu'];
 const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'];
 const DEFAULT_API_BASE = 'https://playlistout-api.lengxiqwq.com';
 
@@ -126,7 +126,7 @@ export async function collectExpectedPublicStats(options = {}) {
       SUM(CASE WHEN date = date('now') THEN count ELSE 0 END) AS today
     FROM analytics_v2_daily_core
     WHERE metric='playlist_success'
-      AND platform IN ('qqmusic','netease','kugou','kuwo','qishui')
+      AND platform IN ('qqmusic','netease','kugou','kuwo','qishui','migu')
     GROUP BY platform;
   `, options);
   const platformMap = new Map(platformRows.map((row) => [row.platform, row]));

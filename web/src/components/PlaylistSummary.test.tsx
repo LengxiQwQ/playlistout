@@ -287,3 +287,25 @@ describe('PlaylistSummary Component — Qishui & Douyin Dual Channel Switcher', 
   });
 });
 
+describe('PlaylistSummary Component — Migu Music Rendering', () => {
+  it('renders Migu Music playlist metadata, sticker, and link correctly', () => {
+    const miguPlaylist: Playlist = {
+      platform: 'migu',
+      id: '236858196',
+      name: '咪咕精选歌单',
+      creator: '咪咕音乐人',
+      trackCount: 50,
+      tracks: [
+        { index: 1, id: 's1', title: '歌曲 1', artist: '歌手 1' },
+      ],
+    };
+
+    render(<PlaylistSummary playlist={miguPlaylist} onReset={vi.fn()} />);
+
+    expect(screen.getByText('咪咕精选歌单')).toBeInTheDocument();
+    expect(screen.getByText('咪咕音乐人')).toBeInTheDocument();
+    expect(screen.getByText('咪咕音乐歌单')).toBeInTheDocument();
+  });
+});
+
+

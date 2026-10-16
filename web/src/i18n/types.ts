@@ -56,7 +56,6 @@ export interface Translations {
     sampleKuwo: string;
     sampleMigu: string;
     sampleKugou: string;
-    sampleKugouBatch: string;
     worksWith: string;
     platformQQ: string;
     platformQQDesc: string;

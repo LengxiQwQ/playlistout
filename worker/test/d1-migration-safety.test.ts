@@ -560,6 +560,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           kugou: { totalSuccess: 10, todaySuccess: 1 },
           kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
+          migu: { totalSuccess: 10, todaySuccess: 1 },
         },
       };
       const expected = {
@@ -596,6 +597,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           kugou: { totalSuccess: 10, todaySuccess: 1 },
           kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
+          migu: { totalSuccess: 10, todaySuccess: 1 },
         },
       };
       const expected = { ...sample, totalPageViews: 105 };
