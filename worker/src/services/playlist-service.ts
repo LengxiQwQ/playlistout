@@ -81,7 +81,7 @@ export async function parsePlaylistService(
   if (!matchedProvider) {
     throw new ProviderError(
       'UNSUPPORTED_URL',
-      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music, or Kuwo Music playlist URL.',
+      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music, Kuwo Music, or Migu Music playlist URL.',
       400,
     );
   }
