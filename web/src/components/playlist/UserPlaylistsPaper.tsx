@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { UserPlaylistsData, UserPlaylistSummary } from '../../api/types';
+import { recordBatchExportPlaylists } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Tape } from '../ui/Tape';
@@ -139,6 +140,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       } else {
         await exportToZip(successfulPlaylists, userData.nickname, batchFormat, userData.platform);
       }
+
+      // Record batch export telemetry in single packed HTTP request
+      recordBatchExportPlaylists(successfulPlaylists, batchFormat, userData.platform);
 
       if (failedCount > 0) {
         showToast(formatString(t.userPlaylists.exportPartialFail, { count: failedCount }));

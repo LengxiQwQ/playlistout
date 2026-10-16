@@ -307,6 +307,7 @@ def perform_export(
     show_header: bool = True,
     show_summary: bool = True,
     indent: str = "  ",
+    auto_flush_telemetry: bool = True,
 ) -> List[str]:
     """统一执行导出，并以简洁一致的方式反馈结果"""
     if formats is None:
@@ -367,6 +368,17 @@ def perform_export(
             fail_msg = f"{indent}❌ 没有文件导出成功"
             print(color_red(fail_msg) if supports_color() else fail_msg)
 
-        if exported_files and reveal_folder_flag:
-            reveal_folder(exported_files[0])
+    if exported_files:
+        try:
+            from .telemetry import report_export_formats
+            success_formats = [os.path.splitext(f)[1].lstrip(".").lower() for f in exported_files]
+            report_export_formats(
+                platform=playlist.platform,
+                formats=success_formats,
+                track_count=len(playlist.tracks),
+                auto_flush=auto_flush_telemetry,
+            )
+        except Exception:
+            pass
+
     return exported_files

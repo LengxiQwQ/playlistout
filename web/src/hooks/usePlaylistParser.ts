@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import type { Playlist, UserPlaylistsData, ApiError } from '../api/types';
-import { parsePlaylist, fetchUserPlaylists, submitFeedback } from '../api/client';
+import { parsePlaylist, fetchUserPlaylists, submitFeedback, clearParseCache } from '../api/client';
 import { validatePlaylistInput } from '../utils/validation';
 import { clearKugouAuth, getKugouAuth } from '../utils/kugouAuth';
 import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from '../analytics/clarity';
@@ -47,6 +47,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);
+  const inFlightTargetRef = useRef<string | null>(null);
 
   const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
     if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
@@ -74,6 +75,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
       isSample?: boolean,
       channelHint?: 'qishui' | 'douyin',
       skipScroll?: boolean,
+      forceRefresh?: boolean,
     ) => {
       const rawTarget = (urlToParse !== undefined ? urlToParse : (inputUrl || playlist?.sourceUrl || playlist?.id || '')).trim();
 
@@ -94,6 +96,11 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
         setInputUrl(targetUrl);
       }
 
+      // Prevent duplicate concurrent requests for the same target if already loading
+      if (state === 'loading' && inFlightTargetRef.current === targetUrl && !forceRefresh) {
+        return;
+      }
+
       // 2. Cancel any pending in-flight request to prevent race conditions
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -102,6 +109,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const currentRequestId = ++requestIdRef.current;
+      inFlightTargetRef.current = targetUrl;
 
       setState('loading');
       setError(null);
@@ -168,7 +176,9 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'qqmusic'
               : undefined;
           const res = channelHint
-            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, channelHint)
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, channelHint, undefined, forceRefresh)
+            : forceRefresh
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, undefined, undefined, true)
             : await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample);
           if (requestIdRef.current !== currentRequestId) return;
 
@@ -316,7 +326,9 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'migu'
               : 'qqmusic';
           const res = channelHint
-            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint, undefined, forceRefresh)
+            : forceRefresh
+            ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, undefined, undefined, true)
             : await parsePlaylist(targetUrl, controller.signal, platform);
           if (requestIdRef.current !== currentRequestId) return;
 
@@ -482,7 +494,9 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
-          return;
+          if (requestIdRef.current !== currentRequestId) {
+            return;
+          }
         }
 
         if (requestIdRef.current === currentRequestId) {
@@ -493,10 +507,15 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
           setState('error');
           recordClarityParseFailure();
         }
+      } finally {
+        if (requestIdRef.current === currentRequestId) {
+          inFlightTargetRef.current = null;
+        }
       }
     },
     [
       inputUrl,
+      state,
       playlist,
       scrollToElement,
       scrollToTop,
@@ -510,13 +529,14 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
 
   const handleReload = useCallback(() => {
     scrollToTop();
-    handleParse();
+    handleParse(undefined, undefined, undefined, false, undefined, false, true);
   }, [scrollToTop, handleParse]);
 
   const handleReset = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    clearParseCache();
     setInputUrl('');
     setPlaylist(null);
     setUserPlaylists(null);

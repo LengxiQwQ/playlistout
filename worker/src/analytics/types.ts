@@ -127,7 +127,27 @@ export interface VisitEventPayload {
   referrerSource?: ReferrerSource;
 }
 
-export type EventPayload = ExportEventPayload | ClipboardEventPayload | VisitEventPayload;
+export interface ResolveEventPayload {
+  type: 'resolve';
+  platform: SupportedPlatform;
+  outcome: 'success_playlist' | 'success_user' | 'failure';
+  trackCount?: number;
+  latencyMs?: number;
+  failureCode?: string;
+}
+
+export type SingleEventPayload =
+  | ExportEventPayload
+  | ClipboardEventPayload
+  | VisitEventPayload
+  | ResolveEventPayload;
+
+export interface BatchEventPayload {
+  type: 'batch';
+  events: SingleEventPayload[];
+}
+
+export type EventPayload = SingleEventPayload | BatchEventPayload;
 
 // ── Dimension Constants ──
 

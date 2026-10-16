@@ -8,7 +8,7 @@ import type { BrowserFamily, DeviceClass, OsFamily } from './types';
 import { PLAYLISTOUT_VERSION } from '../version';
 import type { ResponseMetadata } from '../models/playlist';
 
-export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_mixed'] as const;
+export const ANALYTICS_CHANNELS = ['web', 'plugin', 'api', 'internal', 'legacy_mixed', 'cli'] as const;
 export type AnalyticsChannel = (typeof ANALYTICS_CHANNELS)[number];
 
 /**
@@ -29,6 +29,7 @@ export const REGISTERED_CLIENT_ID_SET: ReadonlySet<string> = new Set([
  */
 export const ANALYTICS_CLIENT_IDS = [
   'official_web',
+  'official_cli',
   'anonymous_api',
   'internal',
   'legacy_unknown',
@@ -123,7 +124,7 @@ function requestLooksAutomated(request: Request): boolean {
   const cf = (request as any).cf;
   const asOrg = String(cf?.asOrganization || '').toLowerCase();
   const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase() || '';
-  const isDeclaredIntegration = declaredType === 'plugin' || declaredType === 'app';
+  const isDeclaredIntegration = declaredType === 'plugin' || declaredType === 'app' || declaredType === 'cli';
   if (
     !hasOfficialWebOrigin(request) &&
     !isDeclaredIntegration &&
@@ -174,6 +175,9 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     clientId = REGISTERED_CLIENT_ID_SET.has(declaredId)
       ? (declaredId as AnalyticsClientId)
       : 'unknown_plugin';
+  } else if (declaredType === 'cli') {
+    channel = 'cli';
+    clientId = declaredId === 'official_cli' ? 'official_cli' : 'anonymous_api';
   } else if (hasOfficialWebOrigin(request)) {
     channel = 'web';
     clientId = 'official_web';
@@ -182,7 +186,7 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     clientId = 'anonymous_api';
   }
 
-  // Plugin UA carries no device/OS hints; the explicit Host / Device-Class headers
+  // Plugin and CLI UAs may carry no device/OS hints; the explicit Host / Device-Class headers
   // are authoritative when they map to a known environment.
   const declaredDeviceClassRaw = request.headers.get('x-playlistout-device-class')?.trim().toLowerCase();
   const declaredDeviceClass: DeviceClass | null =
@@ -192,7 +196,7 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
 
   let deviceClass = parsedUA.deviceClass;
   let osFamily = parsedUA.osFamily;
-  if (channel === 'plugin') {
+  if (channel === 'plugin' || channel === 'cli') {
     const hostEnv = mapHostPlatformToEnv(hostPlatform);
     if (hostEnv) {
       deviceClass = hostEnv.deviceClass;
@@ -209,8 +213,8 @@ export function createAnalyticsRequestContextV2(request: Request): AnalyticsRequ
     hour: now.getUTCHours(),
     channel,
     clientId,
-    clientVersion: channel === 'plugin' ? declaredVersion : null,
-    hostPlatform: channel === 'plugin' ? hostPlatform : null,
+    clientVersion: (channel === 'plugin' || channel === 'cli') ? declaredVersion : null,
+    hostPlatform: (channel === 'plugin' || channel === 'cli') ? hostPlatform : null,
     country: normalizeCountry(cf?.country),
     region: normalizeRegion(cf?.region),
     deviceClass,

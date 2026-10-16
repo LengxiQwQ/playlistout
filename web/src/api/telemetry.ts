@@ -286,6 +286,130 @@ export async function recordExportEvent(
   }
 }
 
+export type ExportFormat = 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8';
+
+/**
+ * Fires an export event for multiple formats generated in a single user action.
+ * Packs multiple formats into 1 single batch HTTP request to save Worker requests.
+ */
+export async function recordExportFormats(
+  formats: ExportFormat[],
+  trackCount?: number,
+  platform: string = 'qqmusic',
+): Promise<void> {
+  if (!formats || formats.length === 0) return;
+
+  if (formats.length === 1) {
+    await recordExportEvent(formats[0], trackCount, platform);
+    return;
+  }
+
+  const events = formats.map((format) => ({
+    type: 'export' as const,
+    format,
+    platform: platform.toLowerCase(),
+    ...(typeof trackCount === 'number' && trackCount >= 0 ? { trackCount } : {}),
+  }));
+
+  const payload = JSON.stringify({
+    type: 'batch',
+    events,
+  });
+  const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+    if (res.ok) {
+      for (const format of formats) {
+        notifyStatsIncrement({ kind: 'export', format });
+      }
+      return;
+    }
+  } catch {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        for (const format of formats) {
+          notifyStatsIncrement({ kind: 'export', format });
+        }
+      }
+    } catch {
+      // Fire-and-forget
+    }
+  }
+}
+
+/**
+ * Records aggregate telemetry for a batch export of multiple user playlists.
+ * Chunked by 10 to guarantee strictly remaining under the 1024-byte boundary.
+ */
+export async function recordBatchExportPlaylists(
+  playlists: Array<{ trackCount?: number; tracks?: unknown[] }>,
+  batchFormat: string,
+  platform: string = 'qqmusic',
+): Promise<void> {
+  if (!playlists || playlists.length === 0) return;
+
+  const normalizedFormat = (batchFormat === 'multi_sheet_xlsx' ? 'xlsx' : batchFormat) as ExportFormat;
+
+  if (batchFormat === 'multi_sheet_xlsx') {
+    const totalTracks = playlists.reduce((sum, pl) => sum + (pl.trackCount ?? pl.tracks?.length ?? 0), 0);
+    await recordExportEvent('xlsx', totalTracks, platform);
+    return;
+  }
+
+  // ZIP packaging of individual playlists: chunk by 10 to stay safely under 1024B limit
+  const CHUNK_SIZE = 10;
+  for (let i = 0; i < playlists.length; i += CHUNK_SIZE) {
+    const chunk = playlists.slice(i, i + CHUNK_SIZE);
+    const events = chunk.map((pl) => ({
+      type: 'export' as const,
+      format: normalizedFormat,
+      platform: platform.toLowerCase(),
+      trackCount: pl.trackCount ?? pl.tracks?.length ?? 0,
+    }));
+
+    const payload = JSON.stringify(
+      events.length === 1
+        ? events[0]
+        : { type: 'batch', events },
+    );
+    const url = `${API_BASE_URL || REMOTE_API_BASE_URL}/api/event`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      });
+      if (res.ok) {
+        for (const _ of chunk) {
+          notifyStatsIncrement({ kind: 'export', format: normalizedFormat });
+        }
+      }
+    } catch {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon(url, blob);
+          for (const _ of chunk) {
+            notifyStatsIncrement({ kind: 'export', format: normalizedFormat });
+          }
+        }
+      } catch {
+        // Fire-and-forget
+      }
+    }
+  }
+}
+
 /**
  * Fires an anonymous clipboard copy event.
  */

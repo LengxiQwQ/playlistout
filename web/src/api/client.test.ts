@@ -262,5 +262,266 @@ describe('Web API Client & Types', () => {
         Object.defineProperty(document, 'referrer', { value: '', configurable: true });
       }
     });
+
+    it('packs multiple export formats into 1 single batch HTTP request', async () => {
+      const { recordExportFormats } = await import('./client');
+
+      let callCount = 0;
+      let capturedBody: any = null;
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (_url: any, init: any) => {
+        callCount++;
+        capturedBody = JSON.parse(String(init?.body || '{}'));
+        return new Response(null, { status: 204 });
+      }) as any;
+
+      try {
+        await recordExportFormats(['xlsx', 'csv', 'json', 'txt', 'm3u8'], 80, 'qqmusic');
+
+        // Exactly 1 network request sent, not 5!
+        expect(callCount).toBe(1);
+        expect(capturedBody).toEqual({
+          type: 'batch',
+          events: [
+            { type: 'export', format: 'xlsx', platform: 'qqmusic', trackCount: 80 },
+            { type: 'export', format: 'csv', platform: 'qqmusic', trackCount: 80 },
+            { type: 'export', format: 'json', platform: 'qqmusic', trackCount: 80 },
+            { type: 'export', format: 'txt', platform: 'qqmusic', trackCount: 80 },
+            { type: 'export', format: 'm3u8', platform: 'qqmusic', trackCount: 80 },
+          ],
+        });
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('sends single export event directly when only 1 format is exported', async () => {
+      const { recordExportFormats } = await import('./client');
+
+      let callCount = 0;
+      let capturedBody: any = null;
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (_url: any, init: any) => {
+        callCount++;
+        capturedBody = JSON.parse(String(init?.body || '{}'));
+        return new Response(null, { status: 204 });
+      }) as any;
+
+      try {
+        await recordExportFormats(['xlsx'], 25, 'netease');
+
+        expect(callCount).toBe(1);
+        expect(capturedBody).toEqual({
+          type: 'export',
+          format: 'xlsx',
+          platform: 'netease',
+          trackCount: 25,
+        });
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+  });
+
+  describe('In-Memory Parse Cache, Deduplication & Strict Retry Safety', () => {
+    it('caches successful parse and eliminates redundant network requests on duplicate calls', async () => {
+      const { parsePlaylist, clearParseCache } = await import('./client');
+      clearParseCache();
+
+      let parseFetchCount = 0;
+      const originalFetch = globalThis.fetch;
+
+      const mockSuccessData = {
+        success: true,
+        data: {
+          platform: 'qqmusic',
+          id: 'mock_pl_1',
+          name: 'Cached Playlist',
+          trackCount: 2,
+          tracks: [],
+        },
+      };
+
+      globalThis.fetch = (async (url: any) => {
+        const urlStr = String(url);
+        if (urlStr.includes('/api/session/token')) {
+          return new Response(JSON.stringify({ success: true, data: { token: 'mock_session_token' } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        parseFetchCount++;
+        return new Response(JSON.stringify(mockSuccessData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }) as any;
+
+      try {
+        // First parse: makes real network fetch
+        const res1 = await parsePlaylist('https://y.qq.com/n/ryqq/playlist/mock_pl_1');
+        expect(res1.success).toBe(true);
+        expect(parseFetchCount).toBe(1);
+
+        // Second parse (same URL): hits memory cache directly, 0 network requests!
+        const res2 = await parsePlaylist('https://y.qq.com/n/ryqq/playlist/mock_pl_1');
+        expect(res2.success).toBe(true);
+        expect(res2.success && res2.data.name).toBe('Cached Playlist');
+        expect(parseFetchCount).toBe(1); // Still 1!
+      } finally {
+        globalThis.fetch = originalFetch;
+        clearParseCache();
+      }
+    });
+
+    it('NEVER caches failed responses: retry ALWAYS triggers a real network request', async () => {
+      const { parsePlaylist, clearParseCache } = await import('./client');
+      clearParseCache();
+
+      let parseFetchCount = 0;
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (url: any) => {
+        const urlStr = String(url);
+        if (urlStr.includes('/api/session/token')) {
+          return new Response(JSON.stringify({ success: true, data: { token: 'mock_session_token' } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        parseFetchCount++;
+        if (parseFetchCount === 1) {
+          // First attempt fails
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'UPSTREAM_ERROR', message: 'Upstream server error' },
+            }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+        // Second attempt (retry) succeeds!
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: { platform: 'qqmusic', id: 'retry_pl_1', name: 'Retried Success', tracks: [] },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }) as any;
+
+      try {
+        // 1. Initial attempt fails
+        const res1 = await parsePlaylist('https://y.qq.com/n/ryqq/playlist/retry_pl_1');
+        expect(res1.success).toBe(false);
+        expect(!res1.success && res1.error.code).toBe('UPSTREAM_ERROR');
+        expect(parseFetchCount).toBe(1);
+
+        // 2. CRITICAL USER INVARIANT: Retrying MUST perform a genuine network request!
+        // It must NOT read the failed error from memory!
+        const res2 = await parsePlaylist('https://y.qq.com/n/ryqq/playlist/retry_pl_1');
+        expect(parseFetchCount).toBe(2); // Network was called again!
+        expect(res2.success).toBe(true);
+        expect(res2.success && res2.data.name).toBe('Retried Success');
+      } finally {
+        globalThis.fetch = originalFetch;
+        clearParseCache();
+      }
+    });
+
+    it('merges identical in-flight requests into 1 single network fetch', async () => {
+      const { parsePlaylist, clearParseCache } = await import('./client');
+      clearParseCache();
+
+      let parseFetchCount = 0;
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (url: any) => {
+        const urlStr = String(url);
+        if (urlStr.includes('/api/session/token')) {
+          return new Response(JSON.stringify({ success: true, data: { token: 'mock_session_token' } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        parseFetchCount++;
+        // Small delay to simulate in-flight request
+        await new Promise((r) => setTimeout(r, 20));
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: { platform: 'netease', id: 'inflight_1', name: 'In Flight Playlist', tracks: [] },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }) as any;
+
+      try {
+        // User rapid double-clicks (fired simultaneously)
+        const [p1, p2] = await Promise.all([
+          parsePlaylist('https://music.163.com/playlist?id=inflight_1'),
+          parsePlaylist('https://music.163.com/playlist?id=inflight_1'),
+        ]);
+
+        expect(p1.success).toBe(true);
+        expect(p2.success).toBe(true);
+        expect(parseFetchCount).toBe(1); // Deduplicated! Only 1 fetch was made!
+      } finally {
+        globalThis.fetch = originalFetch;
+        clearParseCache();
+      }
+    });
+
+    it('bypasses cache when forceRefresh=true is specified', async () => {
+      const { parsePlaylist, clearParseCache } = await import('./client');
+      clearParseCache();
+
+      let parseFetchCount = 0;
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (url: any) => {
+        const urlStr = String(url);
+        if (urlStr.includes('/api/session/token')) {
+          return new Response(JSON.stringify({ success: true, data: { token: 'mock_session_token' } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        parseFetchCount++;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: { platform: 'qqmusic', id: 'refresh_pl', name: `Call ${parseFetchCount}`, tracks: [] },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }) as any;
+
+      try {
+        const res1 = await parsePlaylist('https://y.qq.com/n/ryqq/playlist/refresh_pl');
+        expect(res1.success && res1.data.name).toBe('Call 1');
+        expect(parseFetchCount).toBe(1);
+
+        // Force refresh
+        const res2 = await parsePlaylist(
+          'https://y.qq.com/n/ryqq/playlist/refresh_pl',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          true,
+        );
+        expect(res2.success && res2.data.name).toBe('Call 2');
+        expect(parseFetchCount).toBe(2);
+      } finally {
+        globalThis.fetch = originalFetch;
+        clearParseCache();
+      }
+    });
   });
 });
+

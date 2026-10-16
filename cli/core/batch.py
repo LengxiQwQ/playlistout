@@ -282,6 +282,7 @@ def run_batch_flow(
                 show_header=False,
                 show_summary=False,
                 indent="    ",
+                auto_flush_telemetry=False,
             )
             if files:
                 exported_files.extend(files)
@@ -303,6 +304,13 @@ def run_batch_flow(
             )
             err_msg = f"    ❌ 处理出错：{e}"
             print(color_red(err_msg) if supports_color() else err_msg)
+
+    # 批量导出结束：将所有歌单的所有导出事件打包为单次 HTTP 请求统一发送，极大减少对 Worker 的请求频次
+    try:
+        from .telemetry import flush_telemetry
+        flush_telemetry(wait=False)
+    except Exception:
+        pass
 
     # ─────────────────────────────────────────────────────────────
     # 步骤 3：汇系统计与反馈

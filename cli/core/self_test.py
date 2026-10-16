@@ -27,6 +27,9 @@ def run_self_test() -> int:
     Execute offline deterministic self-tests.
     Returns 0 on success, non-zero on failure.
     """
+    from cli.core.telemetry import set_telemetry_enabled
+    set_telemetry_enabled(False)
+
     print("[*] Running PlaylistOut Frozen Self-Test...")
 
     # 1. Verify Platform Adapters

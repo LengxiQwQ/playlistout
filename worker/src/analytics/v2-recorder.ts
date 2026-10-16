@@ -156,6 +156,107 @@ function appendClientBreakdowns(
   if (host) statements.push(host);
 }
 
+import type { SingleEventPayload } from './types';
+
+export function buildResolveStatementsV2(
+  db: D1Database,
+  ctx: AnalyticsRequestContextV2,
+  input: Omit<ResolveV2Input, 'request'>,
+): D1PreparedStatement[] {
+  const platform = normalizeAnalyticsPlatformV2(input.platform);
+  const statements: D1PreparedStatement[] = [];
+
+  statements.push(...coreUpsert(db, ctx, platform, 'resolve_request', 1));
+
+  if (input.outcome === 'success_playlist') {
+    statements.push(...coreUpsert(db, ctx, platform, 'playlist_success', 1));
+    if (typeof input.trackCount === 'number' && input.trackCount > 0) {
+      statements.push(...coreUpsert(db, ctx, platform, 'tracks_processed', Math.floor(input.trackCount)));
+    }
+  } else if (input.outcome === 'success_user') {
+    statements.push(...coreUpsert(db, ctx, platform, 'user_success', 1));
+  } else {
+    statements.push(...coreUpsert(db, ctx, platform, 'resolve_failure', 1));
+  }
+
+  const endpoint = breakdownUpsert(db, ctx, platform, 'endpoint', input.endpoint || 'resolve');
+  if (endpoint) statements.push(endpoint);
+
+  const dims: Array<[string, unknown]> = [
+    ['input_type', input.inputType],
+    ['requested_type', input.requestedType],
+    ['requested_platform', input.requestedPlatform],
+    ['resolve_outcome', input.outcome],
+    ['failure_code', input.failureCode],
+    ['failure_class', input.failureClass],
+    ['failure_stage', input.failureStage],
+    ['provider_failure_path', input.providerFailurePath],
+  ];
+
+  if (typeof input.latencyMs === 'number' && Number.isFinite(input.latencyMs)) {
+    dims.push(['latency_bucket', classifyLatency(input.latencyMs)]);
+  }
+
+  for (const [dimension, value] of dims) {
+    const stmt = breakdownUpsert(db, ctx, platform, dimension, value);
+    if (stmt) statements.push(stmt);
+  }
+
+  appendClientBreakdowns(statements, db, ctx, platform);
+  statements.push(envUpsert(db, ctx));
+
+  return statements;
+}
+
+export function buildProductEventStatementsV2(
+  db: D1Database,
+  ctx: AnalyticsRequestContextV2,
+  input: Omit<ProductEventV2Input, 'request'>,
+): D1PreparedStatement[] {
+  const platform = input.type === 'visit'
+    ? 'none'
+    : normalizeAnalyticsPlatformV2(input.platform);
+  const statements: D1PreparedStatement[] = [];
+
+  if (input.type === 'export') {
+    statements.push(...coreUpsert(db, ctx, platform, 'export', 1));
+    const format = breakdownUpsert(db, ctx, platform, 'export_format', input.format);
+    if (format) statements.push(format);
+    if (typeof input.trackCount === 'number' && input.trackCount >= 0) {
+      const size = input.trackCount <= 50 ? '1-50'
+        : input.trackCount <= 200 ? '51-200'
+        : input.trackCount <= 500 ? '201-500'
+        : input.trackCount <= 1000 ? '501-1000'
+        : '1000+';
+      const sizeStmt = breakdownUpsert(db, ctx, platform, 'export_playlist_size', size);
+      if (sizeStmt) statements.push(sizeStmt);
+    }
+  } else if (input.type === 'clipboard') {
+    statements.push(...coreUpsert(db, ctx, platform, 'clipboard', 1));
+    const mode = breakdownUpsert(db, ctx, platform, 'clipboard_mode', input.format);
+    if (mode) statements.push(mode);
+  } else if (input.type === 'visit') {
+    statements.push(...coreUpsert(db, ctx, 'none', 'page_view', 1));
+    const referrer = breakdownUpsert(db, ctx, 'none', 'referrer_source', input.referrerSource || 'direct');
+    if (referrer) statements.push(referrer);
+  } else if (input.type === 'rate_limited') {
+    statements.push(...coreUpsert(db, ctx, platform, 'rate_limited', 1));
+    const endpoint = breakdownUpsert(db, ctx, platform, 'rate_limit_endpoint', input.endpoint || 'unknown');
+    if (endpoint) statements.push(endpoint);
+  } else if (input.type === 'migration') {
+    statements.push(...coreUpsert(db, ctx, platform, 'migration_handoff', 1));
+    const destination = breakdownUpsert(db, ctx, platform, 'migration_destination', input.destination || 'other');
+    if (destination) statements.push(destination);
+    const provider = breakdownUpsert(db, ctx, platform, 'migration_provider', input.provider || 'unknown');
+    if (provider) statements.push(provider);
+  }
+
+  appendClientBreakdowns(statements, db, ctx, platform);
+  statements.push(envUpsert(db, ctx));
+
+  return statements;
+}
+
 export async function recordResolveV2(
   db: D1Database | undefined,
   input: ResolveV2Input,
@@ -169,47 +270,8 @@ export async function recordResolveV2(
       await recordAutomatedSecurityEvent(db, ctx, platform, input);
       return;
     }
-    const statements: D1PreparedStatement[] = [];
 
-    statements.push(...coreUpsert(db, ctx, platform, 'resolve_request', 1));
-
-    if (input.outcome === 'success_playlist') {
-      statements.push(...coreUpsert(db, ctx, platform, 'playlist_success', 1));
-      if (typeof input.trackCount === 'number' && input.trackCount > 0) {
-        statements.push(...coreUpsert(db, ctx, platform, 'tracks_processed', Math.floor(input.trackCount)));
-      }
-    } else if (input.outcome === 'success_user') {
-      statements.push(...coreUpsert(db, ctx, platform, 'user_success', 1));
-    } else {
-      statements.push(...coreUpsert(db, ctx, platform, 'resolve_failure', 1));
-    }
-
-    const endpoint = breakdownUpsert(db, ctx, platform, 'endpoint', input.endpoint || 'resolve');
-    if (endpoint) statements.push(endpoint);
-
-    const dims: Array<[string, unknown]> = [
-      ['input_type', input.inputType],
-      ['requested_type', input.requestedType],
-      ['requested_platform', input.requestedPlatform],
-      ['resolve_outcome', input.outcome],
-      ['failure_code', input.failureCode],
-      ['failure_class', input.failureClass],
-      ['failure_stage', input.failureStage],
-      ['provider_failure_path', input.providerFailurePath],
-    ];
-
-    if (typeof input.latencyMs === 'number' && Number.isFinite(input.latencyMs)) {
-      dims.push(['latency_bucket', classifyLatency(input.latencyMs)]);
-    }
-
-    for (const [dimension, value] of dims) {
-      const stmt = breakdownUpsert(db, ctx, platform, dimension, value);
-      if (stmt) statements.push(stmt);
-    }
-
-    appendClientBreakdowns(statements, db, ctx, platform);
-    statements.push(envUpsert(db, ctx));
-
+    const statements = buildResolveStatementsV2(db, ctx, input);
     await db.batch(statements);
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 resolve event:', err);
@@ -225,50 +287,69 @@ export async function recordProductEventV2(
   try {
     const ctx = createAnalyticsRequestContextV2(input.request);
     if (ctx.isAutomated && input.type !== 'rate_limited') return;
-    const platform = input.type === 'visit'
-      ? 'none'
-      : normalizeAnalyticsPlatformV2(input.platform);
-    const statements: D1PreparedStatement[] = [];
 
-    if (input.type === 'export') {
-      statements.push(...coreUpsert(db, ctx, platform, 'export', 1));
-      const format = breakdownUpsert(db, ctx, platform, 'export_format', input.format);
-      if (format) statements.push(format);
-      if (typeof input.trackCount === 'number' && input.trackCount >= 0) {
-        const size = input.trackCount <= 50 ? '1-50'
-          : input.trackCount <= 200 ? '51-200'
-          : input.trackCount <= 500 ? '201-500'
-          : input.trackCount <= 1000 ? '501-1000'
-          : '1000+';
-        const sizeStmt = breakdownUpsert(db, ctx, platform, 'export_playlist_size', size);
-        if (sizeStmt) statements.push(sizeStmt);
-      }
-    } else if (input.type === 'clipboard') {
-      statements.push(...coreUpsert(db, ctx, platform, 'clipboard', 1));
-      const mode = breakdownUpsert(db, ctx, platform, 'clipboard_mode', input.format);
-      if (mode) statements.push(mode);
-    } else if (input.type === 'visit') {
-      statements.push(...coreUpsert(db, ctx, 'none', 'page_view', 1));
-      const referrer = breakdownUpsert(db, ctx, 'none', 'referrer_source', input.referrerSource || 'direct');
-      if (referrer) statements.push(referrer);
-    } else if (input.type === 'rate_limited') {
-      statements.push(...coreUpsert(db, ctx, platform, 'rate_limited', 1));
-      const endpoint = breakdownUpsert(db, ctx, platform, 'rate_limit_endpoint', input.endpoint || 'unknown');
-      if (endpoint) statements.push(endpoint);
-    } else if (input.type === 'migration') {
-      statements.push(...coreUpsert(db, ctx, platform, 'migration_handoff', 1));
-      const destination = breakdownUpsert(db, ctx, platform, 'migration_destination', input.destination || 'other');
-      if (destination) statements.push(destination);
-      const provider = breakdownUpsert(db, ctx, platform, 'migration_provider', input.provider || 'unknown');
-      if (provider) statements.push(provider);
-    }
-
-    appendClientBreakdowns(statements, db, ctx, platform);
-    statements.push(envUpsert(db, ctx));
-
+    const statements = buildProductEventStatementsV2(db, ctx, input);
     await db.batch(statements);
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 product event:', err);
+  }
+}
+
+export async function recordBatchEventsV2(
+  db: D1Database | undefined,
+  request: Request,
+  events: SingleEventPayload[],
+): Promise<void> {
+  if (!db || !events.length) return;
+
+  try {
+    const ctx = createAnalyticsRequestContextV2(request);
+    if (ctx.isAutomated) return;
+
+    const allStatements: D1PreparedStatement[] = [];
+
+    for (const ev of events) {
+      if (ev.type === 'resolve') {
+        allStatements.push(...buildResolveStatementsV2(db, ctx, {
+          platform: ev.platform,
+          outcome: ev.outcome,
+          trackCount: ev.trackCount,
+          latencyMs: ev.latencyMs,
+          failureCode: ev.failureCode,
+          endpoint: 'resolve',
+        }));
+      } else if (ev.type === 'export') {
+        allStatements.push(...buildProductEventStatementsV2(db, ctx, {
+          type: 'export',
+          platform: ev.platform,
+          format: ev.format,
+          trackCount: ev.trackCount,
+        }));
+      } else if (ev.type === 'clipboard') {
+        allStatements.push(...buildProductEventStatementsV2(db, ctx, {
+          type: 'clipboard',
+          platform: ev.platform,
+          format: normalizeClipboardModeV2(ev.format),
+          trackCount: ev.trackCount,
+        }));
+      } else if (ev.type === 'visit') {
+        allStatements.push(...buildProductEventStatementsV2(db, ctx, {
+          type: 'visit',
+          referrerSource: ev.referrerSource,
+        }));
+      }
+    }
+
+    if (allStatements.length === 0) return;
+
+    // D1 batch limit: maximum 128 statements per batch. Chunk safely by 100.
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < allStatements.length; i += CHUNK_SIZE) {
+      const chunk = allStatements.slice(i, i + CHUNK_SIZE);
+      await db.batch(chunk);
+    }
+  } catch (err: unknown) {
+    console.error('Failed to record Analytics V2 batch events:', err);
   }
 }
 

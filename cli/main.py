@@ -9,6 +9,7 @@ Kugou Music, Kuwo Music, and Qishui (Douyin) Music.
 import os
 import re
 import sys
+import time
 import argparse
 from typing import Optional, List
 
@@ -59,6 +60,7 @@ from cli.core.detector import (
 )
 from cli.core.exporter import perform_export
 from cli.core.batch import run_batch_flow, preprocess_playlist
+from cli.core.telemetry import report_resolve, set_telemetry_enabled
 from cli.platforms.registry import PlatformRegistry
 
 
@@ -205,8 +207,12 @@ def main():
     login_group.add_argument("--logout", action="store_true", help="[酷狗] 清除本地保存的登录凭证")
     parser.add_argument("--token", help="[酷狗] 手动传入 Token")
     parser.add_argument("--userid", help="[酷狗] 手动传入 UserID")
+    parser.add_argument("--no-telemetry", action="store_true", help="禁用匿名使用统计上报")
 
     args = parser.parse_args()
+
+    if args.no_telemetry:
+        set_telemetry_enabled(False)
 
     if args.self_test:
         from cli.core.self_test import run_self_test
@@ -316,15 +322,19 @@ def main():
 
             print(f"✅ 已识别：{adapter.display_name} (用户模式)")
             print(f"🚀 正在获取用户歌单列表：{target_text}...")
+            t_user_start = time.time()
             user_playlists = adapter.fetch_user_playlists(
                 target_text,
                 token=args.token,
                 userid=args.userid,
             )
+            user_latency = int((time.time() - t_user_start) * 1000)
             if not user_playlists or not user_playlists.playlists:
+                report_resolve(adapter.platform_id, "failure", latency_ms=user_latency, failure_code="user_not_found")
                 print("❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或登录凭证是否有效。", file=sys.stderr)
                 sys.exit(1)
 
+            report_resolve(adapter.platform_id, "success_user", track_count=len(user_playlists.playlists), latency_ms=user_latency)
             batch_res = run_batch_flow(
                 adapter=adapter,
                 user_playlists=user_playlists,
@@ -342,12 +352,14 @@ def main():
 
         print(f"✅ 已识别：{adapter.display_name}")
         print("🚀 正在获取歌单...")
+        t_pl_start = time.time()
         playlist = adapter.fetch_playlist(
             target_text,
             channel=args.channel or "qishui",
             token=args.token,
             userid=args.userid,
         )
+        pl_latency = int((time.time() - t_pl_start) * 1000)
         if not playlist or not playlist.tracks:
             # 尝试专属交互流（如酷狗凭证管理等）
             handled = adapter.handle_interactive(
@@ -358,9 +370,11 @@ def main():
             if handled:
                 return
 
+            report_resolve(adapter.platform_id, "failure", latency_ms=pl_latency, failure_code="upstream_error")
             print("❌ 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
             sys.exit(1)
 
+        report_resolve(adapter.platform_id, "success_playlist", track_count=len(playlist.tracks), latency_ms=pl_latency)
         exported_files = run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=False)
         if not exported_files:
             print("❌ 未能成功导出任何文件。", file=sys.stderr)
@@ -535,17 +549,21 @@ def main():
 
                     fetch_user_msg = f"🚀 正在获取用户歌单列表：{target.value}..."
                     print(color_cyan(fetch_user_msg) if supports_color() else fetch_user_msg)
+                    t_iuser_start = time.time()
                     user_pls = target_adapter.fetch_user_playlists(
                         target.value,
                         token=args.token,
                         userid=args.userid,
                     )
+                    iuser_lat = int((time.time() - t_iuser_start) * 1000)
                     if not user_pls or not user_pls.playlists:
+                        report_resolve(target_adapter.platform_id, "failure", latency_ms=iuser_lat, failure_code="user_not_found")
                         err_user_msg = "❌ 获取用户歌单失败。请检查用户标识是否正确、歌单是否公开，或账号凭证是否有效。"
                         print(color_red(err_user_msg) if supports_color() else err_user_msg)
                         print("")
                         continue
 
+                    report_resolve(target_adapter.platform_id, "success_user", track_count=len(user_pls.playlists), latency_ms=iuser_lat)
                     run_batch_flow(
                         adapter=target_adapter,
                         user_playlists=user_pls,
@@ -560,19 +578,23 @@ def main():
 
                 fetch_msg = "🚀 正在获取歌单..."
                 print(color_cyan(fetch_msg) if supports_color() else fetch_msg)
+                t_ipl_start = time.time()
                 playlist = target_adapter.fetch_playlist(
                     target_query,
                     channel=args.channel,
                     token=args.token,
                     userid=args.userid,
                 )
+                ipl_lat = int((time.time() - t_ipl_start) * 1000)
                 if not playlist or not playlist.tracks:
+                    report_resolve(target_adapter.platform_id, "failure", latency_ms=ipl_lat, failure_code="upstream_error")
                     fail_fetch_msg = "\n❌ 获取歌单失败。"
                     print(color_red(fail_fetch_msg) if supports_color() else fail_fetch_msg)
                     print("  💡 请检查链接是否有效、歌单是否公开，或稍后重试。")
                     print("")
                     continue
 
+                report_resolve(target_adapter.platform_id, "success_playlist", track_count=len(playlist.tracks), latency_ms=ipl_lat)
                 run_export_flow(playlist, output_dir, formats, reveal_folder, interactive=True)
                 print("")
             except (KeyboardInterrupt, EOFError):

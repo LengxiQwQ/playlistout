@@ -20,6 +20,7 @@ import type { Env } from '../index';
 import type { ApiResponse } from '../models/playlist';
 import type {
   EventPayload,
+  SingleEventPayload,
   ExportFormat,
   ClipboardMode,
   SupportedPlatform,
@@ -32,11 +33,18 @@ import {
   MAX_TRACK_COUNT,
   REFERRER_SOURCES,
 } from '../analytics/types';
-import { recordProductEventV2, recordVisitEventV2, normalizeClipboardModeV2 } from '../analytics/v2-recorder';
+import {
+  recordProductEventV2,
+  recordVisitEventV2,
+  recordResolveV2,
+  recordBatchEventsV2,
+  normalizeClipboardModeV2,
+} from '../analytics/v2-recorder';
 import { isEventOriginAllowed } from '../cors';
 import { getClientIp, checkDurableRateLimit } from '../security/rate-limit';
 
-const MAX_EVENT_BODY_SIZE = 1024; // 1KB max for event payload
+const MAX_EVENT_BODY_SIZE = 1024; // 1KB max for standard single events
+const MAX_CLI_BATCH_BODY_SIZE = 65536; // 64KB max for official CLI batch payload
 
 interface ValidationResult {
   valid: boolean;
@@ -45,10 +53,9 @@ interface ValidationResult {
 }
 
 /**
- * Validates and normalizes the event payload strictly against schema rules.
- * Strictly rejects any unknown or extra fields to prevent data smuggling.
+ * Validates a single event payload (export, clipboard, visit, resolve).
  */
-export function validateEventPayload(body: unknown): ValidationResult {
+export function validateSingleEventPayload(body: unknown): ValidationResult {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return {
       valid: false,
@@ -67,14 +74,115 @@ export function validateEventPayload(body: unknown): ValidationResult {
   }
 
   const type = obj.type.toLowerCase().trim();
-  if (type !== 'export' && type !== 'clipboard' && type !== 'visit') {
+  if (type !== 'export' && type !== 'clipboard' && type !== 'visit' && type !== 'resolve') {
     return {
       valid: false,
-      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export", "clipboard", or "visit".' },
+      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export", "clipboard", "visit", or "resolve".' },
     };
   }
 
   const keys = Object.keys(obj);
+
+  // Resolve payload schema (used by CLI and client telemetry)
+  if (type === 'resolve') {
+    const allowedResolveKeys = new Set(['type', 'platform', 'outcome', 'trackCount', 'latencyMs', 'failureCode']);
+    for (const key of keys) {
+      if (!allowedResolveKeys.has(key)) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: `Unknown field "${key}" in payload.` },
+        };
+      }
+    }
+
+    if (!('platform' in obj) || typeof obj.platform !== 'string') {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "platform" is required and must be a string.' },
+      };
+    }
+    const platform = obj.platform.toLowerCase().trim();
+    if (!(SUPPORTED_PLATFORMS as readonly string[]).includes(platform)) {
+      return {
+        valid: false,
+        error: {
+          code: 'UNSUPPORTED_PLATFORM',
+          message: `Platform "${obj.platform}" is not supported. Supported platforms: ${SUPPORTED_PLATFORMS.join(', ')}.`,
+        },
+      };
+    }
+
+    if (!('outcome' in obj) || typeof obj.outcome !== 'string') {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "outcome" is required and must be a string.' },
+      };
+    }
+    const outcome = obj.outcome.toLowerCase().trim();
+    if (outcome !== 'success_playlist' && outcome !== 'success_user' && outcome !== 'failure') {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "outcome" must be "success_playlist", "success_user", or "failure".' },
+      };
+    }
+
+    let trackCount: number | undefined;
+    if ('trackCount' in obj && obj.trackCount !== undefined) {
+      if (
+        obj.trackCount === null ||
+        typeof obj.trackCount !== 'number' ||
+        !Number.isInteger(obj.trackCount) ||
+        isNaN(obj.trackCount) ||
+        obj.trackCount < 0 ||
+        obj.trackCount > MAX_TRACK_COUNT
+      ) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: `Field "trackCount" must be an integer between 0 and ${MAX_TRACK_COUNT}.` },
+        };
+      }
+      trackCount = obj.trackCount;
+    }
+
+    let latencyMs: number | undefined;
+    if ('latencyMs' in obj && obj.latencyMs !== undefined) {
+      if (
+        typeof obj.latencyMs !== 'number' ||
+        isNaN(obj.latencyMs) ||
+        obj.latencyMs < 0 ||
+        obj.latencyMs > 600000
+      ) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: 'Field "latencyMs" must be a non-negative number <= 600000.' },
+        };
+      }
+      latencyMs = Math.round(obj.latencyMs);
+    }
+
+    let failureCode: string | undefined;
+    if ('failureCode' in obj && obj.failureCode !== undefined) {
+      if (typeof obj.failureCode !== 'string' || obj.failureCode.length > 64) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: 'Field "failureCode" must be a string with maximum length of 64.' },
+        };
+      }
+      failureCode = obj.failureCode.trim().toLowerCase();
+    }
+
+    return {
+      valid: true,
+      payload: {
+        type: 'resolve',
+        platform: platform as SupportedPlatform,
+        outcome: outcome as 'success_playlist' | 'success_user' | 'failure',
+        trackCount,
+        latencyMs,
+        failureCode,
+      },
+    };
+  }
 
   // Visit payload schema
   if (type === 'visit') {
@@ -235,6 +343,86 @@ export function validateEventPayload(body: unknown): ValidationResult {
 }
 
 /**
+ * Validates either a single event or a batch envelope ({ type: 'batch', events: [...] }).
+ */
+export function validateEventPayload(body: unknown): ValidationResult {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return {
+      valid: false,
+      error: { code: 'INVALID_INPUT', message: 'Request body must be a valid JSON object.' },
+    };
+  }
+
+  const obj = body as Record<string, unknown>;
+  const type = typeof obj.type === 'string' ? obj.type.toLowerCase().trim() : '';
+
+  if (type === 'batch') {
+    const keys = Object.keys(obj);
+    const allowedBatchKeys = new Set(['type', 'events']);
+    for (const key of keys) {
+      if (!allowedBatchKeys.has(key)) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: `Unknown field "${key}" in batch payload.` },
+        };
+      }
+    }
+
+    if (!('events' in obj) || !Array.isArray(obj.events) || obj.events.length === 0) {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Field "events" must be a non-empty array.' },
+      };
+    }
+
+    if (obj.events.length > 200) {
+      return {
+        valid: false,
+        error: { code: 'INVALID_INPUT', message: 'Batch events payload cannot exceed 200 items.' },
+      };
+    }
+
+    const validatedEvents: SingleEventPayload[] = [];
+    for (let i = 0; i < obj.events.length; i++) {
+      const item = obj.events[i];
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: `Event at index ${i} must be a valid JSON object.` },
+        };
+      }
+      if ((item as any).type === 'batch') {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: 'Nested batch events are not allowed.' },
+        };
+      }
+      const singleRes = validateSingleEventPayload(item);
+      if (!singleRes.valid || !singleRes.payload) {
+        return {
+          valid: false,
+          error: {
+            code: singleRes.error?.code || 'INVALID_INPUT',
+            message: `Event at index ${i}: ${singleRes.error?.message || 'Invalid item payload.'}`,
+          },
+        };
+      }
+      validatedEvents.push(singleRes.payload as SingleEventPayload);
+    }
+
+    return {
+      valid: true,
+      payload: {
+        type: 'batch',
+        events: validatedEvents,
+      },
+    };
+  }
+
+  return validateSingleEventPayload(body);
+}
+
+/**
  * Reads request body stream strictly up to maxBytes.
  * If total bytes exceed maxBytes, immediately cancels the reader and rejects,
  * preventing memory exhaustion attacks from unbounded streaming payloads.
@@ -251,7 +439,7 @@ export async function readBoundedBody(
       return {
         ok: false,
         code: 'INVALID_INPUT',
-        message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+        message: `Event payload too large. Maximum allowed size is ${maxBytes} bytes.`,
       };
     }
   }
@@ -269,7 +457,7 @@ export async function readBoundedBody(
         return {
           ok: false,
           code: 'INVALID_INPUT',
-          message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+          message: `Event payload too large. Maximum allowed size is ${maxBytes} bytes.`,
         };
       }
       return { ok: true, buffer: new Uint8Array(arrayBuf) };
@@ -304,7 +492,7 @@ export async function readBoundedBody(
           return {
             ok: false,
             code: 'INVALID_INPUT',
-            message: 'Event payload too large. Maximum allowed size is 1024 bytes.',
+            message: `Event payload too large. Maximum allowed size is ${maxBytes} bytes.`,
           };
         }
         chunks.push(value);
@@ -356,9 +544,34 @@ export async function handleEvent(
     );
   }
 
-  // 2. Exact Origin Gate: reject missing, null, or unauthorized origins before any parsing or DB access
+  // 2. Exact Origin Gate: reject missing, null, or unauthorized origins before any parsing or DB access.
+  // Official CLI clients (declared via headers) are permitted without an Origin header.
+  // If an Origin header is present (e.g. from browser), it MUST pass isEventOriginAllowed, regardless of CLI headers.
   const origin = request.headers.get('Origin');
-  if (!origin || !isEventOriginAllowed(origin)) {
+  const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase();
+  const declaredId = request.headers.get('x-playlistout-client-id')?.trim().toLowerCase();
+  const isOfficialCli = declaredType === 'cli' && declaredId === 'official_cli' && !origin;
+
+  if (origin) {
+    if (!isEventOriginAllowed(origin)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Origin not allowed.',
+          },
+        } satisfies ApiResponse<never>),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            Vary: 'Origin',
+          },
+        },
+      );
+    }
+  } else if (!isOfficialCli) {
     return new Response(
       JSON.stringify({
         success: false,
@@ -377,10 +590,10 @@ export async function handleEvent(
     );
   }
 
-  // Effective response headers with exact Origin for CORS
+  // Effective response headers with exact Origin for CORS (if present)
   const eventResponseHeaders: Record<string, string> = {
     ...responseHeaders,
-    'Access-Control-Allow-Origin': origin,
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
     Vary: 'Origin',
   };
 
@@ -406,8 +619,9 @@ export async function handleEvent(
     );
   }
 
-  // 4. Bounded streaming body read (enforces 1024-byte boundary at the streaming level)
-  const bodyResult = await readBoundedBody(request, MAX_EVENT_BODY_SIZE);
+  // 4. Bounded streaming body read (enforces 1024-byte boundary for standard web, and up to 64KB for official CLI batching)
+  const maxBytes = isOfficialCli ? MAX_CLI_BATCH_BODY_SIZE : MAX_EVENT_BODY_SIZE;
+  const bodyResult = await readBoundedBody(request, maxBytes);
   if (!bodyResult.ok) {
     return new Response(
       JSON.stringify({
@@ -502,7 +716,11 @@ export async function handleEvent(
 
   // 8. Record event asynchronously (best-effort via waitUntil)
   if (ctx && typeof ctx.waitUntil === 'function') {
-    if (payload.type === 'export') {
+    if (payload.type === 'batch') {
+      ctx.waitUntil(
+        recordBatchEventsV2(env.DB, request, payload.events),
+      );
+    } else if (payload.type === 'export') {
       ctx.waitUntil(
         recordProductEventV2(env.DB, {
           request,
@@ -529,6 +747,18 @@ export async function handleEvent(
           request,
           payload.referrerSource,
         ),
+      );
+    } else if (payload.type === 'resolve') {
+      ctx.waitUntil(
+        recordResolveV2(env.DB, {
+          request,
+          platform: payload.platform,
+          outcome: payload.outcome,
+          trackCount: payload.trackCount,
+          latencyMs: payload.latencyMs,
+          failureCode: payload.failureCode,
+          endpoint: 'resolve',
+        }),
       );
     }
   }

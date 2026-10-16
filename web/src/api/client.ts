@@ -29,7 +29,7 @@ export {
 } from './kugouAuth';
 
 // Playlist & User Playlists
-export { parsePlaylist } from './playlist';
+export { parsePlaylist, clearParseCache, getCachedPlaylist } from './playlist';
 export { fetchUserPlaylists } from './user';
 
 // Statistics
@@ -54,7 +54,10 @@ export {
   cleanupLegacyDeviceId,
   recordVisit,
   recordExportEvent,
+  recordExportFormats,
+  recordBatchExportPlaylists,
   recordClipboardEvent,
   submitFeedback,
   type ReferrerSource,
+  type ExportFormat,
 } from './telemetry';

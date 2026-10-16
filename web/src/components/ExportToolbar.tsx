@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { Playlist } from '../api/types';
 import { exportPlaylist } from '../utils/export';
 import { formatTracksForClipboard, copyToClipboard, type ClipboardMode } from '../utils/clipboard';
-import { recordExportEvent, recordClipboardEvent } from '../api/client';
+import { recordExportFormats, recordClipboardEvent } from '../api/client';
 import { trackClarityEvent, setClarityTag } from '../analytics/clarity';
 import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
@@ -86,6 +86,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
 
     const exportedFiles: string[] = [];
     const exportedFormatsLabels: string[] = [];
+    const successfulFormats: ExportFormat[] = [];
 
     for (let i = 0; i < selectedFormats.length; i++) {
       const fmt = selectedFormats[i];
@@ -97,12 +98,16 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         const { filename } = exportPlaylist(playlist, fmt);
         exportedFiles.push(filename);
         exportedFormatsLabels.push(fmt.toUpperCase());
-        recordExportEvent(fmt, playlist.tracks.length, playlist.platform || 'qqmusic');
+        successfulFormats.push(fmt);
         setClarityTag('export_format', fmt);
         trackClarityEvent('playlist_export');
       } catch (err) {
         console.error(`Failed to export format ${fmt}:`, err);
       }
+    }
+
+    if (successfulFormats.length > 0) {
+      recordExportFormats(successfulFormats, playlist.tracks.length, playlist.platform || 'qqmusic');
     }
 
     if (exportedFiles.length === 0) {

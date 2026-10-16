@@ -855,4 +855,255 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       }
     });
   });
+
+  describe('Official CLI Client & Resolve Telemetry Acceptance', () => {
+    it('accepts valid export event from official CLI client without Origin header', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+          'X-PlaylistOut-Client-Version': '2.3.0',
+          'X-PlaylistOut-Host': 'windows',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'xlsx',
+          platform: 'netease',
+          trackCount: 45,
+        }),
+      });
+
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, mockEnv, ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
+    it('rejects client without Origin header if client type/id is not official CLI', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'unauthorized_script',
+        },
+        body: JSON.stringify({
+          type: 'export',
+          format: 'xlsx',
+          platform: 'netease',
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(403);
+    });
+
+    it('accepts valid resolve telemetry event for successful playlist', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+          'X-PlaylistOut-Client-Version': '2.3.0',
+          'X-PlaylistOut-Host': 'macos',
+        },
+        body: JSON.stringify({
+          type: 'resolve',
+          platform: 'qqmusic',
+          outcome: 'success_playlist',
+          trackCount: 120,
+          latencyMs: 350,
+        }),
+      });
+
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, mockEnv, ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
+    it('accepts valid resolve telemetry event for upstream failure', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+          'X-PlaylistOut-Client-Version': '2.3.0',
+          'X-PlaylistOut-Host': 'linux',
+        },
+        body: JSON.stringify({
+          type: 'resolve',
+          platform: 'kugou',
+          outcome: 'failure',
+          latencyMs: 2500,
+          failureCode: 'upstream_error',
+        }),
+      });
+
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, mockEnv, ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
+    it('rejects resolve event with invalid outcome', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+        },
+        body: JSON.stringify({
+          type: 'resolve',
+          platform: 'qqmusic',
+          outcome: 'invalid_outcome_val',
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('rejects resolve event with unknown extra fields', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+        },
+        body: JSON.stringify({
+          type: 'resolve',
+          platform: 'qqmusic',
+          outcome: 'success_playlist',
+          unknownField: 'smuggled_data',
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('rejects request with unauthorized Origin even if official CLI headers are provided', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://malicious-website.com',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+        },
+        body: JSON.stringify({
+          type: 'resolve',
+          platform: 'qqmusic',
+          outcome: 'success_playlist',
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(403);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('FORBIDDEN');
+    });
+
+    it('accepts valid batch event containing multiple exports and resolves in single request', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+          'X-PlaylistOut-Client-Version': '2.3.0',
+          'X-PlaylistOut-Host': 'windows',
+        },
+        body: JSON.stringify({
+          type: 'batch',
+          events: [
+            {
+              type: 'resolve',
+              platform: 'netease',
+              outcome: 'success_playlist',
+              trackCount: 30,
+              latencyMs: 120,
+            },
+            {
+              type: 'export',
+              platform: 'netease',
+              format: 'xlsx',
+              trackCount: 30,
+            },
+            {
+              type: 'export',
+              platform: 'netease',
+              format: 'csv',
+              trackCount: 30,
+            },
+          ],
+        }),
+      });
+
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(request, mockEnv, ctx);
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+    });
+
+    it('rejects batch event with empty events array', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+        },
+        body: JSON.stringify({
+          type: 'batch',
+          events: [],
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('rejects batch event containing nested batch', async () => {
+      const request = new Request(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PlaylistOut-Client-Type': 'cli',
+          'X-PlaylistOut-Client-Id': 'official_cli',
+        },
+        body: JSON.stringify({
+          type: 'batch',
+          events: [
+            {
+              type: 'batch',
+              events: [],
+            },
+          ],
+        }),
+      });
+
+      const response = await worker.fetch(request, createMockEnv(), createMockCtx());
+      expect(response.status).toBe(400);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('INVALID_INPUT');
+    });
+  });
 });
