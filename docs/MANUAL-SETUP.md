@@ -119,17 +119,18 @@ npx wrangler d1 migrations apply playlistout-stats --remote
 
 ---
 
-## 6. GitHub Actions Secrets
+## 6. GitHub Actions Secrets 与运行凭据
 
-Worker 自动部署使用以下 Repository Secrets：
+Worker 自动部署使用以下 GitHub Repository Secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `INSIGHTS_ADMIN_TOKEN`（维护者 Analytics / 内部管理接口，以及 Web session 速率分类信号）
+
+维护者后台口令（`INSIGHTS_ADMIN_TOKEN` / `DASHBOARD_PASSWORD`）直接在 Cloudflare Workers 控制台的「设置 -> 变量和机密」中配置，CI 部署不会对其进行覆盖。
 
 不要把它们写进仓库、日志、README、测试 fixture 或任何客户端代码。
 
-如果 Worker workflow 出现 credentials missing / deploy skipped，优先检查这两项 secret 是否仍然有效。
+如果 Worker workflow 出现 credentials missing / deploy skipped，优先检查这两项 Cloudflare 凭证是否仍然有效。
 
 ---
 

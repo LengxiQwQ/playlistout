@@ -132,16 +132,3 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/d1/verify-production-public-stats.js --remote
-
-      - name: Configure Insights Admin Secret
-        if: steps.check-creds.outputs.has_creds == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          INSIGHTS_ADMIN_TOKEN: ${{ secrets.INSIGHTS_ADMIN_TOKEN }}
-        run: |
-          if [ -n "$INSIGHTS_ADMIN_TOKEN" ]; then
-            echo "$INSIGHTS_ADMIN_TOKEN" | npx wrangler secret put INSIGHTS_ADMIN_TOKEN --cwd worker
-          else
-            echo "INSIGHTS_ADMIN_TOKEN secret not set in repository; skipping secret configuration."
-          fi
