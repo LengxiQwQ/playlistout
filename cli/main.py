@@ -200,7 +200,7 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
 
     # 平台专属参数透传
-    parser.add_argument("--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用）")
+    parser.add_argument("--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用；歌单链接/歌单标签与 --user 互斥）")
     parser.add_argument("--channel", choices=["qishui", "douyin"], default=None, help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
     login_group = parser.add_mutually_exclusive_group()
     login_group.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
@@ -234,7 +234,7 @@ def main():
         plt_norm = args.platform.lower().strip()
         reg_entry = PlatformRegistry.get(plt_norm)
         if not reg_entry:
-            print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui, migu", file=sys.stderr)
+            print(f"× 不支持的平台 '{args.platform}'。可选平台: {', '.join(PlatformRegistry.platform_id_list())}", file=sys.stderr)
             sys.exit(2)
         plt_id = reg_entry.platform_id
 
@@ -287,20 +287,30 @@ def main():
             resolve_redirect=True
         )
 
+        # --user 与明确歌单目标互斥：歌单链接 / 歌单标签 / 平台歌单 ID 不接受用户模式，
+        # 避免被强制走用户流程后在运行期产生误导性的抓取失败。
+        if getattr(args, "user", False) and getattr(target, "is_playlist_input", False):
+            print(
+                "× 输入是歌单目标（歌单链接 / 歌单标签），与 --user（用户歌单模式）互斥。\n"
+                "  如需导出用户歌单，请使用用户主页链接，或 'QQ号: xxx' / 'UID: xxx' 形式的用户标识。",
+                file=sys.stderr
+            )
+            sys.exit(2)
+
         if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
             print(
                 f"× 输入 '{raw_input}' 是纯数字 ID，无法自动确定平台。\n"
                 "请使用 -p/--platform 参数指定平台 (例如: -p netease 或 -p qqmusic)。",
                 file=sys.stderr
             )
-            sys.exit(1)
+            sys.exit(2)
         elif target.kind == TargetKind.UNKNOWN or target.platform == PlatformType.UNKNOWN:
             print("× 无法识别歌单链接。请检查链接，或使用 -p/--platform 指定平台。", file=sys.stderr)
             sys.exit(1)
 
         adapter = PlatformRegistry.get(target.platform.value)
         if not adapter:
-            print(f"× 不支持的平台 '{target.platform.value}'。可选平台: netease, qqmusic, kugou, kuwo, qishui, migu", file=sys.stderr)
+            print(f"× 不支持的平台 '{target.platform.value}'。可选平台: {', '.join(PlatformRegistry.platform_id_list())}", file=sys.stderr)
             sys.exit(2)
 
         # 平台专属参数与识别出的目标平台校验 (针对未传 -p 但通过 URL 识别的情况)

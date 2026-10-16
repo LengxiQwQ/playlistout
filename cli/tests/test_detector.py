@@ -273,4 +273,39 @@ def test_resolve_target_comprehensive():
     assert t.value == "1160951354"
 
 
+def test_resolve_target_marks_playlist_inputs_for_user_conflict():
+    """验证 is_playlist_input 标记：明确歌单目标为 True，用户标识为 False。"""
+    # 歌单 URL -> playlist 标记
+    t = SmartDetector.resolve_target("https://y.qq.com/n/ryqq/playlist/9044196528", resolve_redirect=False)
+    assert t.is_playlist_input is True
+
+    # 歌单标签 -> playlist 标记
+    t = SmartDetector.resolve_target("歌单: 2756674066", resolve_redirect=False)
+    assert t.platform == PlatformType.AMBIGUOUS_DIGITS
+    assert t.is_playlist_input is True
+
+    # 歌单 URL + --user 强制用户模式，仍保留歌单标记（供 CLI 互斥拦截）
+    t = SmartDetector.resolve_target("https://music.163.com/playlist?id=2756674066", is_user=True, resolve_redirect=False)
+    assert t.kind == TargetKind.USER
+    assert t.is_playlist_input is True
+
+    # 酷狗 gcid 歌单 ID -> playlist 标记
+    t = SmartDetector.resolve_target("gcid_abcdef123456", resolve_redirect=False)
+    assert t.platform == PlatformType.KUGOU
+    assert t.is_playlist_input is True
+
+    # 用户主页 / 标签 / 纯数字 + --user 不标记为歌单
+    t = SmartDetector.resolve_target("https://y.qq.com/n/ryqq/profile?uin=1160951354", resolve_redirect=False)
+    assert t.kind == TargetKind.USER
+    assert t.is_playlist_input is False
+
+    t = SmartDetector.resolve_target("QQ号: 1160951354", resolve_redirect=False)
+    assert t.kind == TargetKind.USER
+    assert t.is_playlist_input is False
+
+    t = SmartDetector.resolve_target("1160951354", platform="qqmusic", is_user=True, resolve_redirect=False)
+    assert t.kind == TargetKind.USER
+    assert t.is_playlist_input is False
+
+
 

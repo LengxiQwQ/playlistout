@@ -43,6 +43,11 @@ class PlatformRegistry:
         return list(cls._adapters.values())
 
     @classmethod
+    def platform_id_list(cls) -> List[str]:
+        """按注册顺序返回全部平台 ID（供 help / 错误提示动态生成，杜绝硬编码漂移）"""
+        return list(cls._adapters.keys())
+
+    @classmethod
     def get_summary_list(cls) -> List[dict]:
         """获取供 UI 菜单展示的概要信息"""
         return [

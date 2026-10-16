@@ -332,3 +332,36 @@ def test_reset_gai_family():
         assert urllib3_cn.allowed_gai_family() == expected
     except ImportError:
         pass
+
+
+def test_ipv4_fallback_context_restores_after_exception():
+    """验证 fallback 上下文异常退出后全局网络族策略恢复为双栈（不发生全局污染）"""
+    import urllib3.util.connection as urllib3_cn
+    from urllib3.util.connection import HAS_IPV6
+
+    expected = socket.AF_UNSPEC if HAS_IPV6 else socket.AF_INET
+    reset_gai_family()
+
+    with pytest.raises(RuntimeError):
+        with ipv4_fallback_context():
+            assert urllib3_cn.allowed_gai_family() == socket.AF_INET
+            raise RuntimeError("boom")
+
+    assert urllib3_cn.allowed_gai_family() == expected
+
+
+def test_ipv4_fallback_context_reentrant():
+    """验证嵌套 fallback 上下文可重入，且逐层恢复（RLock 串行化契约）"""
+    import urllib3.util.connection as urllib3_cn
+    from urllib3.util.connection import HAS_IPV6
+
+    expected = socket.AF_UNSPEC if HAS_IPV6 else socket.AF_INET
+    reset_gai_family()
+
+    with ipv4_fallback_context():
+        with ipv4_fallback_context():
+            assert urllib3_cn.allowed_gai_family() == socket.AF_INET
+        # 内层退出后外层仍然生效
+        assert urllib3_cn.allowed_gai_family() == socket.AF_INET
+
+    assert urllib3_cn.allowed_gai_family() == expected

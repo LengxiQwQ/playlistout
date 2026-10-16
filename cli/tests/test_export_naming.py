@@ -11,9 +11,11 @@ import os
 from cli.core.exporter import perform_export
 from cli.core.models import NormalizedPlaylist, NormalizedTrack
 from cli.core.naming import (
+    MAX_TOTAL_PATH_LENGTH,
     PLATFORM_DISPLAY_NAMES,
     build_export_base_name,
     ensure_unique_base_name,
+    fit_base_name_to_path_budget,
     get_platform_display_name,
 )
 
@@ -89,3 +91,39 @@ def test_perform_export_unified_name_and_no_overwrite(tmp_path):
         playlist, output_dir=out_dir, formats=["json"], reveal_folder_flag=False
     )
     assert os.path.basename(second[0]) == "【QQ 音乐】测试歌单 - 某作者 (2).json"
+
+
+def test_fit_base_name_to_path_budget(tmp_path):
+    """验证 MAX_PATH 预算：超长歌单名被收缩，且完整路径不超预算、平台前缀保留"""
+    out_dir = str(tmp_path)
+    long_name = "【QQ 音乐】" + "超长歌单名称" * 40
+
+    fitted = fit_base_name_to_path_budget(long_name, out_dir, ["json"])
+    assert 0 < len(fitted) < len(long_name)
+    assert fitted.startswith("【QQ 音乐】")
+    assert not fitted.endswith((" ", "."))
+
+    full_path = os.path.join(os.path.abspath(out_dir), f"{fitted}.json")
+    assert len(full_path) <= MAX_TOTAL_PATH_LENGTH
+
+
+def test_fit_base_name_to_path_budget_extreme_dir():
+    """验证极端深目录下预算仍尽力而为：不产生空文件名"""
+    fake_dir = os.path.abspath("output") + os.sep + "x" * 250
+    fitted = fit_base_name_to_path_budget("【酷狗音乐】很长的歌单名", fake_dir, ["m3u8"])
+    assert 0 < len(fitted) <= 2
+
+
+def test_ensure_unique_base_name_respects_path_budget(tmp_path):
+    """验证 ensure_unique_base_name 在追加冲突后缀后仍不超预算"""
+    out_dir = str(tmp_path)
+    long_name = "【网易云音乐】" + "很长的歌单名称" * 40
+    reserved = set()
+
+    first = ensure_unique_base_name(long_name, out_dir, ["json"], reserved)
+    assert len(os.path.join(os.path.abspath(out_dir), f"{first}.json")) <= MAX_TOTAL_PATH_LENGTH
+
+    # 冲突后缀 (2) 的空间已在预算内预留
+    second = ensure_unique_base_name(long_name, out_dir, ["json"], reserved)
+    assert second == f"{first} (2)"
+    assert len(os.path.join(os.path.abspath(out_dir), f"{second}.json")) <= MAX_TOTAL_PATH_LENGTH

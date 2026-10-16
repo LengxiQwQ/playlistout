@@ -138,6 +138,61 @@ def test_cli_unsupported_user_platform(capsys):
     assert "当前不支持导出用户歌单列表" in captured.err
 
 
+def test_cli_user_flag_with_playlist_url_is_rejected(capsys):
+    """验证歌单链接误加 --user 时互斥拦截并以代码 2 退出"""
+    test_args = ["main.py", "https://y.qq.com/n/ryqq/playlist/12345", "--user"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "--user" in captured.err
+    assert "互斥" in captured.err
+
+
+def test_cli_user_flag_with_playlist_label_is_rejected(capsys):
+    """验证歌单标签（歌单: 123）误加 --user 时互斥拦截并以代码 2 退出"""
+    test_args = ["main.py", "歌单: 12345", "--user"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "互斥" in captured.err
+
+
+def test_cli_user_flag_with_user_profile_url_still_works(capsys):
+    """验证用户主页链接 + --user 不会被误判为歌单目标（继续进入用户流程）"""
+    test_args = ["main.py", "https://y.qq.com/n/ryqq/profile?uin=1160951354", "--user"]
+    with patch.object(sys, "argv", test_args):
+        with patch("cli.platforms.qqmusic.QQMusicAdapter.fetch_user_playlists", return_value=None):
+            with pytest.raises(SystemExit) as exc:
+                main()
+            # 用户流程继续执行：抓取失败按运行期错误以 1 退出，而不是互斥的 2
+            assert exc.value.code == 1
+
+    captured = capsys.readouterr()
+    assert "互斥" not in captured.err
+    assert "获取用户歌单失败" in captured.err
+
+
+def test_cli_unknown_platform_message_lists_registry_platforms(capsys):
+    """验证“可选平台”提示由 PlatformRegistry 动态生成（新增平台无需改提示文案）"""
+    from cli.platforms.registry import PlatformRegistry
+
+    test_args = ["main.py", "12345", "-p", "unknown_plat"]
+    with patch.object(sys, "argv", test_args):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    for adapter in PlatformRegistry.list_all():
+        assert adapter.platform_id in captured.err
+
+
 def test_cli_zero_files_exported_exit_code(capsys):
     """验证当单歌单抓取成功但 0 个文件导出成功时，以代码 1 退出"""
     dummy_pl = NormalizedPlaylist(

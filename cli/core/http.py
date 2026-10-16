@@ -7,6 +7,7 @@ Session management, IPv4 prioritization, and shortlink redirect resolution.
 
 import re
 import socket
+import threading
 from contextlib import contextmanager
 from typing import Optional
 import requests
@@ -33,24 +34,39 @@ def reset_gai_family():
         pass
 
 
+# urllib3 的网络族解析开关是进程级全局变量；用模块级可重入锁串行化 IPv4
+# fallback 窗口，避免并发调用时互相踩踏（CLI 自身为单线程执行模型）。
+_ipv4_fallback_lock = threading.RLock()
+
+
 @contextmanager
 def ipv4_fallback_context():
-    """在发生连接错误或特定超时时，临时切换到仅 IPv4 重试的上下文"""
-    orig = None
-    try:
-        import urllib3.util.connection as urllib3_cn
-        orig = getattr(urllib3_cn, "allowed_gai_family", None)
-        urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
-        yield
-    finally:
+    """
+    在发生连接错误或特定超时时，临时切换到仅 IPv4 重试的上下文。
+
+    线程安全与隔离契约：
+    - 通过模块级 ``RLock`` 串行化整个 fallback 窗口，保证并发调用时全局网络族
+      开关的切换与恢复顺序正确（支持嵌套）。
+    - ``allowed_gai_family`` 为进程级全局开关：fallback 窗口内其他线程发起的
+      新连接会短暂同样走 IPv4。CLI 本身为单线程执行模型；如将本模块用于并发
+      场景，请让并发请求各自使用独立的 ``requests.Session`` 并接受这一短暂降级。
+    """
+    with _ipv4_fallback_lock:
+        orig = None
         try:
-            if orig is not None:
-                import urllib3.util.connection as urllib3_cn
-                urllib3_cn.allowed_gai_family = orig
-            else:
-                reset_gai_family()
-        except Exception:
-            pass
+            import urllib3.util.connection as urllib3_cn
+            orig = getattr(urllib3_cn, "allowed_gai_family", None)
+            urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+            yield
+        finally:
+            try:
+                if orig is not None:
+                    import urllib3.util.connection as urllib3_cn
+                    urllib3_cn.allowed_gai_family = orig
+                else:
+                    reset_gai_family()
+            except Exception:
+                pass
 
 
 def request_with_ipv4_fallback(method: str, url: str, **kwargs) -> requests.Response:

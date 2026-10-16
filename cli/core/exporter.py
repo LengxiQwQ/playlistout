@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import List, Optional, Any
 
 from .models import NormalizedPlaylist, NormalizedTrack
-from .naming import build_export_base_name, ensure_unique_base_name
+from .naming import build_export_base_name, ensure_unique_base_name, fit_base_name_to_path_budget
 from .ui import (
     sanitize_filename,
     reveal_folder,
@@ -317,7 +317,7 @@ def perform_export(
 
     os.makedirs(output_dir, exist_ok=True)
     if base_name:
-        safe_title = sanitize_filename(base_name)
+        safe_title = fit_base_name_to_path_budget(sanitize_filename(base_name), output_dir, formats)
     else:
         # 统一命名：【平台】歌单名 - 作者；重名时自动追加 (2)、(3)……，绝不静默覆盖
         safe_title = ensure_unique_base_name(

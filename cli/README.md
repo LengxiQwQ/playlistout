@@ -94,7 +94,7 @@ python cli/main.py -p kugou --logout
   -i, --id              歌单链接、短链或 ID
   -f, --format          导出格式: 1~5 或 all, xlsx, csv, json, txt, m3u8 (默认: all)
   -o, --output-dir      导出文件保存目录 (默认: output)
-  --user                指定目标为用户 (用于纯数字 QQ号/UID 等脚本批量导出)
+  --user                指定目标为用户 (用于纯数字 QQ号/UID 等脚本批量导出；歌单链接/歌单标签误加时会报错退出)
   --no-open             导出完成后不自动打开文件管理器
   --debug               输出详细异常堆栈跟踪
 
@@ -109,8 +109,8 @@ python cli/main.py -p kugou --logout
 
 ### 退出状态码 (Exit Codes)
 - `0`：执行成功并至少成功导出一个文件。
-- `1`：运行时错误（网络请求失败、未成功导出任何文件、目标解析失败等）。
-- `2`：命令行参数错误（非法导出格式、平台专属参数混用、互斥参数冲突等）。
+- `1`：运行时错误（网络请求失败、上游抓取失败、未成功导出任何文件、链接无法识别等）。
+- `2`：使用方式错误（非法导出格式、平台专属参数混用、互斥参数冲突、纯数字未指定 `-p`、歌单目标误加 `--user` 等）。
 
 ---
 
@@ -177,3 +177,31 @@ cli/
    ```
 3. 在 `cli/core/detector.py` 的 `SmartDetector.detect()` 中添加域名特征规则。
 4. 在 `cli/platforms/__init__.py` 导入该模块即可！系统主菜单、参数识别、统一导出与批量均会自动生效。
+
+---
+
+## 🚢 维护者发布手册（Draft 审核与回滚）
+
+CLI 二进制通过 `.github/workflows/release-cli.yml` 构建发布，4 平台资产（Windows x64 / Linux x64 / macOS arm64 / macOS x64）+ `CLI-SHA256SUMS.txt` 由 CI 产出。
+
+### 正常发布（Draft 审核流程）
+1. 更新根 `package.json` 版本号（唯一版本源，保持 `web/`、`worker/` 同步），合入 `main`。
+2. 触发发布，二选一：
+   - **推送 Tag**：`git tag vX.Y.Z && git push origin vX.Y.Z`（自动强制 `draft=true`，且 Tag 与当前提交不一致时拒绝发布）；
+   - **手动触发** `workflow_dispatch`：默认 `draft=true`；建议先以 `dry_run=true` 跑一遍，不产生任何 Release 资产。
+3. 等 4 平台构建 + smoke test 全绿；资产只会写入/更新 **Draft** Release。
+4. 人工复核 Draft 资产（至少下载本平台包跑一次单歌单导出）后手动发布：
+   ```bash
+   gh release edit vX.Y.Z --draft=false
+   ```
+
+### 安全护栏
+- **禁止向已发布的 Release 追加或覆盖资产**：workflow 会检查已有 Release 的 `isDraft`，非 Draft 直接失败退出；线上二进制有问题时不要热修资产，改发补丁版本。
+- Tag 与提交一致性由 preflight 校验：Tag 已指向其他提交时拒绝发布/覆盖。
+- 构建失败不会产生面向用户的可见变更，修复后重跑即可。
+
+### 回滚规范
+- 已发布版本存在严重缺陷时：
+  1. 在 `main` 上修复并通过 `npm run gate`，提升补丁版本（`X.Y.(Z+1)`）走完整 Draft 审核后发布；
+  2. 如确需下线旧 Release：保留 Tag 与 CHANGELOG 记录，优先编辑 Release 说明标注问题（`gh release edit vX.Y.Z --notes "..."`）；必要时删除问题资产（`gh release delete-asset vX.Y.Z <asset>`），**不要删除历史 Tag**。
+- 本地打包入口 `npm run build:publish`（`scripts/release/build-publish.py`）仅用于本机验证，不改变上述 CI 发布规则。

@@ -372,8 +372,14 @@ jobs:
           EOF
           
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Release $TAG_NAME exists. Uploading/updating CLI assets..."
+            IS_DRAFT=$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft')
+            if [ "$IS_DRAFT" != "true" ]; then
+              echo "::error::Release $TAG_NAME is already published. Refusing to upload CLI binaries to a published release (draft review is mandatory). Bump the version and cut a new draft release instead."
+              exit 1
+            fi
+            echo "Draft release $TAG_NAME exists. Uploading/updating CLI assets..."
             gh release upload "$TAG_NAME" * --clobber
+            echo "✔ Draft $TAG_NAME updated. Validate the assets, then publish manually: gh release edit $TAG_NAME --draft=false"
           else
             TARGET_COMMIT=$(git rev-parse HEAD)
             echo "Creating new GitHub Release draft for $TAG_NAME explicitly bound to commit $TARGET_COMMIT..."

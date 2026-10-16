@@ -40,7 +40,8 @@ def test_cli_ambiguous_digits_without_platform(capsys):
     with patch.object(sys, "argv", test_args):
         with pytest.raises(SystemExit) as exc:
             main()
-        assert exc.value.code == 1
+        # 使用方式错误（缺少 -p）：按 Phase 4.2 退出码语义以 2 退出
+        assert exc.value.code == 2
 
     captured = capsys.readouterr()
     assert "纯数字" in captured.err

@@ -31,10 +31,44 @@ PLATFORM_DISPLAY_NAMES = {
 DEFAULT_PLATFORM_NAME = "音乐平台"
 DEFAULT_FORMATS = ["xlsx", "json", "csv", "txt", "m3u8"]
 
+# Windows MAX_PATH（260）的安全预算：为冲突后缀 (2)、(3)… 与系统保留留出余量
+MAX_TOTAL_PATH_LENGTH = 240
+
 
 def get_platform_display_name(platform: Optional[str]) -> str:
     """返回平台的用户可见名称，未知平台回退为通用名称。"""
     return PLATFORM_DISPLAY_NAMES.get((platform or "").strip().lower(), DEFAULT_PLATFORM_NAME)
+
+
+def fit_base_name_to_path_budget(
+    base_name: str,
+    output_dir: str,
+    formats: Optional[List[str]] = None,
+    max_path_length: int = MAX_TOTAL_PATH_LENGTH,
+) -> str:
+    """
+    MAX_PATH 总路径预算守卫：确保「输出目录绝对路径 + 文件名 + 最长扩展名」不超预算。
+
+    - 目录较浅时原样返回；目录较深时仅收缩主文件名尾部。
+    - 平台前缀（【平台】）位于文件名最前，截断时不会丢失来源信息。
+    - 目录本身已接近/超过预算时尽力而为（至少保留 1 个字符）。
+    - 为可能的冲突后缀 `` (2)`` 预留空间，追加后缀后仍不越界。
+    """
+    formats = list(formats) if formats else list(DEFAULT_FORMATS)
+    longest_ext = max((len(f".{fmt}") for fmt in formats), default=len(".xlsx"))
+    collision_reserve = len(" (2)")
+    budget = (
+        max_path_length
+        - len(os.path.abspath(output_dir))
+        - len(os.sep)
+        - longest_ext
+        - collision_reserve
+    )
+    if len(base_name) <= max(budget, 0):
+        return base_name
+    if budget <= 0:
+        return base_name[:1] or "playlist"
+    return base_name[:budget].rstrip(" .") or "playlist"
 
 
 def _clean_component(value: Optional[str]) -> str:
@@ -73,13 +107,16 @@ def ensure_unique_base_name(
     output_dir: str,
     formats: Optional[List[str]] = None,
     reserved: Optional[Set[str]] = None,
+    max_path_length: int = MAX_TOTAL_PATH_LENGTH,
 ) -> str:
     """
     防覆盖基准名：若同一批次已占用或目标目录中已存在同名文件，
     依次追加 Windows 风格后缀 `` (2)``、`` (3)`` ……，绝不静默覆盖。
+    同时执行 MAX_PATH 总路径预算守卫（见 ``fit_base_name_to_path_budget``）。
     """
     formats = list(formats) if formats else list(DEFAULT_FORMATS)
     safe_base = sanitize_filename(base_name) or "playlist"
+    safe_base = fit_base_name_to_path_budget(safe_base, output_dir, formats, max_path_length)
 
     candidate = safe_base
     counter = 2

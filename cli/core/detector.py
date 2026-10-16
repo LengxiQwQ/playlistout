@@ -39,6 +39,9 @@ class DetectedTarget:
     kind: TargetKind
     value: str
     raw_input: str
+    # 明确歌单目标标记：输入本身是歌单链接 / 歌单标签 / 平台歌单 ID（而非用户标识）。
+    # --user 强制用户模式不会清除此标记，供 CLI 做互斥校验。
+    is_playlist_input: bool = False
 
 
 
@@ -314,7 +317,8 @@ class SmartDetector:
                 platform=p,
                 kind=k,
                 value=m_pl.group(1),
-                raw_input=raw_input
+                raw_input=raw_input,
+                is_playlist_input=True
             )
 
         # 2. 检查用户主页 URL
@@ -371,11 +375,19 @@ class SmartDetector:
         # 识别到了平台，根据 is_user 决定 target kind
         final_platform = explicit_platform or ptype
         final_kind = TargetKind.USER if is_user else TargetKind.PLAYLIST
+        # 歌单目标标记：URL / 平台歌单 ID（如 gcid_xxx）视为明确歌单；分享文案等模糊输入不标记
+        looks_like_playlist_target = bool(
+            detected_text and (
+                re.match(r'^https?://', detected_text)
+                or re.fullmatch(r'[A-Za-z0-9_\-:]{4,}', detected_text)
+            )
+        )
         return DetectedTarget(
             platform=final_platform,
             kind=final_kind,
             value=detected_text,
-            raw_input=raw_input
+            raw_input=raw_input,
+            is_playlist_input=looks_like_playlist_target
         )
 
 
