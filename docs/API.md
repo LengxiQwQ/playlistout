@@ -171,7 +171,7 @@ All errors adhere to a consistent error schema:
 | :--- | :---: | :--- |
 | `INVALID_INPUT` | `400` | Missing, empty, or malformed input; query parameter exceeds 2048 chars; or credentials passed via query string. |
 | `UNSUPPORTED_URL` | `400` | The input is not recognized as a supported music platform URL. |
-| `UNSUPPORTED_PLATFORM` | `400` | Specified platform is not in the supported provider allowlist (`qqmusic`, `netease`, `kugou`, `qishui`). |
+| `UNSUPPORTED_PLATFORM` | `400` | Specified platform is not in the supported provider allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`). |
 | `FORBIDDEN` | `403` | Prohibited arbitrary proxy attempt or unauthorized origin on sensitive endpoints. |
 | `PLAYLIST_NOT_FOUND` | `404` | Playlist does not exist, is empty, is private, or could not be found. |
 | `USER_NOT_FOUND` | `404` | User profile does not exist or has no public playlists. |
@@ -198,7 +198,7 @@ GET /api/v1/resolve?q=<input>&type=auto&platform=auto
 The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side behavior of the website's universal search box:
 1. Strips promotional copy, emojis, boundaries, and punctuation from share texts.
 2. Identifies the input kind (single playlist, user profile, shortlink, or numeric ID).
-3. Detects the platform (QQ Music, NetEase, KuGou, Qishui).
+3. Detects the platform (QQ Music, NetEase, KuGou, Qishui, Kuwo, Migu).
 4. Concurrently probes for ambiguous numeric IDs and returns `409 AMBIGUOUS_INPUT` if multiple candidates match.
 5. Returns a normalized result with light metadata wrappers (`kind`, `platform`, `result`).
 
@@ -208,7 +208,7 @@ The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side b
 | :--- | :--- | :---: | :---: | :--- |
 | `q` | `string` | — | **Yes** | User input string (up to 2048 characters). Can be a web URL, mobile share link, shortlink, mixed share text, user profile URL, QQ number, NetEase UID, or raw numeric ID. |
 | `type` | `string` | `auto` | No | Intent constraint: `auto`, `playlist` (single playlist), or `user` (user profile collections). |
-| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, or `kuwo`. |
+| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, or `migu`. |
 
 #### Response: Single Playlist (`kind: "playlist"`)
 
@@ -324,7 +324,7 @@ Parses a single public playlist from a supported music provider and returns the 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
 | `url` / `id` | `string` | **Yes** | Public playlist URL, shortlink, or raw playlist ID. |
-| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
+| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
 
 #### Response (`200 OK`)
 
@@ -411,7 +411,9 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
       "qqmusic": { "totalSuccess": 600, "todaySuccess": 326 },
       "netease": { "totalSuccess": 450, "todaySuccess": 0 },
       "kugou": { "totalSuccess": 120, "todaySuccess": 0 },
-      "qishui": { "totalSuccess": 80, "todaySuccess": 0 }
+      "qishui": { "totalSuccess": 80, "todaySuccess": 0 },
+      "kuwo": { "totalSuccess": 12, "todaySuccess": 0 },
+      "migu": { "totalSuccess": 6, "todaySuccess": 0 }
     }
   }
 }
@@ -517,6 +519,18 @@ Returns self-describing metadata, visual themes, and capability flags for all re
         "userProfile": false,
         "shortLink": true
       }
+    },
+    {
+      "id": "migu",
+      "name": "咪咕音乐",
+      "nameEn": "Migu Music",
+      "themeColor": "#E64980",
+      "capabilities": {
+        "playlist": true,
+        "userProfile": false,
+        "numericId": true,
+        "shortLink": true
+      }
     }
   ]
 }
@@ -566,7 +580,7 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
 | **Client IP** | Cloudflare Edge (`CF-Connecting-IP`) | **Server-derived** | Determined by the edge network. `X-Forwarded-For` is strictly ignored for security identity. |
 | **User-Agent** | Request Header | **Server-observed** | Inspected by the server and parsed into coarse categories (desktop/mobile, browser family). Full UA strings are never persisted. |
 | **Geography** | Cloudflare (`request.cf`) | **Server-derived** | Country, region, and city derived by Cloudflare GeoIP at ingestion time. |
-| **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`). |
+| **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`). |
 | **Format / Mode** | Client JSON payload | **Validated Client-Reported** | Strictly validated against platform/format schemas. |
 | **Track Count** | Client JSON payload | **Bounded Client-Reported** | Bounded integer between `0` and `50,000`. Telemetry metric only, not server truth. |
 | **Referrer Source** | Browser Client Classifier | **Validated Client-Reported** | Coarse acquisition category classified client-side before transmission (`chatgpt`, `google`, `github`, `direct`, `other_web`, etc.). Raw `document.referrer` URLs, paths, search queries, fragments, and raw campaign values are NEVER transmitted in telemetry. Unknown or invalid categories are rejected with `400 INVALID_INPUT`. |
@@ -696,7 +710,7 @@ interface ResolveResponse<T = unknown> {
   success: boolean;
   data?: {
     kind: 'playlist' | 'user_playlists';
-    platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui';
+    platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu';
     result: T;
   };
   error?: {
@@ -845,7 +859,9 @@ PlaylistOut enforces a strict separation between **Public Product Statistics** (
         "qqmusic": { "totalSuccess": 134, "todaySuccess": 3 },
         "netease": { "totalSuccess": 20, "todaySuccess": 1 },
         "kugou": { "totalSuccess": 28, "todaySuccess": 1 },
-        "qishui": { "totalSuccess": 8, "todaySuccess": 0 }
+        "qishui": { "totalSuccess": 8, "todaySuccess": 0 },
+        "kuwo": { "totalSuccess": 12, "todaySuccess": 0 },
+        "migu": { "totalSuccess": 6, "todaySuccess": 0 }
       },
       "recentDays": [
         { "date": "2026-09-18", "parses": 5, "tracks": 1602, "exports": 36 }
@@ -875,7 +891,7 @@ The filtered query endpoint supports:
   - `to=YYYY-MM-DD`
   - `channel=web|plugin|api|internal|legacy_mixed`
   - `client=official_web|musicfree|anonymous_api|internal|legacy_unknown|unknown_plugin`
-  - `platform=qqmusic|netease|kugou|qishui|unknown|none`
+  - `platform=qqmusic|netease|kugou|qishui|kuwo|migu|unknown|none`
   - `country=XX`
   - `region=<bounded value>`
 - **Maximum range**: 366 days.

@@ -23,7 +23,7 @@
 
 ### 非目标
 
-- 不重做 QQ / 网易云 / 酷狗 / 酷我 / 汽水五个独立旧 CLI 的交互体验。
+- 不重做 QQ / 网易云 / 酷狗 / 酷我 / 汽水 / 咪咕 六个独立旧 CLI 的交互体验。
 - 不以旧独立脚本的功能完成度替统一 CLI“算支持”。
 - 不改 Web 端业务。
 - 不改变现有五种导出格式的公开结构，除非为修复明确错误且有测试保护。
@@ -47,7 +47,7 @@
 统一 Target Resolver
   ↓
 DetectedTarget
-  ├─ platform: qqmusic / netease / kugou / kuwo / qishui
+  ├─ platform: qqmusic / netease / kugou / kuwo / qishui / migu
   ├─ kind: playlist / user / ambiguous / unknown
   └─ value: playlist_id / user_id / cleaned_url
   ↓

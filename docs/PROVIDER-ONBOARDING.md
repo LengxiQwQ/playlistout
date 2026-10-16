@@ -90,6 +90,7 @@ export const SUPPORTED_PLATFORMS = [
   'kugou',
   'qishui',
   'kuwo',
+  'migu',
   '<vendor-id>',
 ] as const;
 ```

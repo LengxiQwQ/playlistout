@@ -1,7 +1,7 @@
 {
   "name": "把你的歌单带走 - Playlist Out",
   "short_name": "Playlist Out",
-  "description": "你的歌单，不应该只困在一个平台。Playlist Out 支持网易云、QQ音乐、酷狗、酷我与汽水音乐公开歌单解析。一键在浏览器本地导出为 JSON、Excel、CSV、TXT、M3U8 等格式，并带到其他开源音乐播放器。",
+  "description": "你的歌单，不应该只困在一个平台。Playlist Out 支持网易云、QQ音乐、酷狗、酷我、汽水与咪咕音乐公开歌单解析。一键在浏览器本地导出为 JSON、Excel、CSV、TXT、M3U8 等格式，并带到其他开源音乐播放器。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5efe0",

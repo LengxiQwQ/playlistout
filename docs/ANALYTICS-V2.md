@@ -129,7 +129,7 @@ Allowed filters:
 - `client=<fixed id>|<registered plugin or ecosystem id>`, where fixed ids are
   `official_web|anonymous_api|internal|legacy_unknown|unknown_plugin` and
   registered client ids include `musicfree`, `bbplayer`, etc.
-- `platform=qqmusic|netease|kugou|qishui|unknown|none`
+- `platform=qqmusic|netease|kugou|qishui|kuwo|migu|unknown|none`
 - `country=XX`
 - `region=<bounded string>`
 

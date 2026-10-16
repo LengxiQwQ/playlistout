@@ -25,7 +25,7 @@ Analytics Foundation R1–R8 and the Analytics V2 migration are **COMPLETE**. Th
 
 The current production baseline includes:
 
-- production playlist parsing for QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, and Kuwo Music
+- production playlist parsing for QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, Kuwo Music, and Migu Music
 - normalized platform-independent playlist data
 - bounded pagination including 1000+ track playlists
 - TXT / CSV / XLSX / JSON / M3U8 / Markdown browser-local export via modular plugin pipeline
@@ -177,7 +177,7 @@ This milestone is complete when:
 
 # 3. Product / ecosystem lane
 
-The five primary supported providers are in production: QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, and KuWo Music.
+The six primary supported providers are in production: QQ Music, NetEase Cloud Music, KuGou Music, QiShui Music, KuWo Music, and Migu Music.
 
 The next product work should prioritize **useful interoperability** and lightweight integration:
 

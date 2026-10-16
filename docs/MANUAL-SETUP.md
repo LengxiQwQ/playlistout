@@ -160,7 +160,7 @@ Worker 自动部署使用以下 Repository Secrets：
 - [x] D1 `playlistout-stats` 已创建并绑定
 - [x] D1 migration 已在生产环境执行
 - [x] Worker 自动部署 step 已真实执行成功
-- [x] QQ Music、网易云音乐、酷狗音乐、汽水音乐四个平台均已进入当前生产版本
+- [x] QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐六个平台均已进入当前生产版本
 
 如果未来生产环境变化，以最新 workflow 日志、Cloudflare Dashboard 和实际 HTTP 行为为准，而不是长期依赖此处的历史勾选状态。
 
@@ -174,7 +174,7 @@ Worker 自动部署使用以下 Repository Secrets：
 2. Pages 与 Worker 是否部署的是预期 commit。
 3. Cloudflare Worker 自定义域名是否仍绑定。
 4. D1 binding / migration 是否正常。
-5. 对应音乐平台（QQ 音乐 / 网易云音乐 / 酷狗音乐 / 汽水音乐）上游接口是否发生兼容性变化。
+5. 对应音乐平台（QQ 音乐 / 网易云音乐 / 酷狗音乐 / 汽水音乐 / 酷我音乐 / 咪咕音乐）上游接口是否发生兼容性变化。
 6. 最后再检查前端展示或浏览器兼容问题。
 
 不要通过放宽 SSRF/CORS/完整性校验来临时“修好”上游兼容问题。

@@ -6,6 +6,13 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+- **Migu Music Integration / 咪咕音乐全端接入**:
+  - 全栈接入第 6 家音乐平台：咪咕音乐（Migu Music），覆盖 Cloudflare Worker API、本地 Python CLI 与前端 Web UI 三层。
+  - **Worker API**：实现 `miguProvider`，支持 `c.migu.cn` 移动端分享短链（SSRF 安全 302 重定向）、`h5.nf.migu.cn` 与 `music.migu.cn` 网页链接；突破上游单页 50 首数量限制，支持多页并发抓取大歌单；标准化歌曲 VIP、无版权与高清音质（Hi-Res / FLAC / 320kbps / 128kbps）映射，封面规范化至 `https://d.musicapp.migu.cn`。
+  - **Unified Python CLI**：新增平台适配器 `cli/platforms/migu.py`（别名 `migu` / `mg`）与独立脚本 `cli/migu/migu_playlist_export.py`；`SmartDetector` 智能识别咪咕链接与分享文案；支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`）；纳入离线确定性自检（`--self-test`）。
+  - **Web UI & 导出**：前端增加咪咕音乐手账贴纸风格徽章与预设卡片；多语言（中英）完整同步；全导出格式 100% 对齐。
+  - **洞察系统 (Insights)**：全面适配 D1 聚合统计、API 遥测、本地运维看板、自动数据采集器与真实性回归测试。
+
 - **MusicFree plugin v2.1.3 — built-in source interface credits / 内置音源接口署名**:
   - 内置兜底命中的播放提示与「仅试听30秒」提示会在平台名后附上实际取链的接口服务名：QQ 直链「（VKeys）」、网易云「（GD音乐台）」或「（Meting）」；酷狗为官方公开接口不加后缀（如「内置音源：QQ音乐（VKeys）」「网易云音乐仅试听30秒（Meting）」）。
   - 插件简介（MusicFree 插件详情页）与插件 README 新增「内置音源接口与致谢」：列出各通道对应服务、作者/文档链接与使用边界（只读、低频、最后兜底；60 秒失败负缓存 + 30 分钟结果复用），并注明与本项目无隶属关系、接口方调整时可随版本同步调整或移除。

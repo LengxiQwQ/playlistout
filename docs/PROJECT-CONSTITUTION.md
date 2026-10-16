@@ -32,7 +32,7 @@ The original QQ Music-only Web MVP shipped with v2.0.0 and is release history. T
 
 Current supported product capabilities are:
 
-- public playlist parsing for **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, **QiShui Music**, and **KuWo Music**
+- public playlist parsing for **QQ Music**, **NetEase Cloud Music**, **KuGou Music**, **QiShui Music**, **KuWo Music**, and **Migu Music**
 - public user-playlist discovery where a provider exposes a supported, trustworthy path
 - browser-local TXT / CSV / XLSX / JSON / M3U8 / Markdown export via modular plugin pipeline
 - clipboard copy workflows
