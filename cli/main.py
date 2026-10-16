@@ -613,6 +613,8 @@ def is_standalone_console() -> bool:
         return False
     try:
         import ctypes
+        if not hasattr(ctypes, "windll"):
+            return False
         pids = (ctypes.c_uint * 2)()
         count = ctypes.windll.kernel32.GetConsoleProcessList(pids, 2)
         return count <= 2

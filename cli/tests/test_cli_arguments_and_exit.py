@@ -245,15 +245,21 @@ def test_is_standalone_console_logic():
     assert not is_standalone_console()
 
     # 模拟 Windows 真实 TTY 独立窗口环境 (进程数 <= 2)
+    mock_windll = MagicMock()
+    mock_windll.kernel32.GetConsoleProcessList.return_value = 2
     with patch.dict(os.environ, {}, clear=True), \
          patch("sys.platform", "win32"), \
-         patch("sys.stdin.isatty", return_value=True):
-        with patch("ctypes.windll.kernel32.GetConsoleProcessList", return_value=2):
-            assert is_standalone_console()
+         patch("sys.stdin.isatty", return_value=True), \
+         patch("ctypes.windll", mock_windll, create=True):
+        assert is_standalone_console()
 
-        # 模拟已有终端环境 (进程数 >= 3)
-        with patch("ctypes.windll.kernel32.GetConsoleProcessList", return_value=3):
-            assert not is_standalone_console()
+    # 模拟已有终端环境 (进程数 >= 3)
+    mock_windll.kernel32.GetConsoleProcessList.return_value = 3
+    with patch.dict(os.environ, {}, clear=True), \
+         patch("sys.platform", "win32"), \
+         patch("sys.stdin.isatty", return_value=True), \
+         patch("ctypes.windll", mock_windll, create=True):
+        assert not is_standalone_console()
 
 
 def test_keep_console_alive_on_exit_invokes_cmd():

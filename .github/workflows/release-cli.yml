@@ -28,7 +28,7 @@ on:
         type: boolean
 
 concurrency:
-  group: release-cli-${{ inputs.version || github.ref_name || 'default' }}-${{ github.ref }}
+  group: release-cli-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
         id: check-ver
         run: |
           PKG_VER=$(node -p "require('./package.json').version")
-          INPUT_VER="${{ inputs.version }}"
+          INPUT_VER="${{ github.event.inputs.version }}"
           if [ -z "$INPUT_VER" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
             INPUT_VER="${{ github.ref_name }}"
           fi
@@ -121,11 +121,11 @@ jobs:
             echo "draft=true" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           else
-            DRY_RUN="${{ inputs.dry_run }}"
+            DRY_RUN="${{ github.event.inputs.dry_run }}"
             [ -z "$DRY_RUN" ] && DRY_RUN="false"
-            DRAFT="${{ inputs.draft }}"
+            DRAFT="${{ github.event.inputs.draft }}"
             [ -z "$DRAFT" ] && DRAFT="true"
-            PRERELEASE="${{ inputs.prerelease }}"
+            PRERELEASE="${{ github.event.inputs.prerelease }}"
             [ -z "$PRERELEASE" ] && PRERELEASE="false"
 
             echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
