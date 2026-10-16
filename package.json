@@ -21,6 +21,7 @@
     "test": "npm run validate:plugins && npm run test --workspaces --if-present",
     "gate": "node scripts/ci-gate.js",
     "check": "npm run gate",
+    "build:publish": "python scripts/release/build-publish.py",
     "prepare": "node scripts/setup-hooks.js"
   }
 }

@@ -10,10 +10,10 @@ Features:
 - Uses Python standard library only (no external dependencies required).
 
 Usage:
-  python scripts/test_api_interception.py
-  python scripts/test_api_interception.py --count 12 --playlist netease
-  python scripts/test_api_interception.py --base-url http://127.0.0.1:8787 --count 10
-  python scripts/test_api_interception.py --mode web --count 35
+  python scripts/utils/test_api_interception.py
+  python scripts/utils/test_api_interception.py --count 12 --playlist netease
+  python scripts/utils/test_api_interception.py --base-url http://127.0.0.1:8787 --count 10
+  python scripts/utils/test_api_interception.py --mode web --count 35
 """
 
 import argparse

@@ -1,6 +1,9 @@
 name: Release CLI
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -13,14 +16,19 @@ on:
         required: false
         default: false
         type: boolean
-      dry_run:
-        description: 'Dry run: build, smoke-test, package, and aggregate artifacts without touching GitHub Release'
+      draft:
+        description: 'Create as GitHub Draft Release (review and fill notes before final publish)'
         required: false
         default: true
         type: boolean
+      dry_run:
+        description: 'Dry run: build, smoke-test, package, and aggregate artifacts without touching GitHub Release'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
-  group: release-cli-${{ inputs.version || 'default' }}-${{ github.ref }}
+  group: release-cli-${{ inputs.version || github.ref_name || 'default' }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -32,7 +40,9 @@ jobs:
     outputs:
       version: ${{ steps.check-ver.outputs.version }}
       tag_exists: ${{ steps.check-tag.outputs.tag_exists }}
-      dry_run: ${{ steps.check-dryrun.outputs.dry_run }}
+      dry_run: ${{ steps.check-options.outputs.dry_run }}
+      draft: ${{ steps.check-options.outputs.draft }}
+      prerelease: ${{ steps.check-options.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -55,10 +65,13 @@ jobs:
         run: |
           PKG_VER=$(node -p "require('./package.json').version")
           INPUT_VER="${{ inputs.version }}"
+          if [ -z "$INPUT_VER" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            INPUT_VER="${{ github.ref_name }}"
+          fi
           INPUT_VER="${INPUT_VER#v}"
           
           if [ -n "$INPUT_VER" ] && [ "$INPUT_VER" != "$PKG_VER" ]; then
-            echo "::error::Input version '$INPUT_VER' does not match root package.json version '$PKG_VER'"
+            echo "::error::Target version '$INPUT_VER' does not match root package.json version '$PKG_VER'"
             exit 1
           fi
           
@@ -82,8 +95,7 @@ jobs:
         run: |
           TARGET_VER="${{ steps.check-ver.outputs.version }}"
           TAG_NAME="v$TARGET_VER"
-          CURRENT_COMMIT="${{ github.sha }}"
-          IS_DRY_RUN="${{ inputs.dry_run }}"
+          CURRENT_COMMIT=$(git rev-parse HEAD)
           
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             TAG_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
@@ -91,13 +103,8 @@ jobs:
             echo "Current target commit is $CURRENT_COMMIT"
             
             if [ "$TAG_COMMIT" != "$CURRENT_COMMIT" ]; then
-              if [ "$IS_DRY_RUN" = "true" ]; then
-                echo "Notice: Tag points to different commit, but continuing because dry_run=true"
-                echo "tag_exists=true" >> "$GITHUB_OUTPUT"
-              else
-                echo "::error::Tag $TAG_NAME already points to commit $TAG_COMMIT, which differs from current commit $CURRENT_COMMIT. Refusing to publish or overwrite."
-                exit 1
-              fi
+              echo "::error::Tag $TAG_NAME already points to commit $TAG_COMMIT, which differs from current commit $CURRENT_COMMIT. Refusing to publish or overwrite."
+              exit 1
             else
               echo "tag_exists=true" >> "$GITHUB_OUTPUT"
             fi
@@ -105,14 +112,26 @@ jobs:
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Register dry run state
-        id: check-dryrun
+      - name: Register release options (dry_run, draft, prerelease)
+        id: check-options
         run: |
-          DRY_RUN="${{ inputs.dry_run }}"
-          if [ -z "$DRY_RUN" ]; then
-            DRY_RUN="true"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # When triggered by pushing a tag, execute real release and create Draft release
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            DRY_RUN="${{ inputs.dry_run }}"
+            [ -z "$DRY_RUN" ] && DRY_RUN="false"
+            DRAFT="${{ inputs.draft }}"
+            [ -z "$DRAFT" ] && DRAFT="true"
+            PRERELEASE="${{ inputs.prerelease }}"
+            [ -z "$PRERELEASE" ] && PRERELEASE="false"
+
+            echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
+            echo "draft=$DRAFT" >> "$GITHUB_OUTPUT"
+            echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           fi
-          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build (${{ matrix.target }})
@@ -300,44 +319,71 @@ jobs:
           path: dist/release-assets/*
           retention-days: 14
 
-      - name: Publish to GitHub Release
+      - name: Publish to GitHub Release (Draft Release)
         if: needs.preflight.outputs.dry_run != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ needs.preflight.outputs.version }}"
           TAG_NAME="v$VERSION"
+          
+          DRAFT_FLAG=""
+          if [ "${{ needs.preflight.outputs.draft }}" = "true" ]; then
+            DRAFT_FLAG="--draft"
+          fi
+          
           PRERELEASE_FLAG=""
-          if [ "${{ inputs.prerelease }}" = "true" ]; then
+          if [ "${{ needs.preflight.outputs.prerelease }}" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
           
           cd dist/release-assets
           
+          cat << NOTES_EOF > release_notes.md
+# Playlist Out
+
+<!-- 在此处填入本次版本的中文介绍文字 / Enter Chinese highlights here -->
+
+<!-- 在此处填入本次版本的英文介绍文字 / Enter English highlights here -->
+
+---
+
+### 📦 包含全平台资产 / Assets Included
+
+- **Windows x64**: \`PlaylistOut-$TAG_NAME-windows-x64.exe\` (双击即用，内置终端常驻退出保护)
+- **Linux x64**: \`PlaylistOut-$TAG_NAME-linux-x64.tar.gz\` (独立可执行文件，解压后运行 \`./PlaylistOut\`)
+- **macOS Apple Silicon**: \`PlaylistOut-$TAG_NAME-macos-arm64.tar.gz\` (Apple 芯片原生构建，内附双击启动器)
+- **macOS Intel**: \`PlaylistOut-$TAG_NAME-macos-x64.tar.gz\` (Intel 芯片原生构建，内附双击启动器)
+- **SHA-256 校验和**: \`CLI-SHA256SUMS.txt\`
+
+---
+
+**完整变更记录 / Full Changelog**：[CHANGELOG.md](https://github.com/LengxiQwQ/playlistout/blob/main/CHANGELOG.md)
+NOTES_EOF
+          
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "Release $TAG_NAME exists. Uploading/updating CLI assets..."
             gh release upload "$TAG_NAME" * --clobber
           else
-            echo "Creating new GitHub Release $TAG_NAME explicitly bound to commit ${{ github.sha }}..."
+            TARGET_COMMIT=$(git rev-parse HEAD)
+            echo "Creating new GitHub Release draft for $TAG_NAME explicitly bound to commit $TARGET_COMMIT..."
             gh release create "$TAG_NAME" \
-              --target "${{ github.sha }}" \
-              --title "PlaylistOut $TAG_NAME" \
-              --notes "PlaylistOut $TAG_NAME Standalone Cross-Platform CLI Release" \
+              --target "$TARGET_COMMIT" \
+              --title "$TAG_NAME" \
+              --notes-file release_notes.md \
+              $DRAFT_FLAG \
               $PRERELEASE_FLAG \
               *
           fi
-          echo "✔ GitHub Release updated successfully."
+          echo "✔ GitHub Release draft updated successfully."
 
-      - name: Report Dry-Run Success
-        if: needs.preflight.outputs.dry_run == 'true'
+      - name: Report Release / Dry-Run Result
         run: |
           echo "================================================================"
-          echo "✔ DRY-RUN SUCCESS: All 4 platforms built and verified!"
-          echo "  - Windows x64:      built and passed frozen smoke test"
-          echo "  - Linux x64:        built and passed frozen smoke test"
-          echo "  - macOS arm64:      built and passed frozen smoke test"
-          echo "  - macOS Intel x64:  built and passed frozen smoke test"
-          echo "  - CLI-SHA256SUMS.txt & cli-release-manifest.json generated"
-          echo "  - Artifacts published to GitHub Actions run bundle"
-          echo "  - GitHub Release was untouched as requested (dry_run: true)"
+          echo "✔ CI Release Flow completed successfully!"
+          echo "  - Version:          v${{ needs.preflight.outputs.version }}"
+          echo "  - Dry run:          ${{ needs.preflight.outputs.dry_run }}"
+          echo "  - Draft mode:       ${{ needs.preflight.outputs.draft }}"
+          echo "  - Platforms built:  Windows x64, Linux x64, macOS arm64, macOS x64"
+          echo "  - Artifacts:        Uploaded to Actions bundle & Release"
           echo "================================================================"

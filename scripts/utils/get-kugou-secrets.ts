@@ -5,11 +5,11 @@
  * without exposing sensitive tokens to shell history, logs, or command-line arguments.
  *
  * Usage:
- *   npx tsx scripts/get-kugou-secrets.ts [--playlist <url>]
+ *   npx tsx scripts/utils/get-kugou-secrets.ts [--playlist <url>]
  */
 
-import { createKugouQrCode, checkKugouQrCode } from '../worker/src/providers/kugou/auth';
-import { fetchKugouUserPlaylists } from '../worker/src/providers/kugou/client';
+import { createKugouQrCode, checkKugouQrCode } from '../../worker/src/providers/kugou/auth';
+import { fetchKugouUserPlaylists } from '../../worker/src/providers/kugou/client';
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -10,7 +10,7 @@
  *   - node scripts/d1/verify-schema.js --remote
  */
 
-import { provisionDatabase } from './d1/provision-db.js';
+import { provisionDatabase } from './provision-db.js';
 
 provisionDatabase()
   .then(() => process.exit(0))

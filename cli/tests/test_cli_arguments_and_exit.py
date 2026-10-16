@@ -3,6 +3,7 @@
 Tests for Unified CLI Arguments Validation, Exit Codes, and Entry Wrapper Semantics
 """
 
+import os
 import sys
 from unittest.mock import patch, MagicMock
 import pytest
@@ -230,3 +231,64 @@ def test_run_cli_entry_generic_exception(capsys):
 
     captured = capsys.readouterr()
     assert "程序发生异常：严重崩溃" in captured.err
+
+
+def test_is_standalone_console_logic():
+    """验证 Windows 独立控制台检测机制"""
+    from cli.main import is_standalone_console
+
+    # 非 Windows 平台永远为 False
+    with patch("sys.platform", "darwin"):
+        assert not is_standalone_console()
+
+    # pytest 环境默认防护返回 False
+    assert not is_standalone_console()
+
+    # 模拟 Windows 真实 TTY 独立窗口环境 (进程数 <= 2)
+    with patch.dict(os.environ, {}, clear=True), \
+         patch("sys.platform", "win32"), \
+         patch("sys.stdin.isatty", return_value=True):
+        with patch("ctypes.windll.kernel32.GetConsoleProcessList", return_value=2):
+            assert is_standalone_console()
+
+        # 模拟已有终端环境 (进程数 >= 3)
+        with patch("ctypes.windll.kernel32.GetConsoleProcessList", return_value=3):
+            assert not is_standalone_console()
+
+
+def test_keep_console_alive_on_exit_invokes_cmd():
+    """验证双击打开退出时成功触发 cmd /k 保持窗口，且具备幂等保障"""
+    from cli.main import keep_console_alive_on_exit, reset_console_alive_state
+    reset_console_alive_state()
+
+    with patch.dict(os.environ, {}, clear=True), \
+         patch("cli.main.is_standalone_console", return_value=True), \
+         patch.object(sys, "argv", ["PlaylistOut.exe"]), \
+         patch("os.system") as mock_system:
+
+        # 第一次调用，触发 cmd /k
+        keep_console_alive_on_exit()
+        mock_system.assert_called_once_with("cmd /k")
+
+        # 第二次调用，幂等保护不再重复触发
+        keep_console_alive_on_exit()
+        assert mock_system.call_count == 1
+
+    reset_console_alive_state()
+
+
+def test_keep_console_alive_on_exit_skipped_in_script_mode():
+    """验证通过命令行传参运行时绝不阻塞或触发 cmd /k"""
+    from cli.main import keep_console_alive_on_exit, reset_console_alive_state
+    reset_console_alive_state()
+
+    with patch.dict(os.environ, {}, clear=True), \
+         patch("cli.main.is_standalone_console", return_value=True), \
+         patch.object(sys, "argv", ["PlaylistOut.exe", "http://music.163.com/playlist?id=123"]), \
+         patch("os.system") as mock_system:
+
+        keep_console_alive_on_exit()
+        mock_system.assert_not_called()
+
+    reset_console_alive_state()
+

@@ -24,10 +24,10 @@
     Client simulation mode: 'direct' (6/min), 'bot' (6/min), 'plugin' (12/min), 'web' (30/min).
 
 .EXAMPLE
-    .\scripts\test-api-interception.ps1
-    .\scripts\test-api-interception.ps1 -Count 12 -Playlist qqmusic
-    .\scripts\test-api-interception.ps1 -BaseUrl http://127.0.0.1:8787 -Count 10
-    .\scripts\test-api-interception.ps1 -Mode web -Count 35
+    .\scripts\utils\test-api-interception.ps1
+    .\scripts\utils\test-api-interception.ps1 -Count 12 -Playlist qqmusic
+    .\scripts\utils\test-api-interception.ps1 -BaseUrl http://127.0.0.1:8787 -Count 10
+    .\scripts\utils\test-api-interception.ps1 -Mode web -Count 35
 #>
 
 [CmdletBinding()]

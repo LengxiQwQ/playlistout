@@ -12,6 +12,9 @@ venv/
 /dashboard.html
 scratch/
 .build/
+publish/
+pulish/
+
 
 # Never commit production/private D1 dumps
 /insights/backups/*.sql

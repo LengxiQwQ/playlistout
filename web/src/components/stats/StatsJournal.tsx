@@ -179,6 +179,46 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     ];
   }, [stats?.byPlatform, language]);
 
+  const handleDashboardNavigate = useCallback((e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      window.open('/dashboard/', '_blank');
+    } else {
+      window.location.href = '/dashboard/';
+    }
+  }, []);
+
+  const handleDashboardAuxClick = useCallback((e: React.MouseEvent) => {
+    if (e.button === 1) {
+      window.open('/dashboard/', '_blank');
+    }
+  }, []);
+
+  const renderAllTimeSubtext = useCallback(
+    (text: string) => {
+      const heartChar = '♡';
+      const lastIndex = text.lastIndexOf(heartChar);
+      if (lastIndex === -1) {
+        return text;
+      }
+      const prefix = text.slice(0, lastIndex);
+      return (
+        <>
+          {prefix}
+          <span
+            role="button"
+            tabIndex={-1}
+            className="secret-dashboard-heart"
+            onClick={handleDashboardNavigate}
+            onAuxClick={handleDashboardAuxClick}
+          >
+            {heartChar}
+          </span>
+        </>
+      );
+    },
+    [handleDashboardNavigate, handleDashboardAuxClick],
+  );
+
   return (
     <section
       id="stats"
@@ -469,7 +509,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               paddingTop: '0.75rem',
             }}
           >
-            {t.stats.allTimeSubtext}
+            {renderAllTimeSubtext(t.stats.allTimeSubtext)}
           </div>
         </Paper>
 

@@ -62,7 +62,7 @@
 
 ### 1. [MusicFree](https://musicfree.catcat.work/)（✅ 已支持 · 插件接入）
 在 MusicFree 中安装 Playlist Out 插件后，即可在播放器中通过「导入外部歌单」直接粘贴歌单链接或导入导出的 JSON 文件：
-- **插件地址**：在 [网页端](https://playlistout.lengxiqwq.com/) 直接点击「**复制插件地址**」按钮，或复制下方链接到 MusicFree 插件管理中安装：
+- **插件安装链接**（复制下方链接到 MusicFree「插件设置 → 从网络安装插件」中粘贴即可安装）：
   ```text
   https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js
   ```
@@ -243,7 +243,7 @@ npm run build
 
 ## 文档导航
 
-README 只保留使用项目所需的核心信息，更详细的协议、接口与架构说明分别放在专门文档中。
+各模块更详细的协议、接口与架构说明见以下专门文档：
 
 | 文档 | 适合谁看 | 内容 |
 |---|---|---|

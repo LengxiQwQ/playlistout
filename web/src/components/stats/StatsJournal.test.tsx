@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { StatsJournal, RunningDaysStamp } from './StatsJournal';
 import * as client from '../../api/client';
 import { LanguageProvider } from '../../i18n';
@@ -379,6 +379,65 @@ describe('StatsJournal Component (Phase 7)', () => {
       expect(container.textContent).not.toMatch(/All-time Unique Visitors/i);
       expect(container.textContent).not.toMatch(/Total Users/i);
       expect(container.textContent).not.toMatch(/Unique People/i);
+    });
+
+    it('renders secret heart entry that navigates to /dashboard/', async () => {
+      vi.spyOn(client, 'fetchStats').mockResolvedValueOnce({
+        success: true,
+        data: mockBaseStats(),
+      });
+
+      const { container } = render(
+        <LanguageProvider defaultLanguage="zh-CN">
+          <StatsJournal today={FIXED_TODAY} />
+        </LanguageProvider>,
+      );
+
+      await waitFor(() => {
+        expect(container.querySelector('.secret-dashboard-heart')).toBeInTheDocument();
+      });
+
+      const heart = container.querySelector('.secret-dashboard-heart');
+      expect(heart).toBeInTheDocument();
+      expect(heart?.textContent).toBe('♡');
+
+      // Test standard click navigation
+      const originalLocation = window.location;
+      let targetHref = '';
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        configurable: true,
+        value: {
+          ...originalLocation,
+          get href() {
+            return targetHref;
+          },
+          set href(val: string) {
+            targetHref = val;
+          },
+        },
+      });
+
+      if (heart) {
+        fireEvent.click(heart);
+        expect(targetHref).toBe('/dashboard/');
+
+        // Test Ctrl+Click opens new tab
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+        fireEvent.click(heart, { ctrlKey: true });
+        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank');
+
+        // Test Middle click opens new tab
+        fireEvent.mouseUp(heart, { button: 1 });
+        fireEvent(heart, new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 }));
+        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank');
+      }
+
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        configurable: true,
+        value: originalLocation,
+      });
     });
   });
 });

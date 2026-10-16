@@ -7,6 +7,17 @@ import { existsSync, mkdirSync, copyFileSync } from 'fs';
 function dashboardDirectoryPlugin(): Plugin {
   return {
     name: 'dashboard-directory-plugin',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url) {
+          const [pathname, search] = req.url.split('?');
+          if (pathname === '/dashboard' || pathname === '/dashboard/') {
+            req.url = '/dashboard.html' + (search ? `?${search}` : '');
+          }
+        }
+        next();
+      });
+    },
     closeBundle() {
       const distDir = fileURLToPath(new URL('dist', import.meta.url));
       const srcHtml = resolve(distDir, 'dashboard.html');

@@ -586,16 +586,69 @@ def main():
 
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
+        keep_console_alive_on_exit()
         sys.exit(0)
 
 
+_CONSOLE_ALIVE_INVOKED = False
+
+
+def reset_console_alive_state():
+    """重置终端保活触发标记 (测试专用)"""
+    global _CONSOLE_ALIVE_INVOKED
+    _CONSOLE_ALIVE_INVOKED = False
+
+
+def is_standalone_console() -> bool:
+    """
+    检测当前是否为 Windows 资源管理器双击新建的独立控制台窗口。
+    - 在独立控制台中，附着的控制台进程列表通常只有当前进程与系统控制台宿主 (<= 2)。
+    - 若从已有 CMD/PowerShell 终端启动，进程数通常 >= 3。
+    """
+    if sys.platform != "win32":
+        return False
+    if not (sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()):
+        return False
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    try:
+        import ctypes
+        pids = (ctypes.c_uint * 2)()
+        count = ctypes.windll.kernel32.GetConsoleProcessList(pids, 2)
+        return count <= 2
+    except Exception:
+        return False
+
+
+def keep_console_alive_on_exit():
+    """
+    当程序在 Windows 独立控制台（如双击打开的单文件 exe）中退出时，
+    无缝转入系统交互命令行模式，防止窗口闪退，完整保留退出横幅并提供可交互终端。
+    """
+    global _CONSOLE_ALIVE_INVOKED
+    if _CONSOLE_ALIVE_INVOKED:
+        return
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    if is_standalone_console() and len(sys.argv) <= 1:
+        _CONSOLE_ALIVE_INVOKED = True
+        try:
+            # 移交当前窗口给系统 CMD，窗口不关闭且保持交互命令行
+            os.system("cmd /k")
+        except Exception:
+            pass
+
+
 def run_cli_entry():
-    """统一最外层入口封装，集中处理退出码、未捕获异常与终端暂停"""
+    """统一最外层入口封装，集中处理退出码、未捕获异常与终端保活"""
     try:
         main()
+        keep_console_alive_on_exit()
     except SystemExit as se:
         code = se.code if isinstance(se.code, int) else (0 if se.code is None else 1)
-        if sys.platform == "win32" and sys.stdin and sys.stdin.isatty():
+        if code == 0:
+            keep_console_alive_on_exit()
+        elif sys.platform == "win32" and sys.stdin and sys.stdin.isatty():
             if len(sys.argv) <= 1 and code != 0:
                 try:
                     input("\n按回车键关闭窗口...")
@@ -604,6 +657,7 @@ def run_cli_entry():
         sys.exit(code)
     except (KeyboardInterrupt, EOFError):
         print_exit_banner()
+        keep_console_alive_on_exit()
         sys.exit(0)
     except Exception as e:
         is_debug = "--debug" in sys.argv or bool(os.environ.get("PLAYLISTOUT_DEBUG"))
