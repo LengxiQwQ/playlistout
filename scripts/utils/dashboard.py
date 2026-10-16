@@ -19,6 +19,11 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 REMOTE_BASE = os.environ.get(
     "PLAYLISTOUT_API_BASE", "https://playlistout-api.lengxiqwq.com"
 ).rstrip("/")
@@ -308,8 +313,8 @@ def reconcile_breakdown_rows(rows: list[dict]) -> list[dict]:
 def is_exclude_my(query: dict[str, str]) -> bool:
     if str(query.get("country", "")).strip().upper() == "MY":
         return False
-    val = str(query.get("exclude_my", query.get("excludeMy", "1")) or "1").strip().lower()
-    return val not in {"0", "false", "no", "off"}
+    val = str(query.get("exclude_my", query.get("excludeMy", "0")) or "0").strip().lower()
+    return val in {"1", "true", "yes", "on"}
 
 
 def _scale_group_rows(rows: list[dict], ratio: float) -> list[dict]:
@@ -608,7 +613,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     breakdowns = {
         dimension: [
             {"name": name, "count": count}
-            for name, count in sorted(values.items(), key=lambda item: (-item[1], item[0]))[:50]
+            for name, count in sorted(values.items(), key=lambda item: (-item[1], item[0]))
             if count > 0
         ]
         for dimension, values in breakdown_totals.items()
@@ -621,11 +626,16 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     countries = _sum_by(
         [row for row in filtered_geo if row.get("country") != "UNKNOWN"],
         "country",
-    )[:50]
+    )
     regions = _sum_by(
-        [row for row in filtered_geo if row.get("region") != "UNKNOWN"],
+        [
+            row
+            for row in filtered_geo
+            if row.get("region") != "UNKNOWN"
+            and (row.get("country") == "CN" or not row.get("country"))
+        ],
         "region",
-    )[:80]
+    )
 
     def filter_option_rows(omit: str, metrics: set[str]) -> list[dict]:
         return [
@@ -665,6 +675,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         row
         for row in geo_rows
         if row.get("region") != "UNKNOWN"
+        and (row.get("country") == "CN" or not row.get("country"))
         and _matches(row, filters, include_geo=True, omit="region")
     ]
 
@@ -782,8 +793,8 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "channels": channels,
             "clients": clients,
             "platforms": platforms,
-            "countries": _sum_by(country_option_rows, "country")[:50],
-            "regions": _sum_by(region_option_rows, "region")[:80],
+            "countries": _sum_by(country_option_rows, "country"),
+            "regions": _sum_by(region_option_rows, "region"),
         },
         "dataQuality": {
             "status": "healthy" if all(check["ok"] for check in checks) else "error",
@@ -901,12 +912,15 @@ button,select,input{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:9px;flex-shrink:0;text-decoration:none;color:inherit;cursor:pointer;transition:opacity .15s}
 .brand:hover{opacity:.8}
 .logo-img{width:32px;height:32px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.15);border:1px solid var(--l)}
-.brand-info{display:flex;flex-direction:column;line-height:1.2}
-h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:6px}
-.badge-tag{font-size:10px;font-weight:600;padding:1px 5px;border-radius:999px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent)}
+.brand-info{display:flex;align-items:center}
+h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
+.badge-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent)}
 .muted{font-size:12px;color:var(--m)}
-.headright{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
-#updated{font-size:11px;white-space:nowrap;color:var(--m);text-align:right}
+.headright{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto}
+#updated{font-size:10px;white-space:nowrap;color:var(--m);text-align:right;line-height:1.25}
+.health-dot{width:9px;height:9px;border-radius:50%;background:var(--g);display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px color-mix(in srgb,var(--g) 25%,transparent);cursor:help;transition:all .2s ease}
+.health-dot.bad{background:var(--r);box-shadow:0 0 0 2px color-mix(in srgb,var(--r) 25%,transparent)}
+.health-dot.loading{background:var(--w);box-shadow:0 0 0 2px color-mix(in srgb,var(--w) 25%,transparent)}
 .health{padding:4px 9px;border:1px solid var(--l);background:var(--p);border-radius:999px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:6px;min-width:92px;justify-content:center}
 .health.good{color:var(--g);border-color:color-mix(in srgb,var(--g) 30%,transparent);background:color-mix(in srgb,var(--g) 8%,transparent)}
 .health.bad{color:var(--r);border-color:color-mix(in srgb,var(--r) 30%,transparent);background:color-mix(in srgb,var(--r) 8%,transparent)}
@@ -979,13 +993,14 @@ h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px;display:flex;ali
 .chart-tooltip-row{display:flex;justify-content:space-between;gap:8px;margin:2px 0}
 
 .bars{display:flex;flex-direction:column;gap:8px}
-.bar{display:grid;grid-template-columns:150px 1fr 70px;gap:8px;align-items:center;font-size:12px}
+.bar{display:grid;grid-template-columns:minmax(130px, 175px) 1fr auto;gap:8px;align-items:center;font-size:12px}
 .bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .b-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.track{height:7px;background:var(--l);border-radius:999px;overflow:hidden}
+.track{height:7px;background:var(--l);border-radius:999px;overflow:hidden;min-width:50px}
 .fill{height:100%;border-radius:999px;transition:width .2s}
-.num{text-align:right;color:var(--m);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:11px}
-.num .pct{color:var(--t);font-weight:700;margin-left:4px}
+.num{text-align:right;color:var(--m);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:flex-end}
+.num .val{color:var(--t);font-weight:600;text-align:right;min-width:48px;display:inline-block}
+.num .pct{color:var(--m);font-weight:500;font-size:10.5px;text-align:right;display:inline-block;width:44px;margin-left:8px;flex-shrink:0}
 
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{padding:3px 7px;border:1px solid var(--l);border-radius:999px;background:var(--p);font-size:11px;color:var(--m)}
@@ -994,7 +1009,7 @@ h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px;display:flex;ali
 .notice{padding:8px 12px;border:1px solid var(--l);border-radius:7px;margin:8px 0;font-size:12px}
 .notice.bad{border-color:var(--r);color:var(--r)}
 
-.table-wrap{overflow:auto;max-height:560px}
+.table-wrap{overflow:auto;max-height:75vh}
 table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
 th,td{padding:8px 10px;border-bottom:1px solid var(--l);vertical-align:middle}
 th{color:var(--m);font-weight:600;font-size:11px;background:color-mix(in srgb,var(--p) 92%,var(--bg));position:sticky;top:0;z-index:2}
@@ -1006,21 +1021,76 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 .badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
 .badge.pending{background:color-mix(in srgb,var(--w) 15%,var(--p));color:var(--w);border:1px solid color-mix(in srgb,var(--w) 30%,transparent)}
 .badge.resolved{background:color-mix(in srgb,var(--g) 15%,var(--p));color:var(--g);border:1px solid color-mix(in srgb,var(--g) 30%,transparent)}
-.badge.ignored{background:color-mix(in srgb,var(--m) 15%,var(--p));color:var(--m);border:1px solid color-mix(in srgb,var(--m) 30%,transparent)}
-.footer{text-align:center;color:var(--m);font-size:11px;padding:24px 0}
+.footer{text-align:center;color:var(--m);font-size:11.5px;padding:28px 0 20px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.footer-line{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--m);font-weight:400}
+.footer-line a{color:var(--m);text-decoration:none;transition:color .15s ease;font-weight:400}
+.footer-line a:hover{color:var(--t);text-decoration:underline;text-underline-offset:2px}
+.footer-sep{color:color-mix(in srgb,var(--m) 45%,transparent);user-select:none}
+
+/* 图表视图切换按钮组 */
+.view-switch{display:inline-flex;background:var(--bg);border:1px solid var(--l);border-radius:6px;padding:2px;gap:2px}
+.view-switch button{border:0;background:transparent;color:var(--m);font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;transition:all .15s ease;line-height:1.4;font-weight:500}
+.view-switch button:hover{color:var(--t)}
+.view-switch button.active{background:var(--p);color:var(--a);font-weight:600;box-shadow:var(--s)}
+
+/* 环形占比图 (Donut Chart) */
+.donut-wrap{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:center;padding:6px 0}
+.donut-graphic{position:relative;width:160px;height:160px;margin:auto}
+.donut-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-slice{transition:stroke-width .2s ease, opacity .2s ease;cursor:pointer}
+.donut-slice:hover{opacity:.85}
+.donut-center{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:10px}
+.donut-center-val{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--t);line-height:1.1}
+.donut-center-lbl{font-size:10.5px;color:var(--m);margin-top:2px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.donut-legend{display:flex;flex-direction:column;gap:0;max-height:220px;overflow-y:auto;padding-right:4px}
+.donut-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;padding:4px 6px;border-radius:4px;transition:background .15s;cursor:pointer}
+.donut-item:hover{background:color-mix(in srgb,var(--p) 85%,var(--a))}
+.donut-item-left{display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.donut-item-right{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-shrink:0}
+.donut-item-right .val{font-weight:600;color:var(--t)}
+.donut-item-right .pct{color:var(--m);min-width:38px;text-align:right}
+
+/* 直方柱状分布图 (Histogram / Column Chart) */
+.hist-wrap{padding:8px 0 4px}
+.hist-cols{display:grid;grid-template-columns:repeat(5, 1fr);gap:10px;align-items:end;height:180px}
+.hist-col{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+.hist-num{display:flex;flex-direction:column;align-items:center;margin-bottom:6px;line-height:1.15}
+.hist-val{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--t)}
+.hist-pct{font-size:10.5px;color:var(--m);font-family:var(--mono)}
+.hist-track{width:100%;max-width:48px;height:100px;background:var(--l);border-radius:6px 6px 2px 2px;display:flex;align-items:flex-end;overflow:hidden}
+.hist-fill{width:100%;border-radius:6px 6px 2px 2px;transition:height .3s cubic-bezier(.4,0,.2,1)}
+.hist-label{font-size:11px;font-weight:600;color:var(--t);margin-top:6px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.hist-sub{font-size:10px;color:var(--m);margin-top:1px;white-space:nowrap}
+
+/* 数据明细表 (Ranked Table) */
+.ranked-table-wrap{overflow-x:auto;border:1px solid var(--l);border-radius:6px}
+.ranked-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.ranked-table th{background:color-mix(in srgb,var(--p) 92%,var(--bg));position:sticky;top:0;z-index:1;padding:6px 8px;font-size:11px;font-weight:600;color:var(--m);border-bottom:1px solid var(--l)}
+.ranked-table td{padding:5px 8px;border-bottom:1px solid var(--l);vertical-align:middle}
+.ranked-table tr:hover td{background:color-mix(in srgb,var(--p) 90%,var(--a))}
+.rank-badge{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:4px;font-size:10px;font-weight:700;background:var(--l);color:var(--m);font-family:var(--mono)}
+.rank-badge.top1{background:#fef08a;color:#854d0e}
+.rank-badge.top2{background:#e2e8f0;color:#334155}
+.rank-badge.top3{background:#fed7aa;color:#9a3412}
+
 @media(max-width:1240px){.head{flex-wrap:wrap;padding:6px 0;gap:8px}.tabs{order:3;width:100%;justify-content:flex-start;margin:4px 0 0;overflow-x:auto}}
 @media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:760px){.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.bar{grid-template-columns:100px 1fr 60px}}
+@media(max-width:760px){
+  .filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.bar{grid-template-columns:minmax(90px, 120px) 1fr auto;gap:6px}.num .pct{width:40px;margin-left:6px}
+  .donut-wrap{grid-template-columns:1fr;justify-items:center}
+  .hist-cols{gap:4px}
+  .hist-track{max-width:32px}
+  .hist-label{font-size:9.5px}
+}
 </style></head><body>
 
 <!-- 纤细吸顶导航栏：仅常驻标签页与状态，中英文上下换行，绝不遮挡视野 -->
 <header class="top"><div class="wrap">
   <div class="head">
-    <a href="https://playlistout.lengxiqwq.com/" target="_blank" rel="noopener noreferrer" class="brand" title="访问 PlaylistOut 官方网站 ↗">
-      <img src="/logo-64.png" width="32" height="32" class="logo-img" alt="PlaylistOut" onerror="this.onerror=null;this.src='/favicon.svg'">
+    <a href="https://playlistout.lengxiqwq.com/" target="_blank" rel="noopener noreferrer" class="brand" title="访问 Playlist Out 官方网站 ↗">
+      <img src="/logo-64.png" width="32" height="32" class="logo-img" alt="Playlist Out" onerror="this.onerror=null;this.src='/favicon.svg'">
       <div class="brand-info">
-        <h1>PlaylistOut <span class="badge-tag">Analytics</span></h1>
-        <div class="muted" style="font-size:10px;white-space:nowrap">Token 不进入浏览器 · 点击访问官网 ↗</div>
+        <h1>Playlist Out <span class="badge-tag">Analytics</span></h1>
       </div>
     </a>
     <nav class="tabs">
@@ -1069,8 +1139,16 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       </button>
     </nav>
     <div class="headright">
-      <div id="health" class="health">● Loading</div>
-      <div id="updated" class="muted" style="font-size:11px">尚未加载</div>
+      <label class="toggle-switch" title="一键排除所有来自马来西亚的测试记录（默认关闭）">
+        <input type="checkbox" id="switchExcludeMy">
+        <span class="toggle-slider"></span>
+        <span class="toggle-switch-text">排除 MY 测试</span>
+      </label>
+      <div id="updated">
+        <div>快照: <span id="snapTime">—</span></div>
+        <div>最新: <span id="latestDate">—</span></div>
+      </div>
+      <div id="health" class="health-dot good" title="数据健康 (Data Healthy)"></div>
       <button id="refreshData" class="ghost">刷新云端数据</button>
     </div>
   </div>
@@ -1083,14 +1161,8 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div class="filter-card-head">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="filter-card-title"><span>⚙️</span> 维度与时间筛选工具栏 (Filters)</div>
-      <div class="muted">单日自动显示小时趋势；从本地快照读取，不重复请求 Worker</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-      <label class="toggle-switch" title="一键排除所有来自马来西亚的测试记录（默认开启）">
-        <input type="checkbox" id="switchExcludeMy" checked>
-        <span class="toggle-slider"></span>
-        <span class="toggle-switch-text">排除 MY 测试</span>
-      </label>
       <div id="chips" class="chips"></div>
     </div>
   </div>
@@ -1108,7 +1180,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         </div>
         <div class="date-group">
           <span class="date-label">单日</span>
+          <button id="filterPrevDay" class="ghost btn-sm" title="切换到前一天">◀ 前一天</button>
           <input id="singleDate" type="date" aria-label="查看单日">
+          <button id="filterNextDay" class="ghost btn-sm" title="切换到后一天">后一天 ▶</button>
           <button id="applySingleDate" class="ghost">查看这一天</button>
         </div>
         <div class="date-group">
@@ -1124,7 +1198,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     <div class="field"><label for="client">接入端 Client</label><select id="client"><option value="">全部</option></select></div>
     <div class="field"><label for="platform">目标平台 Platform</label><select id="platform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option></select></div>
     <div class="field"><label for="country">国家 Country</label><select id="country"><option value="">全部</option></select></div>
-    <div class="field"><label for="region">地区 Region</label><select id="region"><option value="">全部</option></select></div>
+    <div class="field"><label for="region">省份 (中国) Region</label><select id="region"><option value="">全部</option></select></div>
     <div class="field" style="display:flex;align-items:end"><button id="reset" class="ghost" style="width:100%">重置</button></div>
   </div>
 </div>
@@ -1132,7 +1206,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 <!-- 1. 业务总览 (Overview) -->
 <section class="page active" id="page-overview">
   <div class="section">
-    <div><h2>整体情况 Overview</h2><div class="muted">先看结果，再下钻原因。</div></div>
+    <div><h2>业务总览 Overview</h2></div>
   </div>
   <div id="overviewKpis" class="kpis"></div>
 
@@ -1141,11 +1215,17 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div class="panel-head">
         <div>
           <h3>📈 请求趋势 (Request Trend)</h3>
-          <div class="muted" style="font-size:11px">单日范围显示小时趋势，多日范围显示每日趋势；全画幅任意滑动，自动纵向磁吸对准。</div>
+          <div class="muted" style="font-size:11px">单日按小时 · 多日按天</div>
         </div>
-        <div class="trend-legend">
-          <span><span class="legend-dot" style="background:var(--g)"></span>成功解析</span>
-          <span><span class="legend-dot" style="background:var(--r)"></span>最终失败</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="view-switch" data-target="trend">
+            <button class="active" data-view="bar" title="基线对比柱状图 (Steam 评测风格)">📊 柱形</button>
+            <button data-view="line" title="折线走势图">📈 折线</button>
+          </div>
+          <div class="trend-legend">
+            <span><span class="legend-dot" style="background:var(--g)"></span>成功解析</span>
+            <span><span class="legend-dot" style="background:var(--r)"></span>最终失败</span>
+          </div>
         </div>
       </div>
       <div class="trend-box" id="trendBox">
@@ -1161,8 +1241,14 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
     <div class="panel">
       <div class="panel-head">
-        <h3>🎵 请求目标平台</h3>
-        <span class="muted" style="font-size:11px">Platform Share</span>
+        <div>
+          <h3>🎵 请求目标平台</h3>
+          <div class="muted" style="font-size:11px">解析次数</div>
+        </div>
+        <div class="view-switch" data-target="platform">
+          <button class="active" data-view="donut" title="环形占比分布图">🍩 占比</button>
+          <button data-view="bar" title="横向排行列表">📊 排行</button>
+        </div>
       </div>
       <div id="platformBars" class="bars"></div>
     </div>
@@ -1170,24 +1256,50 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🌍 访问国家 Top 10</h3><span class="muted" style="font-size:11px">Country</span></div>
-      <div id="countryBars" class="bars"></div>
+      <div class="panel-head">
+        <div>
+          <h3>🔌 接入端解析量 (Resolve Clients)</h3>
+          <div class="muted" style="font-size:11px">请求总次数</div>
+        </div>
+        <div class="view-switch" data-target="client">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
+      <div id="clientBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🏙️ 活跃省份 / 地区 Top 10</h3><span class="muted" style="font-size:11px">Region</span></div>
-      <div id="regionBars" class="bars"></div>
+      <div class="panel-head"><h3>🩺 数据质量 Data Quality</h3><span class="muted" style="font-size:11px">守恒校验</span></div>
+      <div id="quality"></div>
     </div>
   </div>
 
   <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🔌 Resolve Clients 接入端</h3><span class="muted" style="font-size:11px">生态分流</span></div>
-      <div id="clientBars" class="bars"></div>
-      <div class="muted" style="font-size:11px;margin-top:8px;line-height:1.4">💡 历史说明：<strong>历史未细分流量 (V1时期)</strong> 为 V2 架构前积累的历史统计，当时系统尚未细分 Channel/Client 维度。遵循真实性原则，不对其进行虚假推测。</div>
+      <div class="panel-head">
+        <div>
+          <h3>🌍 来源国家</h3>
+          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+        </div>
+        <div class="view-switch" data-target="country">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="table" title="明细数据表">📋 表格</button>
+        </div>
+      </div>
+      <div id="countryBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🩺 数据完整性 Data Quality</h3><span class="muted" style="font-size:11px">守恒与约束</span></div>
-      <div id="quality"></div>
+      <div class="panel-head">
+        <div>
+          <h3>🏙️ 中国省份 / 直辖市</h3>
+          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+        </div>
+        <div class="view-switch" data-target="region">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="table" title="明细数据表">📋 表格</button>
+        </div>
+      </div>
+      <div id="regionBars" class="bars"></div>
     </div>
   </div>
 </section>
@@ -1218,7 +1330,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
             <th>歌单链接 (Playlist URL) · 支持一键测试复现</th>
             <th style="width:130px">错误代码</th>
             <th style="width:160px">地域 / 城市</th>
-            <th style="width:60px;text-align:center">频次</th>
+            <th style="width:60px;text-align:center">上报频次</th>
             <th style="width:130px">最近上报时间</th>
             <th style="width:70px">状态</th>
             <th style="width:130px;text-align:right">操作</th>
@@ -1240,15 +1352,24 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid3">
     <div class="panel">
-      <div class="panel-head"><h3>🔗 访问来源分类 Referrer</h3></div>
+      <div class="panel-head"><h3>🔗 访问来源 Referrer</h3><span class="muted" style="font-size:11px">访问量 (PV)</span></div>
       <div id="referrerBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🌐 主流浏览器 Browser</h3></div>
+      <div class="panel-head"><h3>🌐 浏览器 Browser</h3><span class="muted" style="font-size:11px">人次占比</span></div>
       <div id="browserBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>💻 设备终端与系统 Device / OS</h3></div>
+      <div class="panel-head">
+        <div>
+          <h3>💻 终端与系统 Device / OS</h3>
+          <div class="muted" style="font-size:11px">人次分布</div>
+        </div>
+        <div class="view-switch" data-target="device">
+          <button class="active" data-view="donut" title="设备类型占比分布图">🍩 占比</button>
+          <button data-view="bar" title="横向排行列表">📊 列表</button>
+        </div>
+      </div>
       <div id="deviceBars" class="bars"></div>
       <hr style="border:0;border-top:1px solid var(--l);margin:10px 0">
       <div id="osBars" class="bars"></div>
@@ -1257,11 +1378,29 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid2">
     <div class="panel">
-      <div class="panel-head"><h3>🌍 全球访问国家分布 Top 15</h3><span class="muted" style="font-size:11px">Country</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🌍 访问国家</h3>
+          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+        </div>
+        <div class="view-switch" data-target="webCountry">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="table" title="明细数据表">📋 表格</button>
+        </div>
+      </div>
       <div id="webCountryBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🏙️ 境内省份与主要城市分布 Top 15</h3><span class="muted" style="font-size:11px">Region</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🏙️ 中国省份 / 直辖市</h3>
+          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+        </div>
+        <div class="view-switch" data-target="webRegion">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="table" title="明细数据表">📋 表格</button>
+        </div>
+      </div>
       <div id="webRegionBars" class="bars"></div>
     </div>
   </div>
@@ -1277,45 +1416,81 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid3">
     <div class="panel">
-      <div class="panel-head"><h3>⚠️ 失败错误代码 Failure Code</h3></div>
+      <div class="panel-head"><h3>⚠️ 失败错误码 Failure Code</h3><span class="muted" style="font-size:11px">错误次数</span></div>
       <div id="failureCodeBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🚦 失败触发阶段 Failure Stage</h3></div>
+      <div class="panel-head"><h3>🚦 异常触发阶段 Failure Stage</h3><span class="muted" style="font-size:11px">触发次数</span></div>
       <div id="failureStageBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>⏱️ 解析耗时分布桶 Latency</h3></div>
+      <div class="panel-head">
+        <div>
+          <h3>⏱️ 解析耗时 Latency</h3>
+          <div class="muted" style="font-size:11px">耗时区间占比</div>
+        </div>
+        <div class="view-switch" data-target="latency">
+          <button class="active" data-view="donut" title="环形占比分布图">🍩 占比</button>
+          <button data-view="bar" title="横向排行列表">📊 排行</button>
+        </div>
+      </div>
       <div id="latencyBars" class="bars"></div>
     </div>
   </div>
 
   <div class="grid3">
     <div class="panel">
-      <div class="panel-head"><h3>📥 用户输入方式 Requested Type</h3></div>
+      <div class="panel-head">
+        <div>
+          <h3>📥 输入方式 Requested Type</h3>
+          <div class="muted" style="font-size:11px">调用次数</div>
+        </div>
+        <div class="view-switch" data-target="requestedType">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
       <div id="requestedTypeBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🛣️ 解析链路路径 Provider Path</h3></div>
+      <div class="panel-head"><h3>🛣️ 通道调度 Provider Path</h3><span class="muted" style="font-size:11px">主备调用</span></div>
       <div id="providerBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🎯 业务调用端点 Endpoint</h3></div>
+      <div class="panel-head"><h3>🎯 调用端点 Endpoint</h3><span class="muted" style="font-size:11px">请求数</span></div>
       <div id="endpointBars" class="bars"></div>
     </div>
   </div>
 
   <div class="grid3">
     <div class="panel">
-      <div class="panel-head"><h3>📊 导出歌单规模分布 Playlist Size</h3></div>
+      <div class="panel-head"><h3>📊 歌单曲目量 Playlist Size</h3><span class="muted" style="font-size:11px">导出份数</span></div>
       <div id="exportSizeBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>📄 导出文件格式偏好 Export Format</h3></div>
+      <div class="panel-head">
+        <div>
+          <h3>📄 导出格式 Export Format</h3>
+          <div class="muted" style="font-size:11px">生成次数</div>
+        </div>
+        <div class="view-switch" data-target="exportFormat">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
       <div id="exportFormatBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>📋 剪贴板快速复制偏好 Clipboard</h3></div>
+      <div class="panel-head">
+        <div>
+          <h3>📋 复制模式 Clipboard</h3>
+          <div class="muted" style="font-size:11px">复制次数</div>
+        </div>
+        <div class="view-switch" data-target="clipboard">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
       <div id="clipboardModeBars" class="bars"></div>
     </div>
   </div>
@@ -1331,11 +1506,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🔌 接入端全貌分布 Resolve Clients</h3><span class="muted" style="font-size:11px">渠道分流</span></div>
+      <div class="panel-head"><h3>🔌 接入端全貌 Resolve Clients</h3><span class="muted" style="font-size:11px">请求总次数</span></div>
       <div id="integrationClients" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🚀 迁移跳转目标平台 Migration Destinations</h3><span class="muted" style="font-size:11px">服务分流</span></div>
+      <div class="panel-head"><h3>🚀 迁移跳转目标 Migration</h3><span class="muted" style="font-size:11px">跳转次数</span></div>
       <div id="migrationBars" class="bars"></div>
     </div>
   </div>
@@ -1348,9 +1523,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         <div class="muted" style="font-size:11px">多播放器插件架构规范：版本与宿主归属独立分类，不与其它插件混杂。</div>
       </div>
       <div class="chips" style="align-items:center">
-        <span class="chip" style="background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);font-weight:600">🟣 MusicFree 专区 (活跃)</span>
-        <span class="chip" style="background:color-mix(in srgb,#fb7299 12%,transparent);color:#fb7299;font-weight:600">🌸 BBPlayer 专区 (活跃)</span>
-        <span class="chip" style="opacity:.6">➕ 更多播放器预留 (Extensible)</span>
+        <span class="chip" style="background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);font-weight:600">🟣 MusicFree 专区</span>
+        <span class="chip" style="background:color-mix(in srgb,#fb7299 12%,transparent);color:#fb7299;font-weight:600">🌸 BBPlayer 专区</span>
+        <span class="chip" style="opacity:.6">➕ 更多播放器预留</span>
       </div>
     </div>
   </div>
@@ -1358,22 +1533,16 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div class="grid2" style="margin-top:4px">
     <div class="panel" style="border-top:3px solid #8b5cf6">
       <div class="panel-head">
-        <div>
-          <h3 style="color:#8b5cf6">🟣 MusicFree · 插件声明版本 Versions</h3>
-          <div class="muted" style="font-size:11px">统一插件版本分布 · 统一紫标规范，避免杂色</div>
-        </div>
-        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">Plugin: musicfree</span>
+        <h3 style="color:#8b5cf6">🟣 MusicFree · 插件版本 Versions</h3>
+        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">请求数</span>
       </div>
       <div id="versionBars" class="bars"></div>
     </div>
 
     <div class="panel" style="border-top:3px solid #8b5cf6">
       <div class="panel-head">
-        <div>
-          <h3 style="color:#8b5cf6">📱 MusicFree · 宿主客户端环境 Host Platforms</h3>
-          <div class="muted" style="font-size:11px">MusicFree 运行的操作系统终端分布</div>
-        </div>
-        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">Attributed Hosts</span>
+        <h3 style="color:#8b5cf6">📱 MusicFree · 宿主系统 Hosts</h3>
+        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">系统分布</span>
       </div>
       <div id="hostBars" class="bars"></div>
     </div>
@@ -1382,22 +1551,16 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div class="grid2" style="margin-top:12px">
     <div class="panel" style="border-top:3px solid #fb7299">
       <div class="panel-head">
-        <div>
-          <h3 style="color:#fb7299">🌸 BBPlayer · 客户端声明版本 Versions</h3>
-          <div class="muted" style="font-size:11px">BBPlayer 正式版 App 版本分布 · Bilibili 粉标规范</div>
-        </div>
-        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">Client: bbplayer</span>
+        <h3 style="color:#fb7299">🌸 BBPlayer · 客户端版本 Versions</h3>
+        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">请求数</span>
       </div>
       <div id="bbplayerVersionBars" class="bars"></div>
     </div>
 
     <div class="panel" style="border-top:3px solid #fb7299">
       <div class="panel-head">
-        <div>
-          <h3 style="color:#fb7299">📱 BBPlayer · 宿主客户端环境 Host Platforms</h3>
-          <div class="muted" style="font-size:11px">BBPlayer 运行的操作系统终端分布</div>
-        </div>
-        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">Attributed Hosts</span>
+        <h3 style="color:#fb7299">📱 BBPlayer · 宿主系统 Hosts</h3>
+        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">系统分布</span>
       </div>
       <div id="bbplayerHostBars" class="bars"></div>
     </div>
@@ -1460,11 +1623,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🛑 429 限流触发端点 Rate-limit Endpoints</h3><span class="muted" style="font-size:11px">频控拦截</span></div>
+      <div class="panel-head"><h3>🛑 429 限流端点 Rate Limits</h3><span class="muted" style="font-size:11px">拦截次数</span></div>
       <div id="rateBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🛡️ 异常隔离原因汇总 Quarantine Summary</h3><span class="muted" style="font-size:11px">规则分类</span></div>
+      <div class="panel-head"><h3>🛡️ 隔离原因 Quarantine Summary</h3><span class="muted" style="font-size:11px">隔离次数</span></div>
       <div id="quarantineSummary" class="bars"></div>
     </div>
   </div>
@@ -1509,13 +1672,30 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   </div>
 </div>
 
-<div class="footer">PlaylistOut Analytics V2 · 遵循 Tabler 设计语言 · 本地沙箱无感运行</div>
+<footer class="footer">
+  <div class="footer-line">
+    <a href="https://playlistout.lengxiqwq.com/" target="_blank" rel="noopener noreferrer">Playlist Out</a>
+    <span class="footer-sep">·</span>
+    <span>把你的歌单带走</span>
+    <span class="footer-sep">·</span>
+    <span>Paste. Parse. Export.</span>
+  </div>
+  <div class="footer-line">
+    <span>Made with ❤️ by <a href="https://github.com/LengxiQwQ" target="_blank" rel="noopener noreferrer">LengxiQwQ</a></span>
+    <span class="footer-sep">·</span>
+    <a href="https://github.com/LengxiQwQ/playlistout" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
+    <span class="footer-sep">·</span>
+    <a href="https://github.com/LengxiQwQ/playlistout/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+    <span class="footer-sep">·</span>
+    <span>UI 设计参考 <a href="https://tabler.io" target="_blank" rel="noopener noreferrer">Tabler</a></span>
+  </div>
+</footer>
 </main>
 
 <script>
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 let A=null,loadController=null,loadSeq=0,snapshotRange={from:null,to:null},currentFbStatus="pending";
-let excludeMy=true; // 默认开启，排除测试地区数据 (MY)
+let excludeMy=false; // 默认关闭，如需排除测试地区数据 (MY) 可手动开启
 const analyticsCache=new Map(),CACHE_MS=15000;
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 const fmt=n=>Number(n||0).toLocaleString();
@@ -1529,6 +1709,39 @@ function updateExcludeMyUI(){
 function isoDayOffset(offset){
   let d=new Date();d.setUTCHours(0,0,0,0);d.setUTCDate(d.getUTCDate()+offset);
   return d.toISOString().slice(0,10);
+}
+function shiftDateStr(dateStr, offsetDays){
+  if(!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return isoDayOffset(offsetDays);
+  let [y, m, d] = dateStr.split("-").map(Number);
+  let dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + offsetDays);
+  return dt.toISOString().slice(0, 10);
+}
+function stepDay(offset){
+  let f = $("#fromDate")?.value || "";
+  let t = $("#toDate")?.value || "";
+  let curSingle = $("#singleDate")?.value || "";
+  let baseDate = "";
+  if (curSingle) {
+    baseDate = curSingle;
+  } else if (f && t && f === t) {
+    baseDate = f;
+  } else if (offset > 0) {
+    baseDate = f || snapshotRange.from || isoDayOffset(-1);
+  } else {
+    baseDate = t || snapshotRange.to || isoDayOffset(0);
+  }
+  let target = shiftDateStr(baseDate, offset);
+  if (snapshotRange.from && target < snapshotRange.from) target = snapshotRange.from;
+  let maxDay = isoDayOffset(0);
+  if (target > maxDay) target = maxDay;
+  setDateInputs(target, target);
+  if (target === isoDayOffset(0)) markPreset("today");
+  else if (target === isoDayOffset(-1)) markPreset("yesterday");
+  else if (target === isoDayOffset(-2)) markPreset("daybefore");
+  else if (target === isoDayOffset(-3)) markPreset("day3");
+  else markPreset("");
+  load();
 }
 function setDateInputs(from,to){
   let f=$("#fromDate"),t=$("#toDate"),s=$("#singleDate"),max=isoDayOffset(0);
@@ -1575,45 +1788,288 @@ function cacheSet(key,data){
 }
 
 const COUNTRY_META = {
-  "CN": { name: "中国 (CN)", color: "#de2910" },
-  "US": { name: "美国 (US)", color: "#1e40af" },
-  "HK": { name: "中国香港 (HK)", color: "#e11d48" },
-  "TW": { name: "中国台湾 (TW)", color: "#0284c7" },
-  "JP": { name: "日本 (JP)", color: "#dc2626" },
-  "SG": { name: "新加坡 (SG)", color: "#e11d48" },
-  "MY": { name: "马来西亚 (MY)", color: "#f59e0b" },
-  "GB": { name: "英国 (GB)", color: "#1d4ed8" },
-  "DE": { name: "德国 (DE)", color: "#d97706" },
-  "FR": { name: "法国 (FR)", color: "#2563eb" },
-  "CA": { name: "加拿大 (CA)", color: "#dc2626" },
-  "AU": { name: "澳大利亚 (AU)", color: "#059669" },
-  "KR": { name: "韩国 (KR)", color: "#2563eb" },
-  "RU": { name: "俄罗斯 (RU)", color: "#0284c7" },
-  "NL": { name: "荷兰 (NL)", color: "#ea580c" },
-  "IN": { name: "印度 (IN)", color: "#ea580c" },
-  "VN": { name: "越南 (VN)", color: "#dc2626" },
-  "TH": { name: "泰国 (TH)", color: "#4f46e5" },
-  "ID": { name: "印尼 (ID)", color: "#dc2626" },
-  "PH": { name: "菲律宾 (PH)", color: "#2563eb" },
-  "BR": { name: "巴西 (BR)", color: "#16a34a" },
-  "IT": { name: "意大利 (IT)", color: "#15803d" },
-  "ES": { name: "西班牙 (ES)", color: "#eab308" },
-  "MO": { name: "中国澳门 (MO)", color: "#059669" },
-  "UNKNOWN": { name: "未知地区", color: "#64748b" }
+  "CN": { name: "中国", color: "#de2910" },
+  "HK": { name: "中国香港", color: "#e11d48" },
+  "TW": { name: "中国台湾", color: "#0284c7" },
+  "MO": { name: "中国澳门", color: "#059669" },
+  "US": { name: "美国", color: "#1e40af" },
+  "JP": { name: "日本", color: "#dc2626" },
+  "SG": { name: "新加坡", color: "#e11d48" },
+  "MY": { name: "马来西亚", color: "#f59e0b" },
+  "GB": { name: "英国", color: "#1d4ed8" },
+  "DE": { name: "德国", color: "#d97706" },
+  "FR": { name: "法国", color: "#2563eb" },
+  "CA": { name: "加拿大", color: "#dc2626" },
+  "AU": { name: "澳大利亚", color: "#059669" },
+  "KR": { name: "韩国", color: "#2563eb" },
+  "RU": { name: "俄罗斯", color: "#0284c7" },
+  "NL": { name: "荷兰", color: "#ea580c" },
+  "IN": { name: "印度", color: "#ea580c" },
+  "VN": { name: "越南", color: "#dc2626" },
+  "TH": { name: "泰国", color: "#4f46e5" },
+  "ID": { name: "印度尼西亚", color: "#dc2626" },
+  "PH": { name: "菲律宾", color: "#2563eb" },
+  "BR": { name: "巴西", color: "#16a34a" },
+  "IT": { name: "意大利", color: "#15803d" },
+  "ES": { name: "西班牙", color: "#eab308" },
+  "SE": { name: "瑞典", color: "#0284c7" },
+  "CH": { name: "瑞士", color: "#dc2626" },
+  "PL": { name: "波兰", color: "#dc2626" },
+  "UA": { name: "乌克兰", color: "#0284c7" },
+  "IE": { name: "爱尔兰", color: "#16a34a" },
+  "NZ": { name: "新西兰", color: "#1e40af" },
+  "MX": { name: "墨西哥", color: "#16a34a" },
+  "ZA": { name: "南非", color: "#059669" },
+  "AR": { name: "阿根廷", color: "#38bdf8" },
+  "TR": { name: "土耳其", color: "#dc2626" },
+  "BE": { name: "比利时", color: "#d97706" },
+  "AT": { name: "奥地利", color: "#dc2626" },
+  "NO": { name: "挪威", color: "#dc2626" },
+  "DK": { name: "丹麦", color: "#dc2626" },
+  "FI": { name: "芬兰", color: "#1e40af" },
+  "PT": { name: "葡萄牙", color: "#16a34a" },
+  "CZ": { name: "捷克", color: "#1e40af" },
+  "RO": { name: "罗马尼亚", color: "#1e40af" },
+  "HU": { name: "匈牙利", color: "#16a34a" },
+  "GR": { name: "希腊", color: "#1e40af" },
+  "IL": { name: "以色列", color: "#0284c7" },
+  "AE": { name: "阿联酋", color: "#16a34a" },
+  "SA": { name: "沙特阿拉伯", color: "#16a34a" },
+  "EG": { name: "埃及", color: "#d97706" },
+  "CL": { name: "智利", color: "#dc2626" },
+  "CO": { name: "哥伦比亚", color: "#eab308" },
+  "PE": { name: "秘鲁", color: "#dc2626" },
+  "PK": { name: "巴基斯坦", color: "#16a34a" },
+  "BD": { name: "孟加拉国", color: "#16a34a" },
+  "NG": { name: "尼日利亚", color: "#16a34a" },
+  "KE": { name: "肯尼亚", color: "#dc2626" },
+  "AD": { name: "安道尔", color: "#2563eb" },
+  "AF": { name: "阿富汗", color: "#15803d" },
+  "AG": { name: "安提瓜和巴布达", color: "#dc2626" },
+  "AI": { name: "安圭拉", color: "#1e40af" },
+  "AL": { name: "阿尔巴尼亚", color: "#dc2626" },
+  "AM": { name: "亚美尼亚", color: "#d97706" },
+  "AO": { name: "安哥拉", color: "#dc2626" },
+  "AQ": { name: "南极洲", color: "#0284c7" },
+  "AS": { name: "美属萨摩亚", color: "#1e40af" },
+  "AW": { name: "阿鲁巴", color: "#0284c7" },
+  "AX": { name: "奥兰群岛", color: "#1e40af" },
+  "AZ": { name: "阿塞拜疆", color: "#0284c7" },
+  "BA": { name: "波黑", color: "#1e40af" },
+  "BB": { name: "巴巴多斯", color: "#1e40af" },
+  "BF": { name: "布基纳法索", color: "#dc2626" },
+  "BG": { name: "保加利亚", color: "#16a34a" },
+  "BH": { name: "巴林", color: "#dc2626" },
+  "BI": { name: "布隆迪", color: "#dc2626" },
+  "BJ": { name: "贝宁", color: "#16a34a" },
+  "BL": { name: "圣巴泰勒米", color: "#1e40af" },
+  "BM": { name: "百慕大", color: "#dc2626" },
+  "BN": { name: "文莱", color: "#eab308" },
+  "BO": { name: "玻利维亚", color: "#dc2626" },
+  "BQ": { name: "荷兰加勒比", color: "#1e40af" },
+  "BS": { name: "巴哈马", color: "#0284c7" },
+  "BT": { name: "不丹", color: "#ea580c" },
+  "BV": { name: "布韦岛", color: "#1e40af" },
+  "BW": { name: "博茨瓦纳", color: "#0284c7" },
+  "BY": { name: "白俄罗斯", color: "#dc2626" },
+  "BZ": { name: "伯利兹", color: "#1e40af" },
+  "CC": { name: "科科斯群岛", color: "#16a34a" },
+  "CD": { name: "刚果(金)", color: "#0284c7" },
+  "CF": { name: "中非", color: "#16a34a" },
+  "CG": { name: "刚果(布)", color: "#16a34a" },
+  "CI": { name: "科特迪瓦", color: "#ea580c" },
+  "CK": { name: "库克群岛", color: "#1e40af" },
+  "CM": { name: "喀麦隆", color: "#16a34a" },
+  "CR": { name: "哥斯达黎加", color: "#1e40af" },
+  "CU": { name: "古巴", color: "#dc2626" },
+  "CV": { name: "佛得角", color: "#1e40af" },
+  "CW": { name: "库拉索", color: "#1e40af" },
+  "CX": { name: "圣诞岛", color: "#16a34a" },
+  "CY": { name: "塞浦路斯", color: "#ea580c" },
+  "DJ": { name: "吉布提", color: "#0284c7" },
+  "DM": { name: "多米尼克", color: "#16a34a" },
+  "DO": { name: "多米尼加", color: "#1e40af" },
+  "DZ": { name: "阿尔及利亚", color: "#16a34a" },
+  "EC": { name: "厄瓜多尔", color: "#eab308" },
+  "EE": { name: "爱沙尼亚", color: "#0284c7" },
+  "EH": { name: "西撒哈拉", color: "#16a34a" },
+  "ER": { name: "厄立特里亚", color: "#dc2626" },
+  "ET": { name: "埃塞俄比亚", color: "#16a34a" },
+  "FJ": { name: "斐济", color: "#0284c7" },
+  "FK": { name: "马尔维纳斯群岛", color: "#1e40af" },
+  "FM": { name: "密克罗尼西亚", color: "#0284c7" },
+  "FO": { name: "法罗群岛", color: "#1e40af" },
+  "GA": { name: "加蓬", color: "#16a34a" },
+  "GD": { name: "格林纳达", color: "#dc2626" },
+  "GE": { name: "格鲁吉亚", color: "#dc2626" },
+  "GF": { name: "法属圭亚那", color: "#16a34a" },
+  "GG": { name: "根西岛", color: "#1e40af" },
+  "GH": { name: "加纳", color: "#dc2626" },
+  "GI": { name: "直布罗陀", color: "#dc2626" },
+  "GL": { name: "格陵兰", color: "#dc2626" },
+  "GM": { name: "冈比亚", color: "#1e40af" },
+  "GN": { name: "几内亚", color: "#dc2626" },
+  "GP": { name: "瓜德罗普", color: "#1e40af" },
+  "GQ": { name: "赤道几内亚", color: "#16a34a" },
+  "GS": { name: "南乔治亚", color: "#1e40af" },
+  "GT": { name: "危地马拉", color: "#0284c7" },
+  "GU": { name: "关岛", color: "#1e40af" },
+  "GW": { name: "几内亚比绍", color: "#dc2626" },
+  "GY": { name: "圭亚那", color: "#16a34a" },
+  "HM": { name: "赫德岛", color: "#1e40af" },
+  "HN": { name: "洪都拉斯", color: "#0284c7" },
+  "HR": { name: "克罗地亚", color: "#dc2626" },
+  "HT": { name: "海地", color: "#1e40af" },
+  "IM": { name: "马恩岛", color: "#dc2626" },
+  "IO": { name: "英属印度洋领地", color: "#1e40af" },
+  "IQ": { name: "伊拉克", color: "#dc2626" },
+  "IR": { name: "伊朗", color: "#16a34a" },
+  "IS": { name: "冰岛", color: "#1e40af" },
+  "JE": { name: "泽西岛", color: "#dc2626" },
+  "JM": { name: "牙买加", color: "#16a34a" },
+  "JO": { name: "约旦", color: "#dc2626" },
+  "KG": { name: "吉尔吉斯斯坦", color: "#dc2626" },
+  "KH": { name: "柬埔寨", color: "#1e40af" },
+  "KI": { name: "基里巴斯", color: "#dc2626" },
+  "KM": { name: "科摩罗", color: "#16a34a" },
+  "KN": { name: "圣基茨和尼维斯", color: "#16a34a" },
+  "KP": { name: "朝鲜", color: "#dc2626" },
+  "KW": { name: "科威特", color: "#16a34a" },
+  "KY": { name: "开曼群岛", color: "#1e40af" },
+  "KZ": { name: "哈萨克斯坦", color: "#0284c7" },
+  "LA": { name: "老挝", color: "#dc2626" },
+  "LB": { name: "黎巴嫩", color: "#dc2626" },
+  "LC": { name: "圣卢西亚", color: "#0284c7" },
+  "LI": { name: "列支敦士登", color: "#1e40af" },
+  "LK": { name: "斯里兰卡", color: "#ea580c" },
+  "LR": { name: "利比里亚", color: "#dc2626" },
+  "LS": { name: "莱索托", color: "#1e40af" },
+  "LT": { name: "立陶宛", color: "#eab308" },
+  "LU": { name: "卢森堡", color: "#0284c7" },
+  "LV": { name: "拉脱维亚", color: "#991b1b" },
+  "LY": { name: "利比亚", color: "#16a34a" },
+  "MA": { name: "摩洛哥", color: "#dc2626" },
+  "MC": { name: "摩纳哥", color: "#dc2626" },
+  "MD": { name: "摩尔多瓦", color: "#1e40af" },
+  "ME": { name: "黑山", color: "#dc2626" },
+  "MF": { name: "法属圣马丁", color: "#1e40af" },
+  "MG": { name: "马达加斯加", color: "#dc2626" },
+  "MH": { name: "马绍尔群岛", color: "#1e40af" },
+  "MK": { name: "北马其顿", color: "#dc2626" },
+  "ML": { name: "马里", color: "#16a34a" },
+  "MM": { name: "缅甸", color: "#eab308" },
+  "MN": { name: "蒙古", color: "#dc2626" },
+  "MP": { name: "北马里亚纳", color: "#1e40af" },
+  "MQ": { name: "马提尼克", color: "#1e40af" },
+  "MR": { name: "毛里塔尼亚", color: "#16a34a" },
+  "MS": { name: "蒙特塞拉特", color: "#1e40af" },
+  "MT": { name: "马耳他", color: "#dc2626" },
+  "MU": { name: "毛里求斯", color: "#dc2626" },
+  "MV": { name: "马尔代夫", color: "#dc2626" },
+  "MW": { name: "马拉维", color: "#dc2626" },
+  "MZ": { name: "莫桑比克", color: "#16a34a" },
+  "NA": { name: "纳米比亚", color: "#1e40af" },
+  "NC": { name: "新喀里多尼亚", color: "#1e40af" },
+  "NE": { name: "尼日尔", color: "#ea580c" },
+  "NF": { name: "诺福克岛", color: "#16a34a" },
+  "NI": { name: "尼加拉瓜", color: "#0284c7" },
+  "NP": { name: "尼泊尔", color: "#dc2626" },
+  "NR": { name: "瑙鲁", color: "#1e40af" },
+  "NU": { name: "纽埃", color: "#eab308" },
+  "OM": { name: "阿曼", color: "#dc2626" },
+  "PA": { name: "巴拿马", color: "#1e40af" },
+  "PF": { name: "法属波利尼西亚", color: "#dc2626" },
+  "PG": { name: "巴布亚新几内亚", color: "#dc2626" },
+  "PM": { name: "圣皮埃尔和密克隆", color: "#1e40af" },
+  "PN": { name: "皮特凯恩群岛", color: "#1e40af" },
+  "PR": { name: "波多黎各", color: "#1e40af" },
+  "PS": { name: "巴勒斯坦", color: "#16a34a" },
+  "PW": { name: "帕劳", color: "#0284c7" },
+  "PY": { name: "巴拉圭", color: "#dc2626" },
+  "QA": { name: "卡塔尔", color: "#991b1b" },
+  "RE": { name: "留尼汪", color: "#1e40af" },
+  "RS": { name: "塞尔维亚", color: "#dc2626" },
+  "RW": { name: "卢旺达", color: "#0284c7" },
+  "SB": { name: "所罗门群岛", color: "#16a34a" },
+  "SC": { name: "塞舌尔", color: "#0284c7" },
+  "SD": { name: "苏丹", color: "#dc2626" },
+  "SH": { name: "圣赫勒拿", color: "#1e40af" },
+  "SI": { name: "斯洛文尼亚", color: "#1e40af" },
+  "SJ": { name: "斯瓦尔巴", color: "#dc2626" },
+  "SK": { name: "斯洛伐克", color: "#1e40af" },
+  "SL": { name: "塞拉利昂", color: "#16a34a" },
+  "SM": { name: "圣马力诺", color: "#0284c7" },
+  "SN": { name: "塞内加尔", color: "#16a34a" },
+  "SO": { name: "索马里", color: "#0284c7" },
+  "SR": { name: "苏里南", color: "#16a34a" },
+  "SS": { name: "南苏丹", color: "#dc2626" },
+  "ST": { name: "圣多美和普林西比", color: "#16a34a" },
+  "SV": { name: "萨尔瓦多", color: "#0284c7" },
+  "SX": { name: "荷属圣马丁", color: "#1e40af" },
+  "SY": { name: "叙利亚", color: "#dc2626" },
+  "SZ": { name: "斯威士兰", color: "#1e40af" },
+  "TC": { name: "特克斯和凯科斯", color: "#1e40af" },
+  "TD": { name: "乍得", color: "#1e40af" },
+  "TF": { name: "法属南部领地", color: "#1e40af" },
+  "TG": { name: "多哥", color: "#16a34a" },
+  "TJ": { name: "塔吉克斯坦", color: "#dc2626" },
+  "TK": { name: "托克劳", color: "#1e40af" },
+  "TL": { name: "东帝汶", color: "#dc2626" },
+  "TM": { name: "土库曼斯坦", color: "#16a34a" },
+  "TN": { name: "突尼斯", color: "#dc2626" },
+  "TO": { name: "汤加", color: "#dc2626" },
+  "TT": { name: "特立尼达和多巴哥", color: "#dc2626" },
+  "TV": { name: "图瓦卢", color: "#0284c7" },
+  "TZ": { name: "坦桑尼亚", color: "#16a34a" },
+  "UG": { name: "乌干达", color: "#eab308" },
+  "UM": { name: "美属边远小岛", color: "#1e40af" },
+  "UY": { name: "乌拉圭", color: "#0284c7" },
+  "UZ": { name: "乌兹别克斯坦", color: "#0284c7" },
+  "VA": { name: "梵蒂冈", color: "#eab308" },
+  "VC": { name: "圣文森特和格林纳丁斯", color: "#0284c7" },
+  "VE": { name: "委内瑞拉", color: "#eab308" },
+  "VG": { name: "英属维尔京群岛", color: "#1e40af" },
+  "VI": { name: "美属维尔京群岛", color: "#1e40af" },
+  "VU": { name: "瓦努阿图", color: "#dc2626" },
+  "WF": { name: "瓦利斯和富图纳", color: "#dc2626" },
+  "WS": { name: "萨摩亚", color: "#dc2626" },
+  "YE": { name: "也门", color: "#dc2626" },
+  "YT": { name: "马约特", color: "#1e40af" },
+  "ZM": { name: "赞比亚", color: "#16a34a" },
+  "ZW": { name: "津巴布韦", color: "#16a34a" },
+  "GLOBAL": { name: "全球网络", color: "#64748b" },
+  "UNKNOWN": { name: "未知地区", color: "#64748b" },
 };
 
 const PROVINCE_NAMES = {
-  "Guangdong": "广东 (Guangdong)", "Zhejiang": "浙江 (Zhejiang)", "Jiangsu": "江苏 (Jiangsu)",
-  "Beijing": "北京 (Beijing)", "Shanghai": "上海 (Shanghai)", "Sichuan": "四川 (Sichuan)",
-  "Shandong": "山东 (Shandong)", "Hubei": "湖北 (Hubei)", "Hunan": "湖南 (Hunan)",
-  "Fujian": "福建 (Fujian)", "Henan": "河南 (Henan)", "Hebei": "河北 (Hebei)",
-  "Shaanxi": "陕西 (Shaanxi)", "Anhui": "安徽 (Anhui)", "Chongqing": "重庆 (Chongqing)",
-  "Tianjin": "天津 (Tianjin)", "Liaoning": "辽宁 (Liaoning)", "Jiangxi": "江西 (Jiangxi)",
-  "Guangxi": "广西 (Guangxi)", "Yunnan": "云南 (Yunnan)", "Heilongjiang": "黑龙江 (Heilongjiang)",
-  "Jilin": "吉林 (Jilin)", "Shanxi": "山西 (Shanxi)", "Guizhou": "贵州 (Guizhou)",
-  "Gansu": "甘肃 (Gansu)", "Hainan": "海南 (Hainan)", "Inner Mongolia": "内蒙古 (Inner Mongolia)",
-  "Xinjiang": "新疆 (Xinjiang)", "Ningxia": "宁夏 (Ningxia)", "Qinghai": "青海 (Qinghai)",
-  "Tibet": "西藏 (Tibet)"
+  // 国内省份与直辖市
+  "Guangdong": "广东", "Zhejiang": "浙江", "Jiangsu": "江苏",
+  "Beijing": "北京", "Shanghai": "上海", "Sichuan": "四川",
+  "Shandong": "山东", "Hubei": "湖北", "Hunan": "湖南",
+  "Fujian": "福建", "Henan": "河南", "Hebei": "河北",
+  "Shaanxi": "陕西", "Anhui": "安徽", "Chongqing": "重庆",
+  "Tianjin": "天津", "Liaoning": "辽宁", "Jiangxi": "江西",
+  "Guangxi": "广西", "Yunnan": "云南", "Heilongjiang": "黑龙江",
+  "Jilin": "吉林", "Shanxi": "山西", "Guizhou": "贵州",
+  "Gansu": "甘肃", "Hainan": "海南", "Inner Mongolia": "内蒙古",
+  "Xinjiang": "新疆", "Ningxia": "宁夏", "Qinghai": "青海",
+  "Tibet": "西藏",
+
+  // 常用海外热门省州 / 地区
+  "Tokyo": "东京", "Osaka": "大阪", "Kyoto": "京都",
+  "California": "加州", "Virginia": "弗吉尼亚", "Washington": "华盛顿州",
+  "Arizona": "亚利桑那", "New York": "纽约州", "Texas": "德克萨斯",
+  "Florida": "佛罗里达", "Illinois": "伊利诺伊", "Massachusetts": "马萨诸塞",
+  "Pennsylvania": "宾夕法尼亚", "Ohio": "俄亥俄", "Georgia": "佐治亚",
+  "Michigan": "密歇根", "North Carolina": "北卡罗来纳", "New Jersey": "新泽西",
+  "Colorado": "科罗拉多", "Oregon": "俄勒冈", "Taiwan": "台湾",
+  "Hong Kong": "香港", "Macau": "澳门", "Seoul": "首尔",
+  "Gyeonggi-do": "京畿道", "England": "英格兰", "Ontario": "安大略",
+  "Quebec": "魁北克", "British Columbia": "不列颠哥伦比亚",
+  "New South Wales": "新南威尔士", "Victoria": "维多利亚",
+  "Bavaria": "巴伐利亚", "Île-de-France": "法兰西岛", "Paris": "巴黎",
+  "Moscow": "莫斯科", "Saint Petersburg": "圣彼得堡", "Selangor": "雪兰莪",
+  "Kuala Lumpur": "吉隆坡", "Bangkok": "曼谷", "Singapore": "新加坡"
 };
 
 const CORE_BRAND_COLORS = {
@@ -1621,18 +2077,23 @@ const CORE_BRAND_COLORS = {
   "plugin:musicfree": "#8b5cf6", "musicfree": "#8b5cf6", "plugin": "#8b5cf6",
   "plugin:bbplayer": "#fb7299", "bbplayer": "#fb7299",
   "official_web": "#0284c7", "web": "#0284c7",
+  "official_cli": "#10b981", "cli": "#10b981",
   "anonymous_api": "#10b981", "api": "#10b981",
   "legacy_mixed": "#64748b", "legacy_unknown": "#64748b",
+  "unknown_plugin": "#64748b", "internal": "#64748b",
   "desktop": "#6366f1", "mobile": "#8b5cf6", "tablet": "#06b6d4",
   "chrome": "#ea4335", "edge": "#0078d7", "safari": "#0284c7", "firefox": "#f97316",
+  "opera": "#ff1b2d", "vivaldi": "#ef3939", "brave": "#fb542b",
   "qqbrowser": "#2563eb", "wechat": "#07c160", "arkweb": "#cf0a2c", "huawei_browser": "#cf0a2c",
-  "miui_browser": "#ff6700", "quark": "#0ea5e9", "baidu": "#2932e1", "slbrowser": "#8b5cf6",
-  "bot_crawler": "#64748b",
+  "miui_browser": "#ff6700", "vivo_browser": "#415fff", "oppo_browser": "#008753", "honor_browser": "#0066cc",
+  "samsung_browser": "#1428a0", "quark": "#0ea5e9", "uc": "#ff8200", "ucbrowser": "#ff8200",
+  "360": "#00c458", "sogou": "#fb6022", "via": "#2c3e50", "xbrowser": "#1e88e5", "115_browser": "#2777f8",
+  "slbrowser": "#8b5cf6", "bot_crawler": "#64748b",
   "windows": "#0078d7", "android": "#22c55e", "ios": "#6366f1", "macos": "#a855f7",
   "linux": "#f59e0b", "harmonyos": "#cf0a2c",
-  "xlsx": "#10b981", "csv": "#3b82f6", "json": "#f59e0b",
+  "xlsx": "#10b981", "csv": "#3b82f6", "txt": "#06b6d4", "json": "#f59e0b", "m3u8": "#8b5cf6",
   "clean_link": "#10b981", "markdown": "#3b82f6",
-  "auto": "#06b6d4", "unknown": "#94a3b8",
+  "auto": "#06b6d4", "unknown": "#94a3b8", "none": "#64748b",
   "<500ms": "#10b981", "500-1000ms": "#06b6d4", "500ms_1s": "#06b6d4",
   "1-3s": "#3b82f6", "1s_3s": "#3b82f6",
   "3-5s": "#f59e0b", "3s_5s": "#f59e0b",
@@ -1677,40 +2138,87 @@ function formatHumanLabel(name){
   let n = String(name || "").trim();
   if (!n) return "—";
   const dict = {
+    // 客户端 Client
+    "official_web": "Playlist Out Web",
+    "official_cli": "Playlist Out CLI",
+    "anonymous_api": "公共开放 API",
+    "musicfree": "MusicFree 插件",
+    "plugin:musicfree": "MusicFree 插件",
+    "bbplayer": "BBPlayer 播放器",
+    "plugin:bbplayer": "BBPlayer 播放器",
+    "legacy_unknown": "未标记历史端",
+    "unknown_plugin": "未登记插件",
+    "internal": "内部探活调度",
+
+    // 渠道 Channel
+    "web": "网页端",
+    "cli": "命令行",
+    "plugin": "播放器插件",
+    "api": "开放接口",
+    "legacy_mixed": "未标记历史端",
+
     // 目标音乐平台
-    "qqmusic": "QQ音乐", "netease": "网易云音乐", "kugou": "酷狗音乐", "kuwo": "酷我音乐", "qishui": "汽水音乐", "migu": "咪咕音乐",
-    "auto": "全自动识别平台 (Auto)",
-    "unknown": "未识别平台 / 非标准输入",
+    "qqmusic": "QQ 音乐", "netease": "网易云音乐", "kugou": "酷狗音乐", "kuwo": "酷我音乐", "qishui": "汽水音乐", "migu": "咪咕音乐",
+    "auto": "全自动识别",
+    "unknown": "未识别平台",
+    "none": "全局汇总",
     
-    // 终端与渠道
+    // 终端与设备
     "desktop": "桌面电脑", "mobile": "移动手机", "tablet": "平板设备",
-    "plugin:musicfree": "MusicFree", "musicfree": "MusicFree",
-    "plugin:bbplayer": "BBPlayer", "bbplayer": "BBPlayer",
-    "official_web": "官方网页端", "anonymous_api": "公共匿名 API",
-    "legacy_unknown": "历史未细分流量 (V1时期)", "legacy_mixed": "历史混合渠道 (V1时期)",
-    "web": "官方网页端", "plugin": "播放器插件 / 生态客户端", "api": "公共 API",
+    "bot_crawler": "网络爬虫 / 机器人",
     
+    // 操作系统 OS
+    "windows": "Windows", "android": "Android", "ios": "iOS", "macos": "macOS", "linux": "Linux", "harmonyos": "HarmonyOS (鸿蒙)",
+
+    // 浏览器
+    "chrome": "Chrome", "edge": "Edge", "safari": "Safari", "firefox": "Firefox",
+    "opera": "Opera", "vivaldi": "Vivaldi", "brave": "Brave", "arc": "Arc", "yandex": "Yandex",
+    "qqbrowser": "QQ 浏览器", "wechat": "微信内置浏览器", "arkweb": "华为浏览器", "huawei_browser": "华为浏览器",
+    "miui_browser": "小米浏览器", "vivo_browser": "Vivo 浏览器", "oppo_browser": "OPPO 浏览器",
+    "honor_browser": "荣耀浏览器", "samsung_browser": "三星浏览器", "quark": "夸克浏览器",
+    "uc": "UC 浏览器", "ucbrowser": "UC 浏览器", "360": "360 浏览器", "sogou": "搜狗浏览器",
+    "slbrowser": "联想浏览器", "via": "Via 浏览器", "xbrowser": "X 浏览器", "115_browser": "115 浏览器",
+    "baidubrowser": "百度浏览器", "baidu_browser": "百度浏览器",
+
     // 耗时桶
-    "<500ms": "< 500ms (极速响应)", "500-1000ms": "500 - 1000ms (正常)", "500ms_1s": "500ms - 1s (正常)",
-    "1-3s": "1 - 3s (一般)", "1s_3s": "1s - 3s (一般)",
-    "3-5s": "3 - 5s (迟缓)", "3s_5s": "3s - 5s (迟缓)",
-    "5s+": "> 5s (超时边缘)", ">5s": "> 5s (超时边缘)",
+    "<500ms": "< 500ms 极速", "500-1000ms": "500ms - 1s 良好", "500ms_1s": "500ms - 1s 良好",
+    "1-3s": "1s - 3s 正常", "1s_3s": "1s - 3s 正常",
+    "3-5s": "3s - 5s 迟缓", "3s_5s": "3s - 5s 迟缓",
+    "5s+": "≥ 5s 超时风险", ">5s": "≥ 5s 超时风险",
     
     // 错误代码
-    "UNSUPPORTED_URL": "格式不支持 (UNSUPPORTED_URL)", "INCOMPLETE_PLAYLIST": "部分截断/VIP (INCOMPLETE)",
-    "PLAYLIST_NOT_FOUND": "歌单未找到 (NOT_FOUND)", "INVALID_INPUT": "输入参数无效 (INVALID)",
-    "PARSE_ERROR": "结构解析错误 (PARSE_ERROR)", "UPSTREAM_TIMEOUT": "上游服务超时 (TIMEOUT)",
-    "RATE_LIMITED": "访问频控拦截 (RATE_LIMITED)", "FORBIDDEN": "上游拒绝访问 (FORBIDDEN)",
+    "UNSUPPORTED_URL": "不支持的链接格式", "INCOMPLETE_PLAYLIST": "部分曲目需登录或受限",
+    "PLAYLIST_NOT_FOUND": "歌单不存在或已删除", "INVALID_INPUT": "输入参数非法",
+    "PARSE_ERROR": "上游协议解析异常", "UPSTREAM_TIMEOUT": "上游响应超时",
+    "RATE_LIMITED": "触发访问频控", "FORBIDDEN": "上游访问被拒绝",
     
+    // 失败触发阶段
+    "input": "参数输入校验", "client": "上游网络请求",
+    "normalize": "数据清洗归一", "upstream": "上游服务限制",
+
     // 输入与模式
-    "web_url": "网页直链 (Web URL)", "mobile_share": "手机分享文案 (Mobile Share)", "raw_id": "纯歌单 ID (Raw ID)",
-    "primary": "Primary 主解析链路", "fallback": "Fallback 降级重试",
-    "clean_link": "净链模式 (Clean Link)", "markdown": "Markdown 表格", "json": "JSON 数据",
+    "web_url": "标准网页链接", "mobile_share": "移动端分享口令/短链",
+    "mobile_share_link": "移动端分享口令/短链", "raw_id": "纯歌单 ID",
+    "other": "其他输入",
+    "primary": "主解析通道", "fallback": "备用重试通道",
+
+    // 导出文件格式
+    "xlsx": "Excel 表格 (.xlsx)", "csv": "CSV 表格 (.csv)", "txt": "纯文本清单 (.txt)",
+    "json": "JSON 数据 (.json)", "m3u8": "M3U8 播放列表 (.m3u8)", "markdown": "Markdown 表格 (.md)",
+    "clean_link": "去参净链",
+    
+    // 剪贴板复制模式
+    "title": "仅歌曲名", "title_artist": "歌名 - 歌手", "title-artist": "歌名 - 歌手",
+    "title_artist_album": "歌名 - 歌手 - 专辑", "title-artist-album": "歌名 - 歌手 - 专辑",
+
+    // 导出歌单规模
+    "1-50": "1 - 50 首", "51-200": "51 - 200 首", "201-500": "201 - 500 首",
+    "501-1000": "501 - 1000 首", "1000+": "1000+ 首",
 
     // 安全风控原因
-    "auto_quarantined_bot_ua": "探测爬虫特征隔离 (Bot UA)",
-    "crawler_script_abuse_chengdu_api": "高频抓取攻击隔离 (Scraper Script)",
-    "auto_quarantined_direct_api": "非标直调频控隔离 (Direct API Flood)"
+    "auto_quarantined_bot_ua": "自动化爬虫拦截",
+    "crawler_script_abuse_chengdu_api": "高频脚本抓取拦截",
+    "auto_quarantined_direct_api": "异常直调频控隔离"
   };
 
   let low = n.toLowerCase();
@@ -1725,21 +2233,199 @@ function formatHumanLabel(name){
   return n;
 }
 
-function bars(id,arr,limit=12,colorOverride=null){
+function formatBrowserLabel(name){
+  let s=String(name||"").trim();
+  if(!s)return "—";
+  if(s.toLowerCase()==="other")return "其他浏览器";
+  return formatHumanLabel(s);
+}
+
+function formatDeviceLabel(name){
+  let s=String(name||"").trim();
+  if(!s)return "—";
+  if(s.toLowerCase()==="other")return "其他设备";
+  return formatHumanLabel(s);
+}
+
+function formatOsLabel(name){
+  let s=String(name||"").trim();
+  if(!s)return "—";
+  if(s.toLowerCase()==="other")return "其他系统";
+  return formatHumanLabel(s);
+}
+
+const chartViews = {
+  trend: "bar",
+  platform: "donut",
+  client: "bar",
+  country: "bar",
+  region: "bar",
+  device: "donut",
+  latency: "donut",
+  exportFormat: "bar",
+  clipboard: "bar",
+  requestedType: "bar",
+  webCountry: "bar",
+  webRegion: "bar"
+};
+
+function bars(id,arr,limit=null,colorOverride=null,labelFormatter=null){
   let el=$(id);if(!el)return;
-  let a=(arr||[]).slice(0,limit);
+  el.className="bars";
+  let a=(arr||[]);
+  if(limit!==null&&limit>0)a=a.slice(0,limit);
   if(!a.length){el.innerHTML='<div class="muted" style="padding:4px 0">暂无数据</div>';return}
   let total=a.reduce((s,x)=>s+Number(x.count||0),0);
   let max=Math.max(...a.map(x=>Number(x.count||0)),1);
   el.innerHTML=a.map(x=>{
-    let c=colorOverride||getBrandColor(x.name),lbl=formatHumanLabel(x.name);
+    let c=colorOverride||getBrandColor(x.name);
+    let lbl=labelFormatter?labelFormatter(x.name):formatHumanLabel(x.name);
     let p=total>0?(Number(x.count||0)/total*100).toFixed(1)+"%":"0.0%";
     return '<div class="bar">'
       +'<div class="bn" title="'+esc(x.name)+'"><span class="b-dot" style="background:'+c+'"></span>'+esc(lbl)+'</div>'
       +'<div class="track"><div class="fill" style="width:'+Math.max(1,Number(x.count||0)/max*100)+'%;background:'+c+'"></div></div>'
-      +'<div class="num">'+fmt(x.count)+'<span class="pct">'+p+'</span></div>'
+      +'<div class="num"><span class="val">'+fmt(x.count)+'</span><span class="pct">'+p+'</span></div>'
       +'</div>';
   }).join("");
+}
+
+function donutChart(id,arr,totalOverride=null,colorOverride=null,labelFormatter=null){
+  let el=$(id);if(!el)return;
+  el.className="";
+  let a=(arr||[]).filter(x=>Number(x.count||0)>0);
+  if(!a.length){el.innerHTML='<div class="muted" style="padding:14px 0;text-align:center">暂无数据</div>';return}
+  let total=totalOverride||a.reduce((s,x)=>s+Number(x.count||0),0)||1;
+  let r=55,circ=2*Math.PI*r;
+  let offset=0;
+  let slicesHtml="";
+  let legendHtml="";
+  a.forEach((item,idx)=>{
+    let count=Number(item.count||0);
+    let ratio=count/total;
+    let strokeDash=(ratio*circ).toFixed(2);
+    let strokeOffset=(-offset).toFixed(2);
+    offset+=ratio*circ;
+    let c=colorOverride||getBrandColor(item.name);
+    let rawLbl=labelFormatter?labelFormatter(item.name):formatHumanLabel(item.name);
+    let pctStr=(ratio*100).toFixed(1)+"%";
+    slicesHtml+='<circle class="donut-slice" cx="80" cy="80" r="'+r+'" fill="none" stroke="'+c+'" stroke-width="22" stroke-dasharray="'+strokeDash+' '+(circ-Number(strokeDash)).toFixed(2)+'" stroke-dashoffset="'+strokeOffset+'" data-idx="'+idx+'" data-val="'+fmt(count)+'" data-pct="' + pctStr + '" data-lbl="'+esc(rawLbl)+'"></circle>';
+    legendHtml+='<div class="donut-item" data-idx="'+idx+'" data-val="'+fmt(count)+'" data-pct="'+pctStr+'" data-lbl="'+esc(rawLbl)+'">'
+      +'<div class="donut-item-left" title="'+esc(item.name)+'"><span class="b-dot" style="background:'+c+'"></span><span>'+esc(rawLbl)+'</span></div>'
+      +'<div class="donut-item-right"><span class="val">'+fmt(count)+'</span><span class="pct">'+pctStr+'</span></div>'
+      +'</div>';
+  });
+  el.innerHTML='<div class="donut-wrap">'
+    +'<div class="donut-graphic">'
+    +'<svg class="donut-svg" viewBox="0 0 160 160">'
+    +'<circle cx="80" cy="80" r="'+r+'" fill="none" stroke="var(--l)" stroke-width="22" opacity="0.35"></circle>'
+    +slicesHtml
+    +'</svg>'
+    +'<div class="donut-center">'
+    +'<div class="donut-center-val">'+fmt(total)+'</div>'
+    +'<div class="donut-center-lbl">总计</div>'
+    +'</div></div>'
+    +'<div class="donut-legend">'+legendHtml+'</div>'
+    +'</div>';
+
+  let centerVal=el.querySelector(".donut-center-val"),centerLbl=el.querySelector(".donut-center-lbl");
+  let slices=el.querySelectorAll(".donut-slice"),items=el.querySelectorAll(".donut-item");
+  function focus(val,pct,lbl){
+    if(centerVal)centerVal.textContent=pct;
+    if(centerLbl)centerLbl.textContent=lbl+" · "+val;
+  }
+  let legendEl=el.querySelector(".donut-legend");
+  function reset(){
+    if(centerVal)centerVal.textContent=fmt(total);
+    if(centerLbl)centerLbl.textContent="总计";
+    slices.forEach(s=>{s.style.opacity="1";s.style.strokeWidth="22"});
+    items.forEach(it=>it.style.background="transparent");
+  }
+  slices.forEach(s=>{
+    s.addEventListener("mouseenter",()=>{
+      slices.forEach(o=>{o.style.opacity=o===s?"1":"0.4";o.style.strokeWidth=o===s?"26":"22"});
+      items.forEach(it=>it.style.background=it.dataset.idx===s.dataset.idx?"color-mix(in srgb,var(--p) 85%,var(--a))":"transparent");
+      focus(s.dataset.val,s.dataset.pct,s.dataset.lbl);
+    });
+    s.addEventListener("mouseleave",reset);
+  });
+  items.forEach(it=>{
+    it.addEventListener("mouseenter",()=>{
+      let idx=it.dataset.idx;
+      slices.forEach(s=>{
+        s.style.opacity=s.dataset.idx===idx?"1":"0.4";
+        s.style.strokeWidth=s.dataset.idx===idx?"26":"22";
+      });
+      items.forEach(other=>{other.style.background=other===it?"color-mix(in srgb,var(--p) 85%,var(--a))":"transparent"});
+      focus(it.dataset.val,it.dataset.pct,it.dataset.lbl);
+    });
+  });
+  if(legendEl){
+    legendEl.addEventListener("mouseleave",()=>{
+      slices.forEach(s=>s.style.strokeWidth="22");
+      reset();
+    });
+  }
+}
+
+function latencyHistogram(id,arr){
+  let el=$(id);if(!el)return;
+  el.className="";
+  const BUCKETS=[
+    {key:"<500ms",label:"<500ms",sub:"极速",color:"#10b981"},
+    {key:"500-1000ms",alt:"500ms_1s",label:"500-1s",sub:"良好",color:"#06b6d4"},
+    {key:"1-3s",alt:"1s_3s",label:"1-3s",sub:"正常",color:"#3b82f6"},
+    {key:"3-5s",alt:"3s_5s",label:"3-5s",sub:"偏慢",color:"#f59e0b"},
+    {key:"5s+",alt:">5s",label:"5s+",sub:"超时风险",color:"#ef4444"}
+  ];
+  let rawMap=new Map();
+  (arr||[]).forEach(x=>rawMap.set(String(x.name).trim().toLowerCase(),Number(x.count||0)));
+  let total=Array.from(rawMap.values()).reduce((a,b)=>a+b,0)||1;
+  let bucketData=BUCKETS.map(b=>{
+    let count=(rawMap.get(b.key.toLowerCase())||0)+(b.alt?(rawMap.get(b.alt.toLowerCase())||0):0);
+    return {...b,count,pct:total>0?(count/total*100).toFixed(1)+"%":"0.0%"};
+  });
+  let maxCount=Math.max(...bucketData.map(b=>b.count),1);
+  el.innerHTML='<div class="hist-wrap"><div class="hist-cols">'
+    +bucketData.map(b=>{
+      let hPct=Math.max(4,Math.round((b.count/maxCount)*100));
+      return '<div class="hist-col">'
+        +'<div class="hist-num"><span class="hist-val">'+fmt(b.count)+'</span><span class="hist-pct">'+b.pct+'</span></div>'
+        +'<div class="hist-track" title="'+b.label+': '+fmt(b.count)+' ('+b.pct+')">'
+        +'<div class="hist-fill" style="height:'+hPct+'%;background:'+b.color+'"></div>'
+        +'</div>'
+        +'<div class="hist-label"><span class="b-dot" style="background:'+b.color+'"></span><span>'+b.label+'</span></div>'
+        +'<div class="hist-sub">'+b.sub+'</div>'
+        +'</div>';
+    }).join("")
+    +'</div></div>';
+}
+
+function rankedTable(id,arr,valLabel="数量",labelFormatter=null){
+  let el=$(id);if(!el)return;
+  el.className="";
+  let a=(arr||[]);
+  if(!a.length){el.innerHTML='<div class="muted" style="padding:14px 0;text-align:center">暂无数据</div>';return}
+  let total=a.reduce((s,x)=>s+Number(x.count||0),0)||1;
+  let max=Math.max(...a.map(x=>Number(x.count||0)),1);
+  let rowsHtml=a.map((x,idx)=>{
+    let rank=idx+1;
+    let badgeCls=rank===1?"top1":(rank===2?"top2":(rank===3?"top3":""));
+    let c=getBrandColor(x.name);
+    let lbl=labelFormatter?labelFormatter(x.name):formatHumanLabel(x.name);
+    let count=Number(x.count||0);
+    let p=(count/total*100).toFixed(1)+"%";
+    let trackW=Math.max(2,Math.round((count/max)*100));
+    return '<tr>'
+      +'<td style="width:36px;text-align:center"><span class="rank-badge '+badgeCls+'">#'+rank+'</span></td>'
+      +'<td><div style="display:flex;align-items:center;gap:6px"><span class="b-dot" style="background:'+c+'"></span><span style="font-weight:600;color:var(--t)">'+esc(lbl)+'</span><span class="muted" style="font-size:10.5px;font-family:var(--mono)">'+esc(x.name)+'</span></div></td>'
+      +'<td style="width:130px"><div style="display:flex;align-items:center;gap:6px"><div class="track" style="flex:1;height:6px"><div class="fill" style="width:'+trackW+'%;background:'+c+'"></div></div><span class="muted" style="font-size:10.5px;font-family:var(--mono);min-width:38px;text-align:right">'+p+'</span></div></td>'
+      +'<td style="width:90px;text-align:right;font-family:var(--mono);font-weight:700">'+fmt(count)+'</td>'
+      +'</tr>';
+  }).join("");
+  el.innerHTML='<div class="ranked-table-wrap"><table class="ranked-table">'
+    +'<thead><tr><th style="width:36px;text-align:center">#</th><th>对象名称</th><th style="width:130px">占比分布</th><th style="width:90px;text-align:right">'+esc(valLabel)+'</th></tr></thead>'
+    +'<tbody>'+rowsHtml+'</tbody>'
+    +'</table></div>';
 }
 
 function kpis(id,rows){
@@ -1769,7 +2455,7 @@ function trendLabel(row){
   return String(row?.date||"").slice(5);
 }
 
-// 智能全画幅磁吸 Canvas 走势图 (告别瞄准小圆点)
+// 智能全画幅磁吸 Canvas 走势图 (支持折线与堆叠柱形自由切换)
 let currentTrendData=[];
 function drawCanvasChart(){
   let canvas=$("#trendCanvas");if(!canvas)return;
@@ -1787,19 +2473,46 @@ function drawCanvasChart(){
     ctx.fillText("暂无走势数据",W/2,H/2);return;
   }
   let ok=a.map(x=>Number(x.playlist_success||0)+Number(x.user_success||0)),fail=a.map(x=>Number(x.resolve_failure||0));
+  let isBarView=chartViews.trend==="bar";
   let max=Math.max(1,...ok,...fail);
+  max=Math.ceil(max*1.15);
   let getX=i=>a.length===1?padL+pw/2:padL+(i/(a.length-1))*pw;
   let getY=v=>padT+ph-(Number(v||0)/max)*ph;
+  let halfH=ph/2;
+  let yBase=padT+halfH;
 
-  // 1. 水平虚线与 Y 刻度
-  ctx.strokeStyle="color-mix(in srgb, var(--l) 80%, transparent)";
-  ctx.lineWidth=1;ctx.fillStyle="#94a3b8";ctx.font="10px var(--mono)";ctx.textAlign="right";
-  [0,.5,1].forEach(r=>{
-    let y=padT+ph-r*ph,val=Math.round(max*r);
-    ctx.beginPath();ctx.setLineDash([3,3]);ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
-    ctx.fillText(fmt(val),padL-6,y+3);
-  });
-  ctx.setLineDash([]);
+  if(isBarView){
+    // 水平虚线与 Y 刻度
+    ctx.strokeStyle="color-mix(in srgb, var(--l) 80%, transparent)";
+    ctx.lineWidth=1;ctx.fillStyle="#94a3b8";ctx.font="10px var(--mono)";ctx.textAlign="right";
+    ctx.setLineDash([3,3]);
+    let levels=[
+      {y:padT,val:max},
+      {y:padT+halfH/2,val:Math.round(max/2)},
+      {y:yBase+halfH/2,val:Math.round(max/2)},
+      {y:padT+ph,val:max}
+    ];
+    levels.forEach(l=>{
+      ctx.beginPath();ctx.moveTo(padL,l.y);ctx.lineTo(W-padR,l.y);ctx.stroke();
+      ctx.fillText(fmt(l.val),padL-6,l.y+3);
+    });
+    ctx.setLineDash([]);
+    // 中央基线
+    ctx.strokeStyle="rgba(148, 163, 184, 0.75)";
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(padL,yBase);ctx.lineTo(W-padR,yBase);ctx.stroke();
+    ctx.fillText("0",padL-6,yBase+3);
+  }else{
+    // 1. 水平虚线与 Y 刻度
+    ctx.strokeStyle="color-mix(in srgb, var(--l) 80%, transparent)";
+    ctx.lineWidth=1;ctx.fillStyle="#94a3b8";ctx.font="10px var(--mono)";ctx.textAlign="right";
+    [0,.5,1].forEach(r=>{
+      let y=padT+ph-r*ph,val=Math.round(max*r);
+      ctx.beginPath();ctx.setLineDash([3,3]);ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+      ctx.fillText(fmt(val),padL-6,y+3);
+    });
+    ctx.setLineDash([]);
+  }
 
   // 2. X 轴标签
   ctx.textAlign="center";let step=Math.max(1,Math.ceil(a.length/7));
@@ -1809,28 +2522,52 @@ function drawCanvasChart(){
     }
   });
 
-  // 3. 成功折线 (绿色)
-  ctx.beginPath();
-  ok.forEach((v,i)=>{let x=getX(i),y=getY(v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
-  ctx.strokeStyle="#10b981";ctx.lineWidth=2.5;ctx.stroke();
+  if(isBarView){
+    let bw=Math.max(4,Math.min(22,(pw/Math.max(1,a.length))*0.65));
+    a.forEach((row,i)=>{
+      let cx=getX(i),x0=cx-bw/2;
+      let okH=(ok[i]/max)*halfH;
+      let failH=(fail[i]/max)*halfH;
+      if(okH>0){
+        ctx.fillStyle="#10b981";
+        ctx.fillRect(x0,yBase-okH,bw,okH);
+      }
+      if(failH>0){
+        ctx.fillStyle="#ef4444";
+        ctx.fillRect(x0,yBase,bw,failH);
+      }
+      if(canvas._activeIdx===i){
+        ctx.strokeStyle="#3b82f6";
+        ctx.lineWidth=1.5;
+        let boxTop=okH>0?yBase-okH:yBase;
+        let boxHeight=(okH>0?okH:0)+(failH>0?failH:0);
+        ctx.strokeRect(x0-2,boxTop-2,bw+4,Math.max(4,boxHeight+4));
+      }
+    });
+  }else{
+    // 3. 成功折线 (绿色)
+    ctx.beginPath();
+    ok.forEach((v,i)=>{let x=getX(i),y=getY(v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+    ctx.strokeStyle="#10b981";ctx.lineWidth=2.5;ctx.stroke();
 
-  // 4. 失败折线 (红色)
-  ctx.beginPath();
-  fail.forEach((v,i)=>{let x=getX(i),y=getY(v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
-  ctx.strokeStyle="#ef4444";ctx.lineWidth=2;ctx.stroke();
+    // 4. 失败折线 (红色)
+    ctx.beginPath();
+    fail.forEach((v,i)=>{let x=getX(i),y=getY(v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+    ctx.strokeStyle="#ef4444";ctx.lineWidth=2;ctx.stroke();
 
-  // 5. 磁吸指针高亮
-  if(canvas._activeIdx>=0&&canvas._activeIdx<a.length){
-    let idx=canvas._activeIdx,snapX=getX(idx),yOk=getY(ok[idx]),yFail=getY(fail[idx]);
-    ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
-    ctx.moveTo(snapX,padT);ctx.lineTo(snapX,H-padB);ctx.stroke();
-    ctx.setLineDash([]);
+    // 5. 磁吸指针高亮
+    if(canvas._activeIdx>=0&&canvas._activeIdx<a.length){
+      let idx=canvas._activeIdx,snapX=getX(idx),yOk=getY(ok[idx]),yFail=getY(fail[idx]);
+      ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+      ctx.moveTo(snapX,padT);ctx.lineTo(snapX,H-padB);ctx.stroke();
+      ctx.setLineDash([]);
 
-    ctx.fillStyle="#10b981";ctx.beginPath();ctx.arc(snapX,yOk,4.5,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle="#10b981";ctx.beginPath();ctx.arc(snapX,yOk,4.5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
 
-    ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(snapX,yFail,4,0,Math.PI*2);ctx.fill();
-    ctx.stroke();
+      ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(snapX,yFail,4,0,Math.PI*2);ctx.fill();
+      ctx.stroke();
+    }
   }
 }
 
@@ -1873,6 +2610,64 @@ function renderTrend(id,rows){
   drawCanvasChart();
 }
 
+function renderComponent(key){
+  if(!A)return;
+  let b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f;
+  if(key==="trend"){
+    drawCanvasChart();
+  }else if(key==="platform"){
+    if(chartViews.platform==="donut")donutChart("#platformBars",d.platforms);
+    else bars("#platformBars",d.platforms);
+  }else if(key==="client"){
+    if(chartViews.client==="donut")donutChart("#clientBars",d.clients);
+    else bars("#clientBars",d.clients);
+  }else if(key==="country"){
+    if(chartViews.country==="table")rankedTable("#countryBars",A.geo?.countries,"独立访客 (UV)");
+    else bars("#countryBars",A.geo?.countries);
+  }else if(key==="region"){
+    if(chartViews.region==="table")rankedTable("#regionBars",A.geo?.regions,"独立访客 (UV)");
+    else bars("#regionBars",A.geo?.regions);
+  }else if(key==="device"){
+    if(chartViews.device==="donut")donutChart("#deviceBars",e.devices,null,null,formatDeviceLabel);
+    else bars("#deviceBars",e.devices,null,null,formatDeviceLabel);
+  }else if(key==="latency"){
+    if(chartViews.latency==="donut")donutChart("#latencyBars",b.latency_bucket);
+    else bars("#latencyBars",b.latency_bucket);
+  }else if(key==="exportFormat"){
+    if(chartViews.exportFormat==="donut")donutChart("#exportFormatBars",b.export_format);
+    else bars("#exportFormatBars",b.export_format);
+  }else if(key==="clipboard"){
+    if(chartViews.clipboard==="donut")donutChart("#clipboardModeBars",b.clipboard_mode);
+    else bars("#clipboardModeBars",b.clipboard_mode);
+  }else if(key==="requestedType"){
+    if(chartViews.requestedType==="donut")donutChart("#requestedTypeBars",b.requested_type);
+    else bars("#requestedTypeBars",b.requested_type);
+  }else if(key==="webCountry"){
+    if(chartViews.webCountry==="table")rankedTable("#webCountryBars",A.geo?.countries,"独立访客 (UV)");
+    else bars("#webCountryBars",A.geo?.countries);
+  }else if(key==="webRegion"){
+    if(chartViews.webRegion==="table")rankedTable("#webRegionBars",A.geo?.regions,"独立访客 (UV)");
+    else bars("#webRegionBars",A.geo?.regions);
+  }
+}
+
+function initViewSwitches(){
+  $$(".view-switch").forEach(sw=>{
+    let target=sw.dataset.target;
+    if(!target)return;
+    sw.querySelectorAll("button").forEach(btn=>{
+      btn.onclick=(e)=>{
+        e.stopPropagation();
+        let view=btn.dataset.view;
+        if(!view||chartViews[target]===view)return;
+        chartViews[target]=view;
+        sw.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b===btn));
+        renderComponent(target);
+      };
+    });
+  });
+}
+
 function render(){
   let o=A.overview||{},b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f,q=A.dataQuality||{};
   let succ=Number(o.playlist_success||0)+Number(o.user_success||0);
@@ -1881,24 +2676,28 @@ function render(){
 
   // 1. Overview KPIs
   kpis("#overviewKpis",[
-    ["Requests",fmt(o.resolve_request),"统一 resolve_request 口径"],
+    ["Requests",fmt(o.resolve_request),"歌单解析总请求"],
     ["Success",fmt(succ),pct(o.success_rate)+" 成功率"],
     ["Tracks",fmt(o.tracks_processed),"处理歌曲 · 均单 "+(o.resolve_request>0?Math.round(o.tracks_processed/o.resolve_request):0)+" 首"],
     ["Exports",fmt(o.export),"文件导出总量"],
-    ["Failures",fmt(o.resolve_failure),"最终失败解析"],
-    ["Client IDs",fmt(o.active_clients),"活跃客户端类别，不代表用户/安装数"]
+    ["Failures",fmt(o.resolve_failure),"未成功解析"],
+    ["Client IDs",String(o.active_clients),"活跃客户端类别"]
   ]);
 
   renderTrend("#trend",(A.hourlyTimeseries||[]).length?A.hourlyTimeseries:(A.timeseries||[]));
-  bars("#platformBars",d.platforms);
-  bars("#clientBars",d.clients);
-  bars("#countryBars",A.geo?.countries,10);
-  bars("#regionBars",A.geo?.regions,10);
+  renderComponent("platform");
+  renderComponent("client");
+  renderComponent("country");
+  renderComponent("region");
 
   // Health check
   let checks=q.checks||[];
-  $("#health").className="health "+(q.status==="healthy"?"good":"bad");
-  $("#health").textContent=q.status==="healthy"?"● Data Healthy":"● Data Integrity Error";
+  let isGood=q.status==="healthy";
+  let healthEl=$("#health");
+  if(healthEl){
+    healthEl.className="health-dot "+(isGood?"good":"bad");
+    healthEl.title=isGood?"数据健康 (Data Healthy)":"数据完整性异常 (Data Integrity Error)";
+  }
   $("#quality").innerHTML=checks.map(x=>'<div class="notice '+(x.ok?"":"bad")+'">'+(x.ok?"✓ ":"✕ ")+esc(x.id)+'<br><span class="muted">'+esc(x.note)+(x.ok?"":" · expected "+fmt(x.expected)+" / actual "+fmt(x.actual))+'</span></div>').join("")
     +'<div class="muted" style="margin-top:6px">Latest: '+esc(q.latestDate||"—")+' · Legacy mixed: '+pct(q.legacyMixedShare)+'</div>';
 
@@ -1911,6 +2710,19 @@ function render(){
   }
 
   let actFrom=$("#fromDate")?.value||A.filters?.from||snapshotRange.from||"", actTo=$("#toDate")?.value||A.filters?.to||snapshotRange.to||"";
+  let headDateDisp=$("#headDateDisplay");
+  if(headDateDisp){
+    let isAll=$(".range button[data-range='all']")?.classList.contains('active');
+    if(isAll){
+      headDateDisp.textContent="全部历史";
+    }else if(actFrom&&actTo&&actFrom===actTo){
+      headDateDisp.textContent=actFrom;
+    }else if(actFrom&&actTo){
+      headDateDisp.textContent=actFrom.slice(5)+" ~ "+actTo.slice(5);
+    }else{
+      headDateDisp.textContent="全部历史";
+    }
+  }
   let chips=['<span class="chip">'+esc(actFrom===actTo?actFrom:(actFrom+" → "+actTo))+'</span>'];
   ["channel","client","platform","country","region"].forEach(id=>{let v=$("#"+id).value;if(v)chips.push('<span class="chip">'+esc(id)+": "+esc(v)+'</span>')});
   $("#chips").innerHTML=chips.join("");
@@ -1922,73 +2734,83 @@ function render(){
     else{badge.style.display="none"}
   }
   let generated=A.generatedAt?new Date(A.generatedAt).toLocaleString():"—";
-  $("#updated").textContent="快照 "+generated+" · 最新数据 "+esc(q.latestDate||"—");
+  let snapEl=$("#snapTime"),latestEl=$("#latestDate");
+  if(snapEl&&latestEl){
+    snapEl.textContent=generated;
+    latestEl.textContent=esc(q.latestDate||"—");
+  }else if($("#updated")){
+    $("#updated").textContent="快照 "+generated+" · 最新数据 "+esc(q.latestDate||"—");
+  }
 
   // 2. Web Page (全维度复原)
+  let webBrowsers = (e.browsers || []).filter(x => {
+    let n = String(x.name || "").toLowerCase();
+    return !n.startsWith("plugin:") && !["musicfree", "bbplayer", "anonymous_api", "official_cli", "internal"].includes(n);
+  });
   kpis("#webKpis",[
-    ["Web Requests",fmt(webReq),"resolve_request"],
-    ["Page Views",fmt(o.page_view),"官网访问"],
-    ["Daily Uniques",fmt(o.visitor_unique),"每日匿名去重"],
-    ["Exports",fmt(o.export),"官网导出事件"],
-    ["Clipboard",fmt(o.clipboard),"官网复制事件"],
-    ["Top Browser",e.browsers?.[0]?.name||"—","最多访问浏览器"]
+    ["Web Requests",fmt(webReq),"歌单解析请求"],
+    ["Page Views",fmt(o.page_view),"官网访问 (PV)"],
+    ["Daily Uniques",fmt(o.visitor_unique),"独立访客 (UV)"],
+    ["Exports",fmt(o.export),"文件导出事件"],
+    ["Clipboard",fmt(o.clipboard),"剪贴板复制事件"],
+    ["Top Browser",formatBrowserLabel(webBrowsers?.[0]?.name||"—"),"最多访问浏览器"]
   ]);
   let envPartial=Boolean($("#platform").value||$("#country").value||$("#region").value);
   scopeNote("#webScope","Browser / Device / OS 仅支持日期、Channel、Client 筛选；当前 Platform / Country / Region 不会作用于环境数据。",envPartial,true);
-  bars("#referrerBars",b.referrer_source);
-  bars("#browserBars",e.browsers);
-  bars("#deviceBars",e.devices);
-  bars("#osBars",e.operatingSystems);
-  bars("#webCountryBars",A.geo?.countries,15);
-  bars("#webRegionBars",A.geo?.regions,15);
+  bars("#referrerBars",b.referrer_source,null,null,x=>x);
+  bars("#browserBars",webBrowsers,null,null,formatBrowserLabel);
+  renderComponent("device");
+  bars("#osBars",e.operatingSystems,null,null,formatOsLabel);
+  renderComponent("webCountry");
+  renderComponent("webRegion");
 
   // 3. Reliability Page (全维度复原)
   kpis("#reliabilityKpis",[
-    ["Success Rate",pct(o.success_rate),"成功率"],
-    ["Failures",fmt(o.resolve_failure),"失败解析"],
-    ["Requests",fmt(o.resolve_request),"总请求数"],
-    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 频控"],
+    ["Success Rate",pct(o.success_rate),"解析成功率"],
+    ["Failures",fmt(o.resolve_failure),"失败解析量"],
+    ["Requests",fmt(o.resolve_request),"总请求调用数"],
+    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 拦截"],
     ["Top Failure",b.failure_code?.[0]?.name||"—","最频发错误"],
-    ["Common Latency",b.latency_bucket?.[0]?.name||"—","出现次数最多的延迟桶"]
+    ["Common Latency",b.latency_bucket?.[0]?.name||"—","最多响应延迟区间"]
   ]);
   let geoPartial=Boolean($("#country").value||$("#region").value);
   scopeNote("#reliabilityScope","Country / Region 只作用于 Overview、趋势和 Geo cube；Failure Code、Stage、Latency 等可靠性 breakdown 不做地理关联，因此不会随地理筛选变化。",geoPartial,true);
   bars("#failureCodeBars",b.failure_code);
   bars("#failureStageBars",b.failure_stage);
-  bars("#latencyBars",b.latency_bucket);
-  bars("#requestedTypeBars",b.requested_type);
+  renderComponent("latency");
+  renderComponent("requestedType");
   bars("#providerBars",b.provider_failure_path);
   bars("#endpointBars",b.endpoint);
   bars("#exportSizeBars",b.export_playlist_size);
-  bars("#exportFormatBars",b.export_format);
-  bars("#clipboardModeBars",b.clipboard_mode);
+  renderComponent("exportFormat");
+  renderComponent("clipboard");
 
   // 4. Integrations Page
   let bbplayerReq=countNamed(d.clients,"bbplayer");
   kpis("#integrationKpis",[
-    ["API Requests",fmt(apiReq),"Public API resolve_request"],
-    ["Plugin Requests",fmt(pluginReq),"插件 / 生态客户端请求"],
-    ["MusicFree",fmt(musicfreeReq),"已识别 MusicFree 请求"],
-    ["BBPlayer",fmt(bbplayerReq),"已识别 BBPlayer 请求"],
+    ["API Requests",fmt(apiReq),"API 解析请求"],
+    ["Plugin Requests",fmt(pluginReq),"插件/生态请求"],
+    ["MusicFree",fmt(musicfreeReq),"MusicFree 请求"],
+    ["BBPlayer",fmt(bbplayerReq),"BBPlayer 请求"],
     ["Anonymous API",fmt(anonymousApiReq),"未注册 API 客户端"],
-    ["Client IDs",fmt(o.active_clients),"活跃客户端类别"]
+    ["Client IDs",String(o.active_clients),"活跃客户端类别"]
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
   bars("#integrationClients",d.clients);
   bars("#versionBars",b.musicfree_version);
   bars("#hostBars",b.musicfree_host);
-  bars("#bbplayerVersionBars",b.bbplayer_version,12,"#fb7299");
+  bars("#bbplayerVersionBars",b.bbplayer_version,null,"#fb7299");
   bars("#bbplayerHostBars",b.bbplayer_host);
   bars("#migrationBars",b.migration_destination);
   bars("#migrationProviderBars",b.migration_provider);
 
   // 5. Security Page
   kpis("#securityKpis",[
-    ["Rate Limited",fmt(o.rate_limited),"HTTP 429"],
+    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 拦截"],
     ["API Channel",fmt(apiReq),"正常产品流量"],
     ["Plugin Channel",fmt(pluginReq),"正常产品流量"],
-    ["Quarantine","见下方","安全取证"],
-    ["Legacy Mixed",pct(q.legacyMixedShare),"历史未知来源"],
+    ["Quarantine","见下方","安全取证记录"],
+    ["Legacy Mixed",pct(q.legacyMixedShare),"历史未标记来源"],
     ["Data Health",q.status==="healthy"?"Healthy":"Error",""]
   ]);
   bars("#rateBars",b.rate_limit_endpoint);
@@ -2016,7 +2838,7 @@ async function load({force=false}={}){
   let controller=new AbortController();loadController=controller;
   let loadTimer=setTimeout(()=>{
     if(seq===loadSeq){
-      $("#health").className="health";$("#health").textContent="● Loading";
+      let h=$("#health");if(h){h.className="health-dot loading";h.title="正在同步云端快照…"}
     }
   },120);
   try{
@@ -2031,7 +2853,7 @@ async function load({force=false}={}){
   }catch(e){
     clearTimeout(loadTimer);
     if(e?.name==="AbortError"||seq!==loadSeq)return;
-    $("#health").className="health bad";$("#health").textContent="● Load Failed";
+    let h=$("#health");if(h){h.className="health-dot bad";h.title="加载失败："+esc(e.message)}
     $("#error").innerHTML='<div class="notice bad">'+esc(e.message)+'</div>';
   }finally{
     clearTimeout(loadTimer);
@@ -2279,11 +3101,13 @@ $$(".range button").forEach(b=>b.onclick=()=>setPreset(b.dataset.range));
 });
 $("#applySingleDate").onclick=()=>{let d=$("#singleDate").value;if(!d)return;setDateInputs(d,d);markPreset("");load()};
 $("#singleDate").onchange=()=>{let d=$("#singleDate").value;if(!d)return;setDateInputs(d,d);markPreset("");load()};
+let prevBtn=$("#filterPrevDay");if(prevBtn)prevBtn.onclick=()=>stepDay(-1);
+let nextBtn=$("#filterNextDay");if(nextBtn)nextBtn.onclick=()=>stepDay(1);
 $("#applyDateRange").onclick=()=>{dates();markPreset("");load()};
 ["fromDate","toDate"].forEach(id=>$("#"+id).onkeydown=e=>{if(e.key==="Enter"){$("#applyDateRange").click()}});
 $("#reset").onclick=()=>{
   ["channel","client","platform","country","region"].forEach(id=>{let el=$("#"+id);if(el)el.value=""});
-  excludeMy=true;
+  excludeMy=false;
   updateExcludeMyUI();
   setPreset("all");
 };
@@ -2310,6 +3134,7 @@ if(fModal)fModal.onclick=e=>{if(e.target===fModal)fModal.style.display="none"};
 
 markPreset("all");
 updateExcludeMyUI();
+initViewSwitches();
 load();
 </script></body></html>'''
 

@@ -538,7 +538,7 @@ export function buildAnalyticsSlice(
   const excludeMy =
     String(query.country || '').trim().toUpperCase() === 'MY'
       ? false
-      : query.exclude_my !== false;
+      : Boolean(query.exclude_my);
 
   const { daily, geo: geoRows, hourly, breakdowns: breakdownRows, envRows } =
     excludeMy
@@ -689,8 +689,7 @@ export function buildAnalyticsSlice(
     const items = Array.from(valMap.entries())
       .filter(([, count]) => count > 0)
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-      .slice(0, 50);
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
     if (items.length > 0) {
       breakdowns[dim] = items;
@@ -703,11 +702,11 @@ export function buildAnalyticsSlice(
   const countries = sumBy(
     filteredGeo.filter((r) => r.country !== 'UNKNOWN'),
     'country',
-  ).slice(0, 50);
+  );
   const regions = sumBy(
-    filteredGeo.filter((r) => r.region !== 'UNKNOWN'),
+    filteredGeo.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)),
     'region',
-  ).slice(0, 80);
+  );
 
   // ── DAU slice: per-day channel series, today/yesterday totals, clients, geo ──
   const dauByDate = new Map<string, DauChannelTotals>();
@@ -772,11 +771,11 @@ export function buildAnalyticsSlice(
   const dauCountries = sumBy(
     dauGeoRows.filter((r) => r.country !== 'UNKNOWN'),
     'country',
-  ).slice(0, 10);
+  );
   const dauRegions = sumBy(
-    dauGeoRows.filter((r) => r.region !== 'UNKNOWN'),
+    dauGeoRows.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)),
     'region',
-  ).slice(0, 10);
+  );
 
   function filterOptionRows(omit: 'channel' | 'client' | 'platform', metrics: Set<string>) {
     return source.filter(
@@ -814,6 +813,7 @@ export function buildAnalyticsSlice(
   const regionOptionRows = geoRows.filter(
     (row) =>
       row.region !== 'UNKNOWN' &&
+      (row.country === 'CN' || !row.country) &&
       matchesFilter(row, filters, { includeGeo: true, omit: 'region' }),
   );
 
@@ -951,8 +951,8 @@ export function buildAnalyticsSlice(
       channels,
       clients,
       platforms,
-      countries: sumBy(countryOptionRows, 'country').slice(0, 50),
-      regions: sumBy(regionOptionRows, 'region').slice(0, 80),
+      countries: sumBy(countryOptionRows, 'country'),
+      regions: sumBy(regionOptionRows, 'region'),
     },
     dataQuality: {
       status: checks.every((c) => c.ok) ? 'healthy' : 'error',
@@ -972,7 +972,7 @@ export function buildQuarantineSlice(
   const excludeMy =
     String(query.country || '').trim().toUpperCase() === 'MY'
       ? false
-      : query.exclude_my !== false;
+      : Boolean(query.exclude_my);
 
   if (excludeMy) {
     rows = rows.filter((r) => String(r.country || '').toUpperCase() !== 'MY');
@@ -1015,7 +1015,7 @@ export function buildFeedbackSlice(
   const excludeMy =
     String(query.country || '').trim().toUpperCase() === 'MY'
       ? false
-      : query.exclude_my !== false;
+      : Boolean(query.exclude_my);
 
   if (excludeMy) {
     allRows = allRows.filter((r) => String(r.country || '').toUpperCase() !== 'MY');

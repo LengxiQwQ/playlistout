@@ -102,7 +102,9 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertNotIn(secret, HTML)
         self.assertNotIn("INSIGHTS_ADMIN_TOKEN", HTML)
         self.assertNotIn("fbToken", HTML)
-        self.assertIn("Token 不进入浏览器", HTML)
+        self.assertNotIn("Token 不进入浏览器", HTML)
+        self.assertNotIn("先看结果，再下钻原因", HTML)
+        self.assertIn("Playlist Out", HTML)
 
     def test_dashboard_has_no_third_party_browser_script(self):
         self.assertNotIn("cdn.jsdelivr.net", HTML)
@@ -273,8 +275,19 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             self.assertIn(text, HTML)
         self.assertNotIn("Hide MY", HTML)
         self.assertNotIn("隐藏马来西亚", HTML)
+        self.assertNotIn("Top 10", HTML)
+        self.assertNotIn("Top 15", HTML)
+        overview_part = HTML[HTML.find('id="page-overview"'):HTML.find('id="page-feedback"')]
+        self.assertIn('id="clientBars"', overview_part)
+        self.assertIn('id="countryBars"', overview_part)
+        self.assertLess(overview_part.find('id="clientBars"'), overview_part.find('id="countryBars"'))
 
     def test_dashboard_date_controls_support_single_day_and_arbitrary_range(self):
+        self.assertNotIn('id="headPrevDay"', HTML)
+        self.assertNotIn('id="headNextDay"', HTML)
+        self.assertNotIn('id="headDateDisplay"', HTML)
+        self.assertIn('id="filterPrevDay"', HTML)
+        self.assertIn('id="filterNextDay"', HTML)
         self.assertIn('id="singleDate"', HTML)
         self.assertIn('id="fromDate"', HTML)
         self.assertIn('id="toDate"', HTML)
@@ -282,9 +295,11 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertIn('data-range="day3"', HTML)
         self.assertIn('data-range="all"', HTML)
         self.assertIn('id="refreshData"', HTML)
+        self.assertIn("stepDay", HTML)
+        self.assertIn("shiftDateStr", HTML)
         self.assertIn("AbortController", HTML)
         self.assertIn("CACHE_MS=15000", HTML)
-        self.assertIn("不重复请求 Worker", HTML)
+        self.assertNotIn("不重复请求 Worker", HTML)
 
     def test_dashboard_selector_helpers_are_distinct_and_valid(self):
         self.assertIn(
@@ -409,29 +424,35 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
             ],
         }
 
-        # 1. Default (exclude_my is active by default)
+        # 1. Default (exclude_my is OFF by default, as requested by user)
         default_res = build_local_analytics(snapshot, {"from": "2026-10-06", "to": "2026-10-06"})
-        self.assertEqual(default_res["overview"]["playlist_success"], 5)  # 20 - 15
-        self.assertEqual(default_res["overview"]["resolve_failure"], 3)   # 5 - 2
-        self.assertEqual(default_res["overview"]["resolve_request"], 8)   # 5 + 3 = 8
-        self.assertEqual(len(default_res["geo"]["countries"]), 0)         # MY removed
+        self.assertEqual(default_res["overview"]["playlist_success"], 20)
+        self.assertEqual(default_res["overview"]["resolve_failure"], 5)
+        self.assertEqual(default_res["overview"]["resolve_request"], 25)
+        self.assertEqual(len(default_res["geo"]["countries"]), 1)
+        self.assertEqual(default_res["geo"]["countries"][0]["name"], "MY")
 
-        # Quarantine & feedback default exclusion
+        # Quarantine & feedback default inclusion (since exclude_my is off by default)
         q_res = build_local_quarantine(snapshot, {})
-        self.assertEqual(q_res["totalRecords"], 1)
-        self.assertEqual(q_res["quarantine"][0]["country"], "CN")
+        self.assertEqual(q_res["totalRecords"], 2)
 
         fb_res = build_local_feedback(snapshot, {})
-        self.assertEqual(fb_res["total"], 1)
-        self.assertEqual(fb_res["entries"][0]["country"], "CN")
+        self.assertEqual(fb_res["total"], 2)
 
-        # 2. Explicitly include Malaysia (exclude_my=0)
-        include_res = build_local_analytics(snapshot, {"from": "2026-10-06", "to": "2026-10-06", "exclude_my": "0"})
-        self.assertEqual(include_res["overview"]["playlist_success"], 20)
-        self.assertEqual(include_res["overview"]["resolve_failure"], 5)
-        self.assertEqual(include_res["overview"]["resolve_request"], 25)
-        self.assertEqual(len(include_res["geo"]["countries"]), 1)
-        self.assertEqual(include_res["geo"]["countries"][0]["name"], "MY")
+        # 2. Explicitly exclude Malaysia (exclude_my=1)
+        excluded_res = build_local_analytics(snapshot, {"from": "2026-10-06", "to": "2026-10-06", "exclude_my": "1"})
+        self.assertEqual(excluded_res["overview"]["playlist_success"], 5)  # 20 - 15
+        self.assertEqual(excluded_res["overview"]["resolve_failure"], 3)   # 5 - 2
+        self.assertEqual(excluded_res["overview"]["resolve_request"], 8)   # 5 + 3 = 8
+        self.assertEqual(len(excluded_res["geo"]["countries"]), 0)         # MY removed
+
+        q_excluded = build_local_quarantine(snapshot, {"exclude_my": "1"})
+        self.assertEqual(q_excluded["totalRecords"], 1)
+        self.assertEqual(q_excluded["quarantine"][0]["country"], "CN")
+
+        fb_excluded = build_local_feedback(snapshot, {"exclude_my": "1"})
+        self.assertEqual(fb_excluded["total"], 1)
+        self.assertEqual(fb_excluded["entries"][0]["country"], "CN")
 
 
     def test_dashboard_html_is_data_driven_not_seeded(self):
