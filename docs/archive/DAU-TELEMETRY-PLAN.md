@@ -1,8 +1,9 @@
 # 日活（DAU）遥测方案
 
-> 状态：**规划稿（未实施，等待评审）**
+> 状态：**✅ 已实施并完成生产验证 · 已归档（2026-10-16 UTC）**
 > 日期：2026-10-16
 > 参考：`docs/ANALYTICS-V2.md`、`docs/API.md`、`docs/PROJECT-CONSTITUTION.md`、`.agents/rules/system-architecture.md`
+> 实施记录：Phase 1 `db145da`（Worker 基建 + `0018_daily_active_hashes.sql`）、Phase 2 `71cc567`（MusicFree 2.2.0 静默心跳）、Phase 3 `20071d6`（洞察「日活 DAU」Tab + 公开统计并入）。生产部署 Deploy Worker run #171 全绿（迁移 + schema/analytics/公开统计对账）；端到端探针确认：注册插件心跳放行（204）、同日两次心跳只计一次（去重 +1）、非法 Origin / 未注册客户端拒绝（403）、公开统计并入生效。7 天观察期为运维检查项，详见下方 Phase 4。
 
 ## 1. 背景与目标
 
@@ -323,6 +324,9 @@ Web（`npm --prefix web test` + `npm --prefix web run typecheck`）：
 - **旧切片兼容**：DAU Tab 上线前生成的切片没有 `active_user`，引擎按 0 处理；上线后从新切片开始有值。
 
 ## 16. 待评审确认的开放问题
+
+> **评审结论（2026-10-16）：** 1、2、4–8 项全部按推荐确认；第 3 项调整为「插件心跳保持完全静默：不提供用户可见开关与运行时提示，仅保留 README 披露与测试专用禁用开关（`globalThis.__PLAYLISTOUT_DISABLE_ACTIVE_PING__`）」，实现以此为准。
+
 
 1. 契约命名是否冻结：指标 `active_user`、事件 `{"type":"active"}`、表 `daily_active_hashes` / scope 格式。
 2. 公开统计文案：“全端活跃人次（按天去重）”表述是否接受（替代“累计访问人次”）。
