@@ -853,7 +853,7 @@ class DashboardApp {
         <!-- 7. 日活 DAU (Daily Active Users) -->
         <section class="page ${this.currentPage === 'dau' ? 'active' : ''}" id="page-dau">
           <div class="section">
-            <div><h2>全端日活与触达 DAU</h2><div class="muted">Web 去重访客 + 插件 / CLI 每日去重活跃 · 按 UTC 日期统计（北京时间约等于 UTC+8，清晨计入新一天）。</div></div>
+            <div><h2>全端日活与触达 DAU</h2><div class="muted">总日活 = 网站去重访客 + 插件 / CLI 每日去重活跃（读时合并，网站历史数据已全部并入）· 按 UTC 日期统计（北京时间约等于 UTC+8，清晨计入新一天）。</div></div>
           </div>
           <div id="dauKpis" class="kpis"></div>
           <div class="panel">
@@ -875,7 +875,7 @@ class DashboardApp {
           </div>
           <div class="grid2" style="margin-top:12px">
             <div class="panel">
-              <div class="panel-head"><h3>🧩 分端接入明细 Clients</h3><span class="muted" style="font-size:11px">插件 / CLI 声明客户端</span></div>
+              <div class="panel-head"><h3>🧩 三端接入明细 Clients</h3><span class="muted" style="font-size:11px">网站 / 插件 / CLI 同表合并</span></div>
               <div class="table-wrap">
                 <table>
                   <thead>
@@ -909,10 +909,10 @@ class DashboardApp {
           <div class="panel" style="margin-top:12px;border-left:3px solid var(--a)">
             <div class="panel-head"><h3>📐 口径说明 Metric Semantics</h3></div>
             <div class="muted" style="font-size:12px;line-height:1.9">
-              <div>• <strong>Web</strong>：每日去重访客（服务端匿名哈希去重，渠道 web）。</div>
+              <div>• <strong>Web</strong>：网站每日去重访客（沿用网站原有的 <code>visitor_unique</code> 匿名访客统计，历史数据全部并入趋势与合计，未另建一套记录）。</div>
               <div>• <strong>插件</strong>：插件被加载即计（新版本：每日一次加载心跳；旧版本：当天首次使用行为由服务端派生计入；升级过渡期两种口径混排）。</div>
               <div>• <strong>CLI</strong>：实际使用即计（解析 / 导出时由服务端派生计入；<code>--no-telemetry</code> 用户不计入）。</div>
-              <div>• 去重键：UTC 日期 × 渠道 × 客户端 × 匿名截断哈希；同一人同日在不同渠道可各计一次，跨天不保持身份（不做跨天追踪）。</div>
+              <div>• 合并口径：总日活 = 网站 + 插件 + CLI；去重键为 UTC 日期 × 渠道 × 客户端 × 匿名截断哈希——同一端同一人同天仅计一次（心跳与解析遥测共享同一身份，不因两种上报重复计），同一天使用多个端则各计一次，跨天不保持身份。</div>
               <div>• 已知边界：NAT / 共享出口可能低估；移动端冷启动跨 IP 可能轻微高估。插件升级当天已按「去版本号」归一，不会把同一人重复计入。</div>
             </div>
           </div>
@@ -1553,27 +1553,39 @@ class DashboardApp {
 
     const tbody = document.getElementById('dauClientRows');
     if (tbody) {
-      if (dau.clients.length === 0) {
-        tbody.innerHTML =
-          '<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--m)">当前筛选无插件 / CLI 活跃记录（等待心跳与使用遥测上报）</td></tr>';
-      } else {
-        tbody.innerHTML = dau.clients
-          .map(
-            (c) => `
+      // 网站（Web）行：数据沿用网站既有的 visitor_unique 匿名访客统计，
+      // 与其他渠道在同一张表里合并展示，避免“日活只有插件一家”的误解。
+      const webRow = `
+          <tr>
+            <td>
+              <span style="font-weight:600;color:${getBrandColor('official_web')}">${esc(formatHumanLabel('official_web'))}</span>
+              <div class="muted" style="font-size:11px;font-family:var(--mono)">official_web</div>
+            </td>
+            <td><span class="badge" style="background:var(--l)">网站</span></td>
+            <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(dau.today.web)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(dau.yesterday.web)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(this.currentSlice.overview.visitor_unique)}</td>
+          </tr>`;
+      const integrationRows = dau.clients
+        .map(
+          (c) => `
           <tr>
             <td>
               <span style="font-weight:600;color:${getBrandColor(c.client)}">${esc(formatHumanLabel(c.client))}</span>
               <div class="muted" style="font-size:11px;font-family:var(--mono)">${esc(c.client)}</div>
             </td>
-            <td><span class="badge" style="background:var(--l)">${c.channel === 'plugin' ? '插件' : 'CLI'}</span></td>
+            <td><span class="badge" style="background:var(--l)">${c.channel === 'plugin' ? '插件' : c.channel === 'cli' ? 'CLI' : esc(c.channel)}</span></td>
             <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(c.today)}</td>
             <td style="text-align:right;font-family:var(--mono)">${fmt(c.yesterday)}</td>
             <td style="text-align:right;font-family:var(--mono)">${fmt(c.total)}</td>
           </tr>
         `,
-          )
-          .join('');
-      }
+        )
+        .join('');
+      tbody.innerHTML =
+        webRow +
+        (integrationRows ||
+          '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--m)">插件 / CLI 暂无记录（等待心跳与使用遥测上报）</td></tr>');
     }
 
     this.renderBars('dauCountryBars', dau.countries);
