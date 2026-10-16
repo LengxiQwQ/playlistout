@@ -90,28 +90,6 @@ jobs:
           pytest -v cli/
           python cli/main.py --self-test
 
-      - name: Check tag and commit consistency
-        id: check-tag
-        run: |
-          TARGET_VER="${{ steps.check-ver.outputs.version }}"
-          TAG_NAME="v$TARGET_VER"
-          CURRENT_COMMIT=$(git rev-parse HEAD)
-          
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            TAG_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
-            echo "Tag $TAG_NAME already exists pointing to commit $TAG_COMMIT"
-            echo "Current target commit is $CURRENT_COMMIT"
-            
-            if [ "$TAG_COMMIT" != "$CURRENT_COMMIT" ]; then
-              echo "::error::Tag $TAG_NAME already points to commit $TAG_COMMIT, which differs from current commit $CURRENT_COMMIT. Refusing to publish or overwrite."
-              exit 1
-            else
-              echo "tag_exists=true" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Register release options (dry_run, draft, prerelease)
         id: check-options
         run: |
@@ -131,6 +109,33 @@ jobs:
             echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
             echo "draft=$DRAFT" >> "$GITHUB_OUTPUT"
             echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check tag and commit consistency
+        id: check-tag
+        run: |
+          TARGET_VER="${{ steps.check-ver.outputs.version }}"
+          TAG_NAME="v$TARGET_VER"
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            TAG_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
+            echo "Tag $TAG_NAME already exists pointing to commit $TAG_COMMIT"
+            echo "Current target commit is $CURRENT_COMMIT"
+            
+            if [ "$TAG_COMMIT" != "$CURRENT_COMMIT" ]; then
+              if [ "${{ steps.check-options.outputs.dry_run }}" = "true" ]; then
+                echo "::warning::Tag $TAG_NAME points to commit $TAG_COMMIT which differs from current commit $CURRENT_COMMIT; dry run does not touch release assets, continuing."
+                echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "::error::Tag $TAG_NAME already points to commit $TAG_COMMIT, which differs from current commit $CURRENT_COMMIT. Refusing to publish or overwrite."
+                exit 1
+              fi
+            else
+              echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
   build:

@@ -188,7 +188,7 @@ CLI 二进制通过 `.github/workflows/release-cli.yml` 构建发布，4 平台�
 1. 更新根 `package.json` 版本号（唯一版本源，保持 `web/`、`worker/` 同步），合入 `main`。
 2. 触发发布，二选一：
    - **推送 Tag**：`git tag vX.Y.Z && git push origin vX.Y.Z`（自动强制 `draft=true`，且 Tag 与当前提交不一致时拒绝发布）；
-   - **手动触发** `workflow_dispatch`：默认 `draft=true`；建议先以 `dry_run=true` 跑一遍，不产生任何 Release 资产。
+   - **手动触发** `workflow_dispatch`：默认 `draft=true`；建议先以 `dry_run=true` 跑一遍，不产生任何 Release 资产（已发布版本上同样可跑 dry-run 演练：Tag 与 HEAD 不一致时仅告警继续，不触碰任何 Release 资产）。
 3. 等 4 平台构建 + smoke test 全绿；资产只会写入/更新 **Draft** Release。
 4. 人工复核 Draft 资产（至少下载本平台包跑一次单歌单导出）后手动发布：
    ```bash
