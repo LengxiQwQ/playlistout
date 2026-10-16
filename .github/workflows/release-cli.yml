@@ -339,27 +339,37 @@ jobs:
           
           cd dist/release-assets
           
-          cat << NOTES_EOF > release_notes.md
-# Playlist Out
+          python - << 'EOF'
+          import os
+          from pathlib import Path
+          import textwrap
 
-<!-- 在此处填入本次版本的中文介绍文字 / Enter Chinese highlights here -->
+          version = "${{ needs.preflight.outputs.version }}"
+          tag = f"v{version}"
 
-<!-- 在此处填入本次版本的英文介绍文字 / Enter English highlights here -->
+          notes = textwrap.dedent(f"""\
+            # Playlist Out
 
----
+            <!-- 在此处填入本次版本的中文介绍文字 / Enter Chinese highlights here -->
 
-### 📦 包含全平台资产 / Assets Included
+            <!-- 在此处填入本次版本的英文介绍文字 / Enter English highlights here -->
 
-- **Windows x64**: \`PlaylistOut-$TAG_NAME-windows-x64.exe\` (双击即用，内置终端常驻退出保护)
-- **Linux x64**: \`PlaylistOut-$TAG_NAME-linux-x64.tar.gz\` (独立可执行文件，解压后运行 \`./PlaylistOut\`)
-- **macOS Apple Silicon**: \`PlaylistOut-$TAG_NAME-macos-arm64.tar.gz\` (Apple 芯片原生构建，内附双击启动器)
-- **macOS Intel**: \`PlaylistOut-$TAG_NAME-macos-x64.tar.gz\` (Intel 芯片原生构建，内附双击启动器)
-- **SHA-256 校验和**: \`CLI-SHA256SUMS.txt\`
+            ---
 
----
+            ### 📦 包含全平台资产 / Assets Included
 
-**完整变更记录 / Full Changelog**：[CHANGELOG.md](https://github.com/LengxiQwQ/playlistout/blob/main/CHANGELOG.md)
-NOTES_EOF
+            - **Windows x64**: `PlaylistOut-{tag}-windows-x64.exe` (双击即用，内置终端常驻退出保护)
+            - **Linux x64**: `PlaylistOut-{tag}-linux-x64.tar.gz` (独立可执行文件，解压后运行 `./PlaylistOut`)
+            - **macOS Apple Silicon**: `PlaylistOut-{tag}-macos-arm64.tar.gz` (Apple 芯片原生构建，内附双击启动器)
+            - **macOS Intel**: `PlaylistOut-{tag}-macos-x64.tar.gz` (Intel 芯片原生构建，内附双击启动器)
+            - **SHA-256 校验和**: `CLI-SHA256SUMS.txt`
+
+            ---
+
+            **完整变更记录 / Full Changelog**：[CHANGELOG.md](https://github.com/LengxiQwQ/playlistout/blob/main/CHANGELOG.md)
+          """)
+          Path("release_notes.md").write_text(notes, encoding="utf-8")
+          EOF
           
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "Release $TAG_NAME exists. Uploading/updating CLI assets..."
