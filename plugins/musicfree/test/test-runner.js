@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.1.3)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.2.0)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -12,12 +12,20 @@
  * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
  * 8. Exception & invalid input fault tolerance, Hermes syntax integrity
  * 9. Embedded fallback sources (QQ/NetEase/KuGou allowlist + strict matching + trial-clip guards + interface-name notices + negative caches)
+ * 10. Playback toast lifecycle: background-safe auto-dismiss (visibility-aware, no rAF/throttled-timer race)
+ * 11. Daily anonymous active heartbeat (silent, at most once per day, test switch, memory + marker gates)
  */
 
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const vm = require('vm');
+const { execFileSync } = require('child_process');
+
+// The active heartbeat fires at module load; keep this suite fully offline by
+// disabling it before the plugin (and dist artifact) is required below.
+globalThis.__PLAYLISTOUT_DISABLE_ACTIVE_PING__ = true;
 
 // Colors for terminal output
 const COLORS = {
@@ -1620,6 +1628,256 @@ async function runAllTests() {
     assert(!code.includes('resolveOnlineLyric'), 'Must not contain legacy online lyric resolver');
     assert(!code.includes('isValidCleanMediaUrl'), 'Must not contain legacy source blocklist');
     assert(!code.includes('isCandidateSimilarMatched'), 'Must not contain loose similar matching');
+  });
+
+  // ── 8.8. Playback Toast Lifecycle (background-safe auto-dismiss) ──
+  logSection('8.8. Playback Toast: Background-Safe Auto-Dismiss');
+
+  const buildToastScript = plugin._buildPlaybackToastScript;
+  assert.strictEqual(typeof buildToastScript, 'function', 'Toast script builder must be exported for testing');
+
+  // 极简模拟 DOM/定时器宿主：验证注入脚本在「页面隐藏 / 定时器被节流」下的生命周期行为
+  function createToastHost(options) {
+    const hidden = !!(options && options.hidden);
+    const host = {
+      visibilityState: hidden ? 'hidden' : 'visible',
+      now: 1000000,
+      nextTimerId: 1,
+      timers: new Map(),
+      elements: [],
+      handlers: {},
+    };
+    const document = {
+      get visibilityState() {
+        return host.visibilityState;
+      },
+      getElementById(id) {
+        return host.elements.find(function (el) { return el.id === id; }) || null;
+      },
+      createElement() {
+        return { id: '', textContent: '', style: {}, offsetWidth: 0 };
+      },
+      body: {
+        appendChild(el) {
+          host.elements.push(el);
+        },
+      },
+      addEventListener(type, fn) {
+        if (!host.handlers[type]) host.handlers[type] = [];
+        host.handlers[type].push(fn);
+      },
+    };
+    const windowObj = {};
+    host.window = windowObj;
+    host.document = document;
+    host.context = vm.createContext({
+      window: windowObj,
+      document: document,
+      setTimeout(fn, ms) {
+        const id = host.nextTimerId++;
+        host.timers.set(id, { fn: fn, at: host.now + ms, ms: ms });
+        return id;
+      },
+      clearTimeout(id) {
+        host.timers.delete(id);
+      },
+      Date: { now: () => host.now },
+    });
+    host.show = (message, kind, duration) =>
+      vm.runInContext(buildToastScript(message, kind, duration), host.context);
+    host.toastEl = () => document.getElementById('playlistout-playback-toast');
+    host.advance = (ms) => {
+      host.now += ms;
+    };
+    host.fireDueTimers = () => {
+      let fired = 0;
+      Array.from(host.timers.entries()).forEach(([id, timer]) => {
+        if (timer.at <= host.now) {
+          host.timers.delete(id);
+          timer.fn();
+          fired++;
+        }
+      });
+      return fired;
+    };
+    host.setVisibility = (state) => {
+      host.visibilityState = state;
+      (host.handlers.visibilitychange || []).forEach((fn) => fn());
+    };
+    return host;
+  }
+
+  await test('Visible page: toast appears, honors the passed duration and dismisses on schedule', () => {
+    const host = createToastHost();
+    host.show('未找到可用音源，已跳过', 'warn', 8000);
+    assert.strictEqual(host.elements.length, 1, 'Toast element must be appended while the page is visible');
+    const el = host.toastEl();
+    assert.strictEqual(el.style.opacity, '1', 'Toast must fade in without depending on requestAnimationFrame');
+    assert.strictEqual(el.textContent, '未找到可用音源，已跳过');
+    assert.strictEqual(host.timers.size, 1, 'Exactly one dismiss timer must be armed');
+    assert.strictEqual(Array.from(host.timers.values())[0].ms, 8000, 'KuGou long notice (8000ms) must be honored');
+
+    host.advance(7999);
+    host.fireDueTimers();
+    assert.strictEqual(el.style.opacity, '1', 'Toast must stay visible before the deadline');
+
+    host.advance(1);
+    host.fireDueTimers();
+    assert.strictEqual(el.style.opacity, '0', 'Toast must hide at the deadline');
+    assert.strictEqual(host.timers.size, 0, 'Dismiss timer must be cleared after hiding');
+  });
+
+  await test('Background trigger: hidden page never renders a toast (no stale toast on return)', () => {
+    const host = createToastHost({ hidden: true });
+    host.show('音源：网易云音乐', 'info', 3600);
+    assert.strictEqual(host.elements.length, 0, 'Hidden page must not create the toast element');
+    assert.strictEqual(host.timers.size, 0, 'Hidden page must not arm a dismiss timer');
+
+    host.setVisibility('visible');
+    assert.strictEqual(host.elements.length, 0, 'Returning to the foreground must not resurrect a stale toast');
+    assert.strictEqual(host.timers.size, 0);
+  });
+
+  await test('Minimizing hides the current toast at once and clears the pending timer', () => {
+    const host = createToastHost();
+    host.show('音源：QQ音乐', 'info', 3600);
+    const el = host.toastEl();
+    assert.strictEqual(el.style.opacity, '1');
+    assert.strictEqual(host.timers.size, 1);
+
+    host.setVisibility('hidden');
+    assert.strictEqual(el.style.opacity, '0', 'Toast must be dismissed the moment the page goes hidden');
+    assert.strictEqual(host.timers.size, 0, 'Throttled dismiss timer must be cleared');
+
+    host.setVisibility('visible');
+    assert.strictEqual(el.style.opacity, '0', 'Toast must not reappear after restoring the window');
+  });
+
+  await test('Throttled timer self-heal: an overdue toast is dismissed on returning to the foreground', () => {
+    const host = createToastHost();
+    host.show('音源：酷狗音乐', 'info', 3600);
+    const el = host.toastEl();
+
+    // 模拟 Chromium 节流：时钟越过过期时间，定时器从未执行、hidden 事件也未送达
+    host.advance(60000);
+    assert.strictEqual(el.style.opacity, '1', 'Precondition: the toast is still (incorrectly) visible');
+    (host.handlers.visibilitychange || []).forEach((fn) => fn());
+    assert.strictEqual(el.style.opacity, '0', 'Foreground self-check must dismiss the overdue toast');
+    assert.strictEqual(host.timers.size, 0, 'Stale throttled timer must be cleared by the self-check');
+  });
+
+  await test('Repeated toasts reuse one element and one visibility hook; the script never uses rAF', () => {
+    const host = createToastHost();
+    host.show('音源：QQ音乐', 'info', 3600);
+    host.show('未找到可用音源，已跳过', 'warn', 3600);
+    assert.strictEqual(host.elements.length, 1, 'Toast element must be reused');
+    assert.strictEqual(host.elements[0].textContent, '未找到可用音源，已跳过', 'Latest message must win');
+    assert.strictEqual(host.timers.size, 1, 'A new toast must replace the previous dismiss timer');
+    assert.strictEqual((host.handlers.visibilitychange || []).length, 1, 'Visibility hook must be installed exactly once');
+
+    const script = buildToastScript('x', 'warn', 3600);
+    assert(!/requestAnimationFrame\s*\(/.test(script), 'Must not rely on rAF (suspended while the page is hidden)');
+    assert(script.includes("document.visibilityState === 'hidden'"), 'Must guard against hidden-page rendering');
+  });
+
+  await test('Daily active heartbeat: exactly one silent ping with plugin headers; memory gate suppresses re-require', () => {
+    const markerDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playlistout-heartbeat-'));
+    const childScript = `
+      const calls = [];
+      globalThis.fetch = function (url, init) {
+        calls.push({ url: url, method: init && init.method, body: init && init.body, headers: (init && init.headers) || {} });
+        return Promise.resolve({ ok: true, status: 204, text: function () { return Promise.resolve(''); } });
+      };
+      const target = process.argv[1];
+      require(target);
+      delete require.cache[require.resolve(target)];
+      require(target);
+      setTimeout(function () {
+        console.log(JSON.stringify({ calls: calls }));
+        process.exit(0);
+      }, 400);
+    `;
+    try {
+      const out = execFileSync(process.execPath, ['-e', childScript, pluginPath], {
+        encoding: 'utf-8',
+        env: Object.assign({}, process.env, { TEMP: markerDir, TMP: markerDir, TMPDIR: markerDir }),
+        timeout: 20000,
+      });
+      const result = JSON.parse(out.trim().split('\n').pop());
+      assert.strictEqual(result.calls.length, 1, 'Exactly one ping expected; the memory gate must suppress the re-require');
+      const call = result.calls[0];
+      assert.strictEqual(call.url, 'https://playlistout-api.lengxiqwq.com/api/event');
+      assert.strictEqual(call.method, 'POST');
+      assert.strictEqual(call.body, '{"type":"active"}', 'Heartbeat body carries no data beyond the type');
+      assert.strictEqual(call.headers['X-PlaylistOut-Client-Type'], 'plugin');
+      assert.strictEqual(call.headers['X-PlaylistOut-Client-Id'], 'musicfree');
+      assert.strictEqual(call.headers['X-PlaylistOut-Client-Version'], pkg.version);
+      assert(
+        /^PlaylistOut-MusicFree\//.test(call.headers['User-Agent']),
+        'Heartbeat must reuse the first-party runtime User-Agent'
+      );
+    } finally {
+      fs.rmSync(markerDir, { recursive: true, force: true });
+    }
+  });
+
+  await test('Daily active heartbeat: marker file and test switch both suppress the ping', () => {
+    const markerDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playlistout-heartbeat-'));
+    const buildScript = (disable) => `
+      ${disable ? 'globalThis.__PLAYLISTOUT_DISABLE_ACTIVE_PING__ = true;' : ''}
+      const calls = [];
+      globalThis.fetch = function (url, init) {
+        calls.push({ url: url, method: init && init.method });
+        return Promise.resolve({ ok: true, status: 204 });
+      };
+      require(process.argv[1]);
+      setTimeout(function () {
+        console.log(JSON.stringify({ calls: calls }));
+        process.exit(0);
+      }, 400);
+    `;
+    const env = Object.assign({}, process.env, { TEMP: markerDir, TMP: markerDir, TMPDIR: markerDir });
+    const run = (disable) =>
+      JSON.parse(
+        execFileSync(process.execPath, ['-e', buildScript(disable), pluginPath], {
+          encoding: 'utf-8',
+          env,
+          timeout: 20000,
+        }).trim().split('\n').pop()
+      );
+    try {
+      const first = run(false);
+      assert.strictEqual(first.calls.length, 1, 'First run in a fresh marker dir must ping once');
+      const second = run(false);
+      assert.strictEqual(second.calls.length, 0, 'A later process on the same day must be suppressed by the marker file');
+      const disabled = run(true);
+      assert.strictEqual(disabled.calls.length, 0, 'The test switch must disable the heartbeat entirely');
+    } finally {
+      fs.rmSync(markerDir, { recursive: true, force: true });
+    }
+  });
+
+  await test('Daily active heartbeat: a throwing fetch never breaks plugin loading', () => {
+    const markerDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playlistout-heartbeat-'));
+    const childScript = `
+      globalThis.fetch = function () { throw new Error('network unavailable'); };
+      const plugin = require(process.argv[1]);
+      setTimeout(function () {
+        console.log(JSON.stringify({ loaded: typeof plugin.importMusicSheet === 'function' }));
+        process.exit(0);
+      }, 400);
+    `;
+    try {
+      const out = execFileSync(process.execPath, ['-e', childScript, pluginPath], {
+        encoding: 'utf-8',
+        env: Object.assign({}, process.env, { TEMP: markerDir, TMP: markerDir, TMPDIR: markerDir }),
+        timeout: 20000,
+      });
+      const result = JSON.parse(out.trim().split('\n').pop());
+      assert.strictEqual(result.loaded, true, 'Plugin must load normally even when the heartbeat fetch throws');
+    } finally {
+      fs.rmSync(markerDir, { recursive: true, force: true });
+    }
   });
 
   // ── Test Summary ──────────────────────────────────────────────────

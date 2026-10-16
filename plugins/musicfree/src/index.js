@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.1.3)
+ * PlaylistOut 官方 MusicFree 插件 (v2.2.0)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.1.3';
+const PLUGIN_VERSION = '2.2.0';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -1627,28 +1627,65 @@ function isCandidateStrictlyMatched(candidate, wantTitle, wantRawArtist, wantDur
 }
 
 /**
- * 在 MusicFree 桌面端顶部渲染醒目且不打断听歌的胶囊提示 (Toast)
+ * 构建 MusicFree 桌面端顶部胶囊提示 (Toast) 的渲染进程脚本
  * - kind === 'warn': 暖橙警示（未找到可用音源，已跳过）
  * - kind === 'info': 翠绿提示（自动匹配换源成功 / 内置兜底音源接管，含仅试听30秒提示）
+ *
+ * 生命周期健壮性（修复「最小化 / 失焦后提示偶发不自动消失」）：
+ * - Chromium 会节流后台页面的 setTimeout、并挂起 requestAnimationFrame。旧实现里若提示
+ *   在窗口最小化 / 被完全遮挡时触发，定时器可能先被消耗、而进场回调直到窗口恢复才执行，
+ *   恢复后提示便会一直挂着；即使只是节流延迟，用户也会看到提示「超时未消失」。
+ * - 因此：页面不可见时直接不展示；页面一旦转入后台立即收起当前提示并清空定时器；
+ *   回到前台再按绝对过期时间自检一次，兜底节流导致的延迟。
+ * 本函数只做字符串拼装、不依赖宿主模块，可在 Node 测试环境注入模拟 DOM 验证。
  */
-async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
-  try {
-    const { electron } = await ensureHostModulesAsync();
-    const BrowserWindow = electron && electron.BrowserWindow;
-    if (!BrowserWindow || typeof BrowserWindow.getAllWindows !== 'function') return;
-    const wins = BrowserWindow.getAllWindows();
-    const win =
-      (typeof BrowserWindow.getFocusedWindow === 'function' &&
-        BrowserWindow.getFocusedWindow()) ||
-      wins.find((w) => !w.isDestroyed()) ||
-      wins[0];
-    if (!win || !win.webContents) return;
-
-    const payload = JSON.stringify({ message: String(message || ''), kind, duration: durationMs || 3600 });
-    const script = `
+function buildPlaybackToastScript(message, kind, durationMs) {
+  const duration = Number(durationMs) > 0 ? Number(durationMs) : 3600;
+  const payload = JSON.stringify({
+    message: String(message || ''),
+    kind: kind === 'warn' ? 'warn' : 'info',
+    duration: duration,
+  });
+  return `
       (function(data) {
         try {
           var id = 'playlistout-playback-toast';
+
+          function hideToast() {
+            if (window.__playlistoutToastTimer) {
+              clearTimeout(window.__playlistoutToastTimer);
+              window.__playlistoutToastTimer = null;
+            }
+            window.__playlistoutToastExpiresAt = 0;
+            var cur = document.getElementById(id);
+            if (cur) {
+              cur.style.opacity = '0';
+              cur.style.transform = 'translateX(-50%) translateY(-10px)';
+            }
+          }
+          window.__playlistoutToastHide = hideToast;
+
+          // 页面处于后台（最小化 / 完全遮挡到不可见）时不展示：此刻用户看不到提示，
+          // 而后台定时器又会被节流，展示出来反而会在恢复窗口后变成常驻提示。
+          if (document.visibilityState === 'hidden') return;
+
+          // 页面转入后台时立即收起当前提示并清掉定时器，避免「回来时提示还挂在屏幕上」
+          if (!window.__playlistoutToastVisibilityHook) {
+            window.__playlistoutToastVisibilityHook = true;
+            document.addEventListener('visibilitychange', function() {
+              if (document.visibilityState === 'hidden') {
+                if (typeof window.__playlistoutToastHide === 'function') window.__playlistoutToastHide();
+                return;
+              }
+              // 回到前台自检：定时器若曾被节流拖延且提示已过期，立即收起
+              var cur = document.getElementById(id);
+              var expiresAt = window.__playlistoutToastExpiresAt || 0;
+              if (cur && expiresAt > 0 && Date.now() >= expiresAt) {
+                if (typeof window.__playlistoutToastHide === 'function') window.__playlistoutToastHide();
+              }
+            });
+          }
+
           var el = document.getElementById(id);
           if (!el) {
             el = document.createElement('div');
@@ -1666,20 +1703,55 @@ async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
             el.style.background = 'rgba(14,28,24,0.95)';
           }
           el.textContent = data.message;
-          requestAnimationFrame(function() {
-            el.style.opacity = '1';
-            el.style.transform = 'translateX(-50%) translateY(0)';
-          });
+          void el.offsetWidth; // 强制重排触发进场过渡（替代会被后台挂起的 requestAnimationFrame）
+          el.style.opacity = '1';
+          el.style.transform = 'translateX(-50%) translateY(0)';
+
+          window.__playlistoutToastExpiresAt = Date.now() + data.duration;
           if (window.__playlistoutToastTimer) clearTimeout(window.__playlistoutToastTimer);
-          window.__playlistoutToastTimer = setTimeout(function() {
-            if (el) {
-              el.style.opacity = '0';
-              el.style.transform = 'translateX(-50%) translateY(-10px)';
-            }
-          }, 3600);
+          window.__playlistoutToastTimer = setTimeout(hideToast, data.duration);
         } catch (_) {}
       })(${payload});
     `;
+}
+
+/**
+ * 在 MusicFree 桌面端顶部渲染醒目且不打断听歌的胶囊提示 (Toast)
+ * - kind === 'warn': 暖橙警示（未找到可用音源，已跳过）
+ * - kind === 'info': 翠绿提示（自动匹配换源成功 / 内置兜底音源接管，含仅试听30秒提示）
+ */
+async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
+  try {
+    const { electron } = await ensureHostModulesAsync();
+    const BrowserWindow = electron && electron.BrowserWindow;
+    if (!BrowserWindow || typeof BrowserWindow.getAllWindows !== 'function') return;
+    const wins = BrowserWindow.getAllWindows();
+    const isUsable = (w) => {
+      try {
+        return !!w && !w.isDestroyed();
+      } catch (_) {
+        return false;
+      }
+    };
+    const isShown = (w) => {
+      try {
+        return isUsable(w) && typeof w.isVisible === 'function' && w.isVisible();
+      } catch (_) {
+        return false;
+      }
+    };
+    const win =
+      (typeof BrowserWindow.getFocusedWindow === 'function' &&
+        BrowserWindow.getFocusedWindow()) ||
+      wins.find(isShown) ||
+      wins.find(isUsable) ||
+      wins[0];
+    if (!win || !win.webContents) return;
+    try {
+      if (typeof win.webContents.isDestroyed === 'function' && win.webContents.isDestroyed()) return;
+    } catch (_) {}
+
+    const script = buildPlaybackToastScript(message, kind, durationMs);
     win.webContents.executeJavaScript(script, true).catch(() => {});
   } catch (_) {}
 }
@@ -2741,6 +2813,140 @@ async function getLyric(musicItem) {
   return emptyLyric;
 }
 
+// ── 每日匿名活跃心跳（DAU）────────────────────────────────────────────
+// 插件被加载时发送一次匿名心跳（每天最多一次），用于统计跨端日活。
+// 静默、无任何 UI 提示、不重试、失败一律忽略；任何异常都绝不影响插件加载。
+// 上报内容仅 {"type":"active"}；服务端从声明头与请求指纹派生渠道/客户端/地区/小时。
+var _activeReportedDate = '';
+var ACTIVE_PING_URL = 'https://playlistout-api.lengxiqwq.com/api/event';
+var ACTIVE_MARKER_FILE = 'playlistout-active.json';
+
+function _todayUtcDate() {
+  try {
+    var d = new Date();
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  } catch (_) {
+    return '';
+  }
+}
+
+function _resolveActiveMarkerPath(pathMod) {
+  try {
+    var proc = new Function('return typeof process !== "undefined" ? process : null')();
+    var env = (proc && proc.env) || {};
+    var base = env.TEMP || env.TMPDIR || env.TMP || env.USERPROFILE || env.HOME || '';
+    if (!base || !pathMod || typeof pathMod.join !== 'function') return '';
+    return pathMod.join(base, ACTIVE_MARKER_FILE);
+  } catch (_) {
+    return '';
+  }
+}
+
+function _readActiveMarkerDate(fsMod, markerPath) {
+  try {
+    if (!markerPath || !fsMod || typeof fsMod.readFileSync !== 'function') return '';
+    var parsed = JSON.parse(fsMod.readFileSync(markerPath, 'utf-8'));
+    return parsed && typeof parsed.date === 'string' ? parsed.date : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function _writeActiveMarkerDate(fsMod, markerPath, date) {
+  try {
+    if (!markerPath || !fsMod || typeof fsMod.writeFileSync !== 'function') return;
+    fsMod.writeFileSync(markerPath, JSON.stringify({ date: date }), 'utf-8');
+  } catch (_) {}
+}
+
+function _sendActivePing() {
+  // 仅用原生 fetch：加载时刻可能早于宿主 bridge 就绪，不依赖 axios / 宿主桥。
+  var fetchFn = null;
+  try {
+    if (typeof fetch === 'function') fetchFn = fetch;
+    else if (typeof globalThis !== 'undefined' && typeof globalThis.fetch === 'function') fetchFn = globalThis.fetch;
+  } catch (_) {}
+  if (!fetchFn) return Promise.resolve();
+
+  var headers;
+  try {
+    headers = Object.assign(getPlaylistOutHeaders(), { 'Content-Type': 'application/json' });
+  } catch (_) {
+    return Promise.resolve();
+  }
+
+  var controller = null;
+  var timer = null;
+  try {
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      timer = setTimeout(function () {
+        try { controller.abort(); } catch (_) {}
+      }, 5000);
+    }
+  } catch (_) {}
+
+  var settle = function () {
+    if (timer) { clearTimeout(timer); timer = null; }
+  };
+
+  try {
+    var p = fetchFn(ACTIVE_PING_URL, {
+      method: 'POST',
+      headers: headers,
+      body: '{"type":"active"}',
+      signal: controller ? controller.signal : undefined,
+    });
+    if (p && typeof p.then === 'function') return p.then(settle, settle);
+    settle();
+    return Promise.resolve();
+  } catch (_) {
+    settle();
+    return Promise.resolve();
+  }
+}
+
+function reportDailyActiveHeartbeat() {
+  try {
+    // 测试/显式禁用开关：测试运行器在 require 插件之前设置（加载早于 env 注入，不能用 env 判断）。
+    if (typeof globalThis !== 'undefined' && globalThis.__PLAYLISTOUT_DISABLE_ACTIVE_PING__ === true) {
+      return;
+    }
+  } catch (_) {
+    return;
+  }
+
+  var today = _todayUtcDate();
+  if (!today) return;
+
+  // 内存 gate：同一进程生命周期内每天最多一次（同步置位，避免并发重复触发）。
+  if (_activeReportedDate === today) return;
+  _activeReportedDate = today;
+
+  // 桌面端标记文件 best-effort 检查与写入；写入失败降级为仅内存 gate（服务端哈希去重兜底）。
+  Promise.resolve()
+    .then(function () { return ensureHostModulesAsync(); })
+    .then(function (mods) {
+      var fsMod = mods && mods.fs;
+      var pathMod = mods && mods.path;
+      var markerPath = _resolveActiveMarkerPath(pathMod);
+      if (_readActiveMarkerDate(fsMod, markerPath) === today) {
+        return null; // 当天已上报，跳过
+      }
+      _writeActiveMarkerDate(fsMod, markerPath, today);
+      return _sendActivePing();
+    })
+    .catch(function () {
+      // 宿主模块不可用（如移动端无文件系统）：仍尝试一次原生 fetch，服务端当日去重兜底。
+      return _sendActivePing().catch(function () {});
+    });
+}
+
+// 每日匿名活跃心跳：静默 fire-and-forget，任何失败都不影响插件加载
+try {
+  reportDailyActiveHeartbeat();
+} catch (_) {}
+
 module.exports = {
   platform: PLUGIN_PLATFORM,
   author: 'LengxiQwQ',
@@ -2797,7 +3003,9 @@ module.exports = {
   _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
   _detectClientEnvironment: detectClientEnvironment,
   _getPlaylistOutHeaders: getPlaylistOutHeaders,
+  _reportDailyActiveHeartbeat: reportDailyActiveHeartbeat,
   _setHostBridge: _setHostBridge,
+  _buildPlaybackToastScript: buildPlaybackToastScript,
   _isCandidateStrictlyMatched: isCandidateStrictlyMatched,
   _maybeRescueResult: maybeRescueResult,
   _embeddedResolveMedia: embeddedResolveMedia,
