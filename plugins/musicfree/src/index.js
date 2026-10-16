@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.2.1)
+ * PlaylistOut 官方 MusicFree 插件 (v2.2.2)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.2.1';
+const PLUGIN_VERSION = '2.2.2';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -869,35 +869,58 @@ function getKugouCredentials() {
 }
 
 /**
- * 播放提示（Toast）总开关：插件设置「播放提示」(playbackToast) 填入关闭值后，
- * 无论切歌、切音质还是自动兜底换源，均不再弹出任何提示。
- * 关闭值（大小写不敏感）：0 / off / close / closed / false / no / disable / disabled / 关 / 关闭 / 禁用 / 屏蔽
- * 留空或其它值默认开启（fail-open：误填内容不会静默用户）。
+ * 用户开关通用解析：关闭值（大小写与空格不敏感）0 / off / close / closed / false / no /
+ * disable / disabled / 关 / 关闭 / 禁用 / 屏蔽；留空或其它值视为开启（fail-open：误填不会误关）。
  */
-function isPlaybackToastEnabled() {
+const USER_SWITCH_OFF_VALUES = [
+  '0',
+  'off',
+  'close',
+  'closed',
+  'false',
+  'no',
+  'disable',
+  'disabled',
+  '关',
+  '关闭',
+  '禁用',
+  '屏蔽',
+];
+
+function isUserSwitchEnabled(keys) {
   try {
     const userVars = getRawUserVariables();
-    const raw = String((userVars && (userVars.playbackToast || userVars.playback_toast)) || '')
-      .trim()
-      .toLowerCase();
+    let raw = '';
+    if (userVars) {
+      for (let i = 0; i < keys.length; i++) {
+        const value = userVars[keys[i]];
+        if (value !== undefined && value !== null && String(value).trim()) {
+          raw = String(value).trim().toLowerCase();
+          break;
+        }
+      }
+    }
     if (!raw) return true;
-    const disabledValues = [
-      '0',
-      'off',
-      'close',
-      'closed',
-      'false',
-      'no',
-      'disable',
-      'disabled',
-      '关',
-      '关闭',
-      '禁用',
-      '屏蔽',
-    ];
-    return !disabledValues.includes(raw);
+    return !USER_SWITCH_OFF_VALUES.includes(raw);
   } catch (_) {}
   return true;
+}
+
+/**
+ * 播放提示（Toast）总开关：插件设置「播放提示」(playbackToast) 填 0 后，
+ * 无论切歌、切音质还是自动兜底换源，均不再弹出任何提示。
+ */
+function isPlaybackToastEnabled() {
+  return isUserSwitchEnabled(['playbackToast', 'playback_toast']);
+}
+
+/**
+ * 兜底音源总开关：插件设置「兜底音源」(fallbackSource) 填 0 后，
+ * 不再调用内置兜底音源引擎（QQ / 网易云 / 酷狗公开接口），缺源的极老曲目直接跳过；
+ * 跨插件严格换源与歌词兜底不受影响。
+ */
+function isEmbeddedFallbackEnabled() {
+  return isUserSwitchEnabled(['fallbackSource', 'fallback_source']);
 }
 
 /**
@@ -2653,6 +2676,8 @@ async function embeddedResolveMediaTask(item, quality, key) {
  * @returns {Promise<{platform: string, info: object, source: {url: string, quality: string}}|null>}
  */
 async function embeddedResolveMedia(item, quality) {
+  // 插件设置「兜底音源」填 0 后：内置兜底引擎整体静默，直接跳过（零第三方请求）
+  if (!isEmbeddedFallbackEnabled()) return null;
   if (!item || typeof item !== 'object' || !item.title) return null;
   var key = getRescueCacheKey(item);
   if (!key) return null;
@@ -2993,7 +3018,7 @@ module.exports = {
     '',
     '支持 QQ音乐、网易云音乐、酷狗音乐、汽水音乐等主流平台歌单在线解析与导入。',
     '导入的曲目会自动归属原平台，优先由您设备上已安装的原生音源插件播放；缺失或取源失败时会自动严格匹配同一首原曲换源（同名+同歌手+同版本，绝不播放错歌）。',
-    '老版本导入的歌单即使原生插件缺失，也会自动调用内置兜底音源（QQ音乐 / 网易云音乐 / 酷狗音乐）严格匹配原曲恢复播放；匹配不到完全一致的原曲时自动跳过。',
+    '老版本导入的歌单即使原生插件缺失，也会自动调用内置兜底音源（QQ音乐 / 网易云音乐 / 酷狗音乐）严格匹配原曲恢复播放（可在插件设置将「兜底音源」设为 0 关闭）；匹配不到完全一致的原曲时自动跳过。',
     '',
     '### 🌐 官方网站（点击可直接在浏览器打开）',
     '- [👉 点击一键前往官网 (playlistout.lengxiqwq.com)](https://playlistout.lengxiqwq.com)',
@@ -3028,9 +3053,14 @@ module.exports = {
       hint: '官网登录获取(可选)',
     },
     {
+      key: 'fallbackSource',
+      name: '兜底音源',
+      hint: '0=关，1=开(默认)',
+    },
+    {
       key: 'playbackToast',
       name: '播放提示',
-      hint: '留空为开启；填0/off/关闭可完全关闭弹窗',
+      hint: '0=关，1=开(默认)',
     },
   ],
   supportedSearchType: ['sheet'],
@@ -3039,6 +3069,7 @@ module.exports = {
   getLyric,
   _getKugouCredentials: getKugouCredentials,
   _isPlaybackToastEnabled: isPlaybackToastEnabled,
+  _isEmbeddedFallbackEnabled: isEmbeddedFallbackEnabled,
   _isOfficialWebsiteTrigger: isOfficialWebsiteTrigger,
   _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
   _detectClientEnvironment: detectClientEnvironment,

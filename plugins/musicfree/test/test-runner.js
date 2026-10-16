@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.2.1)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.2.2)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
  * 2. Current UI/import guidance contract
  * 3. Local JSON file path import & native platform routing (netease, qq, kugou, kuwo, qishui, bilibili, migu)
- * 4. userVariables configuration (KuGou Token credentials only)
+ * 4. userVariables configuration (KuGou Token credentials + fallback/toast switches)
  * 5. Direct JSON string / large-sheet import support
  * 6. Live online NetEase playlist resolution (end-to-end API test, optional RUN_E2E=1)
  * 7. getMediaSource / getLyric host-channel rescue contract (strict matching, auto fallback)
@@ -111,14 +111,19 @@ async function runAllTests() {
     assert(Array.isArray(plugin.userVariables), 'userVariables must be an array');
     assert.deepStrictEqual(
       plugin.userVariables.map((v) => v.key),
-      ['kugouToken', 'kugouUserid', 'playbackToast'],
-      'userVariables must stay slim: KuGou credentials + playback toast switch (no targetPlatform / fallbackMode)'
+      ['kugouToken', 'kugouUserid', 'fallbackSource', 'playbackToast'],
+      'userVariables must stay slim: KuGou credentials + fallback/toast switches (no targetPlatform / fallbackMode)'
     );
-    const toastSwitchVar = plugin.userVariables.find((v) => v.key === 'playbackToast');
-    assert(
-      toastSwitchVar && toastSwitchVar.name === '播放提示' && String(toastSwitchVar.hint).includes('关闭'),
-      'playbackToast setting must be discoverable with a clear close instruction'
-    );
+    const switchNames = { fallbackSource: '兜底音源', playbackToast: '播放提示' };
+    ['fallbackSource', 'playbackToast'].forEach((key) => {
+      const switchVar = plugin.userVariables.find((v) => v.key === key);
+      assert(switchVar && switchVar.name === switchNames[key], key + ' setting must be discoverable');
+      assert(
+        String(switchVar.hint).length <= 12,
+        key + ' hint must stay short — the settings field cannot fit long text'
+      );
+      assert(/0.*关.*1.*开/.test(String(switchVar.hint)), key + ' hint must document 0=off / 1=on');
+    });
     assert.strictEqual(typeof plugin.importMusicSheet, 'function', 'importMusicSheet must be a function');
     assert.strictEqual(typeof plugin.getMediaSource, 'function', 'getMediaSource must be a function');
     assert.strictEqual(typeof plugin.getLyric, 'function', 'getLyric must be a function');
@@ -1461,6 +1466,21 @@ async function runAllTests() {
     }
   });
 
+  await test('Embedded fallback master switch: fallbackSource=0 returns null with zero third-party calls', async () => {
+    plugin._setHostBridge(null);
+    globalThis.env = { getUserVariables: () => ({ fallbackSource: '0' }) };
+    const calls = installHttpMock([]);
+    try {
+      const item = { id: 'fallback_switch_off_1', title: '晴天', artist: '周杰伦', duration: 269, platform: '把你的歌单带走' };
+      const res = await plugin.getMediaSource(item, 'standard');
+      assert.strictEqual(res, null, 'Disabled embedded fallback must not fabricate a source');
+      assert.strictEqual(calls.length, 0, 'Disabled embedded fallback must not touch any third-party channel');
+    } finally {
+      delete globalThis.axios;
+      delete globalThis.env;
+    }
+  });
+
   await test('Embedded lyrics: QQ via s01s/QQ-official, NetEase official, and reuse of embedded media match', async () => {
     plugin._setHostBridge(null);
 
@@ -1800,6 +1820,26 @@ async function runAllTests() {
     ['1', 'on', '开', '任意内容'].forEach((v) => {
       globalThis.env = { getUserVariables: () => ({ playbackToast: v }) };
       assert.strictEqual(plugin._isPlaybackToastEnabled(), true, '"' + v + '" must keep toasts on');
+    });
+
+    delete globalThis.env;
+  });
+
+  await test('Fallback master switch parsing: 0/off/关闭 disable the embedded engine; blank or 1 keeps it on', () => {
+    delete globalThis.env;
+    assert.strictEqual(plugin._isEmbeddedFallbackEnabled(), true, 'Default (no settings) must keep the embedded engine on');
+
+    globalThis.env = { getUserVariables: () => ({}) };
+    assert.strictEqual(plugin._isEmbeddedFallbackEnabled(), true, 'Blank value must keep the embedded engine on');
+
+    ['0', 'off', 'OFF', ' false ', 'no', 'disable', '关', '关闭', '禁用'].forEach((v) => {
+      globalThis.env = { getUserVariables: () => ({ fallbackSource: v }) };
+      assert.strictEqual(plugin._isEmbeddedFallbackEnabled(), false, '"' + v + '" must disable the embedded engine');
+    });
+
+    ['1', 'on', '开', '任意内容'].forEach((v) => {
+      globalThis.env = { getUserVariables: () => ({ fallbackSource: v }) };
+      assert.strictEqual(plugin._isEmbeddedFallbackEnabled(), true, '"' + v + '" must keep the embedded engine on');
     });
 
     delete globalThis.env;
