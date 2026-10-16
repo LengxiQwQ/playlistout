@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MusicFree PlaylistOut Plugin Test Runner (v2.2.0)
+ * MusicFree PlaylistOut Plugin Test Runner (v2.3.0)
  * 
  * Simulates MusicFree host runtime to validate:
  * 1. Contract & metadata specification (userVariables, hints)
@@ -111,8 +111,13 @@ async function runAllTests() {
     assert(Array.isArray(plugin.userVariables), 'userVariables must be an array');
     assert.deepStrictEqual(
       plugin.userVariables.map((v) => v.key),
-      ['kugouToken', 'kugouUserid'],
-      'userVariables must stay slim: only KuGou credentials (no targetPlatform / fallbackMode)'
+      ['kugouToken', 'kugouUserid', 'playbackToast'],
+      'userVariables must stay slim: KuGou credentials + playback toast switch (no targetPlatform / fallbackMode)'
+    );
+    const toastSwitchVar = plugin.userVariables.find((v) => v.key === 'playbackToast');
+    assert(
+      toastSwitchVar && toastSwitchVar.name === '播放提示' && String(toastSwitchVar.hint).includes('关闭'),
+      'playbackToast setting must be discoverable with a clear close instruction'
     );
     assert.strictEqual(typeof plugin.importMusicSheet, 'function', 'importMusicSheet must be a function');
     assert.strictEqual(typeof plugin.getMediaSource, 'function', 'getMediaSource must be a function');
@@ -1778,6 +1783,35 @@ async function runAllTests() {
     const script = buildToastScript('x', 'warn', 3600);
     assert(!/requestAnimationFrame\s*\(/.test(script), 'Must not rely on rAF (suspended while the page is hidden)');
     assert(script.includes("document.visibilityState === 'hidden'"), 'Must guard against hidden-page rendering');
+  });
+
+  await test('Playback toast master switch: close values silence all toasts; blank or other values keep them on', () => {
+    delete globalThis.env;
+    assert.strictEqual(plugin._isPlaybackToastEnabled(), true, 'Default (no settings) must keep toasts on');
+
+    globalThis.env = { getUserVariables: () => ({}) };
+    assert.strictEqual(plugin._isPlaybackToastEnabled(), true, 'Blank value must keep toasts on');
+
+    ['0', 'off', 'OFF', ' close ', 'false', 'NO', 'disable', 'disabled', '关', '关闭', '禁用', '屏蔽'].forEach((v) => {
+      globalThis.env = { getUserVariables: () => ({ playbackToast: v }) };
+      assert.strictEqual(plugin._isPlaybackToastEnabled(), false, '"' + v + '" must silence every toast');
+    });
+
+    ['1', 'on', '开', '任意内容'].forEach((v) => {
+      globalThis.env = { getUserVariables: () => ({ playbackToast: v }) };
+      assert.strictEqual(plugin._isPlaybackToastEnabled(), true, '"' + v + '" must keep toasts on');
+    });
+
+    delete globalThis.env;
+  });
+
+  await test('Toast source contract: showPlaybackToast checks the master switch before touching Electron', () => {
+    const code = fs.readFileSync(pluginPath, 'utf-8');
+    assert(code.includes('function isPlaybackToastEnabled'), 'Master switch helper must exist');
+    assert(
+      code.includes('if (!isPlaybackToastEnabled()) return;'),
+      'showPlaybackToast must bail out when the user disabled toasts'
+    );
   });
 
   await test('Daily active heartbeat: exactly one silent ping with plugin headers; memory gate suppresses re-require', () => {

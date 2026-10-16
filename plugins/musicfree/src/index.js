@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.2.0)
+ * PlaylistOut 官方 MusicFree 插件 (v2.3.0)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.2.0';
+const PLUGIN_VERSION = '2.3.0';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -866,6 +866,38 @@ function getKugouCredentials() {
     };
   } catch (_) {}
   return null;
+}
+
+/**
+ * 播放提示（Toast）总开关：插件设置「播放提示」(playbackToast) 填入关闭值后，
+ * 无论切歌、切音质还是自动兜底换源，均不再弹出任何提示。
+ * 关闭值（大小写不敏感）：0 / off / close / closed / false / no / disable / disabled / 关 / 关闭 / 禁用 / 屏蔽
+ * 留空或其它值默认开启（fail-open：误填内容不会静默用户）。
+ */
+function isPlaybackToastEnabled() {
+  try {
+    const userVars = getRawUserVariables();
+    const raw = String((userVars && (userVars.playbackToast || userVars.playback_toast)) || '')
+      .trim()
+      .toLowerCase();
+    if (!raw) return true;
+    const disabledValues = [
+      '0',
+      'off',
+      'close',
+      'closed',
+      'false',
+      'no',
+      'disable',
+      'disabled',
+      '关',
+      '关闭',
+      '禁用',
+      '屏蔽',
+    ];
+    return !disabledValues.includes(raw);
+  } catch (_) {}
+  return true;
 }
 
 /**
@@ -1722,6 +1754,8 @@ function buildPlaybackToastScript(message, kind, durationMs) {
  */
 async function showPlaybackToast(message, kind = 'warn', durationMs = 3600) {
   try {
+    // 插件设置「播放提示」关闭后，任何场景（自动换源 / 跳过 / 仅试听 / 酷狗限制提示）都不再弹窗
+    if (!isPlaybackToastEnabled()) return;
     const { electron } = await ensureHostModulesAsync();
     const BrowserWindow = electron && electron.BrowserWindow;
     if (!BrowserWindow || typeof BrowserWindow.getAllWindows !== 'function') return;
@@ -2993,12 +3027,18 @@ module.exports = {
       name: '酷狗UID',
       hint: '官网登录获取(可选)',
     },
+    {
+      key: 'playbackToast',
+      name: '播放提示',
+      hint: '留空为开启；填0/off/关闭可完全关闭弹窗',
+    },
   ],
   supportedSearchType: ['sheet'],
   importMusicSheet,
   getMediaSource,
   getLyric,
   _getKugouCredentials: getKugouCredentials,
+  _isPlaybackToastEnabled: isPlaybackToastEnabled,
   _isOfficialWebsiteTrigger: isOfficialWebsiteTrigger,
   _tryOpenOfficialWebsite: tryOpenOfficialWebsite,
   _detectClientEnvironment: detectClientEnvironment,
