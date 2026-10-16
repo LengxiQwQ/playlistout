@@ -13,9 +13,9 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
   - **Web UI & 导出**：前端增加咪咕音乐手账贴纸风格徽章与预设卡片；多语言（中英）完整同步；全导出格式 100% 对齐。
   - **洞察系统 (Insights)**：全面适配 D1 聚合统计、API 遥测、本地运维看板、自动数据采集器与真实性回归测试。
 
-- **MusicFree plugin v2.3.0 — playback toast master switch / 播放提示总开关**:
+- **MusicFree plugin v2.2.1 — playback toast master switch / 播放提示总开关**:
   - 插件设置新增「播放提示」项（`playbackToast`）：填入 `0` / `off` / `关闭` 等关闭值后**完全关闭**全部弹窗提示——自动换源成功、未找到可用音源已跳过、仅试听30秒、酷狗限制提示等一律静默，切歌 / 切音质 / 自动兜底都不会再弹窗；留空或其它值保持默认开启（误填内容不会误关，行为不变）。
-  - 版本号提升至 2.3.0；测试套件扩展至 62 项（新增提示开关解析、关闭值契约与设置项元数据断言）。
+  - 版本号提升至 2.2.1；测试套件扩展至 62 项（新增提示开关解析、关闭值契约与设置项元数据断言）。
 
 - **MusicFree plugin v2.2.0 — silent daily-active heartbeat & background-safe playback toast / 匿名日活心跳与播放提示后台自动消失修复**:
   - 插件被播放器加载时静默发送一次匿名日活心跳（每设备每天最多一次：内存门闩 + 电脑端本地标记文件，写入或请求失败均不影响插件加载；无任何弹窗、提示或设置开关）；心跳内容仅 `{"type":"active"}`，不含歌单、账号、Token 或设备标识，服务端仅据此与请求声明头记录渠道 / 客户端版本 / 地区 / 小时与当日去重哈希，用于统计各端每日活跃规模（详见插件 README「匿名活跃统计说明」）。
