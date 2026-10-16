@@ -14,6 +14,9 @@ export interface SnapshotDailyCoreRow {
 export interface SnapshotHourlyCoreRow {
   date: string;
   hour: number;
+  channel?: string;
+  client_id?: string;
+  platform?: string;
   metric: string;
   count: number;
 }
@@ -145,8 +148,12 @@ export interface DauClientRow {
 }
 
 export interface DauSummary {
+  targetDate: string;
+  comparisonDate: string;
+  isSingleDay: boolean;
   today: DauChannelTotals;
   yesterday: DauChannelTotals;
+  windowTotals: DauChannelTotals;
   series: DauDailyPoint[];
   hours: DauHourlyPoint[];
   clients: DauClientRow[];

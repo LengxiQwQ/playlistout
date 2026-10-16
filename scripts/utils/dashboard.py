@@ -31,11 +31,49 @@ ANALYTICS_PARAMS = {
     "from", "to", "channel", "client", "platform", "country", "region",
     "exclude_my", "excludeMy",
 }
-FEEDBACK_PARAMS = {"status", "limit", "offset", "id", "exclude_my", "excludeMy"}
+FEEDBACK_PARAMS = {
+    "status", "limit", "offset", "id", "from", "to",
+    "platform", "country", "region", "exclude_my", "excludeMy",
+}
 QUARANTINE_PARAMS = {
     "limit", "offset", "reason", "date", "from", "to",
-    "exclude_my", "excludeMy",
+    "platform", "country", "region", "exclude_my", "excludeMy",
 }
+DAU_METRICS = {"visitor_unique", "active_user"}
+
+
+def _dau_channel_for(metric: str, channel: str) -> str | None:
+    ch = str(channel or "").strip()
+    if metric == "visitor_unique" and ch == "web":
+        return "web"
+    if metric == "active_user" and ch == "plugin":
+        return "plugin"
+    if metric == "active_user" and ch == "cli":
+        return "cli"
+    return None
+
+
+def _empty_dau_totals() -> dict[str, int]:
+    return {"total": 0, "web": 0, "plugin": 0, "cli": 0}
+
+
+def _add_dau_count(totals: dict[str, int], metric: str, channel: str, count: int) -> None:
+    slot = _dau_channel_for(metric, channel)
+    if not slot or count <= 0:
+        return
+    totals[slot] += count
+    totals["total"] += count
+
+
+def _shift_date(date_str: str, offset_days: int) -> str:
+    if not date_str:
+        return date_str
+    try:
+        from datetime import datetime, timezone, timedelta
+        dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        return (dt + timedelta(days=offset_days)).strftime("%Y-%m-%d")
+    except Exception:
+        return date_str
 
 
 
@@ -160,21 +198,30 @@ def _matches(
     *,
     include_geo: bool = False,
     environment: bool = False,
+    platform_agnostic: bool = False,
     omit: str | None = None,
 ) -> bool:
     date_value = str(row.get("date", ""))
     if date_value < filters["from"] or date_value > filters["to"]:
         return False
-    if omit != "channel" and filters.get("channel") and row.get("channel") != filters["channel"]:
+    if omit != "channel" and filters.get("channel") and row.get("channel") is not None and row.get("channel") != filters["channel"]:
         return False
-    if omit != "client" and filters.get("client") and row.get("client_id") != filters["client"]:
+    if omit != "client" and filters.get("client") and row.get("client_id") is not None and row.get("client_id") != filters["client"]:
         return False
-    if not environment and omit != "platform" and filters.get("platform") and row.get("platform") != filters["platform"]:
+    if (
+        not environment
+        and not platform_agnostic
+        and omit != "platform"
+        and filters.get("platform")
+        and row.get("platform") is not None
+        and row.get("platform") != "none"
+        and row.get("platform") != filters["platform"]
+    ):
         return False
     if include_geo:
-        if omit != "country" and filters.get("country") and row.get("country") != filters["country"]:
+        if omit != "country" and filters.get("country") and row.get("country") is not None and row.get("country") != filters["country"]:
             return False
-        if omit != "region" and filters.get("region") and row.get("region") != filters["region"]:
+        if omit != "region" and filters.get("region") and row.get("region") is not None and row.get("region") != filters["region"]:
             return False
     return True
 
@@ -637,6 +684,120 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         "region",
     )
 
+    # ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
+    is_single_day = (from_date == to_date)
+    target_date = to_date
+    comparison_date = _shift_date(target_date, -1)
+
+    dau_filtered_source = [
+        row for row in source
+        if _matches(row, filters, include_geo=geo_active, platform_agnostic=True)
+    ] if filters.get("platform") else filtered_source
+
+    all_dates_filters = dict(filters)
+    all_dates_filters["from"] = "0000-00-00"
+    all_dates_filters["to"] = "9999-99-99"
+    all_dates_source = [
+        row for row in source
+        if _matches(row, all_dates_filters, include_geo=geo_active, platform_agnostic=True)
+    ]
+
+    dau_all_dates_map: dict[str, dict[str, int]] = defaultdict(_empty_dau_totals)
+    client_target_map: dict[str, int] = defaultdict(int)
+    client_comp_map: dict[str, int] = defaultdict(int)
+    client_channel_map: dict[str, str] = {}
+
+    for row in all_dates_source:
+        metric = str(row.get("metric", "")).strip()
+        if metric not in DAU_METRICS:
+            continue
+        d = str(row.get("date", "")).strip()
+        if not d:
+            continue
+        count = int(row.get("count", 0) or 0)
+        _add_dau_count(dau_all_dates_map[d], metric, str(row.get("channel", "")), count)
+
+        if metric == "active_user":
+            ch = str(row.get("channel", "")).strip()
+            cl = str(row.get("client_id", "")).strip()
+            if (ch in {"plugin", "cli"}) and cl:
+                client_channel_map[cl] = ch
+                if d == target_date:
+                    client_target_map[cl] += count
+                if d == comparison_date:
+                    client_comp_map[cl] += count
+
+    dau_by_date: dict[str, dict[str, int]] = defaultdict(_empty_dau_totals)
+    dau_client_window_totals: dict[str, int] = defaultdict(int)
+    window_totals = _empty_dau_totals()
+
+    for row in dau_filtered_source:
+        metric = str(row.get("metric", "")).strip()
+        if metric not in DAU_METRICS:
+            continue
+        d = str(row.get("date", "")).strip()
+        if not d:
+            continue
+        count = int(row.get("count", 0) or 0)
+        _add_dau_count(dau_by_date[d], metric, str(row.get("channel", "")), count)
+        _add_dau_count(window_totals, metric, str(row.get("channel", "")), count)
+
+        if metric == "active_user":
+            ch = str(row.get("channel", "")).strip()
+            cl = str(row.get("client_id", "")).strip()
+            if (ch in {"plugin", "cli"}) and cl:
+                client_channel_map[cl] = ch
+                dau_client_window_totals[cl] += count
+
+    dau_series = [
+        {"date": d, **totals}
+        for d, totals in sorted(dau_by_date.items(), key=lambda it: it[0])
+    ]
+
+    dau_today = dau_all_dates_map.get(target_date) or dau_by_date.get(target_date) or _empty_dau_totals()
+    dau_yesterday = dau_all_dates_map.get(comparison_date) or dau_by_date.get(comparison_date) or _empty_dau_totals()
+
+    all_dau_clients = set(client_channel_map.keys()) | set(dau_client_window_totals.keys()) | set(client_target_map.keys()) | set(client_comp_map.keys())
+    dau_clients = []
+    for client in all_dau_clients:
+        ch = client_channel_map.get(client, "plugin")
+        tot = dau_client_window_totals.get(client, 0)
+        tdy = client_target_map.get(client, 0)
+        yst = client_comp_map.get(client, 0)
+        if tot > 0 or tdy > 0 or yst > 0:
+            dau_clients.append({
+                "client": client,
+                "channel": ch,
+                "total": tot,
+                "today": tdy,
+                "yesterday": yst,
+            })
+    dau_clients.sort(key=lambda item: (-item["total"], -item["today"], item["client"]))
+
+    dau_hours: list[dict[str, int]] = []
+    if not geo_active:
+        dau_by_hour: dict[int, int] = defaultdict(int)
+        for row in hourly:
+            m = str(row.get("metric", "")).strip()
+            if m not in DAU_METRICS:
+                continue
+            if not _matches(row, filters, platform_agnostic=True):
+                continue
+            h = int(row.get("hour", 0) or 0)
+            dau_by_hour[h] += int(row.get("count", 0) or 0)
+        dau_hours = [{"hour": h, "total": dau_by_hour.get(h, 0)} for h in sorted(dau_by_hour.keys())]
+
+    dau_geo_source = [
+        r for r in geo_rows
+        if _matches(r, filters, include_geo=True, platform_agnostic=True)
+    ] if filters.get("platform") else filtered_geo
+    dau_geo_rows = [
+        r for r in dau_geo_source
+        if _dau_channel_for(str(r.get("metric", "")).strip(), str(r.get("channel", "")).strip()) is not None
+    ]
+    dau_countries = _sum_by([r for r in dau_geo_rows if r.get("country") != "UNKNOWN"], "country")
+    dau_regions = _sum_by([r for r in dau_geo_rows if r.get("region") != "UNKNOWN" and (r.get("country") == "CN" or not r.get("country"))], "region")
+
     def filter_option_rows(omit: str, metrics: set[str]) -> list[dict]:
         return [
             row
@@ -770,6 +931,19 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "active_clients": len([item for item in matched_clients if item["count"] > 0]),
             "pending_feedback": fb_pending,
         },
+        "dau": {
+            "targetDate": target_date,
+            "comparisonDate": comparison_date,
+            "isSingleDay": is_single_day,
+            "today": dau_today,
+            "yesterday": dau_yesterday,
+            "windowTotals": window_totals,
+            "series": dau_series,
+            "hours": dau_hours,
+            "clients": dau_clients,
+            "countries": dau_countries,
+            "regions": dau_regions,
+        },
         "timeseries": timeseries,
         "hourlyTimeseries": hourly_timeseries,
         "breakdowns": breakdowns,
@@ -816,6 +990,9 @@ def build_local_quarantine(snapshot: dict, query: dict[str, str]) -> dict:
     if from_date and to_date and from_date > to_date:
         from_date, to_date = to_date, from_date
     reason = _query_value(query, "reason")
+    platform = _query_value(query, "platform").lower()
+    country = _query_value(query, "country").upper()
+    region = _query_value(query, "region")
     try:
         limit = max(1, min(500, int(_query_value(query, "limit") or "100")))
     except ValueError:
@@ -829,6 +1006,12 @@ def build_local_quarantine(snapshot: dict, query: dict[str, str]) -> dict:
         if to_date and incident_date > to_date:
             continue
         if reason and row.get("reason") != reason:
+            continue
+        if platform and str(row.get("platform", "")).lower() != platform:
+            continue
+        if country and str(row.get("country", "")).upper() != country:
+            continue
+        if region and str(row.get("region", "")) != region:
             continue
         filtered.append(row)
     filtered.sort(
@@ -851,8 +1034,32 @@ def build_local_feedback(snapshot: dict, query: dict[str, str]) -> dict:
     all_rows = [row for row in snapshot.get("feedback", []) if isinstance(row, dict)]
     if is_exclude_my(query):
         all_rows = [row for row in all_rows if str(row.get("country", "")).upper() != "MY"]
-    status_counts = {"all": len(all_rows), "pending": 0, "resolved": 0, "ignored": 0}
-    for row in all_rows:
+
+    from_date = _query_value(query, "from")
+    to_date = _query_value(query, "to")
+    if from_date and to_date and from_date > to_date:
+        from_date, to_date = to_date, from_date
+    platform = _query_value(query, "platform").lower()
+    country = _query_value(query, "country").upper()
+    region = _query_value(query, "region")
+
+    filtered_rows = []
+    for r in all_rows:
+        report_date = str(r.get("last_reported_at") or r.get("first_reported_at") or r.get("created_at") or "")[:10]
+        if from_date and report_date and report_date < from_date:
+            continue
+        if to_date and report_date and report_date > to_date:
+            continue
+        if platform and str(r.get("platform", "")).lower() != platform:
+            continue
+        if country and str(r.get("country", "")).upper() != country:
+            continue
+        if region and str(r.get("region", "")) != region:
+            continue
+        filtered_rows.append(r)
+
+    status_counts = {"all": len(filtered_rows), "pending": 0, "resolved": 0, "ignored": 0}
+    for row in filtered_rows:
         s = str(row.get("status", "") or "pending").lower()
         if s in status_counts:
             status_counts[s] += 1
@@ -860,12 +1067,12 @@ def build_local_feedback(snapshot: dict, query: dict[str, str]) -> dict:
             status_counts["pending"] += 1
 
     status = _query_value(query, "status").lower()
-    rows = all_rows
+    rows = filtered_rows
     if status and status != "all":
         rows = [row for row in rows if str(row.get("status", "") or "pending").lower() == status]
     rows.sort(
         key=lambda row: (
-            str(row.get("last_reported_at", "") or row.get("first_reported_at", "")),
+            str(row.get("last_reported_at", "") or row.get("first_reported_at", "") or row.get("created_at", "")),
             int(row.get("id", 0) or 0),
         ),
         reverse=True,
@@ -1135,6 +1342,13 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         <span class="tab-text">
           <span class="tab-title">安全风控</span>
           <span class="tab-sub">Security</span>
+        </span>
+      </button>
+      <button class="tab" data-page="dau">
+        <span class="tab-icon">📈</span>
+        <span class="tab-text">
+          <span class="tab-title">日活 DAU</span>
+          <span class="tab-sub">Daily Active</span>
         </span>
       </button>
     </nav>
@@ -1655,6 +1869,81 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         </thead>
         <tbody id="quarantineRows"></tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- 7. 日活 DAU (Daily Active Users) -->
+<section class="page" id="page-dau">
+  <div class="section">
+    <div><h2>全端日活与触达 DAU</h2><div class="muted">总日活 = 网站去重访客 + 插件 / CLI 每日去重活跃（读时合并，网站历史数据已全部并入）· 按 UTC 日期统计（北京时间约等于 UTC+8，清晨计入新一天）。</div></div>
+  </div>
+  <div id="dauKpis" class="kpis"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h3>📈 全端日活趋势 (DAU Trend)</h3>
+        <div class="muted" style="font-size:11px">每日去重活跃 (UV) · 柱状为分端堆叠，折线为合计</div>
+      </div>
+      <div class="trend-legend">
+        <span><span class="legend-dot" style="background:#0284c7"></span>Playlist Out Web</span>
+        <span><span class="legend-dot" style="background:#8b5cf6"></span>生态插件端</span>
+        <span><span class="legend-dot" style="background:#10b981"></span>Playlist Out CLI</span>
+        <span><span class="legend-dot" style="background:#f97316"></span>全端合计日活</span>
+      </div>
+    </div>
+    <div class="trend-box" id="dauTrendBox">
+      <canvas id="dauTrendCanvas"></canvas>
+      <div id="dauTrendTip" class="chart-tooltip">
+        <div id="dauTipTitle" class="chart-tooltip-title"></div>
+        <div class="chart-tooltip-row"><span style="color:var(--t);font-weight:600">全端总日活:</span><strong id="dauTipTotal"></strong></div>
+        <div class="chart-tooltip-row"><span style="color:#0284c7">● Web 访客:</span><strong id="dauTipWeb"></strong></div>
+        <div class="chart-tooltip-row"><span style="color:#8b5cf6">● 插件活跃:</span><strong id="dauTipPlugin"></strong></div>
+        <div class="chart-tooltip-row"><span style="color:#10b981">● CLI 活跃:</span><strong id="dauTipCli"></strong></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="panel">
+      <div class="panel-head"><h3>🧩 接入端明细 Clients</h3><span class="muted" style="font-size:11px">多端日活对比</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr id="dauClientHead">
+              <th>接入端 Client</th>
+              <th style="width:80px">渠道类型</th>
+              <th style="text-align:right;width:110px" id="thDauToday">当日活跃 (UV)</th>
+              <th style="text-align:right;width:110px" id="thDauYesterday">前日活跃 (UV)</th>
+              <th style="text-align:right;width:110px" id="thDauTotal">周期累计人次</th>
+            </tr>
+          </thead>
+          <tbody id="dauClientRows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3 id="dauHourHeadTitle">🕐 单日小时分布 (UTC)</h3><span id="dauHourHeadSub" class="muted" style="font-size:11px">小时活跃 (UV)</span></div>
+      <div id="dauHourBars" class="bars"></div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="panel">
+      <div class="panel-head"><h3>🌍 活跃国家</h3><span class="muted" style="font-size:11px">活跃用户 (UV)</span></div>
+      <div id="dauCountryBars" class="bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>🏙️ 省份 / 地区</h3><span class="muted" style="font-size:11px">活跃用户 (UV)</span></div>
+      <div id="dauRegionBars" class="bars"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:12px;border-left:3px solid var(--a)">
+    <div class="panel-head"><h3>📐 口径说明 Metric Semantics</h3></div>
+    <div class="muted" style="font-size:12px;line-height:1.9">
+      <div>• <strong>Playlist Out Web</strong>：网站每日去重访客（沿用网站原有的 <code>visitor_unique</code> 匿名访客统计，历史数据全部并入趋势与合计，未另建一套记录）。</div>
+      <div>• <strong>生态插件端</strong>：插件被加载即计（新版本：每日一次加载心跳；旧版本：当天首次使用行为由服务端派生计入；升级过渡期两种口径混排）。</div>
+      <div>• <strong>Playlist Out CLI</strong>：实际使用即计（解析 / 导出时由服务端派生计入；<code>--no-telemetry</code> 用户不计入）。</div>
+      <div>• 合并口径：总日活 = 网站 + 插件 + CLI；去重键为 UTC 日期 × 渠道 × 客户端 × 匿名截断哈希——同一端同一人同天仅计一次（心跳与解析遥测共享同一身份，不因两种上报重复计），同一天使用多个端则各计一次，跨天不保持身份。</div>
+      <div>• 已知边界：NAT / 共享出口可能低估；移动端冷启动跨 IP 可能轻微高估。插件升级当天已按「去版本号」归一，不会把同一人重复计入。</div>
     </div>
   </div>
 </section>
@@ -2594,14 +2883,18 @@ function initTrendInteractions(){
 
     let snapX=a.length===1?padL+pw/2:padL+(idx/(a.length-1))*pw;
     tip.style.left=snapX+"px";
-    tip.style.top="30px";
+    let tipY = Math.max(10, Math.min(e.clientY - rect.top - 12, rect.height - 90));
+    tip.style.top = tipY + "px";
     tip.style.display="block";
     drawCanvasChart();
   });
   box.addEventListener("mouseleave",()=>{
     tip.style.display="none";canvas._activeIdx=-1;drawCanvasChart();
   });
-  window.addEventListener("resize",()=>drawCanvasChart());
+  window.addEventListener("resize",()=>{
+    if($("#page-overview")?.classList.contains("active"))drawCanvasChart();
+    if($("#page-dau")?.classList.contains("active"))drawDauChart();
+  });
 }
 
 function renderTrend(id,rows){
@@ -2668,6 +2961,354 @@ function initViewSwitches(){
   });
 }
 
+function delta(curr, prev){
+  if(!prev)return curr > 0 ? "前日无数据" : "较前日持平";
+  let d=Math.round(((curr-prev)/prev)*1000)/10;
+  return "较前日 "+(d>=0?"+":"")+d.toFixed(1)+"%";
+}
+
+let activeDauIdx = -1;
+
+function renderDauTab(){
+  let dau=A.dau;
+  if(!dau)return;
+  let isSingle=Boolean(dau.isSingleDay);
+  let targetLabel=isSingle
+    ?(dau.targetDate===isoDayOffset(0)?"今日":"当日")
+    :"期末日";
+  let compLabel=dau.comparisonDate===isoDayOffset(-1)?"昨日":"前日 ("+String(dau.comparisonDate||"").slice(5)+")";
+  let peak=(dau.series||[]).reduce((acc,p)=>Math.max(acc,Number(p.total||0)),0);
+  let dayCount=Math.max(1,(dau.series||[]).length);
+  let avg=Math.round(Number(dau.windowTotals?.total||0)/dayCount);
+
+  let kpiItems=isSingle
+    ?[
+      [
+        targetLabel+"全端日活用户",
+        fmt(dau.today?.total),
+        compLabel+" "+fmt(dau.yesterday?.total)+" · "+delta(Number(dau.today?.total||0),Number(dau.yesterday?.total||0))
+      ],
+      [
+        targetLabel+" Web 访客",
+        fmt(dau.today?.web),
+        compLabel+" "+fmt(dau.yesterday?.web)+" · "+delta(Number(dau.today?.web||0),Number(dau.yesterday?.web||0))
+      ],
+      [
+        targetLabel+"插件活跃",
+        fmt(dau.today?.plugin),
+        compLabel+" "+fmt(dau.yesterday?.plugin)+" · "+delta(Number(dau.today?.plugin||0),Number(dau.yesterday?.plugin||0))
+      ],
+      [
+        targetLabel+" CLI 活跃",
+        fmt(dau.today?.cli),
+        compLabel+" "+fmt(dau.yesterday?.cli)+" · "+delta(Number(dau.today?.cli||0),Number(dau.yesterday?.cli||0))
+      ],
+      [
+        "活跃客户端种类",
+        String((dau.clients||[]).length),
+        "覆盖生态接入端数"
+      ],
+      [
+        "当日日活峰值",
+        fmt(dau.today?.total),
+        "单日去重总活跃"
+      ]
+    ]
+    :[
+      [
+        "区间全端日活人次",
+        fmt(dau.windowTotals?.total),
+        "日均 "+fmt(avg)+"/天 · 累计跨端人次"
+      ],
+      [
+        "区间 Web 访客累计",
+        fmt(dau.windowTotals?.web),
+        "日均 "+fmt(Math.round(Number(dau.windowTotals?.web||0)/dayCount))+"/天"
+      ],
+      [
+        "区间插件活跃累计",
+        fmt(dau.windowTotals?.plugin),
+        "日均 "+fmt(Math.round(Number(dau.windowTotals?.plugin||0)/dayCount))+"/天"
+      ],
+      [
+        "区间 CLI 活跃累计",
+        fmt(dau.windowTotals?.cli),
+        "日均 "+fmt(Math.round(Number(dau.windowTotals?.cli||0)/dayCount))+"/天"
+      ],
+      [
+        "活跃客户端种类",
+        String((dau.clients||[]).length),
+        "覆盖生态接入端数"
+      ],
+      [
+        "区间最高日活峰值",
+        fmt(peak),
+        "区间单日最高去重活跃"
+      ]
+    ];
+
+  kpis("#dauKpis",kpiItems);
+
+  let thToday=$("#thDauToday"),thYesterday=$("#thDauYesterday"),thTotal=$("#thDauTotal");
+  if(thToday&&thYesterday&&thTotal){
+    if(isSingle){
+      thToday.textContent="当日活跃 ("+String(dau.targetDate||"").slice(5)+")";
+      thYesterday.textContent="前日活跃 ("+String(dau.comparisonDate||"").slice(5)+")";
+      thTotal.textContent="当日活跃 (UV)";
+    }else{
+      thToday.textContent="期末日 ("+String(dau.targetDate||"").slice(5)+")";
+      thYesterday.textContent="前日 ("+String(dau.comparisonDate||"").slice(5)+")";
+      thTotal.textContent="周期累计人次";
+    }
+  }
+
+  let tbody=$("#dauClientRows");
+  if(tbody){
+    let webTotalVal=isSingle?dau.today?.web:dau.windowTotals?.web;
+    let webRow='<tr>'
+      +'<td>'
+      +'<span style="font-weight:600;color:'+getBrandColor('official_web')+'">'+esc(formatHumanLabel('official_web'))+'</span>'
+      +'<div class="muted" style="font-size:11px;font-family:var(--mono)">official_web</div>'
+      +'</td>'
+      +'<td><span class="badge" style="background:var(--l)">网页端</span></td>'
+      +'<td style="text-align:right;font-family:var(--mono);font-weight:700">'+fmt(dau.today?.web)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono)">'+fmt(dau.yesterday?.web)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono)">'+fmt(webTotalVal)+'</td>'
+      +'</tr>';
+    let clientRows=(dau.clients||[]).map(c=>'<tr>'
+      +'<td>'
+      +'<span style="font-weight:600;color:'+getBrandColor(c.client)+'">'+esc(formatHumanLabel(c.client))+'</span>'
+      +'<div class="muted" style="font-size:11px;font-family:var(--mono)">'+esc(c.client)+'</div>'
+      +'</td>'
+      +'<td><span class="badge" style="background:var(--l)">'+(c.channel==='plugin'?'插件端':(c.channel==='cli'?'CLI 终端':esc(formatHumanLabel(c.channel))))+'</span></td>'
+      +'<td style="text-align:right;font-family:var(--mono);font-weight:700">'+fmt(c.today)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono)">'+fmt(c.yesterday)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono)">'+fmt(c.total)+'</td>'
+      +'</tr>').join('');
+    tbody.innerHTML=webRow+(clientRows||'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--m)">插件 / CLI 暂无记录（等待心跳与使用遥测上报）</td></tr>');
+  }
+
+  bars("#dauCountryBars",dau.countries);
+  bars("#dauRegionBars",dau.regions);
+  renderDauHourBars();
+  drawDauChart();
+}
+
+function renderDauHourBars(){
+  let el=$("#dauHourBars");
+  if(!el||!A||!A.dau)return;
+  let hours=A.dau.hours||[];
+  let isSingle=Boolean(A.dau.isSingleDay);
+  let headTitle=$("#dauHourHeadTitle"),headSub=$("#dauHourHeadSub");
+  if(headTitle){
+    headTitle.textContent=isSingle?"🕐 单日小时分布 (UTC)":"🕐 小时活跃时段画像 (UTC)";
+  }
+  if(headSub){
+    headSub.textContent=isSingle?"所选日 ("+String(A.dau.targetDate||"")+") 小时活跃 (UV)":"所选周期小时活跃累计";
+  }
+  if(!hours.length){
+    el.innerHTML='<div style="color:var(--m);padding:8px 0;font-size:12px">暂无小时分布数据</div>';
+    return;
+  }
+  let max=Math.max(...hours.map(h=>Number(h.total||0)),1);
+  el.innerHTML=hours.map(h=>{
+    let p=Math.min(100,Math.round((Number(h.total||0)/max)*1000)/10);
+    return '<div class="bar">'
+      +'<div class="bn"><span>'+String(h.hour).padStart(2,"0")+':00</span></div>'
+      +'<div class="track"><div class="fill" style="width:'+p+'%;background:var(--a)"></div></div>'
+      +'<div class="num"><span class="val">'+fmt(h.total)+'</span></div>'
+      +'</div>';
+  }).join("");
+}
+
+function drawDauChart(){
+  let canvas=$("#dauTrendCanvas");
+  if(!canvas||!A||!A.dau)return;
+  let ctx=canvas.getContext("2d");
+  if(!ctx)return;
+  let data=A.dau.series||[];
+  let dpr=window.devicePixelRatio||1;
+  let rect=canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  ctx.scale(dpr,dpr);
+  let w=rect.width,h=rect.height;
+  ctx.clearRect(0,0,w,h);
+  if(!data.length){
+    ctx.fillStyle="#94a3b8";
+    ctx.font="12px system-ui";
+    ctx.textAlign="center";
+    ctx.fillText("当前筛选无日活数据",w/2,h/2);
+    return;
+  }
+  let padLeft=40,padRight=20,padTop=20,padBottom=30;
+  let maxVal=1;
+  for(let d of data){
+    if(Number(d.total||0)>maxVal)maxVal=Number(d.total||0);
+  }
+  maxVal=Math.ceil(maxVal*1.15);
+  let plotW=w-padLeft-padRight;
+  let plotH=h-padTop-padBottom;
+
+  ctx.strokeStyle="rgba(226, 232, 240, 0.6)";
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<=4;i++){
+    let y=padTop+(plotH/4)*i;
+    ctx.moveTo(padLeft,y);
+    ctx.lineTo(w-padRight,y);
+    ctx.fillStyle="#94a3b8";
+    ctx.font="10px monospace";
+    ctx.textAlign="right";
+    ctx.fillText(String(Math.round(maxVal*(1-i/4))),padLeft-6,y+3);
+  }
+  ctx.stroke();
+
+  let stackOrder=[
+    {key:"cli",color:"#10b981"},
+    {key:"plugin",color:"#8b5cf6"},
+    {key:"web",color:"#0284c7"}
+  ];
+
+  if(data.length===1){
+    let d=data[0];
+    let cx=padLeft+plotW/2;
+    let barW=Math.min(48,Math.max(28,plotW*0.12));
+    let x0=cx-barW/2;
+    let yBase=padTop+plotH;
+    for(let seg of stackOrder){
+      let val=Number(d[seg.key]||0);
+      if(val<=0)continue;
+      let segH=(val/maxVal)*plotH;
+      ctx.fillStyle=seg.color;
+      ctx.fillRect(x0,yBase-segH,barW,segH);
+      yBase-=segH;
+    }
+    ctx.fillStyle="#f97316";
+    ctx.font="bold 12px monospace";
+    ctx.textAlign="center";
+    ctx.fillText(fmt(d.total)+" UV",cx,Math.max(padTop+14,yBase-6));
+
+    if(activeDauIdx===0){
+      ctx.strokeStyle="#3b82f6";
+      ctx.lineWidth=2;
+      ctx.strokeRect(x0-2,yBase-2,barW+4,padTop+plotH-yBase+4);
+    }
+    ctx.fillStyle="#94a3b8";
+    ctx.font="10px system-ui";
+    ctx.textAlign="center";
+    ctx.fillText(String(d.date||""),cx,h-8);
+    return;
+  }
+
+  let stepX=plotW/data.length;
+  let barW=Math.max(3,Math.min(22,stepX*0.62));
+  let totalPoints=[];
+
+  data.forEach((d,i)=>{
+    let cx=padLeft+stepX*i+stepX/2;
+    let x0=cx-barW/2;
+    let yBase=padTop+plotH;
+    for(let seg of stackOrder){
+      let val=Number(d[seg.key]||0);
+      if(val<=0)continue;
+      let segH=(val/maxVal)*plotH;
+      ctx.fillStyle=seg.color;
+      ctx.fillRect(x0,yBase-segH,barW,segH);
+      yBase-=segH;
+    }
+    totalPoints.push({x:cx,y:padTop+plotH-(Number(d.total||0)/maxVal)*plotH});
+  });
+
+  if(activeDauIdx>=0&&activeDauIdx<data.length){
+    let activeD=data[activeDauIdx];
+    let cx=padLeft+stepX*activeDauIdx+stepX/2;
+    let x0=cx-barW/2;
+    let totalH=(Number(activeD.total||0)/maxVal)*plotH;
+    ctx.strokeStyle="#3b82f6";
+    ctx.lineWidth=2;
+    ctx.strokeRect(x0-2,padTop+plotH-totalH-2,barW+4,totalH+4);
+  }
+
+  ctx.strokeStyle="#f97316";
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  totalPoints.forEach((pt,i)=>{
+    if(i===0)ctx.moveTo(pt.x,pt.y);
+    else ctx.lineTo(pt.x,pt.y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle="#f97316";
+  totalPoints.forEach((pt,i)=>{
+    ctx.beginPath();
+    let r=activeDauIdx===i?4:2.2;
+    ctx.arc(pt.x,pt.y,r,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle="#94a3b8";
+  ctx.font="10px system-ui";
+  ctx.textAlign="center";
+  let step=Math.ceil(data.length/8);
+  data.forEach((d,i)=>{
+    if(i%step===0||i===data.length-1){
+      ctx.fillText(String(d.date||"").slice(5),padLeft+stepX*i+stepX/2,h-8);
+    }
+  });
+}
+
+function initDauInteractions(){
+  let dauBox=$("#dauTrendBox");
+  let dauCanvas=$("#dauTrendCanvas");
+  let dauTip=$("#dauTrendTip");
+  if(!dauBox||!dauCanvas||!dauTip||dauBox._inited)return;
+  dauBox._inited=true;
+
+  dauBox.addEventListener("mousemove",(e)=>{
+    if(!A||!A.dau)return;
+    let data=A.dau.series||[];
+    if(!data.length)return;
+    let rect=dauBox.getBoundingClientRect();
+    let padLeft=40,padRight=20,plotW=rect.width-padLeft-padRight;
+    let mouseX=e.clientX-rect.left;
+    let mouseY=e.clientY-rect.top;
+
+    if(mouseX<padLeft-15||mouseX>rect.width-padRight+15){
+      dauTip.style.display="none";
+      activeDauIdx=-1;
+      drawDauChart();
+      return;
+    }
+    let ratio=Math.max(0,Math.min(1,(mouseX-padLeft)/Math.max(1,plotW)));
+    let idx=data.length===1?0:Math.round(ratio*(data.length-1));
+    activeDauIdx=idx;
+
+    let row=data[idx];
+    let tipTitle=$("#dauTipTitle"),tipTotal=$("#dauTipTotal");
+    let tipWeb=$("#dauTipWeb"),tipPlugin=$("#dauTipPlugin"),tipCli=$("#dauTipCli");
+    if(tipTitle)tipTitle.textContent=row.date;
+    if(tipTotal)tipTotal.textContent=fmt(row.total)+" UV";
+    if(tipWeb)tipWeb.textContent=fmt(row.web);
+    if(tipPlugin)tipPlugin.textContent=fmt(row.plugin);
+    if(tipCli)tipCli.textContent=fmt(row.cli);
+
+    let snapX=data.length===1?padLeft+plotW/2:padLeft+(idx/(data.length-1))*plotW;
+    dauTip.style.left=snapX+"px";
+    let tipY=Math.max(10,Math.min(mouseY-12,rect.height-90));
+    dauTip.style.top=tipY+"px";
+    dauTip.style.display="block";
+    drawDauChart();
+  });
+
+  dauBox.addEventListener("mouseleave",()=>{
+    dauTip.style.display="none";
+    activeDauIdx=-1;
+    drawDauChart();
+  });
+}
+
 function render(){
   let o=A.overview||{},b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f,q=A.dataQuality||{};
   let succ=Number(o.playlist_success||0)+Number(o.user_success||0);
@@ -2675,12 +3316,22 @@ function render(){
   let musicfreeReq=countNamed(d.clients,"musicfree"),anonymousApiReq=countNamed(d.clients,"anonymous_api");
 
   // 1. Overview KPIs
+  let dau = A.dau || {};
+  let isSingle = Boolean(dau.isSingleDay);
+  let dauLabel = isSingle
+    ? (dau.targetDate === isoDayOffset(0) ? "今日全端日活" : "当日全端日活")
+    : "区间全端日活";
+  let dauVal = isSingle ? fmt(dau.today?.total) : fmt(dau.windowTotals?.total);
+  let dauSub = isSingle
+    ? "Web "+fmt(dau.today?.web)+" · 插件 "+fmt(dau.today?.plugin)+" · CLI "+fmt(dau.today?.cli)
+    : "日均 "+fmt(Math.round(Number(dau.windowTotals?.total||0)/Math.max(1,(dau.series||[]).length)))+"/天 · 累计跨端人次";
+
   kpis("#overviewKpis",[
     ["Requests",fmt(o.resolve_request),"歌单解析总请求"],
     ["Success",fmt(succ),pct(o.success_rate)+" 成功率"],
     ["Tracks",fmt(o.tracks_processed),"处理歌曲 · 均单 "+(o.resolve_request>0?Math.round(o.tracks_processed/o.resolve_request):0)+" 首"],
     ["Exports",fmt(o.export),"文件导出总量"],
-    ["Failures",fmt(o.resolve_failure),"未成功解析"],
+    [dauLabel,dauVal,dauSub],
     ["Client IDs",String(o.active_clients),"活跃客户端类别"]
   ]);
 
@@ -2815,6 +3466,11 @@ function render(){
   ]);
   bars("#rateBars",b.rate_limit_endpoint);
 
+  // 6. DAU Page
+  if(A.dau){
+    renderDauTab();
+  }
+
   // Select dropdowns
   options("channel",f.channels);
   options("client",f.clients);
@@ -2833,6 +3489,8 @@ async function load({force=false}={}){
     A=cached.data;render();
     if($("#page-security")?.classList.contains("active"))quarantine();
     if($("#page-feedback")?.classList.contains("active"))feedback(currentFbStatus);
+    if($("#page-dau")?.classList.contains("active"))requestAnimationFrame(drawDauChart);
+    if($("#page-overview")?.classList.contains("active"))requestAnimationFrame(drawCanvasChart);
     return;
   }
   let controller=new AbortController();loadController=controller;
@@ -2850,6 +3508,8 @@ async function load({force=false}={}){
     quarantineLoaded=false;feedbackLoaded=false;
     if($("#page-security")?.classList.contains("active"))quarantine();
     if($("#page-feedback")?.classList.contains("active"))feedback(currentFbStatus);
+    if($("#page-dau")?.classList.contains("active"))requestAnimationFrame(drawDauChart);
+    if($("#page-overview")?.classList.contains("active"))requestAnimationFrame(drawCanvasChart);
   }catch(e){
     clearTimeout(loadTimer);
     if(e?.name==="AbortError"||seq!==loadSeq)return;
@@ -2866,7 +3526,7 @@ let quarantineLoaded=false,feedbackLoaded=false;
 let currentQuarantineRows = [];
 async function quarantine(){
   try{
-    let qp=new URLSearchParams(dates());qp.set("limit","100");qp.set("exclude_my",excludeMy?"1":"0");
+    let qp=new URLSearchParams(params());qp.set("limit","100");
     let d=await api("/api/quarantine?"+qp.toString()),rows=d.quarantine||[],m=new Map();
     currentQuarantineRows = rows;
     let totalBadge = $("#quarantineCountBadge");
@@ -2967,7 +3627,10 @@ async function quarantine(){
 
 async function feedbackCountCheck(){
   try{
-    let d=await api("/api/feedback?status=pending&limit=1&exclude_my="+(excludeMy?"1":"0"));
+    let qp=new URLSearchParams(params());
+    qp.set("status","pending");
+    qp.set("limit","1");
+    let d=await api("/api/feedback?"+qp.toString());
     let pending=d.counts?.pending??d.total??0;
     let badge=$("#navPendingBadge");
     if(badge){
@@ -2987,8 +3650,11 @@ async function feedback(status="pending"){
   currentFbStatus=status;
   $$(".fb-tab").forEach(b=>b.classList.toggle("active",b.dataset.fbStatus===status));
   try{
-    let url="/api/feedback?limit=100"+(status==="all"?"":"&status="+encodeURIComponent(status))+"&exclude_my="+(excludeMy?"1":"0");
-    let d=await api(url),rows=d.entries||[];
+    let qp=new URLSearchParams(params());
+    qp.set("limit","100");
+    if(status&&status!=="all")qp.set("status",status);
+    else qp.delete("status");
+    let d=await api("/api/feedback?"+qp.toString()),rows=d.entries||[];
     if(d.counts){
       $("#fbCountAll").textContent=d.counts.all||0;
       $("#fbCountPending").textContent=d.counts.pending||0;
@@ -3075,6 +3741,7 @@ $$(".tab").forEach(b=>b.onclick=()=>{
   if(b.dataset.page==="security"&&!quarantineLoaded)quarantine();
   if(b.dataset.page==="feedback"&&!feedbackLoaded)feedback(currentFbStatus);
   if(b.dataset.page==="overview")requestAnimationFrame(drawCanvasChart);
+  if(b.dataset.page==="dau")requestAnimationFrame(drawDauChart);
 });
 
 $$(".fb-tab").forEach(b=>b.onclick=()=>{
@@ -3096,6 +3763,8 @@ $$(".range button").forEach(b=>b.onclick=()=>setPreset(b.dataset.range));
   let el=$("#"+id);
   if(el)el.onchange=()=>{
     if(id==="country")$("#region").value="";
+    quarantineLoaded=false;
+    feedbackLoaded=false;
     load();
   };
 });
@@ -3108,6 +3777,8 @@ $("#applyDateRange").onclick=()=>{dates();markPreset("");load()};
 $("#reset").onclick=()=>{
   ["channel","client","platform","country","region"].forEach(id=>{let el=$("#"+id);if(el)el.value=""});
   excludeMy=false;
+  quarantineLoaded=false;
+  feedbackLoaded=false;
   updateExcludeMyUI();
   setPreset("all");
 };
@@ -3135,6 +3806,7 @@ if(fModal)fModal.onclick=e=>{if(e.target===fModal)fModal.style.display="none"};
 markPreset("all");
 updateExcludeMyUI();
 initViewSwitches();
+initDauInteractions();
 load();
 </script></body></html>'''
 

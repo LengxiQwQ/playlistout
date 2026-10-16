@@ -840,6 +840,7 @@ class DashboardApp {
   private currentPage = 'overview';
   private activePreset = 'all';
   private activeTrendIdx = -1;
+  private activeDauIdx = -1;
   private chartViews: Record<string, string> = {
     trend: 'bar',
     platform: 'donut',
@@ -1477,6 +1478,13 @@ class DashboardApp {
             </div>
             <div class="trend-box" id="dauTrendBox">
               <canvas id="dauTrendCanvas"></canvas>
+              <div id="dauTrendTip" class="chart-tooltip">
+                <div id="dauTipTitle" class="chart-tooltip-title"></div>
+                <div class="chart-tooltip-row"><span style="color:var(--t);font-weight:600">全端总日活:</span><strong id="dauTipTotal"></strong></div>
+                <div class="chart-tooltip-row"><span style="color:#0284c7">● Web 访客:</span><strong id="dauTipWeb"></strong></div>
+                <div class="chart-tooltip-row"><span style="color:#8b5cf6">● 插件活跃:</span><strong id="dauTipPlugin"></strong></div>
+                <div class="chart-tooltip-row"><span style="color:#10b981">● CLI 活跃:</span><strong id="dauTipCli"></strong></div>
+              </div>
             </div>
           </div>
           <div class="grid2" style="margin-top:12px">
@@ -1485,12 +1493,12 @@ class DashboardApp {
               <div class="table-wrap">
                 <table>
                   <thead>
-                    <tr>
+                    <tr id="dauClientHead">
                       <th>接入端 Client</th>
                       <th style="width:80px">渠道类型</th>
-                      <th style="text-align:right;width:100px">今日活跃 (UV)</th>
-                      <th style="text-align:right;width:100px">昨日活跃 (UV)</th>
-                      <th style="text-align:right;width:110px">周期累计人次</th>
+                      <th style="text-align:right;width:110px" id="thDauToday">当日活跃 (UV)</th>
+                      <th style="text-align:right;width:110px" id="thDauYesterday">前日活跃 (UV)</th>
+                      <th style="text-align:right;width:110px" id="thDauTotal">周期累计人次</th>
                     </tr>
                   </thead>
                   <tbody id="dauClientRows"></tbody>
@@ -1498,7 +1506,7 @@ class DashboardApp {
               </div>
             </div>
             <div class="panel">
-              <div class="panel-head"><h3>🕐 单日小时分布 (UTC)</h3><span class="muted" style="font-size:11px">小时活跃 (UV)</span></div>
+              <div class="panel-head"><h3 id="dauHourHeadTitle">🕐 单日小时分布 (UTC)</h3><span id="dauHourHeadSub" class="muted" style="font-size:11px">小时活跃 (UV)</span></div>
               <div id="dauHourBars" class="bars"></div>
             </div>
           </div>
@@ -1783,8 +1791,9 @@ class DashboardApp {
         if (tipRate) tipRate.textContent = rate;
 
         const snapX = data.length === 1 ? padLeft + plotW / 2 : padLeft + (idx / (data.length - 1)) * plotW;
+        const mouseY = e.clientY - rect.top;
         trendTip.style.left = `${snapX}px`;
-        trendTip.style.top = '30px';
+        trendTip.style.top = `${Math.max(20, Math.min(rect.height - 70, mouseY - 15))}px`;
         trendTip.style.display = 'block';
 
         this.drawCanvasChart();
@@ -1794,6 +1803,63 @@ class DashboardApp {
         trendTip.style.display = 'none';
         this.activeTrendIdx = -1;
         this.drawCanvasChart();
+      });
+    }
+
+    // DAU Trend interaction
+    const dauBox = document.getElementById('dauTrendBox');
+    const dauCanvas = document.getElementById('dauTrendCanvas') as HTMLCanvasElement | null;
+    const dauTip = document.getElementById('dauTrendTip');
+    if (dauBox && dauCanvas && dauTip) {
+      dauBox.addEventListener('mousemove', (e) => {
+        const slice = this.currentSlice;
+        if (!slice) return;
+        const data = slice.dau.series;
+        if (!data || data.length === 0) return;
+
+        const rect = dauBox.getBoundingClientRect();
+        const padLeft = 40;
+        const padRight = 20;
+        const plotW = rect.width - padLeft - padRight;
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (mouseX < padLeft - 15 || mouseX > rect.width - padRight + 15) {
+          dauTip.style.display = 'none';
+          this.activeDauIdx = -1;
+          this.drawDauChart();
+          return;
+        }
+
+        const ratio = Math.max(0, Math.min(1, (mouseX - padLeft) / Math.max(1, plotW)));
+        const idx = data.length === 1 ? 0 : Math.round(ratio * (data.length - 1));
+        this.activeDauIdx = idx;
+
+        const row = data[idx];
+        const tipTitle = document.getElementById('dauTipTitle');
+        const tipTotal = document.getElementById('dauTipTotal');
+        const tipWeb = document.getElementById('dauTipWeb');
+        const tipPlugin = document.getElementById('dauTipPlugin');
+        const tipCli = document.getElementById('dauTipCli');
+
+        if (tipTitle) tipTitle.textContent = row.date;
+        if (tipTotal) tipTotal.textContent = `${fmt(row.total)} UV`;
+        if (tipWeb) tipWeb.textContent = fmt(row.web);
+        if (tipPlugin) tipPlugin.textContent = fmt(row.plugin);
+        if (tipCli) tipCli.textContent = fmt(row.cli);
+
+        const snapX = data.length === 1 ? padLeft + plotW / 2 : padLeft + (idx / (data.length - 1)) * plotW;
+        dauTip.style.left = `${snapX}px`;
+        dauTip.style.top = `${Math.max(20, Math.min(rect.height - 70, mouseY - 15))}px`;
+        dauTip.style.display = 'block';
+
+        this.drawDauChart();
+      });
+
+      dauBox.addEventListener('mouseleave', () => {
+        dauTip.style.display = 'none';
+        this.activeDauIdx = -1;
+        this.drawDauChart();
       });
     }
 
@@ -2269,14 +2335,22 @@ class DashboardApp {
     const ov = this.currentSlice.overview;
     const dau = this.currentSlice.dau;
 
+    const isSingle = dau.isSingleDay;
+    const dauLabel = isSingle
+      ? (dau.targetDate === this.isoDayOffset(0) ? '今日全端日活' : '当日全端日活')
+      : '区间全端日活';
+    const dauVal = isSingle ? fmt(dau.today.total) : fmt(dau.windowTotals.total);
+    const dauSub = isSingle
+      ? `Web ${fmt(dau.today.web)} · 插件 ${fmt(dau.today.plugin)} · CLI ${fmt(dau.today.cli)}`
+      : `日均 ${fmt(Math.round(dau.windowTotals.total / Math.max(1, dau.series.length)))}/天 · 累计跨端人次`;
+
     const kpiItems = [
       { label: '解析请求总量', val: fmt(ov.resolve_request), sub: '歌单解析总请求', color: 'var(--t)' },
       { label: '成功解析歌单', val: fmt(ov.playlist_success + ov.user_success), sub: `成功率 ${pct(ov.success_rate)}`, color: 'var(--g)' },
       { label: '解析失败量', val: fmt(ov.resolve_failure), sub: `失败率 ${pct(100 - ov.success_rate)}`, color: ov.resolve_failure > 0 ? 'var(--w)' : 'var(--g)' },
       { label: '导出与快速复制', val: fmt(ov.export + ov.clipboard), sub: `${fmt(ov.export)} 导出 · ${fmt(ov.clipboard)} 剪贴`, color: 'var(--a)' },
-      { label: '今日全端日活', val: fmt(dau.today.total), sub: `Web ${fmt(dau.today.web)} · 插件 ${fmt(dau.today.plugin)} · CLI ${fmt(dau.today.cli)}`, color: 'var(--a)' },
+      { label: dauLabel, val: dauVal, sub: dauSub, color: 'var(--a)' },
       { label: '活跃客户端种类', val: fmt(ov.active_clients), sub: '覆盖生态接入端数', color: 'var(--t)' },
-      { label: '待审失败歌单', val: fmt(ov.pending_feedback), sub: ov.pending_feedback > 0 ? '待复现与修复' : '暂无待审异常', color: ov.pending_feedback > 0 ? 'var(--w)' : 'var(--g)' },
     ];
 
     const kpiEl = document.getElementById('overviewKpis');
@@ -2621,28 +2695,49 @@ class DashboardApp {
     if (!this.currentSlice) return;
     const dau = this.currentSlice.dau;
 
-    const delta = (today: number, yesterday: number): string => {
-      if (yesterday <= 0) return today > 0 ? '昨日无数据' : '较昨日持平';
-      const d = Math.round(((today - yesterday) / yesterday) * 1000) / 10;
-      return `较昨日 ${d >= 0 ? '+' : ''}${d.toFixed(1)}%`;
+    const delta = (curr: number, prev: number): string => {
+      if (prev <= 0) return curr > 0 ? '前日无数据' : '较前日持平';
+      const d = Math.round(((curr - prev) / prev) * 1000) / 10;
+      return `较前日 ${d >= 0 ? '+' : ''}${d.toFixed(1)}%`;
     };
 
-    const recent = dau.series.slice(-30);
-    const peak = recent.reduce((acc, p) => Math.max(acc, p.total), 0);
+    const isSingle = dau.isSingleDay;
+    const targetLabel = isSingle
+      ? (dau.targetDate === this.isoDayOffset(0) ? '今日' : '当日')
+      : '期末日';
+    const compLabel = dau.comparisonDate === this.isoDayOffset(-1) ? '昨日' : `前日 (${dau.comparisonDate.slice(5)})`;
 
-    const kpiItems = [
-      {
-        label: '今日全端日活用户',
-        val: fmt(dau.today.total),
-        sub: `昨日 ${fmt(dau.yesterday.total)} · ${delta(dau.today.total, dau.yesterday.total)}`,
-        color: 'var(--t)',
-      },
-      { label: '今日 Web 访客', val: fmt(dau.today.web), sub: `较昨日 ${delta(dau.today.web, dau.yesterday.web)}`, color: '#0284c7' },
-      { label: '今日插件活跃', val: fmt(dau.today.plugin), sub: `较昨日 ${delta(dau.today.plugin, dau.yesterday.plugin)}`, color: '#8b5cf6' },
-      { label: '今日 CLI 活跃', val: fmt(dau.today.cli), sub: `较昨日 ${delta(dau.today.cli, dau.yesterday.cli)}`, color: 'var(--g)' },
-      { label: '活跃客户端种类', val: String(dau.clients.length), sub: '覆盖生态接入端数', color: 'var(--a)' },
-      { label: '近 30 天日活峰值', val: fmt(peak), sub: '单日最高去重活跃', color: 'var(--w)' },
-    ];
+    const peak = dau.series.reduce((acc, p) => Math.max(acc, p.total), 0);
+    const dayCount = Math.max(1, dau.series.length);
+    const avg = Math.round(dau.windowTotals.total / dayCount);
+
+    const kpiItems = isSingle
+      ? [
+          {
+            label: `${targetLabel}全端日活用户`,
+            val: fmt(dau.today.total),
+            sub: `${compLabel} ${fmt(dau.yesterday.total)} · ${delta(dau.today.total, dau.yesterday.total)}`,
+            color: 'var(--t)',
+          },
+          { label: `${targetLabel} Web 访客`, val: fmt(dau.today.web), sub: `${compLabel} ${fmt(dau.yesterday.web)} · ${delta(dau.today.web, dau.yesterday.web)}`, color: '#0284c7' },
+          { label: `${targetLabel}插件活跃`, val: fmt(dau.today.plugin), sub: `${compLabel} ${fmt(dau.yesterday.plugin)} · ${delta(dau.today.plugin, dau.yesterday.plugin)}`, color: '#8b5cf6' },
+          { label: `${targetLabel} CLI 活跃`, val: fmt(dau.today.cli), sub: `${compLabel} ${fmt(dau.yesterday.cli)} · ${delta(dau.today.cli, dau.yesterday.cli)}`, color: 'var(--g)' },
+          { label: '活跃客户端种类', val: String(dau.clients.length), sub: '覆盖生态接入端数', color: 'var(--a)' },
+          { label: '当日日活峰值', val: fmt(dau.today.total), sub: '单日去重总活跃', color: 'var(--w)' },
+        ]
+      : [
+          {
+            label: '区间全端日活人次',
+            val: fmt(dau.windowTotals.total),
+            sub: `日均 ${fmt(avg)}/天 · 累计跨端人次`,
+            color: 'var(--t)',
+          },
+          { label: '区间 Web 访客累计', val: fmt(dau.windowTotals.web), sub: `日均 ${fmt(Math.round(dau.windowTotals.web / dayCount))}/天`, color: '#0284c7' },
+          { label: '区间插件活跃累计', val: fmt(dau.windowTotals.plugin), sub: `日均 ${fmt(Math.round(dau.windowTotals.plugin / dayCount))}/天`, color: '#8b5cf6' },
+          { label: '区间 CLI 活跃累计', val: fmt(dau.windowTotals.cli), sub: `日均 ${fmt(Math.round(dau.windowTotals.cli / dayCount))}/天`, color: 'var(--g)' },
+          { label: '活跃客户端种类', val: String(dau.clients.length), sub: '覆盖生态接入端数', color: 'var(--a)' },
+          { label: '区间最高日活峰值', val: fmt(peak), sub: '区间单日最高去重活跃', color: 'var(--w)' },
+        ];
 
     const kpiEl = document.getElementById('dauKpis');
     if (kpiEl) {
@@ -2659,10 +2754,24 @@ class DashboardApp {
         .join('');
     }
 
+    const thToday = document.getElementById('thDauToday');
+    const thYesterday = document.getElementById('thDauYesterday');
+    const thTotal = document.getElementById('thDauTotal');
+    if (thToday && thYesterday && thTotal) {
+      if (dau.isSingleDay) {
+        thToday.textContent = `当日活跃 (${dau.targetDate.slice(5)})`;
+        thYesterday.textContent = `前日活跃 (${dau.comparisonDate.slice(5)})`;
+        thTotal.textContent = '当日活跃 (UV)';
+      } else {
+        thToday.textContent = `期末日 (${dau.targetDate.slice(5)})`;
+        thYesterday.textContent = `前日 (${dau.comparisonDate.slice(5)})`;
+        thTotal.textContent = '周期累计人次';
+      }
+    }
+
     const tbody = document.getElementById('dauClientRows');
     if (tbody) {
-      // 网站（Web）行：数据沿用网站既有的 visitor_unique 匿名访客统计，
-      // 与其他渠道在同一张表里合并展示，避免“日活只有插件一家”的误解。
+      const webTotalVal = dau.isSingleDay ? dau.today.web : dau.windowTotals.web;
       const webRow = `
           <tr>
             <td>
@@ -2672,7 +2781,7 @@ class DashboardApp {
             <td><span class="badge" style="background:var(--l)">网页端</span></td>
             <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(dau.today.web)}</td>
             <td style="text-align:right;font-family:var(--mono)">${fmt(dau.yesterday.web)}</td>
-            <td style="text-align:right;font-family:var(--mono)">${fmt(this.currentSlice.overview.visitor_unique)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(webTotalVal)}</td>
           </tr>`;
       const integrationRows = dau.clients
         .map(
@@ -2705,8 +2814,18 @@ class DashboardApp {
     const el = document.getElementById('dauHourBars');
     if (!el || !this.currentSlice) return;
     const hours = this.currentSlice.dau.hours;
+    const isSingle = this.currentSlice.dau.isSingleDay;
+    const headTitle = document.getElementById('dauHourHeadTitle');
+    const headSub = document.getElementById('dauHourHeadSub');
+    if (headTitle) {
+      headTitle.textContent = isSingle ? '🕐 单日小时分布 (UTC)' : '🕐 小时活跃时段画像 (UTC)';
+    }
+    if (headSub) {
+      headSub.textContent = isSingle ? `所选日 (${this.currentSlice.dau.targetDate}) 小时活跃 (UV)` : '所选周期小时活跃累计';
+    }
+
     if (hours.length === 0) {
-      el.innerHTML = '<div style="color:var(--m);padding:8px 0;font-size:12px">筛选「单日」时展示该日的小时分布</div>';
+      el.innerHTML = '<div style="color:var(--m);padding:8px 0;font-size:12px">暂无小时分布数据</div>';
       return;
     }
     const max = Math.max(...hours.map((h) => h.total), 1);
@@ -2731,7 +2850,7 @@ class DashboardApp {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const data = this.currentSlice.dau.series.slice(-30);
+    const data = this.currentSlice.dau.series;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -2780,13 +2899,47 @@ class DashboardApp {
     }
     ctx.stroke();
 
-    const stepX = plotW / data.length;
-    const barW = Math.max(3, Math.min(22, stepX * 0.62));
     const stackOrder: Array<{ key: 'cli' | 'plugin' | 'web'; color: string }> = [
       { key: 'cli', color: '#10b981' },
       { key: 'plugin', color: '#8b5cf6' },
       { key: 'web', color: '#0284c7' },
     ];
+
+    if (data.length === 1) {
+      const d = data[0];
+      const cx = padLeft + plotW / 2;
+      const barW = Math.min(48, Math.max(28, plotW * 0.12));
+      const x0 = cx - barW / 2;
+      let yBase = padTop + plotH;
+      for (const seg of stackOrder) {
+        const val = Number(d[seg.key] || 0);
+        if (val <= 0) continue;
+        const segH = (val / maxVal) * plotH;
+        ctx.fillStyle = seg.color;
+        ctx.fillRect(x0, yBase - segH, barW, segH);
+        yBase -= segH;
+      }
+
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${fmt(d.total)} UV`, cx, Math.max(padTop + 14, yBase - 6));
+
+      if (this.activeDauIdx === 0) {
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x0 - 2, yBase - 2, barW + 4, padTop + plotH - yBase + 4);
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(d.date || ''), cx, h - 8);
+      return;
+    }
+
+    const stepX = plotW / data.length;
+    const barW = Math.max(3, Math.min(22, stepX * 0.62));
 
     // Stacked channel bars
     const totalPoints: Array<{ x: number; y: number }> = [];
@@ -2805,6 +2958,16 @@ class DashboardApp {
       totalPoints.push({ x: cx, y: padTop + plotH - (Number(d.total || 0) / maxVal) * plotH });
     });
 
+    if (this.activeDauIdx >= 0 && this.activeDauIdx < data.length) {
+      const activeD = data[this.activeDauIdx];
+      const cx = padLeft + stepX * this.activeDauIdx + stepX / 2;
+      const x0 = cx - barW / 2;
+      const totalH = (Number(activeD.total || 0) / maxVal) * plotH;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x0 - 2, padTop + plotH - totalH - 2, barW + 4, totalH + 4);
+    }
+
     // Total DAU line
     ctx.strokeStyle = '#f97316';
     ctx.lineWidth = 2;
@@ -2816,11 +2979,12 @@ class DashboardApp {
     ctx.stroke();
 
     ctx.fillStyle = '#f97316';
-    for (const pt of totalPoints) {
+    totalPoints.forEach((pt, i) => {
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 2.2, 0, Math.PI * 2);
+      const r = this.activeDauIdx === i ? 4 : 2.2;
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
       ctx.fill();
-    }
+    });
 
     // X-axis labels
     ctx.fillStyle = '#94a3b8';

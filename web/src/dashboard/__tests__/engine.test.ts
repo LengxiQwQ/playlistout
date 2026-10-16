@@ -7,7 +7,7 @@ import {
   reconcileClientEnv,
   reconcileDailyCore,
 } from '../engine';
-import type { AnalyticsSnapshot } from '../types';
+import type { AnalyticsSnapshot, FeedbackRow } from '../types';
 
 describe('Analytics Dashboard In-Memory Slice Engine', () => {
   const mockSnapshot: AnalyticsSnapshot = {
@@ -370,17 +370,138 @@ describe('Analytics Dashboard In-Memory Slice Engine', () => {
     ]);
   });
 
+  it('supports querying DAU for past single day with correct comparison date data', () => {
+    const snapshot: AnalyticsSnapshot = {
+      ...mockSnapshot,
+      dailyCore: [
+        { date: '2026-10-04', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 40 },
+        { date: '2026-10-05', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 60 },
+        { date: '2026-10-04', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 10 },
+        { date: '2026-10-05', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 15 },
+      ],
+      hourlyCore: [],
+      geo: [],
+      breakdowns: [],
+      clientEnv: [],
+    };
+
+    // When querying single day 2026-10-05, targetDate is 2026-10-05 and comparisonDate is 2026-10-04
+    const slice = buildAnalyticsSlice(snapshot, { from: '2026-10-05', to: '2026-10-05', exclude_my: false });
+    expect(slice.dau.targetDate).toBe('2026-10-05');
+    expect(slice.dau.comparisonDate).toBe('2026-10-04');
+    expect(slice.dau.isSingleDay).toBe(true);
+    expect(slice.dau.today).toEqual({ total: 75, web: 60, plugin: 15, cli: 0 });
+    expect(slice.dau.yesterday).toEqual({ total: 50, web: 40, plugin: 10, cli: 0 });
+
+    const mf = slice.dau.clients.find((c) => c.client === 'musicfree');
+    expect(mf).toMatchObject({
+      total: 15,
+      today: 15,
+      yesterday: 10,
+    });
+  });
+
+  it('filters feedback slice by platform, date, and status', () => {
+    const qqSlice = buildFeedbackSlice(mockSnapshot, { platform: 'qqmusic' });
+    expect(qqSlice.total).toBe(1);
+    expect(qqSlice.entries[0].platform).toBe('qqmusic');
+    expect(qqSlice.counts.pending).toBe(1);
+    expect(qqSlice.counts.resolved).toBe(0);
+
+    const neteaseSlice = buildFeedbackSlice(mockSnapshot, { platform: 'netease' });
+    expect(neteaseSlice.total).toBe(1);
+    expect(neteaseSlice.entries[0].platform).toBe('netease');
+
+    const dateSlice = buildFeedbackSlice(mockSnapshot, { from: '2026-10-05', to: '2026-10-05' });
+    expect(dateSlice.total).toBe(1);
+    expect(dateSlice.entries[0].id).toBe(2);
+  });
+
+  it('filters quarantine slice by platform, country, and date range', () => {
+    const customSnapshot: AnalyticsSnapshot = {
+      ...mockSnapshot,
+      quarantine: [
+        { id: 1, incident_date: '2026-10-04', reason: 'bot_ua', platform: 'qqmusic', country: 'CN', count: 5 },
+        { id: 2, incident_date: '2026-10-05', reason: 'bot_ua', platform: 'netease', country: 'US', count: 8 },
+      ],
+    };
+
+    const cnSlice = buildQuarantineSlice(customSnapshot, { country: 'CN' });
+    expect(cnSlice.totalRecords).toBe(1);
+    expect(cnSlice.quarantine[0].id).toBe(1);
+
+    const neteaseSlice = buildQuarantineSlice(customSnapshot, { platform: 'netease' });
+    expect(neteaseSlice.totalRecords).toBe(1);
+    expect(neteaseSlice.quarantine[0].id).toBe(2);
+  });
+
   it('defaults missing DAU fields to zero for older snapshots', () => {
     const slice = buildAnalyticsSlice(mockSnapshot, { from: '2026-10-04', to: '2026-10-05', exclude_my: false });
     expect(slice.overview.active_user).toBe(0);
-    expect(slice.dau).toEqual({
+    expect(slice.dau).toMatchObject({
       today: { total: 0, web: 0, plugin: 0, cli: 0 },
       yesterday: { total: 0, web: 0, plugin: 0, cli: 0 },
+      windowTotals: { total: 0, web: 0, plugin: 0, cli: 0 },
       series: [],
       hours: [],
       clients: [],
       countries: [],
       regions: [],
     });
+  });
+
+  it('does not double count visitor_unique in overview when platform is filtered', () => {
+    const customSnapshot: AnalyticsSnapshot = {
+      ...mockSnapshot,
+      dailyCore: [
+        {
+          date: '2026-10-05',
+          channel: 'web',
+          client_id: 'official_web',
+          platform: 'none',
+          metric: 'visitor_unique',
+          count: 50,
+        },
+        {
+          date: '2026-10-05',
+          channel: 'web',
+          client_id: 'official_web',
+          platform: 'qqmusic',
+          metric: 'resolve_request',
+          count: 10,
+        },
+      ],
+    };
+    const slice = buildAnalyticsSlice(customSnapshot, {
+      from: '2026-10-05',
+      to: '2026-10-05',
+      platform: 'qqmusic',
+    });
+    // overview visitor_unique must stay 50, not 100
+    expect(slice.overview.visitor_unique).toBe(50);
+    expect(slice.dau.today.total).toBe(50);
+  });
+
+  it('supports created_at fallback when filtering feedback by date range', () => {
+    const customSnapshot: AnalyticsSnapshot = {
+      ...mockSnapshot,
+      feedback: [
+        {
+          id: 101,
+          platform: 'qqmusic',
+          status: 'pending',
+          created_at: '2026-10-05T12:00:00Z',
+        } as unknown as FeedbackRow,
+        {
+          id: 102,
+          platform: 'netease',
+          status: 'pending',
+          created_at: '2026-10-01T12:00:00Z',
+        } as unknown as FeedbackRow,
+      ],
+    };
+    const slice = buildFeedbackSlice(customSnapshot, { from: '2026-10-05', to: '2026-10-05' });
+    expect(slice.total).toBe(1);
+    expect(slice.entries[0].id).toBe(101);
   });
 });

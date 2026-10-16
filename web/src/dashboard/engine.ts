@@ -445,6 +445,7 @@ export function matchesFilter<
     platform?: string;
     country?: string;
     region?: string;
+    metric?: string;
   },
 >(
   row: T,
@@ -460,6 +461,7 @@ export function matchesFilter<
   options: {
     includeGeo?: boolean;
     environment?: boolean;
+    platformAgnostic?: boolean;
     omit?: 'channel' | 'client' | 'platform' | 'country' | 'region';
   } = {},
 ): boolean {
@@ -467,20 +469,28 @@ export function matchesFilter<
   if (dateValue < filters.from || dateValue > filters.to) {
     return false;
   }
-  if (options.omit !== 'channel' && filters.channel && row.channel !== filters.channel) {
+  if (options.omit !== 'channel' && filters.channel && row.channel !== undefined && row.channel !== filters.channel) {
     return false;
   }
-  if (options.omit !== 'client' && filters.client && row.client_id !== filters.client) {
+  if (options.omit !== 'client' && filters.client && row.client_id !== undefined && row.client_id !== filters.client) {
     return false;
   }
-  if (!options.environment && options.omit !== 'platform' && filters.platform && row.platform !== filters.platform) {
+  if (
+    !options.environment &&
+    !options.platformAgnostic &&
+    options.omit !== 'platform' &&
+    filters.platform &&
+    row.platform !== undefined &&
+    row.platform !== 'none' &&
+    row.platform !== filters.platform
+  ) {
     return false;
   }
   if (options.includeGeo) {
-    if (options.omit !== 'country' && filters.country && row.country !== filters.country) {
+    if (options.omit !== 'country' && filters.country && row.country !== undefined && row.country !== filters.country) {
       return false;
     }
-    if (options.omit !== 'region' && filters.region && row.region !== filters.region) {
+    if (options.omit !== 'region' && filters.region && row.region !== undefined && row.region !== filters.region) {
       return false;
     }
   }
@@ -518,11 +528,6 @@ function addDauCount(
   if (!slot || !Number.isFinite(count) || count <= 0) return;
   totals[slot] += count;
   totals.total += count;
-}
-
-function utcDayKey(offsetDays = 0): string {
-  const d = new Date(Date.now() + offsetDays * 86_400_000);
-  return d.toISOString().slice(0, 10);
 }
 
 export function buildAnalyticsSlice(
@@ -708,10 +713,74 @@ export function buildAnalyticsSlice(
     'region',
   );
 
-  // ── DAU slice: per-day channel series, today/yesterday totals, clients, geo ──
+  // ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
+  const isSingleDay = fromDate === toDate;
+  const targetDate = toDate;
+  const shiftDate = (dateStr: string, offsetDays: number): string => {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + offsetDays));
+    return dt.toISOString().slice(0, 10);
+  };
+  const comparisonDate = shiftDate(targetDate, -1);
+
+  // For platform-agnostic metrics (visitor_unique, active_user, page_view), ensure they are not
+  // wiped out when a specific provider platform is selected
+  const dauFilteredSource = filters.platform
+    ? source.filter((row) =>
+        matchesFilter(row, filters, { includeGeo: geoActive, platformAgnostic: true }),
+      )
+    : filteredSource;
+
+  // Query source across all dates (without date restriction) to ensure targetDate and comparisonDate
+  // have full data even if comparisonDate < fromDate (or targetDate was a past date).
+  const allDatesSource = source.filter((row) =>
+    matchesFilter(
+      row,
+      { ...filters, from: '0000-00-00', to: '9999-99-99' },
+      { includeGeo: geoActive, platformAgnostic: true },
+    ),
+  );
+
+  const dauAllDatesMap = new Map<string, DauChannelTotals>();
+  const clientTargetMap = new Map<string, number>();
+  const clientCompMap = new Map<string, number>();
+  const clientChannelMap = new Map<string, string>();
+
+  for (const row of allDatesSource) {
+    const metric = String(row.metric || '').trim();
+    if (!DAU_METRICS.has(metric)) continue;
+    const date = String(row.date || '');
+    if (!date) continue;
+    const count = Number(row.count || 0);
+
+    let dt = dauAllDatesMap.get(date);
+    if (!dt) {
+      dt = emptyDauTotals();
+      dauAllDatesMap.set(date, dt);
+    }
+    addDauCount(dt, metric, String(row.channel || ''), count);
+
+    if (metric === 'active_user') {
+      const channel = String(row.channel || '').trim();
+      const client = String(row.client_id || '').trim();
+      if ((channel === 'plugin' || channel === 'cli') && client) {
+        clientChannelMap.set(client, channel);
+        if (date === targetDate) {
+          clientTargetMap.set(client, (clientTargetMap.get(client) || 0) + count);
+        }
+        if (date === comparisonDate) {
+          clientCompMap.set(client, (clientCompMap.get(client) || 0) + count);
+        }
+      }
+    }
+  }
+
   const dauByDate = new Map<string, DauChannelTotals>();
-  const dauClientTotals = new Map<string, DauClientRow>();
-  for (const row of filteredSource) {
+  const dauClientWindowTotals = new Map<string, number>();
+  const windowTotals = emptyDauTotals();
+
+  for (const row of dauFilteredSource) {
     const metric = String(row.metric || '').trim();
     if (!DAU_METRICS.has(metric)) continue;
     const date = String(row.date || '');
@@ -724,19 +793,14 @@ export function buildAnalyticsSlice(
       dauByDate.set(date, dayTotals);
     }
     addDauCount(dayTotals, metric, String(row.channel || ''), count);
+    addDauCount(windowTotals, metric, String(row.channel || ''), count);
 
     if (metric === 'active_user') {
       const channel = String(row.channel || '').trim();
       const client = String(row.client_id || '').trim();
       if ((channel === 'plugin' || channel === 'cli') && client) {
-        let clientEntry = dauClientTotals.get(client);
-        if (!clientEntry) {
-          clientEntry = { client, channel, total: 0, today: 0, yesterday: 0 };
-          dauClientTotals.set(client, clientEntry);
-        }
-        clientEntry.total += count;
-        if (date === utcDayKey(0)) clientEntry.today += count;
-        if (date === utcDayKey(-1)) clientEntry.yesterday += count;
+        clientChannelMap.set(client, channel);
+        dauClientWindowTotals.set(client, (dauClientWindowTotals.get(client) || 0) + count);
       }
     }
   }
@@ -744,19 +808,35 @@ export function buildAnalyticsSlice(
   const dauSeries: DauDailyPoint[] = Array.from(dauByDate.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, totals]) => ({ date, ...totals }));
-  const dauToday = dauByDate.get(utcDayKey(0)) || emptyDauTotals();
-  const dauYesterday = dauByDate.get(utcDayKey(-1)) || emptyDauTotals();
-  const dauClients = Array.from(dauClientTotals.values()).sort(
-    (a, b) => b.total - a.total || a.client.localeCompare(b.client),
-  );
+
+  const dauToday = dauAllDatesMap.get(targetDate) || dauByDate.get(targetDate) || emptyDauTotals();
+  const dauYesterday = dauAllDatesMap.get(comparisonDate) || dauByDate.get(comparisonDate) || emptyDauTotals();
+
+  const allClients = new Set([
+    ...clientChannelMap.keys(),
+    ...dauClientWindowTotals.keys(),
+    ...clientTargetMap.keys(),
+    ...clientCompMap.keys(),
+  ]);
+
+  const dauClients: DauClientRow[] = Array.from(allClients)
+    .map((client) => {
+      const channel = clientChannelMap.get(client) || 'plugin';
+      const total = dauClientWindowTotals.get(client) || 0;
+      const today = clientTargetMap.get(client) || 0;
+      const yesterday = clientCompMap.get(client) || 0;
+      return { client, channel, total, today, yesterday };
+    })
+    .filter((c) => c.total > 0 || c.today > 0 || c.yesterday > 0)
+    .sort((a, b) => b.total - a.total || b.today - a.today || a.client.localeCompare(b.client));
 
   let dauHours: DauHourlyPoint[] = [];
-  if (!geoActive && fromDate === toDate) {
+  if (!geoActive) {
     const dauByHour = new Map<number, number>();
     for (const row of hourly) {
       const metric = String(row.metric || '').trim();
       if (metric !== 'visitor_unique' && metric !== 'active_user') continue;
-      if (!matchesFilter(row, filters)) continue;
+      if (!matchesFilter(row, filters, { platformAgnostic: true })) continue;
       const h = Number(row.hour || 0);
       dauByHour.set(h, (dauByHour.get(h) || 0) + Number(row.count || 0));
     }
@@ -765,7 +845,10 @@ export function buildAnalyticsSlice(
       .map(([hour, total]) => ({ hour, total }));
   }
 
-  const dauGeoRows = filteredGeo.filter(
+  const dauGeoSource = filters.platform
+    ? geoRows.filter((r) => matchesFilter(r, filters, { includeGeo: true, platformAgnostic: true }))
+    : filteredGeo;
+  const dauGeoRows = dauGeoSource.filter(
     (row) => dauChannelFor(String(row.metric || '').trim(), String(row.channel || '')) !== null,
   );
   const dauCountries = sumBy(
@@ -918,8 +1001,12 @@ export function buildAnalyticsSlice(
       pending_feedback: fbPending,
     },
     dau: {
+      targetDate,
+      comparisonDate,
+      isSingleDay,
       today: dauToday,
       yesterday: dauYesterday,
+      windowTotals,
       series: dauSeries,
       hours: dauHours,
       clients: dauClients,
@@ -984,6 +1071,9 @@ export function buildQuarantineSlice(
     [fromDate, toDate] = [toDate, fromDate];
   }
   const reason = (query.reason || '').trim();
+  const platform = (query.platform || '').trim().toLowerCase();
+  const country = (query.country || '').trim().toUpperCase();
+  const region = (query.region || '').trim();
   const limit = Math.max(1, Math.min(500, query.limit || 100));
 
   const filtered = rows.filter((row) => {
@@ -991,6 +1081,9 @@ export function buildQuarantineSlice(
     if (fromDate && incDate < fromDate) return false;
     if (toDate && incDate > toDate) return false;
     if (reason && row.reason !== reason) return false;
+    if (platform && String(row.platform || '').toLowerCase() !== platform) return false;
+    if (country && String(row.country || '').toUpperCase() !== country) return false;
+    if (region && String(row.region || '') !== region) return false;
     return true;
   });
 
@@ -1021,6 +1114,27 @@ export function buildFeedbackSlice(
     allRows = allRows.filter((r) => String(r.country || '').toUpperCase() !== 'MY');
   }
 
+  let fromDate = (query.from || '').trim();
+  let toDate = (query.to || '').trim();
+  if (fromDate && toDate && fromDate > toDate) {
+    [fromDate, toDate] = [toDate, fromDate];
+  }
+  const platform = (query.platform || '').trim().toLowerCase();
+  const country = (query.country || '').trim().toUpperCase();
+  const region = (query.region || '').trim();
+
+  allRows = allRows.filter((r) => {
+    const reportDate = String(
+      r.last_reported_at || r.first_reported_at || (r as { created_at?: string }).created_at || '',
+    ).slice(0, 10);
+    if (fromDate && reportDate && reportDate < fromDate) return false;
+    if (toDate && reportDate && reportDate > toDate) return false;
+    if (platform && String(r.platform || '').toLowerCase() !== platform) return false;
+    if (country && String(r.country || '').toUpperCase() !== country) return false;
+    if (region && String(r.region || '') !== region) return false;
+    return true;
+  });
+
   const statusCounts = { all: allRows.length, pending: 0, resolved: 0, ignored: 0 };
   for (const r of allRows) {
     const s = String(r.status || 'pending').toLowerCase() as 'pending' | 'resolved' | 'ignored';
@@ -1038,8 +1152,12 @@ export function buildFeedbackSlice(
   }
 
   rows.sort((a, b) => {
-    const dateA = String(a.last_reported_at || a.first_reported_at || '');
-    const dateB = String(b.last_reported_at || b.first_reported_at || '');
+    const dateA = String(
+      a.last_reported_at || a.first_reported_at || (a as { created_at?: string }).created_at || '',
+    );
+    const dateB = String(
+      b.last_reported_at || b.first_reported_at || (b as { created_at?: string }).created_at || '',
+    );
     const dateComp = dateB.localeCompare(dateA);
     if (dateComp !== 0) return dateComp;
     return Number(b.id || 0) - Number(a.id || 0);

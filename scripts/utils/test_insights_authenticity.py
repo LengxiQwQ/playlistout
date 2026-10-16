@@ -21,6 +21,7 @@ from scripts.utils.dashboard import (
     FEEDBACK_PARAMS,
     HTML,
     Handler,
+    QUARANTINE_PARAMS,
     build_local_analytics,
     build_local_feedback,
     build_local_quarantine,
@@ -348,8 +349,157 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         )
         self.assertEqual(
             FEEDBACK_PARAMS,
-            {"status", "limit", "offset", "id", "exclude_my", "excludeMy"},
+            {
+                "status",
+                "limit",
+                "offset",
+                "id",
+                "from",
+                "to",
+                "platform",
+                "country",
+                "region",
+                "exclude_my",
+                "excludeMy",
+            },
         )
+        self.assertEqual(
+            QUARANTINE_PARAMS,
+            {
+                "limit",
+                "offset",
+                "reason",
+                "date",
+                "from",
+                "to",
+                "platform",
+                "country",
+                "region",
+                "exclude_my",
+                "excludeMy",
+            },
+        )
+
+    def test_dau_past_date_and_multi_day_calculation(self):
+        snapshot = {
+            "dailyCore": [
+                {
+                    "date": "2026-10-01",
+                    "channel": "web",
+                    "client_id": "none",
+                    "platform": "none",
+                    "metric": "visitor_unique",
+                    "count": 40,
+                },
+                {
+                    "date": "2026-10-01",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "none",
+                    "metric": "active_user",
+                    "count": 60,
+                },
+                {
+                    "date": "2026-10-02",
+                    "channel": "web",
+                    "client_id": "none",
+                    "platform": "none",
+                    "metric": "visitor_unique",
+                    "count": 50,
+                },
+                {
+                    "date": "2026-10-02",
+                    "channel": "plugin",
+                    "client_id": "musicfree",
+                    "platform": "none",
+                    "metric": "active_user",
+                    "count": 70,
+                },
+            ],
+            "hourlyCore": [
+                {
+                    "date": "2026-10-02",
+                    "hour": 10,
+                    "channel": "web",
+                    "client_id": "none",
+                    "platform": "none",
+                    "metric": "visitor_unique",
+                    "count": 15,
+                },
+            ],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+
+        # Single-day past date (2026-10-02): comparison date is 2026-10-01
+        res = build_local_analytics(snapshot, {"from": "2026-10-02", "to": "2026-10-02"})
+        dau = res["dau"]
+        self.assertTrue(dau["isSingleDay"])
+        self.assertEqual(dau["targetDate"], "2026-10-02")
+        self.assertEqual(dau["comparisonDate"], "2026-10-01")
+        self.assertEqual(dau["today"]["total"], 120)  # 50 + 70
+        self.assertEqual(dau["today"]["web"], 50)
+        self.assertEqual(dau["today"]["plugin"], 70)
+        self.assertEqual(dau["yesterday"]["total"], 100)  # 40 + 60
+        self.assertEqual(dau["yesterday"]["web"], 40)
+        self.assertEqual(dau["yesterday"]["plugin"], 60)
+        self.assertEqual(dau["windowTotals"]["total"], 120)
+
+        # Platform-agnostic: even when filtering by platform='qqmusic', visitor_unique (platform='none') is preserved
+        res_platform = build_local_analytics(snapshot, {"from": "2026-10-02", "to": "2026-10-02", "platform": "qqmusic"})
+        self.assertEqual(res_platform["dau"]["today"]["total"], 120)
+        # Overview metric must NOT be double-counted
+        self.assertEqual(res_platform["overview"]["visitor_unique"], 50)
+
+        # Multi-day window (2026-10-01 to 2026-10-02): 2 days
+        res_multi = build_local_analytics(snapshot, {"from": "2026-10-01", "to": "2026-10-02"})
+        dau_multi = res_multi["dau"]
+        self.assertFalse(dau_multi["isSingleDay"])
+        self.assertEqual(dau_multi["windowTotals"]["total"], 220)  # 120 + 100
+        self.assertEqual(len(dau_multi["series"]), 2)
+
+    def test_feedback_and_quarantine_multi_dimension_filtering(self):
+        snapshot = {
+            "dailyCore": [],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [
+                {"id": 1, "incident_date": "2026-10-01", "platform": "qqmusic", "country": "CN", "region": "Beijing", "count": 2},
+                {"id": 2, "incident_date": "2026-10-02", "platform": "netease", "country": "CN", "region": "Shanghai", "count": 5},
+                {"id": 3, "incident_date": "2026-10-02", "platform": "qqmusic", "country": "MY", "region": "Selangor", "count": 1},
+            ],
+            "feedback": [
+                {"id": 1, "created_at": "2026-10-01T10:00:00Z", "platform": "qqmusic", "country": "CN", "region": "Beijing", "status": "pending"},
+                {"id": 2, "created_at": "2026-10-02T10:00:00Z", "platform": "netease", "country": "CN", "region": "Shanghai", "status": "pending"},
+                {"id": 3, "created_at": "2026-10-02T12:00:00Z", "platform": "qqmusic", "country": "MY", "region": "Selangor", "status": "resolved"},
+            ],
+        }
+
+        # Filter feedback by date range
+        fb_date = build_local_feedback(snapshot, {"from": "2026-10-02", "to": "2026-10-02"})
+        self.assertEqual(fb_date["total"], 2)
+
+        # Filter feedback by platform
+        fb_plat = build_local_feedback(snapshot, {"platform": "qqmusic"})
+        self.assertEqual(fb_plat["total"], 2)
+
+        # Filter feedback by country
+        fb_cn = build_local_feedback(snapshot, {"country": "CN"})
+        self.assertEqual(fb_cn["total"], 2)
+
+        # Filter feedback with exclude_my
+        fb_no_my = build_local_feedback(snapshot, {"exclude_my": "1"})
+        self.assertEqual(fb_no_my["total"], 2)
+
+        # Filter quarantine by date and platform
+        q_filtered = build_local_quarantine(snapshot, {"from": "2026-10-02", "to": "2026-10-02", "platform": "netease"})
+        self.assertEqual(q_filtered["totalRecords"], 1)
+        self.assertEqual(q_filtered["quarantine"][0]["id"], 2)
 
     def test_exclude_my_deducts_malaysia_test_records_and_preserves_invariants(self):
         snapshot = {
