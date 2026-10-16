@@ -42,6 +42,7 @@ SAMPLE_PLAYLISTS = {
     "kugou": "https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/",
     "qishui": "https://qishui.douyin.com/s/iXHhKHhY/",
     "kuwo": "https://m.kuwo.cn/newh5app/playlist_detail/2311665489",
+    "migu": "https://c.migu.cn/0mp9YM",
 }
 
 DEFAULT_BASE_URL = "https://playlistout-api.lengxiqwq.com"
@@ -130,7 +131,7 @@ def main():
     parser.add_argument(
         "--playlist",
         default="netease",
-        help="Sample playlist key (netease, qqmusic, kugou, qishui) or full URL/ID",
+        help="Sample playlist key (netease, qqmusic, kugou, qishui, kuwo, migu) or full URL/ID",
     )
     parser.add_argument(
         "-n",

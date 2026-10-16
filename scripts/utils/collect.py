@@ -342,7 +342,7 @@ def compute_running_days(launched_at: str | None = None, today: dt.date | None =
 
 def format_platform_shares(by_platform: dict, lang: str) -> str:
     """Render every platform returned by the Worker; never silently drop a supported provider."""
-    preferred = ["qqmusic", "netease", "kugou", "kuwo", "qishui"]
+    preferred = ["qqmusic", "netease", "kugou", "kuwo", "qishui", "migu"]
     labels = {
         "zh": {
             "qqmusic": "QQ 音乐",
@@ -350,6 +350,7 @@ def format_platform_shares(by_platform: dict, lang: str) -> str:
             "kugou": "酷狗音乐",
             "kuwo": "酷我音乐",
             "qishui": "汽水音乐",
+            "migu": "咪咕音乐",
         },
         "en": {
             "qqmusic": "QQ Music",
@@ -357,6 +358,7 @@ def format_platform_shares(by_platform: dict, lang: str) -> str:
             "kugou": "KuGou Music",
             "kuwo": "Kuwo Music",
             "qishui": "QiShui Music",
+            "migu": "Migu Music",
         },
     }
 

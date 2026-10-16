@@ -39,6 +39,7 @@ class TestPublicInsightsAuthenticity(unittest.TestCase):
             "kugou": {"totalSuccess": 28},
             "kuwo": {"totalSuccess": 12},
             "qishui": {"totalSuccess": 8},
+            "migu": {"totalSuccess": 15},
         }
         zh = format_platform_shares(stats, "zh")
         self.assertIn("134 次", zh)
@@ -46,7 +47,9 @@ class TestPublicInsightsAuthenticity(unittest.TestCase):
         self.assertIn("28 次", zh)
         self.assertIn("12 次", zh)
         self.assertIn("8 次", zh)
+        self.assertIn("15 次", zh)
         self.assertIn("酷我音乐", zh)
+        self.assertIn("咪咕音乐", zh)
 
     def test_empty_platform_share_does_not_fabricate(self):
         value = format_platform_shares(

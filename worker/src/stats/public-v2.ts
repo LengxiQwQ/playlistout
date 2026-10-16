@@ -55,6 +55,7 @@ function emptyPublicStats(): PublicStatsResponse {
       kugou: { totalSuccess: 0, todaySuccess: 0 },
       qishui: { totalSuccess: 0, todaySuccess: 0 },
       kuwo: { totalSuccess: 0, todaySuccess: 0 },
+      migu: { totalSuccess: 0, todaySuccess: 0 },
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),

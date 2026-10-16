@@ -12,7 +12,7 @@
     Target API base URL (default: https://playlistout-api.lengxiqwq.com).
 
 .PARAMETER Playlist
-    Playlist identifier or sample name: 'netease', 'qqmusic', 'kugou', 'qishui', 'kuwo', or custom URL.
+    Playlist identifier or sample name: 'netease', 'qqmusic', 'kugou', 'qishui', 'kuwo', 'migu', or custom URL.
 
 .PARAMETER Count
     Number of consecutive requests to send (default: 10).
@@ -48,6 +48,7 @@ $SamplePlaylists = @{
     "kugou"   = "https://m.kugou.com/songlist/gcid_3zr52qfrzaz06a/"
     "qishui"  = "https://qishui.douyin.com/s/iXHhKHhY/"
     "kuwo"    = "https://m.kuwo.cn/newh5app/playlist_detail/2311665489"
+    "migu"    = "https://c.migu.cn/0mp9YM"
 }
 
 $TargetPlaylist = if ($SamplePlaylists.ContainsKey($Playlist.ToLower())) { $SamplePlaylists[$Playlist.ToLower()] } else { $Playlist }
