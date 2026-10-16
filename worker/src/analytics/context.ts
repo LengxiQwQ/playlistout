@@ -45,6 +45,7 @@ export const ANALYTICS_PLATFORMS_V2 = [
   'kugou',
   'qishui',
   'kuwo',
+  'migu',
   'unknown',
   'none',
 ] as const;

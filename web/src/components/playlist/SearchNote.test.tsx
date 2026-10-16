@@ -34,6 +34,7 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(screen.getByText('网易云音乐（可批量）')).toBeInTheDocument();
     expect(screen.getByText('酷狗音乐（未登录）')).toBeInTheDocument();
     expect(screen.getByText('酷我音乐')).toBeInTheDocument();
+    expect(screen.getByText('咪咕音乐')).toBeInTheDocument();
 
     // Click sample
     const sampleQQ = screen.getByText('QQ音乐批量');
@@ -45,6 +46,14 @@ describe('SearchNote Component (Phase 4)', () => {
     expect(handleSelectSample).toHaveBeenCalledWith(
       'https://m.kuwo.cn/newh5app/playlist_detail/2311665489',
       'kuwo',
+      'playlist',
+    );
+
+    const sampleMigu = screen.getByText('咪咕音乐示例');
+    fireEvent.click(sampleMigu);
+    expect(handleSelectSample).toHaveBeenCalledWith(
+      'https://c.migu.cn/0mp9YM',
+      'migu',
       'playlist',
     );
 
@@ -92,7 +101,7 @@ describe('SearchNote Component (Phase 4)', () => {
     );
 
     expect(screen.getByTestId('status-alert-error')).toBeInTheDocument();
-    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐公开歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/目前支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐公开歌单/)).toBeInTheDocument();
 
     const retryBtn = screen.getByRole('button', { name: '重试' });
     fireEvent.click(retryBtn);

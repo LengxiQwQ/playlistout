@@ -92,6 +92,7 @@ const BRAND_COLORS: Record<string, string> = {
   netease: '#ef4444',
   kugou: '#3b82f6',
   kuwo: '#ca8a04',
+  migu: '#db2777',
   qishui: '#f59e0b',
   'plugin:musicfree': '#8b5cf6',
   musicfree: '#8b5cf6',
@@ -184,6 +185,7 @@ function formatHumanLabel(val: string): string {
     netease: '网易云音乐',
     kugou: '酷狗音乐',
     kuwo: '酷我音乐',
+    migu: '咪咕音乐',
     qishui: '汽水音乐',
     desktop: '桌面电脑 (Desktop)',
     mobile: '移动手机 (Mobile)',
@@ -570,7 +572,7 @@ class DashboardApp {
             </div>
             <div class="field"><label for="filterChannel">来源渠道 Channel</label><select id="filterChannel"><option value="">全部</option><option>web</option><option>plugin</option><option>api</option><option>legacy_mixed</option></select></div>
             <div class="field"><label for="filterClient">接入端 Client</label><select id="filterClient"><option value="">全部</option></select></div>
-            <div class="field"><label for="filterPlatform">目标平台 Platform</label><select id="filterPlatform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option></select></div>
+            <div class="field"><label for="filterPlatform">目标平台 Platform</label><select id="filterPlatform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option></select></div>
             <div class="field"><label for="filterCountry">国家 Country</label><select id="filterCountry"><option value="">全部</option></select></div>
             <div class="field"><label for="filterRegion">地区 Region</label><select id="filterRegion"><option value="">全部</option></select></div>
             <div class="field" style="display:flex;align-items:end"><button id="resetFiltersBtn" class="ghost" style="width:100%">重置</button></div>

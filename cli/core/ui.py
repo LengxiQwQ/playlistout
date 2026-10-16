@@ -147,6 +147,13 @@ def color_blue(text: str) -> str:
     return text
 
 
+def color_magenta(text: str) -> str:
+    """洋红/桃粉加粗文本，用于咪咕音乐品牌色"""
+    if supports_color():
+        return f"\033[1;35m{text}\033[0m"
+    return text
+
+
 def get_platform_brand_color(platform_id: str = None, text: str = "") -> str:
     """
     根据平台 ID 或别名返回带品牌专属主题色的文本 (无色彩环境原样返回)。
@@ -155,6 +162,7 @@ def get_platform_brand_color(platform_id: str = None, text: str = "") -> str:
     - 酷狗音乐 (kugou / kg): 蓝色 (Bold Blue)
     - 酷我音乐 (kuwo / kw): 黄色 (Bold Yellow)
     - 汽水音乐 (qishui / qs / douyin): 青色 (Bold Cyan)
+    - 咪咕音乐 (migu / mg): 品红/桃粉 (Bold Magenta)
     """
     if not supports_color() or not platform_id or not text:
         return text
@@ -170,6 +178,8 @@ def get_platform_brand_color(platform_id: str = None, text: str = "") -> str:
         return color_yellow(text)
     elif pid in ("qishui", "qs", "douyin"):
         return color_cyan(text)
+    elif pid in ("migu", "mg"):
+        return color_magenta(text)
     return text
 
 

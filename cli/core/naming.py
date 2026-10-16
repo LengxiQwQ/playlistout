@@ -25,6 +25,7 @@ PLATFORM_DISPLAY_NAMES = {
     "kugou": "酷狗音乐",
     "kuwo": "酷我音乐",
     "qishui": "汽水音乐",
+    "migu": "咪咕音乐",
 }
 
 DEFAULT_PLATFORM_NAME = "音乐平台"

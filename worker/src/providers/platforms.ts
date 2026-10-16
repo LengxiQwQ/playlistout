@@ -1,7 +1,7 @@
 /**
  * Single source of truth for all supported music platforms in PlaylistOut.
  */
-export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'] as const;
+export const SUPPORTED_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu'] as const;
 export type SupportedPlatform = (typeof SUPPORTED_PLATFORMS)[number];
 
 export type ResolvePlatformParam = 'auto' | SupportedPlatform;

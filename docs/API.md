@@ -15,7 +15,7 @@ The Public API v1 powers both the official PlaylistOut web application and exter
 
 ## 2. Supported Music Platforms
 
-PlaylistOut officially supports 5 major music platforms:
+PlaylistOut officially supports 6 major music platforms:
 
 | Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
 | :--- | :--- | :--- | :---: | :---: | :---: |
@@ -24,6 +24,7 @@ PlaylistOut officially supports 5 major music platforms:
 | `kugou` | 酷狗音乐 / 概念版 | KuGou Music / Kugou Lite | • 普通版: ⚠️ 10-track preview (Zero-login) / ✅ 100% full (With Token Header)<br/>• 概念版 (Collection): ✅ Yes (100% full, zero-login) | ✅ Yes (Requires Token & Userid) | ✅ Supported (`Bearer` / `X-Kugou-*`) |
 | `kuwo` | 酷我音乐 | Kuwo Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web user export) | ❌ Not needed |
 | `qishui` | 汽水音乐 | Soda Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web profiles) | ❌ Not needed |
+| `migu` | 咪咕音乐 | Migu Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web user export) | ❌ Not needed |
 
 
 ---

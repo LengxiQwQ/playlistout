@@ -137,6 +137,8 @@ def get_platform_prompt_hint(adapter) -> str:
         return f"{colored_badge} 粘贴歌单链接/分享短链或输入歌单 ID（普通版输入 login 登录，概念版免登全量，输入 0 返回）："
     elif pid == "kuwo":
         return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
+    elif pid == "migu":
+        return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
     elif pid == "qishui":
         return f"{colored_badge} 粘贴歌单链接、抖音分享文案，或输入歌单 ID（输入 0 返回）："
     return f"{colored_badge} 粘贴歌单链接或输入歌单 ID（输入 0 返回）："
@@ -171,6 +173,7 @@ def main():
   - 酷狗音乐   (kugou / kg)
   - 酷我音乐   (kuwo / kw)
   - 汽水音乐   (qishui / qs / douyin)
+  - 咪咕音乐   (migu / mg)
 
 使用模式示例：
   1. 智能自动识别模式：
@@ -189,7 +192,7 @@ def main():
     parser.add_argument("--debug", action="store_true", help="显示详细错误堆栈信息 (调试模式)")
     parser.add_argument("input", nargs="?", help="歌单链接、短链、分享文案或纯数字 ID")
     parser.add_argument("-i", "--id", dest="opt_id", help="歌单链接、短链或 ID")
-    parser.add_argument("-p", "--platform", help="显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui 等)")
+    parser.add_argument("-p", "--platform", help="显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui, migu 等)")
     parser.add_argument("-o", "--output-dir", default="output", help="导出目录 (默认: output)")
     parser.add_argument("-f", "--format", default="all", help="导出格式: 1~5 或 all, xlsx, csv, json, txt, m3u8 (默认: all)")
     parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
@@ -225,7 +228,7 @@ def main():
         plt_norm = args.platform.lower().strip()
         reg_entry = PlatformRegistry.get(plt_norm)
         if not reg_entry:
-            print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
+            print(f"× 不支持的平台 '{args.platform}'。可选平台: netease, qqmusic, kugou, kuwo, qishui, migu", file=sys.stderr)
             sys.exit(2)
         plt_id = reg_entry.platform_id
 
@@ -291,7 +294,7 @@ def main():
 
         adapter = PlatformRegistry.get(target.platform.value)
         if not adapter:
-            print(f"× 不支持的平台 '{target.platform.value}'。可选平台: netease, qqmusic, kugou, kuwo, qishui", file=sys.stderr)
+            print(f"× 不支持的平台 '{target.platform.value}'。可选平台: netease, qqmusic, kugou, kuwo, qishui, migu", file=sys.stderr)
             sys.exit(2)
 
         # 平台专属参数与识别出的目标平台校验 (针对未传 -p 但通过 URL 识别的情况)

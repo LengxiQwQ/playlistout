@@ -69,7 +69,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleParse = useCallback(
     async (
       urlToParse?: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
       modeHint?: 'user' | 'playlist',
       isSample?: boolean,
       channelHint?: 'qishui' | 'douyin',
@@ -162,6 +162,8 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'qishui'
               : platformHint === 'kuwo'
               ? 'kuwo'
+              : platformHint === 'migu'
+              ? 'migu'
               : platformHint === 'qqmusic'
               ? 'qqmusic'
               : undefined;
@@ -240,6 +242,8 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'kugou'
               : validation.platform === 'qishui'
               ? 'qishui'
+              : validation.platform === 'migu'
+              ? 'migu'
               : validation.platform === 'qqmusic'
               ? 'qqmusic'
               : undefined;
@@ -308,6 +312,8 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'qishui'
               : validation.platform === 'kuwo'
               ? 'kuwo'
+              : validation.platform === 'migu'
+              ? 'migu'
               : 'qqmusic';
           const res = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, undefined, channelHint)
@@ -556,7 +562,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleQuickSample = useCallback(
     (
       sampleInput: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
       modeHint?: 'user' | 'playlist',
     ) => {
       setInputUrl(sampleInput);

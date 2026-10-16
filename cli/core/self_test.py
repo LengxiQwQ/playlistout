@@ -33,7 +33,7 @@ def run_self_test() -> int:
     try:
         from cli.platforms.registry import PlatformRegistry
         adapters = PlatformRegistry.list_all()
-        required_platforms = ["qqmusic", "netease", "kugou", "kuwo", "qishui"]
+        required_platforms = ["qqmusic", "netease", "kugou", "kuwo", "qishui", "migu"]
         missing = [p for p in required_platforms if not PlatformRegistry.get(p)]
         if missing:
             print(f"[-] Platform registry failure: missing adapters {missing}", file=sys.stderr)

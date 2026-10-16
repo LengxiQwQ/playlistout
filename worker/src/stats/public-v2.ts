@@ -5,7 +5,7 @@ import type {
 } from '../analytics/types';
 
 const LAUNCHED_AT = '2026-09-12';
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'] as const;
+const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu'] as const;
 const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'] as const;
 
 interface BaselineRow {

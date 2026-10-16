@@ -174,20 +174,37 @@ describe('Client-Side Input Validation', () => {
     expect(res3.platform).toBe('kuwo');
   });
 
+  it('accepts Migu playlist URLs as valid', () => {
+    const res1 = validatePlaylistInput('https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('short_link');
+    expect(res1.platform).toBe('migu');
+
+    const res2 = validatePlaylistInput('https://h5.nf.migu.cn/app/v4/p/share/playlist/index.html?id=236858196');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('single_playlist_url');
+    expect(res2.platform).toBe('migu');
+
+    const res3 = validatePlaylistInput('分享歌单 | 歌单1 https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172 （@咪咕音乐）');
+    expect(res3.valid).toBe(true);
+    expect(res3.kind).toBe('short_link');
+    expect(res3.platform).toBe('migu');
+  });
+
   it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐');
 
-    const res2 = validatePlaylistInput('https://music.migu.cn/v3/music/playlist/123');
+    const res2 = validatePlaylistInput('https://music.apple.com/us/playlist/today-hits/pl.f4d1060b52a24e1d9541540f92e4386f');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐与酷我音乐');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐或酷我音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐或咪咕音乐歌单链接');
   });
 });
 
@@ -228,8 +245,9 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
   const example5 = '【推荐】来自网易云音乐的是冷汐呀233 听过2984首歌，拥有11位粉丝 https://163cn.tv/bgpHWLfw';
   const example6 = '分享歌单: 是冷汐呀233喜欢的音乐 是冷汐呀233 https://music.163.com/m/playlist?id=2756674066&creatorId=1825474783';
   const example7 = '分享酷我歌单 https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar 赶紧去听听吧';
+  const example8 = '分享歌单 | 歌单1 https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172 （@咪咕音乐）';
 
-  it('extracts exact URLs from all 7 real-world platform share text samples', () => {
+  it('extracts exact URLs from all 8 real-world platform share text samples', () => {
     expect(extractCleanUrlOrInput(example1)).toBe('https://qishui.douyin.com/s/iXHhKHhY/');
     expect(extractCleanUrlOrInput(example2)).toBe('https://qishui.douyin.com/s/iXHhmCAW/');
     expect(extractCleanUrlOrInput(example3)).toBe(
@@ -244,6 +262,9 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
     );
     expect(extractCleanUrlOrInput(example7)).toBe(
       'https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar',
+    );
+    expect(extractCleanUrlOrInput(example8)).toBe(
+      'https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172',
     );
   });
 
@@ -309,6 +330,14 @@ describe('Share Text URL Auto-Cleaning (extractCleanUrlOrInput)', () => {
     expect(res7.platform).toBe('kuwo');
     expect(res7.cleanedInput).toBe(
       'https://m.kuwo.cn/newh5app/playlist_detail/2311665489?t=plantform&from=ar',
+    );
+
+    const res8 = validatePlaylistInput(example8);
+    expect(res8.valid).toBe(true);
+    expect(res8.kind).toBe('short_link');
+    expect(res8.platform).toBe('migu');
+    expect(res8.cleanedInput).toBe(
+      'https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172',
     );
   });
 

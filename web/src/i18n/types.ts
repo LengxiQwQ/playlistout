@@ -54,6 +54,7 @@ export interface Translations {
     sampleNetease: string;
     sampleQishui: string;
     sampleKuwo: string;
+    sampleMigu: string;
     sampleKugou: string;
     sampleKugouBatch: string;
     worksWith: string;
@@ -67,6 +68,8 @@ export interface Translations {
     platformQishuiDesc: string;
     platformKuwo: string;
     platformKuwoDesc: string;
+    platformMigu: string;
+    platformMiguDesc: string;
     kugouLoggedIn: string;
     kugouNotLoggedIn: string;
     kugouLoginBadge: string;

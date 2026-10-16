@@ -45,7 +45,9 @@ export function classifyInputType(input: string): InputType {
     /m\.kugou\.com/i.test(trimmed) ||
     /t\d?\.kugou\.com/i.test(trimmed) ||
     /(?:qishui\.douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com)\/s\//i.test(trimmed) ||
-    /m\.kuwo\.cn/i.test(trimmed)
+    /m\.kuwo\.cn/i.test(trimmed) ||
+    /(?:^|[^a-zA-Z0-9])c\.migu\.cn/i.test(trimmed) ||
+    /h5\.nf\.migu\.cn/i.test(trimmed)
   ) {
     return 'mobile_share_link';
   }
@@ -57,7 +59,8 @@ export function classifyInputType(input: string): InputType {
     /kugou\.com/i.test(trimmed) ||
     /qishui\.douyin\.com/i.test(trimmed) ||
     /music\.douyin\.com/i.test(trimmed) ||
-    /kuwo\.cn/i.test(trimmed)
+    /kuwo\.cn/i.test(trimmed) ||
+    /migu\.cn/i.test(trimmed)
   ) {
     return 'web_url';
   }

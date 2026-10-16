@@ -5,7 +5,7 @@ import { Sticker } from '../ui/Sticker';
 export interface SamplePresetsGridProps {
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
     modeHint?: 'user' | 'playlist',
   ) => void;
   hasKugouAuth?: boolean;
@@ -147,6 +147,28 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           }}
         >
           {t.search.sampleKuwo}
+        </Sticker>
+        <Sticker
+          type="button"
+          color="white"
+          rotateDeg={0.5}
+          onClick={() =>
+            onSelectSample(
+              'https://c.migu.cn/0mp9YM',
+              'migu',
+              'playlist',
+            )
+          }
+          className="font-handwriting"
+          style={{
+            padding: '0.35rem 0.9rem',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            fontFamily: 'var(--font-handwriting, cursive)',
+            cursor: 'pointer',
+          }}
+        >
+          {t.search.sampleMigu}
         </Sticker>
         <Sticker
           type="button"

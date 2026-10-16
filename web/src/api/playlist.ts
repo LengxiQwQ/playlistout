@@ -13,7 +13,7 @@ import { getKugouAuth } from '../utils/kugouAuth';
 export async function parsePlaylist(
   urlOrId: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo',
+  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
   authOptions?: { token?: string; userid?: string },
   isSample?: boolean,
   channel?: 'qishui' | 'douyin',

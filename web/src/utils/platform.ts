@@ -4,7 +4,7 @@
  * Designed for seamless extensibility across QQ Music, NetEase Cloud Music, KuGou, Kuwo, etc.
  */
 
-export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | string;
+export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | string;
 
 export interface PlatformConfig {
   id: string;
@@ -131,6 +131,26 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
         : /^https?:\/\//i.test(id)
         ? id
         : `https://www.kuwo.cn/playlist_detail/${id}`,
+  },
+  migu: {
+    id: 'migu',
+    name: '咪咕音乐',
+    nameEn: 'Migu Music',
+    color: 'pink',
+    badgeBg: '#fdf2f8',
+    badgeBorder: '#db2777',
+    userIdLabelZh: '咪咕 ID',
+    userIdLabelEn: 'Migu ID',
+    playlistStickerZh: '咪咕音乐歌单',
+    playlistStickerEn: 'Migu Music Playlist',
+    viewActionZh: '在咪咕音乐中查看 ↗',
+    viewActionEn: 'View on Migu Music ↗',
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://music.migu.cn/v5/#/playlist/${id}`,
   },
 };
 

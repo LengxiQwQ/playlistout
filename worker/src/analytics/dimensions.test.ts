@@ -25,12 +25,14 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyInputType('https://y.qq.com/n/ryqq/playlist/9044196528')).toBe('web_url');
       expect(classifyInputType('https://y.qq.com/n/ryqq_v2/playlist/9044196528')).toBe('web_url');
       expect(classifyInputType('y.qq.com/n/ryqq/playlist/12345')).toBe('web_url');
+      expect(classifyInputType('https://music.migu.cn/v5/#/playlist/236858196')).toBe('web_url');
     });
 
     it('classifies mobile share links', () => {
       expect(classifyInputType('https://i.y.qq.com/n2/m/share/details/taoge.html?id=9044196528')).toBe('mobile_share_link');
       expect(classifyInputType('https://i2.y.qq.com/n3/other/pages/details/playlist.html?id=9044196528')).toBe('mobile_share_link');
       expect(classifyInputType('https://y.qq.com/n/m/detail/taoge/index.html?id=12345')).toBe('mobile_share_link');
+      expect(classifyInputType('https://c.migu.cn/0mp9YM')).toBe('mobile_share_link');
     });
 
     it('classifies unknown inputs as other', () => {
@@ -176,6 +178,7 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyResolveRequestedPlatform('kugou')).toBe('kugou');
       expect(classifyResolveRequestedPlatform('qishui')).toBe('qishui');
       expect(classifyResolveRequestedPlatform('kuwo')).toBe('kuwo');
+      expect(classifyResolveRequestedPlatform('migu')).toBe('migu');
       expect(classifyResolveRequestedPlatform(undefined)).toBe('auto');
       expect(classifyResolveRequestedPlatform('spotify_secret_key')).toBe('unknown');
     });
@@ -186,6 +189,7 @@ describe('Analytics Dimension Classifiers', () => {
       expect(classifyAnalyticsPlatform('kugou')).toBe('kugou');
       expect(classifyAnalyticsPlatform('qishui')).toBe('qishui');
       expect(classifyAnalyticsPlatform('kuwo')).toBe('kuwo');
+      expect(classifyAnalyticsPlatform('migu')).toBe('migu');
       expect(classifyAnalyticsPlatform('other')).toBe('unknown');
       expect(classifyAnalyticsPlatform(undefined)).toBe('unknown');
     });

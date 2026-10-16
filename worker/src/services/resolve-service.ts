@@ -326,7 +326,8 @@ async function resolveServiceCore(
     rawPlatform === 'netease' ||
     rawPlatform === 'kugou' ||
     rawPlatform === 'qishui' ||
-    rawPlatform === 'kuwo'
+    rawPlatform === 'kuwo' ||
+    rawPlatform === 'migu'
   ) {
     normalizedPlatform = rawPlatform;
     tracking.requestedPlatform = rawPlatform;
@@ -337,7 +338,7 @@ async function resolveServiceCore(
     tracking.requestedPlatform = 'unknown';
     throw new ProviderError(
       'UNSUPPORTED_PLATFORM',
-      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui, kuwo.`,
+      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui, kuwo, migu.`,
       400,
     );
   }

@@ -14,6 +14,7 @@ from .qqmusic import QQMusicAdapter
 from .kugou import KugouAdapter
 from .kuwo import KuwoAdapter
 from .qishui import QishuiAdapter
+from .migu import MiguAdapter
 
 from cli.core.http import reset_gai_family
 
@@ -29,4 +30,5 @@ __all__ = [
     "KugouAdapter",
     "KuwoAdapter",
     "QishuiAdapter",
+    "MiguAdapter",
 ]

@@ -101,4 +101,18 @@ describe('Worker extractCleanUrlOrInput', () => {
     const protocolLess = 'www.kuwo.cn/playlist_detail/2311665489';
     expect(extractCleanUrlOrInput(protocolLess)).toBe('https://www.kuwo.cn/playlist_detail/2311665489');
   });
+
+  it('extracts Migu URL and protocol-less variants from share text', () => {
+    const shareText =
+      '分享歌单 | 歌单1 https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172 （@咪咕音乐）';
+    expect(extractCleanUrlOrInput(shareText)).toBe(
+      'https://c.migu.cn/0mp9YM?ifrom=33cd5775f04cbe24c3c95a47621c0172',
+    );
+
+    const protocolLessShort = 'c.migu.cn/0mp9YM';
+    expect(extractCleanUrlOrInput(protocolLessShort)).toBe('https://c.migu.cn/0mp9YM');
+
+    const protocolLessWeb = 'music.migu.cn/v5/#/playlist/236858196';
+    expect(extractCleanUrlOrInput(protocolLessWeb)).toBe('https://music.migu.cn/v5/#/playlist/236858196');
+  });
 });

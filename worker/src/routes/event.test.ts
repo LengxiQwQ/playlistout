@@ -114,7 +114,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       await Promise.allSettled(ctx._promises);
     });
 
-    it.each(['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo'])('accepts valid export for supported platform: %s', async (platform) => {
+    it.each(['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu'])('accepts valid export for supported platform: %s', async (platform) => {
       const request = new Request(baseUrl, {
         method: 'POST',
         headers: {
@@ -634,7 +634,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     it.each([
       'spotify',
       'apple',
-      'migu',
+      'tidal',
       'arbitrary_platform',
       '<script>alert(1)</script>',
     ])('rejects unsupported platform "%s" with UNSUPPORTED_PLATFORM', async (unsupportedPlatform) => {

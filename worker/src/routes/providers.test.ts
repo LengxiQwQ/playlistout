@@ -20,7 +20,7 @@ describe('Providers Route', () => {
     const body: any = await response.json();
     expect(body.success).toBe(true);
     expect(Array.isArray(body.data)).toBe(true);
-    expect(body.data.length).toBe(5);
+    expect(body.data.length).toBe(6);
 
     const ids = body.data.map((p: any) => p.id);
     expect(ids).toContain('qqmusic');
@@ -28,6 +28,7 @@ describe('Providers Route', () => {
     expect(ids).toContain('kugou');
     expect(ids).toContain('qishui');
     expect(ids).toContain('kuwo');
+    expect(ids).toContain('migu');
 
     const qq = body.data.find((p: any) => p.id === 'qqmusic');
     expect(qq.name).toBe('QQ 音乐');
@@ -42,7 +43,7 @@ describe('Providers Route', () => {
 
     const body: any = await response.json();
     expect(body.success).toBe(true);
-    expect(body.data.length).toBe(5);
+    expect(body.data.length).toBe(6);
   });
 
   it('rejects POST /api/providers with 405 Method Not Allowed', async () => {

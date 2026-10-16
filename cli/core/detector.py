@@ -21,6 +21,7 @@ class PlatformType(str, Enum):
     KUGOU = "kugou"
     KUWO = "kuwo"
     QISHUI = "qishui"
+    MIGU = "migu"
     AMBIGUOUS_DIGITS = "ambiguous_digits"
     UNKNOWN = "unknown"
 
@@ -66,7 +67,7 @@ def extract_clean_url_or_input(input_text: str) -> str:
 
     # 2. 匹配无协议前缀的各大音乐平台域名
     m_bare = re.search(
-        r'(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
+        r'(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn|(?:c\.|music\.|m\.music\.|h5\.nf\.)?migu\.cn)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
         trimmed,
         re.I
     )
@@ -178,7 +179,10 @@ class SmartDetector:
         url_to_check = text if (text.startswith("http://") or text.startswith("https://")) else (extract_url_from_text(text) or text)
 
         # 4. 如果是短链且允许重定向，先解析多跳重定向
-        is_shortlink = any(s in url_to_check for s in ("163cn.tv", "c6.y.qq.com", "fcgi-bin/u", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com", "t.kuwo.cn", "v.douyin.com", "/s/"))
+        is_shortlink = (
+            any(s in url_to_check for s in ("163cn.tv", "c6.y.qq.com", "fcgi-bin/u", "t.kugou.com", "t1.kugou.com", "t2.kugou.com", "t3.kugou.com", "t.kuwo.cn", "v.douyin.com", "/s/"))
+            or bool(re.search(r'(?:^|[/.\b])c\.migu\.cn', url_to_check))
+        )
         if is_shortlink and resolve_redirect:
             resolved = resolve_shortlink(url_to_check)
             if resolved:
@@ -207,6 +211,10 @@ class SmartDetector:
         if "kuwo.cn" in hostname:
             return PlatformType.KUWO, url_to_check
 
+        # 咪咕音乐
+        if "migu.cn" in hostname:
+            return PlatformType.MIGU, url_to_check
+
         # 汽水音乐 / 抖音音乐 (收紧：普通抖音短视频/图文不得误判为汽水歌单)
         if any(h in hostname for h in ("qishui.douyin.com", "qishui.com", "music.douyin.com", "v.douyin.com")):
             return PlatformType.QISHUI, url_to_check
@@ -225,6 +233,8 @@ class SmartDetector:
         raw_strip = raw_input.strip()
         if "汽水音乐" in raw_strip or "qishui" in raw_strip.lower():
             return PlatformType.QISHUI, url_to_check
+        if "咪咕音乐" in raw_strip or "migu" in raw_strip.lower():
+            return PlatformType.MIGU, url_to_check
         if "网易云音乐" in raw_strip or "163.com" in raw_strip.lower():
             return PlatformType.NETEASE, url_to_check
         if "QQ音乐" in raw_strip or "qqmusic" in raw_strip.lower():
@@ -272,6 +282,8 @@ class SmartDetector:
                 explicit_platform = PlatformType.KUWO
             elif norm_p in ("qishui", "douyin"):
                 explicit_platform = PlatformType.QISHUI
+            elif norm_p in ("migu", "mg"):
+                explicit_platform = PlatformType.MIGU
 
         # 1. 检查带标签前缀的用户或歌单输入 (保留标签语义)
         m_qq = re.search(r'(?:qq|uin|qq号)[:：\s]*(\d{4,15})\b', raw_strip, re.I)

@@ -257,6 +257,7 @@ export const RESOLVE_REQUESTED_PLATFORMS = [
   'kugou',
   'qishui',
   'kuwo',
+  'migu',
   'unknown',
 ] as const;
 export type ResolveRequestedPlatform = typeof RESOLVE_REQUESTED_PLATFORMS[number];
@@ -268,6 +269,7 @@ export const ANALYTICS_PLATFORMS = [
   'kugou',
   'qishui',
   'kuwo',
+  'migu',
   'unknown',
 ] as const;
 export type AnalyticsPlatform = typeof ANALYTICS_PLATFORMS[number];

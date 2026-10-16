@@ -152,7 +152,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const kugou = raw.kugou?.totalSuccess || 0;
     const qishui = raw.qishui?.totalSuccess || 0;
     const kuwo = raw.kuwo?.totalSuccess || 0;
-    const total = qq + netease + kugou + qishui + kuwo;
+    const migu = raw.migu?.totalSuccess || 0;
+    const total = qq + netease + kugou + qishui + kuwo + migu;
 
     if (total === 0) {
       return [
@@ -161,6 +162,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
         { id: 'qishui', name: getPlatformName('qishui', language), count: 0, pct: 0, color: '#65a30d' },
         { id: 'kugou', name: getPlatformName('kugou', language), count: 0, pct: 0, color: '#2563eb' },
         { id: 'kuwo', name: getPlatformName('kuwo', language), count: 0, pct: 0, color: '#ca8a04' },
+        { id: 'migu', name: getPlatformName('migu', language), count: 0, pct: 0, color: '#db2777' },
       ];
     }
 
@@ -169,6 +171,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const qishuiPct = Math.round((qishui / total) * 100);
     const kugouPct = Math.round((kugou / total) * 100);
     const kuwoPct = Math.round((kuwo / total) * 100);
+    const miguPct = Math.round((migu / total) * 100);
 
     return [
       { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: qqPct, color: '#059669' },
@@ -176,6 +179,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       { id: 'qishui', name: getPlatformName('qishui', language), count: qishui, pct: qishuiPct, color: '#65a30d' },
       { id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#2563eb' },
       { id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: kuwoPct, color: '#ca8a04' },
+      { id: 'migu', name: getPlatformName('migu', language), count: migu, pct: miguPct, color: '#db2777' },
     ];
   }, [stats?.byPlatform, language]);
 
