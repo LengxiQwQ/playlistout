@@ -1106,4 +1106,111 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
       expect(data.error.code).toBe('INVALID_INPUT');
     });
   });
+
+  describe('Daily Active Events & Registered Integration Gate', () => {
+    function activeRequest(headers: Record<string, string>, body: unknown = { type: 'active' }): Request {
+      return new Request(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      });
+    }
+
+    const pluginHeaders = {
+      'X-PlaylistOut-Client-Type': 'plugin',
+      'X-PlaylistOut-Client-Id': 'musicfree',
+      'X-PlaylistOut-Client-Version': '2.1.4',
+      'X-PlaylistOut-Device-Class': 'desktop',
+      'X-PlaylistOut-Host': 'windows',
+      'User-Agent': 'PlaylistOut-MusicFree/2.1.4 (desktop; windows)',
+    };
+
+    it('accepts {type:"active"} from a registered plugin without an Origin header', async () => {
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(activeRequest(pluginHeaders), mockEnv, ctx);
+
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+      expect(mockEnv.DB._statements.some((s) => s.includes('daily_active_hashes'))).toBe(true);
+    });
+
+    it('accepts {type:"active"} from the official CLI without an Origin header', async () => {
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(activeRequest({
+        'X-PlaylistOut-Client-Type': 'cli',
+        'X-PlaylistOut-Client-Id': 'official_cli',
+        'X-PlaylistOut-Client-Version': '2.3.0',
+        'X-PlaylistOut-Host': 'windows',
+      }), mockEnv, ctx);
+
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+      expect(mockEnv.DB._statements.some((s) => s.includes('daily_active_hashes'))).toBe(true);
+    });
+
+    it('silently no-ops active heartbeats from the web channel (no daily-active write)', async () => {
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(activeRequest({
+        Origin: 'https://playlistout.lengxiqwq.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36',
+      }, { type: 'active' }), mockEnv, ctx);
+
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+      expect(mockEnv.DB._statements.some((s) => s.includes('daily_active_hashes'))).toBe(false);
+    });
+
+    it('rejects an unregistered plugin without Origin with 403', async () => {
+      const response = await worker.fetch(activeRequest({
+        ...pluginHeaders,
+        'X-PlaylistOut-Client-Id': 'someone_else',
+      }), createMockEnv(), createMockCtx());
+
+      expect(response.status).toBe(403);
+    });
+
+    it('rejects a registered plugin that sends a disallowed browser Origin with 403', async () => {
+      const response = await worker.fetch(activeRequest({
+        ...pluginHeaders,
+        Origin: 'https://evil.example.com',
+      }), createMockEnv(), createMockCtx());
+
+      expect(response.status).toBe(403);
+    });
+
+    it('rejects active payloads with unknown fields', async () => {
+      const response = await worker.fetch(activeRequest(pluginHeaders, {
+        type: 'active',
+        platform: 'qqmusic',
+      }), createMockEnv(), createMockCtx());
+
+      expect(response.status).toBe(400);
+      const data = (await response.json()) as any;
+      expect(data.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('supports active events inside an official CLI batch payload', async () => {
+      const mockEnv = createMockEnv();
+      const ctx = createMockCtx();
+      const response = await worker.fetch(activeRequest({
+        'X-PlaylistOut-Client-Type': 'cli',
+        'X-PlaylistOut-Client-Id': 'official_cli',
+        'X-PlaylistOut-Client-Version': '2.3.0',
+        'X-PlaylistOut-Host': 'linux',
+      }, {
+        type: 'batch',
+        events: [
+          { type: 'active' },
+          { type: 'resolve', platform: 'qqmusic', outcome: 'success_playlist', trackCount: 10 },
+        ],
+      }), mockEnv, ctx);
+
+      expect(response.status).toBe(204);
+      await Promise.allSettled(ctx._promises);
+      expect(mockEnv.DB._statements.some((s) => s.includes('daily_active_hashes'))).toBe(true);
+    });
+  });
 });

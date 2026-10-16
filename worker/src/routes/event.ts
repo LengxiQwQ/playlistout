@@ -1,13 +1,17 @@
 /**
  * POST /api/event — Frontend Event Ingestion Endpoint
  *
- * Accepts export/clipboard/visit events from the frontend for analytics tracking.
+ * Accepts export/clipboard/visit/resolve/active events for analytics tracking.
  * Strictly enforces Event Origin Gate, strict Content-Type, actual byte size guard,
  * strict JSON schema (rejecting any unknown fields), and durable abuse rate limiting.
  *
  * PRIVACY & SECURITY:
  * - No user-identifying data accepted or stored.
  * - Client deviceId is strictly removed and rejected (UV determined by server-derived hash).
+ * - The `active` heartbeat carries no fields; daily-active deduplication uses a
+ *   server-derived truncated hash (never raw IP/UA) with 7-day retention.
+ * - Registered plugin/ecosystem integrations (declared via headers) are allowed
+ *   without an Origin header; unregistered ids and browser origins stay gated.
  * - Supported platforms: qqmusic, netease, kugou, qishui.
  * - Export formats strictly separated from clipboard copy modes.
  * - Track counts bounded to realistic maximums (<= 50,000).
@@ -38,8 +42,10 @@ import {
   recordVisitEventV2,
   recordResolveV2,
   recordBatchEventsV2,
+  recordActiveEventV2,
   normalizeClipboardModeV2,
 } from '../analytics/v2-recorder';
+import { REGISTERED_CLIENT_ID_SET } from '../analytics/context';
 import { isEventOriginAllowed } from '../cors';
 import { getClientIp, checkDurableRateLimit } from '../security/rate-limit';
 
@@ -74,14 +80,32 @@ export function validateSingleEventPayload(body: unknown): ValidationResult {
   }
 
   const type = obj.type.toLowerCase().trim();
-  if (type !== 'export' && type !== 'clipboard' && type !== 'visit' && type !== 'resolve') {
+  if (type !== 'export' && type !== 'clipboard' && type !== 'visit' && type !== 'resolve' && type !== 'active') {
     return {
       valid: false,
-      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export", "clipboard", "visit", or "resolve".' },
+      error: { code: 'INVALID_INPUT', message: 'Field "type" must be either "export", "clipboard", "visit", "resolve", or "active".' },
     };
   }
 
   const keys = Object.keys(obj);
+
+  // Active heartbeat payload schema: strictly only "type" is allowed.
+  // Heartbeats carry no client-supplied data; the server derives all dimensions.
+  if (type === 'active') {
+    for (const key of keys) {
+      if (key !== 'type') {
+        return {
+          valid: false,
+          error: { code: 'INVALID_INPUT', message: `Unknown field "${key}" in payload.` },
+        };
+      }
+    }
+
+    return {
+      valid: true,
+      payload: { type: 'active' },
+    };
+  }
 
   // Resolve payload schema (used by CLI and client telemetry)
   if (type === 'resolve') {
@@ -545,12 +569,17 @@ export async function handleEvent(
   }
 
   // 2. Exact Origin Gate: reject missing, null, or unauthorized origins before any parsing or DB access.
-  // Official CLI clients (declared via headers) are permitted without an Origin header.
-  // If an Origin header is present (e.g. from browser), it MUST pass isEventOriginAllowed, regardless of CLI headers.
+  // Official CLI clients and registered plugin/ecosystem integrations (declared via headers) are
+  // permitted without an Origin header. If an Origin header is present (e.g. from a browser), it
+  // MUST pass isEventOriginAllowed, regardless of CLI/plugin headers.
   const origin = request.headers.get('Origin');
   const declaredType = request.headers.get('x-playlistout-client-type')?.trim().toLowerCase();
   const declaredId = request.headers.get('x-playlistout-client-id')?.trim().toLowerCase();
   const isOfficialCli = declaredType === 'cli' && declaredId === 'official_cli' && !origin;
+  const isRegisteredIntegration =
+    (declaredType === 'plugin' || declaredType === 'app') &&
+    !!declaredId &&
+    REGISTERED_CLIENT_ID_SET.has(declaredId);
 
   if (origin) {
     if (!isEventOriginAllowed(origin)) {
@@ -571,7 +600,7 @@ export async function handleEvent(
         },
       );
     }
-  } else if (!isOfficialCli) {
+  } else if (!isOfficialCli && !isRegisteredIntegration) {
     return new Response(
       JSON.stringify({
         success: false,
@@ -759,6 +788,10 @@ export async function handleEvent(
           failureCode: payload.failureCode,
           endpoint: 'resolve',
         }),
+      );
+    } else if (payload.type === 'active') {
+      ctx.waitUntil(
+        recordActiveEventV2(env.DB, request),
       );
     }
   }

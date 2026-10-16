@@ -385,9 +385,11 @@ Retrieves all public playlists created by a specific user.
 GET /api/v1/stats
 ```
 
-Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports, platform distribution, and visitor metrics).
+Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports, platform distribution, and cross-client activity metrics).
 
-> 🛡️ **Privacy Notice on Visitor Metrics**: PlaylistOut deliberately avoids cross-day visitor identity tracking to maximize user privacy. Deduplication is performed strictly within individual UTC days (`visitorsToday`). The cumulative visitor metric (`cumulativeDailyVisitors`) represents the sum of daily unique visitor counts; the same visitor may be counted again across different days.
+> 🛡️ **Privacy Notice on Activity Metrics**: PlaylistOut deliberately avoids cross-day identity tracking to maximize user privacy. Deduplication is performed strictly within individual UTC days (`visitorsToday`). The cumulative metric (`cumulativeDailyVisitors`, 全端活跃人次) is the sum of daily deduplicated activity: Web daily-unique visitors plus Plugin/CLI daily-active users. The same person may be counted again across different days, and may be counted once per channel on the same day.
+
+> 🎯 **全端活跃人次（按天去重）口径**: Web = 每日去重访客（由服务端匿名哈希去重）；插件 = 加载即计（每日一次，旧版本插件在任意使用行为时由服务端派生计入）；CLI = 实际使用即计（解析/导出等行为时由服务端派生计入，`--no-telemetry` 用户不计入）。
 
 #### Response (`200 OK`)
 
@@ -423,9 +425,9 @@ Returns coarse, privacy-preserving aggregate statistics (parses, tracks, exports
 
 | Field | Type | Description |
 | :--- | :---: | :--- |
-| `cumulativeDailyVisitors` | `number` | **Canonical metric**: Cumulative Daily Unique Visits (累计日独立访问人次). Sum of daily deduplicated visitor counts. Does not perform cross-day tracking. |
+| `cumulativeDailyVisitors` | `number` | **Canonical metric**: 全端活跃人次（按天去重）. Cumulative sum of daily deduplicated activity: Web daily-unique visitors plus Plugin/CLI daily-active users. Does not perform cross-day tracking. |
 | `totalVisitors` | `number` | **Deprecated compatibility alias** for `cumulativeDailyVisitors`. Semantically identical; guaranteed equal to `cumulativeDailyVisitors`. NOT an all-time globally unique person count. |
-| `visitorsToday` | `number` | Daily Unique Visitors (今日独立访客). Coarse-grained count deduplicated within the current UTC day via anonymous salted cryptographic hash. |
+| `visitorsToday` | `number` | 今日全端活跃人次. Deduplicated within the current UTC day via anonymous salted cryptographic hashes (Web visitors + Plugin/CLI active users, 7-day hash retention). |
 
 #### Hourly Traffic Metrics
 
@@ -570,7 +572,20 @@ For backward compatibility with existing frontends, bookmarks, and automated scr
 ## 7.5 Frontend Event Ingestion & Client Trust Boundary (`POST /api/event`)
 
 ### Overview
-`POST /api/event` is an internal telemetry ingestion endpoint used exclusively by official PlaylistOut frontend clients for recording aggregate anonymous statistics (export formats, clipboard copy modes, and page visits).
+`POST /api/event` is an internal telemetry ingestion endpoint used exclusively by official PlaylistOut frontend clients for recording aggregate anonymous statistics (export formats, clipboard copy modes, page visits, resolve telemetry, and daily-active heartbeats).
+
+### Event Payload Types
+
+| `type` | Payload schema | Typical clients |
+| :--- | :--- | :--- |
+| `visit` | `{ "type": "visit", "referrerSource"?: <enum> }` | Web |
+| `export` | `{ "type": "export", "platform": <enum>, "format": <enum>, "trackCount"?: number }` | Web / CLI |
+| `clipboard` | `{ "type": "clipboard", "platform": <enum>, "format": <enum>, "trackCount"?: number }` | Web |
+| `resolve` | `{ "type": "resolve", "platform": <enum>, "outcome": <enum>, "trackCount"?, "latencyMs"?, "failureCode"? }` | CLI / plugins |
+| `active` | `{ "type": "active" }` — strictly no other fields | Plugins (daily heartbeat) / CLI |
+| `batch` | `{ "type": "batch", "events": [...] }` — up to 200 items | Official CLI |
+
+The `active` heartbeat carries no client-supplied data. The server derives channel, client id, country/region, UTC hour, and a truncated one-way dedup hash (`date + scope + IP + version-stripped UA + salt`); raw IP / UA are never stored, and dedup hashes are retained for 7 days (cross-client DAU).
 
 ### Client Event Trust Boundary & Analytics Trust Levels
 In public Single Page Applications (SPAs) without mandatory user login or hardware attestation, browser telemetry cannot achieve absolute cryptographic authenticity. PlaylistOut enforces a realistic, honest trust model:
@@ -589,10 +604,13 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
 1. **Event Origin Gate (Browser Boundary)**:
    - Only exact official origins (`https://playlistout.com`, `https://www.playlistout.com`, `https://playlistout.lengxiqwq.com`, `https://lengxiqwq.github.io`, and approved local dev ports) are permitted.
    - Missing Origin, `Origin: null`, wildcards, or unauthorized subdomains (e.g. `foo.lengxiqwq.com`, `fake.playlistout.com`) receive `403 FORBIDDEN` before any database access or body parsing.
+   - Exemptions for non-browser clients: the official CLI (`X-PlaylistOut-Client-Type: cli` + `official_cli`) and registered plugin/ecosystem integrations (`plugin`/`app` + a client id from the committed plugin registry, e.g. `musicfree`) may omit `Origin`. This matches the existing attribution trust model (declared headers; no new trust boundary) — unregistered ids still require a valid Origin.
+   - When an `Origin` header is present, it must pass validation regardless of client headers.
    - *Note*: Origin validation is a browser cross-origin boundary, not cryptographic authentication.
 2. **No Client-Driven UV Inflation**:
    - Client `deviceId` is strictly prohibited and rejected with `400 INVALID_INPUT` if present.
    - Daily unique visitors are deduplicated strictly via server-derived connection IP, server-observed UA signal, date, and salt.
+   - Daily-active users (plugin/CLI) use the same pattern: a truncated one-way hash of `date + scope + IP + version-stripped UA + salt` with 7-day retention; the `active` event itself carries no fields, and `active` from non-plugin/CLI channels is a silent no-op.
 3. **Data Minimization Before Transmission (Referrer Minimization)**:
    - Full `document.referrer` URLs, paths, search queries, fragments, and raw campaign parameters NEVER cross the network boundary.
    - Client performs coarse classification in-browser and transmits only `referrerSource` from a strict finite enum allowlist.
@@ -600,8 +618,8 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
    - Unknown/unrecognized categories are rejected with generic `400 INVALID_INPUT` without echoing invalid inputs.
 4. **Strict JSON & Schema Guard**:
    - `Content-Type` must be `application/json`.
-   - Body size must not exceed 1024 bytes (verified by chunked streaming reader).
-   - Any unknown/extra fields trigger `400 INVALID_INPUT`.
+   - Body size must not exceed 1024 bytes for standard single events (official CLI `batch` payloads: 65536 bytes max), verified by a chunked streaming reader.
+   - Any unknown/extra fields trigger `400 INVALID_INPUT` (the `active` heartbeat allows only `type`).
 5. **Cross-Isolate Durable Abuse Control**:
    - Fast in-memory burst guard + D1-backed ephemeral rate bucket (`60 requests / minute`).
    - Rate limit keys are short-lived salted one-way hashes (no raw IP stored).

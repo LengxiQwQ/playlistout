@@ -21,6 +21,7 @@ export { executeD1Query, validateMigrationHistory };
 
 export const REQUIRED_TABLES = [
   'daily_visitor_hashes',
+  'daily_active_hashes',
   'security_rate_limits',
   'quarantined_stats',
   'parse_feedback',
@@ -39,6 +40,7 @@ export const REQUIRED_TABLES = [
 
 export const REQUIRED_COLUMNS = {
   daily_visitor_hashes: ['date', 'hash'],
+  daily_active_hashes: ['date', 'scope', 'hash'],
   security_rate_limits: ['key', 'count', 'reset_at'],
   quarantined_stats: ['id', 'incident_date', 'batch_id', 'reason', 'source_table', 'platform', 'metric_or_dimension', 'count', 'details_json'],
   parse_feedback: ['id', 'url', 'error_code', 'platform', 'status', 'report_count', 'first_reported_at', 'last_reported_at', 'resolved_at'],
@@ -57,6 +59,7 @@ export const REQUIRED_COLUMNS = {
 
 export const REQUIRED_INDEXES = [
   'idx_visitor_hashes_date',
+  'idx_daily_active_hashes_date',
   'idx_security_rate_limits_reset_at',
   'idx_quarantined_date',
   'idx_quarantined_reason',

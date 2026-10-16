@@ -136,11 +136,21 @@ export interface ResolveEventPayload {
   failureCode?: string;
 }
 
+/**
+ * Anonymous daily-active heartbeat. Carries no payload fields by design; the
+ * server derives everything (channel, client id, country, hour, dedup hash)
+ * from declared headers and the request fingerprint.
+ */
+export interface ActiveEventPayload {
+  type: 'active';
+}
+
 export type SingleEventPayload =
   | ExportEventPayload
   | ClipboardEventPayload
   | VisitEventPayload
-  | ResolveEventPayload;
+  | ResolveEventPayload
+  | ActiveEventPayload;
 
 export interface BatchEventPayload {
   type: 'batch';

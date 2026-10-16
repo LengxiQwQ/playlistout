@@ -32,6 +32,7 @@ export const KNOWN_BUSINESS_TABLES = [
   'daily_performance_stats',
   'daily_clipboard_stats',
   'daily_visitor_hashes',
+  'daily_active_hashes',
   'security_rate_limits',
 ];
 

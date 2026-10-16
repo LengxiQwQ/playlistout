@@ -3,6 +3,7 @@ import { getClientIp } from '../security/rate-limit';
 import {
   createAnalyticsRequestContextV2,
   normalizeAnalyticsPlatformV2,
+  REGISTERED_CLIENT_ID_SET,
   type AnalyticsRequestContextV2,
   type AnalyticsPlatformV2,
 } from './context';
@@ -44,6 +45,91 @@ async function computeDailyVisitorHash(request: Request, date: string): Promise<
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')
     .slice(0, 16);
+}
+
+const ACTIVE_HASH_SALT = 'playlistout_a_salt_2026';
+const ACTIVE_HASH_RETENTION_DAYS = 7;
+
+/**
+ * Normalizes a client User-Agent for daily-active deduplication by stripping
+ * version numbers, e.g. "PlaylistOut-MusicFree/2.1.3 (desktop; windows)" →
+ * "PlaylistOut-MusicFree (desktop; windows)", so a same-day plugin or CLI
+ * upgrade cannot count the same person twice.
+ */
+function normalizeActiveUserAgent(ua: string): string {
+  return ua.trim().slice(0, 128).replace(/\/\d+(?:\.\d+)*/g, '');
+}
+
+async function computeDailyActiveHash(
+  request: Request,
+  date: string,
+  scope: string,
+): Promise<string> {
+  const ip = getClientIp(request);
+  const ua = normalizeActiveUserAgent(request.headers.get('user-agent') || '');
+  const payload = new TextEncoder().encode(`${date}:${scope}:${ip}:${ua}:${ACTIVE_HASH_SALT}`);
+  const digest = await crypto.subtle.digest('SHA-256', payload);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
+/**
+ * Daily active eligibility: registered plugin/ecosystem clients on the plugin
+ * channel, and the official CLI only. Web visitors are tracked separately via
+ * `visitor_unique` and must not be double counted here; unregistered plugins
+ * and anonymous API traffic never qualify.
+ */
+export function isDailyActiveEligible(ctx: AnalyticsRequestContextV2): boolean {
+  if (ctx.channel === 'plugin') return REGISTERED_CLIENT_ID_SET.has(ctx.clientId);
+  if (ctx.channel === 'cli') return ctx.clientId === 'official_cli';
+  return false;
+}
+
+export function dailyActiveScope(ctx: AnalyticsRequestContextV2): string {
+  return `${ctx.channel}:${ctx.clientId}`;
+}
+
+/**
+ * Records one daily-active user for eligible plugin / CLI traffic, deduplicated
+ * per (UTC date, scope, truncated hash). Returns true when a new active user was
+ * recorded. Callers treat failures as best-effort analytics.
+ */
+export async function maybeRecordDailyActiveV2(
+  db: D1Database,
+  request: Request,
+  ctx?: AnalyticsRequestContextV2,
+): Promise<boolean> {
+  const context = ctx || createAnalyticsRequestContextV2(request);
+  if (context.isAutomated) return false;
+  if (!isDailyActiveEligible(context)) return false;
+
+  const scope = dailyActiveScope(context);
+  const hash = await computeDailyActiveHash(request, context.date, scope);
+
+  let isNewActive = true;
+  try {
+    const result = await db.prepare(`
+      INSERT OR IGNORE INTO daily_active_hashes (date, scope, hash)
+      VALUES (?1, ?2, ?3)
+    `).bind(context.date, scope, hash).run();
+    if (result?.meta && typeof result.meta.changes === 'number') {
+      isNewActive = result.meta.changes > 0;
+    }
+  } catch {
+    isNewActive = true;
+  }
+
+  if (!isNewActive) return false;
+
+  await db.batch(coreUpsert(db, context, 'none', 'active_user', 1));
+
+  const cutoff = new Date(Date.now() - ACTIVE_HASH_RETENTION_DAYS * 86400 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  await db.prepare('DELETE FROM daily_active_hashes WHERE date < ?1').bind(cutoff).run();
+  return true;
 }
 
 async function recordAutomatedSecurityEvent(
@@ -273,6 +359,7 @@ export async function recordResolveV2(
 
     const statements = buildResolveStatementsV2(db, ctx, input);
     await db.batch(statements);
+    await maybeRecordDailyActiveV2(db, input.request, ctx);
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 resolve event:', err);
   }
@@ -290,6 +377,7 @@ export async function recordProductEventV2(
 
     const statements = buildProductEventStatementsV2(db, ctx, input);
     await db.batch(statements);
+    await maybeRecordDailyActiveV2(db, input.request, ctx);
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 product event:', err);
   }
@@ -309,6 +397,11 @@ export async function recordBatchEventsV2(
     const allStatements: D1PreparedStatement[] = [];
 
     for (const ev of events) {
+      if (ev.type === 'active') {
+        // Explicit heartbeat events carry no payload; the derived daily-active
+        // write below records (and deduplicates) the active user.
+        continue;
+      }
       if (ev.type === 'resolve') {
         allStatements.push(...buildResolveStatementsV2(db, ctx, {
           platform: ev.platform,
@@ -340,16 +433,32 @@ export async function recordBatchEventsV2(
       }
     }
 
-    if (allStatements.length === 0) return;
-
     // D1 batch limit: maximum 128 statements per batch. Chunk safely by 100.
     const CHUNK_SIZE = 100;
     for (let i = 0; i < allStatements.length; i += CHUNK_SIZE) {
       const chunk = allStatements.slice(i, i + CHUNK_SIZE);
       await db.batch(chunk);
     }
+
+    // Derived daily-active coverage (DAU plan §5.6): any eligible plugin / CLI
+    // telemetry marks the client as active for today, covering old client
+    // versions without a heartbeat.
+    await maybeRecordDailyActiveV2(db, request, ctx);
   } catch (err: unknown) {
     console.error('Failed to record Analytics V2 batch events:', err);
+  }
+}
+
+export async function recordActiveEventV2(
+  db: D1Database | undefined,
+  request: Request,
+): Promise<void> {
+  if (!db) return;
+  try {
+    const ctx = createAnalyticsRequestContextV2(request);
+    await maybeRecordDailyActiveV2(db, request, ctx);
+  } catch (err: unknown) {
+    console.error('Failed to record Analytics V2 active event:', err);
   }
 }
 

@@ -40,6 +40,7 @@ Client identification is analytics attribution only. It is **not authentication*
 - `clipboard`
 - `page_view`
 - `visitor_unique`
+- `active_user`
 - `rate_limited`
 
 Invariant for resolver traffic:
@@ -48,6 +49,20 @@ Invariant for resolver traffic:
 resolve_request = playlist_success + user_success + resolve_failure
 ```
 
+`active_user` semantics (cross-client DAU):
+
+- Counts exactly once per UTC day × scope × person, where scope is `plugin:<client-id>`
+  (registered plugin/ecosystem clients only) or `cli:official_cli` (official CLI only).
+- Web visitors are **not** counted here; the Web daily-active number is `visitor_unique`
+  on channel `web`. Unregistered plugins, anonymous API traffic, and unexpected channels
+  are silent no-ops.
+- Deduplication uses the ephemeral `daily_active_hashes` table (7-day retention): a
+  truncated one-way SHA-256 hash of `date + scope + IP + version-stripped UA + salt`.
+  Raw IP / UA are never stored; version stripping ensures a same-day client upgrade
+  cannot count the same person twice.
+- Written to `analytics_v2_daily_core` / `analytics_v2_hourly_core` / `analytics_v2_geo`
+  with `platform = 'none'`.
+
 ## Storage model
 
 - `analytics_v2_daily_core`: daily product counters by date/channel/client/platform/metric.
@@ -55,12 +70,14 @@ resolve_request = playlist_success + user_success + resolve_failure
 - `analytics_v2_geo`: approved product counters by coarse country/region. No city is stored in V2.
 - `analytics_v2_breakdown`: bounded operational dimensions such as failure code, latency bucket, provider path, export format, plugin version.
 - `analytics_v2_client_env`: coarse client environment only.
+- `daily_active_hashes`: ephemeral cross-client DAU dedup hashes (`date`, `scope`, truncated
+  hash) with 7-day retention; same privacy model as `daily_visitor_hashes`.
 
 Every V2 table stores base facts only. Totals are computed at query time.
 
 ## Privacy boundary
 
-V2 may correlate approved **product dimensions** (date, channel, registered client, platform) because they are necessary to answer product questions. It does not create user/session/request identities. Geography and client environment remain separate cubes from reliability dimensions, so a maintainer cannot reconstruct a single request by joining all dimensions.
+V2 may correlate approved **product dimensions** (date, channel, registered client, platform) because they are necessary to answer product questions. It does not create user/session/request identities. Geography and client environment remain separate cubes from reliability dimensions, so a maintainer cannot reconstruct a single request by joining all dimensions. Daily-active deduplication uses the same ephemeral-hash approach as Web visitors (`daily_active_hashes`, 7-day retention, no raw IP/UA stored).
 
 ## Historical migration policy
 
@@ -114,8 +131,27 @@ Rules:
   identifier is allowed.
 
 Reference implementations of centralized header injection are:
-- MusicFree plugin: `plugins/musicfree/src/index.js` (`getPluginHeaders()`)
+- MusicFree plugin: `plugins/musicfree/src/index.js` (`getPlaylistOutHeaders()`)
 - BBPlayer mobile client: `apps/mobile/src/lib/services/playlistOutService.ts` (`getPlaylistOutHeaders()`)
+
+## Cross-client daily active users (DAU)
+
+Daily active users are recorded per UTC day via the `active_user` metric:
+
+- **Web**: `visitor_unique` (channel `web`) — daily deduplicated visitors.
+- **Plugins / ecosystem clients**: `active_user` (channel `plugin`, `client_id = <registered id>`).
+  The MusicFree plugin sends a single `{ "type": "active" }` heartbeat at module load
+  (max once per day per device; native `fetch`, silent failure, no retry). The server also
+  **derives** the same daily-active write from any eligible plugin telemetry (resolve /
+  export / batch), so older plugin versions without heartbeat code are counted on first
+  use. Both paths share one dedup hash: at most one count per person per day per client.
+- **CLI**: `active_user` (channel `cli`, `client_id = official_cli`) — derived on the
+  server from real usage telemetry (resolve / export / batch); no extra client code and
+  no startup ping. `--no-telemetry` users are not counted.
+
+Public statistics (`/api/v1/stats`) sum the Web bridge with `active_user` to produce the
+全端活跃人次（按天去重） counters. `scripts/d1/verify-production-public-stats.js` computes
+the identical expected values and must be deployed in lockstep.
 
 ## Internal API
 
