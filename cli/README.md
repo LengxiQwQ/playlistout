@@ -16,7 +16,7 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 | 操作系统 | 下载文件 | 运行方式 |
 |---|---|---|
-| **Windows x64** | `PlaylistOut-CLI-v{version}-windows-x64.exe` | 直接双击运行，或在终端中运行（退出时保留窗口提示，绝不闪退） |
+| **Windows x64** | `PlaylistOut-CLI-v{version}-windows-x64.exe` | 直接双击运行，或在终端中运行 |
 | **macOS Apple Silicon (M系列)** | `PlaylistOut-CLI-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
 | **macOS Intel (x86_64)** | `PlaylistOut-CLI-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
 | **Linux x64** | `PlaylistOut-CLI-v{version}-linux-x64.tar.gz` | 终端执行 `tar -xzf PlaylistOut-CLI-*.tar.gz && ./PlaylistOut` |
