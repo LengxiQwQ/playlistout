@@ -18,26 +18,20 @@
 
 ---
 
-## 🚀 开始使用
+## 🚀 快速使用
 
-Playlist Out 提供网页版和本地 CLI，两种方式都可以完成歌单解析与导出。
+🌐 **在线网页版**：打开浏览器即可直接使用 👉 **[playlistout.lengxiqwq.com](https://playlistout.lengxiqwq.com/)**
 
-| 使用方式 | 适合场景 | 入口 |
-|---|---|---|
-| 🌐 **网页版** | 打开浏览器直接使用，无需安装 | [在线使用](https://playlistout.lengxiqwq.com/) |
-| 💻 **本地 CLI** | 在 Windows、Linux 或 macOS 本地运行 | [下载 CLI](https://github.com/LengxiQwQ/playlistout/releases/latest) |
+---
 
-使用流程：**复制歌单链接、分享文案或 ID → 解析歌单 → 选择需要的格式导出。**
+### 💻 本地 CLI（交互式 & 命令行参数模式）
 
-### 📦 终端玩家快速安装
+| 获取方式 | 适合场景 | 安装与使用 |
+| :--- | :--- | :--- |
+| ⚡ **包管理器安装** | 喜欢终端命令的玩家 | `npm install playlistout` (装完输入 `playlistout` 启动) |
+| 🗂️ **单文件免安装** | 喜欢桌面双击的用户 | [前往 Releases 下载单文件](https://github.com/LengxiQwQ/playlistout/releases/latest) |
 
-| 平台 | 安装与使用命令 | 状态 | 特性 |
-| :--- | :--- | :--- | :--- |
-| **📦 NPM** | `npm install -g playlistout`<br>*(安装后终端直接输入 `playlistout`)* | 🟢 **已上线** | 跨平台全生态支持，一次安装全局永久可用 |
-| **🪟 WinGet** | `winget install LengxiQwQ.PlaylistOut` | ⏳ *审核中* | Windows 官方商店包管理器，支持静默升级 |
-| **🍨 Scoop** | `scoop install playlistout` | ⏳ *审核中* | 极客友好，自动配置系统环境变量与开始菜单快捷方式 |
-
-本地 CLI 已打包完整运行环境，无需安装 Python；Playlist Out 直接解析公开歌单元数据，不建立用户账号，也不提供或存储音乐音频文件，各平台能力会随上游接口变化持续适配。
+> 💡 注：WinGet (`winget install LengxiQwQ.PlaylistOut`) 与 Scoop 官方源正在同步审核中。
 
 ---
 
