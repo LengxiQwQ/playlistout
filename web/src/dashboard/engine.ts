@@ -598,39 +598,44 @@ export const SYSTEM_TELEMETRY_MILESTONES: Record<
 };
 
 export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
-  let hasWeb = false;
-  let hasPlugin = false;
-  let hasCli = false;
+  let hasWebRow = false;
   let minWeb: string | null = null;
   let minPlugin: string | null = null;
   let minCli: string | null = null;
+  let maxDate: string | null = null;
 
   for (const row of rows) {
     const d = String(row.date || '').trim();
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    if (!maxDate || d > maxDate) maxDate = d;
     const m = String(row.metric || '').trim();
     const ch = String(row.channel || '').trim();
 
     if (m === 'visitor_unique' && (ch === 'web' || !ch)) {
-      hasWeb = true;
+      hasWebRow = true;
       if (!minWeb || d < minWeb) minWeb = d;
     } else if (m === 'active_user' && ch === 'plugin') {
-      hasPlugin = true;
       if (!minPlugin || d < minPlugin) minPlugin = d;
     } else if (m === 'active_user' && ch === 'cli') {
-      hasCli = true;
       if (!minCli || d < minCli) minCli = d;
     }
   }
 
-  const webStart = hasWeb
-    ? (minWeb || SYSTEM_TELEMETRY_MILESTONES.web.coverageStart)
-    : null;
+  const webMilestone = SYSTEM_TELEMETRY_MILESTONES.web.coverageStart;
+  const pluginMilestone = SYSTEM_TELEMETRY_MILESTONES.plugin.coverageStart;
+  const cliMilestone = SYSTEM_TELEMETRY_MILESTONES.cli.coverageStart;
+
+  const hasWeb = Boolean(hasWebRow || (maxDate && maxDate >= webMilestone) || !maxDate);
+  const webStart = minWeb || webMilestone;
+
+  const hasPlugin = Boolean(minPlugin || (maxDate && maxDate >= pluginMilestone) || !maxDate);
   const pluginStart = hasPlugin
-    ? (minPlugin || SYSTEM_TELEMETRY_MILESTONES.plugin.coverageStart)
+    ? (minPlugin && minPlugin < pluginMilestone ? minPlugin : pluginMilestone)
     : null;
+
+  const hasCli = Boolean(minCli || (maxDate && maxDate >= cliMilestone) || !maxDate);
   const cliStart = hasCli
-    ? (minCli || SYSTEM_TELEMETRY_MILESTONES.cli.coverageStart)
+    ? (minCli && minCli < cliMilestone ? minCli : cliMilestone)
     : null;
 
   return {
@@ -1033,20 +1038,39 @@ export function buildAnalyticsSlice(
     }
   }
 
-  const dauSeries: DauDailyPoint[] = Array.from(dauByDate.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, totals]) => {
-      const webUncollected = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && date < coverage.web.earliestDate);
-      const pluginUncollected = Boolean(coverage.plugin.hasCoverage && coverage.plugin.earliestDate && date < coverage.plugin.earliestDate);
-      const cliUncollected = Boolean(coverage.cli.hasCoverage && coverage.cli.earliestDate && date < coverage.cli.earliestDate);
-      return {
-        date,
-        ...totals,
-        webUncollected,
-        pluginUncollected,
-        cliUncollected,
-      };
-    });
+  const dauSeries: DauDailyPoint[] = [];
+  if (dauAllDatesMap.size > 0 || dauByDate.size > 0) {
+    if (fromDate && toDate && /^\d{4}-\d{2}-\d{2}$/.test(fromDate) && /^\d{4}-\d{2}-\d{2}$/.test(toDate) && fromDate <= toDate) {
+      let curr = fromDate;
+      while (curr <= toDate) {
+        const totals = dauByDate.get(curr) || emptyDauTotals();
+        const webUncollected = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && curr < coverage.web.earliestDate);
+        const pluginUncollected = Boolean(coverage.plugin.hasCoverage && coverage.plugin.earliestDate && curr < coverage.plugin.earliestDate);
+        const cliUncollected = Boolean(coverage.cli.hasCoverage && coverage.cli.earliestDate && curr < coverage.cli.earliestDate);
+        dauSeries.push({
+          date: curr,
+          ...totals,
+          webUncollected,
+          pluginUncollected,
+          cliUncollected,
+        });
+        curr = shiftDate(curr, 1);
+      }
+    } else {
+      for (const [date, totals] of Array.from(dauByDate.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+        const webUncollected = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && date < coverage.web.earliestDate);
+        const pluginUncollected = Boolean(coverage.plugin.hasCoverage && coverage.plugin.earliestDate && date < coverage.plugin.earliestDate);
+        const cliUncollected = Boolean(coverage.cli.hasCoverage && coverage.cli.earliestDate && date < coverage.cli.earliestDate);
+        dauSeries.push({
+          date,
+          ...totals,
+          webUncollected,
+          pluginUncollected,
+          cliUncollected,
+        });
+      }
+    }
+  }
 
   const dauToday = dauAllDatesMap.get(targetDate) || dauByDate.get(targetDate) || emptyDauTotals();
   const dauYesterday = dauAllDatesMap.get(comparisonDate) || dauByDate.get(comparisonDate) || emptyDauTotals();
@@ -1176,7 +1200,8 @@ export function buildAnalyticsSlice(
       if (dayInc[h].total > 0) hasData = true;
       dayCum.push(cum);
     }
-    if (hasData) {
+    const isCovered = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && bDate >= coverage.web.earliestDate);
+    if (isCovered || hasData) {
       baselineHourlyCumulative.push(dayCum);
     }
   }
@@ -1499,8 +1524,11 @@ export function buildAnalyticsSlice(
       for (let o = 0; o < 7; o++) {
         const d = shiftDate(pt.date, -o);
         const dayTotals = dauAllDatesMap.get(d);
+        const isCovered = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && d >= coverage.web.earliestDate);
         if (dayTotals !== undefined) {
           sum7 += dayTotals.total;
+          validDays++;
+        } else if (isCovered) {
           validDays++;
         }
       }
@@ -2234,3 +2262,20 @@ export function buildFeedbackSlice(
     },
   };
 }
+
+export function normalizeDauCompareMode(
+  mode: import('./types').DauCompareMode,
+  isSingle: boolean,
+): import('./types').DauCompareMode {
+  if (isSingle) {
+    if (mode === 'prev_period') {
+      return 'auto';
+    }
+  } else {
+    if (mode === 'seven_day_baseline') {
+      return 'auto';
+    }
+  }
+  return mode;
+}
+

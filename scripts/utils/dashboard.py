@@ -99,35 +99,51 @@ SYSTEM_TELEMETRY_MILESTONES = {
 
 
 def detect_dau_coverage(rows: list[dict]) -> dict:
-    has_web = False
-    has_plugin = False
-    has_cli = False
+    has_web_row = False
     min_web = None
     min_plugin = None
     min_cli = None
+    max_date = None
 
     for r in rows:
         d_str = str(r.get("date", "")).strip()
-        if not d_str:
+        if not d_str or len(d_str) != 10:
             continue
+        if not max_date or d_str > max_date:
+            max_date = d_str
         m_str = str(r.get("metric", "")).strip()
         ch_str = str(r.get("channel", "")).strip()
         if m_str == "visitor_unique" and (ch_str == "web" or not ch_str):
-            has_web = True
+            has_web_row = True
             if not min_web or d_str < min_web:
                 min_web = d_str
         elif m_str == "active_user" and ch_str == "plugin":
-            has_plugin = True
             if not min_plugin or d_str < min_plugin:
                 min_plugin = d_str
         elif m_str == "active_user" and ch_str == "cli":
-            has_cli = True
             if not min_cli or d_str < min_cli:
                 min_cli = d_str
 
-    web_start = (min_web or SYSTEM_TELEMETRY_MILESTONES["web"]["coverageStart"]) if has_web else None
-    plugin_start = (min_plugin or SYSTEM_TELEMETRY_MILESTONES["plugin"]["coverageStart"]) if has_plugin else None
-    cli_start = (min_cli or SYSTEM_TELEMETRY_MILESTONES["cli"]["coverageStart"]) if has_cli else None
+    web_milestone = SYSTEM_TELEMETRY_MILESTONES["web"]["coverageStart"]
+    plugin_milestone = SYSTEM_TELEMETRY_MILESTONES["plugin"]["coverageStart"]
+    cli_milestone = SYSTEM_TELEMETRY_MILESTONES["cli"]["coverageStart"]
+
+    has_web = bool(has_web_row or (max_date and max_date >= web_milestone) or not max_date)
+    web_start = min_web or web_milestone
+
+    has_plugin = bool(min_plugin or (max_date and max_date >= plugin_milestone) or not max_date)
+    plugin_start = (
+        (min_plugin if (min_plugin and min_plugin < plugin_milestone) else plugin_milestone)
+        if has_plugin
+        else None
+    )
+
+    has_cli = bool(min_cli or (max_date and max_date >= cli_milestone) or not max_date)
+    cli_start = (
+        (min_cli if (min_cli and min_cli < cli_milestone) else cli_milestone)
+        if has_cli
+        else None
+    )
 
     return {
         "web": {"earliestDate": web_start, "hasCoverage": has_web},
@@ -972,16 +988,31 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     today_utc = (str(snapshot.get("generatedAt") or "")[:10]) or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     is_today = is_single_day and (target_date == today_utc)
 
-    dau_series = [
-        {
-            "date": d,
-            **totals,
-            "webUncollected": bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and d < coverage["web"]["earliestDate"]),
-            "pluginUncollected": bool(coverage["plugin"]["hasCoverage"] and coverage["plugin"]["earliestDate"] and d < coverage["plugin"]["earliestDate"]),
-            "cliUncollected": bool(coverage["cli"]["hasCoverage"] and coverage["cli"]["earliestDate"] and d < coverage["cli"]["earliestDate"]),
-        }
-        for d, totals in sorted(dau_by_date.items(), key=lambda it: it[0])
-    ]
+    dau_series = []
+    if dau_all_dates_map or dau_by_date:
+        if from_date and to_date and len(from_date) == 10 and len(to_date) == 10 and from_date <= to_date:
+            curr = from_date
+            while curr <= to_date:
+                totals = dau_by_date.get(curr) or _empty_dau_totals()
+                dau_series.append({
+                    "date": curr,
+                    **totals,
+                    "webUncollected": bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and curr < coverage["web"]["earliestDate"]),
+                    "pluginUncollected": bool(coverage["plugin"]["hasCoverage"] and coverage["plugin"]["earliestDate"] and curr < coverage["plugin"]["earliestDate"]),
+                    "cliUncollected": bool(coverage["cli"]["hasCoverage"] and coverage["cli"]["earliestDate"] and curr < coverage["cli"]["earliestDate"]),
+                })
+                curr = _shift_date(curr, 1)
+        else:
+            dau_series = [
+                {
+                    "date": d,
+                    **totals,
+                    "webUncollected": bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and d < coverage["web"]["earliestDate"]),
+                    "pluginUncollected": bool(coverage["plugin"]["hasCoverage"] and coverage["plugin"]["earliestDate"] and d < coverage["plugin"]["earliestDate"]),
+                    "cliUncollected": bool(coverage["cli"]["hasCoverage"] and coverage["cli"]["earliestDate"] and d < coverage["cli"]["earliestDate"]),
+                }
+                for d, totals in sorted(dau_by_date.items(), key=lambda it: it[0])
+            ]
 
     dau_today = dau_all_dates_map.get(target_date) or dau_by_date.get(target_date) or _empty_dau_totals()
     dau_yesterday = dau_all_dates_map.get(comparison_date) or dau_by_date.get(comparison_date) or _empty_dau_totals()
@@ -1102,7 +1133,8 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             if day_inc[h]["total"] > 0:
                 has_data = True
             day_cum.append(cum)
-        if has_data:
+        is_covered = bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and b_date >= coverage["web"]["earliestDate"])
+        if is_covered or has_data:
             baseline_hourly_cumulative.append(day_cum)
 
     seven_day_baseline = []
@@ -1359,8 +1391,11 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             for o in range(7):
                 d = _shift_date(pt["date"], -o)
                 day_totals = dau_all_dates_map.get(d)
+                is_covered = bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and d >= coverage["web"]["earliestDate"])
                 if day_totals is not None:
                     sum7 += day_totals["total"]
+                    valid_days += 1
+                elif is_covered:
                     valid_days += 1
             ma7_val = round(sum7 / valid_days) if valid_days > 0 else pt["total"]
             pt["ma7"] = ma7_val

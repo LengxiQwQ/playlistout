@@ -10,6 +10,7 @@ import {
   buildAnalyticsSlice,
   buildFeedbackSlice,
   buildQuarantineSlice,
+  normalizeDauCompareMode,
   resolvePageFilterParams,
 } from './engine';
 import type {
@@ -19,6 +20,7 @@ import type {
   QuarantineRow,
   CountItem,
   DauCumulativeHourlyPoint,
+  DauCompareMode,
   FilterDimension,
   FilterParams,
 } from './types';
@@ -891,7 +893,7 @@ class DashboardApp {
     'ma7',
     'prevPeriod',
   ]);
-  private dauCompareMode: 'auto' | 'seven_day_baseline' | 'prev_period' | 'none' = 'auto';
+  private dauCompareMode: DauCompareMode = 'auto';
   private activeWebTrendIdx = -1;
   private webCompareMode = false;
   private selectedIntegrationClient = '';
@@ -3877,10 +3879,18 @@ class DashboardApp {
     this.renderBars('migrationProviderBars', b['migration_provider'] || []);
   }
 
+  private normalizeDauCompareMode(isSingle: boolean): void {
+    this.dauCompareMode = normalizeDauCompareMode(this.dauCompareMode, isSingle);
+    if (!isSingle && this.dauCompareMode === 'none') {
+      this.dauActiveSeries.delete('prevPeriod');
+    }
+  }
+
   private renderDauTab(): void {
     if (!this.currentSlice) return;
     const dau = this.currentSlice.dau;
     const isSingle = dau.isSingleDay;
+    this.normalizeDauCompareMode(isSingle);
 
     // 1. Mode Badge
     const modeBadge = document.getElementById('dauModeBadge');
@@ -4160,8 +4170,12 @@ class DashboardApp {
             ${seriesDefs
               .map((s) => {
                 const active = this.dauActiveSeries.has(s.key);
+                const isBlocked = s.key === 'prevPeriod' && this.dauCompareMode === 'none';
+                const opacity = isBlocked ? '0.2' : (active ? '1' : '0.35');
+                const cursor = isBlocked ? 'not-allowed' : 'pointer';
+                const titleAttr = isBlocked ? 'title="对比基准已设为不对比，可在右上角切换对比基准"' : '';
                 return `
-                  <button type="button" class="btn-toggle-series ghost btn-sm" data-series="${s.key}" style="padding:1px 7px;font-size:11px;cursor:pointer;opacity:${active ? '1' : '0.35'};border-color:${active ? s.color : 'var(--l)'}">
+                  <button type="button" class="btn-toggle-series ghost btn-sm" data-series="${s.key}" ${titleAttr} style="padding:1px 7px;font-size:11px;cursor:${cursor};opacity:${opacity};border-color:${active && !isBlocked ? s.color : 'var(--l)'}">
                     <span style="width:8px;height:8px;border-radius:50%;background:${s.color};display:inline-block;margin-right:4px"></span>${s.label}
                   </button>
                 `;
@@ -4174,6 +4188,9 @@ class DashboardApp {
             e.stopPropagation();
             const sKey = (btn as HTMLElement).dataset.series as 'total' | 'web' | 'plugin' | 'cli' | 'ma7' | 'prevPeriod';
             if (sKey) {
+              if (sKey === 'prevPeriod' && this.dauCompareMode === 'none') {
+                return; // Cannot enable previous period when compare is none
+              }
               if (this.dauActiveSeries.has(sKey)) {
                 if (this.dauActiveSeries.size > 1) {
                   this.dauActiveSeries.delete(sKey);

@@ -503,6 +503,88 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         self.assertEqual(dau_multi["windowTotals"]["total"], 220)  # 120 + 100
         self.assertEqual(len(dau_multi["series"]), 2)
 
+    def test_dau_milestone_authoritative_coverage(self):
+        snapshot = {
+            "dailyCore": [
+                {"date": "2026-10-15", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 100},
+                # Plugin first user is on 2026-10-17; 10-15 and 10-16 had 0 users (no rows)
+                {"date": "2026-10-17", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 120},
+                {"date": "2026-10-17", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 5},
+            ],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        res = build_local_analytics(snapshot, {"from": "2026-10-15", "to": "2026-10-17"})
+        cov = res["dau"]["coverage"]
+        self.assertTrue(cov["plugin"]["hasCoverage"])
+        # Authoritative milestone must be 2026-10-15, NOT 2026-10-17
+        self.assertEqual(cov["plugin"]["earliestDate"], "2026-10-15")
+        self.assertTrue(cov["cli"]["hasCoverage"])
+        self.assertEqual(cov["cli"]["earliestDate"], "2026-10-15")
+
+        # In series, 10-15 is covered, so pluginUncollected is false
+        p15 = next(s for s in res["dau"]["series"] if s["date"] == "2026-10-15")
+        self.assertFalse(p15["pluginUncollected"])
+        self.assertEqual(p15["plugin"], 0)
+
+    def test_dau_continuous_calendar_days_zero_filling(self):
+        snapshot = {
+            "dailyCore": [
+                {"date": "2026-10-14", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 10},
+                # 2026-10-15 has 0 activity (no row)
+                {"date": "2026-10-16", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 10},
+            ],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        res = build_local_analytics(snapshot, {"from": "2026-10-14", "to": "2026-10-16"})
+        series = res["dau"]["series"]
+        self.assertEqual(len(series), 3)
+        self.assertEqual([s["date"] for s in series], ["2026-10-14", "2026-10-15", "2026-10-16"])
+        d15 = series[1]
+        self.assertEqual(d15["date"], "2026-10-15")
+        self.assertEqual(d15["total"], 0)
+        self.assertFalse(d15["webUncollected"])
+        # Daily average: (10 + 0 + 10) / 3 = 7, NOT (10 + 10) / 2 = 10
+        self.assertEqual(res["dau"]["multiDay"]["dayCount"], 3)
+        self.assertEqual(res["dau"]["multiDay"]["dailyAverage"], 7)
+
+    def test_dau_baseline_and_ma7_includes_zero_active_days(self):
+        snapshot = {
+            "dailyCore": [
+                {"date": "2026-10-10", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 10},
+                {"date": "2026-10-12", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 10},
+                {"date": "2026-10-17", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 10},
+            ],
+            "hourlyCore": [
+                {"date": "2026-10-10", "hour": 12, "channel": "web", "client_id": "official_web", "metric": "visitor_unique", "count": 10},
+                {"date": "2026-10-12", "hour": 12, "channel": "web", "client_id": "official_web", "metric": "visitor_unique", "count": 10},
+                {"date": "2026-10-17", "hour": 12, "channel": "web", "client_id": "official_web", "metric": "visitor_unique", "count": 10},
+            ],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        res_single = build_local_analytics(snapshot, {"from": "2026-10-17", "to": "2026-10-17"})
+        base_h12 = res_single["dau"]["singleDay"]["sevenDayBaseline"][12]["total"]
+        # 7-day lookback: 2 active days (10 each) + 5 zero days = 20 / 7 = 3 (rounded)
+        self.assertEqual(base_h12, 3)
+
+        res_multi = build_local_analytics(snapshot, {"from": "2026-10-10", "to": "2026-10-17"})
+        pt17 = next(s for s in res_multi["dau"]["series"] if s["date"] == "2026-10-17")
+        # MA7 includes the 0 days within coverage
+        self.assertEqual(pt17["ma7"], 3)
+
     def test_feedback_and_quarantine_multi_dimension_filtering(self):
         snapshot = {
             "dailyCore": [],

@@ -461,3 +461,6 @@ export interface QuarantineSlice {
   normalizedRatePer1k?: string;
   filterContract?: SliceFilterContract;
 }
+
+export type DauCompareMode = 'auto' | 'seven_day_baseline' | 'prev_period' | 'none';
+

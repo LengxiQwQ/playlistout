@@ -3,6 +3,7 @@ import {
   buildAnalyticsSlice,
   detectDauCoverage,
   generateDauAnnotations,
+  normalizeDauCompareMode,
 } from '../engine';
 import type { AnalyticsSnapshot } from '../types';
 
@@ -353,6 +354,111 @@ describe('Activity & DAU Engine Redesign', () => {
     expect(single.hasFullHour).toBe(false);
     expect(comp.comparisonCount).toBe(0);
     expect(comp.deltaPercent).toBeNull();
+  });
+
+  it('17. treats milestone as authoritative for plugin and CLI coverage even when no active_user rows exist on milestone date', () => {
+    const delayedPluginSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      dailyCore: [
+        { date: '2026-10-15', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 100 },
+        // On 10-15 and 10-16, plugin and CLI had 0 users (no rows).
+        // First plugin user arrived on 10-17:
+        { date: '2026-10-17', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 120 },
+        { date: '2026-10-17', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 5 },
+      ],
+      hourlyCore: [],
+    };
+
+    const coverage = detectDauCoverage(delayedPluginSnapshot.dailyCore);
+    expect(coverage.plugin.hasCoverage).toBe(true);
+    // Must be authoritative milestone 2026-10-15, NOT the first row date 2026-10-17!
+    expect(coverage.plugin.earliestDate).toBe('2026-10-15');
+    expect(coverage.cli.hasCoverage).toBe(true);
+    expect(coverage.cli.earliestDate).toBe('2026-10-15');
+
+    const slice = buildAnalyticsSlice(delayedPluginSnapshot, { from: '2026-10-15', to: '2026-10-17' });
+    const p15 = slice.dau.series.find((p) => p.date === '2026-10-15')!;
+    // 10-15 is on milestone, so pluginUncollected must be false even with 0 rows
+    expect(p15.pluginUncollected).toBe(false);
+    expect(p15.plugin).toBe(0);
+  });
+
+  it('18. fills continuous calendar days with real 0 in dauSeries when dates have 0 activity', () => {
+    const sparseSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      dailyCore: [
+        { date: '2026-10-14', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 10 },
+        // 2026-10-15 has completely 0 activity and no database row
+        { date: '2026-10-16', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 10 },
+      ],
+      hourlyCore: [],
+    };
+
+    const slice = buildAnalyticsSlice(sparseSnapshot, { from: '2026-10-14', to: '2026-10-16' });
+    const series = slice.dau.series;
+
+    expect(series).toHaveLength(3);
+    expect(series.map((s) => s.date)).toEqual(['2026-10-14', '2026-10-15', '2026-10-16']);
+
+    const d15 = series[1];
+    expect(d15.date).toBe('2026-10-15');
+    expect(d15.total).toBe(0);
+    expect(d15.web).toBe(0);
+    expect(d15.plugin).toBe(0);
+    expect(d15.cli).toBe(0);
+    expect(d15.webUncollected).toBe(false);
+    expect(d15.pluginUncollected).toBe(false);
+    expect(d15.cliUncollected).toBe(false);
+
+    // Multi-day average: (10 + 0 + 10) / 3 = 7 (rounded from 6.67), NOT (10 + 10) / 2 = 10!
+    expect(slice.dau.multiDay!.dayCount).toBe(3);
+    expect(slice.dau.multiDay!.dailyAverage).toBe(7);
+  });
+
+  it('19. includes zero-active days within coverage in 7-day hourly baseline and MA7 denominator', () => {
+    // Target is 2026-10-17.
+    // 7-day lookback: 10-10, 10-11, 10-12, 10-13, 10-14, 10-15, 10-16.
+    // Web coverage starts at 2026-10-10 in this snapshot.
+    // Only 10-10 (total 10) and 10-12 (total 10) have activity; the other 5 days within coverage are 0.
+    const baselineSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      dailyCore: [
+        { date: '2026-10-10', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-12', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-17', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 10 },
+      ],
+      hourlyCore: [
+        { date: '2026-10-10', hour: 12, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-12', hour: 12, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-17', hour: 12, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 10 },
+      ],
+    };
+
+    const slice = buildAnalyticsSlice(baselineSnapshot, { from: '2026-10-17', to: '2026-10-17' });
+    const single = slice.dau.singleDay!;
+
+    // Baseline at hour 12: (10 + 0 + 10 + 0 + 0 + 0 + 0) / 7 = 3 (rounded from 20/7 = 2.857)
+    // If 0-active days were skipped, it would be (10 + 10) / 2 = 10!
+    expect(single.sevenDayBaseline[12].total).toBe(3);
+
+    // Now test MA7 with zero-active days in multi-day query
+    const multiSlice = buildAnalyticsSlice(baselineSnapshot, { from: '2026-10-10', to: '2026-10-17' });
+    const pt17 = multiSlice.dau.series.find((p) => p.date === '2026-10-17')!;
+    // On 10-17, 7-day lookback includes 10-11..10-17 (7 covered days: 10-12=10, 10-17=10, others 0)
+    // MA7 = (10 + 10) / 7 = 3
+    expect(pt17.ma7).toBe(3);
+  });
+
+  it('20. normalizes compare mode when switching between single-day and multi-day', () => {
+    // Switching from single-day to multi-day: seven_day_baseline resets to auto
+    expect(normalizeDauCompareMode('seven_day_baseline', false)).toBe('auto');
+    expect(normalizeDauCompareMode('none', false)).toBe('none');
+    expect(normalizeDauCompareMode('auto', false)).toBe('auto');
+
+    // Switching from multi-day to single-day: prev_period resets to auto
+    expect(normalizeDauCompareMode('prev_period', true)).toBe('auto');
+    expect(normalizeDauCompareMode('seven_day_baseline', true)).toBe('seven_day_baseline');
+    expect(normalizeDauCompareMode('none', true)).toBe('none');
   });
 });
 
