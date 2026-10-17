@@ -218,10 +218,16 @@
   }
 
   .header-actions .sticker,
+  .header-desktop-btn,
   .header-drawer-btn {
     padding: 0.26rem 0.5rem !important;
     font-size: 0.9rem !important;
     white-space: nowrap !important;
+  }
+
+  .header-desktop-btn svg {
+    width: 14px;
+    height: 14px;
   }
 
   /* Steeper splash tilt animation for mobile */
@@ -952,7 +958,8 @@
     flex-shrink: 0 !important;
   }
 
-  .header-drawer-btn {
+  .header-drawer-btn,
+  .header-desktop-btn {
     padding: 0.25rem 0.45rem !important;
     font-size: 0.86rem !important;
     white-space: nowrap !important;

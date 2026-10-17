@@ -8,6 +8,7 @@ export interface Translations {
     numbersLink: string;
     github: string;
     desktopBtn: string;
+    downloadBtn: string;
     fontButtonText: string;
     fontDrawerCaption: string;
     fontPickerHint: string;
@@ -16,6 +17,8 @@ export interface Translations {
     mobileDrawerTitle: string;
     mobileDrawerFontTitle: string;
     mobileDrawerFontDesc: string;
+    mobileDrawerLangTitle: string;
+    mobileDrawerLangDesc: string;
     mobileDrawerLinksTitle: string;
     mobileClose: string;
   };

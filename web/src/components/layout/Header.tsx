@@ -114,19 +114,6 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           gap: '0.85rem',
         }}
       >
-        {/* Desktop-only: Download Desktop App (GitHub Releases) */}
-        <a
-          href="https://github.com/LengxiQwQ/playlistout/releases/latest"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="header-desktop-btn desktop-only"
-          aria-label={t.header.desktopBtn}
-          title={t.header.desktopBtn}
-        >
-          <DownloadIcon size={18} />
-          <span>{t.header.desktopBtn}</span>
-        </a>
-
         {/* Desktop-only: Star on GitHub */}
         <a
           href="https://github.com/LengxiQwQ/playlistout"
@@ -145,8 +132,23 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           <FontSwitcher />
         </div>
 
-        {/* Always visible: Language Switcher */}
-        <LanguageSwitcher />
+        {/* Download App (GitHub Releases) - visible on both desktop & mobile */}
+        <a
+          href="https://github.com/LengxiQwQ/playlistout/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="header-desktop-btn"
+          aria-label={t.header.desktopBtn}
+          title={t.header.desktopBtn}
+        >
+          <DownloadIcon size={18} />
+          <span>{t.header.downloadBtn}</span>
+        </a>
+
+        {/* Desktop-only: Language Switcher */}
+        <div className="desktop-only">
+          <LanguageSwitcher />
+        </div>
 
         {/* Mobile-only: Hand-drawn Settings Drawer Button */}
         <button

@@ -95,27 +95,47 @@ describe('Header Component', () => {
     expect(screen.queryByTestId('mobile-settings-drawer')).not.toBeInTheDocument();
   });
 
-  it('renders desktop client download link pointing to GitHub releases in header and mobile drawer', () => {
+  it('renders download link in header and moves language switcher into mobile drawer', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <Header />
       </LanguageProvider>
     );
 
-    const desktopLink = screen.getByRole('link', { name: /下载桌面版/i });
-    expect(desktopLink).toBeInTheDocument();
-    expect(desktopLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
-    expect(desktopLink).toHaveAttribute('target', '_blank');
+    // Download button in header with "下载" and DownloadIcon
+    const downloadLink = screen.getByRole('link', { name: /下载/i });
+    expect(downloadLink).toBeInTheDocument();
+    expect(downloadLink).toHaveTextContent('下载');
+    expect(downloadLink).toHaveClass('header-desktop-btn');
+    expect(downloadLink).not.toHaveClass('desktop-only');
+    expect(downloadLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(downloadLink).toHaveAttribute('target', '_blank');
 
-    // Also verify mobile drawer desktop link
+    // Open mobile drawer
     const drawerBtn = screen.getByRole('button', { name: /手账百宝箱/i });
     fireEvent.click(drawerBtn);
 
     const drawer = screen.getByTestId('mobile-settings-drawer');
+
+    // Verify download link is NOT in mobile drawer
     const drawerLinks = drawer.querySelectorAll('a.mobile-drawer-link-card');
-    const desktopDrawerLink = Array.from(drawerLinks).find((el) => el.textContent?.includes('下载桌面版'));
-    expect(desktopDrawerLink).toBeDefined();
-    expect(desktopDrawerLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
-    expect(desktopDrawerLink).toHaveAttribute('target', '_blank');
+    const desktopDrawerLink = Array.from(drawerLinks).find((el) => el.textContent?.includes('下载'));
+    expect(desktopDrawerLink).toBeUndefined();
+
+    // Verify language switcher is present in mobile drawer
+    expect(screen.getByText('🌐 界面语言')).toBeInTheDocument();
+    const enButton = screen.getByRole('button', { name: /English/i });
+    expect(enButton).toBeInTheDocument();
+
+    // Switch to English in mobile drawer
+    fireEvent.click(enButton);
+    expect(document.documentElement.lang).toBe('en-US');
+    expect(downloadLink).toHaveTextContent('Download');
+
+    // Switch back to Chinese in mobile drawer
+    const zhButton = screen.getByRole('button', { name: /简体中文/i });
+    fireEvent.click(zhButton);
+    expect(document.documentElement.lang).toBe('zh-CN');
+    expect(downloadLink).toHaveTextContent('下载');
   });
 });

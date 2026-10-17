@@ -986,6 +986,84 @@ button.sticker:disabled,
   text-align: left;
 }
 
+/* Mobile Language Selector in Settings Drawer */
+.mobile-lang-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.mobile-lang-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--paper-white, #ffffff);
+  border: 2px solid var(--ink, #2d3436);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.2);
+  transition: all 0.15s ease;
+  width: 100%;
+  font-family: inherit;
+}
+
+.mobile-lang-card:hover {
+  background: #fefce8;
+  transform: translateY(-1px);
+}
+
+.mobile-lang-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #2d3436);
+}
+
+.mobile-lang-card.active {
+  background: var(--note-yellow, #fff8bd);
+  border-color: var(--ink, #2d3436);
+  box-shadow: 3px 3px 0 var(--ink, #2d3436);
+  font-weight: 700;
+}
+
+.mobile-lang-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-lang-code {
+  font-size: 0.8rem;
+  color: #8a8f92;
+  font-weight: 700;
+}
+
+.mobile-lang-card.active .mobile-lang-code {
+  color: var(--ink, #2d3436);
+}
+
+.mobile-lang-check {
+  font-size: 0.95rem;
+  color: #15803d;
+  font-weight: 900;
+}
+
+.mobile-lang-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink, #2d3436);
+  line-height: 1.2;
+}
+
+.mobile-lang-sub {
+  font-size: 0.85rem;
+  color: #636e72;
+  margin-top: 0.15rem;
+  line-height: 1.1;
+}
+
 /* Paper Input Clear Button */
 .btn-paper-clear {
   border: none;

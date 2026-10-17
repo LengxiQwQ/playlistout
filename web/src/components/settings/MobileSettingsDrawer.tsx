@@ -24,29 +24,11 @@ const GitHubIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   </svg>
 );
 
-const DownloadIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
-  <svg
-    height={size}
-    width={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.4"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-
 export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   const { currentPresets, selectedPresetId, selectPreset, getFontName } = useFontPreset();
 
   useEffect(() => {
@@ -158,7 +140,87 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Support & Links */}
+        {/* Section 2: Display Language */}
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              marginBottom: '0.5rem',
+            }}
+          >
+            <span
+              className="font-marker"
+              style={{
+                fontSize: '1.25rem',
+                color: 'var(--ink, #2d3436)',
+              }}
+            >
+              🌐 {t.header.mobileDrawerLangTitle}
+            </span>
+          </div>
+
+          <div
+            className="font-note"
+            style={{
+              fontSize: '1.15rem',
+              color: '#636e72',
+              marginBottom: '0.9rem',
+              lineHeight: 1.2,
+            }}
+          >
+            {t.header.mobileDrawerLangDesc}
+          </div>
+
+          <div className="mobile-lang-grid">
+            <button
+              type="button"
+              onClick={() => setLanguage('zh-CN')}
+              className={`mobile-lang-card sticker ${language === 'zh-CN' ? 'active' : ''}`}
+              aria-pressed={language === 'zh-CN'}
+            >
+              <div className="mobile-lang-card-header">
+                <span className="mobile-lang-code font-mono">ZH</span>
+                {language === 'zh-CN' && (
+                  <span className="mobile-lang-check" aria-label="Selected">
+                    ✓
+                  </span>
+                )}
+              </div>
+              <div className="mobile-lang-name font-handwriting">
+                简体中文
+              </div>
+              <div className="mobile-lang-sub font-note">
+                Chinese
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLanguage('en-US')}
+              className={`mobile-lang-card sticker ${language === 'en-US' ? 'active' : ''}`}
+              aria-pressed={language === 'en-US'}
+            >
+              <div className="mobile-lang-card-header">
+                <span className="mobile-lang-code font-mono">EN</span>
+                {language === 'en-US' && (
+                  <span className="mobile-lang-check" aria-label="Selected">
+                    ✓
+                  </span>
+                )}
+              </div>
+              <div className="mobile-lang-name font-handwriting">
+                English
+              </div>
+              <div className="mobile-lang-sub font-note">
+                英文
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Section 3: Support & Links */}
         <div>
           <div
             className="font-marker"
@@ -172,33 +234,6 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {/* Desktop Client Release Download Link */}
-            <a
-              href="https://github.com/LengxiQwQ/playlistout/releases/latest"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-drawer-link-card sticker font-handwriting"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--note-pink, #fde8ec)',
-                textDecoration: 'none',
-                color: 'var(--ink, #2d3436)',
-                borderRadius: '8px',
-                border: '2px solid var(--ink, #2d3436)',
-                fontSize: '1.15rem',
-                fontWeight: 700,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <DownloadIcon size={20} />
-                <span>{t.header.desktopBtn}</span>
-              </div>
-              <span style={{ fontSize: '1rem' }}>↗</span>
-            </a>
-
             <a
               href="https://github.com/LengxiQwQ/playlistout"
               target="_blank"
