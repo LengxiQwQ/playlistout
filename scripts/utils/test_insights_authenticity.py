@@ -25,6 +25,7 @@ from scripts.utils.dashboard import (
     build_local_analytics,
     build_local_feedback,
     build_local_quarantine,
+    detect_dau_coverage,
     fetch_dashboard_snapshot,
     get_admin_token,
     reconcile_breakdown_rows,
@@ -584,6 +585,69 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
         pt17 = next(s for s in res_multi["dau"]["series"] if s["date"] == "2026-10-17")
         # MA7 includes the 0 days within coverage
         self.assertEqual(pt17["ma7"], 3)
+
+    def test_dau_channel_scoped_baseline_and_ma7(self):
+        snapshot = {
+            "generatedAt": "2026-10-17T20:00:00Z",
+            "dailyCore": [
+                {"date": "2026-10-10", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 100},
+                {"date": "2026-10-16", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 10},
+                {"date": "2026-10-17", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 10},
+            ],
+            "hourlyCore": [
+                {"date": "2026-10-16", "hour": 12, "channel": "plugin", "client_id": "musicfree", "metric": "active_user", "count": 10},
+                {"date": "2026-10-17", "hour": 12, "channel": "plugin", "client_id": "musicfree", "metric": "active_user", "count": 10},
+            ],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        res_single = build_local_analytics(snapshot, {"from": "2026-10-17", "to": "2026-10-17", "channel": "plugin"})
+        base_h12 = res_single["dau"]["singleDay"]["sevenDayBaseline"][12]["total"]
+        # Plugin lookback denominator has only 2 covered days (10-15, 10-16) instead of 7!
+        # Sum = 10, valid_days = 2 -> 10 / 2 = 5
+        self.assertEqual(base_h12, 5)
+
+        res_multi = build_local_analytics(snapshot, {"from": "2026-10-10", "to": "2026-10-17", "channel": "plugin"})
+        pt17 = next(s for s in res_multi["dau"]["series"] if s["date"] == "2026-10-17")
+        # For plugin, only 10-15 (0), 10-16 (10), 10-17 (10) are covered (3 days) -> 20 / 3 = 7
+        self.assertEqual(pt17["ma7"], 7)
+
+    def test_dau_channel_scoped_multiday_averages(self):
+        snapshot = {
+            "generatedAt": "2026-10-17T20:00:00Z",
+            "dailyCore": [
+                {"date": "2026-10-10", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 50},
+                {"date": "2026-10-15", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 0},
+                {"date": "2026-10-16", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 10},
+                {"date": "2026-10-17", "channel": "plugin", "client_id": "musicfree", "platform": "none", "metric": "active_user", "count": 10},
+            ],
+            "hourlyCore": [],
+            "breakdowns": [],
+            "geo": [],
+            "clientEnv": [],
+            "quarantine": [],
+            "feedback": [],
+        }
+        res = build_local_analytics(snapshot, {"from": "2026-10-10", "to": "2026-10-17", "channel": "plugin"})
+        multi = res["dau"]["multiDay"]
+        self.assertEqual(multi["fullDayCount"], 2)
+        self.assertEqual(multi["fullDayAverage"], 5)
+        self.assertEqual(multi["dailyAverage"], 5)
+        self.assertEqual(multi["dayCount"], 3)
+
+    def test_dau_milestone_coverage_as_of_generated_at(self):
+        rows = [
+            {"date": "2026-10-14", "channel": "web", "client_id": "official_web", "platform": "none", "metric": "visitor_unique", "count": 100},
+        ]
+        cov = detect_dau_coverage(rows, "2026-10-17T12:00:00Z")
+        self.assertTrue(cov["web"]["hasCoverage"])
+        self.assertTrue(cov["plugin"]["hasCoverage"])
+        self.assertEqual(cov["plugin"]["earliestDate"], "2026-10-15")
+        self.assertTrue(cov["cli"]["hasCoverage"])
+        self.assertEqual(cov["cli"]["earliestDate"], "2026-10-15")
 
     def test_feedback_and_quarantine_multi_dimension_filtering(self):
         snapshot = {

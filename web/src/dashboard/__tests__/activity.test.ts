@@ -5,7 +5,7 @@ import {
   generateDauAnnotations,
   normalizeDauCompareMode,
 } from '../engine';
-import type { AnalyticsSnapshot } from '../types';
+import type { AnalyticsSnapshot, SnapshotDailyCoreRow } from '../types';
 
 describe('Activity & DAU Engine Redesign', () => {
   const baseSnapshot: AnalyticsSnapshot = {
@@ -459,6 +459,88 @@ describe('Activity & DAU Engine Redesign', () => {
     expect(normalizeDauCompareMode('prev_period', true)).toBe('auto');
     expect(normalizeDauCompareMode('seven_day_baseline', true)).toBe('seven_day_baseline');
     expect(normalizeDauCompareMode('none', true)).toBe('none');
+  });
+
+  it('21. scopes 7-day baseline and MA7 denominator to active channel coverage', () => {
+    // Web coverage starts at 2026-10-01; Plugin coverage milestone is 2026-10-15.
+    // Query date: 2026-10-17.
+    // Filter: channel = 'plugin'.
+    // 7-day lookback for baseline: 10-10, 10-11, 10-12, 10-13, 10-14, 10-15, 10-16.
+    // Days 10-10 through 10-14 are PRE-coverage for plugin! Only 10-15 (0 users) and 10-16 (10 users) are covered.
+    const baselineSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      generatedAt: '2026-10-17T20:00:00Z',
+      dailyCore: [
+        { date: '2026-10-10', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 100 },
+        { date: '2026-10-16', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 10 },
+        { date: '2026-10-17', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 10 },
+      ],
+      hourlyCore: [
+        { date: '2026-10-16', hour: 12, channel: 'plugin', client_id: 'musicfree', metric: 'active_user', count: 10 },
+        { date: '2026-10-17', hour: 12, channel: 'plugin', client_id: 'musicfree', metric: 'active_user', count: 10 },
+      ],
+    };
+
+    const slice = buildAnalyticsSlice(baselineSnapshot, { from: '2026-10-17', to: '2026-10-17', channel: 'plugin' });
+    const single = slice.dau.singleDay!;
+
+    // Baseline denominator for plugin should only be the 2 covered days (10-15, 10-16), NOT 7 days!
+    // Sum = 10, valid days = 2 -> 10 / 2 = 5! (If web coverage was used, 10 / 7 = 1)
+    expect(single.sevenDayBaseline[12].total).toBe(5);
+
+    // Multi-day MA7 check for plugin on 10-17
+    const multiSlice = buildAnalyticsSlice(baselineSnapshot, { from: '2026-10-10', to: '2026-10-17', channel: 'plugin' });
+    const pt17 = multiSlice.dau.series.find((p) => p.date === '2026-10-17')!;
+    // 7-day lookback from 10-17: 10-11..10-17. For plugin, only 10-15 (0), 10-16 (10), 10-17 (10) are covered (3 days).
+    // Sum = 20, validDays = 3 -> 20 / 3 = 7 (rounded)
+    expect(pt17.ma7).toBe(7);
+  });
+
+  it('22. scopes multi-day fullDays, compDayCount, and dailyAverage to active channel coverage', () => {
+    // Range: 2026-10-10 to 2026-10-17.
+    // Channel = 'plugin'.
+    // Plugin coverage starts at 2026-10-15.
+    // Pre-coverage dates (10-10 through 10-14) must NOT enter denominator.
+    const snapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      generatedAt: '2026-10-17T20:00:00Z',
+      dailyCore: [
+        { date: '2026-10-10', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 50 },
+        { date: '2026-10-15', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 0 },
+        { date: '2026-10-16', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 10 },
+        { date: '2026-10-17', channel: 'plugin', client_id: 'musicfree', platform: 'none', metric: 'active_user', count: 10 },
+      ],
+      hourlyCore: [],
+    };
+
+    // Range includes today (10-17).
+    // Completed full days within coverage: 10-15 (0) and 10-16 (10) -> exactly 2 days!
+    // Total for completed days = 10.
+    // fullDayAverage = 10 / 2 = 5!
+    // If 10-10..10-14 were counted, fullDays would be 7 and avg would be 10 / 7 = 1.
+    const slice = buildAnalyticsSlice(snapshot, { from: '2026-10-10', to: '2026-10-17', channel: 'plugin' });
+    const multi = slice.dau.multiDay!;
+
+    expect(multi.fullDayCount).toBe(2);
+    expect(multi.fullDayAverage).toBe(5);
+    expect(multi.dailyAverage).toBe(5);
+    expect(multi.dayCount).toBe(3); // 10-15, 10-16, 10-17 are collected
+  });
+
+  it('23. activates milestone coverage based on snapshot.generatedAt asOfDate even when recent rows are empty', () => {
+    // Database only has daily rows up to 2026-10-14 (no row exists for 10-15..10-17 at all)
+    // But snapshot was generated at 2026-10-17.
+    // Plugin & CLI milestones are 2026-10-15, so asOfDate (2026-10-17) >= 2026-10-15 activates them!
+    const rows: SnapshotDailyCoreRow[] = [
+      { date: '2026-10-14', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 100 },
+    ];
+
+    const cov = detectDauCoverage(rows, '2026-10-17T12:00:00Z');
+    expect(cov.web.hasCoverage).toBe(true);
+    expect(cov.plugin.hasCoverage).toBe(true);
+    expect(cov.plugin.earliestDate).toBe('2026-10-15');
+    expect(cov.cli.hasCoverage).toBe(true);
+    expect(cov.cli.earliestDate).toBe('2026-10-15');
   });
 });
 

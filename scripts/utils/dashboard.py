@@ -98,7 +98,7 @@ SYSTEM_TELEMETRY_MILESTONES = {
 }
 
 
-def detect_dau_coverage(rows: list[dict]) -> dict:
+def detect_dau_coverage(rows: list[dict], generated_at: str | None = None) -> dict:
     has_web_row = False
     min_web = None
     min_plugin = None
@@ -128,17 +128,20 @@ def detect_dau_coverage(rows: list[dict]) -> dict:
     plugin_milestone = SYSTEM_TELEMETRY_MILESTONES["plugin"]["coverageStart"]
     cli_milestone = SYSTEM_TELEMETRY_MILESTONES["cli"]["coverageStart"]
 
-    has_web = bool(has_web_row or (max_date and max_date >= web_milestone) or not max_date)
+    gen_date = str(generated_at)[:10] if generated_at else None
+    as_of_date = gen_date if (gen_date and len(gen_date) == 10 and gen_date[4] == "-" and gen_date[7] == "-") else max_date
+
+    has_web = bool(has_web_row or (as_of_date and as_of_date >= web_milestone) or not as_of_date)
     web_start = min_web or web_milestone
 
-    has_plugin = bool(min_plugin or (max_date and max_date >= plugin_milestone) or not max_date)
+    has_plugin = bool(min_plugin or (as_of_date and as_of_date >= plugin_milestone) or not as_of_date)
     plugin_start = (
         (min_plugin if (min_plugin and min_plugin < plugin_milestone) else plugin_milestone)
         if has_plugin
         else None
     )
 
-    has_cli = bool(min_cli or (max_date and max_date >= cli_milestone) or not max_date)
+    has_cli = bool(min_cli or (as_of_date and as_of_date >= cli_milestone) or not as_of_date)
     cli_start = (
         (min_cli if (min_cli and min_cli < cli_milestone) else cli_milestone)
         if has_cli
@@ -982,8 +985,27 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
                 client_channel_map[cl] = ch
                 dau_client_window_totals[cl] += count
 
-    coverage = detect_dau_coverage(snapshot.get("dailyCore", []))
+    coverage = detect_dau_coverage(snapshot.get("dailyCore", []), snapshot.get("generatedAt"))
     annotations = generate_dau_annotations(coverage)
+
+    # Resolve active channel for coverage boundaries:
+    # If user filtered by channel (web, plugin, cli), use it.
+    # If user filtered by client, map client to channel (e.g. musicfree -> plugin, official_web -> web).
+    # If all channels, default to 'web' (base platform telemetry start).
+    resolved_client_channel = (
+        client_channel_map.get(filters.get("client")) or ("web" if filters.get("client") == "official_web" else "plugin")
+        if filters.get("client")
+        else ""
+    )
+    active_channel = filters.get("channel") or resolved_client_channel or "web"
+
+    active_coverage_start = (
+        (coverage["plugin"]["earliestDate"] if coverage["plugin"]["hasCoverage"] else None)
+        if active_channel == "plugin"
+        else (coverage["cli"]["earliestDate"] if coverage["cli"]["hasCoverage"] else None)
+        if active_channel == "cli"
+        else (coverage["web"]["earliestDate"] if coverage["web"]["hasCoverage"] else None)
+    )
 
     today_utc = (str(snapshot.get("generatedAt") or "")[:10]) or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     is_today = is_single_day and (target_date == today_utc)
@@ -1133,7 +1155,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             if day_inc[h]["total"] > 0:
                 has_data = True
             day_cum.append(cum)
-        is_covered = bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and b_date >= coverage["web"]["earliestDate"])
+        is_covered = bool(active_coverage_start and b_date >= active_coverage_start)
         if is_covered or has_data:
             baseline_hourly_cumulative.append(day_cum)
 
@@ -1274,12 +1296,21 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
                     s += int(row.get("count", 0) or 0)
         return s
 
+    def is_point_collected(p: dict) -> bool:
+        if not active_coverage_start:
+            return True
+        return p.get("date", "") >= active_coverage_start
+
     range_includes_today = (not is_single_day) and (to_date >= today_utc)
-    full_days = [p for p in dau_series if p["date"] < today_utc] if range_includes_today else dau_series
+    completed_days = [p for p in dau_series if p["date"] < today_utc] if range_includes_today else dau_series
+    full_days = [p for p in completed_days if is_point_collected(p)]
     comp_day_count = max(1, len(full_days))
     full_days_total = sum(p["total"] for p in full_days)
     full_day_average = round(full_days_total / comp_day_count)
-    daily_average = full_day_average if range_includes_today else round(window_totals["total"] / max(1, len(dau_series)))
+
+    collected_days = [p for p in dau_series if is_point_collected(p)]
+    collected_day_count = max(1, len(collected_days))
+    daily_average = full_day_average if range_includes_today else round(window_totals["total"] / collected_day_count)
 
     completed_from_date = full_days[0]["date"] if full_days else from_date
     prev_to = _shift_date(completed_from_date, -1)
@@ -1345,7 +1376,8 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     multi_day_stats = None
     if not is_single_day:
         peak_day = None
-        for pt in dau_series:
+        peak_candidates = collected_days if collected_days else dau_series
+        for pt in peak_candidates:
             if not peak_day or pt["total"] > peak_day["total"]:
                 peak_day = {"date": pt["date"], "total": pt["total"]}
 
@@ -1391,7 +1423,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             for o in range(7):
                 d = _shift_date(pt["date"], -o)
                 day_totals = dau_all_dates_map.get(d)
-                is_covered = bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and d >= coverage["web"]["earliestDate"])
+                is_covered = bool(active_coverage_start and d >= active_coverage_start)
                 if day_totals is not None:
                     sum7 += day_totals["total"]
                     valid_days += 1
@@ -1404,7 +1436,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         multi_day_stats = {
             "fromDate": from_date,
             "toDate": to_date,
-            "dayCount": len(dau_series),
+            "dayCount": len(collected_days),
             "dailyAverage": daily_average,
             "fullDayCount": comp_day_count,
             "fullDayAverage": full_day_average,

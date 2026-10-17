@@ -597,7 +597,10 @@ export const SYSTEM_TELEMETRY_MILESTONES: Record<
   },
 };
 
-export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
+export function detectDauCoverage(
+  rows: SnapshotDailyCoreRow[],
+  generatedAt?: string,
+): DauCoverage {
   let hasWebRow = false;
   let minWeb: string | null = null;
   let minPlugin: string | null = null;
@@ -625,15 +628,20 @@ export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
   const pluginMilestone = SYSTEM_TELEMETRY_MILESTONES.plugin.coverageStart;
   const cliMilestone = SYSTEM_TELEMETRY_MILESTONES.cli.coverageStart;
 
-  const hasWeb = Boolean(hasWebRow || (maxDate && maxDate >= webMilestone) || !maxDate);
+  // Determine the authoritative timeline reference date (asOfDate):
+  // Prefer snapshot.generatedAt (UTC date); fallback to the latest row date in rows
+  const genDate = generatedAt ? String(generatedAt).slice(0, 10) : null;
+  const asOfDate = genDate && /^\d{4}-\d{2}-\d{2}$/.test(genDate) ? genDate : maxDate;
+
+  const hasWeb = Boolean(hasWebRow || (asOfDate && asOfDate >= webMilestone) || !asOfDate);
   const webStart = minWeb || webMilestone;
 
-  const hasPlugin = Boolean(minPlugin || (maxDate && maxDate >= pluginMilestone) || !maxDate);
+  const hasPlugin = Boolean(minPlugin || (asOfDate && asOfDate >= pluginMilestone) || !asOfDate);
   const pluginStart = hasPlugin
     ? (minPlugin && minPlugin < pluginMilestone ? minPlugin : pluginMilestone)
     : null;
 
-  const hasCli = Boolean(minCli || (maxDate && maxDate >= cliMilestone) || !maxDate);
+  const hasCli = Boolean(minCli || (asOfDate && asOfDate >= cliMilestone) || !asOfDate);
   const cliStart = hasCli
     ? (minCli && minCli < cliMilestone ? minCli : cliMilestone)
     : null;
@@ -941,7 +949,7 @@ export function buildAnalyticsSlice(
     : (webRegions.length > 0 ? webRegions : sumBy(filteredGeo.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)), 'region'));
 
   // ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
-  const coverage = detectDauCoverage(snapshot.dailyCore || []);
+  const coverage = detectDauCoverage(snapshot.dailyCore || [], snapshot.generatedAt);
   const annotations = generateDauAnnotations(coverage);
 
   const isSingleDay = fromDate === toDate;
@@ -1037,6 +1045,22 @@ export function buildAnalyticsSlice(
       }
     }
   }
+
+  // Resolve active channel for coverage boundaries:
+  // If user filtered by channel (web, plugin, cli), use it.
+  // If user filtered by client, map client to channel (e.g. musicfree -> plugin, official_web -> web).
+  // If all channels, default to 'web' (base platform telemetry start).
+  const resolvedClientChannel = filters.client
+    ? (clientChannelMap.get(filters.client) || (filters.client === 'official_web' ? 'web' : 'plugin'))
+    : '';
+  const activeChannel = filters.channel || resolvedClientChannel || 'web';
+
+  const activeCoverageStart =
+    activeChannel === 'plugin'
+      ? (coverage.plugin.hasCoverage ? coverage.plugin.earliestDate : null)
+      : activeChannel === 'cli'
+        ? (coverage.cli.hasCoverage ? coverage.cli.earliestDate : null)
+        : (coverage.web.hasCoverage ? coverage.web.earliestDate : null);
 
   const dauSeries: DauDailyPoint[] = [];
   if (dauAllDatesMap.size > 0 || dauByDate.size > 0) {
@@ -1200,7 +1224,7 @@ export function buildAnalyticsSlice(
       if (dayInc[h].total > 0) hasData = true;
       dayCum.push(cum);
     }
-    const isCovered = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && bDate >= coverage.web.earliestDate);
+    const isCovered = Boolean(activeCoverageStart && bDate >= activeCoverageStart);
     if (isCovered || hasData) {
       baselineHourlyCumulative.push(dayCum);
     }
@@ -1376,14 +1400,23 @@ export function buildAnalyticsSlice(
     return sum;
   };
 
+  const isPointCollected = (p: DauDailyPoint): boolean => {
+    if (!activeCoverageStart) return true;
+    return p.date >= activeCoverageStart;
+  };
+
   const rangeIncludesToday = !isSingleDay && toDate >= todayUtc;
-  const fullDays = rangeIncludesToday
+  const completedDays = rangeIncludesToday
     ? dauSeries.filter((p) => p.date < todayUtc)
     : dauSeries;
+  const fullDays = completedDays.filter(isPointCollected);
   const compDayCount = Math.max(1, fullDays.length);
   const fullDaysTotal = fullDays.reduce((acc, p) => acc + p.total, 0);
   const fullDayAverage = Math.round(fullDaysTotal / compDayCount);
-  const dailyAverage = rangeIncludesToday ? fullDayAverage : Math.round(windowTotals.total / Math.max(1, dauSeries.length));
+
+  const collectedDays = dauSeries.filter(isPointCollected);
+  const collectedDayCount = Math.max(1, collectedDays.length);
+  const dailyAverage = rangeIncludesToday ? fullDayAverage : Math.round(windowTotals.total / collectedDayCount);
 
   const completedFromDate = fullDays.length > 0 ? fullDays[0].date : fromDate;
   const prevTo = shiftDate(completedFromDate, -1);
@@ -1468,7 +1501,8 @@ export function buildAnalyticsSlice(
   let multiDayStats: DauMultiDayStats | undefined;
   if (!isSingleDay) {
     let peakDay: { date: string; total: number } | null = null;
-    for (const pt of dauSeries) {
+    const peakCandidates = collectedDays.length > 0 ? collectedDays : dauSeries;
+    for (const pt of peakCandidates) {
       if (!peakDay || pt.total > peakDay.total) {
         peakDay = { date: pt.date, total: pt.total };
       }
@@ -1524,7 +1558,7 @@ export function buildAnalyticsSlice(
       for (let o = 0; o < 7; o++) {
         const d = shiftDate(pt.date, -o);
         const dayTotals = dauAllDatesMap.get(d);
-        const isCovered = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && d >= coverage.web.earliestDate);
+        const isCovered = Boolean(activeCoverageStart && d >= activeCoverageStart);
         if (dayTotals !== undefined) {
           sum7 += dayTotals.total;
           validDays++;
@@ -1540,7 +1574,7 @@ export function buildAnalyticsSlice(
     multiDayStats = {
       fromDate,
       toDate,
-      dayCount: dauSeries.length,
+      dayCount: collectedDays.length,
       dailyAverage,
       fullDayCount: compDayCount,
       fullDayAverage,
