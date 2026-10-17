@@ -712,10 +712,12 @@ h1 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.3px; line-h
 .tab-sub { font-size: 9.5px; font-weight: 600; color: var(--m); letter-spacing: .3px; text-transform: uppercase; }
 .tab.active .tab-sub { color: color-mix(in srgb, var(--a) 70%, var(--m)); }
 .tab-badge { padding: 1px 5px; border-radius: 999px; font-size: 10px; font-weight: 700; background: var(--w); color: #fff; line-height: 1.2; margin-left: 2px; }
-.filter-card { padding: 12px 16px; margin-bottom: 14px; background: var(--p); border: 1px solid var(--l); border-radius: var(--rad); box-shadow: var(--s); }
+.filter-card { padding: 14px 16px; margin-bottom: 16px; background: var(--p); border: 1px solid var(--l); border-radius: var(--rad); box-shadow: var(--s); }
 .filter-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--l); min-height: 36px; }
 .filter-card-title { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--t); white-space: nowrap; }
 .scope-note-pill { font-size: 11px; color: var(--m); background: color-mix(in srgb, var(--p) 80%, var(--bg)); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--l); font-weight: 500; }
+.scope-note { padding: 8px 12px; border: 1px solid var(--l); border-radius: var(--rad); background: color-mix(in srgb, var(--p) 80%, var(--bg)); font-size: 11.5px; color: var(--m); line-height: 1.5; margin-bottom: 14px; }
+.scope-note.warn { border-color: color-mix(in srgb, var(--w) 40%, transparent); color: var(--t); }
 .toggle-switch { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px; transition: background .15s; }
 .toggle-switch:hover { background: color-mix(in srgb, var(--p) 80%, var(--a)); }
 .toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
@@ -726,7 +728,7 @@ h1 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.3px; line-h
 .toggle-switch-text { font-size: 11.5px; font-weight: 600; color: var(--m); white-space: nowrap; }
 .toggle-switch input:checked ~ .toggle-switch-text { color: var(--t); }
 .filters { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)) auto; gap: 8px; }
-.date-field { grid-column: 1 / -1; }
+.date-field { grid-column: 1 / -1; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid color-mix(in srgb, var(--l) 70%, transparent); }
 .field label { display: block; font-size: 11px; color: var(--m); font-weight: 600; margin: 0 0 4px 2px; }
 .field select, .field input { height: 34px; width: 100%; padding: 0 8px; border: 1px solid var(--l); border-radius: 7px; background: var(--p); font-size: 12px; }
 .date-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -737,19 +739,21 @@ h1 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.3px; line-h
 .range button { height: 32px; padding: 0 9px; border: 1px solid var(--l); border-radius: 7px; background: var(--p); cursor: pointer; font-size: 12px; color: var(--m); transition: all .15s; }
 .range button:hover { color: var(--t); border-color: var(--m); }
 .range button.active { background: var(--a); color: #fff; border-color: var(--a); font-weight: 600; }
-.page { display: none; min-height: calc(100vh - 220px); }
+.page { display: none; min-height: calc(100vh - 220px); padding-bottom: 24px; }
 .page.active { display: block; }
-.section { display: flex; justify-content: space-between; align-items: end; margin: 16px 0 10px; }
+.section { display: flex; justify-content: space-between; align-items: end; margin: 16px 0 12px; }
 .section h2 { margin: 0; font-size: 16px; font-weight: 700; }
-.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
 .card, .panel { background: var(--p); border: 1px solid var(--l); border-radius: var(--rad); box-shadow: var(--s); }
 .kpi-card { padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 92px; }
 .kpi-label { font-size: 11px; font-weight: 600; color: var(--m); display: flex; justify-content: space-between; align-items: center; }
 .kpi-val { font-size: 22px; font-weight: 700; font-family: var(--mono); margin: 4px 0 2px; letter-spacing: -.5px; }
 .kpi-sub { font-size: 11px; color: var(--m); }
-.grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
-.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-.panel { padding: 14px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.grid2 > .panel, .grid3 > .panel { margin-top: 0; margin-bottom: 0; }
+.panel > .grid2:last-child, .panel > .grid3:last-child { margin-bottom: 0; }
+.panel { padding: 14px; min-width: 0; margin-bottom: 14px; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--l); }
 .panel h3 { font-size: 13px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
 .trend-box { position: relative; height: 260px; width: 100%; }
@@ -782,7 +786,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--p) 90%, var(--a)); }
 .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; display: inline-block; }
 .badge.pending { background: color-mix(in srgb, var(--w) 15%, var(--p)); color: var(--w); border: 1px solid color-mix(in srgb, var(--w) 30%, transparent); }
 .badge.resolved { background: color-mix(in srgb, var(--g) 15%, var(--p)); color: var(--g); border: 1px solid color-mix(in srgb, var(--g) 30%, transparent); }
-.footer { text-align: center; color: var(--m); font-size: 11.5px; padding: 28px 0 20px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.footer { text-align: center; color: var(--m); font-size: 11.5px; padding: 24px 0 20px; border-top: 1px solid color-mix(in srgb, var(--l) 70%, transparent); margin-top: 12px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .footer-line { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; color: var(--m); font-weight: 400; }
 .footer-line a { color: var(--m); text-decoration: none; transition: color .15s ease; font-weight: 400; }
 .footer-line a:hover { color: var(--t); text-decoration: underline; text-underline-offset: 2px; }
@@ -1155,7 +1159,7 @@ class DashboardApp {
           <div class="section">
             <div><h2>业务总览 Overview</h2><div class="muted">全站宏观状态、变化归因 (Movers) 与关键待办事项；支持上一等长周期对比。</div></div>
           </div>
-          <div id="overviewAlerts" style="margin-bottom:12px;display:none"></div>
+          <div id="overviewAlerts" style="margin-bottom:14px;display:none"></div>
           <div id="overviewKpis" class="kpis"></div>
           <div class="grid2">
             <div class="panel">
@@ -1199,7 +1203,7 @@ class DashboardApp {
               <div id="platformBars" class="bars"></div>
             </div>
           </div>
-          <div class="grid2" style="margin-top:12px">
+          <div class="grid2">
             <div class="panel">
               <div class="panel-head">
                 <div>
@@ -1227,7 +1231,7 @@ class DashboardApp {
               </details>
             </div>
           </div>
-          <details class="panel" style="margin-top:12px">
+          <details class="panel">
             <summary style="cursor:pointer;font-size:12px;font-weight:600;padding:4px 0;color:var(--m)">🌐 来源国家与地区分布 (已降级收起 · 建议前往“官网流量 Web”查看精准访客地域) ▼</summary>
             <div class="grid2" style="margin-top:10px">
               <div>
@@ -1365,7 +1369,7 @@ class DashboardApp {
               </div>
             </div>
           </div>
-          <div id="feedbackKpis" class="kpis" style="margin-bottom:12px"></div>
+          <div id="feedbackKpis" class="kpis"></div>
           <div class="panel">
             <div class="table-wrap">
               <table>
@@ -1399,7 +1403,7 @@ class DashboardApp {
           <div id="webKpis" class="kpis"></div>
 
           <!-- 第一层：官网流量走势 Trend -->
-          <div class="panel" style="margin-bottom:12px">
+          <div class="panel">
             <div class="panel-head" style="align-items:center">
               <div>
                 <h3>📈 官网流量趋势 Web Traffic Trend</h3>
@@ -1462,7 +1466,7 @@ class DashboardApp {
           </div>
 
           <!-- 第四层：Geo 访客地域单面板下钻 -->
-          <div class="panel" style="margin-top:12px">
+          <div class="panel">
             <div class="panel-head" style="align-items:center">
               <div>
                 <h3>🌍 官网访客地域分布 Web Visitor Geography</h3>
@@ -1541,7 +1545,7 @@ class DashboardApp {
           <div id="integrationKpis" class="kpis"></div>
 
           <!-- 第一层：全景接入端总表 Dynamic Client Table -->
-          <div class="panel" style="margin-bottom:12px">
+          <div class="panel">
             <div class="panel-head" style="align-items:center">
               <div>
                 <h3>🔌 接入端全景分析 Resolve Clients Overview</h3>
@@ -1568,7 +1572,7 @@ class DashboardApp {
           </div>
 
           <!-- 第二层：选中 Client 深度下钻分析 Client Drilldown -->
-          <div class="panel" id="clientDrilldownPanel" style="margin-bottom:12px">
+          <div class="panel" id="clientDrilldownPanel">
             <div class="panel-head" style="align-items:center;border-bottom:1px solid var(--l);padding-bottom:10px;margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:10px">
                 <span id="drilldownClientDot" class="b-dot" style="width:10px;height:10px"></span>
@@ -1641,11 +1645,11 @@ class DashboardApp {
               <div id="quarantineSummary" class="bars"></div>
             </div>
           </div>
-          <div class="panel" style="margin-top:12px">
+          <div class="panel">
             <div class="panel-head"><h3>🛑 429 限流端点 Rate Limits</h3><span class="muted" style="font-size:11px">拦截次数</span></div>
             <div id="rateBars" class="bars"></div>
           </div>
-          <div class="panel" style="margin-top:12px">
+          <div class="panel">
             <div class="panel-head">
               <div>
                 <h3>🔍 隔离取证记录 Quarantine Forensics</h3>
@@ -1688,7 +1692,7 @@ class DashboardApp {
             <div id="dauCompareToolbar" style="display:flex;align-items:center;gap:8px"></div>
           </div>
 
-          <div id="dauScopeBanner" style="display:none;margin-bottom:12px;background:var(--p);border:1px solid var(--l);padding:8px 12px;border-radius:6px;font-size:12px;align-items:center;justify-content:space-between"></div>
+          <div id="dauScopeBanner" style="display:none;margin-bottom:14px;background:var(--p);border:1px solid var(--l);padding:8px 12px;border-radius:6px;font-size:12px;align-items:center;justify-content:space-between"></div>
 
           <div id="dauKpis" class="kpis"></div>
 
@@ -1710,7 +1714,7 @@ class DashboardApp {
             <div id="dauChartFootnote" class="muted" style="font-size:11px;padding:8px 14px;border-top:1px solid var(--l);display:none"></div>
           </div>
 
-          <div class="grid2" style="margin-top:12px">
+          <div class="grid2">
             <div class="panel">
               <div class="panel-head">
                 <h3 id="dauSubChartHeadTitle">🕐 每小时首次活跃 (First Active by Hour)</h3>
@@ -1746,7 +1750,7 @@ class DashboardApp {
             </div>
           </div>
 
-          <div class="panel" style="margin-top:12px">
+          <div class="panel">
             <div class="panel-head">
               <div style="display:flex;align-items:center;gap:10px">
                 <h3 id="dauGeoTitle">🌍 活跃地域分布 Geographic</h3>

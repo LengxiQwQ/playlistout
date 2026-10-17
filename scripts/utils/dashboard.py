@@ -2130,10 +2130,12 @@ h1{margin:0;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.15
 .tab-badge{padding:1px 5px;border-radius:999px;font-size:10px;font-weight:700;background:var(--w);color:#fff;line-height:1.2;margin-left:2px}
 .tab.active .tab-badge{background:var(--w);color:#fff}
 
-.filter-card{padding:12px 16px;margin-bottom:14px;background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
+.filter-card{padding:14px 16px;margin-bottom:16px;background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
 .filter-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--l);min-height:36px}
 .filter-card-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--t);white-space:nowrap}
 .scope-note-pill{font-size:11px;color:var(--m);background:color-mix(in srgb,var(--p) 80%,var(--bg));padding:2px 8px;border-radius:6px;border:1px solid var(--l);font-weight:500}
+.scope-note{padding:8px 12px;border:1px solid var(--l);border-radius:var(--rad);background:color-mix(in srgb,var(--p) 80%,var(--bg));font-size:11.5px;color:var(--m);line-height:1.5;margin-bottom:14px}
+.scope-note.warn{border-color:color-mix(in srgb,var(--w) 40%,transparent);color:var(--t)}
 .toggle-switch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;transition:background .15s}
 .toggle-switch:hover{background:color-mix(in srgb,var(--p) 80%,var(--a))}
 .toggle-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
@@ -2144,7 +2146,7 @@ h1{margin:0;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.15
 .toggle-switch-text{font-size:11.5px;font-weight:600;color:var(--m);white-space:nowrap}
 .toggle-switch input:checked ~ .toggle-switch-text{color:var(--t)}
 .filters{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr)) auto;gap:8px}
-.date-field{grid-column:1/-1}
+.date-field{grid-column:1/-1;padding-bottom:12px;margin-bottom:4px;border-bottom:1px solid color-mix(in srgb,var(--l) 70%,transparent)}
 .field label{display:block;font-size:11px;color:var(--m);font-weight:600;margin:0 0 4px 2px}
 .field select,.field input{height:34px;width:100%;padding:0 8px;border:1px solid var(--l);border-radius:7px;background:var(--p);font-size:12px}
 .date-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -2158,20 +2160,22 @@ h1{margin:0;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.15
 .range button.active{background:var(--a);color:#fff;border-color:var(--a);font-weight:600}
 .range-note{font-size:11px;color:var(--m);margin-left:auto}
 
-.page{display:none;min-height:calc(100vh - 220px)}.page.active{display:block}
-.section{display:flex;justify-content:space-between;align-items:end;margin:16px 0 10px}
+.page{display:none;min-height:calc(100vh - 220px);padding-bottom:24px}.page.active{display:block}
+.section{display:flex;justify-content:space-between;align-items:end;margin:16px 0 12px}
 .section h2{margin:0;font-size:16px;font-weight:700}
 
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
 .card,.panel{background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
 .kpi-card{padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;min-height:92px}
 .kpi-label{font-size:11px;font-weight:600;color:var(--m);display:flex;justify-content:space-between;align-items:center}
 .kpi-val{font-size:22px;font-weight:700;font-family:var(--mono);margin:4px 0 2px;letter-spacing:-.5px}
 .kpi-sub{font-size:11px;color:var(--m)}
 
-.grid2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-.panel{padding:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.grid2 > .panel, .grid3 > .panel{margin-top:0;margin-bottom:0}
+.panel > .grid2:last-child, .panel > .grid3:last-child{margin-bottom:0}
+.panel{padding:14px;min-width:0;margin-bottom:14px}
 .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--l)}
 .panel h3{font-size:13px;font-weight:700;margin:0;display:flex;align-items:center;gap:6px}
 
@@ -2195,8 +2199,6 @@ h1{margin:0;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.15
 
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{padding:3px 7px;border:1px solid var(--l);border-radius:999px;background:var(--p);font-size:11px;color:var(--m)}
-.scope-note{padding:8px 12px;border:1px solid var(--l);border-radius:7px;background:var(--p);font-size:11px;color:var(--m);margin-bottom:10px}
-.scope-note.warn{border-color:color-mix(in srgb,var(--w) 40%,transparent);color:var(--t)}
 .notice{padding:8px 12px;border:1px solid var(--l);border-radius:7px;margin:8px 0;font-size:12px}
 .notice.bad{border-color:var(--r);color:var(--r)}
 
@@ -2212,7 +2214,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 .badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
 .badge.pending{background:color-mix(in srgb,var(--w) 15%,var(--p));color:var(--w);border:1px solid color-mix(in srgb,var(--w) 30%,transparent)}
 .badge.resolved{background:color-mix(in srgb,var(--g) 15%,var(--p));color:var(--g);border:1px solid color-mix(in srgb,var(--g) 30%,transparent)}
-.footer{text-align:center;color:var(--m);font-size:11.5px;padding:28px 0 20px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.footer{text-align:center;color:var(--m);font-size:11.5px;padding:24px 0 20px;border-top:1px solid color-mix(in srgb,var(--l) 70%,transparent);margin-top:12px;display:flex;flex-direction:column;gap:6px;align-items:center}
 .footer-line{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--m);font-weight:400}
 .footer-line a{color:var(--m);text-decoration:none;transition:color .15s ease;font-weight:400}
 .footer-line a:hover{color:var(--t);text-decoration:underline;text-underline-offset:2px}
@@ -2415,7 +2417,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div class="section">
     <div><h2>业务总览 Overview</h2><div class="muted">全站宏观状态、变化归因 (Movers) 与关键待办事项；支持上一等长周期对比。</div></div>
   </div>
-  <div id="overviewAlerts" style="margin-bottom:12px;display:none"></div>
+  <div id="overviewAlerts" style="margin-bottom:14px;display:none"></div>
   <div id="overviewKpis" class="kpis"></div>
 
   <div class="grid2">
@@ -2462,7 +2464,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     </div>
   </div>
 
-  <div class="grid2" style="margin-top:12px">
+  <div class="grid2">
     <div class="panel">
       <div class="panel-head">
         <div>
@@ -2491,7 +2493,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     </div>
   </div>
 
-  <details class="panel" style="margin-top:12px">
+  <details class="panel">
     <summary style="cursor:pointer;font-size:12px;font-weight:600;padding:4px 0;color:var(--m)">🌐 来源国家与地区分布 (已降级收起 · 建议前往“官网流量 Web”查看精准访客地域) ▼</summary>
     <div class="grid2" style="margin-top:10px">
       <div>
@@ -2629,7 +2631,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       </div>
     </div>
   </div>
-  <div id="feedbackKpis" class="kpis" style="margin-bottom:12px"></div>
+  <div id="feedbackKpis" class="kpis"></div>
 
   <div class="panel">
     <div class="table-wrap">
@@ -2665,7 +2667,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div id="webKpis" class="kpis"></div>
 
   <!-- 第一层：官网流量走势 Trend -->
-  <div class="panel" style="margin-bottom:12px">
+  <div class="panel">
     <div class="panel-head" style="align-items:center">
       <div>
         <h3>📈 官网流量趋势 Web Traffic Trend</h3>
@@ -2728,7 +2730,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   </div>
 
   <!-- 第四层：Geo 访客地域单面板下钻 -->
-  <div class="panel" style="margin-top:12px">
+  <div class="panel">
     <div class="panel-head" style="align-items:center">
       <div>
         <h3>🌍 官网访客地域分布 Web Visitor Geography</h3>
@@ -2807,7 +2809,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div id="integrationKpis" class="kpis"></div>
 
   <!-- 第一层：全景接入端总表 Dynamic Client Table -->
-  <div class="panel" style="margin-bottom:12px">
+  <div class="panel">
     <div class="panel-head" style="align-items:center">
       <div>
         <h3>🔌 接入端全景分析 Resolve Clients Overview</h3>
@@ -2834,7 +2836,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   </div>
 
   <!-- 第二层：选中 Client 深度下钻分析 Client Drilldown -->
-  <div class="panel" id="clientDrilldownPanel" style="margin-bottom:12px">
+  <div class="panel" id="clientDrilldownPanel">
     <div class="panel-head" style="align-items:center;border-bottom:1px solid var(--l);padding-bottom:10px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px">
         <span id="drilldownClientDot" class="b-dot" style="width:10px;height:10px"></span>
@@ -2900,7 +2902,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div id="securityKpis" class="kpis"></div>
 
   <!-- 产品经理视角：安全机制与风控策略全景卡片 -->
-  <div class="card" style="padding:14px 18px;margin-top:12px;background:color-mix(in srgb,var(--p) 95%,var(--a));border-left:4px solid var(--a)">
+  <div class="card" style="padding:14px 18px;margin-bottom:14px;background:color-mix(in srgb,var(--p) 95%,var(--a));border-left:4px solid var(--a)">
     <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:8px">
       <span>🛡️</span> PlaylistOut 双轨安全防御与遥测隔离体系 (Security Defense & Quarantine Architecture)
     </div>
@@ -2930,7 +2932,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     </div>
   </div>
 
-  <div class="grid2" style="margin-top:12px">
+  <div class="grid2">
     <div class="panel">
       <div class="panel-head"><h3>📈 安全拦截走势 Security Incident Trend</h3><span class="muted" style="font-size:11px">按日期拦截事件数</span></div>
       <div id="quarantineTrendBars" class="bars"></div>
@@ -2940,12 +2942,12 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div id="quarantineSummary" class="bars"></div>
     </div>
   </div>
-  <div class="panel" style="margin-top:12px">
+  <div class="panel">
     <div class="panel-head"><h3>🛑 429 限流端点 Rate Limits</h3><span class="muted" style="font-size:11px">拦截次数</span></div>
     <div id="rateBars" class="bars"></div>
   </div>
 
-  <div class="panel" style="margin-top:12px">
+  <div class="panel">
     <div class="panel-head">
       <div>
         <h3>🔍 隔离取证记录 Quarantine Forensics</h3>
@@ -3002,7 +3004,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       </div>
     </div>
   </div>
-  <div class="grid2" style="margin-top:12px">
+  <div class="grid2">
     <div class="panel">
       <div class="panel-head"><h3>🧩 接入端明细 Clients</h3><span class="muted" style="font-size:11px">多端日活对比</span></div>
       <div class="table-wrap">
@@ -3025,7 +3027,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div id="dauHourBars" class="bars"></div>
     </div>
   </div>
-  <div class="grid2" style="margin-top:12px">
+  <div class="grid2">
     <div class="panel">
       <div class="panel-head"><h3>🌍 活跃国家</h3><span class="muted" style="font-size:11px">活跃用户 (UV)</span></div>
       <div id="dauCountryBars" class="bars"></div>
@@ -3035,7 +3037,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div id="dauRegionBars" class="bars"></div>
     </div>
   </div>
-  <div class="panel" style="margin-top:12px;border-left:3px solid var(--a)">
+  <div class="panel" style="border-left:3px solid var(--a)">
     <div class="panel-head"><h3>📐 口径说明 Metric Semantics</h3></div>
     <div class="muted" style="font-size:12px;line-height:1.9">
       <div>• <strong>Playlist Out Web</strong>：网站每日去重访客（沿用网站原有的 <code>visitor_unique</code> 匿名访客统计，历史数据全部并入趋势与合计，未另建一套记录）。</div>
