@@ -538,15 +538,15 @@ button.sticker:disabled,
 }
 
 .font-picker-button {
-  min-width: 175px;
+  min-width: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
   border: 2px solid var(--ink, #2d3436);
   background: var(--note-yellow, #fff8bd);
   color: var(--ink, #2d3436);
-  padding: 0.42rem 0.95rem;
+  padding: 0.42rem 0.85rem;
   cursor: pointer;
   user-select: none;
   border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;

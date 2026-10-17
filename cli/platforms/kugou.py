@@ -364,6 +364,33 @@ def verify_kugou_credentials(token: str, userid: str, timeout: int = 10) -> Tupl
         return False, f"网络请求异常: {e}", {}
 
 
+def configure_auth_non_interactive(token: str, userid: str, timeout: int = 10) -> Tuple[bool, str, Optional[str]]:
+    """
+    非交互式/纯命令行配置酷狗登录凭证：
+    前置格式初筛、向酷狗官方接口在线验活并获取真实昵称、成功后安全持久化，零交互输入。
+    返回: (success: bool, message: str, auth_path: Optional[str])
+    """
+    token = (token or "").strip()
+    userid = (userid or "").strip()
+
+    if not userid:
+        return False, "UserID 不能为空", None
+    if not userid.isdigit():
+        return False, "UserID 必须为纯数字（例如: 12345678）", None
+    if not token:
+        return False, "Token 不能为空", None
+    if not (16 <= len(token) <= 128 and all(c in "0123456789abcdefABCDEF" for c in token)):
+        return False, "Token 格式不正确（必须为十六进制字符串，通常为 32 位或 64 位 Hex）", None
+
+    is_valid, err_msg, user_info = verify_kugou_credentials(token, userid, timeout=timeout)
+    if not is_valid:
+        return False, err_msg, None
+
+    nickname = user_info.get("nickname") or f"酷狗用户_{userid}"
+    auth_path = save_auth_credentials(token, userid, source="manual", nickname=nickname)
+    return True, f"已连接账号：{nickname} (UserID: {userid})", auth_path
+
+
 # ----------------- 交互式登录流程 -----------------
 
 def run_qr_login_flow() -> Tuple[Optional[str], Optional[str]]:
@@ -807,3 +834,8 @@ class KugouAdapter(BasePlatformAdapter):
             print(color_green(succ_clear) if supports_color() else succ_clear)
             return True
         return False
+
+    @staticmethod
+    def configure_auth(token: str, userid: str, timeout: int = 10) -> Tuple[bool, str, Optional[str]]:
+        """非交互式配置酷狗登录凭证"""
+        return configure_auth_non_interactive(token, userid, timeout=timeout)

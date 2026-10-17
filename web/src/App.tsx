@@ -9,6 +9,7 @@ import { ResultPaper } from './components/playlist/ResultPaper';
 import { UserPlaylistsPaper } from './components/playlist/UserPlaylistsPaper';
 import { InfoNotes } from './components/layout/InfoNotes';
 import { PluginEcosystem } from './components/ecosystem/PluginEcosystem';
+// import { DesktopCliSection } from './components/desktop/DesktopCliSection';
 import { DeveloperPanel } from './components/developer/DeveloperPanel';
 import { StatsJournal, RunningDaysStamp } from './components/stats/StatsJournal';
 import { Footer } from './components/layout/Footer';
@@ -146,6 +147,13 @@ export const AppContent: React.FC = () => {
           <div className="baseline-grid-snap">
             <PluginEcosystem />
           </div>
+
+          {/* Standalone Desktop & CLI Workstation Section (Draft / Reserved) */}
+          {/*
+          <div className="baseline-grid-snap">
+            <DesktopCliSection />
+          </div>
+          */}
 
           {/* Educational Stationery Notes */}
           <div className="baseline-grid-snap">

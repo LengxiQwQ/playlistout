@@ -10,16 +10,16 @@ describe('FontSwitcher Component', () => {
     delete document.body.dataset.fontPreset;
   });
 
-  it('renders font picker button and caption', () => {
+  it('renders compact font picker button without cumbersome caption', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>
     );
 
-    expect(screen.getByText('字体抽屉 ✎')).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: /毛笔手账/i });
+    const button = screen.getByRole('button', { name: /字体/i });
     expect(button).toBeInTheDocument();
+    expect(button).toHaveTextContent('字体');
     expect(document.body.dataset.fontPreset).toBe('zhnote');
   });
 
@@ -30,7 +30,7 @@ describe('FontSwitcher Component', () => {
       </LanguageProvider>
     );
 
-    const button = screen.getByRole('button', { name: /毛笔手账/i });
+    const button = screen.getByRole('button', { name: /字体/i });
     fireEvent.click(button);
 
     expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('FontSwitcher Component', () => {
       </LanguageProvider>
     );
 
-    const button = screen.getByRole('button', { name: /毛笔手账/i });
+    const button = screen.getByRole('button', { name: /字体/i });
     fireEvent.click(button);
 
     const kuaileOption = screen.getByText('快乐手绘 (萌趣)');
@@ -56,7 +56,7 @@ describe('FontSwitcher Component', () => {
 
     expect(document.body.dataset.fontPreset).toBe('zh_kuaile');
     expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zh_kuaile');
-    expect(screen.getByText(/02 · 快乐手绘/)).toBeInTheDocument();
+    expect(button).toHaveAttribute('title', expect.stringContaining('快乐手绘'));
   });
 
   it('switches font preset to zh_zhimang and persists', () => {
@@ -66,7 +66,7 @@ describe('FontSwitcher Component', () => {
       </LanguageProvider>
     );
 
-    const button = screen.getByRole('button', { name: /毛笔手账/i });
+    const button = screen.getByRole('button', { name: /字体/i });
     fireEvent.click(button);
 
     const zhimangOption = screen.getByText('洒脱行书 (行草)');
@@ -83,7 +83,7 @@ describe('FontSwitcher Component', () => {
       </LanguageProvider>
     );
 
-    const button = screen.getByRole('button', { name: /毛笔手账/i });
+    const button = screen.getByRole('button', { name: /字体/i });
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
 

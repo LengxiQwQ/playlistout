@@ -56,7 +56,7 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 2. **用户歌单批量导出**：
    - **QQ 音乐**：直接粘贴用户的 QQ 号或用户主页链接，程序会自动列出该用户所有公开自建歌单，支持输入 `all` 全部导出，或输入 `1,3,5`、`1-3` 导出选定歌单。
    - **网易云音乐**：直接粘贴网易云用户 UID 或主页链接，同样支持多选或全量批量导出。
-   - **酷狗音乐**：普通公开歌单可直接导出前 10 首；在提示符输入 `login`，会调出二维码供手机酷狗 APP 扫码登录，登录后即可导出完整歌单和个人云端歌单。
+   - **酷狗音乐**：普通公开歌单可直接导出前 10 首；在提示符输入 `login`，会调出二维码供手机酷狗 APP 扫码登录，登录后即可导出完整歌单和个人云端歌单。若不希望在终端扫码，也可以在网页端登录后直接复制 UserID 和 Token，通过命令行参数 `--token` 与 `--userid` 免交互完成凭证配置。
 
 ---
 
@@ -77,10 +77,16 @@ PlaylistOut "1160951354" -p qqmusic --user -f json --no-open
 # 4. 批量导出网易云用户的指定序号歌单 (例如只导出第 1 和第 2 个歌单)
 PlaylistOut "1825474783" -p netease --user --select 1,2 -f json,csv --no-open
 
-# 5. 酷狗音乐：导出已登录账号的全部个人歌单
+# 5. 酷狗音乐：免交互验证并保存登录凭据（可使用在网页版登录后获取的 UserID 与 Token）
+PlaylistOut -p kugou --token <TOKEN> --userid <USERID> --save-auth
+
+# 6. 酷狗音乐：单次带凭证直接批量导出（免交互，不覆盖全局凭据）
+PlaylistOut -p kugou --token <TOKEN> --userid <USERID> --user -f xlsx,csv -o ./output --no-open
+
+# 7. 酷狗音乐：导出已登录账号的全部个人歌单（自建 + 收藏）
 PlaylistOut -p kugou --user -f json --no-open
 
-# 6. 汽水音乐：切换解析通道为抖音原声
+# 8. 汽水音乐：切换解析通道为抖音原声
 PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 ```
 
@@ -108,10 +114,11 @@ PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 平台专属选项:
   --channel {qishui,douyin}
                         [汽水音乐] 解析通道: qishui 官方正版 / douyin 全量原声
-  --login               [酷狗音乐] 终端扫码登录获取凭证
-  --logout              [酷狗音乐] 清除本地保存的登录凭证
-  --token TOKEN         [酷狗音乐] 手动传入认证 Token
-  --userid USERID       [酷狗音乐] 手动传入 UserID
+  --login               [酷狗音乐] 调出终端扫码登录获取凭据并退出
+  --logout              [酷狗音乐] 清除本地保存的登录凭据并退出
+  --token TOKEN         [酷狗音乐] 手动传入认证 Token（可直接导出或保存）
+  --userid USERID       [酷狗音乐] 手动传入数字 UserID
+  --save-auth           [酷狗音乐] 在线验活 --token 与 --userid 凭据并持久化到本地后退出
 ```
 
 #### 退出状态码 (Exit Codes)
@@ -129,11 +136,17 @@ PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 |---|:---:|:---:|---|---|
 | **网易云音乐** | ✅ | ✅ (UID / 主页链接) | 免登 | — |
 | **QQ 音乐** | ✅ | ✅ (QQ号 / 主页链接) | 免登 | — |
-| **酷狗音乐** | ⚠️ 免登录前 10 首 (登录后完整) | ✅ (个人云端歌单) | 终端扫码登录 | `--login`, `--logout`, `--token`, `--userid` |
+| **酷狗音乐** | ⚠️ 免登录前 10 首 (登录后完整) | ✅ (个人云端歌单) | 终端扫码登录 / Web 凭据导入 | `--login`, `--logout`, `--token`, `--userid`, `--save-auth` |
 | **酷狗概念版** | ✅ | — | 免登 (全量无截断) | — |
 | **酷我音乐** | ✅ | — | 免登 (多页自动合并) | — |
 | **汽水音乐** | ✅ | — | 免登 (双通道支持) | `--channel {qishui,douyin}` |
 | **咪咕音乐** | ✅ | — | 免登 (并发分页获取) | — |
+
+> 💡 **酷狗音乐凭据获取技巧（免终端扫码）**：  
+> 若在无显示界面的远程服务器、容器或 CI 流水线中运行，或希望直接复用网页端已登录会话：  
+> 1. 打开 [Playlist Out 网页版](https://playlistout.lengxiqwq.com/) 并完成酷狗账号登录；  
+> 2. 按 F12 打开浏览器开发者工具，在「应用程序 (Application)」→「本地存储 (Local Storage)」中复制 `kugou_userid` 与 `kugou_token`；  
+> 3. 在终端执行 `PlaylistOut -p kugou --token <TOKEN> --userid <USERID> --save-auth`。CLI 会自动请求官方接口在线验活并换取用户昵称，验证通过后安全写入本地配置文件（`~/.playlistout/kugou_auth.json`），后续直接运行无需重复登录。
 
 #### 导出格式与命名规范
 

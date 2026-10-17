@@ -94,4 +94,28 @@ describe('Header Component', () => {
 
     expect(screen.queryByTestId('mobile-settings-drawer')).not.toBeInTheDocument();
   });
+
+  it('renders desktop client download link pointing to GitHub releases in header and mobile drawer', () => {
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <Header />
+      </LanguageProvider>
+    );
+
+    const desktopLink = screen.getByRole('link', { name: /下载桌面版/i });
+    expect(desktopLink).toBeInTheDocument();
+    expect(desktopLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(desktopLink).toHaveAttribute('target', '_blank');
+
+    // Also verify mobile drawer desktop link
+    const drawerBtn = screen.getByRole('button', { name: /手账百宝箱/i });
+    fireEvent.click(drawerBtn);
+
+    const drawer = screen.getByTestId('mobile-settings-drawer');
+    const drawerLinks = drawer.querySelectorAll('a.mobile-drawer-link-card');
+    const desktopDrawerLink = Array.from(drawerLinks).find((el) => el.textContent?.includes('下载桌面版'));
+    expect(desktopDrawerLink).toBeDefined();
+    expect(desktopDrawerLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(desktopDrawerLink).toHaveAttribute('target', '_blank');
+  });
 });

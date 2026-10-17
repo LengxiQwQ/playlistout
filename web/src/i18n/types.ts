@@ -7,6 +7,8 @@ export interface Translations {
     previewLink: string;
     numbersLink: string;
     github: string;
+    desktopBtn: string;
+    fontButtonText: string;
     fontDrawerCaption: string;
     fontPickerHint: string;
     languageSwitch: string;
@@ -241,6 +243,20 @@ export interface Translations {
     websiteLink: string;
     guideLink: string;
     nextTitle: string;
+  };
+  desktop: {
+    title: string;
+    subtitle: string;
+    tapeNote: string;
+    step1Title: string;
+    step1Desc: string;
+    step2Title: string;
+    step2Desc: string;
+    step3Title: string;
+    step3Desc: string;
+    terminalExample: string;
+    downloadButton: string;
+    downloadHint: string;
   };
   developer: {
     title: string;

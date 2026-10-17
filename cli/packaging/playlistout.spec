@@ -27,10 +27,10 @@ excludes = [
     "scripts.utils.test_insights_authenticity",
 ]
 
-# Windows executable icon and version resource
-icon_path = os.path.join(SPEC_DIR, "icon.ico")
+# Windows executable icon and version resource (prefer web favicon as single source of truth)
+icon_path = os.path.join(REPO_ROOT, "web", "public", "favicon.ico")
 if not os.path.isfile(icon_path):
-    icon_path = os.path.join(REPO_ROOT, "web", "public", "favicon.ico")
+    icon_path = os.path.join(SPEC_DIR, "icon.ico")
 if not (sys.platform == "win32" and os.path.isfile(icon_path)):
     icon_path = None
 

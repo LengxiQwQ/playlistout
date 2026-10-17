@@ -23,6 +23,24 @@ const GitHubIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   </svg>
 );
 
+const DownloadIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
+  <svg
+    height={size}
+    width={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
   const { t } = useTranslation();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -96,6 +114,19 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           gap: '0.85rem',
         }}
       >
+        {/* Desktop-only: Download Desktop App (GitHub Releases) */}
+        <a
+          href="https://github.com/LengxiQwQ/playlistout/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="header-desktop-btn desktop-only"
+          aria-label={t.header.desktopBtn}
+          title={t.header.desktopBtn}
+        >
+          <DownloadIcon size={18} />
+          <span>{t.header.desktopBtn}</span>
+        </a>
+
         {/* Desktop-only: Star on GitHub */}
         <a
           href="https://github.com/LengxiQwQ/playlistout"

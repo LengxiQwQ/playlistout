@@ -184,7 +184,9 @@ def main():
   2. 显式指定平台模式 (适用于纯数字 ID)：
      {inv_cmd} "2756674066" -p netease
      {inv_cmd} "9044196528" -p qq -f xlsx,csv
-  3. 交互模式 (无参数直接运行)：
+  3. 酷狗凭证配置 (纯命令行非交互模式，支持使用网页版获取的 UserID 与 Token)：
+     {inv_cmd} -p kugou --token <TOKEN> --userid <USERID>
+  4. 交互模式 (无参数直接运行)：
      {inv_cmd}
         """
     )
@@ -208,6 +210,7 @@ def main():
     login_group.add_argument("--logout", action="store_true", help="[酷狗] 清除本地保存的登录凭证")
     parser.add_argument("--token", help="[酷狗] 手动传入 Token")
     parser.add_argument("--userid", help="[酷狗] 手动传入 UserID")
+    parser.add_argument("--save-auth", action="store_true", help="[酷狗] 将传入的 --token 与 --userid 永久保存到本地登录配置")
     parser.add_argument("--no-telemetry", action="store_true", help="禁用匿名使用统计上报")
 
     args = parser.parse_args()
@@ -249,7 +252,15 @@ def main():
             print("× 参数 --channel 仅适用于汽水音乐平台 (qishui)，请配合 -p qishui 或汽水链接使用。", file=sys.stderr)
             sys.exit(2)
 
-    kugou_auth_args = [arg_name for arg_name, val in [("--token", args.token), ("--userid", args.userid), ("--login", args.login), ("--logout", args.logout)] if val]
+    kugou_auth_args = [
+        arg_name for arg_name, val in [
+            ("--token", args.token),
+            ("--userid", args.userid),
+            ("--save-auth", getattr(args, "save_auth", False)),
+            ("--login", args.login),
+            ("--logout", args.logout),
+        ] if val
+    ]
     if kugou_auth_args:
         if plt_id:
             adapter = PlatformRegistry.get(plt_id)
@@ -263,15 +274,62 @@ def main():
             print(f"× 平台 '{adapter.display_name}' 当前不支持导出用户歌单列表。", file=sys.stderr)
             sys.exit(2)
 
-    # 处理全局平台专属快捷操作 (如酷狗登录/注销)
-    if args.login or args.logout:
+    raw_input = args.opt_id or args.input
+    has_token = bool(args.token)
+    has_userid = bool(args.userid)
+
+    # ─────────────────────────────────────────────────────────────
+    # 酷狗登录凭证与身份管理 (纯命令行优先，严格隔离交互菜单)
+    # ─────────────────────────────────────────────────────────────
+    # 1. 处理 --logout 凭证清除
+    if args.logout:
         kugou_adapter = PlatformRegistry.get("kugou")
         if kugou_adapter:
-            kugou_adapter.handle_interactive("login" if args.login else "logout")
-            if not args.input and not args.opt_id:
+            kugou_adapter.handle_interactive("logout")
+            if not raw_input:
                 return
 
-    raw_input = args.opt_id or args.input
+    # 2. 处理纯命令行非交互式凭证配置与在线验活
+    # 触发条件：
+    # - 传入了 --token 与 --userid 且没有提供待导出歌单链接/ID (纯凭证配置指令)
+    # - 或显式指定了 --save-auth
+    # - 或显式指定了 --login 并同时提供了 --token / --userid
+    should_configure_auth = (
+        (has_token and has_userid and not raw_input)
+        or (has_token and has_userid and getattr(args, "save_auth", False))
+        or (args.login and (has_token or has_userid))
+    )
+
+    if should_configure_auth:
+        if not (has_token and has_userid):
+            print("× 酷狗登录凭证需要成对传入 --token 与 --userid。", file=sys.stderr)
+            sys.exit(2)
+
+        from cli.platforms.kugou import configure_auth_non_interactive
+        success, msg, auth_path = configure_auth_non_interactive(args.token, args.userid)
+        if success:
+            print(f"✓ 酷狗凭证校验成功！{msg}")
+            if auth_path:
+                print(f"✓ 登录凭证已安全保存至: {auth_path}")
+            if not raw_input:
+                return
+        else:
+            print(f"× 酷狗凭证校验失败：{msg}", file=sys.stderr)
+            sys.exit(1)
+
+    # 3. 处理单边传参拦截：只传了 token 或只传了 userid，且没有目标歌单
+    if (has_token ^ has_userid) and not raw_input:
+        print("× 酷狗登录凭证需要成对传入 --token 与 --userid。", file=sys.stderr)
+        sys.exit(2)
+
+    # 4. 处理显式 --login 且未传凭据 (调出终端扫码登录菜单)
+    if args.login:
+        kugou_adapter = PlatformRegistry.get("kugou")
+        if kugou_adapter:
+            kugou_adapter.handle_interactive("login")
+            if not raw_input:
+                return
+
     output_dir = args.output_dir if args.output_dir else "output"
     reveal_folder = not args.no_open
 
@@ -289,9 +347,38 @@ def main():
         sys.exit(2)
 
     # ─────────────────────────────────────────────────────────────
+    # 模式判定：非交互命令行模式 vs 交互式终端模式
+    # ─────────────────────────────────────────────────────────────
+    has_target = bool(raw_input or is_headless_kugou_user)
+    has_explicit_cli_flags = bool(
+        args.platform
+        or args.channel
+        or args.selection
+        or getattr(args, "user", False)
+        or args.token
+        or args.userid
+        or getattr(args, "save_auth", False)
+        or getattr(args, "opt_id", None)
+    )
+
+    if not has_target:
+        if has_explicit_cli_flags:
+            # 用户在命令行指定了平台/选项，但未提供目标歌单 URL 或 ID，拦截退化进交互式
+            print(
+                "× 缺少目标歌单链接或 ID。\n"
+                "  用法示例：\n"
+                f"    {inv_cmd} \"<url>\"\n"
+                f"    {inv_cmd} \"<url>\" -p kugou -f json\n"
+                f"    {inv_cmd} -p kugou --token <TOKEN> --userid <USERID>\n"
+                "  无参数直接运行将启动交互式终端。",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
+    # ─────────────────────────────────────────────────────────────
     # 模式一：非交互命令行模式 (通过输入参数跑脚本)
     # ─────────────────────────────────────────────────────────────
-    if raw_input or is_headless_kugou_user:
+    if has_target:
         # 严格铁律：通过输入参数跑脚本时，严禁使用任何颜色，防止影响脚本解析与运行
         set_color_enabled(False)
         if is_headless_kugou_user:
@@ -405,6 +492,9 @@ def main():
         if not playlist or not playlist.tracks:
             # 严格模式：headless 模式下若传入了明确的 login/logout 指令则处理，否则绝不调起任何交互输入
             if target_text and target_text.lower() in ("login", "logout", "--login", "--logout"):
+                if target_text.lower() in ("login", "--login") and not (sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()):
+                    print("× 非交互终端环境下无法调出扫码登录，请使用 --token 与 --userid 传入凭证。", file=sys.stderr)
+                    sys.exit(2)
                 handled = adapter.handle_interactive(
                     target_text,
                     output_dir=output_dir,

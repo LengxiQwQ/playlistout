@@ -51,3 +51,18 @@ def test_frozen_version_reads_meipass(tmp_path, monkeypatch):
     pkg_file.write_text(json.dumps({"name": "playlistout", "version": "9.9.9"}), encoding="utf-8")
 
     assert version_mod.get_version() == "9.9.9"
+
+
+def test_cli_icon_parity_with_web():
+    """Verify that cli/packaging icons match web public icons (web as source of truth)."""
+    import hashlib
+    repo_root = Path(__file__).resolve().parents[2]
+
+    web_ico = (repo_root / "web" / "public" / "favicon.ico").read_bytes()
+    cli_ico = (repo_root / "cli" / "packaging" / "icon.ico").read_bytes()
+    assert hashlib.md5(cli_ico).hexdigest() == hashlib.md5(web_ico).hexdigest()
+
+    web_png = (repo_root / "web" / "public" / "logo-256.png").read_bytes()
+    cli_png = (repo_root / "cli" / "packaging" / "icon.png").read_bytes()
+    assert hashlib.md5(cli_png).hexdigest() == hashlib.md5(web_png).hexdigest()
+

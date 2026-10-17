@@ -311,17 +311,18 @@ export const FontSwitcher: React.FC = () => {
 
   return (
     <div className={`font-picker ${isOpen ? 'open' : ''}`} id="fontPicker">
-      <span className="font-picker-caption">{t.header.fontDrawerCaption}</span>
       <button
         className="font-picker-button"
         id="fontPickerButton"
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-label={`${t.header.fontButtonText}: ${getFontName(currentPreset)}`}
+        title={`${t.header.fontButtonText}: ${currentPreset.index} · ${getFontName(currentPreset)}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span id="fontPickerLabel">
-          {currentPreset.index} · {getFontName(currentPreset)}
+          {t.header.fontButtonText}
         </span>
         <span className="paper-caret" style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
           ⌄

@@ -116,8 +116,9 @@ PlaylistOut "9044196528" -p qqmusic -f xlsx,csv
 PlaylistOut "1160951354" -p qqmusic --user -f json --no-open
 PlaylistOut -p kugou --user --select 1,2 -f json --no-open
 
-# 酷狗扫码登录
+# 酷狗扫码登录 (亦支持 --token/--userid 免扫码非交互配置)
 PlaylistOut -p kugou --login
+PlaylistOut -p kugou --token <TOKEN> --userid <USERID> --save-auth
 ```
 
 每个正式版本同时提供 `CLI-SHA256SUMS.txt` 和 `cli-release-manifest.json`，用于核验发行文件完整性和构建信息。

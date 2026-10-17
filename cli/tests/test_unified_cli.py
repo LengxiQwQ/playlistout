@@ -211,7 +211,8 @@ def test_home_banner_and_menu_copy(capsys):
     ])
 
     out = capsys.readouterr().out
-    assert "Playlist Out CLI · 把你的歌单带走" in out
+    assert "Playlist Out CLI v" in out
+    assert "把你的歌单带走 - 命令行版" in out
     assert "你的歌单，不应该只困在一个音乐平台里。" in out
     assert "解析、导出，并把歌单继续带进支持的开源播放器。" in out
     assert "作者：LengxiQwQ" in out
@@ -386,12 +387,16 @@ def test_cli_module_execution():
 
 def test_ui_color_and_banner_amber(capsys, monkeypatch):
     from cli.core.ui import print_banner, supports_color
+    from cli.core.version import get_version
+
+    version = get_version()
 
     # In capsys non-tty, supports_color should be False by default
     assert supports_color() is False
     print_banner()
     out = capsys.readouterr().out
-    assert "Playlist Out CLI · 把你的歌单带走" in out
+    assert f"Playlist Out CLI v{version}" in out
+    assert "把你的歌单带走 - 命令行版" in out
     assert "\033[1;33m" not in out
 
     # Forced color test
@@ -399,7 +404,9 @@ def test_ui_color_and_banner_amber(capsys, monkeypatch):
     assert supports_color() is True
     print_banner()
     out_colored = capsys.readouterr().out
-    assert "\033[1;33mPlaylist Out CLI · 把你的歌单带走\033[0m" in out_colored
+    assert f"\033[1;33mPlaylist Out CLI v{version}\033[0m" in out_colored
+    assert "把你的歌单带走 - 命令行版" in out_colored
+    assert "\033[1;33m把你的歌单带走" not in out_colored
 
 
 def test_ui_title_formatting_and_cyan(capsys, monkeypatch):
@@ -623,8 +630,9 @@ def test_interactive_sticky_platform_and_return_menu(capsys, tmp_path):
 
     out = capsys.readouterr().out
     # 1. 软件标题在最开始打印过一次
-    assert "Playlist Out CLI · 把你的歌单带走" in out
-    assert out.count("Playlist Out CLI · 把你的歌单带走") == 1
+    assert "Playlist Out CLI v" in out
+    assert "把你的歌单带走 - 命令行版" in out
+    assert out.count("把你的歌单带走 - 命令行版") == 1
 
     # 2. 第一次选择网易云音乐
     assert "已选择：网易云音乐" in out

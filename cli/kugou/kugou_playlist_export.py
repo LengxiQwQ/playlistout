@@ -1564,26 +1564,49 @@ def main():
 
     args = parser.parse_args()
 
+    raw_input = args.opt_id or args.input
+    has_token = bool(args.token)
+    has_userid = bool(args.userid)
+
     # 处理凭证清除
     if args.logout:
         clear_auth_credentials()
-        return
-
-    # 处理手动保存凭证
-    if args.save_auth and args.token and args.userid:
-        save_auth_credentials(args.token, args.userid, source="manual")
-        print("✓ 凭证已保存。")
-        if not args.input and not args.opt_id:
+        print("✓ 酷狗登录凭证已清除。")
+        if not raw_input:
             return
+
+    # 处理纯命令行凭证保存与配置
+    if (has_token and has_userid and not raw_input) or (has_token and has_userid and args.save_auth) or (args.login and has_token and has_userid):
+        from cli.platforms.kugou import configure_auth_non_interactive
+        success, msg, auth_path = configure_auth_non_interactive(args.token, args.userid)
+        if success:
+            print(f"✓ 酷狗凭证校验成功！{msg}")
+            if auth_path:
+                print(f"✓ 登录凭证已安全保存至: {auth_path}")
+            if not raw_input:
+                return
+        else:
+            print(f"× 酷狗凭证校验失败：{msg}", file=sys.stderr)
+            sys.exit(1)
+
+    if (has_token ^ has_userid) and not raw_input:
+        print("× 酷狗登录凭证需要成对传入 --token 与 --userid。", file=sys.stderr)
+        sys.exit(2)
 
     # 处理显式 --login 流程
     if args.login:
+        if not (sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()):
+            print("× 非交互终端环境下无法调出扫码登录，请使用 --token 与 --userid 传入凭证。", file=sys.stderr)
+            sys.exit(2)
         interactive_login_menu()
-        if not args.input and not args.opt_id:
+        if not raw_input:
             return
 
-    raw_input = args.opt_id or args.input
     output_dir = args.output_dir if args.output_dir else "output"
+
+    if not raw_input and (has_token or has_userid or args.save_auth or getattr(args, "opt_id", None)):
+        print("错误: 缺少目标歌单链接或 ID，请检查输入参数。", file=sys.stderr)
+        sys.exit(2)
 
     if raw_input:
         target = extract_kugou_target(raw_input)

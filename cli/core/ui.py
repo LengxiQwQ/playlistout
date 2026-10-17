@@ -12,6 +12,18 @@ import platform
 import subprocess
 from typing import List
 
+# 针对 Windows 控制台尽量启用 UTF-8 编码避免特殊字符乱码
+if sys.platform == 'win32':
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+from cli.core.version import get_version
+
 REPO_URL = "https://github.com/LengxiQwQ/playlistout"
 AUTHOR_URL = "https://github.com/LengxiQwQ"
 WEB_URL = "https://playlistout.lengxiqwq.com"
@@ -248,13 +260,19 @@ def print_banner(platform_name: str = None):
     repo_link = terminal_link(REPO_URL, "GitHub 开源仓库")
     web_link = terminal_link(WEB_URL, "在线网页版")
 
-    if platform_name:
-        title = f"Playlist Out CLI - {platform_name} 歌单导出工具"
-    else:
-        title = "Playlist Out CLI · 把你的歌单带走"
+    version = get_version()
+    version_str = f" v{version}" if version and version != "unknown-dev" else ""
+    title = f"Playlist Out CLI{version_str}"
 
-    # 使用暖橙色加粗渲染软件名称 (非交互模式无色彩)
+    if platform_name:
+        subtitle = f"把你的歌单带走 - {platform_name} 歌单导出工具"
+    else:
+        subtitle = "把你的歌单带走 - 命令行版"
+
+    # 第一行使用暖橙色加粗渲染软件名称与版本号 (非交互模式无色彩)
     print(color_amber(title))
+    # 第二行中文副标题保持终端默认普通颜色
+    print(subtitle)
     print("")
     print("你的歌单，不应该只困在一个音乐平台里。")
     print("解析、导出，并把歌单继续带进支持的开源播放器。")

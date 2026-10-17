@@ -450,3 +450,92 @@ def test_cli_qishui_channel_none_safety():
         mock_info.assert_called_once_with("7087507348697186339", channel="qishui")
 
 
+def test_cli_kugou_non_interactive_token_userid_save_success(capsys):
+    """验证传入 -p kugou --token 与 --userid 时，直接在线校验并安全保存，绝不调用任何 input() 或交互式菜单"""
+    tok = "c7a8b9e6f1234567890abcdef1234567"
+    uid = "1425711902"
+    mock_info = {"userid": uid, "nickname": "是冷汐呀", "playlist_count": 6}
+
+    test_args = ["main.py", "-p", "kugou", "--token", tok, "--userid", uid]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.kugou.verify_kugou_credentials", return_value=(True, "", mock_info)) as mock_verify, \
+         patch("cli.platforms.kugou.save_auth_credentials", return_value="/tmp/kugou_auth.json") as mock_save, \
+         patch("builtins.input", side_effect=AssertionError("Non-interactive mode must NEVER call input()!")):
+
+        main()
+        mock_verify.assert_called_once_with(tok, uid, timeout=10)
+        mock_save.assert_called_once_with(tok, uid, source="manual", nickname="是冷汐呀")
+
+    captured = capsys.readouterr()
+    assert "凭证校验成功" in captured.out
+    assert "是冷汐呀" in captured.out
+    assert "/tmp/kugou_auth.json" in captured.out
+
+
+def test_cli_kugou_non_interactive_token_userid_save_failure(capsys):
+    """验证传入非法或已过期 token 时，纯命令行报错退出（exit 1），绝不进入交互式菜单"""
+    tok = "c7a8b9e6f1234567890abcdef1234567"
+    uid = "1425711902"
+
+    test_args = ["main.py", "-p", "kugou", "--token", tok, "--userid", uid]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.kugou.verify_kugou_credentials", return_value=(False, "Token 无效或已过期", {})) as mock_verify, \
+         patch("cli.platforms.kugou.save_auth_credentials") as mock_save, \
+         patch("builtins.input", side_effect=AssertionError("Non-interactive mode must NEVER call input()!")):
+
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 1
+        mock_verify.assert_called_once()
+        assert not mock_save.called
+
+    captured = capsys.readouterr()
+    assert "凭证校验失败：Token 无效或已过期" in captured.err
+
+
+def test_cli_kugou_non_interactive_token_without_userid_fails(capsys):
+    """验证仅传 --token 缺少 --userid 时拦截报错以代码 2 退出"""
+    test_args = ["main.py", "-p", "kugou", "--token", "c7a8b9e6f1234567890abcdef1234567"]
+    with patch.object(sys, "argv", test_args), \
+         patch("builtins.input", side_effect=AssertionError("Non-interactive mode must NEVER call input()!")):
+
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "成对传入 --token 与 --userid" in captured.err
+
+
+def test_cli_kugou_login_flag_with_token_userid_runs_non_interactive(capsys):
+    """验证 --login 配合 --token 与 --userid 时，直接走非交互保存，绝不调起交互菜单"""
+    tok = "c7a8b9e6f1234567890abcdef1234567"
+    uid = "1425711902"
+    mock_info = {"userid": uid, "nickname": "是冷汐呀", "playlist_count": 6}
+
+    test_args = ["main.py", "--login", "-p", "kugou", "--token", tok, "--userid", uid]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.kugou.verify_kugou_credentials", return_value=(True, "", mock_info)), \
+         patch("cli.platforms.kugou.save_auth_credentials", return_value="/tmp/kugou_auth.json"), \
+         patch("cli.platforms.kugou.KugouAdapter.handle_interactive", side_effect=AssertionError("handle_interactive called!")):
+
+        main()
+
+    captured = capsys.readouterr()
+    assert "凭证校验成功" in captured.out
+
+
+def test_cli_flags_without_input_rejects_and_never_enters_interactive(capsys):
+    """验证用户传了参数（如 -p netease）但漏传了 URL 时，以代码 2 报错退出，绝不静默退化进入交互模式"""
+    test_args = ["main.py", "-p", "netease"]
+    with patch.object(sys, "argv", test_args), \
+         patch("builtins.input", side_effect=AssertionError("Command line mode must NEVER enter interactive menu!")):
+
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "缺少目标歌单链接或 ID" in captured.err
+
+

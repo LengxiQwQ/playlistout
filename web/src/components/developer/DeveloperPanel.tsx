@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import { Paper } from '../ui/Paper';
 
 const API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 const REPOSITORY_DOC_BASE = 'https://github.com/LengxiQwQ/playlistout/blob/main';
-const CLI_GUIDE_URL = 'https://github.com/LengxiQwQ/playlistout#python-cli--命令行';
 
 interface DeveloperMethod {
-  id: 'json' | 'api' | 'cli' | 'integration';
+  id: 'api' | 'cli' | 'json' | 'integration';
   mark: string;
   title: string;
   description: string;
@@ -20,17 +19,17 @@ interface DeveloperMethod {
 export const DeveloperPanel: React.FC = () => {
   const { t } = useTranslation();
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const methods: DeveloperMethod[] = [
-    {
-      id: 'json',
-      mark: '{ }',
-      title: t.developer.jsonTitle,
-      description: t.developer.jsonDescription,
-      meta: t.developer.jsonMeta,
-      action: t.developer.jsonAction,
-      href: `${REPOSITORY_DOC_BASE}/docs/JSON-SCHEMA.md`,
-    },
     {
       id: 'api',
       mark: '</>',
@@ -47,7 +46,16 @@ export const DeveloperPanel: React.FC = () => {
       description: t.developer.cliDescription,
       meta: t.developer.cliMeta,
       action: t.developer.cliAction,
-      href: CLI_GUIDE_URL,
+      href: `${REPOSITORY_DOC_BASE}/cli/README.md`,
+    },
+    {
+      id: 'json',
+      mark: '{ }',
+      title: t.developer.jsonTitle,
+      description: t.developer.jsonDescription,
+      meta: t.developer.jsonMeta,
+      action: t.developer.jsonAction,
+      href: `${REPOSITORY_DOC_BASE}/docs/JSON-SCHEMA.md`,
     },
     {
       id: 'integration',
@@ -63,6 +71,14 @@ export const DeveloperPanel: React.FC = () => {
   const handleCopyApi = async () => {
     const ok = await copyToClipboard(API_BASE_URL);
     setCopyState(ok ? 'copied' : 'failed');
+
+    if (copyTimerRef.current !== null) {
+      window.clearTimeout(copyTimerRef.current);
+    }
+    copyTimerRef.current = window.setTimeout(() => {
+      setCopyState('idle');
+      copyTimerRef.current = null;
+    }, 2000);
   };
 
   const copyLabel =
@@ -86,19 +102,19 @@ export const DeveloperPanel: React.FC = () => {
     >
       <div className="developer-heading-row">
         <div className="developer-heading-copy">
-          <h2 id="developers-title" className="developer-title">
+          <h2 id="developers-title" className="font-marker developer-title">
             {t.developer.title}
           </h2>
-          <p className="developer-subtitle">{t.developer.subtitle}</p>
+          <p className="font-handwriting developer-subtitle">{t.developer.subtitle}</p>
         </div>
-        <div className="developer-value-note">{t.developer.valueNote}</div>
+        <div className="developer-value-note font-handwriting">{t.developer.valueNote}</div>
       </div>
 
       <div className="developer-method-grid">
         {methods.map((method) => (
           <article key={method.id} className={`developer-method developer-method-${method.id}`}>
             <div className="developer-method-topline">
-              <span className="developer-method-mark" aria-hidden="true">
+              <span className="font-mono developer-method-mark" aria-hidden="true">
                 {method.mark}
               </span>
               <span className="developer-method-meta">{method.meta}</span>
@@ -132,7 +148,7 @@ export const DeveloperPanel: React.FC = () => {
         ))}
       </div>
 
-      <div className="developer-footer-note">{t.developer.footerNote}</div>
+      <div className="developer-footer-note font-handwriting">{t.developer.footerNote}</div>
     </Paper>
   );
 };

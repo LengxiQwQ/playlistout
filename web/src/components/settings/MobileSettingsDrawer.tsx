@@ -24,6 +24,24 @@ const GitHubIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   </svg>
 );
 
+const DownloadIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg
+    height={size}
+    width={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
   isOpen,
   onClose,
@@ -154,6 +172,33 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {/* Desktop Client Release Download Link */}
+            <a
+              href="https://github.com/LengxiQwQ/playlistout/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-drawer-link-card sticker font-handwriting"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 1rem',
+                backgroundColor: 'var(--note-pink, #fde8ec)',
+                textDecoration: 'none',
+                color: 'var(--ink, #2d3436)',
+                borderRadius: '8px',
+                border: '2px solid var(--ink, #2d3436)',
+                fontSize: '1.15rem',
+                fontWeight: 700,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <DownloadIcon size={20} />
+                <span>{t.header.desktopBtn}</span>
+              </div>
+              <span style={{ fontSize: '1rem' }}>↗</span>
+            </a>
+
             <a
               href="https://github.com/LengxiQwQ/playlistout"
               target="_blank"
