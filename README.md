@@ -28,7 +28,7 @@
 
 | 获取方式 | 适合场景 | 安装与使用 |
 | :--- | :--- | :--- |
-| ⚡ **包管理器安装** | 喜欢终端命令的玩家 | `npm install playlistout` (装完输入 `playlistout` 启动) |
+| ⚡ **包管理器安装** | 喜欢终端命令的玩家 | `npm install -g playlistout`<br>*(装完输入 `playlistout` 启动)* |
 | 🗂️ **单文件免安装** | 喜欢桌面双击的用户 | [前往 Releases 下载单文件](https://github.com/LengxiQwQ/playlistout/releases/latest) |
 
 > 💡 注：WinGet (`winget install LengxiQwQ.PlaylistOut`) 与 Scoop 官方源正在同步审核中。
@@ -89,43 +89,29 @@ BBPlayer 已完成 Playlist Out 歌单导入适配，将在下一正式版本中
 
 ---
 
-## 💻 本地 CLI
+## 💻 本地 CLI 常用命令
 
-Playlist Out CLI 支持交互式使用和命令行参数调用，可用于日常解析、批量导出和自动化任务。
-
-正式 Release 提供 4 种原生发行包：
-
-| 系统 | 发行文件 | 使用方式 |
-|---|---|---|
-| **Windows x64** | `PlaylistOut-CLI-v{version}-windows-x64.exe` | 直接双击运行，或在终端调用 |
-| **Linux x64** | `PlaylistOut-CLI-v{version}-linux-x64.tar.gz` | 解压后运行 `./PlaylistOut` |
-| **macOS Apple Silicon** | `PlaylistOut-CLI-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
-| **macOS Intel** | `PlaylistOut-CLI-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
-
-macOS 当前为未签名构建，首次运行时可能需要在「系统设置 → 隐私与安全性」中手动允许。
+Playlist Out CLI 支持**交互向导**与**命令行参数**两种模式，常用调用示例如下：
 
 ```bash
-# 交互式启动
-PlaylistOut
+# 1. 交互向导模式（直接回车，根据屏幕提示粘贴链接即可）
+playlistout
 
-# 直接解析歌单
-PlaylistOut "https://music.163.com/playlist?id=2756674066"
+# 2. 单歌单直接导出（可多选格式：xlsx, csv, json, txt, m3u8）
+playlistout "https://music.163.com/playlist?id=2756674066" -f xlsx,csv
 
-# 指定平台和导出格式
-PlaylistOut "9044196528" -p qqmusic -f xlsx,csv
+# 3. 纯数字 ID 解析（通过 -p 锁定平台）
+playlistout "9044196528" -p qqmusic -f xlsx
 
-# 用户歌单批量导出 (支持 --select 指定歌单序号)
-PlaylistOut "1160951354" -p qqmusic --user -f json --no-open
-PlaylistOut -p kugou --user --select 1,2 -f json --no-open
+# 4. 用户公开歌单批量导出（支持全量导出或指定编号）
+playlistout "1160951354" -p qqmusic --user -f json --no-open
+playlistout -p kugou --user --select 1,2 -f json --no-open
 
-# 酷狗扫码登录 (亦支持 --token/--userid 免扫码非交互配置)
-PlaylistOut -p kugou --login
-PlaylistOut -p kugou --token <TOKEN> --userid <USERID> --save-auth
+# 5. 酷狗凭证配置（亦可直接输入 login 调出终端扫码）
+playlistout -p kugou --token <TOKEN> --userid <USERID>
 ```
 
-每个正式版本同时提供 `CLI-SHA256SUMS.txt` 和 `cli-release-manifest.json`，用于核验发行文件完整性和构建信息。
-
-完整命令参数、平台能力、认证方式和退出状态码见 [Playlist Out CLI 使用指南](cli/README.md)。
+👉 更多参数选项、平台特性与退出状态码详见 [Playlist Out CLI 使用指南 (cli/README.md)](cli/README.md)。
 
 ---
 
