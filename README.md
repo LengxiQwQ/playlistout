@@ -111,7 +111,7 @@ playlistout -p kugou --user --select 1,2 -f json --no-open
 playlistout -p kugou --token <TOKEN> --userid <USERID>
 ```
 
-👉 更多参数选项、平台特性与退出状态码详见 [Playlist Out CLI 使用指南 (cli/README.md)](cli/README.md)。
+👉 更多参数选项、平台特性与退出状态码详见 [Playlist Out CLI 使用指南](cli/README.md)。
 
 ---
 
