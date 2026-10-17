@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Tests for PlaylistOut CLI Telemetry & Insights Integration
-==========================================================
+Tests for Playlist Out CLI Telemetry & Insights Integration
+===========================================================
 Verifies non-blocking execution, privacy opt-outs, payload formatting,
 headers, silent fail-open behavior, and batch event packaging.
 """

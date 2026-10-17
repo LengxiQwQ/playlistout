@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Base Platform Adapter
-=================================
+Playlist Out CLI Base Platform Adapter
+======================================
 Abstract base class defining the contract for all music platform integrations.
 """
 

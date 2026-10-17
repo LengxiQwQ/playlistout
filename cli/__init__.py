@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified CLI
-=======================
+Playlist Out CLI
+================
 A modular, privacy-preserving music playlist exporter supporting multiple platforms.
 """
 
-__version__ = "2.2.0"
+from .core.version import get_version
+
+__version__ = get_version()
 __author__ = "LengxiQwQ"

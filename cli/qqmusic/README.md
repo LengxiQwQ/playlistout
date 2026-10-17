@@ -16,7 +16,7 @@
 
 - 支持通过歌单链接或歌单 ID 输入；
 - **新增**：支持输入 QQ 号批量导出该用户所有自建歌单；
-- 支持导出格式：`.xlsx`、`.csv`、`.json`（遵循 PlaylistOut Canonical JSON 数据规范，含歌单及单曲封面直链 `coverUrl`）、`.txt`、`.m3u8`；
+- 支持导出格式：`.xlsx`、`.csv`、`.json`（遵循 Playlist Out Canonical JSON 数据规范，含歌单及单曲封面直链 `coverUrl`）、`.txt`、`.m3u8`；
 - 文件名统一为 `【平台】歌单名 - 作者.ext`（如 `【QQ 音乐】夜曲精选 - 周杰伦.xlsx`），自动替换 Windows 不允许的字符，同目录重名时自动追加 ` (2)`、` (3)` 防覆盖；
 - 导出文件统一自动保存在 `output/` 目录下（单歌单及批量歌单均自动归类到 `output/`）；
 - 导出完成后（在 Windows）会自动打开文件所在目录并选中文件；

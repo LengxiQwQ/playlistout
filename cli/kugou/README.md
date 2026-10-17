@@ -21,12 +21,12 @@
     - 凭证自动保存至本地 `~/.playlistout/kugou_auth.json`，下次导出个人歌单直接复用，免重复扫码。
   - **方式二：手动配置官网或抓包凭证**
     - 运行 `python kugou_playlist_export.py --login` 选择 `[2]`；
-    - 输入在 PlaylistOut 官网（https://playlistout.lengxiqwq.com）扫码后显示的 UserID 与 Token，或通过命令行参数 `--token` 和 `--userid` 传入并自动保存。
+    - 输入在 Playlist Out 官网（https://playlistout.lengxiqwq.com）扫码后显示的 UserID 与 Token，或通过命令行参数 `--token` 和 `--userid` 传入并自动保存。
 - **支持高音质与 VIP 状态标记**：
   - 识别无损 FLAC、高品 320kbps 及标准音质；
   - 准确标注 VIP 专享与正常播放状态；
 - **全格式导出支持**：`.xlsx`、`.json`、`.txt`、`.csv`、`.m3u8`；
-- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 PlaylistOut 通用歌单结构，包含封面直链 (`coverUrl`)、单曲页面直链 (`sourceUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本接入；
+- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 Playlist Out 通用歌单结构，包含封面直链 (`coverUrl`)、单曲页面直链 (`sourceUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本接入；
 - 导出完成后自动打开文件所在目录并定位文件；
 - 同时支持命令行参数运行与控制台交互式循环操作。
 

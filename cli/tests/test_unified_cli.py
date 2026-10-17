@@ -123,7 +123,7 @@ def test_cli_version_flag(capsys):
         assert exc.value.code == 0
 
     captured = capsys.readouterr()
-    expected_version_str = f"PlaylistOut CLI v{get_version()}"
+    expected_version_str = f"Playlist Out CLI v{get_version()}"
     assert expected_version_str in captured.out
 
 
@@ -381,7 +381,7 @@ def test_cli_module_execution():
         check=False
     )
     assert result.returncode == 0
-    assert "PlaylistOut CLI v" in result.stdout
+    assert "Playlist Out CLI v" in result.stdout
 
 
 def test_ui_color_and_banner_amber(capsys, monkeypatch):

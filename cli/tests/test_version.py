@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests for PlaylistOut Version Resolver & Consistency
+Tests for Playlist Out Version Resolver & Consistency
 """
 
 import json

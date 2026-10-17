@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut CLI Telemetry & Insights Integration
+Playlist Out CLI Telemetry & Insights Integration
 =================================================
 Fire-and-forget, non-blocking telemetry reporter communicating with the official
-PlaylistOut Insights endpoint (POST /api/event) to record aggregate product usage.
+Playlist Out Insights endpoint (POST /api/event) to record aggregate product usage.
 
 Governed strictly by docs/PROJECT-CONSTITUTION.md:
 - No user-identifying data, track lists, URLs, or tokens are ever collected or stored.

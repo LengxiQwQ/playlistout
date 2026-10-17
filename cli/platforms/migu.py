@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Migu Music Platform Adapter
-=======================================
+Playlist Out CLI Migu Music Platform Adapter
+============================================
 Integrates Migu Music (migu.cn) into the unified CLI.
 """
 

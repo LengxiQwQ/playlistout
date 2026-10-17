@@ -13,7 +13,7 @@
 - **支持歌曲状态标记**：直观区分歌曲是正常可播、下架/无版权变灰、还是 VIP专享；
 - 支持全量歌曲分批详情获取，彻底突破官方未登录 10 首歌的截断限制；
 - 支持导出格式：`.xlsx`、`.json`、`.txt`、`.csv`、`.m3u8`；
-- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 PlaylistOut 通用歌单结构，包含歌单封面直链 (`coverUrl`) 及每首歌曲/专辑封面直链 (`coverUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本标准化接入；
+- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 Playlist Out 通用歌单结构，包含歌单封面直链 (`coverUrl`) 及每首歌曲/专辑封面直链 (`coverUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本标准化接入；
 - 导出文件统一保存在 `output/` 目录下，导出完成后（在 Windows）自动打开文件所在目录并选中文件。
 
 ---

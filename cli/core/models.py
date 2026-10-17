@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Normalized Data Models
-===================================
+Playlist Out CLI Normalized Data Models
+=======================================
 Standardized representation of playlists, tracks, and export configurations
 across all supported music platforms.
 """
@@ -39,7 +39,7 @@ class NormalizedTrack:
     raw_extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
-        """Convert to official PlaylistOut Canonical JSON track format."""
+        """Convert to official Playlist Out Canonical JSON track format."""
         entry: Dict[str, Any] = {
             "index": self.index,
             "title": str(self.title or "未知歌曲").strip(),

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Qishui Music Platform Adapter
-=========================================
+Playlist Out CLI Qishui Music Platform Adapter
+==============================================
 Integrates Qishui / Douyin Music (qishui.douyin.com / qishui.com) into the unified CLI.
 """
 

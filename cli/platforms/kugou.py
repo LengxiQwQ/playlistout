@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Kugou Music Platform Adapter
-========================================
+Playlist Out CLI Kugou Music Platform Adapter
+=============================================
 Integrates Kugou Music (kugou.com) into the unified CLI.
 Supports official special playlists, collection playlists, H5 share pages, and Cloudlists (with terminal QR code auth).
 """

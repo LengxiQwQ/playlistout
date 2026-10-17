@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Frozen & Runtime Self-Test
-======================================
+Playlist Out CLI Offline Self-Test Suite
+========================================
 Deterministic offline self-test verifying CLI initialization, platform adapter registration,
 core dependencies (requests, certifi CA bundle, openpyxl), and file exports (XLSX, CSV, JSON, TXT, M3U8)
 without network access or user workspace pollution.
@@ -30,7 +30,7 @@ def run_self_test() -> int:
     from cli.core.telemetry import set_telemetry_enabled
     set_telemetry_enabled(False)
 
-    print("[*] Running PlaylistOut Frozen Self-Test...")
+    print("[*] Running Playlist Out CLI Self-Test...")
 
     # 1. Verify Platform Adapters
     try:
@@ -120,7 +120,7 @@ def run_self_test() -> int:
         test_playlist = NormalizedPlaylist(
             platform="selftest",
             id="test-playlist-999",
-            name="自测歌单 PlaylistOut 🎵",
+            name="自测歌单 Playlist Out 🎵",
             creator="测试员 Tester",
             tracks=tracks,
             tags=["Pop", "Test"],
@@ -221,7 +221,7 @@ def run_self_test() -> int:
             export_m3u8(test_playlist, m3u8_path)
             with open(m3u8_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            if "#EXTM3U" not in content or "#PLAYLIST:自测歌单 PlaylistOut 🎵" not in content:
+            if "#EXTM3U" not in content or "#PLAYLIST:自测歌单 Playlist Out 🎵" not in content:
                 print("[-] M3U8 header missing from output", file=sys.stderr)
                 return 1
             if "#EXTINF:269,周杰伦 / Jay Chou - 晴天 (Sunshine) 🎵" not in content:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut UI & Terminal Components
-====================================
+Playlist Out CLI UI & Terminal Components
+=========================================
 Branding, ANSI banners, OSC-8 terminal hyperlinks, format menus, and cross-platform folder opener.
 """
 

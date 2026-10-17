@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified Export Naming
-=================================
+Playlist Out CLI Unified Export Naming
+======================================
 Single source of truth for exported file names across the unified CLI and the
 legacy per-vendor scripts:
 

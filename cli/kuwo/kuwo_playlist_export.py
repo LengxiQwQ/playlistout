@@ -610,7 +610,7 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="酷我音乐歌单导出工具 (PlaylistOut Kuwo Exporter)")
+    parser = argparse.ArgumentParser(description="酷我音乐歌单导出工具 (Playlist Out CLI Kuwo Exporter)")
     parser.add_argument("input", nargs="?", help="酷我歌单 ID、链接或短链")
     parser.add_argument("--id", "-i", dest="opt_id", help="酷我歌单 ID、链接或短链")
     parser.add_argument("--output-dir", "-o", default="output", help="导出目录 (默认: output)")

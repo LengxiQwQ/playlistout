@@ -699,7 +699,7 @@ def perform_export(title, tracks, author, playlist_cover="", playlist_id="", out
 
 def main():
     parser = argparse.ArgumentParser(
-        description="网易云音乐歌单导出工具 (PlaylistOut NetEase Exporter)",
+        description="网易云音乐歌单导出工具 (Playlist Out CLI NetEase Exporter)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("input", nargs="?", help="网易云歌单链接、短链、歌单ID 或 用户主页")

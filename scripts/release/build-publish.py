@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PlaylistOut One-Click Release Builder
-=====================================
+Playlist Out CLI One-Click Release Builder
+=========================================
 Builds standalone executables and packages them directly into the root 'publish/' directory.
 Automatically verifies version consistency, builds the host target (Windows/Linux/macOS),
 supports local dual-target builds (Windows + Linux via Docker or WSL),
@@ -105,7 +105,7 @@ def build_linux_via_docker(publish_dir: Path, version: str) -> bool:
     try:
         result = subprocess.run(docker_cmd)
         if result.returncode == 0:
-            linux_tar = REPO_ROOT / "dist" / "cli" / "artifacts" / f"PlaylistOut-v{version}-linux-x64.tar.gz"
+            linux_tar = REPO_ROOT / "dist" / "cli" / "artifacts" / f"PlaylistOut-CLI-v{version}-linux-x64.tar.gz"
             if linux_tar.is_file():
                 shutil.copy2(linux_tar, publish_dir / linux_tar.name)
                 print(f"[✓] Docker Linux 编译成功！产物已就绪: {linux_tar.name}")
@@ -154,7 +154,7 @@ def build_linux_via_wsl(publish_dir: Path, version: str) -> bool:
         ]
         result = subprocess.run(cmd)
         if result.returncode == 0:
-            linux_tar = REPO_ROOT / "dist" / "cli" / "artifacts" / f"PlaylistOut-v{version}-linux-x64.tar.gz"
+            linux_tar = REPO_ROOT / "dist" / "cli" / "artifacts" / f"PlaylistOut-CLI-v{version}-linux-x64.tar.gz"
             if linux_tar.is_file():
                 shutil.copy2(linux_tar, publish_dir / linux_tar.name)
                 print(f"[✓] WSL Linux 编译成功！产物已就绪: {linux_tar.name}")
@@ -167,7 +167,7 @@ def build_linux_via_wsl(publish_dir: Path, version: str) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="PlaylistOut 一键打包发布脚本 (自动编译并将最终资产输出至 publish/ 目录)"
+        description="Playlist Out CLI 一键打包发布脚本 (自动编译并将最终资产输出至 publish/ 目录)"
     )
     parser.add_argument(
         "--target",
@@ -194,7 +194,7 @@ def main():
     target = args.target or host_target
 
     print("=" * 68)
-    print("🚀 PlaylistOut 一键发布构建器 (One-Click Release Publisher)")
+    print("🚀 Playlist Out CLI 一键发布构建器 (One-Click Release Publisher)")
     print(f"   当前版本:   v{version}")
     print(f"   宿主平台:   {platform.platform()} ({host_target})")
     print(f"   发布目录:   {args.output_dir}/")
@@ -223,7 +223,7 @@ def main():
             linux_built = build_linux_via_wsl(publish_dir, version)
 
         if linux_built:
-            built_assets.append(publish_dir / f"PlaylistOut-v{version}-linux-x64.tar.gz")
+            built_assets.append(publish_dir / f"PlaylistOut-CLI-v{version}-linux-x64.tar.gz")
         else:
             print("\n" + "─" * 68)
             print("💡 本地双端构建提示 (Windows + Linux)：")
@@ -255,7 +255,7 @@ def main():
     # 6. 生成发布指引说明
     guide_file = publish_dir / "README.txt"
     guide_lines = [
-        f"PlaylistOut 单文件发布清单 (Release v{version})",
+        f"Playlist Out CLI 单文件发布清单 (Release v{version})",
         "=" * 50,
         f"打包环境: {platform.platform()}",
         "",

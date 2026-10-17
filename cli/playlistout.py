@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified CLI Entry Point
-===================================
+Playlist Out CLI Entry Point
+============================
 Main unified executable entrypoint (alias for main.py).
 """
 

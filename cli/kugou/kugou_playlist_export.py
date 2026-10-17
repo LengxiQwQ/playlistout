@@ -679,7 +679,7 @@ def normalize_cover_url(url):
 
 
 def normalize_kugou_track(raw_song, index):
-    """将酷狗单曲统一转换为 PlaylistOut Track 格式"""
+    """将酷狗单曲统一转换为 Playlist Out Track 格式"""
     title, artist = extract_title_and_artists(raw_song)
     h = raw_song.get("hash") or raw_song.get("FileHash") or ""
 
@@ -1244,7 +1244,7 @@ def format_total_duration(total_ms):
 
 
 def export_json(playlist, output_path):
-    """导出 PlaylistOut Canonical 标准规范 JSON 格式"""
+    """导出 Playlist Out Canonical 标准规范 JSON 格式"""
     tracks_out = []
     for i, t in enumerate(playlist.get("tracks") or [], 1):
         idx = int(t.get("index") or i)
@@ -1531,7 +1531,7 @@ def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None, all
 
 def main():
     parser = argparse.ArgumentParser(
-        description="酷狗音乐歌单导出工具 (PlaylistOut Kugou Exporter)",
+        description="酷狗音乐歌单导出工具 (Playlist Out CLI Kugou Exporter)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 支持链接类型：

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified Exporter
-============================
+Playlist Out CLI Unified Exporter
+=================================
 Export normalized playlists to XLSX, CSV, Canonical JSON, TXT, and M3U8.
 """
 
@@ -162,7 +162,7 @@ def export_csv(playlist: NormalizedPlaylist, output_file: str):
 
 
 def export_json(playlist: NormalizedPlaylist, output_file: str):
-    """导出为符合 PlaylistOut 官方规范的 Canonical JSON Schema v1"""
+    """导出为符合 Playlist Out 官方规范的 Canonical JSON Schema v1"""
     tracks_json = [t.to_canonical_dict() for t in playlist.tracks]
 
     created_str = datetime.fromtimestamp(playlist.create_time).strftime("%Y-%m-%d %H:%M:%S") if playlist.create_time else None

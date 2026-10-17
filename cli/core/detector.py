@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Smart Link & Platform Detector
-==========================================
+Playlist Out CLI Smart Link & Platform Detector
+===============================================
 Analyzes freeform text, links, shortlinks, and IDs to accurately determine
 which music platform the input belongs to.
 """

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Kuwo Music Platform Adapter
-=======================================
+Playlist Out CLI Kuwo Music Platform Adapter
+============================================
 Integrates Kuwo Music (kuwo.cn) into the unified CLI.
 """
 

@@ -1,8 +1,6 @@
-# PlaylistOut CLI
+# Playlist Out CLI · 把你的歌单带走
 
-> **把你的歌单带走** · 本地终端歌单解析与导出工具
-
-PlaylistOut 本地命令行版本，支持在 Windows、macOS 与 Linux 本地解析并导出网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐与咪咕音乐六大平台的公开歌单。全流程在本地运行与导出，不上传任何数据。
+Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地解析并导出网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐与咪咕音乐六大平台的公开歌单。
 
 提供两种使用方式：
 - **交互式模式**：双击即可使用，跟随屏幕提示粘贴链接并回车，无需记忆任何命令；
@@ -10,7 +8,7 @@ PlaylistOut 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 ---
 
-## 👤 普通用户快速上手
+## 👤 快速上手
 
 ### 1. 下载即用（免安装 Python）
 
@@ -18,10 +16,10 @@ PlaylistOut 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 | 操作系统 | 下载文件 | 运行方式 |
 |---|---|---|
-| **Windows x64** | `PlaylistOut-v{version}-windows-x64.exe` | 直接双击运行，或在终端中运行（退出时保留窗口提示，绝不闪退） |
-| **macOS Apple Silicon (M系列)** | `PlaylistOut-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
-| **macOS Intel (x86_64)** | `PlaylistOut-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
-| **Linux x64** | `PlaylistOut-v{version}-linux-x64.tar.gz` | 终端执行 `tar -xzf PlaylistOut-*.tar.gz && ./PlaylistOut` |
+| **Windows x64** | `PlaylistOut-CLI-v{version}-windows-x64.exe` | 直接双击运行，或在终端中运行（退出时保留窗口提示，绝不闪退） |
+| **macOS Apple Silicon (M系列)** | `PlaylistOut-CLI-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
+| **macOS Intel (x86_64)** | `PlaylistOut-CLI-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或在终端执行 `./PlaylistOut` |
+| **Linux x64** | `PlaylistOut-CLI-v{version}-linux-x64.tar.gz` | 终端执行 `tar -xzf PlaylistOut-CLI-*.tar.gz && ./PlaylistOut` |
 
 > 💡 **macOS 首次运行提示**：由于发行包由开源社区构建、未向 Apple 购买开发者证书，首次打开如遇系统提示「无法打开，因为无法验证开发者」或「已损坏」，可通过以下任一方式解决：
 > 1. 打开系统的「系统设置 → 隐私与安全性」，滑到底部安全性区域，点击「仍要打开」；
@@ -43,7 +41,7 @@ PlaylistOut 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 ```text
 ============================================================
-              PlaylistOut 歌单导出工具 v3.0.0
+            Playlist Out CLI 歌单导出工具 v3.0.0
 ============================================================
   支持平台：网易云音乐 · QQ音乐 · 酷狗音乐 · 酷我音乐 · 汽水音乐 · 咪咕音乐
 ------------------------------------------------------------
@@ -149,7 +147,7 @@ PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 |---|---|---|
 | **Excel** | `.xlsx` | 包含 `Tracks`（歌曲纯净列表）与 `Playlist Info`（歌单元数据）两个工作表，适合归档与表格分析 |
 | **CSV** | `.csv` | UTF-8 带 BOM 编码（Excel 打开不乱码），适合跨软件迁移与数据处理 |
-| **JSON** | `.json` | 遵循 PlaylistOut Canonical JSON 统一数据标准，适合程序脚本与开源播放器解析 |
+| **JSON** | `.json` | 遵循 Playlist Out Canonical JSON 统一数据标准，适合程序脚本与开源播放器解析 |
 | **纯文本** | `.txt` | 每行格式为 `歌名 - 歌手 - 专辑`，适合快速查看和文本分享 |
 | **M3U8** | `.m3u8` | 标准 Extended M3U 播放列表格式，适合兼容本地音乐播放器导入 |
 

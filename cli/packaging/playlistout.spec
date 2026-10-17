@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PlaylistOut PyInstaller Spec
-============================
-Packages the PlaylistOut Unified CLI into a single-file console executable.
+Playlist Out CLI PyInstaller Spec
+=================================
+Packages the Playlist Out CLI into a single-file console executable.
 Bundles package.json for runtime version resolution.
 """
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Version Resolver
-============================
+Playlist Out CLI Version Resolver
+=================================
 Reads version from the root package.json (single source of truth).
 In frozen mode, reads the bundled package.json from sys._MEIPASS.
 In frozen mode or strict release mode, fails closed if the version cannot be determined.
@@ -18,7 +18,7 @@ _CACHED_VERSION: Optional[str] = None
 
 def get_version(strict: bool = False) -> str:
     """
-    Get the PlaylistOut version string.
+    Get the Playlist Out version string.
     :param strict: If True, raise RuntimeError if version cannot be determined.
                    Always True in frozen mode.
     """

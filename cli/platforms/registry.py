@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Platform Registry
-=============================
+Playlist Out CLI Platform Registry
+==================================
 Registry and factory for all music platform adapters.
 Enables clean OCP (Open-Closed Principle) extensibility.
 """

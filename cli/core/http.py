@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut HTTP Layer
-======================
+Playlist Out CLI HTTP Layer
+===========================
 Session management, IPv4 prioritization, and shortlink redirect resolution.
 """
 

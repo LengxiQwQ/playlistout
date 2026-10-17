@@ -979,7 +979,7 @@ def batch_export_songs(playlists, folder_name, nickname="", output_dir="output",
 # --- 主程序入口 ---
 def main():
     parser = argparse.ArgumentParser(
-        description="QQ音乐歌单导出工具 (PlaylistOut QQ Music Exporter)",
+        description="QQ音乐歌单导出工具 (Playlist Out CLI QQ Music Exporter)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("input", nargs="?", help="歌单链接、歌单ID 或 QQ号")

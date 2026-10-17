@@ -340,7 +340,7 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
 def main():
     from cli.core.ui import print_format_menu, print_exit_banner, resolve_export_formats
 
-    parser = argparse.ArgumentParser(description="咪咕音乐歌单导出工具 (PlaylistOut Migu Exporter)")
+    parser = argparse.ArgumentParser(description="咪咕音乐歌单导出工具 (Playlist Out CLI Migu Exporter)")
     parser.add_argument("input", nargs="?", help="歌单链接、短链或歌单 ID")
     parser.add_argument("--id", "-i", dest="opt_id", help="歌单链接、短链或歌单 ID")
     parser.add_argument("--output-dir", "-o", default="output", help="导出目录 (默认: output)")

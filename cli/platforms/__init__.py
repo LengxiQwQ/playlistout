@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Platforms Package
-=============================
+Playlist Out CLI Platforms Package
+==================================
 Exports the registry, base adapter, and automatically discovers & registers all adapters.
 """
 

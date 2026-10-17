@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut QQ Music Platform Adapter
-=====================================
+Playlist Out CLI QQ Music Platform Adapter
+==========================================
 Integrates QQ Music (y.qq.com) into the unified CLI.
 """
 

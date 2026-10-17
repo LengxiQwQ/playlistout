@@ -13,7 +13,7 @@
 - **支持歌曲状态与音质标定**：直观区分歌曲是正常可播、下架/无版权变灰、还是 VIP专享；提取 Hi-Res、FLAC、320kbps 等最高可用音质；
 - **规范封面图片直链**：自动清洗并拼接高清封面直链 (`https://d.musicapp.migu.cn/...`)；
 - **全格式导出支持**：`.xlsx`、`.json`、`.txt`、`.csv`、`.m3u8`；
-- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 PlaylistOut 通用歌单结构，包含歌单封面直链 (`coverUrl`) 及每首歌曲/专辑封面直链 (`coverUrl`)、单曲页面直链 (`sourceUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本接入；
+- **统一遵循 Canonical JSON 规范**：导出的 JSON 采用 Playlist Out 通用歌单结构，包含歌单封面直链 (`coverUrl`) 及每首歌曲/专辑封面直链 (`coverUrl`)、单曲页面直链 (`sourceUrl`)、统一歌手字段 `artist`、毫秒时长 `durationMs`，便于第三方播放器与自动化脚本接入；
 - 导出完成后（在 Windows）自动打开文件所在目录并选中文件；
 - 同时支持命令行参数运行与交互式循环操作。
 

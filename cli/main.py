@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified CLI
-=======================
+Playlist Out CLI
+================
 Main entry point for exporting playlists from QQ Music, NetEase Cloud Music,
 Kugou Music, Kuwo Music, Qishui (Douyin) Music, and Migu Music.
 """
@@ -166,7 +166,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog=inv_cmd,
-        description="PlaylistOut 全平台音乐歌单统一导出工具",
+        description="Playlist Out CLI 全平台音乐歌单统一导出工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 支持平台：
@@ -189,7 +189,7 @@ def main():
         """
     )
 
-    parser.add_argument("-v", "--version", action="version", version=f"PlaylistOut CLI v{cli_ver}")
+    parser.add_argument("-v", "--version", action="version", version=f"Playlist Out CLI v{cli_ver}")
     parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--debug", action="store_true", help="显示详细错误堆栈信息 (调试模式)")
     parser.add_argument("input", nargs="?", help="歌单链接、短链、分享文案或纯数字 ID")

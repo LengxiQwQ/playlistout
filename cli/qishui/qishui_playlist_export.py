@@ -930,7 +930,7 @@ def perform_export(info, output_dir="output", formats=None, reveal_folder=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="汽水音乐歌单导出工具 (PlaylistOut Qishui Exporter)")
+    parser = argparse.ArgumentParser(description="汽水音乐歌单导出工具 (Playlist Out CLI Qishui Exporter)")
     parser.add_argument("input", nargs="?", help="汽水音乐歌单 ID、链接或分享文本")
     parser.add_argument("--id", "-i", dest="opt_id", help="汽水音乐歌单 ID、链接或分享文本")
     parser.add_argument("--output-dir", "-o", default="output", help="导出目录 (默认: output)")

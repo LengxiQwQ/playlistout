@@ -151,19 +151,19 @@ jobs:
           - target: windows-x64
             os: windows-2022
             binary_name: PlaylistOut.exe
-            asset_pattern: PlaylistOut-*-windows-x64.exe
+            asset_pattern: PlaylistOut-CLI-*-windows-x64.exe
           - target: linux-x64
             os: ubuntu-22.04
             binary_name: PlaylistOut
-            asset_pattern: PlaylistOut-*-linux-x64.tar.gz
+            asset_pattern: PlaylistOut-CLI-*-linux-x64.tar.gz
           - target: macos-arm64
             os: macos-14
             binary_name: PlaylistOut
-            asset_pattern: PlaylistOut-*-macos-arm64.tar.gz
+            asset_pattern: PlaylistOut-CLI-*-macos-arm64.tar.gz
           - target: macos-x64
             os: macos-15-intel
             binary_name: PlaylistOut
-            asset_pattern: PlaylistOut-*-macos-x64.tar.gz
+            asset_pattern: PlaylistOut-CLI-*-macos-x64.tar.gz
 
     steps:
       - uses: actions/checkout@v7
@@ -255,15 +255,15 @@ jobs:
           VERSION="${{ needs.preflight.outputs.version }}"
           echo "Consolidating release assets for v$VERSION..."
           
-          find dist/matrix-downloads -type f \( -name "PlaylistOut-v$VERSION-*.exe" -o -name "PlaylistOut-v$VERSION-*.tar.gz" \) -exec cp {} dist/release-assets/ \;
+          find dist/matrix-downloads -type f \( -name "PlaylistOut-CLI-v$VERSION-*.exe" -o -name "PlaylistOut-CLI-v$VERSION-*.tar.gz" \) -exec cp {} dist/release-assets/ \;
           
           cd dist/release-assets
           
           EXPECTED_ASSETS=(
-            "PlaylistOut-v$VERSION-windows-x64.exe"
-            "PlaylistOut-v$VERSION-linux-x64.tar.gz"
-            "PlaylistOut-v$VERSION-macos-arm64.tar.gz"
-            "PlaylistOut-v$VERSION-macos-x64.tar.gz"
+            "PlaylistOut-CLI-v$VERSION-windows-x64.exe"
+            "PlaylistOut-CLI-v$VERSION-linux-x64.tar.gz"
+            "PlaylistOut-CLI-v$VERSION-macos-arm64.tar.gz"
+            "PlaylistOut-CLI-v$VERSION-macos-x64.tar.gz"
           )
           
           for asset in "${EXPECTED_ASSETS[@]}"; do
@@ -277,7 +277,7 @@ jobs:
       - name: Generate CLI-SHA256SUMS.txt
         run: |
           cd dist/release-assets
-          sha256sum PlaylistOut-v${{ needs.preflight.outputs.version }}-* > CLI-SHA256SUMS.txt
+          sha256sum PlaylistOut-CLI-v${{ needs.preflight.outputs.version }}-* > CLI-SHA256SUMS.txt
           cat CLI-SHA256SUMS.txt
 
       - name: Generate cli-release-manifest.json
@@ -293,7 +293,7 @@ jobs:
           commit = "${{ github.sha }}"
           
           assets = []
-          for f in sorted(assets_dir.glob("PlaylistOut-*")):
+          for f in sorted(assets_dir.glob("PlaylistOut-CLI-*")):
               if f.is_file():
                   sha256 = hashlib.sha256(f.read_bytes()).hexdigest()
                   assets.append({
@@ -363,10 +363,10 @@ jobs:
 
             ### 📦 包含全平台资产 / Assets Included
 
-            - **Windows x64**: `PlaylistOut-{tag}-windows-x64.exe` (双击即用，内置终端常驻退出保护)
-            - **Linux x64**: `PlaylistOut-{tag}-linux-x64.tar.gz` (独立可执行文件，解压后运行 `./PlaylistOut`)
-            - **macOS Apple Silicon**: `PlaylistOut-{tag}-macos-arm64.tar.gz` (Apple 芯片原生构建，内附双击启动器)
-            - **macOS Intel**: `PlaylistOut-{tag}-macos-x64.tar.gz` (Intel 芯片原生构建，内附双击启动器)
+            - **Windows x64**: `PlaylistOut-CLI-{tag}-windows-x64.exe` (双击即用，内置终端常驻退出保护)
+            - **Linux x64**: `PlaylistOut-CLI-{tag}-linux-x64.tar.gz` (独立可执行文件，解压后运行 `./PlaylistOut`)
+            - **macOS Apple Silicon**: `PlaylistOut-CLI-{tag}-macos-arm64.tar.gz` (Apple 芯片原生构建，内附双击启动器)
+            - **macOS Intel**: `PlaylistOut-CLI-{tag}-macos-x64.tar.gz` (Intel 芯片原生构建，内附双击启动器)
             - **SHA-256 校验和**: `CLI-SHA256SUMS.txt`
 
             ---

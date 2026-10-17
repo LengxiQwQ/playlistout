@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    PlaylistOut 一键打包发布脚本 (PowerShell 版)
+    Playlist Out CLI 一键打包发布脚本 (PowerShell 版)
 .DESCRIPTION
     自动调用 Python 打包引擎，在本地构建 Windows 单文件 exe，
     若检测到 Docker 则自动在容器内交叉编译 Linux 单文件 tar.gz，

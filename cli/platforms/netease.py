@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut NetEase Platform Adapter
-====================================
+Playlist Out CLI NetEase Platform Adapter
+=========================================
 Integrates NetEase Cloud Music (music.163.com / 163cn.tv) into the unified CLI.
 """
 

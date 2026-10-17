@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut Unified Batch Playlist Export Flow
-==============================================
+Playlist Out CLI Unified Batch Playlist Export Flow
+===================================================
 Standardized user playlist selection, preprocessing, collision-safe naming,
 batch progress tracking, and structured result aggregation across all adapters.
 """

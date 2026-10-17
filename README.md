@@ -95,10 +95,10 @@ Playlist Out CLI 支持交互式使用和命令行参数调用，可用于日常
 
 | 系统 | 发行文件 | 使用方式 |
 |---|---|---|
-| **Windows x64** | `PlaylistOut-v{version}-windows-x64.exe` | 直接双击运行，或在终端调用 |
-| **Linux x64** | `PlaylistOut-v{version}-linux-x64.tar.gz` | 解压后运行 `./PlaylistOut` |
-| **macOS Apple Silicon** | `PlaylistOut-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
-| **macOS Intel** | `PlaylistOut-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
+| **Windows x64** | `PlaylistOut-CLI-v{version}-windows-x64.exe` | 直接双击运行，或在终端调用 |
+| **Linux x64** | `PlaylistOut-CLI-v{version}-linux-x64.tar.gz` | 解压后运行 `./PlaylistOut` |
+| **macOS Apple Silicon** | `PlaylistOut-CLI-v{version}-macos-arm64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
+| **macOS Intel** | `PlaylistOut-CLI-v{version}-macos-x64.tar.gz` | 解压后双击 `PlaylistOut.command`，或运行 `./PlaylistOut` |
 
 macOS 当前为未签名构建，首次运行时可能需要在「系统设置 → 隐私与安全性」中手动允许。
 

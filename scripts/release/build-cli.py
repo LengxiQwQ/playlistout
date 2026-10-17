@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PlaylistOut CLI Standalone Build Orchestrator
+Playlist Out CLI Standalone Build Orchestrator
 =============================================
-Builds and packages the PlaylistOut standalone executable for the current platform.
+Builds and packages the Playlist Out CLI standalone executable for the current platform.
 Executes platform-local PyInstaller builds and packages standard release archives.
 
 Targets:
-  - windows-x64: PlaylistOut-v{version}-windows-x64.exe
-  - linux-x64:   PlaylistOut-v{version}-linux-x64.tar.gz
-  - macos-arm64: PlaylistOut-v{version}-macos-arm64.tar.gz
-  - macos-x64:   PlaylistOut-v{version}-macos-x64.tar.gz
+  - windows-x64: PlaylistOut-CLI-v{version}-windows-x64.exe
+  - linux-x64:   PlaylistOut-CLI-v{version}-linux-x64.tar.gz
+  - macos-arm64: PlaylistOut-CLI-v{version}-macos-arm64.tar.gz
+  - macos-x64:   PlaylistOut-CLI-v{version}-macos-x64.tar.gz
 
 Usage:
   python scripts/release/build-cli.py
   python scripts/release/build-cli.py --target windows-x64
-  python scripts/release/build-cli.py --target linux-x64 --version 2.2.0
+  python scripts/release/build-cli.py --target linux-x64 --version 3.0.0
 """
 
 import argparse
@@ -141,7 +141,7 @@ def build_cli(target: str, expected_version: str = None) -> Path:
         )
 
     print("=" * 64)
-    print(f"[*] Building PlaylistOut Standalone CLI")
+    print(f"[*] Building Playlist Out CLI")
     print(f"   Target:    {target}")
     print(f"   Version:   v{version}")
     print(f"   Python:    {platform.python_version()} ({platform.architecture()[0]})")
@@ -196,13 +196,13 @@ def build_cli(target: str, expected_version: str = None) -> Path:
 
     # Package according to target conventions
     if target == "windows-x64":
-        asset_name = f"PlaylistOut-v{version}-windows-x64.exe"
+        asset_name = f"PlaylistOut-CLI-v{version}-windows-x64.exe"
         final_asset = artifacts_dir / asset_name
         shutil.copy2(staged_binary, final_asset)
         print(f"[✓] Windows standalone asset created: {final_asset}")
 
     elif target == "linux-x64":
-        asset_name = f"PlaylistOut-v{version}-linux-x64.tar.gz"
+        asset_name = f"PlaylistOut-CLI-v{version}-linux-x64.tar.gz"
         final_asset = artifacts_dir / asset_name
         with tarfile.open(final_asset, "w:gz") as tar:
             tar.add(staged_binary, arcname="PlaylistOut")
@@ -219,7 +219,7 @@ def build_cli(target: str, expected_version: str = None) -> Path:
         command_script.write_text(command_content, encoding="utf-8")
         os.chmod(command_script, 0o755)
 
-        asset_name = f"PlaylistOut-v{version}-{target}.tar.gz"
+        asset_name = f"PlaylistOut-CLI-v{version}-{target}.tar.gz"
         final_asset = artifacts_dir / asset_name
         with tarfile.open(final_asset, "w:gz") as tar:
             tar.add(staged_binary, arcname="PlaylistOut")
@@ -252,7 +252,7 @@ def build_cli(target: str, expected_version: str = None) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PlaylistOut CLI Release Builder")
+    parser = argparse.ArgumentParser(description="Playlist Out CLI Release Builder")
     parser.add_argument(
         "--target",
         choices=SUPPORTED_TARGETS,

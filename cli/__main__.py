@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PlaylistOut CLI Module Entry Point
-==================================
+Playlist Out CLI Module Entry Point
+===================================
 Enables executing `python -m cli`.
 """
 
