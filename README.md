@@ -29,6 +29,14 @@ Playlist Out 提供网页版和本地 CLI，两种方式都可以完成歌单解
 
 使用流程：**复制歌单链接、分享文案或 ID → 解析歌单 → 选择需要的格式导出。**
 
+### 📦 终端玩家快速安装
+
+| 平台 | 安装与使用命令 | 状态 | 特性 |
+| :--- | :--- | :--- | :--- |
+| **📦 NPM** | `npm install -g playlistout`<br>*(安装后终端直接输入 `playlistout`)* | 🟢 **已上线** | 跨平台全生态支持，一次安装全局永久可用 |
+| **🪟 WinGet** | `winget install LengxiQwQ.PlaylistOut` | ⏳ *审核中* | Windows 官方商店包管理器，支持静默升级 |
+| **🍨 Scoop** | `scoop install playlistout` | ⏳ *审核中* | 极客友好，自动配置系统环境变量与开始菜单快捷方式 |
+
 本地 CLI 已打包完整运行环境，无需安装 Python；Playlist Out 直接解析公开歌单元数据，不建立用户账号，也不提供或存储音乐音频文件，各平台能力会随上游接口变化持续适配。
 
 ---

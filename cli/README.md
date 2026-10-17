@@ -10,7 +10,17 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 ## 👤 快速上手
 
-### 1. 下载即用（免安装 Python）
+### 1. 包管理器一键安装（推荐终端玩家 ⭐）
+
+| 平台 | 安装与使用命令 | 状态 | 特性 |
+| :--- | :--- | :--- | :--- |
+| **📦 NPM** | `npm install -g playlistout`<br>*(安装后终端直接输入 `playlistout`)* | 🟢 **已上线** | 跨平台全生态支持，一次安装全局永久可用 |
+| **🪟 WinGet** | `winget install LengxiQwQ.PlaylistOut` | ⏳ *审核中* | Windows 官方商店包管理器，支持静默升级 |
+| **🍨 Scoop** | `scoop install playlistout` | ⏳ *审核中* | 极客友好，自动配置系统环境变量与开始菜单快捷方式 |
+
+---
+
+### 2. 下载即用（免安装 Python，双击运行）
 
 在 [GitHub Releases](https://github.com/LengxiQwQ/playlistout/releases) 页面下载对应系统的压缩包或执行文件：
 
@@ -30,7 +40,7 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 ---
 
-### 2. 模式一：交互式模式（零门槛，推荐）
+### 3. 模式一：交互式模式（零门槛，推荐）
 
 无需敲复杂命令，直接启动程序：
 - Windows 双击 `PlaylistOut.exe`；
@@ -60,7 +70,7 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 
 ---
 
-### 3. 模式二：命令行参数模式（适合脚本与批处理）
+### 4. 模式二：命令行参数模式（适合脚本与批处理）
 
 如果你需要编写批处理脚本、集成到自己的工作流中，可以直接传入参数，全程静默无交互运行：
 
