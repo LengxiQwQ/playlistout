@@ -20,6 +20,12 @@ import type {
   DauDailyPoint,
   DauHourlyPoint,
   DauClientRow,
+  DauCumulativeHourlyPoint,
+  DauCoverage,
+  DauAnnotation,
+  DauComparisonMeta,
+  DauSingleDayStats,
+  DauMultiDayStats,
 } from './types';
 
 export const CORE_METRICS = [
@@ -508,9 +514,10 @@ type DauChannelSlot = 'web' | 'plugin' | 'cli';
 
 function dauChannelFor(metric: string, channel: string): DauChannelSlot | null {
   const ch = String(channel || '').trim();
-  if (metric === 'visitor_unique' && ch === 'web') return 'web';
+  if (metric === 'visitor_unique' && (ch === 'web' || !ch)) return 'web';
   if (metric === 'active_user' && ch === 'plugin') return 'plugin';
   if (metric === 'active_user' && ch === 'cli') return 'cli';
+  if (metric === 'active_user' && !ch) return 'plugin';
   return null;
 }
 
@@ -528,6 +535,67 @@ function addDauCount(
   if (!slot || !Number.isFinite(count) || count <= 0) return;
   totals[slot] += count;
   totals.total += count;
+}
+
+export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
+  let minWeb: string | null = null;
+  let minPlugin: string | null = null;
+  let minCli: string | null = null;
+
+  for (const row of rows) {
+    const d = String(row.date || '').trim();
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    const cnt = Number(row.count || 0);
+    if (cnt <= 0) continue;
+    const m = String(row.metric || '').trim();
+    const ch = String(row.channel || '').trim();
+
+    if (m === 'visitor_unique' && (ch === 'web' || !ch)) {
+      if (!minWeb || d < minWeb) minWeb = d;
+    } else if (m === 'active_user' && ch === 'plugin') {
+      if (!minPlugin || d < minPlugin) minPlugin = d;
+    } else if (m === 'active_user' && ch === 'cli') {
+      if (!minCli || d < minCli) minCli = d;
+    }
+  }
+
+  return {
+    web: { earliestDate: minWeb, hasCoverage: minWeb !== null },
+    plugin: { earliestDate: minPlugin, hasCoverage: minPlugin !== null },
+    cli: { earliestDate: minCli, hasCoverage: minCli !== null },
+  };
+}
+
+export function generateDauAnnotations(coverage: DauCoverage): DauAnnotation[] {
+  const annotations: DauAnnotation[] = [];
+  if (coverage.web.earliestDate) {
+    annotations.push({
+      date: coverage.web.earliestDate,
+      type: 'coverage_start',
+      title: '网页端访客统计启动',
+      description: 'Web 端 visitor_unique 匿名去重访客统计上线',
+      channel: 'web',
+    });
+  }
+  if (coverage.plugin.earliestDate) {
+    annotations.push({
+      date: coverage.plugin.earliestDate,
+      type: 'coverage_start',
+      title: '生态插件活跃开始采集',
+      description: 'MusicFree 等生态插件接入心跳与活跃遥测',
+      channel: 'plugin',
+    });
+  }
+  if (coverage.cli.earliestDate) {
+    annotations.push({
+      date: coverage.cli.earliestDate,
+      type: 'coverage_start',
+      title: 'CLI 活跃开始采集',
+      description: 'Playlist Out CLI 接入使用活跃遥测',
+      channel: 'cli',
+    });
+  }
+  return annotations.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export function buildAnalyticsSlice(
@@ -714,6 +782,9 @@ export function buildAnalyticsSlice(
   );
 
   // ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
+  const coverage = detectDauCoverage(snapshot.dailyCore || []);
+  const annotations = generateDauAnnotations(coverage);
+
   const isSingleDay = fromDate === toDate;
   const targetDate = toDate;
   const shiftDate = (dateStr: string, offsetDays: number): string => {
@@ -723,6 +794,9 @@ export function buildAnalyticsSlice(
     return dt.toISOString().slice(0, 10);
   };
   const comparisonDate = shiftDate(targetDate, -1);
+
+  const todayUtc = snapshot.generatedAt ? snapshot.generatedAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const isToday = isSingleDay && targetDate === todayUtc;
 
   // For platform-agnostic metrics (visitor_unique, active_user, page_view), ensure they are not
   // wiped out when a specific provider platform is selected
@@ -807,12 +881,209 @@ export function buildAnalyticsSlice(
 
   const dauSeries: DauDailyPoint[] = Array.from(dauByDate.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, totals]) => ({ date, ...totals }));
+    .map(([date, totals]) => {
+      const webUncollected = Boolean(coverage.web.hasCoverage && coverage.web.earliestDate && date < coverage.web.earliestDate);
+      const pluginUncollected = Boolean(coverage.plugin.hasCoverage && coverage.plugin.earliestDate && date < coverage.plugin.earliestDate);
+      const cliUncollected = Boolean(coverage.cli.hasCoverage && coverage.cli.earliestDate && date < coverage.cli.earliestDate);
+      return {
+        date,
+        ...totals,
+        webUncollected,
+        pluginUncollected,
+        cliUncollected,
+      };
+    });
 
   const dauToday = dauAllDatesMap.get(targetDate) || dauByDate.get(targetDate) || emptyDauTotals();
   const dauYesterday = dauAllDatesMap.get(comparisonDate) || dauByDate.get(comparisonDate) || emptyDauTotals();
 
+  // Determine currentHour (for today: latest recorded hour in snapshot or genHour; for historical: 23)
+  let currentHour = 23;
+  if (isToday) {
+    const todayHours = hourly
+      .filter((r) => r.date === targetDate && DAU_METRICS.has(String(r.metric || '').trim()))
+      .map((r) => Number(r.hour || 0));
+    const maxH = todayHours.length > 0 ? Math.max(...todayHours) : 0;
+    const genH = snapshot.generatedAt ? new Date(snapshot.generatedAt).getUTCHours() : new Date().getUTCHours();
+    currentHour = Math.min(23, Math.max(maxH, genH));
+  }
+
+  // Hourly breakdown function for any single date
+  const getHourlyBreakdown = (dateStr: string, isTargetToday: boolean, curH: number): DauHourlyPoint[] => {
+    const map = new Map<number, { web: number; plugin: number; cli: number }>();
+    for (let h = 0; h < 24; h++) {
+      map.set(h, { web: 0, plugin: 0, cli: 0 });
+    }
+    if (!geoActive) {
+      for (const row of hourly) {
+        if (row.date !== dateStr) continue;
+        const m = String(row.metric || '').trim();
+        if (!DAU_METRICS.has(m)) continue;
+        if (!matchesFilter(row, { ...filters, from: '0000-00-00', to: '9999-99-99' }, { platformAgnostic: true })) continue;
+        const h = Number(row.hour || 0);
+        if (h < 0 || h > 23) continue;
+        const slot = dauChannelFor(m, String(row.channel || ''));
+        if (!slot) continue;
+        map.get(h)![slot] += Number(row.count || 0);
+      }
+    }
+    const res: DauHourlyPoint[] = [];
+    for (let h = 0; h < 24; h++) {
+      const entry = map.get(h)!;
+      const isFuture = isTargetToday && h > curH;
+      const tot = isFuture ? 0 : entry.web + entry.plugin + entry.cli;
+      res.push({
+        hour: h,
+        total: tot,
+        web: isFuture ? 0 : entry.web,
+        plugin: isFuture ? 0 : entry.plugin,
+        cli: isFuture ? 0 : entry.cli,
+        isFuture,
+      });
+    }
+    return res;
+  };
+
+  const targetHourly = getHourlyBreakdown(targetDate, isToday, currentHour);
+  const compHourly = getHourlyBreakdown(comparisonDate, false, 23);
+
+  // Compute cumulative curves for target and comparison day
+  let cTargetWeb = 0;
+  let cTargetPlugin = 0;
+  let cTargetCli = 0;
+  let cTargetTotal = 0;
+
+  let cCompWeb = 0;
+  let cCompPlugin = 0;
+  let cCompCli = 0;
+  let cCompTotal = 0;
+
+  const targetCumulative: DauCumulativeHourlyPoint[] = [];
+  for (let h = 0; h < 24; h++) {
+    const tPoint = targetHourly[h];
+    const cPoint = compHourly[h];
+
+    cCompWeb += cPoint.web || 0;
+    cCompPlugin += cPoint.plugin || 0;
+    cCompCli += cPoint.cli || 0;
+    cCompTotal += cPoint.total || 0;
+
+    const isFuture = isToday && h > currentHour;
+    if (!isFuture) {
+      cTargetWeb += tPoint.web || 0;
+      cTargetPlugin += tPoint.plugin || 0;
+      cTargetCli += tPoint.cli || 0;
+      cTargetTotal += tPoint.total || 0;
+    }
+
+    targetCumulative.push({
+      hour: h,
+      targetTotal: isFuture ? null : cTargetTotal,
+      targetWeb: isFuture ? null : cTargetWeb,
+      targetPlugin: isFuture ? null : cTargetPlugin,
+      targetCli: isFuture ? null : cTargetCli,
+      comparisonTotal: cCompTotal,
+      comparisonWeb: cCompWeb,
+      comparisonPlugin: cCompPlugin,
+      comparisonCli: cCompCli,
+      baselineTotal: null,
+      isFuture,
+    });
+  }
+
+  // Compute 7-day same-hour baseline
+  const baselineHourlyCumulative: number[][] = [];
+  for (let i = 1; i <= 7; i++) {
+    const bDate = shiftDate(targetDate, -i);
+    const dayInc = getHourlyBreakdown(bDate, false, 23);
+    let cum = 0;
+    const dayCum: number[] = [];
+    let hasData = false;
+    for (let h = 0; h < 24; h++) {
+      cum += dayInc[h].total;
+      if (dayInc[h].total > 0) hasData = true;
+      dayCum.push(cum);
+    }
+    if (hasData) {
+      baselineHourlyCumulative.push(dayCum);
+    }
+  }
+
+  const sevenDayBaseline: { hour: number; total: number }[] = [];
+  for (let h = 0; h < 24; h++) {
+    let sumH = 0;
+    for (const dayCum of baselineHourlyCumulative) {
+      sumH += dayCum[h];
+    }
+    const avgH = baselineHourlyCumulative.length > 0 ? Math.round(sumH / baselineHourlyCumulative.length) : 0;
+    sevenDayBaseline.push({ hour: h, total: avgH });
+    targetCumulative[h].baselineTotal = avgH;
+  }
+
+  // Peak first-active hour on target day
+  let peakHour: { hour: number; count: number } | null = null;
+  let maxInc = -1;
+  for (let h = 0; h <= (isToday ? currentHour : 23); h++) {
+    const cnt = targetHourly[h].total;
+    if (cnt > maxInc) {
+      maxInc = cnt;
+      peakHour = { hour: h, count: cnt };
+    }
+  }
+  if (!peakHour || maxInc < 0) {
+    peakHour = { hour: 0, count: 0 };
+  }
+
+  // Coverage comparability check
+  let comparable = true;
+  let incomparableReason: string | undefined;
+  if (coverage.plugin.earliestDate && targetDate >= coverage.plugin.earliestDate && comparisonDate < coverage.plugin.earliestDate) {
+    comparable = false;
+    incomparableReason = '统计覆盖发生变化（对比日插件尚未采集）';
+  } else if (coverage.cli.earliestDate && targetDate >= coverage.cli.earliestDate && comparisonDate < coverage.cli.earliestDate) {
+    comparable = false;
+    incomparableReason = '统计覆盖发生变化（对比日 CLI 尚未采集）';
+  }
+
+  const targetCount = isSingleDay
+    ? (isToday ? (targetCumulative[currentHour]?.targetTotal ?? dauToday.total) : dauToday.total)
+    : dauToday.total;
+  const comparisonCount = isSingleDay
+    ? (isToday ? (targetCumulative[currentHour]?.comparisonTotal ?? dauYesterday.total) : dauYesterday.total)
+    : dauYesterday.total;
+  const deltaCount = targetCount - comparisonCount;
+  const deltaPercent = (comparable && comparisonCount > 0)
+    ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
+    : null;
+
+  const baselineCount = sevenDayBaseline[currentHour]?.total ?? 0;
+  const baselineDelta = targetCount - baselineCount;
+  const baselineDeltaPercent = (comparable && baselineCount > 0)
+    ? Math.round((baselineDelta / baselineCount) * 1000) / 10
+    : null;
+
+  const comparisonMeta: DauComparisonMeta = {
+    mode: isSingleDay ? 'prev_day' : 'prev_period',
+    label: isSingleDay
+      ? (isToday ? '较昨日同期' : '较前日全天')
+      : '较上一等长周期',
+    targetLabel: isSingleDay
+      ? (isToday ? '今日截至目前' : '当日完整')
+      : '期末日',
+    isSameHour: isToday,
+    currentHour: isToday ? currentHour : undefined,
+    comparable,
+    incomparableReason,
+    targetCount,
+    comparisonCount,
+    deltaCount,
+    deltaPercent,
+    baselineCount: isSingleDay ? baselineCount : undefined,
+    baselineDeltaPercent: isSingleDay ? baselineDeltaPercent : undefined,
+  };
+
   const allClients = new Set([
+    'official_web',
     ...clientChannelMap.keys(),
     ...dauClientWindowTotals.keys(),
     ...clientTargetMap.keys(),
@@ -821,28 +1092,158 @@ export function buildAnalyticsSlice(
 
   const dauClients: DauClientRow[] = Array.from(allClients)
     .map((client) => {
-      const channel = clientChannelMap.get(client) || 'plugin';
-      const total = dauClientWindowTotals.get(client) || 0;
-      const today = clientTargetMap.get(client) || 0;
-      const yesterday = clientCompMap.get(client) || 0;
-      return { client, channel, total, today, yesterday };
+      const isWeb = client === 'official_web';
+      const channel = isWeb ? 'web' : (clientChannelMap.get(client) || 'plugin');
+      const total = isWeb
+        ? (isSingleDay ? dauToday.web : windowTotals.web)
+        : (dauClientWindowTotals.get(client) || 0);
+      const today = isWeb ? dauToday.web : (clientTargetMap.get(client) || 0);
+      const yesterday = isWeb ? dauYesterday.web : (clientCompMap.get(client) || 0);
+
+      const compCount = isSingleDay
+        ? (isToday ? (targetCumulative[currentHour]?.comparisonWeb ?? yesterday) : yesterday)
+        : 0;
+      const targetVal = isSingleDay ? today : total;
+      const dCount = targetVal - compCount;
+      const dPct = compCount > 0 ? Math.round(((targetVal - compCount) / compCount) * 1000) / 10 : null;
+      const denom = isSingleDay ? (dauToday.total || 1) : (windowTotals.total || 1);
+      const sharePct = Math.round((targetVal / denom) * 1000) / 10;
+
+      return {
+        client,
+        channel,
+        total,
+        today,
+        yesterday,
+        comparisonCount: compCount,
+        deltaCount: dCount,
+        deltaPercent: dPct,
+        sharePercent: sharePct,
+      };
     })
     .filter((c) => c.total > 0 || c.today > 0 || c.yesterday > 0)
     .sort((a, b) => b.total - a.total || b.today - a.today || a.client.localeCompare(b.client));
 
+  let multiDayStats: DauMultiDayStats | undefined;
+  if (!isSingleDay) {
+    const dayCount = Math.max(1, dauSeries.length);
+    const dailyAverage = Math.round(windowTotals.total / dayCount);
+
+    let peakDay: { date: string; total: number } | null = null;
+    for (const pt of dauSeries) {
+      if (!peakDay || pt.total > peakDay.total) {
+        peakDay = { date: pt.date, total: pt.total };
+      }
+    }
+
+    let latestFullDay: { date: string; total: number } | null = null;
+    if (isToday) {
+      const yestDate = shiftDate(todayUtc, -1);
+      const yestPt = dauSeries.find((p) => p.date === yestDate) || dauAllDatesMap.get(yestDate);
+      if (yestPt) {
+        latestFullDay = { date: yestDate, total: yestPt.total };
+      }
+    }
+    if (!latestFullDay && dauSeries.length > 0) {
+      const lastPt = dauSeries[dauSeries.length - 1];
+      latestFullDay = { date: lastPt.date, total: lastPt.total };
+    }
+
+    const prevFrom = shiftDate(fromDate, -dayCount);
+    const prevTo = shiftDate(fromDate, -1);
+    const prevPeriodSeries: DauDailyPoint[] = [];
+    let prevTotal = 0;
+
+    for (let i = 0; i < dayCount; i++) {
+      const dStr = shiftDate(prevFrom, i);
+      const totals = dauAllDatesMap.get(dStr) || emptyDauTotals();
+      prevPeriodSeries.push({ date: dStr, ...totals });
+      prevTotal += totals.total;
+    }
+    const prevDailyAvg = Math.round(prevTotal / dayCount);
+
+    let multiComparable = true;
+    let multiIncomparableReason: string | undefined;
+    if (coverage.plugin.earliestDate && toDate >= coverage.plugin.earliestDate && prevFrom < coverage.plugin.earliestDate) {
+      multiComparable = false;
+      multiIncomparableReason = '统计覆盖发生变化（上一周期插件尚未采集）';
+    } else if (coverage.cli.earliestDate && toDate >= coverage.cli.earliestDate && prevFrom < coverage.cli.earliestDate) {
+      multiComparable = false;
+      multiIncomparableReason = '统计覆盖发生变化（上一周期 CLI 尚未采集）';
+    }
+
+    const mDelta = dailyAverage - prevDailyAvg;
+    const mDeltaPct = (multiComparable && prevDailyAvg > 0)
+      ? Math.round((mDelta / prevDailyAvg) * 1000) / 10
+      : null;
+
+    comparisonMeta.comparable = multiComparable;
+    comparisonMeta.incomparableReason = multiIncomparableReason;
+    comparisonMeta.targetCount = dailyAverage;
+    comparisonMeta.comparisonCount = prevDailyAvg;
+    comparisonMeta.deltaCount = mDelta;
+    comparisonMeta.deltaPercent = mDeltaPct;
+    comparisonMeta.label = '较上一周期日均';
+
+    const sevenDayMovingAverage: { date: string; value: number }[] = [];
+    for (const pt of dauSeries) {
+      let sum7 = 0;
+      for (let o = 0; o < 7; o++) {
+        const d = shiftDate(pt.date, -o);
+        sum7 += (dauAllDatesMap.get(d)?.total || 0);
+      }
+      const ma7Val = Math.round(sum7 / 7);
+      pt.ma7 = ma7Val;
+      sevenDayMovingAverage.push({ date: pt.date, value: ma7Val });
+    }
+
+    multiDayStats = {
+      fromDate,
+      toDate,
+      dayCount,
+      dailyAverage,
+      latestFullDay,
+      peakDay,
+      previousPeriodFrom: prevFrom,
+      previousPeriodTo: prevTo,
+      previousPeriodSeries: prevPeriodSeries,
+      sevenDayMovingAverage,
+    };
+  }
+
+  const singleDayStats: DauSingleDayStats = {
+    targetDate,
+    comparisonDate,
+    currentHour,
+    isToday,
+    targetCumulative,
+    hourlyIncrements: targetHourly,
+    comparisonHourlyIncrements: compHourly,
+    peakHour,
+    sevenDayBaseline,
+  };
+
   let dauHours: DauHourlyPoint[] = [];
   if (!geoActive) {
-    const dauByHour = new Map<number, number>();
+    const dauByHour = new Map<number, { total: number; web: number; plugin: number; cli: number }>();
     for (const row of hourly) {
       const metric = String(row.metric || '').trim();
-      if (metric !== 'visitor_unique' && metric !== 'active_user') continue;
+      if (!DAU_METRICS.has(metric)) continue;
       if (!matchesFilter(row, filters, { platformAgnostic: true })) continue;
       const h = Number(row.hour || 0);
-      dauByHour.set(h, (dauByHour.get(h) || 0) + Number(row.count || 0));
+      let entry = dauByHour.get(h);
+      if (!entry) {
+        entry = { total: 0, web: 0, plugin: 0, cli: 0 };
+        dauByHour.set(h, entry);
+      }
+      const slot = dauChannelFor(metric, String(row.channel || ''));
+      const cnt = Number(row.count || 0);
+      entry.total += cnt;
+      if (slot) entry[slot] += cnt;
     }
     dauHours = Array.from(dauByHour.entries())
       .sort((a, b) => a[0] - b[0])
-      .map(([hour, total]) => ({ hour, total }));
+      .map(([hour, val]) => ({ hour, total: val.total, web: val.web, plugin: val.plugin, cli: val.cli }));
   }
 
   const dauGeoSource = filters.platform
@@ -1012,6 +1413,14 @@ export function buildAnalyticsSlice(
       clients: dauClients,
       countries: dauCountries,
       regions: dauRegions,
+      coverage,
+      annotations,
+      comparison: comparisonMeta,
+      singleDay: isSingleDay ? singleDayStats : undefined,
+      multiDay: isSingleDay ? undefined : multiDayStats,
+      targetCumulative: isSingleDay ? targetCumulative : undefined,
+      comparisonCumulative: isSingleDay ? targetCumulative.map((p) => ({ hour: p.hour, total: p.comparisonTotal })) : undefined,
+      sevenDayBaseline: isSingleDay ? sevenDayBaseline : undefined,
     },
     timeseries,
     hourlyTimeseries,

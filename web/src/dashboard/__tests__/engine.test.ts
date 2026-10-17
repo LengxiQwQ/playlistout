@@ -365,8 +365,8 @@ describe('Analytics Dashboard In-Memory Slice Engine', () => {
     // Single-day filter exposes the hourly DAU distribution (non-DAU metrics excluded)
     const singleDay = buildAnalyticsSlice(snapshot, { from: today, to: today, exclude_my: false });
     expect(singleDay.dau.hours).toEqual([
-      { hour: 10, total: 5 },
-      { hour: 11, total: 2 },
+      { hour: 10, total: 5, web: 5, plugin: 0, cli: 0 },
+      { hour: 11, total: 2, web: 0, plugin: 2, cli: 0 },
     ]);
   });
 

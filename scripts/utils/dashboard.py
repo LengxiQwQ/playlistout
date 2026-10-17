@@ -44,12 +44,14 @@ DAU_METRICS = {"visitor_unique", "active_user"}
 
 def _dau_channel_for(metric: str, channel: str) -> str | None:
     ch = str(channel or "").strip()
-    if metric == "visitor_unique" and ch == "web":
+    if metric == "visitor_unique" and (ch == "web" or not ch):
         return "web"
     if metric == "active_user" and ch == "plugin":
         return "plugin"
     if metric == "active_user" and ch == "cli":
         return "cli"
+    if metric == "active_user" and not ch:
+        return "plugin"
     return None
 
 
@@ -749,21 +751,60 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
                 client_channel_map[cl] = ch
                 dau_client_window_totals[cl] += count
 
+    min_web = None
+    min_plugin = None
+    min_cli = None
+    for r in snapshot.get("dailyCore", []):
+        cnt = int(r.get("count", 0) or 0)
+        if cnt <= 0:
+            continue
+        d_str = str(r.get("date", "")).strip()
+        m_str = str(r.get("metric", "")).strip()
+        ch_str = str(r.get("channel", "")).strip()
+        if m_str == "visitor_unique" and (ch_str == "web" or not ch_str):
+            if not min_web or d_str < min_web:
+                min_web = d_str
+        elif m_str == "active_user" and ch_str == "plugin":
+            if not min_plugin or d_str < min_plugin:
+                min_plugin = d_str
+        elif m_str == "active_user" and ch_str == "cli":
+            if not min_cli or d_str < min_cli:
+                min_cli = d_str
+
+    coverage = {
+        "web": {"earliestDate": min_web, "hasCoverage": min_web is not None},
+        "plugin": {"earliestDate": min_plugin, "hasCoverage": min_plugin is not None},
+        "cli": {"earliestDate": min_cli, "hasCoverage": min_cli is not None},
+    }
+
     dau_series = [
-        {"date": d, **totals}
+        {
+            "date": d,
+            **totals,
+            "webUncollected": bool(coverage["web"]["hasCoverage"] and coverage["web"]["earliestDate"] and d < coverage["web"]["earliestDate"]),
+            "pluginUncollected": bool(coverage["plugin"]["hasCoverage"] and coverage["plugin"]["earliestDate"] and d < coverage["plugin"]["earliestDate"]),
+            "cliUncollected": bool(coverage["cli"]["hasCoverage"] and coverage["cli"]["earliestDate"] and d < coverage["cli"]["earliestDate"]),
+        }
         for d, totals in sorted(dau_by_date.items(), key=lambda it: it[0])
     ]
 
     dau_today = dau_all_dates_map.get(target_date) or dau_by_date.get(target_date) or _empty_dau_totals()
     dau_yesterday = dau_all_dates_map.get(comparison_date) or dau_by_date.get(comparison_date) or _empty_dau_totals()
 
-    all_dau_clients = set(client_channel_map.keys()) | set(dau_client_window_totals.keys()) | set(client_target_map.keys()) | set(client_comp_map.keys())
+    all_dau_clients = {"official_web"} | set(client_channel_map.keys()) | set(dau_client_window_totals.keys()) | set(client_target_map.keys()) | set(client_comp_map.keys())
     dau_clients = []
     for client in all_dau_clients:
-        ch = client_channel_map.get(client, "plugin")
-        tot = dau_client_window_totals.get(client, 0)
-        tdy = client_target_map.get(client, 0)
-        yst = client_comp_map.get(client, 0)
+        is_web = (client == "official_web")
+        ch = "web" if is_web else client_channel_map.get(client, "plugin")
+        tot = (dau_today["web"] if is_single_day else window_totals["web"]) if is_web else dau_client_window_totals.get(client, 0)
+        tdy = dau_today["web"] if is_web else client_target_map.get(client, 0)
+        yst = dau_yesterday["web"] if is_web else client_comp_map.get(client, 0)
+        comp_count = yst if is_single_day else 0
+        d_count = tdy - comp_count
+        d_pct = round(((tdy - comp_count) / comp_count) * 1000) / 10 if comp_count > 0 else None
+        denom = dau_today["total"] if is_single_day else window_totals["total"]
+        val = tdy if is_single_day else tot
+        share_pct = round((val / (denom or 1)) * 1000) / 10
         if tot > 0 or tdy > 0 or yst > 0:
             dau_clients.append({
                 "client": client,
@@ -771,12 +812,16 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
                 "total": tot,
                 "today": tdy,
                 "yesterday": yst,
+                "comparisonCount": comp_count,
+                "deltaCount": d_count,
+                "deltaPercent": d_pct,
+                "sharePercent": share_pct,
             })
     dau_clients.sort(key=lambda item: (-item["total"], -item["today"], item["client"]))
 
     dau_hours: list[dict[str, int]] = []
     if not geo_active:
-        dau_by_hour: dict[int, int] = defaultdict(int)
+        dau_by_hour: dict[int, dict[str, int]] = defaultdict(lambda: {"total": 0, "web": 0, "plugin": 0, "cli": 0})
         for row in hourly:
             m = str(row.get("metric", "")).strip()
             if m not in DAU_METRICS:
@@ -784,8 +829,15 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             if not _matches(row, filters, platform_agnostic=True):
                 continue
             h = int(row.get("hour", 0) or 0)
-            dau_by_hour[h] += int(row.get("count", 0) or 0)
-        dau_hours = [{"hour": h, "total": dau_by_hour.get(h, 0)} for h in sorted(dau_by_hour.keys())]
+            slot = _dau_channel_for(m, str(row.get("channel", "")))
+            cnt = int(row.get("count", 0) or 0)
+            dau_by_hour[h]["total"] += cnt
+            if slot:
+                dau_by_hour[h][slot] += cnt
+        dau_hours = [
+            {"hour": h, "total": dau_by_hour[h]["total"], "web": dau_by_hour[h]["web"], "plugin": dau_by_hour[h]["plugin"], "cli": dau_by_hour[h]["cli"]}
+            for h in sorted(dau_by_hour.keys())
+        ]
 
     dau_geo_source = [
         r for r in geo_rows
@@ -943,6 +995,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "clients": dau_clients,
             "countries": dau_countries,
             "regions": dau_regions,
+            "coverage": coverage,
         },
         "timeseries": timeseries,
         "hourlyTimeseries": hourly_timeseries,

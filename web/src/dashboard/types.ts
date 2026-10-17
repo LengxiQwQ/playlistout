@@ -132,11 +132,33 @@ export interface DauChannelTotals {
 
 export interface DauDailyPoint extends DauChannelTotals {
   date: string;
+  webUncollected?: boolean;
+  pluginUncollected?: boolean;
+  cliUncollected?: boolean;
+  ma7?: number | null;
 }
 
 export interface DauHourlyPoint {
   hour: number;
   total: number;
+  web?: number;
+  plugin?: number;
+  cli?: number;
+  isFuture?: boolean;
+}
+
+export interface DauCumulativeHourlyPoint {
+  hour: number;
+  targetTotal: number | null;
+  targetWeb: number | null;
+  targetPlugin: number | null;
+  targetCli: number | null;
+  comparisonTotal: number | null;
+  comparisonWeb: number | null;
+  comparisonPlugin: number | null;
+  comparisonCli: number | null;
+  baselineTotal?: number | null;
+  isFuture?: boolean;
 }
 
 export interface DauClientRow {
@@ -145,6 +167,71 @@ export interface DauClientRow {
   total: number;
   today: number;
   yesterday: number;
+  comparisonCount?: number;
+  deltaCount?: number;
+  deltaPercent?: number | null;
+  sharePercent?: number;
+  coverageUncollected?: boolean;
+}
+
+export interface ChannelCoverageInfo {
+  earliestDate: string | null;
+  hasCoverage: boolean;
+}
+
+export interface DauCoverage {
+  web: ChannelCoverageInfo;
+  plugin: ChannelCoverageInfo;
+  cli: ChannelCoverageInfo;
+}
+
+export interface DauAnnotation {
+  date: string;
+  type: 'coverage_start' | 'milestone' | 'info';
+  title: string;
+  description: string;
+  channel?: 'web' | 'plugin' | 'cli';
+}
+
+export interface DauComparisonMeta {
+  mode: 'prev_day' | 'prev_period' | 'same_day_last_week' | 'seven_day_baseline' | 'none';
+  label: string;
+  targetLabel: string;
+  isSameHour: boolean;
+  currentHour?: number;
+  comparable: boolean;
+  incomparableReason?: string;
+  targetCount: number;
+  comparisonCount: number;
+  deltaCount: number;
+  deltaPercent: number | null;
+  baselineCount?: number;
+  baselineDeltaPercent?: number | null;
+}
+
+export interface DauSingleDayStats {
+  targetDate: string;
+  comparisonDate: string;
+  currentHour: number;
+  isToday: boolean;
+  targetCumulative: DauCumulativeHourlyPoint[];
+  hourlyIncrements: DauHourlyPoint[];
+  comparisonHourlyIncrements: DauHourlyPoint[];
+  peakHour: { hour: number; count: number } | null;
+  sevenDayBaseline: { hour: number; total: number }[];
+}
+
+export interface DauMultiDayStats {
+  fromDate: string;
+  toDate: string;
+  dayCount: number;
+  dailyAverage: number;
+  latestFullDay: { date: string; total: number } | null;
+  peakDay: { date: string; total: number } | null;
+  previousPeriodFrom: string;
+  previousPeriodTo: string;
+  previousPeriodSeries: DauDailyPoint[];
+  sevenDayMovingAverage: { date: string; value: number }[];
 }
 
 export interface DauSummary {
@@ -159,6 +246,14 @@ export interface DauSummary {
   clients: DauClientRow[];
   countries: CountItem[];
   regions: CountItem[];
+  coverage?: DauCoverage;
+  annotations?: DauAnnotation[];
+  comparison?: DauComparisonMeta;
+  singleDay?: DauSingleDayStats;
+  multiDay?: DauMultiDayStats;
+  targetCumulative?: DauCumulativeHourlyPoint[];
+  comparisonCumulative?: { hour: number; total: number | null }[];
+  sevenDayBaseline?: { hour: number; total: number }[];
 }
 
 export interface AnalyticsSlice {
