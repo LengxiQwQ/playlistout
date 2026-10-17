@@ -4,11 +4,9 @@
 
 # Playlist Out · 把你的歌单带走
 
-**一个开源的跨平台歌单解析、导出与迁移工具。**
-
-支持多个主流音乐平台，将歌单整理并导出为 Excel、JSON、CSV、TXT、M3U8，也可以继续带进支持的开源播放器。
-
 **你的歌单，不应该只困在一个音乐平台里。**
+
+解析、导出，并把歌单继续带进支持的开源播放器。
 
 [![Website](https://img.shields.io/badge/Website-playlistout.lengxiqwq.com-EAA008?style=flat-square)](https://playlistout.lengxiqwq.com)
 [![Release](https://img.shields.io/github/v/release/LengxiQwQ/playlistout?style=flat-square&logo=github&label=Release)](https://github.com/LengxiQwQ/playlistout/releases)
