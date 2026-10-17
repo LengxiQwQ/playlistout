@@ -537,7 +537,31 @@ function addDauCount(
   totals.total += count;
 }
 
+export const SYSTEM_TELEMETRY_MILESTONES: Record<
+  'web' | 'plugin' | 'cli',
+  { coverageStart: string; title: string; description: string }
+> = {
+  web: {
+    coverageStart: '2026-03-01',
+    title: '网页端访客统计启动',
+    description: 'Web 端 visitor_unique 匿名去重访客统计上线',
+  },
+  plugin: {
+    coverageStart: '2026-10-15',
+    title: '生态插件活跃开始采集',
+    description: 'MusicFree 等生态插件接入心跳与活跃遥测',
+  },
+  cli: {
+    coverageStart: '2026-10-15',
+    title: 'CLI 活跃开始采集',
+    description: 'Playlist Out CLI 接入使用活跃遥测',
+  },
+};
+
 export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
+  let hasWeb = false;
+  let hasPlugin = false;
+  let hasCli = false;
   let minWeb: string | null = null;
   let minPlugin: string | null = null;
   let minCli: string | null = null;
@@ -546,52 +570,64 @@ export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
     const d = String(row.date || '').trim();
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
     const cnt = Number(row.count || 0);
-    if (cnt <= 0) continue;
     const m = String(row.metric || '').trim();
     const ch = String(row.channel || '').trim();
 
     if (m === 'visitor_unique' && (ch === 'web' || !ch)) {
-      if (!minWeb || d < minWeb) minWeb = d;
+      hasWeb = true;
+      if (cnt > 0 && (!minWeb || d < minWeb)) minWeb = d;
     } else if (m === 'active_user' && ch === 'plugin') {
-      if (!minPlugin || d < minPlugin) minPlugin = d;
+      hasPlugin = true;
+      if (cnt > 0 && (!minPlugin || d < minPlugin)) minPlugin = d;
     } else if (m === 'active_user' && ch === 'cli') {
-      if (!minCli || d < minCli) minCli = d;
+      hasCli = true;
+      if (cnt > 0 && (!minCli || d < minCli)) minCli = d;
     }
   }
 
+  const webStart = hasWeb
+    ? (minWeb || SYSTEM_TELEMETRY_MILESTONES.web.coverageStart)
+    : null;
+  const pluginStart = hasPlugin
+    ? (minPlugin || SYSTEM_TELEMETRY_MILESTONES.plugin.coverageStart)
+    : null;
+  const cliStart = hasCli
+    ? (minCli || SYSTEM_TELEMETRY_MILESTONES.cli.coverageStart)
+    : null;
+
   return {
-    web: { earliestDate: minWeb, hasCoverage: minWeb !== null },
-    plugin: { earliestDate: minPlugin, hasCoverage: minPlugin !== null },
-    cli: { earliestDate: minCli, hasCoverage: minCli !== null },
+    web: { earliestDate: webStart, hasCoverage: hasWeb },
+    plugin: { earliestDate: pluginStart, hasCoverage: hasPlugin },
+    cli: { earliestDate: cliStart, hasCoverage: hasCli },
   };
 }
 
 export function generateDauAnnotations(coverage: DauCoverage): DauAnnotation[] {
   const annotations: DauAnnotation[] = [];
-  if (coverage.web.earliestDate) {
+  if (coverage.web.hasCoverage && coverage.web.earliestDate) {
     annotations.push({
       date: coverage.web.earliestDate,
       type: 'coverage_start',
-      title: '网页端访客统计启动',
-      description: 'Web 端 visitor_unique 匿名去重访客统计上线',
+      title: SYSTEM_TELEMETRY_MILESTONES.web.title,
+      description: SYSTEM_TELEMETRY_MILESTONES.web.description,
       channel: 'web',
     });
   }
-  if (coverage.plugin.earliestDate) {
+  if (coverage.plugin.hasCoverage && coverage.plugin.earliestDate) {
     annotations.push({
       date: coverage.plugin.earliestDate,
       type: 'coverage_start',
-      title: '生态插件活跃开始采集',
-      description: 'MusicFree 等生态插件接入心跳与活跃遥测',
+      title: SYSTEM_TELEMETRY_MILESTONES.plugin.title,
+      description: SYSTEM_TELEMETRY_MILESTONES.plugin.description,
       channel: 'plugin',
     });
   }
-  if (coverage.cli.earliestDate) {
+  if (coverage.cli.hasCoverage && coverage.cli.earliestDate) {
     annotations.push({
       date: coverage.cli.earliestDate,
       type: 'coverage_start',
-      title: 'CLI 活跃开始采集',
-      description: 'Playlist Out CLI 接入使用活跃遥测',
+      title: SYSTEM_TELEMETRY_MILESTONES.cli.title,
+      description: SYSTEM_TELEMETRY_MILESTONES.cli.description,
       channel: 'cli',
     });
   }
@@ -897,15 +933,27 @@ export function buildAnalyticsSlice(
   const dauToday = dauAllDatesMap.get(targetDate) || dauByDate.get(targetDate) || emptyDauTotals();
   const dauYesterday = dauAllDatesMap.get(comparisonDate) || dauByDate.get(comparisonDate) || emptyDauTotals();
 
-  // Determine currentHour (for today: latest recorded hour in snapshot or genHour; for historical: 23)
+  // Determine currentHour & effectiveHour (for today: fair comparison cutoff up to latest full hour)
   let currentHour = 23;
+  let effectiveHour = 23;
+  let isLatestFullHour = true;
   if (isToday) {
     const todayHours = hourly
       .filter((r) => r.date === targetDate && DAU_METRICS.has(String(r.metric || '').trim()))
       .map((r) => Number(r.hour || 0));
     const maxH = todayHours.length > 0 ? Math.max(...todayHours) : 0;
-    const genH = snapshot.generatedAt ? new Date(snapshot.generatedAt).getUTCHours() : new Date().getUTCHours();
+    const genDate = snapshot.generatedAt ? new Date(snapshot.generatedAt) : new Date();
+    const genH = genDate.getUTCHours();
+    const genMin = genDate.getUTCMinutes();
     currentHour = Math.min(23, Math.max(maxH, genH));
+
+    if (currentHour > 0 && maxH < genH && genMin < 50) {
+      effectiveHour = currentHour - 1;
+      isLatestFullHour = true;
+    } else {
+      effectiveHour = currentHour;
+      isLatestFullHour = currentHour === 23;
+    }
   }
 
   // Hourly breakdown function for any single date
@@ -1023,7 +1071,7 @@ export function buildAnalyticsSlice(
   // Peak first-active hour on target day
   let peakHour: { hour: number; count: number } | null = null;
   let maxInc = -1;
-  for (let h = 0; h <= (isToday ? currentHour : 23); h++) {
+  for (let h = 0; h <= (isToday ? effectiveHour : 23); h++) {
     const cnt = targetHourly[h].total;
     if (cnt > maxInc) {
       maxInc = cnt;
@@ -1045,18 +1093,19 @@ export function buildAnalyticsSlice(
     incomparableReason = '统计覆盖发生变化（对比日 CLI 尚未采集）';
   }
 
+  const compHourToUse = isToday ? effectiveHour : 23;
   const targetCount = isSingleDay
-    ? (isToday ? (targetCumulative[currentHour]?.targetTotal ?? dauToday.total) : dauToday.total)
+    ? (isToday ? (targetCumulative[compHourToUse]?.targetTotal ?? dauToday.total) : dauToday.total)
     : dauToday.total;
   const comparisonCount = isSingleDay
-    ? (isToday ? (targetCumulative[currentHour]?.comparisonTotal ?? dauYesterday.total) : dauYesterday.total)
+    ? (isToday ? (targetCumulative[compHourToUse]?.comparisonTotal ?? dauYesterday.total) : dauYesterday.total)
     : dauYesterday.total;
   const deltaCount = targetCount - comparisonCount;
   const deltaPercent = (comparable && comparisonCount > 0)
     ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
     : null;
 
-  const baselineCount = sevenDayBaseline[currentHour]?.total ?? 0;
+  const baselineCount = sevenDayBaseline[compHourToUse]?.total ?? 0;
   const baselineDelta = targetCount - baselineCount;
   const baselineDeltaPercent = (comparable && baselineCount > 0)
     ? Math.round((baselineDelta / baselineCount) * 1000) / 10
@@ -1065,13 +1114,15 @@ export function buildAnalyticsSlice(
   const comparisonMeta: DauComparisonMeta = {
     mode: isSingleDay ? 'prev_day' : 'prev_period',
     label: isSingleDay
-      ? (isToday ? '较昨日同期' : '较前日全天')
+      ? (isToday ? `较昨日同期 (00:00~${String(effectiveHour).padStart(2, '0')}:00)` : '较前日全天')
       : '较上一等长周期',
     targetLabel: isSingleDay
-      ? (isToday ? '今日截至目前' : '当日完整')
+      ? (isToday ? `今日截至 ${String(effectiveHour).padStart(2, '0')}:00` : '当日完整')
       : '期末日',
     isSameHour: isToday,
     currentHour: isToday ? currentHour : undefined,
+    effectiveHour: isToday ? effectiveHour : undefined,
+    isLatestFullHour: isToday ? isLatestFullHour : undefined,
     comparable,
     incomparableReason,
     targetCount,
@@ -1081,6 +1132,69 @@ export function buildAnalyticsSlice(
     baselineCount: isSingleDay ? baselineCount : undefined,
     baselineDeltaPercent: isSingleDay ? baselineDeltaPercent : undefined,
   };
+
+  const getClientHourlySum = (dateStr: string, client: string, maxHour: number): number => {
+    let sum = 0;
+    const isWeb = client === 'official_web';
+    for (const row of hourly) {
+      if (row.date !== dateStr) continue;
+      const h = Number(row.hour || 0);
+      if (h < 0 || h > maxHour) continue;
+      const m = String(row.metric || '').trim();
+      if (!DAU_METRICS.has(m)) continue;
+      if (!matchesFilter(row, { ...filters, from: '0000-00-00', to: '9999-99-99' }, { platformAgnostic: true })) continue;
+      const ch = String(row.channel || '').trim();
+      const cl = String(row.client_id || '').trim();
+
+      if (isWeb) {
+        if (m === 'visitor_unique' && (ch === 'web' || !ch || cl === 'official_web' || cl === 'web')) {
+          sum += Number(row.count || 0);
+        }
+      } else {
+        if (m === 'active_user' && (cl === client || (!cl && ch === clientChannelMap.get(client)))) {
+          sum += Number(row.count || 0);
+        }
+      }
+    }
+    return sum;
+  };
+
+  const getClientPeriodSum = (fromD: string, toD: string, client: string): number => {
+    let sum = 0;
+    const isWeb = client === 'official_web';
+    for (const row of allDatesSource) {
+      const d = String(row.date || '');
+      if (d < fromD || d > toD) continue;
+      const m = String(row.metric || '').trim();
+      if (!DAU_METRICS.has(m)) continue;
+      const ch = String(row.channel || '').trim();
+      const cl = String(row.client_id || '').trim();
+
+      if (isWeb) {
+        if (m === 'visitor_unique' && (ch === 'web' || !ch || cl === 'official_web' || cl === 'web')) {
+          sum += Number(row.count || 0);
+        }
+      } else {
+        if (m === 'active_user' && (cl === client || (!cl && ch === clientChannelMap.get(client)))) {
+          sum += Number(row.count || 0);
+        }
+      }
+    }
+    return sum;
+  };
+
+  const rangeIncludesToday = !isSingleDay && toDate >= todayUtc;
+  const fullDays = rangeIncludesToday
+    ? dauSeries.filter((p) => p.date < todayUtc)
+    : dauSeries;
+  const compDayCount = Math.max(1, fullDays.length);
+  const fullDaysTotal = fullDays.reduce((acc, p) => acc + p.total, 0);
+  const fullDayAverage = Math.round(fullDaysTotal / compDayCount);
+  const dailyAverage = rangeIncludesToday ? fullDayAverage : Math.round(windowTotals.total / Math.max(1, dauSeries.length));
+
+  const completedFromDate = fullDays.length > 0 ? fullDays[0].date : fromDate;
+  const prevTo = shiftDate(completedFromDate, -1);
+  const prevFrom = shiftDate(prevTo, -(compDayCount - 1));
 
   const allClients = new Set([
     'official_web',
@@ -1100,14 +1214,40 @@ export function buildAnalyticsSlice(
       const today = isWeb ? dauToday.web : (clientTargetMap.get(client) || 0);
       const yesterday = isWeb ? dauYesterday.web : (clientCompMap.get(client) || 0);
 
-      const compCount = isSingleDay
-        ? (isToday ? (targetCumulative[currentHour]?.comparisonWeb ?? yesterday) : yesterday)
-        : 0;
-      const targetVal = isSingleDay ? today : total;
-      const dCount = targetVal - compCount;
-      const dPct = compCount > 0 ? Math.round(((targetVal - compCount) / compCount) * 1000) / 10 : null;
-      const denom = isSingleDay ? (dauToday.total || 1) : (windowTotals.total || 1);
-      const sharePct = Math.round((targetVal / denom) * 1000) / 10;
+      let targetCount = today;
+      let compCount = yesterday;
+      let currentPeriodDailyAvg: number | undefined;
+      let previousPeriodDailyAvg: number | undefined;
+
+      if (isSingleDay) {
+        if (isToday) {
+          targetCount = isWeb
+            ? (targetCumulative[effectiveHour]?.targetWeb ?? today)
+            : getClientHourlySum(targetDate, client, effectiveHour);
+          compCount = isWeb
+            ? (targetCumulative[effectiveHour]?.comparisonWeb ?? yesterday)
+            : getClientHourlySum(comparisonDate, client, effectiveHour);
+        } else {
+          targetCount = today;
+          compCount = yesterday;
+        }
+      } else {
+        const completedFrom = fullDays.length > 0 ? fullDays[0].date : fromDate;
+        const completedTo = fullDays.length > 0 ? fullDays[fullDays.length - 1].date : toDate;
+        const currClientSum = getClientPeriodSum(completedFrom, completedTo, client);
+        const prevClientSum = getClientPeriodSum(prevFrom, prevTo, client);
+        currentPeriodDailyAvg = Math.round(currClientSum / compDayCount);
+        previousPeriodDailyAvg = Math.round(prevClientSum / compDayCount);
+        targetCount = currentPeriodDailyAvg;
+        compCount = previousPeriodDailyAvg;
+      }
+
+      const dCount = targetCount - compCount;
+      const dPct = compCount > 0 ? Math.round(((targetCount - compCount) / compCount) * 1000) / 10 : null;
+      const denom = isSingleDay
+        ? (dauToday.total || 1)
+        : (dailyAverage || 1);
+      const sharePct = Math.round((targetCount / denom) * 1000) / 10;
 
       return {
         client,
@@ -1115,20 +1255,20 @@ export function buildAnalyticsSlice(
         total,
         today,
         yesterday,
+        targetCount,
         comparisonCount: compCount,
         deltaCount: dCount,
         deltaPercent: dPct,
         sharePercent: sharePct,
+        currentPeriodDailyAvg,
+        previousPeriodDailyAvg,
       };
     })
-    .filter((c) => c.total > 0 || c.today > 0 || c.yesterday > 0)
-    .sort((a, b) => b.total - a.total || b.today - a.today || a.client.localeCompare(b.client));
+    .filter((c) => c.total > 0 || c.today > 0 || c.yesterday > 0 || (c.targetCount ?? 0) > 0 || (c.comparisonCount ?? 0) > 0)
+    .sort((a, b) => (b.targetCount ?? b.total) - (a.targetCount ?? a.total) || b.total - a.total || a.client.localeCompare(b.client));
 
   let multiDayStats: DauMultiDayStats | undefined;
   if (!isSingleDay) {
-    const dayCount = Math.max(1, dauSeries.length);
-    const dailyAverage = Math.round(windowTotals.total / dayCount);
-
     let peakDay: { date: string; total: number } | null = null;
     for (const pt of dauSeries) {
       if (!peakDay || pt.total > peakDay.total) {
@@ -1137,30 +1277,24 @@ export function buildAnalyticsSlice(
     }
 
     let latestFullDay: { date: string; total: number } | null = null;
-    if (isToday) {
-      const yestDate = shiftDate(todayUtc, -1);
-      const yestPt = dauSeries.find((p) => p.date === yestDate) || dauAllDatesMap.get(yestDate);
-      if (yestPt) {
-        latestFullDay = { date: yestDate, total: yestPt.total };
-      }
-    }
-    if (!latestFullDay && dauSeries.length > 0) {
+    if (fullDays.length > 0) {
+      const lastFullPt = fullDays[fullDays.length - 1];
+      latestFullDay = { date: lastFullPt.date, total: lastFullPt.total };
+    } else if (dauSeries.length > 0) {
       const lastPt = dauSeries[dauSeries.length - 1];
       latestFullDay = { date: lastPt.date, total: lastPt.total };
     }
 
-    const prevFrom = shiftDate(fromDate, -dayCount);
-    const prevTo = shiftDate(fromDate, -1);
-    const prevPeriodSeries: DauDailyPoint[] = [];
+    const previousPeriodSeries: DauDailyPoint[] = [];
     let prevTotal = 0;
 
-    for (let i = 0; i < dayCount; i++) {
+    for (let i = 0; i < compDayCount; i++) {
       const dStr = shiftDate(prevFrom, i);
       const totals = dauAllDatesMap.get(dStr) || emptyDauTotals();
-      prevPeriodSeries.push({ date: dStr, ...totals });
+      previousPeriodSeries.push({ date: dStr, ...totals });
       prevTotal += totals.total;
     }
-    const prevDailyAvg = Math.round(prevTotal / dayCount);
+    const prevDailyAvg = Math.round(prevTotal / compDayCount);
 
     let multiComparable = true;
     let multiIncomparableReason: string | undefined;
@@ -1188,11 +1322,16 @@ export function buildAnalyticsSlice(
     const sevenDayMovingAverage: { date: string; value: number }[] = [];
     for (const pt of dauSeries) {
       let sum7 = 0;
+      let validDays = 0;
       for (let o = 0; o < 7; o++) {
         const d = shiftDate(pt.date, -o);
-        sum7 += (dauAllDatesMap.get(d)?.total || 0);
+        const dayTotals = dauAllDatesMap.get(d);
+        if (dayTotals !== undefined) {
+          sum7 += dayTotals.total;
+          validDays++;
+        }
       }
-      const ma7Val = Math.round(sum7 / 7);
+      const ma7Val = validDays > 0 ? Math.round(sum7 / validDays) : pt.total;
       pt.ma7 = ma7Val;
       sevenDayMovingAverage.push({ date: pt.date, value: ma7Val });
     }
@@ -1200,13 +1339,16 @@ export function buildAnalyticsSlice(
     multiDayStats = {
       fromDate,
       toDate,
-      dayCount,
+      dayCount: dauSeries.length,
       dailyAverage,
+      fullDayCount: compDayCount,
+      fullDayAverage,
+      rangeIncludesToday,
       latestFullDay,
       peakDay,
       previousPeriodFrom: prevFrom,
       previousPeriodTo: prevTo,
-      previousPeriodSeries: prevPeriodSeries,
+      previousPeriodSeries,
       sevenDayMovingAverage,
     };
   }
@@ -1215,6 +1357,7 @@ export function buildAnalyticsSlice(
     targetDate,
     comparisonDate,
     currentHour,
+    effectiveHour,
     isToday,
     targetCumulative,
     hourlyIncrements: targetHourly,

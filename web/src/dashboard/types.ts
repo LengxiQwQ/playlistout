@@ -167,11 +167,14 @@ export interface DauClientRow {
   total: number;
   today: number;
   yesterday: number;
+  targetCount?: number;
   comparisonCount?: number;
   deltaCount?: number;
   deltaPercent?: number | null;
   sharePercent?: number;
   coverageUncollected?: boolean;
+  currentPeriodDailyAvg?: number;
+  previousPeriodDailyAvg?: number;
 }
 
 export interface ChannelCoverageInfo {
@@ -199,6 +202,8 @@ export interface DauComparisonMeta {
   targetLabel: string;
   isSameHour: boolean;
   currentHour?: number;
+  effectiveHour?: number;
+  isLatestFullHour?: boolean;
   comparable: boolean;
   incomparableReason?: string;
   targetCount: number;
@@ -213,6 +218,7 @@ export interface DauSingleDayStats {
   targetDate: string;
   comparisonDate: string;
   currentHour: number;
+  effectiveHour?: number;
   isToday: boolean;
   targetCumulative: DauCumulativeHourlyPoint[];
   hourlyIncrements: DauHourlyPoint[];
@@ -226,6 +232,9 @@ export interface DauMultiDayStats {
   toDate: string;
   dayCount: number;
   dailyAverage: number;
+  fullDayCount?: number;
+  fullDayAverage?: number;
+  rangeIncludesToday?: boolean;
   latestFullDay: { date: string; total: number } | null;
   peakDay: { date: string; total: number } | null;
   previousPeriodFrom: string;

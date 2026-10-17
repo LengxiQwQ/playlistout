@@ -216,4 +216,117 @@ describe('Activity & DAU Engine Redesign', () => {
     expect(slice.dau.coverage!.plugin.hasCoverage).toBe(false);
     expect(slice.dau.coverage!.cli.hasCoverage).toBe(false);
   });
+
+  it('11. computes accurate same-hour targetCount and comparisonCount per client without contamination', () => {
+    const slice = buildAnalyticsSlice(baseSnapshot, { from: '2026-10-17', to: '2026-10-17' });
+    const clients = slice.dau.clients;
+
+    const webRow = clients.find((c) => c.client === 'official_web')!;
+    const mfRow = clients.find((c) => c.client === 'musicfree')!;
+    const cliRow = clients.find((c) => c.client === 'playlistout_cli')!;
+
+    expect(webRow).toBeDefined();
+    expect(mfRow).toBeDefined();
+    expect(cliRow).toBeDefined();
+
+    // At hour 14 on 2026-10-17:
+    // Web: 35 (h8) + 55 (h12) = 90
+    // Web yesterday at h14: 30 (h8) + 40 (h12) = 70
+    expect(webRow.targetCount).toBe(90);
+    expect(webRow.comparisonCount).toBe(70);
+    expect(webRow.deltaCount).toBe(20);
+
+    // MusicFree: 25 (h10)
+    // MusicFree yesterday at h14: 20 (h10)
+    expect(mfRow.targetCount).toBe(25);
+    expect(mfRow.comparisonCount).toBe(20);
+    expect(mfRow.deltaCount).toBe(5);
+    expect(mfRow.deltaPercent).toBe(25.0);
+
+    // CLI: 8 (h14)
+    // CLI yesterday at h14: 10 (h14)
+    expect(cliRow.targetCount).toBe(8);
+    expect(cliRow.comparisonCount).toBe(10);
+    expect(cliRow.deltaCount).toBe(-2);
+    expect(cliRow.deltaPercent).toBe(-20.0);
+  });
+
+  it('12. enforces fair cutoff to latest completed full hour when current clock hour is in-progress', () => {
+    // Snapshot generated at 07:13 UTC on 2026-10-17; hourly data only exists up to hour 6
+    const partialHourSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      generatedAt: '2026-10-17T07:13:00Z',
+      hourlyCore: [
+        { date: '2026-10-16', hour: 4, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-16', hour: 6, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 15 },
+        { date: '2026-10-17', hour: 4, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 12 },
+        { date: '2026-10-17', hour: 6, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 18 },
+      ],
+    };
+
+    const slice = buildAnalyticsSlice(partialHourSnapshot, { from: '2026-10-17', to: '2026-10-17' });
+    const comp = slice.dau.comparison!;
+
+    expect(comp.isSameHour).toBe(true);
+    expect(comp.currentHour).toBe(7);
+    expect(comp.effectiveHour).toBe(6);
+    expect(comp.isLatestFullHour).toBe(true);
+    expect(comp.targetCount).toBe(30); // 12 + 18 up to 06:00
+    expect(comp.comparisonCount).toBe(25); // 10 + 15 up to 06:00
+    expect(comp.deltaCount).toBe(5);
+    expect(comp.label).toContain('00:00~06:00');
+  });
+
+  it('13. provides fair completed-day baselines in multi-day mode when range includes today', () => {
+    const multiDaySnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      dailyCore: [
+        { date: '2026-10-11', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 100 },
+        { date: '2026-10-12', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 110 },
+        { date: '2026-10-13', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 120 },
+        { date: '2026-10-14', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 130 },
+        { date: '2026-10-15', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 140 },
+        { date: '2026-10-16', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 182 },
+        { date: '2026-10-17', channel: 'web', client_id: 'official_web', platform: 'none', metric: 'visitor_unique', count: 90 }, // today, partial
+      ],
+    };
+
+    // Range includes today (2026-10-17)
+    const slice = buildAnalyticsSlice(multiDaySnapshot, { from: '2026-10-11', to: '2026-10-17' });
+    const multi = slice.dau.multiDay!;
+
+    expect(multi.rangeIncludesToday).toBe(true);
+    // Latest full day should be yesterday (10-16), not partial today
+    expect(multi.latestFullDay?.date).toBe('2026-10-16');
+    expect(multi.latestFullDay?.total).toBe(182);
+
+    // Full day count excludes partial today (6 full days: 10-11 to 10-16)
+    expect(multi.fullDayCount).toBe(6);
+    expect(multi.previousPeriodSeries).toBeDefined();
+    expect(multi.previousPeriodSeries.length).toBe(6);
+  });
+
+  it('14. calculates moving average dividing only by valid observed days without cold start depression', () => {
+    const slice = buildAnalyticsSlice(baseSnapshot, { from: '2026-10-01', to: '2026-10-07' });
+    const pt1 = slice.dau.series.find((p) => p.date === '2026-10-01')!;
+    // On Day 1 (2026-10-01), only 1 day of history exists (100). MA7 must be 100, NOT 100/7 = 14!
+    expect(pt1.ma7).toBe(100);
+
+    const pt2 = slice.dau.series.find((p) => p.date === '2026-10-02')!;
+    // On Day 2, avg of 100 and 105 is 103 (rounded)
+    expect(pt2.ma7).toBe(103);
+  });
+
+  it('15. computes period daily averages for clients in multi-day mode', () => {
+    const slice = buildAnalyticsSlice(baseSnapshot, { from: '2026-10-06', to: '2026-10-07' });
+    const clients = slice.dau.clients;
+
+    const webRow = clients.find((c) => c.client === 'official_web')!;
+    expect(webRow.currentPeriodDailyAvg).toBeDefined();
+    expect(webRow.previousPeriodDailyAvg).toBeDefined();
+    // In multi-day mode, targetCount holds currentPeriodDailyAvg and comparisonCount holds previousPeriodDailyAvg
+    expect(webRow.targetCount).toBe(webRow.currentPeriodDailyAvg);
+    expect(webRow.comparisonCount).toBe(webRow.previousPeriodDailyAvg);
+  });
 });
+

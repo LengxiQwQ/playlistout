@@ -843,13 +843,14 @@ class DashboardApp {
   private activeTrendIdx = -1;
   private activeDauIdx = -1;
   private activeDauHour = -1;
-  private dauActiveSeries: Set<'total' | 'web' | 'plugin' | 'cli' | 'ma7'> = new Set([
+  private dauActiveSeries: Set<'total' | 'web' | 'plugin' | 'cli' | 'ma7' | 'prevPeriod'> = new Set([
     'total',
     'web',
     'plugin',
     'cli',
     'ma7',
   ]);
+  private dauCompareMode: 'auto' | 'seven_day_baseline' | 'prev_period' | 'none' = 'auto';
   private dauDrilldownRegion: string | null = null;
   private chartViews: Record<string, string> = {
     trend: 'bar',
@@ -1951,6 +1952,7 @@ class DashboardApp {
           this.activeDauHour = -1;
 
           const row = data[idx];
+          const prevPt = dau.multiDay?.previousPeriodSeries?.[idx];
           if (tipTitle) tipTitle.textContent = `${row.date} 活跃人次`;
           if (tipContent) {
             tipContent.innerHTML = `
@@ -1959,6 +1961,7 @@ class DashboardApp {
               <div class="chart-tooltip-row"><span style="color:#8b5cf6">插件端:</span><strong>${row.pluginUncollected ? '未采集' : fmt(row.plugin)}</strong></div>
               <div class="chart-tooltip-row"><span style="color:#10b981">CLI 终端:</span><strong>${row.cliUncollected ? '未采集' : fmt(row.cli)}</strong></div>
               ${row.ma7 != null ? `<div class="chart-tooltip-row"><span style="color:#f59e0b">7日均线:</span><strong>${fmt(row.ma7)}</strong></div>` : ''}
+              ${prevPt ? `<div class="chart-tooltip-row"><span style="color:#64748b">上一周期:</span><strong>${fmt(prevPt.total)} (${prevPt.date})</strong></div>` : ''}
               <div style="font-size:10px;color:#0284c7;margin-top:6px;border-top:1px solid var(--l);padding-top:3px">💡 点击下钻查看此单日详情</div>
             `;
           }
@@ -2037,9 +2040,16 @@ class DashboardApp {
 
     // Toggle Platform Filter visibility and Channel options based on page
     const platformField = document.getElementById('filterPlatform')?.closest('.field') as HTMLElement | null;
+    const platformSelect = document.getElementById('filterPlatform') as HTMLSelectElement | null;
     const channelSelect = document.getElementById('filterChannel') as HTMLSelectElement | null;
+    let needsRefilter = false;
+
     if (page === 'dau') {
       if (platformField) platformField.style.display = 'none';
+      if (platformSelect && platformSelect.value) {
+        platformSelect.value = '';
+        needsRefilter = true;
+      }
       if (channelSelect) {
         const curVal = channelSelect.value;
         channelSelect.innerHTML = `
@@ -2050,7 +2060,11 @@ class DashboardApp {
         `;
         if (curVal !== '' && curVal !== 'web' && curVal !== 'plugin' && curVal !== 'cli') {
           channelSelect.value = '';
+          needsRefilter = true;
         }
+      }
+      if (needsRefilter) {
+        this.applyFilters();
       }
     } else {
       if (platformField) platformField.style.display = '';
@@ -2892,6 +2906,46 @@ class DashboardApp {
       }
     }
 
+    // 1.5 Compare Toolbar (Interactive Selector)
+    const compareToolbar = document.getElementById('dauCompareToolbar');
+    if (compareToolbar) {
+      if (isSingle) {
+        compareToolbar.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+            <span class="muted">对比基准:</span>
+            <select id="dauCompareSelect" style="padding:2px 8px;border-radius:4px;border:1px solid var(--l);background:var(--p);font-size:12px">
+              <option value="auto" ${this.dauCompareMode === 'auto' ? 'selected' : ''}>自动 (昨日同期)</option>
+              <option value="seven_day_baseline" ${this.dauCompareMode === 'seven_day_baseline' ? 'selected' : ''}>近 7 日同期基准</option>
+              <option value="none" ${this.dauCompareMode === 'none' ? 'selected' : ''}>不对比</option>
+            </select>
+          </div>
+        `;
+      } else {
+        compareToolbar.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+            <span class="muted">对比基准:</span>
+            <select id="dauCompareSelect" style="padding:2px 8px;border-radius:4px;border:1px solid var(--l);background:var(--p);font-size:12px">
+              <option value="auto" ${this.dauCompareMode === 'auto' || this.dauCompareMode === 'prev_period' ? 'selected' : ''}>上一等长周期</option>
+              <option value="none" ${this.dauCompareMode === 'none' ? 'selected' : ''}>不对比</option>
+            </select>
+          </div>
+        `;
+      }
+      const cmpSelect = document.getElementById('dauCompareSelect') as HTMLSelectElement | null;
+      if (cmpSelect) {
+        cmpSelect.onchange = () => {
+          this.dauCompareMode = cmpSelect.value as any;
+          if (this.dauCompareMode === 'none') {
+            this.dauActiveSeries.delete('prevPeriod');
+          } else if (this.dauCompareMode === 'auto' && !isSingle) {
+            this.dauActiveSeries.add('prevPeriod');
+          }
+          this.renderDauTab();
+          this.drawDauChart();
+        };
+      }
+    }
+
     // 2. Scope Banner
     const scopeBanner = document.getElementById('dauScopeBanner');
     if (scopeBanner) {
@@ -2930,21 +2984,52 @@ class DashboardApp {
     const comp = dau.comparison;
     const sStats = dau.singleDay;
     const mStats = dau.multiDay;
+    const isToday = isSingle && dau.targetDate === this.isoDayOffset(0);
+    const effH = comp?.effectiveHour ?? sStats?.effectiveHour ?? 0;
+    const effHStr = String(effH).padStart(2, '0') + ':00';
+
+    let card2Label = '';
+    let card2Val = '—';
+    let card2Sub = '';
+
+    if (this.dauCompareMode === 'none') {
+      card2Label = isSingle ? '昨日对比 (已停用)' : '周期对比 (已停用)';
+      card2Val = '—';
+      card2Sub = '在右上角工具栏选择对比基准重新启用';
+    } else if (this.dauCompareMode === 'seven_day_baseline' && isSingle) {
+      card2Label = '近 7 日同期基准 (均值)';
+      card2Val = comp?.baselineCount != null ? fmt(comp.baselineCount) : '—';
+      card2Sub = comp?.baselineDeltaPercent != null
+        ? `波动 ${comp.baselineDeltaPercent >= 0 ? '+' : ''}${comp.baselineDeltaPercent.toFixed(1)}% · 同步小时平均`
+        : '所选日缺少足够历史同期';
+    } else {
+      card2Label = isSingle
+        ? (isToday ? `昨日同期 (00:00~${effHStr})` : `前一天对比 (${dau.comparisonDate.slice(5)})`)
+        : '与上一等长周期相比';
+      card2Val = isSingle
+        ? fmt(comp?.comparisonCount ?? dau.yesterday.total)
+        : (comp?.deltaPercent != null ? `${comp.deltaPercent >= 0 ? '+' : ''}${comp.deltaPercent.toFixed(1)}%` : '—');
+      card2Sub = comp?.comparable === false
+        ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
+        : (isSingle
+            ? `较同期 ${comp?.deltaPercent != null ? (comp.deltaPercent >= 0 ? '+' : '') + comp.deltaPercent.toFixed(1) + '%' : '—'} (${comp?.deltaCount != null ? (comp.deltaCount >= 0 ? '+' : '') + fmt(comp.deltaCount) : '—'})`
+            : `前一周期日均 ${comp?.comparisonCount != null ? fmt(comp.comparisonCount) : '—'} 人次`);
+    }
 
     const kpiItems = isSingle
       ? [
           {
-            label: dau.targetDate === this.isoDayOffset(0) ? '今日活跃人次 (截至当前)' : `当日活跃人次 (${dau.targetDate.slice(5)})`,
-            val: fmt(dau.today.total),
-            sub: `网页: ${fmt(dau.today.web)} · 插件: ${fmt(dau.today.plugin)} · CLI: ${fmt(dau.today.cli)}`,
+            label: isToday ? `今日活跃人次 (截至 ${effHStr})` : `当日活跃人次 (${dau.targetDate.slice(5)})`,
+            val: fmt(comp?.targetCount ?? dau.today.total),
+            sub: isToday
+              ? `Web ${fmt(sStats?.targetCumulative[effH]?.targetWeb ?? dau.today.web)} · 插件 ${fmt(sStats?.targetCumulative[effH]?.targetPlugin ?? dau.today.plugin)} · CLI ${fmt(sStats?.targetCumulative[effH]?.targetCli ?? dau.today.cli)}`
+              : `网页: ${fmt(dau.today.web)} · 插件: ${fmt(dau.today.plugin)} · CLI: ${fmt(dau.today.cli)}`,
             color: '#0284c7',
           },
           {
-            label: dau.targetDate === this.isoDayOffset(0) ? '昨日同期对比 (00:00~当前)' : `前一天对比 (${dau.comparisonDate.slice(5)})`,
-            val: fmt(dau.yesterday.total),
-            sub: comp?.comparable === false
-              ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
-              : `较同期 ${comp?.deltaPercent != null ? (comp.deltaPercent >= 0 ? '+' : '') + comp.deltaPercent.toFixed(1) + '%' : '—'} (${comp?.deltaCount != null ? (comp.deltaCount >= 0 ? '+' : '') + fmt(comp.deltaCount) : '—'})`,
+            label: card2Label,
+            val: card2Val,
+            sub: card2Sub,
             color: 'var(--t)',
           },
           {
@@ -2968,7 +3053,9 @@ class DashboardApp {
           {
             label: '区间日均活跃人次',
             val: fmt(mStats?.dailyAverage ?? Math.round(dau.windowTotals.total / Math.max(1, dau.series.length))),
-            sub: `跨端独立去重 · 周期累计 ${fmt(dau.windowTotals.total)} 人次`,
+            sub: mStats?.rangeIncludesToday
+              ? `基于 ${mStats.fullDayCount} 个完整日均值 (已排除今日残缺日)`
+              : `跨端独立去重 · 周期累计 ${fmt(dau.windowTotals.total)} 人次`,
             color: '#0284c7',
           },
           {
@@ -2978,11 +3065,9 @@ class DashboardApp {
             color: 'var(--t)',
           },
           {
-            label: '与上一等长周期相比',
-            val: comp?.deltaPercent != null ? `${comp.deltaPercent >= 0 ? '+' : ''}${comp.deltaPercent.toFixed(1)}%` : '—',
-            sub: comp?.comparable === false
-              ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
-              : `前一周期累计 ${comp?.comparisonCount != null ? fmt(comp.comparisonCount) : '—'} 人次`,
+            label: card2Label,
+            val: card2Val,
+            sub: card2Sub,
             color: 'var(--g)',
           },
           {
@@ -3028,17 +3113,18 @@ class DashboardApp {
         legendEl.innerHTML = `
           <div style="display:flex;align-items:center;gap:12px;font-size:11px">
             <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:3px;background:#0284c7;display:inline-block;border-radius:2px"></span> 所选日累计</span>
-            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dashed #64748b;display:inline-block"></span> 对比日同期</span>
+            ${this.dauCompareMode !== 'none' ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dashed #64748b;display:inline-block"></span> 对比日同期</span>' : ''}
             ${hasBase ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dotted #f59e0b;display:inline-block"></span> 近7日同期基准</span>' : ''}
           </div>
         `;
       } else {
-        const seriesDefs: Array<{ key: 'total' | 'web' | 'plugin' | 'cli' | 'ma7'; label: string; color: string }> = [
+        const seriesDefs: Array<{ key: 'total' | 'web' | 'plugin' | 'cli' | 'ma7' | 'prevPeriod'; label: string; color: string }> = [
           { key: 'total', label: '总活跃', color: '#f97316' },
           { key: 'web', label: '网页端', color: '#0284c7' },
           { key: 'plugin', label: '插件端', color: '#8b5cf6' },
           { key: 'cli', label: 'CLI 终端', color: '#10b981' },
           { key: 'ma7', label: '7日均线', color: '#f59e0b' },
+          { key: 'prevPeriod', label: '上一周期', color: '#64748b' },
         ];
         legendEl.innerHTML = `
           <div style="display:flex;align-items:center;gap:6px;font-size:11px">
@@ -3057,7 +3143,7 @@ class DashboardApp {
         legendEl.querySelectorAll('.btn-toggle-series').forEach((btn) => {
           (btn as HTMLElement).onclick = (e) => {
             e.stopPropagation();
-            const sKey = (btn as HTMLElement).dataset.series as 'total' | 'web' | 'plugin' | 'cli' | 'ma7';
+            const sKey = (btn as HTMLElement).dataset.series as 'total' | 'web' | 'plugin' | 'cli' | 'ma7' | 'prevPeriod';
             if (sKey) {
               if (this.dauActiveSeries.has(sKey)) {
                 if (this.dauActiveSeries.size > 1) {
@@ -3164,8 +3250,16 @@ class DashboardApp {
     // 7. Client Table
     const thCol1 = document.getElementById('thDauCol1');
     const thCol2 = document.getElementById('thDauCol2');
-    if (thCol1) thCol1.textContent = isSingle ? `当日活跃 (${dau.targetDate.slice(5)})` : `期末日 (${dau.targetDate.slice(5)})`;
-    if (thCol2) thCol2.textContent = isSingle ? `对比同期 (${dau.comparisonDate.slice(5)})` : `前日同期 (${dau.comparisonDate.slice(5)})`;
+    if (thCol1) {
+      thCol1.textContent = isSingle
+        ? (isToday ? `当日活跃 (至 ${effHStr})` : `当日活跃 (${dau.targetDate.slice(5)})`)
+        : '本周期日均';
+    }
+    if (thCol2) {
+      thCol2.textContent = isSingle
+        ? (isToday ? `对比同期 (至 ${effHStr})` : `前日同期 (${dau.comparisonDate.slice(5)})`)
+        : '上周期日均';
+    }
 
     const tbody = document.getElementById('dauClientRows');
     if (tbody) {
@@ -3184,6 +3278,8 @@ class DashboardApp {
                 : c.channel === 'cli'
                   ? 'CLI 终端'
                   : formatHumanLabel(c.channel);
+          const col1Val = isSingle ? (c.targetCount ?? c.today) : (c.currentPeriodDailyAvg ?? c.total);
+          const col2Val = isSingle ? (c.comparisonCount ?? c.yesterday) : (c.previousPeriodDailyAvg ?? 0);
           return `
             <tr>
               <td>
@@ -3191,8 +3287,8 @@ class DashboardApp {
                 <div class="muted" style="font-size:11px;font-family:var(--mono)">${esc(c.client)}</div>
               </td>
               <td><span class="badge" style="background:var(--l)">${esc(channelLabel)}</span></td>
-              <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(c.today)}</td>
-              <td style="text-align:right;font-family:var(--mono)">${fmt(c.yesterday)}</td>
+              <td style="text-align:right;font-family:var(--mono);font-weight:700">${fmt(col1Val)}</td>
+              <td style="text-align:right;font-family:var(--mono)">${fmt(col2Val)}</td>
               <td style="text-align:right;font-family:var(--mono)">${deltaStr}</td>
               <td style="text-align:right;font-family:var(--mono)">${shareStr}</td>
               <td style="text-align:center">
@@ -3343,7 +3439,7 @@ class DashboardApp {
       }
 
       // 2. Comparison Day (dashed slate)
-      if (targetPts.length === 24) {
+      if (this.dauCompareMode !== 'none' && targetPts.length === 24) {
         ctx.strokeStyle = '#64748b';
         ctx.lineWidth = 1.8;
         ctx.setLineDash([5, 4]);
@@ -3464,6 +3560,11 @@ class DashboardApp {
         if (this.dauActiveSeries.has('cli') && d.cli > maxVal) maxVal = d.cli;
         if (this.dauActiveSeries.has('ma7') && d.ma7 != null && d.ma7 > maxVal) maxVal = d.ma7;
       }
+      if (this.dauActiveSeries.has('prevPeriod') && dau.multiDay?.previousPeriodSeries) {
+        for (const pd of dau.multiDay.previousPeriodSeries) {
+          if (pd.total > maxVal) maxVal = pd.total;
+        }
+      }
       maxVal = Math.ceil(maxVal * 1.15);
 
       // Y-grid & labels
@@ -3576,6 +3677,43 @@ class DashboardApp {
         });
       };
 
+      const prevData = dau.multiDay?.previousPeriodSeries || [];
+      if (this.dauActiveSeries.has('prevPeriod') && prevData.length > 0) {
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        let started = false;
+        prevData.forEach((pd, i) => {
+          if (i < data.length) {
+            const val = Number(pd.total || 0);
+            const x = getX(i);
+            const y = padTop + plotH - (val / maxVal) * plotH;
+            if (!started) {
+              ctx.moveTo(x, y);
+              started = true;
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Points
+        ctx.fillStyle = '#64748b';
+        prevData.forEach((pd, i) => {
+          if (i < data.length) {
+            const val = Number(pd.total || 0);
+            const x = getX(i);
+            const y = padTop + plotH - (val / maxVal) * plotH;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
+
       drawLine('ma7', '#f59e0b', 1.8, true);
       drawLine('cli', '#10b981', 1.8);
       drawLine('plugin', '#8b5cf6', 1.8);
@@ -3600,6 +3738,14 @@ class DashboardApp {
           ctx.fillStyle = '#f97316';
           ctx.beginPath();
           ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (this.dauActiveSeries.has('prevPeriod') && prevData[this.activeDauIdx]) {
+          const py = padTop + plotH - (Number(prevData[this.activeDauIdx].total || 0) / maxVal) * plotH;
+          ctx.fillStyle = '#64748b';
+          ctx.beginPath();
+          ctx.arc(hx, py, 4, 0, Math.PI * 2);
           ctx.fill();
         }
       }
