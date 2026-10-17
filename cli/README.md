@@ -71,6 +71,8 @@ python cli/main.py "https://qishui.douyin.com/s/xxx" --channel douyin
 python cli/main.py "1160951354" -p qqmusic --user -f json --no-open
 python cli/main.py "1825474783" -p netease --user -f json,csv --no-open
 python cli/main.py -p kugou --user -f json --no-open
+# 支持通过 --select 指定要导出的歌单序号 (例如 1 或 1,3,5 或 1-3 或 all)
+python cli/main.py -p kugou --user --select 1,2 -f json --no-open
 
 # 5. 平台专属认证快捷操作
 python cli/main.py -p kugou --login
@@ -90,12 +92,14 @@ python cli/main.py -p kugou --logout
 通用选项:
   -h, --help            显示帮助信息并退出
   -v, --version         显示版本号并退出
-  -p, --platform        显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui 等)
+  -p, --platform        显式指定目标平台 (netease, qqmusic, kugou, kuwo, qishui, migu 等)
   -i, --id              歌单链接、短链或 ID
   -f, --format          导出格式: 1~5 或 all, xlsx, csv, json, txt, m3u8 (默认: all)
   -o, --output-dir      导出文件保存目录 (默认: output)
-  --user                指定目标为用户 (用于纯数字 QQ号/UID 等脚本批量导出；歌单链接/歌单标签误加时会报错退出)
+  -u, --user            指定目标为用户 (用于纯数字 QQ号/UID 等脚本批量导出；酷狗已登录时可免传 UID；歌单链接/歌单标签误加时会报错退出)
+  -s, --select          用户歌单批量模式下选择要导出的歌单序号 (例如: 1 或 1,3,5 或 1-3 或 all)
   --no-open             导出完成后不自动打开文件管理器
+  --no-telemetry        禁用匿名使用统计上报
   --debug               输出详细异常堆栈跟踪
 
 平台专属选项:

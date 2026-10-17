@@ -1470,7 +1470,7 @@ def perform_export(playlist, output_dir="output", formats=None, reveal_folder_fl
     return exported_files
 
 
-def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None):
+def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None, allow_interactive=False):
     target_type = target["type"]
     target_id = target["id"]
     print(f"→ 成功识别目标类型: {target_type.upper()}, ID: {target_id}")
@@ -1500,20 +1500,27 @@ def _fetch_kugou_playlist_by_target(target, cli_token=None, cli_userid=None):
             userid = userid or saved_userid
 
         if not token or not userid:
-            print("\n! 提示：您正在导出个人自建歌单 (Cloudlist)，该歌单需要酷狗登录凭证。")
-            token, userid = interactive_login_menu()
-            if not token or not userid:
-                print("! 未获取到有效凭证，无法导出个人自建歌单。")
+            if allow_interactive:
+                print("\n! 提示：您正在导出个人自建歌单 (Cloudlist)，该歌单需要酷狗登录凭证。")
+                token, userid = interactive_login_menu()
+                if not token or not userid:
+                    print("! 未获取到有效凭证，无法导出个人自建歌单。")
+                    return None
+            else:
+                print("× 导出酷狗个人自建歌单 (Cloudlist) 需要登录凭证。请先运行 `PlaylistOut -p kugou --login` 或通过 `--token` 与 `--userid` 传入凭证。", file=sys.stderr)
                 return None
 
         try:
             playlist = fetch_cloudlist_playlist(target_id, token, userid, target["original_url"])
         except PermissionError as pe:
-            print(f"\n! 凭证认证失败: {pe}")
-            print("→ 正在引导重新登录...")
-            token, userid = interactive_login_menu()
-            if token and userid:
-                playlist = fetch_cloudlist_playlist(target_id, token, userid, target["original_url"])
+            print(f"\n! 凭证认证失败: {pe}", file=sys.stderr)
+            if allow_interactive:
+                print("→ 正在引导重新登录...")
+                token, userid = interactive_login_menu()
+                if token and userid:
+                    playlist = fetch_cloudlist_playlist(target_id, token, userid, target["original_url"])
+                else:
+                    return None
             else:
                 return None
 
@@ -1584,7 +1591,7 @@ def main():
             print("错误: 无法识别输入的酷狗链接或歌单 ID，请检查输入格式。", file=sys.stderr)
             sys.exit(1)
 
-        playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid)
+        playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid, allow_interactive=False)
         if not playlist or not playlist.get("tracks"):
             print("错误: 未能获取到任何有效歌曲数据。", file=sys.stderr)
             sys.exit(1)
@@ -1620,7 +1627,7 @@ def main():
                 print("=" * 64)
                 continue
 
-            playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid)
+            playlist = _fetch_kugou_playlist_by_target(target, cli_token=args.token, cli_userid=args.userid, allow_interactive=True)
             if not playlist or not playlist.get("tracks"):
                 print("× 未能获取到任何有效歌曲数据，请检查歌单是否有效或重试。")
                 print("=" * 64)

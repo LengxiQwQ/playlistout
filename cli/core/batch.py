@@ -7,6 +7,7 @@ batch progress tracking, and structured result aggregation across all adapters.
 """
 
 import os
+import sys
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Set, Any
@@ -219,7 +220,11 @@ def run_batch_flow(
                 target_pls = user_playlists.created_playlists or all_pls
             else:
                 indices = parse_playlist_selection(selection_input, len(all_pls))
-                target_pls = [all_pls[i - 1] for i in indices] if indices else (user_playlists.created_playlists or all_pls)
+                if not indices:
+                    err_sel = f"× 歌单选择 '{selection_input}' 无效或超出可用序号范围 (1-{len(all_pls)})。"
+                    print(err_sel, file=sys.stderr)
+                    return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
+                target_pls = [all_pls[i - 1] for i in indices]
         else:
             # 默认导出用户创建的全部歌单（若无自建则全量）
             target_pls = user_playlists.created_playlists or all_pls

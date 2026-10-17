@@ -136,7 +136,7 @@ def get_platform_prompt_hint(adapter) -> str:
     elif pid == "netease":
         return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID、用户 UID（输入 0 返回）："
     elif pid == "kugou":
-        return f"{colored_badge} 粘贴歌单链接/分享短链或输入歌单 ID（普通版输入 login 登录，概念版免登全量，输入 0 返回）："
+        return f"{colored_badge} 粘贴歌单链接/分享短链或输入歌单 ID（输入 login 登录，输入 my 导出我的歌单，输入 0 返回）："
     elif pid == "kuwo":
         return f"{colored_badge} 粘贴歌单链接/分享短链，或输入歌单 ID（输入 0 返回）："
     elif pid == "migu":
@@ -200,7 +200,8 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="导出完成后不自动打开文件夹")
 
     # 平台专属参数透传
-    parser.add_argument("--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用；歌单链接/歌单标签与 --user 互斥）")
+    parser.add_argument("-u", "--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用；歌单链接/歌单标签与 --user 互斥）")
+    parser.add_argument("-s", "--select", dest="selection", help="用户歌单批量模式下选择要导出的歌单序号 (例如: 1 或 1,3,5 或 1-3 或 all)")
     parser.add_argument("--channel", choices=["qishui", "douyin"], default=None, help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
     login_group = parser.add_mutually_exclusive_group()
     login_group.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
@@ -274,18 +275,40 @@ def main():
     output_dir = args.output_dir if args.output_dir else "output"
     reveal_folder = not args.no_open
 
+    # 检查是否为酷狗 Headless 用户歌单模式 (通过 -p kugou --user 且无需额外提供 input)
+    is_headless_kugou_user = bool(getattr(args, "user", False) and plt_id == "kugou" and not raw_input)
+
+    # 严格校验：若显式传了 --user 但未提供输入目标且非已登录酷狗，报错提示并退出
+    if getattr(args, "user", False) and not raw_input and not is_headless_kugou_user:
+        print("× 用户歌单模式需要提供目标用户 ID、QQ 号或主页链接 (酷狗平台已登录时可免传)。", file=sys.stderr)
+        sys.exit(2)
+
+    # 严格校验：若传了 --select 但未进入用户模式或无目标输入，报错提示并退出
+    if getattr(args, "selection", None) and not (raw_input or is_headless_kugou_user):
+        print("× 参数 --select 仅适用于用户歌单批量模式 (例如配合 --user 或用户主页链接使用)。", file=sys.stderr)
+        sys.exit(2)
+
     # ─────────────────────────────────────────────────────────────
     # 模式一：非交互命令行模式 (通过输入参数跑脚本)
     # ─────────────────────────────────────────────────────────────
-    if raw_input:
+    if raw_input or is_headless_kugou_user:
         # 严格铁律：通过输入参数跑脚本时，严禁使用任何颜色，防止影响脚本解析与运行
         set_color_enabled(False)
-        target = SmartDetector.resolve_target(
-            raw_input=raw_input,
-            platform=args.platform,
-            is_user=getattr(args, "user", False),
-            resolve_redirect=True
-        )
+        if is_headless_kugou_user:
+            target = DetectedTarget(
+                platform=PlatformType.KUGOU,
+                kind=TargetKind.USER,
+                value="",
+                raw_input="",
+                is_playlist_input=False,
+            )
+        else:
+            target = SmartDetector.resolve_target(
+                raw_input=raw_input,
+                platform=args.platform,
+                is_user=getattr(args, "user", False),
+                resolve_redirect=True
+            )
 
         # --user 与明确歌单目标互斥：歌单链接 / 歌单标签 / 平台歌单 ID 不接受用户模式，
         # 避免被强制走用户流程后在运行期产生误导性的抓取失败。
@@ -295,6 +318,10 @@ def main():
                 "  如需导出用户歌单，请使用用户主页链接，或 'QQ号: xxx' / 'UID: xxx' 形式的用户标识。",
                 file=sys.stderr
             )
+            sys.exit(2)
+
+        if target.kind != TargetKind.USER and getattr(args, "selection", None):
+            print("× 参数 --select 仅适用于用户歌单批量模式 (例如配合 --user 或用户主页链接使用)。", file=sys.stderr)
             sys.exit(2)
 
         if target.kind == TargetKind.AMBIGUOUS or target.platform == PlatformType.AMBIGUOUS_DIGITS:
@@ -331,7 +358,8 @@ def main():
                 sys.exit(2)
 
             print(f"✅ 已识别：{adapter.display_name} (用户模式)")
-            print(f"🚀 正在获取用户歌单列表：{target_text}...")
+            desc_target = f"：{target_text}" if target_text else ""
+            print(f"🚀 正在获取用户歌单列表{desc_target}...")
             t_user_start = time.time()
             user_playlists = adapter.fetch_user_playlists(
                 target_text,
@@ -351,10 +379,13 @@ def main():
                 output_dir=output_dir,
                 formats=formats,
                 interactive=False,
+                selection_input=args.selection,
                 reveal_folder_flag=reveal_folder,
                 token=args.token,
                 userid=args.userid,
             )
+            if batch_res.total == 0:
+                sys.exit(2 if args.selection else 1)
             if batch_res.success == 0:
                 print("❌ 未能成功导出任何歌单。", file=sys.stderr)
                 sys.exit(1)
@@ -368,17 +399,19 @@ def main():
             channel=args.channel or "qishui",
             token=args.token,
             userid=args.userid,
+            allow_interactive=False,
         )
         pl_latency = int((time.time() - t_pl_start) * 1000)
         if not playlist or not playlist.tracks:
-            # 尝试专属交互流（如酷狗凭证管理等）
-            handled = adapter.handle_interactive(
-                target_text,
-                output_dir=output_dir,
-                no_open=args.no_open
-            )
-            if handled:
-                return
+            # 严格模式：headless 模式下若传入了明确的 login/logout 指令则处理，否则绝不调起任何交互输入
+            if target_text and target_text.lower() in ("login", "logout", "--login", "--logout"):
+                handled = adapter.handle_interactive(
+                    target_text,
+                    output_dir=output_dir,
+                    no_open=args.no_open
+                )
+                if handled:
+                    return
 
             report_resolve(adapter.platform_id, "failure", latency_ms=pl_latency, failure_code="upstream_error")
             print("❌ 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
@@ -464,7 +497,7 @@ def main():
                     print_main_menu(summary_list)
                     continue
                 if not (p_sel.isdigit() and 1 <= int(p_sel) <= len(adapters_list)):
-                    warn_invalid = "⚠️ 请输入 1-5 中的有效平台编号。"
+                    warn_invalid = f"⚠️ 请输入 1-{len(adapters_list)} 中的有效平台编号。"
                     print(color_yellow(warn_invalid) if supports_color() else warn_invalid)
                     print("")
                     continue
@@ -489,12 +522,21 @@ def main():
                 rec_name = get_platform_brand_color(target_adapter.platform_id, target_adapter.display_name)
                 print(f"✅ 已识别：{rec_name}")
 
-            # 交互模式纯数字消歧：仅当目标平台支持免登用户歌单查询 (QQ 音乐 QQ号 / 网易云 UID) 时，才询问是歌单 ID 还是用户标识
             is_pure_digit = bool(re.fullmatch(r'\d+', extract_clean_url_or_input(target_query)))
             has_explicit_tag = bool(re.search(r'(?:qq|uin|uid|账号|用户|歌单|playlist)[:：\s]*\d+', target_query, re.I))
             supports_public_user_query = bool(target_adapter and target_adapter.platform_id in ("qqmusic", "netease"))
 
-            if is_pure_digit and not has_explicit_tag and supports_public_user_query:
+            # 交互模式快捷指令与消歧：
+            # 1. 酷狗处于锁定状态时，输入 my / user / 我 / 自建 快速导出当前登录账号自建歌单
+            if target_adapter and target_adapter.platform_id == "kugou" and target_query.lower() in ("my", "user", "me", "mine", "我的", "自建"):
+                target = DetectedTarget(
+                    platform=PlatformType.KUGOU,
+                    kind=TargetKind.USER,
+                    value="",
+                    raw_input=target_query,
+                )
+            # 2. 交互模式纯数字消歧：仅当目标平台支持免登用户歌单查询 (QQ 音乐 QQ号 / 网易云 UID) 时，才询问是歌单 ID 还是用户标识
+            elif is_pure_digit and not has_explicit_tag and supports_public_user_query:
                 print_title("纯数字类型确认", "检测到纯数字，请确认查询目标：", emoji="🔍")
                 k1 = color_bold("1") if supports_color() else "1"
                 k2 = color_bold("2") if supports_color() else "2"
@@ -557,7 +599,8 @@ def main():
                         print("")
                         continue
 
-                    fetch_user_msg = f"🚀 正在获取用户歌单列表：{target.value}..."
+                    desc_target = f"：{target.value}" if target.value else ""
+                    fetch_user_msg = f"🚀 正在获取用户歌单列表{desc_target}..."
                     print(color_cyan(fetch_user_msg) if supports_color() else fetch_user_msg)
                     t_iuser_start = time.time()
                     user_pls = target_adapter.fetch_user_playlists(
@@ -580,6 +623,7 @@ def main():
                         output_dir=output_dir,
                         formats=None,
                         interactive=True,
+                        selection_input=args.selection,
                         reveal_folder_flag=reveal_folder,
                         token=args.token,
                         userid=args.userid,
@@ -591,9 +635,10 @@ def main():
                 t_ipl_start = time.time()
                 playlist = target_adapter.fetch_playlist(
                     target_query,
-                    channel=args.channel,
+                    channel=args.channel or "qishui",
                     token=args.token,
                     userid=args.userid,
+                    allow_interactive=True,
                 )
                 ipl_lat = int((time.time() - t_ipl_start) * 1000)
                 if not playlist or not playlist.tracks:

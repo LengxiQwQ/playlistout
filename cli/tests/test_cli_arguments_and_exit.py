@@ -353,3 +353,100 @@ def test_keep_console_alive_on_exit_skipped_in_script_mode():
 
     reset_console_alive_state()
 
+
+def test_cli_kugou_user_mode_headless_authenticated():
+    """验证酷狗 -p kugou --user 在无 positional input 时以 headless 模式直接导出已登录账号歌单"""
+    mock_user_pls = NormalizedUserPlaylists(
+        platform="kugou",
+        user_id="1425711902",
+        nickname="是冷汐呀",
+        playlists=[UserPlaylistSummary(id="4", name="我喜欢", track_count=10, is_created=True)],
+    )
+
+    test_args = ["main.py", "-p", "kugou", "--user", "-f", "json", "--no-open"]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.kugou.KugouAdapter.fetch_user_playlists", return_value=mock_user_pls) as mock_fetch, \
+         patch("cli.main.run_batch_flow", return_value=BatchResult(total=1, success=1, failed=0)) as mock_batch, \
+         patch("builtins.input", side_effect=AssertionError("Headless mode must not call input()!")):
+        main()
+        mock_fetch.assert_called_once_with("", token=None, userid=None)
+        mock_batch.assert_called_once()
+        assert mock_batch.call_args.kwargs["interactive"] is False
+
+
+def test_cli_kugou_user_mode_headless_unauthenticated(capsys):
+    """验证酷狗未登录时 -p kugou --user 报错退出且绝不调用 input() 或进入交互式菜单"""
+    test_args = ["main.py", "-p", "kugou", "--user", "-f", "json", "--no-open"]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.kugou.load_auth_credentials", return_value=(None, None, {})), \
+         patch("builtins.input", side_effect=AssertionError("Headless mode must not call input()!")):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 1
+
+    captured = capsys.readouterr()
+    assert "酷狗用户歌单需要登录凭证" in captured.err or "获取用户歌单失败" in captured.err
+
+
+def test_cli_user_mode_without_input_non_kugou_fails(capsys):
+    """验证非酷狗平台传入 --user 但未提供输入目标时，以代码 2 退出并提示提供用户标识"""
+    test_args = ["main.py", "-p", "netease", "--user"]
+    with patch.object(sys, "argv", test_args), \
+         patch("builtins.input", side_effect=AssertionError("Headless mode must not call input()!")):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "用户歌单模式需要提供目标用户 ID" in captured.err
+
+
+def test_cli_select_without_user_mode_fails(capsys):
+    """验证 --select 未配合用户模式使用时以代码 2 退出"""
+    # 1. 独立运行
+    with patch.object(sys, "argv", ["main.py", "--select", "1"]):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    # 2. 配合歌单链接运行
+    with patch.object(sys, "argv", ["main.py", "https://y.qq.com/n/ryqq/playlist/123", "--select", "1"]):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "参数 --select 仅适用于用户歌单批量模式" in captured.err
+
+
+def test_cli_select_invalid_in_headless_batch_exits_code_2(capsys):
+    """验证在用户歌单批量模式下传入无效 --select 序号以代码 2 退出，杜绝全量导出"""
+    mock_user_pls = NormalizedUserPlaylists(
+        platform="netease",
+        user_id="12345",
+        nickname="测试用户",
+        playlists=[UserPlaylistSummary(id="p1", name="歌单1", is_created=True)],
+    )
+
+    test_args = ["main.py", "12345", "-p", "netease", "--user", "--select", "999", "--no-open"]
+    with patch.object(sys, "argv", test_args), \
+         patch("cli.platforms.netease.NetEaseAdapter.fetch_user_playlists", return_value=mock_user_pls):
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "歌单选择 '999' 无效" in captured.err
+
+
+def test_cli_qishui_channel_none_safety():
+    """验证 options.channel=None 时汽水平台适配器安全退化为 qishui，不触发 AttributeError"""
+    from cli.platforms.registry import PlatformRegistry
+    qishui_adapter = PlatformRegistry.get("qishui")
+
+    with patch("cli.platforms.qishui.get_playlist_info", return_value=("歌单名", [], "作者", "", "7087507348697186339")) as mock_info:
+        res = qishui_adapter.fetch_playlist("https://music.douyin.com/qishui/share/playlist/7087507348697186339", channel=None)
+        assert res is not None
+        mock_info.assert_called_once_with("7087507348697186339", channel="qishui")
+
+

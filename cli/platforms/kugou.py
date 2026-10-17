@@ -593,11 +593,13 @@ class KugouAdapter(BasePlatformAdapter):
 
         cli_token = options.get("token")
         cli_userid = options.get("userid")
+        allow_interactive = bool(options.get("allow_interactive", False))
 
         playlist_data = _fetch_kugou_playlist_by_target(
             target,
             cli_token=cli_token,
-            cli_userid=cli_userid
+            cli_userid=cli_userid,
+            allow_interactive=allow_interactive,
         )
         if not playlist_data or not playlist_data.get("tracks"):
             return None

@@ -30,6 +30,7 @@ import subprocess
 import argparse
 import requests
 import socket
+import time
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -161,14 +162,19 @@ def resolve_shortlink(text):
         url = m.group(0)
 
     if url:
-        try:
-            resp = requests.get(url, headers=HEADERS, allow_redirects=False, timeout=8)
-            if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
-                return resp.headers["Location"]
-            elif resp.status_code == 200:
-                return resp.url
-        except Exception:
-            pass
+        for attempt in range(2):
+            try:
+                resp = requests.get(url, headers=HEADERS, allow_redirects=False, timeout=8)
+                if resp.status_code in (301, 302, 303, 307, 308) and "Location" in resp.headers:
+                    return resp.headers["Location"]
+                elif resp.status_code == 200:
+                    return resp.url
+                break
+            except Exception:
+                if attempt == 0:
+                    time.sleep(0.5)
+                    continue
+                pass
     return text
 
 
@@ -228,12 +234,16 @@ def fetch_kuwo_page(playlist_id, page=1, page_size=PAGE_SIZE):
         **HEADERS,
         'Referer': f"https://m.kuwo.cn/newh5app/playlist_detail/{playlist_id}",
     }
-    try:
-        resp = requests.get(url, headers=headers, timeout=12)
-        if resp.status_code == 200:
-            return resp.json()
-    except Exception as e:
-        print(f"请求酷我第 {page} 页失败: {e}", file=sys.stderr)
+    for attempt in range(2):
+        try:
+            resp = requests.get(url, headers=headers, timeout=12)
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            if attempt == 0:
+                time.sleep(0.5)
+                continue
+            print(f"请求酷我第 {page} 页失败: {e}", file=sys.stderr)
     return None
 
 

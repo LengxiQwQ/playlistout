@@ -257,3 +257,37 @@ def test_fetch_user_playlists_uses_saved_real_nickname():
         assert isinstance(res, NormalizedUserPlaylists)
         assert res.user_id == "1425711902"
         assert res.nickname == "琴心月满"
+
+
+def test_kugou_headless_fetch_never_calls_interactive_login(capsys):
+    """验证在 allow_interactive=False (Headless) 模式下，无论缺凭证还是凭证失效均绝不调用交互登录"""
+    from cli.kugou.kugou_playlist_export import _fetch_kugou_playlist_by_target
+
+    target = {
+        "type": "cloudlist",
+        "id": "123456",
+        "original_url": "https://m.kugou.com/songlist/?listid=123456",
+    }
+
+    # 1. 无凭证情况：打印 stderr 错误，返回 None，绝不调 interactive_login_menu
+    with patch("cli.kugou.kugou_playlist_export.load_auth_credentials", return_value=(None, None, {})), \
+         patch("cli.kugou.kugou_playlist_export.interactive_login_menu", side_effect=AssertionError("interactive_login_menu called in headless!")) as mock_menu, \
+         patch("builtins.input", side_effect=AssertionError("input() called in headless mode!")):
+
+        res = _fetch_kugou_playlist_by_target(target, allow_interactive=False)
+        assert res is None
+        mock_menu.assert_not_called()
+
+    captured = capsys.readouterr()
+    assert "需要登录凭证" in captured.err
+
+    # 2. 凭证失效 (PermissionError) 情况：绝不调 interactive_login_menu 重新登录
+    with patch("cli.kugou.kugou_playlist_export.load_auth_credentials", return_value=("tok", "123", {})), \
+         patch("cli.kugou.kugou_playlist_export.fetch_cloudlist_playlist", side_effect=PermissionError("token expired")), \
+         patch("cli.kugou.kugou_playlist_export.interactive_login_menu", side_effect=AssertionError("interactive_login_menu called in headless!")) as mock_menu, \
+         patch("builtins.input", side_effect=AssertionError("input() called in headless mode!")):
+
+        res = _fetch_kugou_playlist_by_target(target, allow_interactive=False)
+        assert res is None
+        mock_menu.assert_not_called()
+

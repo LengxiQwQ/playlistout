@@ -537,6 +537,7 @@ def get_playlist_info(playlist_id, channel="qishui"):
     支持 options: channel='qishui' (官方清洁正版通道) 或 'douyin' (全量收藏通道)。
     返回: (playlist_title, tracks, author, cover_url, playlist_id)
     """
+    channel = (channel or "qishui").lower()
     cursor = '0'
     page = 0
     all_media_resources = []
@@ -582,7 +583,7 @@ def get_playlist_info(playlist_id, channel="qishui"):
     is_douyin_sync = bool(playlist_meta.get('type') == 4 and (playlist_meta.get('owner') or {}).get('id'))
 
     # 2. 如果指定了 douyin 通道且是抖音同步歌单
-    if channel.lower() == 'douyin' and is_douyin_sync:
+    if channel == 'douyin' and is_douyin_sync:
         owner_id = str(playlist_meta['owner']['id']).strip()
         print(f"检测到抖音同步歌单，正在通过抖音全量收藏通道拉取 (用户 UID: {owner_id})...")
         tracks = fetch_aweme_music_collection(owner_id)

@@ -112,8 +112,9 @@ PlaylistOut "https://music.163.com/playlist?id=2756674066"
 # 指定平台和导出格式
 PlaylistOut "9044196528" -p qqmusic -f xlsx,csv
 
-# 用户歌单批量导出
+# 用户歌单批量导出 (支持 --select 指定歌单序号)
 PlaylistOut "1160951354" -p qqmusic --user -f json --no-open
+PlaylistOut -p kugou --user --select 1,2 -f json --no-open
 
 # 酷狗扫码登录
 PlaylistOut -p kugou --login

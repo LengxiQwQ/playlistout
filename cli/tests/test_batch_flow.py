@@ -201,3 +201,69 @@ def test_run_batch_flow_interactive_selection(tmp_path):
     assert result.success == 1
     assert len(result.exported_files) == 1
     assert result.exported_files[0].endswith(".json")
+
+
+def test_run_batch_flow_headless_selection_subset(tmp_path):
+    """验证非交互模式下通过 selection_input 正确导出指定子集歌单"""
+    adapter = MagicMock()
+    t = NormalizedTrack(index=1, title="测试曲", artist="测试家")
+    adapter.fetch_playlist.side_effect = lambda pid, **kwargs: NormalizedPlaylist(
+        platform="netease", id=pid, name=f"歌单_{pid}", tracks=[t]
+    )
+
+    user_pls = NormalizedUserPlaylists(
+        platform="netease",
+        user_id="uid_batch_subset",
+        nickname="批量测试用户",
+        playlists=[
+            UserPlaylistSummary(id="p1", name="歌单1", is_created=True),
+            UserPlaylistSummary(id="p2", name="歌单2", is_created=True),
+            UserPlaylistSummary(id="p3", name="歌单3", is_created=True),
+        ],
+    )
+
+    result = run_batch_flow(
+        adapter=adapter,
+        user_playlists=user_pls,
+        output_dir=str(tmp_path),
+        formats=["txt"],
+        interactive=False,
+        selection_input="1,3",
+        reveal_folder_flag=False,
+    )
+
+    assert result.total == 2
+    assert result.success == 2
+    assert adapter.fetch_playlist.call_count == 2
+    called_pids = [call.args[0] for call in adapter.fetch_playlist.call_args_list]
+    assert called_pids == ["p1", "p3"]
+
+
+def test_run_batch_flow_headless_invalid_selection_fails_closed(tmp_path, capsys):
+    """验证非交互模式下传入越界或非法序号严格 fail-closed，杜绝静默全量导出"""
+    adapter = MagicMock()
+    user_pls = NormalizedUserPlaylists(
+        platform="netease",
+        user_id="uid_invalid_sel",
+        nickname="越界测试用户",
+        playlists=[
+            UserPlaylistSummary(id="p1", name="歌单1", is_created=True),
+            UserPlaylistSummary(id="p2", name="歌单2", is_created=True),
+        ],
+    )
+
+    result = run_batch_flow(
+        adapter=adapter,
+        user_playlists=user_pls,
+        output_dir=str(tmp_path),
+        formats=["json"],
+        interactive=False,
+        selection_input="999",
+        reveal_folder_flag=False,
+    )
+
+    assert result.total == 0
+    assert result.success == 0
+    assert not adapter.fetch_playlist.called
+    captured = capsys.readouterr()
+    assert "歌单选择 '999' 无效或超出可用序号范围" in captured.err

@@ -34,7 +34,7 @@ class QishuiAdapter(BasePlatformAdapter):
         if not pid:
             return None
 
-        channel = options.get("channel", "qishui")
+        channel = options.get("channel") or "qishui"
         info = get_playlist_info(pid, channel=channel)
         if not info:
             return None

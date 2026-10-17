@@ -15,7 +15,8 @@ from cli.core.ui import resolve_export_formats
 
 def test_registry_registration_and_aliases():
     adapters = PlatformRegistry.list_all()
-    assert len(adapters) >= 5
+    assert len(adapters) == 6
+    assert set(PlatformRegistry.platform_id_list()) == {"netease", "qqmusic", "kugou", "kuwo", "qishui", "migu"}
 
     # 验证各平台 ID 与别名正确映射
     assert PlatformRegistry.get("netease").platform_id == "netease"
@@ -76,7 +77,7 @@ def test_cli_explicit_platform_success(tmp_path):
             return_value=mock_playlist
         ) as mock_fetch:
             main()
-            mock_fetch.assert_called_once_with("12345", channel="qishui", token=None, userid=None)
+            mock_fetch.assert_called_once_with("12345", channel="qishui", token=None, userid=None, allow_interactive=False)
 
     assert (tmp_path / "cli_out" / "【网易云音乐】测试歌单 - 作者.csv").exists()
 
@@ -326,7 +327,7 @@ def test_cli_qishui_explicit_platform_and_channel(tmp_path):
     with patch.object(sys, "argv", test_args):
         with patch.object(PlatformRegistry.get("qishui"), "fetch_playlist", return_value=mock_playlist) as mock_fetch:
             main()
-            mock_fetch.assert_called_once_with("7087507348697186339", channel="douyin", token=None, userid=None)
+            mock_fetch.assert_called_once_with("7087507348697186339", channel="douyin", token=None, userid=None, allow_interactive=False)
     assert (tmp_path / "qishui_out" / "【汽水音乐】汽水测试歌单 - 汽水作者.csv").exists()
 
 
@@ -510,11 +511,13 @@ def test_script_mode_disables_color(monkeypatch, capsys):
                 mock_adapter.display_name = "网易云音乐"
                 mock_adapter.supported_channels = ()
                 mock_adapter.requires_user_auth = False
-                mock_adapter.fetch_playlist.return_value = None
-                mock_adapter.handle_interactive.return_value = True
+                mock_pl = MagicMock()
+                mock_pl.tracks = [MagicMock()]
+                mock_adapter.fetch_playlist.return_value = mock_pl
                 mock_reg.return_value = mock_adapter
 
-                main()
+                with patch("cli.main.run_export_flow", return_value=["test.csv"]):
+                    main()
 
     # 验证在脚本传参模式下，色彩覆盖已被强制禁用
     assert supports_color() is False
