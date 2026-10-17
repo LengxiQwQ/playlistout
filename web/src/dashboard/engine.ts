@@ -7,6 +7,7 @@ import type {
   AnalyticsSnapshot,
   AnalyticsSlice,
   FeedbackSlice,
+  FeedbackStats,
   QuarantineSlice,
   FilterParams,
   SnapshotDailyCoreRow,
@@ -16,6 +17,7 @@ import type {
   SnapshotClientEnvRow,
   CountItem,
   QualityCheck,
+  IntegrationClientSummary,
   DauChannelTotals,
   DauDailyPoint,
   DauHourlyPoint,
@@ -27,6 +29,7 @@ import type {
   DauSingleDayStats,
   DauMultiDayStats,
 } from './types';
+import { PAGE_FILTER_CAPABILITIES } from './types';
 
 export const CORE_METRICS = [
   'resolve_request',
@@ -41,6 +44,14 @@ export const CORE_METRICS = [
   'active_user',
   'rate_limited',
   'migration_handoff',
+] as const;
+ 
+export const LATENCY_BUCKET_ORDER = [
+  '<500ms',
+  '500-1000ms',
+  '1-3s',
+  '3-5s',
+  '5s+',
 ] as const;
 
 export function sumBy<T>(rows: T[], key: keyof T): CountItem[] {
@@ -175,8 +186,18 @@ export function reconcileBreakdownRows(rows: SnapshotBreakdownRow[]): SnapshotBr
     let val = String(row.value || '');
     const cnt = Number(row.count || 0);
 
-    if (dim === 'latency_bucket' && val === '_500ms') {
-      val = '<500ms';
+    if (dim === 'latency_bucket') {
+      if (val === '_500ms') {
+        val = '<500ms';
+      } else if (val === '500ms_1s') {
+        val = '500-1000ms';
+      } else if (val === '1s_3s') {
+        val = '1-3s';
+      } else if (val === '3s_5s') {
+        val = '3-5s';
+      } else if (val === '>5s' || val === '5s') {
+        val = '5s+';
+      }
     }
 
     const key = `${d}|${ch}|${cl}|${p}|${dim}|${val}`;
@@ -503,6 +524,24 @@ export function matchesFilter<
   return true;
 }
 
+export function resolvePageFilterParams(query: FilterParams, page: string): FilterParams {
+  const caps = PAGE_FILTER_CAPABILITIES[page] || { supportedDimensions: [] };
+  const supported = new Set(caps.supportedDimensions);
+
+  return {
+    from: (query.from || '').trim(),
+    to: (query.to || '').trim(),
+    channel: supported.has('channel') ? (query.channel || '').trim().toLowerCase() : '',
+    client: supported.has('client') ? (query.client || '').trim().toLowerCase() : '',
+    platform: supported.has('platform') ? (query.platform || '').trim().toLowerCase() : '',
+    country: supported.has('country') ? (query.country || '').trim().toUpperCase() : '',
+    region: supported.has('region') ? (query.region || '').trim() : '',
+    exclude_my: query.exclude_my,
+  };
+}
+
+
+
 // ── Cross-channel Daily Active Users (DAU) aggregation ──
 // Web activity is `visitor_unique` on channel `web`; plugin / CLI activity is
 // `active_user` recorded per UTC day and scope. Missing metrics default to 0 so
@@ -735,6 +774,49 @@ export function buildAnalyticsSlice(
       .map((h) => byHour.get(h)!);
   }
 
+  // Web Traffic Timeseries (strictly channel=web, naturally Web-scoped)
+  const webFilters = { ...filters, channel: 'web' };
+  const webFilteredSource = source.filter((row) =>
+    row.channel === 'web' && matchesFilter(row, webFilters, { includeGeo: geoActive }),
+  );
+  const webByDay = new Map<string, Record<string, string | number>>();
+  for (const row of webFilteredSource) {
+    const day = String(row.date || '');
+    const metric = String(row.metric || '');
+    if (!day || !metric) continue;
+    let target = webByDay.get(day);
+    if (!target) {
+      target = { date: day };
+      webByDay.set(day, target);
+    }
+    target[metric] = (Number(target[metric] || 0)) + Number(row.count || 0);
+  }
+  const webTimeseries = Array.from(webByDay.keys())
+    .sort()
+    .map((k) => webByDay.get(k)!);
+
+  let webHourlyTimeseries: Array<Record<string, string | number>> = [];
+  if (!geoActive && fromDate === toDate) {
+    const webByHour = new Map<number, Record<string, string | number>>();
+    for (let h = 0; h < 24; h++) {
+      webByHour.set(h, { date: fromDate, hour: h, page_view: 0, visitor_unique: 0 });
+    }
+    for (const row of hourly) {
+      if (row.channel !== 'web' && row.channel !== undefined) continue;
+      if (!matchesFilter(row, webFilters)) continue;
+      const h = Number(row.hour || 0);
+      const metric = String(row.metric || '');
+      const target = webByHour.get(h);
+      if (target) {
+        target[metric] = (Number(target[metric] || 0)) + Number(row.count || 0);
+      }
+    }
+    webHourlyTimeseries = Array.from(webByHour.keys())
+      .sort((a, b) => a - b)
+      .map((h) => webByHour.get(h)!);
+  }
+
+
   const breakdownTotals = new Map<string, Map<string, number>>();
   for (const row of breakdownRows) {
     if (!matchesFilter(row, filters)) continue;
@@ -796,8 +878,21 @@ export function buildAnalyticsSlice(
   for (const [dim, valMap] of breakdownTotals.entries()) {
     const items = Array.from(valMap.entries())
       .filter(([, count]) => count > 0)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+      .map(([name, count]) => ({ name, count }));
+
+    if (dim === 'latency_bucket') {
+      const orderMap = new Map<string, number>(
+        LATENCY_BUCKET_ORDER.map((name, i) => [name, i]),
+      );
+      items.sort((a, b) => {
+        const idxA = orderMap.has(a.name) ? orderMap.get(a.name)! : 999;
+        const idxB = orderMap.has(b.name) ? orderMap.get(b.name)! : 999;
+        if (idxA !== idxB) return idxA - idxB;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      items.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    }
 
     if (items.length > 0) {
       breakdowns[dim] = items;
@@ -807,14 +902,38 @@ export function buildAnalyticsSlice(
   const filteredGeo = geoRows.filter((r) =>
     matchesFilter(r, filters, { includeGeo: true }),
   );
-  const countries = sumBy(
-    filteredGeo.filter((r) => r.country !== 'UNKNOWN'),
+
+  // Web Geo: strictly channel=web and metric=visitor_unique
+  const webGeoRows = geoRows.filter((r) =>
+    r.channel === 'web' &&
+    r.metric === 'visitor_unique' &&
+    matchesFilter(r, filters, { includeGeo: true }),
+  );
+  const webCountries = sumBy(
+    webGeoRows.filter((r) => r.country !== 'UNKNOWN'),
     'country',
   );
-  const regions = sumBy(
-    filteredGeo.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)),
+  const webRegions = sumBy(
+    webGeoRows.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)),
     'region',
   );
+
+  // Request Geo: strictly resolve_request (or fallback to any resolve row if legacy)
+  const reqGeoRows = filteredGeo.filter((r) => r.metric === 'resolve_request');
+  const reqCountries = sumBy(
+    reqGeoRows.filter((r) => r.country !== 'UNKNOWN'),
+    'country',
+  );
+  const reqRegions = sumBy(
+    reqGeoRows.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)),
+    'region',
+  );
+  const countries = reqCountries.length > 0
+    ? reqCountries
+    : (webCountries.length > 0 ? webCountries : sumBy(filteredGeo.filter((r) => r.country !== 'UNKNOWN'), 'country'));
+  const regions = reqRegions.length > 0
+    ? reqRegions
+    : (webRegions.length > 0 ? webRegions : sumBy(filteredGeo.filter((r) => r.region !== 'UNKNOWN' && (r.country === 'CN' || !r.country)), 'region'));
 
   // ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
   const coverage = detectDauCoverage(snapshot.dailyCore || []);
@@ -1470,7 +1589,7 @@ export function buildAnalyticsSlice(
   const channels = sumBy(filterOptionRows('channel', new Set(['resolve_request'])), 'channel');
   const clients = sumBy(filterOptionRows('client', new Set(['resolve_request'])), 'client_id');
   const platforms = sumBy(
-    filterOptionRows('platform', new Set(['resolve_request', 'export', 'clipboard'])),
+    filterOptionRows('platform', new Set(['resolve_request'])),
     'platform',
   );
 
@@ -1483,7 +1602,7 @@ export function buildAnalyticsSlice(
     'client_id',
   );
   const matchedPlatforms = sumBy(
-    filteredSource.filter((r) => ['resolve_request', 'export', 'clipboard'].includes(String(r.metric))),
+    filteredSource.filter((r) => r.metric === 'resolve_request'),
     'platform',
   );
 
@@ -1505,6 +1624,14 @@ export function buildAnalyticsSlice(
   const devices = sumBy(filteredEnv, 'device_class');
   const browsers = sumBy(filteredEnv, 'browser_family');
   const operatingSystems = sumBy(filteredEnv, 'os_family');
+
+  const webEnvRows = envRows.filter((row) =>
+    row.channel === 'web' &&
+    matchesFilter(row, filters, { environment: true }),
+  );
+  const webDevices = sumBy(webEnvRows, 'device_class');
+  const webBrowsers = sumBy(webEnvRows, 'browser_family');
+  const webOperatingSystems = sumBy(webEnvRows, 'os_family');
 
   const exportTotal = (breakdowns['export_format'] || []).reduce((acc, it) => acc + it.count, 0);
   const clipboardTotal = (breakdowns['clipboard_mode'] || []).reduce((acc, it) => acc + it.count, 0);
@@ -1571,6 +1698,191 @@ export function buildAnalyticsSlice(
 
   const successCount = Number(overviewRaw['playlist_success'] || 0) + Number(overviewRaw['user_success'] || 0);
 
+  // Period comparison for Overview KPIs
+  let previousOverview: AnalyticsSlice['previousOverview'] = undefined;
+  let previousWebOverview: AnalyticsSlice['previousWebOverview'] = undefined;
+  let previousWebTimeseries: AnalyticsSlice['previousWebTimeseries'] = undefined;
+  let previousWebHourlyTimeseries: AnalyticsSlice['previousWebHourlyTimeseries'] = undefined;
+  if (fromDate && toDate) {
+    const d1 = new Date(fromDate).getTime();
+    const d2 = new Date(toDate).getTime();
+    const days = Math.max(1, Math.round((d2 - d1) / (86400 * 1000)) + 1);
+    const prevTo = shiftDate(fromDate, -1);
+    const prevFrom = shiftDate(prevTo, -(days - 1));
+
+    const prevFilters = {
+      ...filters,
+      from: prevFrom,
+      to: prevTo,
+    };
+    const prevSource = source.filter((row) =>
+      matchesFilter(row, prevFilters, { includeGeo: geoActive }),
+    );
+    const prevRaw: Record<string, number> = {};
+    for (const m of CORE_METRICS) prevRaw[m] = 0;
+    for (const r of prevSource) {
+      const m = String(r.metric || '');
+      prevRaw[m] = (prevRaw[m] || 0) + Number(r.count || 0);
+    }
+    const prevReq = prevRaw['resolve_request'] || 0;
+    const prevSucc = Number(prevRaw['playlist_success'] || 0) + Number(prevRaw['user_success'] || 0);
+    previousOverview = {
+      resolve_request: prevReq,
+      playlist_success: prevRaw['playlist_success'] || 0,
+      user_success: prevRaw['user_success'] || 0,
+      resolve_failure: prevRaw['resolve_failure'] || 0,
+      tracks_processed: prevRaw['tracks_processed'] || 0,
+      export: prevRaw['export'] || 0,
+      clipboard: prevRaw['clipboard'] || 0,
+      page_view: prevRaw['page_view'] || 0,
+      visitor_unique: prevRaw['visitor_unique'] || 0,
+      rate_limited: prevRaw['rate_limited'] || 0,
+      migration_handoff: prevRaw['migration_handoff'] || 0,
+      success_rate: prevReq > 0 ? Math.round((prevSucc / prevReq) * 10000) / 100 : 0,
+      pending_feedback: fbPending,
+    };
+
+    const prevWebFilters = {
+      ...webFilters,
+      from: prevFrom,
+      to: prevTo,
+    };
+    const prevWebSource = source.filter((row) =>
+      row.channel === 'web' && matchesFilter(row, prevWebFilters, { includeGeo: geoActive }),
+    );
+    let prevPV = 0;
+    let prevUV = 0;
+    const prevWebByDay = new Map<string, Record<string, string | number>>();
+    for (const row of prevWebSource) {
+      const day = String(row.date || '');
+      const metric = String(row.metric || '');
+      const cnt = Number(row.count || 0);
+      if (metric === 'page_view') prevPV += cnt;
+      if (metric === 'visitor_unique') prevUV += cnt;
+      if (day && metric) {
+        let target = prevWebByDay.get(day);
+        if (!target) {
+          target = { date: day };
+          prevWebByDay.set(day, target);
+        }
+        target[metric] = (Number(target[metric] || 0)) + cnt;
+      }
+    }
+    previousWebOverview = {
+      page_view: prevPV,
+      visitor_unique: prevUV,
+    };
+    previousWebTimeseries = Array.from(prevWebByDay.keys()).sort().map((k) => prevWebByDay.get(k)!);
+
+    if (!geoActive && fromDate === toDate) {
+      const prevWebByHour = new Map<number, Record<string, string | number>>();
+      for (let h = 0; h < 24; h++) {
+        prevWebByHour.set(h, { date: prevFrom, hour: h, page_view: 0, visitor_unique: 0 });
+      }
+      for (const row of hourly) {
+        if (row.channel !== 'web' && row.channel !== undefined) continue;
+        if (!matchesFilter(row, prevWebFilters)) continue;
+        const h = Number(row.hour || 0);
+        const metric = String(row.metric || '');
+        const target = prevWebByHour.get(h);
+        if (target) {
+          target[metric] = (Number(target[metric] || 0)) + Number(row.count || 0);
+        }
+      }
+      previousWebHourlyTimeseries = Array.from(prevWebByHour.keys()).sort((a, b) => a - b).map((h) => prevWebByHour.get(h)!);
+    }
+  }
+
+  // ── Integration Clients Dynamic Summary ──
+  const clientStatsMap = new Map<string, { requests: number; success: number; channel: string }>();
+  for (const row of source) {
+    if (!matchesFilter(row, filters, { includeGeo: geoActive })) continue;
+    const cl = String(row.client_id || '').trim();
+    if (!cl || cl === 'none') continue;
+    let stat = clientStatsMap.get(cl);
+    if (!stat) {
+      stat = { requests: 0, success: 0, channel: String(row.channel || 'unknown') };
+      clientStatsMap.set(cl, stat);
+    }
+    const m = String(row.metric || '');
+    const cnt = Number(row.count || 0);
+    if (m === 'resolve_request') stat.requests += cnt;
+    if (m === 'playlist_success' || m === 'user_success') stat.success += cnt;
+    if (row.channel && (!stat.channel || stat.channel === 'unknown')) stat.channel = String(row.channel);
+  }
+
+  for (const it of clients) {
+    if (!clientStatsMap.has(it.name) && it.name && it.name !== 'none') {
+      clientStatsMap.set(it.name, { requests: it.count, success: 0, channel: 'unknown' });
+    }
+  }
+
+  const prevClientStatsMap = new Map<string, { requests: number; success: number }>();
+  if (prevFrom && prevTo) {
+    const prevClientFilters = { ...filters, from: prevFrom, to: prevTo };
+    for (const row of source) {
+      if (!matchesFilter(row, prevClientFilters, { includeGeo: geoActive })) continue;
+      const cl = String(row.client_id || '').trim();
+      if (!cl || cl === 'none') continue;
+      let stat = prevClientStatsMap.get(cl);
+      if (!stat) {
+        stat = { requests: 0, success: 0 };
+        prevClientStatsMap.set(cl, stat);
+      }
+      const m = String(row.metric || '');
+      const cnt = Number(row.count || 0);
+      if (m === 'resolve_request') stat.requests += cnt;
+      if (m === 'playlist_success' || m === 'user_success') stat.success += cnt;
+    }
+  }
+
+  const integrationClients: IntegrationClientSummary[] = Array.from(clientStatsMap.entries())
+    .map(([clientId, stat]) => {
+      const requests = stat.requests;
+      const successRate = requests > 0 ? Math.round((stat.success / requests) * 1000) / 10 : 0;
+      const prevStat = prevClientStatsMap.get(clientId);
+      const prevRequests = prevStat?.requests;
+      const prevSuccessRate = prevStat && prevStat.requests > 0
+        ? Math.round((prevStat.success / prevStat.requests) * 1000) / 10
+        : undefined;
+
+      let requestDeltaText = '—';
+      let requestDeltaColor = 'var(--m)';
+      if (prevRequests !== undefined && prevRequests !== null) {
+        const diff = requests - prevRequests;
+        if (diff === 0) {
+          requestDeltaText = '— 持平';
+        } else if (prevRequests === 0) {
+          requestDeltaText = '+100% vs 上期';
+          requestDeltaColor = 'var(--g)';
+        } else {
+          const pctVal = ((diff / prevRequests) * 100).toFixed(1);
+          requestDeltaText = `${diff > 0 ? '+' : ''}${pctVal}% vs 上期`;
+          requestDeltaColor = diff > 0 ? 'var(--g)' : 'var(--r)';
+        }
+      }
+
+      const clKey = clientId.toLowerCase();
+      const versionDist = breakdowns[`${clKey}_version`] || (clKey === 'musicfree' ? breakdowns['client_version'] : []) || [];
+      const hostDist = breakdowns[`${clKey}_host`] || (clKey === 'musicfree' ? breakdowns['host_platform'] : []) || [];
+
+      return {
+        clientId,
+        channel: stat.channel,
+        requests,
+        successRate,
+        prevRequests,
+        prevSuccessRate,
+        requestDeltaText,
+        requestDeltaColor,
+        topVersion: versionDist[0]?.name,
+        topHost: hostDist[0]?.name,
+        versionDistribution: versionDist,
+        hostDistribution: hostDist,
+      };
+    })
+    .sort((a, b) => b.requests - a.requests);
+
   return {
     version: 2,
     filters,
@@ -1599,6 +1911,12 @@ export function buildAnalyticsSlice(
       active_clients: matchedClients.filter((it) => it.count > 0).length,
       pending_feedback: fbPending,
     },
+    previousOverview,
+    webTimeseries,
+    webHourlyTimeseries,
+    previousWebOverview,
+    previousWebTimeseries,
+    previousWebHourlyTimeseries,
     dau: {
       targetDate,
       comparisonDate,
@@ -1622,6 +1940,7 @@ export function buildAnalyticsSlice(
     },
     timeseries,
     hourlyTimeseries,
+
     breakdowns,
     distributions: {
       channels: matchedChannels,
@@ -1635,11 +1954,22 @@ export function buildAnalyticsSlice(
       filterScope:
         'Environment supports date/channel/client filters. Platform and geography are intentionally separate privacy cubes.',
     },
+    webEnvironment: {
+      devices: webDevices,
+      browsers: webBrowsers,
+      operatingSystems: webOperatingSystems,
+      filterScope: 'Web 终端环境基于官方 Web 渠道请求分布。',
+    },
     geo: {
       countries,
       regions,
       filterScope:
         'Geography is intentionally stored in a separate privacy-preserving cube. Geo filters affect overview/timeseries/geo, not reliability breakdowns.',
+    },
+    webGeo: {
+      countries: webCountries,
+      regions: webRegions,
+      filterScope: 'Web 独立访客地域基于官方 Web 渠道的 visitor_unique 指标聚合。',
     },
     availableFilters: {
       channels,
@@ -1648,12 +1978,17 @@ export function buildAnalyticsSlice(
       countries: sumBy(countryOptionRows, 'country'),
       regions: sumBy(regionOptionRows, 'region'),
     },
+    integrationClients,
     dataQuality: {
       status: checks.every((c) => c.ok) ? 'healthy' : 'error',
       checks,
       latestDate: latest || null,
       legacyMixedShare:
         totalCount > 0 ? Math.round((legacyCount / totalCount) * 10000) / 100 : 0,
+    },
+    filterContract: {
+      supportedDimensions: ['channel', 'client', 'platform', 'country', 'region'],
+      scopeNote: '全局分析切片覆盖渠道、接入端、平台及地域维度。',
     },
   };
 }
@@ -1697,19 +2032,57 @@ export function buildQuarantineSlice(
   filtered.sort((a, b) => {
     const dateComp = String(b.incident_date || '').localeCompare(String(a.incident_date || ''));
     if (dateComp !== 0) return dateComp;
-    return (Number(b.id || 0)) - (Number(a.id || 0));
+    return Number(b.id || 0) - Number(a.id || 0);
   });
+
+  // Calculate timeline / timeseries grouped by incident_date ascending
+  const timeseriesMap = new Map<string, { count: number; events: number }>();
+  // Calculate reasons distribution grouped by reason
+  const reasonsMap = new Map<string, number>();
+
+  for (const r of filtered) {
+    const d = String(r.incident_date || '').slice(0, 10);
+    const cnt = Number(r.count || 0);
+    if (d) {
+      const cur = timeseriesMap.get(d) || { count: 0, events: 0 };
+      cur.count += 1;
+      cur.events += cnt;
+      timeseriesMap.set(d, cur);
+    }
+    const rsn = String(r.reason || 'unknown');
+    reasonsMap.set(rsn, (reasonsMap.get(rsn) || 0) + cnt);
+  }
+
+  const timeseries = Array.from(timeseriesMap.entries())
+    .map(([date, val]) => ({ date, count: val.count, events: val.events }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const reasons = Array.from(reasonsMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 
   return {
     quarantine: filtered.slice(0, limit),
     totalRecords: filtered.length,
     totalEvents: filtered.reduce((acc, r) => acc + Number(r.count || 0), 0),
+    reasons,
+    timeseries,
+    filterContract: {
+      supportedDimensions: ['platform', 'country', 'region'],
+      scopeNote: PAGE_FILTER_CAPABILITIES.security.scopeNote,
+    },
   };
 }
 
 export function buildFeedbackSlice(
   snapshot: AnalyticsSnapshot,
-  query: FilterParams & { status?: string; limit?: number; offset?: number },
+  query: FilterParams & {
+    status?: string;
+    error_code?: string;
+    sort_by?: 'recent' | 'frequent' | 'oldest_pending';
+    limit?: number;
+    offset?: number;
+  },
 ): FeedbackSlice {
   let allRows = snapshot.feedback || [];
   const excludeMy =
@@ -1742,6 +2115,56 @@ export function buildFeedbackSlice(
     return true;
   });
 
+  // Calculate availableErrorCodes from allRows
+  const errorCodeCounts = new Map<string, number>();
+  const platformCounts = new Map<string, number>();
+  const uniqueUrls = new Set<string>();
+  let totalReports = 0;
+
+  for (const r of allRows) {
+    const code = String(r.error_code || '').trim();
+    if (code) {
+      errorCodeCounts.set(code, (errorCodeCounts.get(code) || 0) + 1);
+    }
+    const p = String(r.platform || '').trim().toLowerCase();
+    if (p) {
+      platformCounts.set(p, (platformCounts.get(p) || 0) + 1);
+    }
+    if (r.source_url) {
+      uniqueUrls.add(r.source_url);
+    }
+    totalReports += Number(r.report_count || 1);
+  }
+
+  const availableErrorCodes = Array.from(errorCodeCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  let topPlatform = '—';
+  let maxPCount = 0;
+  for (const [p, c] of platformCounts.entries()) {
+    if (c > maxPCount) {
+      maxPCount = c;
+      topPlatform = p;
+    }
+  }
+
+  let topErrorCode = '—';
+  let maxECount = 0;
+  for (const [e, c] of errorCodeCounts.entries()) {
+    if (c > maxECount) {
+      maxECount = c;
+      topErrorCode = e;
+    }
+  }
+
+  const stats: FeedbackStats = {
+    uniqueUrls: uniqueUrls.size,
+    totalReports,
+    topPlatform,
+    topErrorCode,
+  };
+
   const statusCounts = { all: allRows.length, pending: 0, resolved: 0, ignored: 0 };
   for (const r of allRows) {
     const s = String(r.status || 'pending').toLowerCase() as 'pending' | 'resolved' | 'ignored';
@@ -1752,13 +2175,39 @@ export function buildFeedbackSlice(
     }
   }
 
-  const targetStatus = (query.status || '').trim().toLowerCase();
   let rows = allRows;
+
+  // Filter by status if specified
+  const targetStatus = (query.status || '').trim().toLowerCase();
   if (targetStatus && targetStatus !== 'all') {
-    rows = allRows.filter((r) => (r.status || 'pending').toLowerCase() === targetStatus);
+    rows = rows.filter((r) => (r.status || 'pending').toLowerCase() === targetStatus);
   }
 
+  // Filter by error_code if specified
+  const targetErrorCode = (query.error_code || '').trim();
+  if (targetErrorCode) {
+    rows = rows.filter((r) => String(r.error_code || '').trim() === targetErrorCode);
+  }
+
+  // Sorting
+  const sortBy = query.sort_by || 'recent';
   rows.sort((a, b) => {
+    if (sortBy === 'frequent') {
+      const diff = Number(b.report_count || 0) - Number(a.report_count || 0);
+      if (diff !== 0) return diff;
+    } else if (sortBy === 'oldest_pending') {
+      const aPending = (a.status || 'pending') === 'pending';
+      const bPending = (b.status || 'pending') === 'pending';
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+      if (aPending && bPending) {
+        const dateA = String(a.first_reported_at || a.last_reported_at || '');
+        const dateB = String(b.first_reported_at || b.last_reported_at || '');
+        const dateComp = dateA.localeCompare(dateB);
+        if (dateComp !== 0) return dateComp;
+      }
+    }
+    // Default or fallback: recent first
     const dateA = String(
       a.last_reported_at || a.first_reported_at || (a as { created_at?: string }).created_at || '',
     );
@@ -1777,5 +2226,11 @@ export function buildFeedbackSlice(
     entries: rows.slice(offset, offset + limit),
     total: rows.length,
     counts: statusCounts,
+    availableErrorCodes,
+    stats,
+    filterContract: {
+      supportedDimensions: ['platform', 'country', 'region'],
+      scopeNote: PAGE_FILTER_CAPABILITIES.feedback.scopeNote,
+    },
   };
 }

@@ -3,7 +3,7 @@
 PlaylistOut Unified CLI
 =======================
 Main entry point for exporting playlists from QQ Music, NetEase Cloud Music,
-Kugou Music, Kuwo Music, and Qishui (Douyin) Music.
+Kugou Music, Kuwo Music, Qishui (Douyin) Music, and Migu Music.
 """
 
 import os

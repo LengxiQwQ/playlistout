@@ -20,7 +20,7 @@ from scripts.utils.dashboard import (
     ANALYTICS_PARAMS,
     FEEDBACK_PARAMS,
     HTML,
-    Handler,
+    PAGE_FILTER_CAPABILITIES,
     QUARANTINE_PARAMS,
     build_local_analytics,
     build_local_feedback,
@@ -29,6 +29,7 @@ from scripts.utils.dashboard import (
     get_admin_token,
     reconcile_breakdown_rows,
     reconcile_client_env,
+    resolve_page_filter_params,
 )
 
 
@@ -379,6 +380,47 @@ class TestDashboardV3SecurityAndUX(unittest.TestCase):
                 "excludeMy",
             },
         )
+
+    def test_page_filter_capabilities_and_parity(self):
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["overview"]["supportedDimensions"], [])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["web"]["supportedDimensions"], ["country", "region"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["reliability"]["supportedDimensions"], ["channel", "client", "platform"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["usage"]["supportedDimensions"], ["channel", "client", "platform"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["integrations"]["supportedDimensions"], ["client", "channel"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["feedback"]["supportedDimensions"], ["platform", "country", "region"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["security"]["supportedDimensions"], ["platform", "country", "region"])
+        self.assertEqual(PAGE_FILTER_CAPABILITIES["dau"]["supportedDimensions"], ["channel", "country", "region"])
+
+        full_query = {
+            "from": "2026-10-01",
+            "to": "2026-10-10",
+            "channel": "web",
+            "client": "official_web",
+            "platform": "qqmusic",
+            "country": "CN",
+            "region": "Guangdong",
+            "exclude_my": "1",
+        }
+        ov = resolve_page_filter_params(full_query, "overview")
+        self.assertEqual(ov["channel"], "")
+        self.assertEqual(ov["client"], "")
+        self.assertEqual(ov["platform"], "")
+        self.assertEqual(ov["country"], "")
+        self.assertEqual(ov["region"], "")
+
+        rel = resolve_page_filter_params(full_query, "reliability")
+        self.assertEqual(rel["channel"], "web")
+        self.assertEqual(rel["client"], "official_web")
+        self.assertEqual(rel["platform"], "qqmusic")
+        self.assertEqual(rel["country"], "")
+        self.assertEqual(rel["region"], "")
+
+        fb = resolve_page_filter_params(full_query, "feedback")
+        self.assertEqual(fb["channel"], "")
+        self.assertEqual(fb["client"], "")
+        self.assertEqual(fb["platform"], "qqmusic")
+        self.assertEqual(fb["country"], "CN")
+        self.assertEqual(fb["region"], "Guangdong")
 
     def test_dau_past_date_and_multi_day_calculation(self):
         snapshot = {

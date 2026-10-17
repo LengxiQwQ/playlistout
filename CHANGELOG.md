@@ -6,6 +6,10 @@ All notable changes to **PlaylistOut** will be documented in this file. Adheres 
 
 ## [Unreleased]
 
+## [v3.0.0] - 2026-10-17
+
+### 🚀 全平台 Unified CLI 独立发行、咪咕音乐六大平台矩阵、P0~P3 模块化架构演进与插件生态全面升级 / Unified CLI Multi-Platform Binaries, Migu Music 6-Platform Matrix, P0-P3 Modular Architecture & Ecosystem Leap
+
 - **Migu Music Integration / 咪咕音乐全端接入**:
   - 全栈接入第 6 家音乐平台：咪咕音乐（Migu Music），覆盖 Cloudflare Worker API、本地 Python CLI 与前端 Web UI 三层。
   - **Worker API**：实现 `miguProvider`，支持 `c.migu.cn` 移动端分享短链（SSRF 安全 302 重定向）、`h5.nf.migu.cn` 与 `music.migu.cn` 网页链接；突破上游单页 50 首数量限制，支持多页并发抓取大歌单；标准化歌曲 VIP、无版权与高清音质（Hi-Res / FLAC / 320kbps / 128kbps）映射，封面规范化至 `https://d.musicapp.migu.cn`。

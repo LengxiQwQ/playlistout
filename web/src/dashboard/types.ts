@@ -177,6 +177,21 @@ export interface DauClientRow {
   previousPeriodDailyAvg?: number;
 }
 
+export interface IntegrationClientSummary {
+  clientId: string;
+  channel: string;
+  requests: number;
+  successRate: number;
+  prevRequests?: number;
+  prevSuccessRate?: number;
+  requestDeltaText: string;
+  requestDeltaColor: string;
+  topVersion?: string;
+  topHost?: string;
+  versionDistribution: CountItem[];
+  hostDistribution: CountItem[];
+}
+
 export interface ChannelCoverageInfo {
   earliestDate: string | null;
   hasCoverage: boolean;
@@ -292,9 +307,32 @@ export interface AnalyticsSlice {
     active_clients: number;
     pending_feedback: number;
   };
+  previousOverview?: {
+    resolve_request: number;
+    playlist_success: number;
+    user_success: number;
+    resolve_failure: number;
+    tracks_processed: number;
+    export: number;
+    clipboard: number;
+    page_view: number;
+    visitor_unique: number;
+    rate_limited: number;
+    migration_handoff: number;
+    success_rate: number;
+    pending_feedback: number;
+  };
   dau: DauSummary;
   timeseries: Array<Record<string, string | number>>;
   hourlyTimeseries: Array<Record<string, string | number>>;
+  webTimeseries?: Array<Record<string, string | number>>;
+  webHourlyTimeseries?: Array<Record<string, string | number>>;
+  previousWebOverview?: {
+    page_view: number;
+    visitor_unique: number;
+  };
+  previousWebTimeseries?: Array<Record<string, string | number>>;
+  previousWebHourlyTimeseries?: Array<Record<string, string | number>>;
   breakdowns: Record<string, CountItem[]>;
   distributions: {
     channels: CountItem[];
@@ -307,7 +345,18 @@ export interface AnalyticsSlice {
     operatingSystems: CountItem[];
     filterScope: string;
   };
+  webEnvironment?: {
+    devices: CountItem[];
+    browsers: CountItem[];
+    operatingSystems: CountItem[];
+    filterScope: string;
+  };
   geo: {
+    countries: CountItem[];
+    regions: CountItem[];
+    filterScope: string;
+  };
+  webGeo: {
     countries: CountItem[];
     regions: CountItem[];
     filterScope: string;
@@ -319,12 +368,68 @@ export interface AnalyticsSlice {
     countries: CountItem[];
     regions: CountItem[];
   };
+  integrationClients?: IntegrationClientSummary[];
   dataQuality: {
     status: 'healthy' | 'error';
     checks: QualityCheck[];
     latestDate: string | null;
     legacyMixedShare: number;
   };
+  filterContract?: SliceFilterContract;
+}
+
+export type FilterDimension = 'channel' | 'client' | 'platform' | 'country' | 'region';
+
+export interface PageFilterCapability {
+  supportedDimensions: FilterDimension[];
+  scopeNote: string;
+}
+
+export interface SliceFilterContract {
+  supportedDimensions: FilterDimension[];
+  scopeNote: string;
+}
+
+export const PAGE_FILTER_CAPABILITIES: Record<string, PageFilterCapability> = {
+  overview: {
+    supportedDimensions: [],
+    scopeNote: '业务总览展示全站宏观指标与核心趋势，仅支持时间范围筛选。',
+  },
+  web: {
+    supportedDimensions: ['country', 'region'],
+    scopeNote: '官网地域分析针对 Web 独立访客 (UV)；环境与来源指标属于事件级分布。',
+  },
+  reliability: {
+    supportedDimensions: ['channel', 'client', 'platform'],
+    scopeNote: '稳定与性能指标支持渠道、接入端与目标平台筛选（不适用地域维度）。',
+  },
+  usage: {
+    supportedDimensions: ['channel', 'client', 'platform'],
+    scopeNote: '使用偏好分析覆盖来源渠道、接入端与音乐平台维度。',
+  },
+  integrations: {
+    supportedDimensions: ['client', 'channel'],
+    scopeNote: '生态集成分析覆盖客户端与渠道维度（平台维度不适用）。',
+  },
+  feedback: {
+    supportedDimensions: ['platform', 'country', 'region'],
+    scopeNote: '待审歌单队列支持按音乐平台及上报地域筛选（客户端与渠道维度不适用）。',
+  },
+  security: {
+    supportedDimensions: ['platform', 'country', 'region'],
+    scopeNote: '安全风控与拦截报文支持按攻击目标平台及来源地域筛选（客户端与渠道维度不适用）。',
+  },
+  dau: {
+    supportedDimensions: ['channel', 'country', 'region'],
+    scopeNote: '活跃趋势支持按活跃渠道（网页、插件、CLI）与地域筛选。',
+  },
+};
+
+export interface FeedbackStats {
+  uniqueUrls: number;
+  totalReports: number;
+  topPlatform: string;
+  topErrorCode: string;
 }
 
 export interface FeedbackSlice {
@@ -336,10 +441,23 @@ export interface FeedbackSlice {
     resolved: number;
     ignored: number;
   };
+  availableErrorCodes?: CountItem[];
+  stats?: FeedbackStats;
+  filterContract?: SliceFilterContract;
+}
+
+export interface QuarantinePoint {
+  date: string;
+  count: number;
+  events: number;
 }
 
 export interface QuarantineSlice {
   quarantine: QuarantineRow[];
   totalRecords: number;
   totalEvents: number;
+  reasons?: CountItem[];
+  timeseries?: QuarantinePoint[];
+  normalizedRatePer1k?: string;
+  filterContract?: SliceFilterContract;
 }

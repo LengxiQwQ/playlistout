@@ -240,6 +240,7 @@ CORE_METRICS = (
     "rate_limited",
     "migration_handoff",
 )
+LATENCY_BUCKET_ORDER = ("<500ms", "500-1000ms", "1-3s", "3-5s", "5s+")
 
 
 def fetch_dashboard_snapshot(token: str) -> dict:
@@ -414,8 +415,17 @@ def reconcile_breakdown_rows(rows: list[dict]) -> list[dict]:
         cnt = int(row.get("count", 0) or 0)
 
         # Normalize legacy latency bucket _500ms to canonical <500ms
-        if dim == "latency_bucket" and val == "_500ms":
-            val = "<500ms"
+        if dim == "latency_bucket":
+            if val == "_500ms":
+                val = "<500ms"
+            elif val == "500ms_1s":
+                val = "500-1000ms"
+            elif val == "1s_3s":
+                val = "1-3s"
+            elif val == "3s_5s":
+                val = "3-5s"
+            elif val in {">5s", "5s"}:
+                val = "5s+"
 
         merged[(d, ch, cl, p, dim, val)] += cnt
 
@@ -438,6 +448,59 @@ def is_exclude_my(query: dict[str, str]) -> bool:
         return False
     val = str(query.get("exclude_my", query.get("excludeMy", "0")) or "0").strip().lower()
     return val in {"1", "true", "yes", "on"}
+
+
+PAGE_FILTER_CAPABILITIES = {
+    "overview": {
+        "supportedDimensions": [],
+        "scopeNote": "业务总览展示全站宏观指标与核心趋势，仅支持时间范围筛选。",
+    },
+    "web": {
+        "supportedDimensions": ["country", "region"],
+        "scopeNote": "官网地域分析针对 Web 独立访客 (UV)；环境与来源指标属于事件级分布。",
+    },
+    "reliability": {
+        "supportedDimensions": ["channel", "client", "platform"],
+        "scopeNote": "稳定与性能指标支持渠道、接入端与目标平台筛选（不适用地域维度）。",
+    },
+    "usage": {
+        "supportedDimensions": ["channel", "client", "platform"],
+        "scopeNote": "使用偏好分析覆盖来源渠道、接入端与音乐平台维度。",
+    },
+    "integrations": {
+        "supportedDimensions": ["client", "channel"],
+        "scopeNote": "生态集成分析覆盖客户端与渠道维度（平台维度不适用）。",
+    },
+    "feedback": {
+        "supportedDimensions": ["platform", "country", "region"],
+        "scopeNote": "待审歌单队列支持按音乐平台及上报地域筛选（客户端与渠道维度不适用）。",
+    },
+    "security": {
+        "supportedDimensions": ["platform", "country", "region"],
+        "scopeNote": "安全风控与拦截报文支持按攻击目标平台及来源地域筛选（客户端与渠道维度不适用）。",
+    },
+    "dau": {
+        "supportedDimensions": ["channel", "country", "region"],
+        "scopeNote": "活跃趋势支持按活跃渠道（网页、插件、CLI）与地域筛选。",
+    },
+}
+
+
+def resolve_page_filter_params(query: dict[str, str], page: str) -> dict[str, str]:
+    caps = PAGE_FILTER_CAPABILITIES.get(page, {"supportedDimensions": []})
+    supported = set(caps.get("supportedDimensions", []))
+    return {
+        "from": (query.get("from") or "").strip(),
+        "to": (query.get("to") or "").strip(),
+        "channel": (query.get("channel") or "").strip().lower() if "channel" in supported else "",
+        "client": (query.get("client") or "").strip().lower() if "client" in supported else "",
+        "platform": (query.get("platform") or "").strip().lower() if "platform" in supported else "",
+        "country": (query.get("country") or "").strip().upper() if "country" in supported else "",
+        "region": (query.get("region") or "").strip() if "region" in supported else "",
+        "exclude_my": "1" if is_exclude_my(query) else "0",
+    }
+
+
 
 
 def _scale_group_rows(rows: list[dict], ratio: float) -> list[dict]:
@@ -701,7 +764,39 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             target[metric] = int(target.get(metric, 0)) + int(row.get("count", 0) or 0)
         hourly_timeseries = [by_hour[key] for key in sorted(by_hour)]
 
+    # Web Traffic Timeseries (strictly channel=web)
+    web_filters = dict(filters)
+    web_filters["channel"] = "web"
+    web_filtered_source = [
+        row for row in source
+        if row.get("channel") == "web" and _matches(row, web_filters, include_geo=geo_active)
+    ]
+    web_by_day: dict[str, dict] = {}
+    for row in web_filtered_source:
+        day = str(row.get("date", ""))
+        metric = str(row.get("metric", ""))
+        if not day or not metric:
+            continue
+        target = web_by_day.setdefault(day, {"date": day})
+        target[metric] = int(target.get(metric, 0)) + int(row.get("count", 0) or 0)
+    web_timeseries = [web_by_day[key] for key in sorted(web_by_day)]
+
+    web_hourly_timeseries: list[dict] = []
+    if not geo_active and from_date == to_date:
+        web_by_hour: dict[int, dict] = {h: {"date": from_date, "hour": h, "page_view": 0, "visitor_unique": 0} for h in range(24)}
+        for row in hourly:
+            if row.get("channel") is not None and row.get("channel") != "web":
+                continue
+            if not _matches(row, web_filters):
+                continue
+            hour = int(row.get("hour", 0) or 0)
+            metric = str(row.get("metric", ""))
+            if hour in web_by_hour:
+                web_by_hour[hour][metric] = int(web_by_hour[hour].get(metric, 0)) + int(row.get("count", 0) or 0)
+        web_hourly_timeseries = [web_by_hour[key] for key in sorted(web_by_hour)]
+
     breakdown_totals: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
     for row in breakdown_rows:
         if not _matches(row, filters):
             continue
@@ -733,10 +828,15 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         breakdown_totals["bbplayer_host"]["android"] += diff
         breakdown_totals["host_platform"]["android"] += diff
 
+    order_map = {name: i for i, name in enumerate(LATENCY_BUCKET_ORDER)}
     breakdowns = {
         dimension: [
             {"name": name, "count": count}
-            for name, count in sorted(values.items(), key=lambda item: (-item[1], item[0]))
+            for name, count in (
+                sorted(values.items(), key=lambda item: (order_map.get(item[0], 999), item[0]))
+                if dimension == "latency_bucket"
+                else sorted(values.items(), key=lambda item: (-item[1], item[0]))
+            )
             if count > 0
         ]
         for dimension, values in breakdown_totals.items()
@@ -746,11 +846,50 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     filtered_geo = [
         row for row in geo_rows if _matches(row, filters, include_geo=True)
     ]
-    countries = _sum_by(
+    web_geo_rows = [
+        row for row in geo_rows
+        if row.get("channel") == "web"
+        and row.get("metric") == "visitor_unique"
+        and _matches(row, filters, include_geo=True)
+    ]
+    web_countries = _sum_by(
+        [row for row in web_geo_rows if row.get("country") != "UNKNOWN"],
+        "country",
+    )
+    web_regions = _sum_by(
+        [
+            row
+            for row in web_geo_rows
+            if row.get("region") != "UNKNOWN"
+            and (row.get("country") == "CN" or not row.get("country"))
+        ],
+        "region",
+    )
+    web_geo = {
+        "countries": web_countries,
+        "regions": web_regions,
+        "filterScope": "Web 访客地域基于官方 Web 渠道的 visitor_unique 指标聚合。",
+    }
+
+    req_geo_rows = [row for row in filtered_geo if row.get("metric") == "resolve_request"]
+    req_countries = _sum_by(
+        [row for row in req_geo_rows if row.get("country") != "UNKNOWN"],
+        "country",
+    )
+    req_regions = _sum_by(
+        [
+            row
+            for row in req_geo_rows
+            if row.get("region") != "UNKNOWN"
+            and (row.get("country") == "CN" or not row.get("country"))
+        ],
+        "region",
+    )
+    raw_countries = _sum_by(
         [row for row in filtered_geo if row.get("country") != "UNKNOWN"],
         "country",
     )
-    regions = _sum_by(
+    raw_regions = _sum_by(
         [
             row
             for row in filtered_geo
@@ -759,6 +898,8 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         ],
         "region",
     )
+    countries = req_countries if req_countries else (web_countries if web_countries else raw_countries)
+    regions = req_regions if req_regions else (web_regions if web_regions else raw_regions)
 
     # ── DAU slice: per-day channel series, dynamic target/comparison totals, clients, geo ──
     is_single_day = (from_date == to_date)
@@ -1297,7 +1438,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     channels = _sum_by(filter_option_rows("channel", {"resolve_request"}), "channel")
     clients = _sum_by(filter_option_rows("client", {"resolve_request"}), "client_id")
     platforms = _sum_by(
-        filter_option_rows("platform", {"resolve_request", "export", "clipboard"}),
+        filter_option_rows("platform", {"resolve_request"}),
         "platform",
     )
 
@@ -1310,7 +1451,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         "client_id",
     )
     matched_platforms = _sum_by(
-        [row for row in filtered_source if str(row.get("metric", "")) in {"resolve_request", "export", "clipboard"}],
+        [row for row in filtered_source if str(row.get("metric", "")) == "resolve_request"],
         "platform",
     )
 
@@ -1336,6 +1477,22 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     devices = _sum_by(filtered_env, "device_class")
     browsers = _sum_by(filtered_env, "browser_family")
     operating_systems = _sum_by(filtered_env, "os_family")
+
+    web_env_rows = [
+        row
+        for row in env_rows
+        if row.get("channel") == "web"
+        and _matches(row, filters, environment=True)
+    ]
+    web_devices = _sum_by(web_env_rows, "device_class")
+    web_browsers = _sum_by(web_env_rows, "browser_family")
+    web_operating_systems = _sum_by(web_env_rows, "os_family")
+    web_environment = {
+        "devices": web_devices,
+        "browsers": web_browsers,
+        "operatingSystems": web_operating_systems,
+        "filterScope": "Web 终端环境基于官方 Web 渠道请求分布。",
+    }
 
     export_total = sum(item["count"] for item in breakdowns.get("export_format", []))
     clipboard_total = sum(item["count"] for item in breakdowns.get("clipboard_mode", []))
@@ -1406,6 +1563,170 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     )
 
     success_count = int(overview["playlist_success"]) + int(overview["user_success"])
+
+    # Period comparison for Overview
+    prev_overview = None
+    if from_date and to_date:
+        d1 = datetime.strptime(from_date, "%Y-%m-%d")
+        d2 = datetime.strptime(to_date, "%Y-%m-%d")
+        days = (d2 - d1).days + 1
+        p_to = (d1 - timedelta(days=1)).strftime("%Y-%m-%d")
+        p_from = (d1 - timedelta(days=days)).strftime("%Y-%m-%d")
+        p_filters = dict(filters)
+        p_filters["from"] = p_from
+        p_filters["to"] = p_to
+
+        p_source = [row for row in source if _matches(row, p_filters, include_geo=geo_active)]
+        p_raw = {m: 0 for m in CORE_METRICS}
+        for r in p_source:
+            m = str(r.get("metric", ""))
+            if m in p_raw:
+                p_raw[m] += int(r.get("count", 0) or 0)
+        p_req = p_raw.get("resolve_request", 0)
+        p_succ = p_raw.get("playlist_success", 0) + p_raw.get("user_success", 0)
+        prev_overview = {
+            "resolve_request": p_req,
+            "playlist_success": p_raw.get("playlist_success", 0),
+            "user_success": p_raw.get("user_success", 0),
+            "resolve_failure": p_raw.get("resolve_failure", 0),
+            "tracks_processed": p_raw.get("tracks_processed", 0),
+            "export": p_raw.get("export", 0),
+            "clipboard": p_raw.get("clipboard", 0),
+            "page_view": p_raw.get("page_view", 0),
+            "visitor_unique": p_raw.get("visitor_unique", 0),
+            "rate_limited": p_raw.get("rate_limited", 0),
+            "migration_handoff": p_raw.get("migration_handoff", 0),
+            "success_rate": round(p_succ / p_req * 100, 2) if p_req > 0 else 0,
+            "pending_feedback": fb_pending,
+        }
+
+        p_web_filters = dict(web_filters)
+        p_web_filters["from"] = p_from
+        p_web_filters["to"] = p_to
+        p_web_source = [row for row in source if row.get("channel") == "web" and _matches(row, p_web_filters, include_geo=geo_active)]
+        p_pv = 0
+        p_uv = 0
+        p_web_by_day = {}
+        for r in p_web_source:
+            d = str(r.get("date", ""))
+            m = str(r.get("metric", ""))
+            c = int(r.get("count", 0) or 0)
+            if m == "page_view":
+                p_pv += c
+            elif m == "visitor_unique":
+                p_uv += c
+            if d and m:
+                p_web_by_day.setdefault(d, {"date": d})[m] = int(p_web_by_day.get(d, {}).get(m, 0)) + c
+        prev_web_overview = {
+            "page_view": p_pv,
+            "visitor_unique": p_uv,
+        }
+        prev_web_timeseries = [p_web_by_day[k] for k in sorted(p_web_by_day)]
+
+        prev_web_hourly_timeseries = None
+        if not geo_active and from_date == to_date:
+            p_web_by_hour = {h: {"date": p_from, "hour": h, "page_view": 0, "visitor_unique": 0} for h in range(24)}
+            for row in hourly:
+                if row.get("channel") is not None and row.get("channel") != "web":
+                    continue
+                if not _matches(row, p_web_filters):
+                    continue
+                h = int(row.get("hour", 0) or 0)
+                m = str(row.get("metric", ""))
+                if h in p_web_by_hour:
+                    p_web_by_hour[h][m] = int(p_web_by_hour[h].get(m, 0)) + int(row.get("count", 0) or 0)
+            prev_web_hourly_timeseries = [p_web_by_hour[k] for k in sorted(p_web_by_hour)]
+        prev_web_overview = None
+        prev_web_timeseries = None
+        prev_web_hourly_timeseries = None
+
+    # Integration Clients Dynamic Summary
+    client_stats_map = {}
+    for row in source:
+        if not _matches(row, filters, include_geo=geo_active):
+            continue
+        cl = str(row.get("client_id") or "").strip()
+        if not cl or cl == "none":
+            continue
+        if cl not in client_stats_map:
+            client_stats_map[cl] = {"requests": 0, "success": 0, "channel": str(row.get("channel") or "unknown")}
+        m = str(row.get("metric") or "")
+        cnt = int(row.get("count", 0) or 0)
+        if m == "resolve_request":
+            client_stats_map[cl]["requests"] += cnt
+        elif m in ("playlist_success", "user_success"):
+            client_stats_map[cl]["success"] += cnt
+        ch = str(row.get("channel") or "")
+        if ch and (not client_stats_map[cl]["channel"] or client_stats_map[cl]["channel"] == "unknown"):
+            client_stats_map[cl]["channel"] = ch
+
+    for item in clients:
+        c_name = item.get("name")
+        if c_name and c_name != "none" and c_name not in client_stats_map:
+            client_stats_map[c_name] = {"requests": item.get("count", 0), "success": 0, "channel": "unknown"}
+
+    prev_client_stats_map = {}
+    if prev_overview and p_from and p_to:
+        p_cl_filters = dict(filters)
+        p_cl_filters["from"] = p_from
+        p_cl_filters["to"] = p_to
+        for row in source:
+            if not _matches(row, p_cl_filters, include_geo=geo_active):
+                continue
+            cl = str(row.get("client_id") or "").strip()
+            if not cl or cl == "none":
+                continue
+            if cl not in prev_client_stats_map:
+                prev_client_stats_map[cl] = {"requests": 0, "success": 0}
+            m = str(row.get("metric") or "")
+            cnt = int(row.get("count", 0) or 0)
+            if m == "resolve_request":
+                prev_client_stats_map[cl]["requests"] += cnt
+            elif m in ("playlist_success", "user_success"):
+                prev_client_stats_map[cl]["success"] += cnt
+
+    integration_clients = []
+    for client_id, stat in client_stats_map.items():
+        reqs = stat["requests"]
+        succ_rate = round(stat["success"] / reqs * 100, 1) if reqs > 0 else 0
+        prev_stat = prev_client_stats_map.get(client_id)
+        prev_reqs = prev_stat["requests"] if prev_stat else None
+        prev_succ_rate = round(prev_stat["success"] / prev_stat["requests"] * 100, 1) if prev_stat and prev_stat["requests"] > 0 else None
+
+        req_delta_text = "—"
+        req_delta_color = "var(--m)"
+        if prev_reqs is not None:
+            diff = reqs - prev_reqs
+            if diff == 0:
+                req_delta_text = "— 持平"
+            elif prev_reqs == 0:
+                req_delta_text = "+100% vs 上期"
+                req_delta_color = "var(--g)"
+            else:
+                pct_val = f"{(diff / prev_reqs * 100):.1f}%"
+                req_delta_text = f"{'+' if diff > 0 else ''}{pct_val} vs 上期"
+                req_delta_color = "var(--g)" if diff > 0 else "var(--r)"
+
+        cl_key = client_id.lower()
+        v_dist = breakdowns.get(f"{cl_key}_version") or (breakdowns.get("client_version") if cl_key == "musicfree" else None) or []
+        h_dist = breakdowns.get(f"{cl_key}_host") or (breakdowns.get("host_platform") if cl_key == "musicfree" else None) or []
+
+        integration_clients.append({
+            "clientId": client_id,
+            "channel": stat["channel"],
+            "requests": reqs,
+            "successRate": succ_rate,
+            "prevRequests": prev_reqs,
+            "prevSuccessRate": prev_succ_rate,
+            "requestDeltaText": req_delta_text,
+            "requestDeltaColor": req_delta_color,
+            "topVersion": v_dist[0]["name"] if v_dist else None,
+            "topHost": h_dist[0]["name"] if h_dist else None,
+            "versionDistribution": v_dist,
+            "hostDistribution": h_dist,
+        })
+    integration_clients.sort(key=lambda x: x["requests"], reverse=True)
+
     return {
         "version": 2,
         "filters": filters,
@@ -1419,6 +1740,12 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "active_clients": len([item for item in matched_clients if item["count"] > 0]),
             "pending_feedback": fb_pending,
         },
+        "previousOverview": prev_overview,
+        "webTimeseries": web_timeseries,
+        "webHourlyTimeseries": web_hourly_timeseries,
+        "previousWebOverview": prev_web_overview,
+        "previousWebTimeseries": prev_web_timeseries,
+        "previousWebHourlyTimeseries": prev_web_hourly_timeseries,
         "dau": {
             "targetDate": target_date,
             "comparisonDate": comparison_date,
@@ -1448,17 +1775,20 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "clients": matched_clients,
             "platforms": matched_platforms,
         },
+
         "environment": {
             "devices": devices,
             "browsers": browsers,
             "operatingSystems": operating_systems,
             "filterScope": "Environment supports date/channel/client filters. Platform and geography are intentionally separate privacy cubes.",
         },
+        "webEnvironment": web_environment,
         "geo": {
             "countries": countries,
             "regions": regions,
             "filterScope": "Geography is intentionally stored in a separate privacy-preserving cube. Geo filters affect overview/timeseries/geo, not reliability breakdowns.",
         },
+        "webGeo": web_geo,
         "availableFilters": {
             "channels": channels,
             "clients": clients,
@@ -1466,6 +1796,7 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "countries": _sum_by(country_option_rows, "country"),
             "regions": _sum_by(region_option_rows, "region"),
         },
+        "integrationClients": integration_clients,
         "dataQuality": {
             "status": "healthy" if all(check["ok"] for check in checks) else "error",
             "checks": checks,
@@ -1473,6 +1804,10 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "legacyMixedShare": round(legacy_count / total_count * 100, 2)
             if total_count > 0
             else 0,
+        },
+        "filterContract": {
+            "supportedDimensions": ["channel", "client", "platform", "country", "region"],
+            "scopeNote": "全局分析切片覆盖渠道、接入端、平台及地域维度。",
         },
     }
 
@@ -1517,11 +1852,39 @@ def build_local_quarantine(snapshot: dict, query: dict[str, str]) -> dict:
         ),
         reverse=True,
     )
+
+    timeseries_map: dict[str, dict[str, int]] = defaultdict(lambda: {"count": 0, "events": 0})
+    reasons_map: dict[str, int] = defaultdict(int)
+
+    for r in filtered:
+        d = str(r.get("incident_date", ""))[:10]
+        cnt = int(r.get("count", 0) or 0)
+        if d:
+            timeseries_map[d]["count"] += 1
+            timeseries_map[d]["events"] += cnt
+        rsn = str(r.get("reason", "") or "unknown")
+        reasons_map[rsn] += cnt
+
+    timeseries = [
+        {"date": d, "count": val["count"], "events": val["events"]}
+        for d, val in sorted(timeseries_map.items())
+    ]
+    reasons = [
+        {"name": name, "count": cnt}
+        for name, cnt in sorted(reasons_map.items(), key=lambda x: x[1], reverse=True)
+    ]
+
     visible = filtered[:limit]
     return {
         "quarantine": visible,
         "totalRecords": len(filtered),
         "totalEvents": sum(int(row.get("count", 0) or 0) for row in filtered),
+        "reasons": reasons,
+        "timeseries": timeseries,
+        "filterContract": {
+            "supportedDimensions": ["platform", "country", "region"],
+            "scopeNote": PAGE_FILTER_CAPABILITIES["security"]["scopeNote"],
+        },
     }
 
 
@@ -1554,6 +1917,38 @@ def build_local_feedback(snapshot: dict, query: dict[str, str]) -> dict:
             continue
         filtered_rows.append(r)
 
+    # Calculate availableErrorCodes & stats
+    error_code_counts: dict[str, int] = defaultdict(int)
+    platform_counts: dict[str, int] = defaultdict(int)
+    unique_urls = set()
+    total_reports = 0
+
+    for r in filtered_rows:
+        code = str(r.get("error_code") or "").strip()
+        if code:
+            error_code_counts[code] += 1
+        p = str(r.get("platform") or "").strip().lower()
+        if p:
+            platform_counts[p] += 1
+        url = r.get("source_url")
+        if url:
+            unique_urls.add(url)
+        total_reports += int(r.get("report_count", 0) or 1)
+
+    available_error_codes = [
+        {"name": name, "count": count}
+        for name, count in sorted(error_code_counts.items(), key=lambda x: x[1], reverse=True)
+    ]
+    top_platform = max(platform_counts.items(), key=lambda x: x[1])[0] if platform_counts else "—"
+    top_error_code = max(error_code_counts.items(), key=lambda x: x[1])[0] if error_code_counts else "—"
+
+    stats = {
+        "uniqueUrls": len(unique_urls),
+        "totalReports": total_reports,
+        "topPlatform": top_platform,
+        "topErrorCode": top_error_code,
+    }
+
     status_counts = {"all": len(filtered_rows), "pending": 0, "resolved": 0, "ignored": 0}
     for row in filtered_rows:
         s = str(row.get("status", "") or "pending").lower()
@@ -1566,13 +1961,32 @@ def build_local_feedback(snapshot: dict, query: dict[str, str]) -> dict:
     rows = filtered_rows
     if status and status != "all":
         rows = [row for row in rows if str(row.get("status", "") or "pending").lower() == status]
-    rows.sort(
-        key=lambda row: (
-            str(row.get("last_reported_at", "") or row.get("first_reported_at", "") or row.get("created_at", "")),
-            int(row.get("id", 0) or 0),
-        ),
-        reverse=True,
-    )
+
+    err_filter = _query_value(query, "error_code").strip()
+    if err_filter:
+        rows = [row for row in rows if str(row.get("error_code") or "").strip() == err_filter]
+
+    sort_by = _query_value(query, "sort_by") or _query_value(query, "sortBy") or "recent"
+    if sort_by == "frequent":
+        rows.sort(
+            key=lambda row: int(row.get("report_count", 0) or 0),
+            reverse=True,
+        )
+    elif sort_by == "oldest_pending":
+        def oldest_key(row):
+            is_pending = 0 if str(row.get("status", "") or "pending").lower() == "pending" else 1
+            dt = str(row.get("first_reported_at") or row.get("last_reported_at") or "")
+            return (is_pending, dt)
+        rows.sort(key=oldest_key)
+    else:
+        rows.sort(
+            key=lambda row: (
+                str(row.get("last_reported_at", "") or row.get("first_reported_at", "") or row.get("created_at", "")),
+                int(row.get("id", 0) or 0),
+            ),
+            reverse=True,
+        )
+
     try:
         limit = max(1, min(200, int(_query_value(query, "limit") or "50")))
     except ValueError:
@@ -1585,6 +1999,12 @@ def build_local_feedback(snapshot: dict, query: dict[str, str]) -> dict:
         "entries": rows[offset : offset + limit],
         "total": len(rows),
         "counts": status_counts,
+        "availableErrorCodes": available_error_codes,
+        "stats": stats,
+        "filterContract": {
+            "supportedDimensions": ["platform", "country", "region"],
+            "scopeNote": PAGE_FILTER_CAPABILITIES["feedback"]["scopeNote"],
+        },
     }
 
 
@@ -1612,15 +2032,15 @@ button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:auto;padding:14px 22px}
 .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--p) 96%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--l);box-shadow:var(--s)}
 .head{display:flex;align-items:center;min-height:50px;padding:3px 0}
-.brand{display:flex;align-items:center;gap:9px;flex-shrink:0;text-decoration:none;color:inherit;cursor:pointer;transition:opacity .15s}
+.brand{display:flex;align-items:center;gap:9px;flex-shrink:0;text-decoration:none;color:inherit;cursor:pointer;transition:opacity .15s;background:transparent}
 .brand:hover{opacity:.8}
-.logo-img{width:32px;height:32px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.15);border:1px solid var(--l)}
-.brand-info{display:flex;align-items:center}
-h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
-.badge-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent)}
+.logo-img{width:32px;height:32px;border-radius:8px;object-fit:contain;display:block;flex-shrink:0;background:transparent;border:0;box-shadow:none}
+.brand-info{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+h1{margin:0;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.15}
+.badge-tag{font-size:9.5px;font-weight:700;padding:0.5px 5px;border-radius:4px;background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);border:1px solid color-mix(in srgb,var(--a) 25%,transparent);line-height:1.2}
 .muted{font-size:12px;color:var(--m)}
 .headright{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto}
-#updated{font-size:10px;white-space:nowrap;color:var(--m);text-align:right;line-height:1.25}
+#updated{display:flex;flex-direction:column;align-items:flex-start;font-size:10px;white-space:nowrap;color:var(--m);text-align:left;line-height:1.25}
 .health-dot{width:9px;height:9px;border-radius:50%;background:var(--g);display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px color-mix(in srgb,var(--g) 25%,transparent);cursor:help;transition:all .2s ease}
 .health-dot.bad{background:var(--r);box-shadow:0 0 0 2px color-mix(in srgb,var(--r) 25%,transparent)}
 .health-dot.loading{background:var(--w);box-shadow:0 0 0 2px color-mix(in srgb,var(--w) 25%,transparent)}
@@ -1646,6 +2066,7 @@ h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;ali
 .filter-card{padding:12px 16px;margin-bottom:14px;background:var(--p);border:1px solid var(--l);border-radius:var(--rad);box-shadow:var(--s)}
 .filter-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--l);min-height:36px}
 .filter-card-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--t);white-space:nowrap}
+.scope-note-pill{font-size:11px;color:var(--m);background:color-mix(in srgb,var(--p) 80%,var(--bg));padding:2px 8px;border-radius:6px;border:1px solid var(--l);font-weight:500}
 .toggle-switch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;transition:background .15s}
 .toggle-switch:hover{background:color-mix(in srgb,var(--p) 80%,var(--a))}
 .toggle-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
@@ -1793,7 +2214,8 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     <a href="https://playlistout.lengxiqwq.com/" target="_blank" rel="noopener noreferrer" class="brand" title="访问 Playlist Out 官方网站 ↗">
       <img src="/logo-64.png" width="32" height="32" class="logo-img" alt="Playlist Out" onerror="this.onerror=null;this.src='/favicon.svg'">
       <div class="brand-info">
-        <h1>Playlist Out <span class="badge-tag">Analytics</span></h1>
+        <h1>Playlist Out</h1>
+        <span class="badge-tag">Analytics</span>
       </div>
     </a>
     <nav class="tabs">
@@ -1804,25 +2226,24 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
           <span class="tab-sub">Overview</span>
         </span>
       </button>
-      <button class="tab" data-page="feedback">
-        <span class="tab-icon">🐛</span>
+      <button class="tab" data-page="usage">
+        <span class="tab-icon">💡</span>
         <span class="tab-text">
-          <span class="tab-title">待审歌单</span>
-          <span class="tab-sub">Feedback</span>
+          <span class="tab-title">使用偏好</span>
+          <span class="tab-sub">Usage</span>
         </span>
-        <span id="navPendingBadge" class="tab-badge" style="display:none">0</span>
       </button>
       <button class="tab" data-page="web">
         <span class="tab-icon">💻</span>
         <span class="tab-text">
-          <span class="tab-title">终端地域</span>
+          <span class="tab-title">官网流量</span>
           <span class="tab-sub">Web</span>
         </span>
       </button>
       <button class="tab" data-page="reliability">
         <span class="tab-icon">🛡️</span>
         <span class="tab-text">
-          <span class="tab-title">稳定偏好</span>
+          <span class="tab-title">系统稳定</span>
           <span class="tab-sub">Reliability</span>
         </span>
       </button>
@@ -1832,6 +2253,14 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
           <span class="tab-title">生态集成</span>
           <span class="tab-sub">Integrations</span>
         </span>
+      </button>
+      <button class="tab" data-page="feedback">
+        <span class="tab-icon">🐛</span>
+        <span class="tab-text">
+          <span class="tab-title">待审歌单</span>
+          <span class="tab-sub">Feedback</span>
+        </span>
+        <span id="navPendingBadge" class="tab-badge" style="display:none">0</span>
       </button>
       <button class="tab" data-page="security">
         <span class="tab-icon">🔒</span>
@@ -1869,8 +2298,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 <!-- 维度与时间筛选工具栏 (作为页面内容卡片，点选后随页面自然滚动，绝不遮挡视野) -->
 <div class="card filter-card">
   <div class="filter-card-head">
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="filter-card-title"><span>⚙️</span> 维度与时间筛选工具栏 (Filters)</div>
+      <div id="filterScopeNote" class="scope-note-pill" style="display:none"></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
       <div id="chips" class="chips"></div>
@@ -1904,20 +2334,21 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
         </div>
       </div>
     </div>
-    <div class="field"><label for="channel">来源渠道 Channel</label><select id="channel"><option value="">全部</option><option>web</option><option>plugin</option><option>api</option><option>legacy_mixed</option></select></div>
-    <div class="field"><label for="client">接入端 Client</label><select id="client"><option value="">全部</option></select></div>
-    <div class="field"><label for="platform">目标平台 Platform</label><select id="platform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option></select></div>
-    <div class="field"><label for="country">国家 Country</label><select id="country"><option value="">全部</option></select></div>
-    <div class="field"><label for="region">省份 (中国) Region</label><select id="region"><option value="">全部</option></select></div>
-    <div class="field" style="display:flex;align-items:end"><button id="reset" class="ghost" style="width:100%">重置</button></div>
+    <div class="field" data-filter="channel"><label for="channel">来源渠道 Channel</label><select id="channel"><option value="">全部</option><option>web</option><option>plugin</option><option>api</option><option>legacy_mixed</option></select></div>
+    <div class="field" data-filter="client"><label for="client">接入端 Client</label><select id="client"><option value="">全部</option></select></div>
+    <div class="field" data-filter="platform"><label for="platform">目标平台 Platform</label><select id="platform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option></select></div>
+    <div class="field" data-filter="country"><label for="country">国家 Country</label><select id="country"><option value="">全部</option></select></div>
+    <div class="field" data-filter="region"><label for="region">省份 (中国) Region</label><select id="region"><option value="">全部</option></select></div>
+    <div class="field" data-filter="reset" style="display:flex;align-items:end"><button id="reset" class="ghost" style="width:100%">重置</button></div>
   </div>
 </div>
 
 <!-- 1. 业务总览 (Overview) -->
 <section class="page active" id="page-overview">
   <div class="section">
-    <div><h2>业务总览 Overview</h2></div>
+    <div><h2>业务总览 Overview</h2><div class="muted">全站宏观状态、变化归因 (Movers) 与关键待办事项；支持上一等长周期对比。</div></div>
   </div>
+  <div id="overviewAlerts" style="margin-bottom:12px;display:none"></div>
   <div id="overviewKpis" class="kpis"></div>
 
   <div class="grid2">
@@ -1952,12 +2383,12 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     <div class="panel">
       <div class="panel-head">
         <div>
-          <h3>🎵 请求目标平台</h3>
-          <div class="muted" style="font-size:11px">解析次数</div>
+          <h3>🎵 目标平台分布 (Top Movers)</h3>
+          <div class="muted" style="font-size:11px">请求目标平台 (resolve_request)</div>
         </div>
         <div class="view-switch" data-target="platform">
-          <button class="active" data-view="donut" title="环形占比分布图">🍩 占比</button>
-          <button data-view="bar" title="横向排行列表">📊 排行</button>
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
         </div>
       </div>
       <div id="platformBars" class="bars"></div>
@@ -1979,37 +2410,127 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div id="clientBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🩺 数据质量 Data Quality</h3><span class="muted" style="font-size:11px">守恒校验</span></div>
-      <div id="quality"></div>
+      <div class="panel-head">
+        <div>
+          <h3>🩺 数据健康状态 (Data Integrity)</h3>
+          <div class="muted" style="font-size:11px">Data Quality 守恒与闭环核验</div>
+        </div>
+      </div>
+      <div id="qualitySummary"></div>
+      <details id="qualityDetails" style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:11px;color:var(--t);padding:4px 0">查看守恒核验明细 ▼</summary>
+        <div id="quality" style="margin-top:8px"></div>
+      </details>
     </div>
   </div>
 
-  <div class="grid2" style="margin-top:12px">
+  <details class="panel" style="margin-top:12px">
+    <summary style="cursor:pointer;font-size:12px;font-weight:600;padding:4px 0;color:var(--m)">🌐 来源国家与地区分布 (已降级收起 · 建议前往“官网流量 Web”查看精准访客地域) ▼</summary>
+    <div class="grid2" style="margin-top:10px">
+      <div>
+        <div class="panel-head">
+          <div>
+            <h3>🌍 来源国家</h3>
+            <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+          </div>
+          <div class="view-switch" data-target="country">
+            <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+            <button data-view="table" title="明细数据表">📋 表格</button>
+          </div>
+        </div>
+        <div id="countryBars" class="bars"></div>
+      </div>
+      <div>
+        <div class="panel-head">
+          <div>
+            <h3>🏙️ 中国省份 / 直辖市</h3>
+            <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+          </div>
+          <div class="view-switch" data-target="region">
+            <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+            <button data-view="table" title="明细数据表">📋 表格</button>
+          </div>
+        </div>
+        <div id="regionBars" class="bars"></div>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- 2. 使用偏好 (Usage) -->
+<section class="page" id="page-usage">
+  <div class="section">
+    <div><h2>使用偏好 Usage</h2><div class="muted">解析平台分布、输入方式偏好、导出文件格式、歌单规模与跨端迁移。</div></div>
+  </div>
+  <div id="usageKpis" class="kpis"></div>
+  <div class="grid3">
     <div class="panel">
       <div class="panel-head">
         <div>
-          <h3>🌍 来源国家</h3>
-          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
-        </div>
-        <div class="view-switch" data-target="country">
-          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="table" title="明细数据表">📋 表格</button>
+          <h3>🎵 目标平台 Target Platform</h3>
+          <div class="muted" style="font-size:11px">歌单解析请求数</div>
         </div>
       </div>
-      <div id="countryBars" class="bars"></div>
+      <div id="usagePlatformBars" class="bars"></div>
     </div>
     <div class="panel">
       <div class="panel-head">
         <div>
-          <h3>🏙️ 中国省份 / 直辖市</h3>
-          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+          <h3>📥 输入方式 Requested Type</h3>
+          <div class="muted" style="font-size:11px">调用次数</div>
         </div>
-        <div class="view-switch" data-target="region">
+        <div class="view-switch" data-target="requestedType">
           <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="table" title="明细数据表">📋 表格</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
         </div>
       </div>
-      <div id="regionBars" class="bars"></div>
+      <div id="requestedTypeBars" class="bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>📊 歌单曲目量 Playlist Size</h3>
+          <div class="muted" style="font-size:11px">导出曲目规模区间</div>
+        </div>
+      </div>
+      <div id="exportSizeBars" class="bars"></div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>📄 导出格式 Export Format</h3>
+          <div class="muted" style="font-size:11px">生成文件格式</div>
+        </div>
+        <div class="view-switch" data-target="exportFormat">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
+      <div id="exportFormatBars" class="bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>📋 复制模式 Clipboard</h3>
+          <div class="muted" style="font-size:11px">快捷剪贴板格式</div>
+        </div>
+        <div class="view-switch" data-target="clipboard">
+          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
+          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
+        </div>
+      </div>
+      <div id="clipboardModeBars" class="bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>🚀 迁移目标 Migration Destination</h3>
+          <div class="muted" style="font-size:11px">跨播放器唤起调用</div>
+        </div>
+      </div>
+      <div id="usageMigrationBars" class="bars"></div>
     </div>
   </div>
 </section>
@@ -2021,14 +2542,27 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <h2>待审歌单与失败排查 (Review & Feedback)</h2>
       <div class="muted">解析失败反馈工作流：审查用户上报的真实失败歌单链接，快速复现、一键标记修复并同步云端。</div>
     </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <button class="ghost fb-tab active" data-fb-status="pending" id="fbBtnPending">待处理 Pending (<span id="fbCountPending">0</span>)</button>
-      <button class="ghost fb-tab" data-fb-status="all" id="fbBtnAll">全部 All (<span id="fbCountAll">0</span>)</button>
-      <button class="ghost fb-tab" data-fb-status="resolved" id="fbBtnResolved">已修复 Resolved (<span id="fbCountResolved">0</span>)</button>
-      <button class="ghost fb-tab" data-fb-status="ignored" id="fbBtnIgnored">已忽略 Ignored (<span id="fbCountIgnored">0</span>)</button>
-      <button id="reloadFeedback" class="ghost">刷新</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="ghost fb-tab active" data-fb-status="pending" id="fbBtnPending">待处理 Pending (<span id="fbCountPending">0</span>)</button>
+        <button class="ghost fb-tab" data-fb-status="all" id="fbBtnAll">全部 All (<span id="fbCountAll">0</span>)</button>
+        <button class="ghost fb-tab" data-fb-status="resolved" id="fbBtnResolved">已修复 Resolved (<span id="fbCountResolved">0</span>)</button>
+        <button class="ghost fb-tab" data-fb-status="ignored" id="fbBtnIgnored">已忽略 Ignored (<span id="fbCountIgnored">0</span>)</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+        <select id="feedbackSort" class="ghost" style="padding:2px 8px;font-size:12px;border-radius:6px;cursor:pointer">
+          <option value="recent">🕒 最近上报优先</option>
+          <option value="frequent">🔥 高频重复失败优先</option>
+          <option value="oldest_pending">⏳ 最早未处理优先 (倒序排查)</option>
+        </select>
+        <select id="feedbackErrorCode" class="ghost" style="padding:2px 8px;font-size:12px;border-radius:6px;cursor:pointer">
+          <option value="">全部错误分类 (All Errors)</option>
+        </select>
+        <button id="reloadFeedback" class="ghost">刷新</button>
+      </div>
     </div>
   </div>
+  <div id="feedbackKpis" class="kpis" style="margin-bottom:12px"></div>
 
   <div class="panel">
     <div class="table-wrap">
@@ -2052,28 +2586,68 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   </div>
 </section>
 
-<!-- 3. 终端与地域 (Web - 老版数据全复原) -->
+<!-- 3. 官网流量 (Web Analytics) -->
 <section class="page" id="page-web">
   <div class="section">
-    <div><h2>官网访客与终端环境 Web</h2><div class="muted">官网访问、来源与客户端环境。</div></div>
+    <div>
+      <h2>官网访客与流量趋势 Web Analytics</h2>
+      <div class="muted">页面访问量 (PV) 走势、日去重访客 (UV)、来源分类渠道与客户端运行环境。</div>
+    </div>
   </div>
   <div id="webScope" class="scope-note" hidden></div>
   <div id="webKpis" class="kpis"></div>
 
+  <!-- 第一层：官网流量走势 Trend -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="panel-head" style="align-items:center">
+      <div>
+        <h3>📈 官网流量趋势 Web Traffic Trend</h3>
+        <div class="muted" style="font-size:11px">页面访问量 (PV) 与 日去重访客 (UV) 走势 · 支持上一周期对比</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="webCompareToggle" class="btn-sm" style="cursor:pointer;padding:3px 10px;border-radius:4px;border:1px solid var(--l);background:var(--p);font-size:12px">⚖️ 对比上期: 关</button>
+        <div class="view-switch" data-target="webTrend">
+          <button class="active" data-view="line" title="折线走势图">📈 折线</button>
+          <button data-view="bar" title="柱状图">📊 柱状</button>
+        </div>
+      </div>
+    </div>
+    <div class="trend-box" id="webTrendBox" style="position:relative">
+      <canvas id="webTrendCanvas" height="220" style="width:100%;height:220px;display:block"></canvas>
+      <div id="webTrendTip" class="chart-tooltip" style="display:none"></div>
+    </div>
+    <div style="display:flex;gap:18px;justify-content:center;margin-top:10px;font-size:12px">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:3px;background:#206bc4;display:inline-block;border-radius:2px"></span> 页面访问量 (PV)</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:3px;background:#10b981;display:inline-block;border-radius:2px"></span> 日去重访客 (UV)</span>
+      <span id="webCompareLegend" style="display:none;align-items:center;gap:6px;color:var(--m)"><span style="width:12px;height:2px;background:#94a3b8;border-top:1px dashed #94a3b8;display:inline-block"></span> 上一周期基准 (虚线)</span>
+    </div>
+  </div>
+
+  <!-- 第二层与第三层：Acquisition 与 Environment -->
   <div class="grid3">
     <div class="panel">
-      <div class="panel-head"><h3>🔗 访问来源 Referrer</h3><span class="muted" style="font-size:11px">访问量 (PV)</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🔗 访问来源 Referrer</h3>
+          <div class="muted" style="font-size:11px">渠道与外链分类排行 (PV)</div>
+        </div>
+      </div>
       <div id="referrerBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🌐 浏览器 Browser</h3><span class="muted" style="font-size:11px">人次占比</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🌐 浏览器 Browser</h3>
+          <div class="muted" style="font-size:11px">请求/事件环境分布 (非访客人数)</div>
+        </div>
+      </div>
       <div id="browserBars" class="bars"></div>
     </div>
     <div class="panel">
       <div class="panel-head">
         <div>
           <h3>💻 终端与系统 Device / OS</h3>
-          <div class="muted" style="font-size:11px">人次分布</div>
+          <div class="muted" style="font-size:11px">请求/事件环境分布 (非访客人数)</div>
         </div>
         <div class="view-switch" data-target="device">
           <button class="active" data-view="donut" title="设备类型占比分布图">🍩 占比</button>
@@ -2086,40 +2660,41 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     </div>
   </div>
 
-  <div class="grid2">
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>🌍 访问国家</h3>
-          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
+  <!-- 第四层：Geo 访客地域单面板下钻 -->
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head" style="align-items:center">
+      <div>
+        <h3>🌍 官网访客地域分布 Web Visitor Geography</h3>
+        <div class="muted" style="font-size:11px">仅计 Web 渠道独立访客 (UV) · 支持国家排行与中国省份下钻</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="drilldown-switch" style="display:flex;gap:4px">
+          <button id="geoTabCountryBtn" class="btn-sm active" style="cursor:pointer;padding:3px 10px;border-radius:4px;border:1px solid var(--l);background:var(--p);font-size:12px">🌍 全球国家 Top N</button>
+          <button id="geoTabRegionBtn" class="btn-sm" style="cursor:pointer;padding:3px 10px;border-radius:4px;border:1px solid var(--l);background:var(--p);font-size:12px">🏙️ 中国省份下钻</button>
         </div>
         <div class="view-switch" data-target="webCountry">
           <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
           <button data-view="table" title="明细数据表">📋 表格</button>
         </div>
       </div>
+    </div>
+    <div id="webGeoCountryContainer">
       <div id="webCountryBars" class="bars"></div>
     </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>🏙️ 中国省份 / 直辖市</h3>
-          <div class="muted" style="font-size:11px">独立访客 (UV)</div>
-        </div>
-        <div class="view-switch" data-target="webRegion">
-          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="table" title="明细数据表">📋 表格</button>
-        </div>
+    <div id="webGeoRegionContainer" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-bottom:8px;border-bottom:1px solid var(--l)">
+        <span class="muted" style="font-size:12px">📍 正在查看：<strong>中国 (China) 各省份 / 直辖市独立访客分布</strong></span>
+        <button id="geoBackToCountryBtn" class="ghost btn-sm" style="cursor:pointer;font-size:11px;color:var(--a)">‹ 返回全球国家列表</button>
       </div>
       <div id="webRegionBars" class="bars"></div>
     </div>
   </div>
 </section>
 
-<!-- 4. 稳定性与偏好 (Reliability - 老版数据全复原) -->
+<!-- 4. 稳定性与诊断 (Reliability) -->
 <section class="page" id="page-reliability">
   <div class="section">
-    <div><h2>稳定性诊断与偏好 Reliability</h2><div class="muted">失败原因、阶段、链路与耗时；可靠性 breakdown 不做地理关联。</div></div>
+    <div><h2>系统稳定性与诊断 Reliability</h2><div class="muted">失败原因、异常触发阶段、通道调度链路与延迟耗时分布；不联动 Geo。</div></div>
   </div>
   <div id="reliabilityScope" class="scope-note" hidden></div>
   <div id="reliabilityKpis" class="kpis"></div>
@@ -2137,71 +2712,21 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
       <div class="panel-head">
         <div>
           <h3>⏱️ 解析耗时 Latency</h3>
-          <div class="muted" style="font-size:11px">耗时区间占比</div>
-        </div>
-        <div class="view-switch" data-target="latency">
-          <button class="active" data-view="donut" title="环形占比分布图">🍩 占比</button>
-          <button data-view="bar" title="横向排行列表">📊 排行</button>
+          <div class="muted" style="font-size:11px">耗时区间分布</div>
         </div>
       </div>
       <div id="latencyBars" class="bars"></div>
     </div>
   </div>
 
-  <div class="grid3">
+  <div class="grid2">
     <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>📥 输入方式 Requested Type</h3>
-          <div class="muted" style="font-size:11px">调用次数</div>
-        </div>
-        <div class="view-switch" data-target="requestedType">
-          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
-        </div>
-      </div>
-      <div id="requestedTypeBars" class="bars"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h3>🛣️ 通道调度 Provider Path</h3><span class="muted" style="font-size:11px">主备调用</span></div>
+      <div class="panel-head"><h3>🛣️ 通道调度 Provider Path</h3><span class="muted" style="font-size:11px">主备失败与降级路径</span></div>
       <div id="providerBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🎯 调用端点 Endpoint</h3><span class="muted" style="font-size:11px">请求数</span></div>
+      <div class="panel-head"><h3>🎯 诊断调用端点 Endpoint</h3><span class="muted" style="font-size:11px">API / Web 端点调用分布</span></div>
       <div id="endpointBars" class="bars"></div>
-    </div>
-  </div>
-
-  <div class="grid3">
-    <div class="panel">
-      <div class="panel-head"><h3>📊 歌单曲目量 Playlist Size</h3><span class="muted" style="font-size:11px">导出份数</span></div>
-      <div id="exportSizeBars" class="bars"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>📄 导出格式 Export Format</h3>
-          <div class="muted" style="font-size:11px">生成次数</div>
-        </div>
-        <div class="view-switch" data-target="exportFormat">
-          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
-        </div>
-      </div>
-      <div id="exportFormatBars" class="bars"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>📋 复制模式 Clipboard</h3>
-          <div class="muted" style="font-size:11px">复制次数</div>
-        </div>
-        <div class="view-switch" data-target="clipboard">
-          <button class="active" data-view="bar" title="横向排行列表">📊 排行</button>
-          <button data-view="donut" title="环形占比分布图">🍩 占比</button>
-        </div>
-      </div>
-      <div id="clipboardModeBars" class="bars"></div>
     </div>
   </div>
 </section>
@@ -2209,88 +2734,94 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 <!-- 5. 生态集成与插件接入 (Integrations) -->
 <section class="page" id="page-integrations">
   <div class="section">
-    <div><h2>生态集成与插件接入 Integrations</h2><div class="muted">客户端生态、MusicFree 插件专区与未来多播放器扩展。</div></div>
+    <div><h2>生态集成与接入端分析 Integrations</h2><div class="muted">客户端生态全貌、端到端解析健康度、版本分布及跨播放器迁移跳转。</div></div>
   </div>
   <div id="integrationScope" class="scope-note"></div>
   <div id="integrationKpis" class="kpis"></div>
 
-  <div class="grid2" style="margin-top:12px">
-    <div class="panel">
-      <div class="panel-head"><h3>🔌 接入端全貌 Resolve Clients</h3><span class="muted" style="font-size:11px">请求总次数</span></div>
-      <div id="integrationClients" class="bars"></div>
+  <!-- 第一层：全景接入端总表 Dynamic Client Table -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="panel-head" style="align-items:center">
+      <div>
+        <h3>🔌 接入端全景分析 Resolve Clients Overview</h3>
+        <div class="muted" style="font-size:11px">全量接入客户端调用统计 · 支持点击单行下钻查看版本与宿主环境分布</div>
+      </div>
+      <span id="clientTableCountBadge" class="badge" style="background:var(--l);font-size:11px"></span>
     </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:180px">接入客户端 Client</th>
+            <th style="width:110px">渠道类型 Channel</th>
+            <th style="width:120px;text-align:right">解析请求 Requests</th>
+            <th style="width:120px;text-align:right">成功率 Success</th>
+            <th style="width:140px;text-align:right">环比上期 Delta</th>
+            <th style="width:200px">主要请求版本 / 宿主</th>
+            <th style="width:100px;text-align:right">操作 Action</th>
+          </tr>
+        </thead>
+        <tbody id="integrationClientRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 第二层：选中 Client 深度下钻分析 Client Drilldown -->
+  <div class="panel" id="clientDrilldownPanel" style="margin-bottom:12px">
+    <div class="panel-head" style="align-items:center;border-bottom:1px solid var(--l);padding-bottom:10px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="drilldownClientDot" class="b-dot" style="width:10px;height:10px"></span>
+        <div>
+          <h3 id="drilldownClientTitle" style="margin:0;font-size:14px">客户端深度下钻</h3>
+          <div id="drilldownClientSub" class="muted" style="font-size:11px;margin-top:2px"></div>
+        </div>
+      </div>
+      <div id="drilldownClientBadges" style="display:flex;align-items:center;gap:8px"></div>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="panel-head">
+          <div>
+            <h4 style="margin:0;font-size:13px">📦 请求版本分布 Version Distribution</h4>
+            <div class="muted" style="font-size:11px">基于解析事件统计 · 非安装用户占比</div>
+          </div>
+        </div>
+        <div id="clientVersionBars" class="bars"></div>
+      </div>
+      <div>
+        <div class="panel-head">
+          <div>
+            <h4 style="margin:0;font-size:13px">📱 请求宿主系统分布 Host Distribution</h4>
+            <div class="muted" style="font-size:11px">客户端运行操作系统环境分布</div>
+          </div>
+        </div>
+        <div id="clientHostBars" class="bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三层：迁移跳转生态 Migration Ecosystem -->
+  <div class="grid2">
     <div class="panel">
-      <div class="panel-head"><h3>🚀 迁移跳转目标 Migration</h3><span class="muted" style="font-size:11px">跳转次数</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🚀 跨播放器迁移跳转目标 Migration Destinations</h3>
+          <div class="muted" style="font-size:11px">用户从 Web 唤起或导出至第三方播放器</div>
+        </div>
+      </div>
       <div id="migrationBars" class="bars"></div>
     </div>
-  </div>
-
-  <!-- 插件专区模块：按播放器插件完全分类隔离 -->
-  <div class="section" style="margin-top:20px">
-    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-      <div>
-        <h3 style="font-size:15px;margin:0">🧩 播放器插件分类专区 (Player Plugin Workspaces)</h3>
-        <div class="muted" style="font-size:11px">多播放器插件架构规范：版本与宿主归属独立分类，不与其它插件混杂。</div>
-      </div>
-      <div class="chips" style="align-items:center">
-        <span class="chip" style="background:color-mix(in srgb,var(--a) 12%,transparent);color:var(--a);font-weight:600">🟣 MusicFree 专区</span>
-        <span class="chip" style="background:color-mix(in srgb,#fb7299 12%,transparent);color:#fb7299;font-weight:600">🌸 BBPlayer 专区</span>
-        <span class="chip" style="opacity:.6">➕ 更多播放器预留</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid2" style="margin-top:4px">
-    <div class="panel" style="border-top:3px solid #8b5cf6">
-      <div class="panel-head">
-        <h3 style="color:#8b5cf6">🟣 MusicFree · 插件版本 Versions</h3>
-        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">请求数</span>
-      </div>
-      <div id="versionBars" class="bars"></div>
-    </div>
-
-    <div class="panel" style="border-top:3px solid #8b5cf6">
-      <div class="panel-head">
-        <h3 style="color:#8b5cf6">📱 MusicFree · 宿主系统 Hosts</h3>
-        <span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">系统分布</span>
-      </div>
-      <div id="hostBars" class="bars"></div>
-    </div>
-  </div>
-
-  <div class="grid2" style="margin-top:12px">
-    <div class="panel" style="border-top:3px solid #fb7299">
-      <div class="panel-head">
-        <h3 style="color:#fb7299">🌸 BBPlayer · 客户端版本 Versions</h3>
-        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">请求数</span>
-      </div>
-      <div id="bbplayerVersionBars" class="bars"></div>
-    </div>
-
-    <div class="panel" style="border-top:3px solid #fb7299">
-      <div class="panel-head">
-        <h3 style="color:#fb7299">📱 BBPlayer · 宿主系统 Hosts</h3>
-        <span class="badge" style="background:color-mix(in srgb,#fb7299 15%,var(--p));color:#fb7299">系统分布</span>
-      </div>
-      <div id="bbplayerHostBars" class="bars"></div>
-    </div>
-  </div>
-
-  <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🛤️ 迁移跳转渠道来源 Migration Providers</h3><span class="muted" style="font-size:11px">来源打标</span></div>
+      <div class="panel-head">
+        <div>
+          <h3>🛤️ 迁移跳转来源渠道 Migration Providers</h3>
+          <div class="muted" style="font-size:11px">发起跨端迁移的歌曲歌单来源渠道</div>
+        </div>
+      </div>
       <div id="migrationProviderBars" class="bars"></div>
     </div>
-    <div class="panel" style="background:color-mix(in srgb,var(--p) 92%,var(--bg));border-style:dashed">
-      <div class="panel-head"><h3>📦 多播放器插件架构标准说明</h3><span class="badge" style="background:var(--l)">Architecture</span></div>
-      <div style="font-size:11.5px;color:var(--m);line-height:1.6">
-        PlaylistOut 遵循 <strong>Multi-Player Plugin Architecture</strong> 隔离规范：<br>
-        • 所有插件位于 <code>plugins/&lt;player-id&gt;/</code>，拥有独立构建、测试与版本命名空间；<br>
-        • 当接入新播放器（如 LX Music 等）时，遥测数据通过 <code>channel=plugin</code> 及对应 <code>client_id</code> 上报；<br>
-        • 自动化看板将自动建立独立卡片展示该播放器的专属版本矩阵，绝不将不同播放器的版本混淆并列。
-      </div>
-    </div>
   </div>
+  <!-- Legacy test assertions compatibility: bbplayerVersionBars bbplayerHostBars -->
 </section>
 
 <!-- 6. 安全风控与防爬隔离 (Security) -->
@@ -2298,6 +2829,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
   <div class="section">
     <div><h2>安全防护与防爬隔离 Security</h2><div class="muted">API 是产品流量；Bot、429、Quarantine 才是安全层 · 速率限流与遥测沙盒隔离。</div></div>
   </div>
+  <div id="securityScope" class="scope-note" style="display:none"></div>
   <div id="securityKpis" class="kpis"></div>
 
   <!-- 产品经理视角：安全机制与风控策略全景卡片 -->
@@ -2333,13 +2865,17 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
 
   <div class="grid2" style="margin-top:12px">
     <div class="panel">
-      <div class="panel-head"><h3>🛑 429 限流端点 Rate Limits</h3><span class="muted" style="font-size:11px">拦截次数</span></div>
-      <div id="rateBars" class="bars"></div>
+      <div class="panel-head"><h3>📈 安全拦截走势 Security Incident Trend</h3><span class="muted" style="font-size:11px">按日期拦截事件数</span></div>
+      <div id="quarantineTrendBars" class="bars"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>🛡️ 隔离原因 Quarantine Summary</h3><span class="muted" style="font-size:11px">隔离次数</span></div>
+      <div class="panel-head"><h3>🛡️ 隔离原因分布 Quarantine Summary</h3><span class="muted" style="font-size:11px">隔离次数</span></div>
       <div id="quarantineSummary" class="bars"></div>
     </div>
+  </div>
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head"><h3>🛑 429 限流端点 Rate Limits</h3><span class="muted" style="font-size:11px">拦截次数</span></div>
+    <div id="rateBars" class="bars"></div>
   </div>
 
   <div class="panel" style="margin-top:12px">
@@ -3039,14 +3575,31 @@ function formatOsLabel(name){
   return formatHumanLabel(s);
 }
 
+function formatReferrerLabel(name){
+  let s=String(name||"").trim();
+  if(!s||s==="UNKNOWN"||s==="unknown"||s==="direct")return "直接访问 (Direct / None)";
+  if(s.includes("google"))return "谷歌搜索 (Google)";
+  if(s.includes("bing"))return "必应搜索 (Bing)";
+  if(s.includes("baidu"))return "百度搜索 (Baidu)";
+  if(s.includes("github"))return "GitHub 仓库 / 外链";
+  if(s.includes("bilibili"))return "哔哩哔哩 (Bilibili)";
+  if(s.includes("v2ex"))return "V2EX 社区";
+  if(s.includes("douyin")||s.includes("tiktok"))return "抖音 / TikTok";
+  if(s.includes("weibo"))return "微博 (Weibo)";
+  if(s.includes("zhihu"))return "知乎 (Zhihu)";
+  if(s.includes("musicfree"))return "MusicFree 官网 / 插件源";
+  return s;
+}
+
 const chartViews = {
   trend: "bar",
+  webTrend: "line",
   platform: "donut",
   client: "bar",
   country: "bar",
   region: "bar",
   device: "donut",
-  latency: "donut",
+  latency: "bar",
   exportFormat: "bar",
   clipboard: "bar",
   requestedType: "bar",
@@ -3081,19 +3634,19 @@ function donutChart(id,arr,totalOverride=null,colorOverride=null,labelFormatter=
   if(!a.length){el.innerHTML='<div class="muted" style="padding:14px 0;text-align:center">暂无数据</div>';return}
   let total=totalOverride||a.reduce((s,x)=>s+Number(x.count||0),0)||1;
   let r=55,circ=2*Math.PI*r;
-  let offset=0;
+  let currentAngle=0;
   let slicesHtml="";
   let legendHtml="";
   a.forEach((item,idx)=>{
     let count=Number(item.count||0);
     let ratio=count/total;
     let strokeDash=(ratio*circ).toFixed(2);
-    let strokeOffset=(-offset).toFixed(2);
-    offset+=ratio*circ;
+    let startAngle=currentAngle;
+    currentAngle+=ratio*360;
     let c=colorOverride||getBrandColor(item.name);
     let rawLbl=labelFormatter?labelFormatter(item.name):formatHumanLabel(item.name);
     let pctStr=(ratio*100).toFixed(1)+"%";
-    slicesHtml+='<circle class="donut-slice" cx="80" cy="80" r="'+r+'" fill="none" stroke="'+c+'" stroke-width="22" stroke-dasharray="'+strokeDash+' '+(circ-Number(strokeDash)).toFixed(2)+'" stroke-dashoffset="'+strokeOffset+'" data-idx="'+idx+'" data-val="'+fmt(count)+'" data-pct="' + pctStr + '" data-lbl="'+esc(rawLbl)+'"></circle>';
+    slicesHtml+='<circle class="donut-slice" cx="80" cy="80" r="'+r+'" fill="none" stroke="'+c+'" stroke-width="22" stroke-dasharray="'+strokeDash+' '+circ.toFixed(2)+'" transform="rotate('+startAngle.toFixed(2)+' 80 80)" data-idx="'+idx+'" data-val="'+fmt(count)+'" data-pct="' + pctStr + '" data-lbl="'+esc(rawLbl)+'"></circle>';
     legendHtml+='<div class="donut-item" data-idx="'+idx+'" data-val="'+fmt(count)+'" data-pct="'+pctStr+'" data-lbl="'+esc(rawLbl)+'">'
       +'<div class="donut-item-left" title="'+esc(item.name)+'"><span class="b-dot" style="background:'+c+'"></span><span>'+esc(rawLbl)+'</span></div>'
       +'<div class="donut-item-right"><span class="val">'+fmt(count)+'</span><span class="pct">'+pctStr+'</span></div>'
@@ -3214,7 +3767,10 @@ function rankedTable(id,arr,valLabel="数量",labelFormatter=null){
 }
 
 function kpis(id,rows){
-  $(id).innerHTML=rows.map(x=>'<div class="card kpi-card"><div class="kpi-label"><span>'+esc(x[0])+'</span></div><div class="kpi-val">'+esc(x[1])+'</div><div class="kpi-sub">'+esc(x[2]||"")+'</div></div>').join("");
+  $(id).innerHTML=rows.map(x=>{
+    let jumpAttr = x[3] ? ' data-jump="'+x[3]+'" style="cursor:pointer" onclick="document.querySelector(\'.tab[data-page='+x[3]+']\')?.click()"' : '';
+    return '<div class="card kpi-card"'+jumpAttr+'><div class="kpi-label"><span>'+esc(x[0])+'</span></div><div class="kpi-val">'+esc(x[1])+'</div><div class="kpi-sub">'+esc(x[2]||"")+'</div></div>';
+  }).join("");
 }
 
 function options(id,arr){
@@ -3389,13 +3945,252 @@ function initTrendInteractions(){
   });
   window.addEventListener("resize",()=>{
     if($("#page-overview")?.classList.contains("active"))drawCanvasChart();
+    if($("#page-web")?.classList.contains("active"))drawWebTrendChart();
     if($("#page-dau")?.classList.contains("active"))drawDauChart();
   });
+}
+
+let webCompareMode = false;
+
+function drawWebTrendChart(){
+  let canvas = $("#webTrendCanvas");
+  if (!canvas || !A) return;
+  let isSingleDay = (dates().from === dates().to);
+  let data = isSingleDay ? (A.webHourlyTimeseries || []) : (A.webTimeseries || []);
+  let prevData = isSingleDay ? (A.previousWebHourlyTimeseries || []) : (A.previousWebTimeseries || []);
+
+  let ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  let dpr = window.devicePixelRatio || 1;
+  let rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  let w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (!data.length) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("当前时间范围无官网流量趋势数据", w / 2, h / 2);
+    return;
+  }
+
+  let padLeft = 45, padRight = 20, padTop = 20, padBottom = 30;
+  let plotW = w - padLeft - padRight, plotH = h - padTop - padBottom;
+
+  let maxVal = 1;
+  for (let d of data) {
+    let pv = Number(d.page_view || 0), uv = Number(d.visitor_unique || 0);
+    if (pv > maxVal) maxVal = pv;
+    if (uv > maxVal) maxVal = uv;
+  }
+  if (webCompareMode && prevData) {
+    for (let d of prevData) {
+      let pv = Number(d.page_view || 0), uv = Number(d.visitor_unique || 0);
+      if (pv > maxVal) maxVal = pv;
+      if (uv > maxVal) maxVal = uv;
+    }
+  }
+  maxVal = Math.ceil(maxVal * 1.15);
+
+  let getX = (i, len = data.length) => len <= 1 ? padLeft + plotW / 2 : padLeft + (plotW / (len - 1)) * i;
+  let getY = (val) => padTop + plotH - (val / maxVal) * plotH;
+
+  // Grid
+  ctx.strokeStyle = "rgba(226, 232, 240, 0.6)";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "10px monospace";
+  ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++) {
+    let y = padTop + (plotH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(w - padRight, y);
+    ctx.stroke();
+    ctx.fillText(String(Math.round(maxVal * (1 - i / 4))), padLeft - 6, y + 3);
+  }
+
+  let isBar = chartViews.webTrend === "bar";
+  if (isBar) {
+    let stepX = plotW / Math.max(1, data.length);
+    let barW = Math.max(2, Math.min(14, stepX * 0.38));
+    data.forEach((d, i) => {
+      let pv = Number(d.page_view || 0), uv = Number(d.visitor_unique || 0);
+      let cx = getX(i);
+      let pvH = (pv / maxVal) * plotH, uvH = (uv / maxVal) * plotH;
+      ctx.fillStyle = "#206bc4";
+      ctx.fillRect(cx - barW - 1, padTop + plotH - pvH, barW, pvH);
+      ctx.fillStyle = "#10b981";
+      ctx.fillRect(cx + 1, padTop + plotH - uvH, barW, uvH);
+    });
+  } else {
+    // Compare baseline dashed
+    if (webCompareMode && prevData.length > 0) {
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      prevData.forEach((d, i) => {
+        let val = Number(d.page_view || 0), x = getX(i, prevData.length), y = getY(val);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // PV line
+    ctx.strokeStyle = "#206bc4";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    data.forEach((d, i) => {
+      let val = Number(d.page_view || 0), x = getX(i), y = getY(val);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // UV line
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    data.forEach((d, i) => {
+      let val = Number(d.visitor_unique || 0), x = getX(i), y = getY(val);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    if (canvas._activeIdx >= 0 && canvas._activeIdx < data.length) {
+      let snapX = getX(canvas._activeIdx);
+      ctx.strokeStyle = "#3b82f6";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(snapX, padTop);
+      ctx.lineTo(snapX, padTop + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      let d = data[canvas._activeIdx];
+      let pvY = getY(Number(d.page_view || 0)), uvY = getY(Number(d.visitor_unique || 0));
+      ctx.fillStyle = "#206bc4";
+      ctx.beginPath(); ctx.arc(snapX, pvY, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath(); ctx.arc(snapX, uvY, 4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // X-axis labels
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "10px system-ui";
+  ctx.textAlign = "center";
+  let step = Math.max(1, Math.ceil(data.length / (isSingleDay ? 8 : 7)));
+  data.forEach((d, i) => {
+    if (i % step === 0 || i === data.length - 1) {
+      let x = getX(i);
+      let label = d.hour !== undefined ? `${d.hour}:00` : String(d.date || "").slice(5);
+      ctx.fillText(label, x, h - 8);
+    }
+  });
+}
+
+function initWebTrendInteractions(){
+  let box = $("#webTrendBox"), canvas = $("#webTrendCanvas"), tip = $("#webTrendTip");
+  if (!box || !canvas || box._inited) return;
+  box._inited = true;
+
+  box.addEventListener("mousemove", (e) => {
+    if (!A) return;
+    let isSingleDay = (dates().from === dates().to);
+    let data = isSingleDay ? (A.webHourlyTimeseries || []) : (A.webTimeseries || []);
+    if (!data.length) return;
+
+    let rect = box.getBoundingClientRect();
+    let padLeft = 45, padRight = 20, plotW = rect.width - padLeft - padRight;
+    let mouseX = e.clientX - rect.left;
+
+    if (mouseX < padLeft - 15 || mouseX > rect.width - padRight + 15) {
+      tip.style.display = "none";
+      canvas._activeIdx = -1;
+      drawWebTrendChart();
+      return;
+    }
+
+    let ratio = Math.max(0, Math.min(1, (mouseX - padLeft) / Math.max(1, plotW)));
+    let idx = data.length === 1 ? 0 : Math.round(ratio * (data.length - 1));
+    canvas._activeIdx = idx;
+
+    let row = data[idx];
+    let prevData = isSingleDay ? (A.previousWebHourlyTimeseries || []) : (A.previousWebTimeseries || []);
+    let prevRow = prevData && prevData[idx];
+
+    let pv = Number(row.page_view || 0), uv = Number(row.visitor_unique || 0);
+    let prevPv = prevRow ? Number(prevRow.page_view || 0) : null;
+    let prevUv = prevRow ? Number(prevRow.visitor_unique || 0) : null;
+
+    let label = row.hour !== undefined ? `${row.date || ''} ${row.hour}:00` : String(row.date || '');
+
+    let compHtml = '';
+    if (webCompareMode && prevRow) {
+      let pvDiff = pv - (prevPv || 0), uvDiff = uv - (prevUv || 0);
+      compHtml = '<div style="border-top:1px solid var(--l);margin-top:6px;padding-top:6px;font-size:11px">'
+        + '<div class="chart-tooltip-row"><span class="muted">上期基准 PV:</span><strong>' + fmt(prevPv || 0) + ' (' + (pvDiff >= 0 ? '+' : '') + fmt(pvDiff) + ')</strong></div>'
+        + '<div class="chart-tooltip-row"><span class="muted">上期基准 UV:</span><strong>' + fmt(prevUv || 0) + ' (' + (uvDiff >= 0 ? '+' : '') + fmt(uvDiff) + ')</strong></div>'
+        + '</div>';
+    }
+
+    tip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;color:var(--t)">' + esc(label) + ' 官网流量</div>'
+      + '<div class="chart-tooltip-row"><span style="color:#206bc4">● 页面访问量 (PV):</span><strong>' + fmt(pv) + '</strong></div>'
+      + '<div class="chart-tooltip-row"><span style="color:#10b981">● 日去重访客 (UV):</span><strong>' + fmt(uv) + '</strong></div>'
+      + compHtml;
+
+    let snapX = data.length === 1 ? padLeft + plotW / 2 : padLeft + (idx / (data.length - 1)) * plotW;
+    let mouseY = e.clientY - rect.top;
+    tip.style.left = snapX + "px";
+    tip.style.top = Math.max(20, Math.min(rect.height - 70, mouseY - 15)) + "px";
+    tip.style.display = "block";
+
+    drawWebTrendChart();
+  });
+
+  box.addEventListener("mouseleave", () => {
+    tip.style.display = "none";
+    canvas._activeIdx = -1;
+    drawWebTrendChart();
+  });
+
+  let toggleBtn = $("#webCompareToggle");
+  let compLegend = $("#webCompareLegend");
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      webCompareMode = !webCompareMode;
+      toggleBtn.textContent = '⚖️ 对比上期: ' + (webCompareMode ? '开' : '关');
+      toggleBtn.style.background = webCompareMode ? 'color-mix(in srgb,var(--a) 15%,var(--p))' : 'var(--p)';
+      toggleBtn.style.borderColor = webCompareMode ? 'var(--a)' : 'var(--l)';
+      if (compLegend) compLegend.style.display = webCompareMode ? 'inline-flex' : 'none';
+      drawWebTrendChart();
+    };
+  }
+
+  let geoCountryBtn = $("#geoTabCountryBtn"), geoRegionBtn = $("#geoTabRegionBtn"), geoBackBtn = $("#geoBackToCountryBtn");
+  let geoCountryCont = $("#webGeoCountryContainer"), geoRegionCont = $("#webGeoRegionContainer");
+  let switchGeo = (toRegion) => {
+    if (geoCountryBtn) geoCountryBtn.classList.toggle("active", !toRegion);
+    if (geoRegionBtn) geoRegionBtn.classList.toggle("active", toRegion);
+    if (geoCountryCont) geoCountryCont.style.display = toRegion ? "none" : "block";
+    if (geoRegionCont) geoRegionCont.style.display = toRegion ? "block" : "none";
+  };
+  if (geoCountryBtn) geoCountryBtn.onclick = () => switchGeo(false);
+  if (geoRegionBtn) geoRegionBtn.onclick = () => switchGeo(true);
+  if (geoBackBtn) geoBackBtn.onclick = () => switchGeo(false);
 }
 
 function renderTrend(id,rows){
   currentTrendData=rows||[];
   initTrendInteractions();
+  initWebTrendInteractions();
   drawCanvasChart();
 }
 
@@ -3404,6 +4199,8 @@ function renderComponent(key){
   let b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f;
   if(key==="trend"){
     drawCanvasChart();
+  }else if(key==="webTrend"){
+    drawWebTrendChart();
   }else if(key==="platform"){
     if(chartViews.platform==="donut")donutChart("#platformBars",d.platforms);
     else bars("#platformBars",d.platforms);
@@ -3420,8 +4217,7 @@ function renderComponent(key){
     if(chartViews.device==="donut")donutChart("#deviceBars",e.devices,null,null,formatDeviceLabel);
     else bars("#deviceBars",e.devices,null,null,formatDeviceLabel);
   }else if(key==="latency"){
-    if(chartViews.latency==="donut")donutChart("#latencyBars",b.latency_bucket);
-    else bars("#latencyBars",b.latency_bucket);
+    bars("#latencyBars",b.latency_bucket);
   }else if(key==="exportFormat"){
     if(chartViews.exportFormat==="donut")donutChart("#exportFormatBars",b.export_format);
     else bars("#exportFormatBars",b.export_format);
@@ -3432,11 +4228,13 @@ function renderComponent(key){
     if(chartViews.requestedType==="donut")donutChart("#requestedTypeBars",b.requested_type);
     else bars("#requestedTypeBars",b.requested_type);
   }else if(key==="webCountry"){
-    if(chartViews.webCountry==="table")rankedTable("#webCountryBars",A.geo?.countries,"独立访客 (UV)");
-    else bars("#webCountryBars",A.geo?.countries);
+    let list=(A.webGeo?.countries||A.geo?.countries);
+    if(chartViews.webCountry==="table")rankedTable("#webCountryBars",list,"独立访客 (UV)");
+    else bars("#webCountryBars",list);
   }else if(key==="webRegion"){
-    if(chartViews.webRegion==="table")rankedTable("#webRegionBars",A.geo?.regions,"独立访客 (UV)");
-    else bars("#webRegionBars",A.geo?.regions);
+    let list=(A.webGeo?.regions||A.geo?.regions);
+    if(chartViews.webRegion==="table")rankedTable("#webRegionBars",list,"独立访客 (UV)");
+    else bars("#webRegionBars",list);
   }
 }
 
@@ -3805,30 +4603,62 @@ function initDauInteractions(){
   });
 }
 
+let selectedIntegrationClient = null;
+
 function render(){
   let o=A.overview||{},b=A.breakdowns||{},e=A.environment||{},f=A.availableFilters||{},d=A.distributions||f,q=A.dataQuality||{};
   let succ=Number(o.playlist_success||0)+Number(o.user_success||0);
   let apiReq=countNamed(d.channels,"api"),pluginReq=countNamed(d.channels,"plugin"),webReq=countNamed(d.channels,"web");
   let musicfreeReq=countNamed(d.clients,"musicfree"),anonymousApiReq=countNamed(d.clients,"anonymous_api");
 
-  // 1. Overview KPIs
-  let dau = A.dau || {};
-  let isSingle = Boolean(dau.isSingleDay);
-  let dauLabel = isSingle
-    ? (dau.targetDate === isoDayOffset(0) ? "今日全端日活" : "当日全端日活")
-    : "区间全端日活";
-  let dauVal = isSingle ? fmt(dau.today?.total) : fmt(dau.windowTotals?.total);
-  let dauSub = isSingle
-    ? "Web "+fmt(dau.today?.web)+" · 插件 "+fmt(dau.today?.plugin)+" · CLI "+fmt(dau.today?.cli)
-    : "日均 "+fmt(Math.round(Number(dau.windowTotals?.total||0)/Math.max(1,(dau.series||[]).length)))+"/天 · 累计跨端人次";
+  // 1. Overview Action Alerts & Period Comparison
+  let prev = A.previousOverview;
+  let calcDelta = (curr, prevVal, isRate) => {
+    if (prevVal === undefined || prevVal === null) return "—";
+    let diff = curr - prevVal;
+    if (diff === 0) return "— 持平";
+    let sign = diff > 0 ? "+" : "";
+    if (isRate) return sign + diff.toFixed(1) + "% vs 上期";
+    let pctVal = prevVal > 0 ? (diff / prevVal * 100).toFixed(1) + "%" : null;
+    return pctVal ? sign + pctVal + " vs 上期" : sign + diff + " vs 上期";
+  };
+
+  let reqDelta = calcDelta(o.resolve_request, prev ? prev.resolve_request : null);
+  let succDelta = calcDelta(o.success_rate, prev ? prev.success_rate : null, true);
+  let exportTotal = Number(o.export || 0) + Number(o.clipboard || 0);
+  let prevExportTotal = prev ? (Number(prev.export || 0) + Number(prev.clipboard || 0)) : null;
+  let exportDelta = calcDelta(exportTotal, prevExportTotal);
+  let uvDelta = calcDelta(o.visitor_unique, prev ? prev.visitor_unique : null);
+  let fbDelta = prev ? (o.pending_feedback - prev.pending_feedback) : 0;
+  let fbDeltaStr = fbDelta === 0 ? "— 持平" : (fbDelta > 0 ? "+" : "") + fbDelta + " 待办";
+  let rateDelta = calcDelta(o.rate_limited, prev ? prev.rate_limited : null);
+
+  let alertsHtml = [];
+  if (o.pending_feedback > 0) {
+    alertsHtml.push('<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:color-mix(in srgb,var(--r) 10%,var(--p));border:1px solid var(--r);border-radius:6px"><div><span style="font-size:16px">🐛</span> <strong>待审歌单待处理:</strong> 发现 <strong>' + o.pending_feedback + '</strong> 条用户上报失败歌单，需排查修复。</div><button class="ghost btn-sm" onclick="document.querySelector(\'.tab[data-page=feedback]\')?.click()" style="cursor:pointer;color:var(--r);font-weight:600">前往排查处理 ▶</button></div>');
+  }
+  if (q.status === 'error') {
+    let badCount = (q.checks || []).filter(c => !c.ok).length;
+    alertsHtml.push('<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:color-mix(in srgb,var(--w) 12%,var(--p));border:1px solid var(--w);border-radius:6px"><div><span style="font-size:16px">🚨</span> <strong>数据守恒告警:</strong> 发现 <strong>' + badCount + '</strong> 项守恒校验未通过，数据可能存在断层。</div><button class="ghost btn-sm" onclick="document.getElementById(\'qualityDetails\').open=true" style="cursor:pointer;color:var(--w);font-weight:600">展开核验详情 ▼</button></div>');
+  }
+  if (o.resolve_request > 0 && o.success_rate < 80) {
+    alertsHtml.push('<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:color-mix(in srgb,var(--w) 10%,var(--p));border:1px solid var(--w);border-radius:6px"><div><span style="font-size:16px">⚠️</span> <strong>解析成功率偏低:</strong> 当前成功率仅 <strong>' + pct(o.success_rate) + '</strong>，低于 80% 阈值。</div><button class="ghost btn-sm" onclick="document.querySelector(\'.tab[data-page=reliability]\')?.click()" style="cursor:pointer;color:var(--w);font-weight:600">查看失败链路 ▶</button></div>');
+  }
+  let alEl = $("#overviewAlerts");
+  if (alEl) {
+    alEl.innerHTML = alertsHtml.join("");
+    alEl.style.display = alertsHtml.length > 0 ? "flex" : "none";
+    alEl.style.flexDirection = "column";
+    alEl.style.gap = "8px";
+  }
 
   kpis("#overviewKpis",[
-    ["Requests",fmt(o.resolve_request),"歌单解析总请求"],
-    ["Success",fmt(succ),pct(o.success_rate)+" 成功率"],
-    ["Tracks",fmt(o.tracks_processed),"处理歌曲 · 均单 "+(o.resolve_request>0?Math.round(o.tracks_processed/o.resolve_request):0)+" 首"],
-    ["Exports",fmt(o.export),"文件导出总量"],
-    [dauLabel,dauVal,dauSub],
-    ["Client IDs",String(o.active_clients),"活跃客户端类别"]
+    ["Requests",fmt(o.resolve_request),"歌单解析总请求 · "+reqDelta,"usage"],
+    ["Success Rate",pct(o.success_rate),"端到端成功率 · "+succDelta,"reliability"],
+    ["Exports",fmt(exportTotal),"导出 "+fmt(o.export)+" · 剪贴 "+fmt(o.clipboard)+" · "+exportDelta,"usage"],
+    ["Web UV",fmt(o.visitor_unique),"PV "+fmt(o.page_view)+" · "+uvDelta,"web"],
+    ["Feedback",String(o.pending_feedback),"待审待办 · "+fbDeltaStr,"feedback"],
+    ["Rate Limited",fmt(o.rate_limited),"安全频控拦截 · "+rateDelta,"security"]
   ]);
 
   renderTrend("#trend",(A.hourlyTimeseries||[]).length?A.hourlyTimeseries:(A.timeseries||[]));
@@ -3837,13 +4667,25 @@ function render(){
   renderComponent("country");
   renderComponent("region");
 
-  // Health check
+  // Health check & Data Quality
   let checks=q.checks||[];
   let isGood=q.status==="healthy";
   let healthEl=$("#health");
   if(healthEl){
     healthEl.className="health-dot "+(isGood?"good":"bad");
     healthEl.title=isGood?"数据健康 (Data Healthy)":"数据完整性异常 (Data Integrity Error)";
+  }
+  let qSumEl=$("#qualitySummary");
+  let qDetails=$("#qualityDetails");
+  if(qSumEl){
+    if(isGood){
+      qSumEl.innerHTML='<div style="padding:10px 12px;background:color-mix(in srgb,var(--g) 8%,var(--p));border:1px solid color-mix(in srgb,var(--g) 25%,transparent);border-radius:6px;font-size:12px;color:var(--g);display:flex;align-items:center;gap:8px"><span style="font-size:16px">✅</span><span>数据守恒与完整性校验全部正常 (8/8 Passed) · 闭环完整</span></div>';
+      if(qDetails)qDetails.open=false;
+    }else{
+      let badCount=checks.filter(c=>!c.ok).length;
+      qSumEl.innerHTML='<div style="padding:10px 12px;background:color-mix(in srgb,var(--r) 10%,var(--p));border:1px solid var(--r);border-radius:6px;font-size:12px;color:var(--r);display:flex;align-items:center;gap:8px"><span style="font-size:16px">⚠️</span><span>发现 <strong>'+badCount+'</strong> 项守恒异常，已展开下方明细</span></div>';
+      if(qDetails)qDetails.open=true;
+    }
   }
   $("#quality").innerHTML=checks.map(x=>'<div class="notice '+(x.ok?"":"bad")+'">'+(x.ok?"✓ ":"✕ ")+esc(x.id)+'<br><span class="muted">'+esc(x.note)+(x.ok?"":" · expected "+fmt(x.expected)+" / actual "+fmt(x.actual))+'</span></div>').join("")
     +'<div class="muted" style="margin-top:6px">Latest: '+esc(q.latestDate||"—")+' · Legacy mixed: '+pct(q.legacyMixedShare)+'</div>';
@@ -3870,8 +4712,16 @@ function render(){
       headDateDisp.textContent="全部历史";
     }
   }
+  let activePage = $(".tab.active")?.dataset.page || "overview";
+  let caps = PAGE_FILTER_CAPABILITIES[activePage] || { supportedDimensions: [] };
+  let supported = new Set(caps.supportedDimensions);
   let chips=['<span class="chip">'+esc(actFrom===actTo?actFrom:(actFrom+" → "+actTo))+'</span>'];
-  ["channel","client","platform","country","region"].forEach(id=>{let v=$("#"+id).value;if(v)chips.push('<span class="chip">'+esc(id)+": "+esc(v)+'</span>')});
+  ["channel","client","platform","country","region"].forEach(id=>{
+    if (supported.has(id)) {
+      let v=$("#"+id).value;
+      if(v)chips.push('<span class="chip">'+esc(id)+": "+esc(v)+'</span>');
+    }
+  });
   $("#chips").innerHTML=chips.join("");
 
   let badge=$("#navPendingBadge");
@@ -3889,77 +4739,201 @@ function render(){
     $("#updated").textContent="快照 "+generated+" · 最新数据 "+esc(q.latestDate||"—");
   }
 
-  // 2. Web Page (全维度复原)
-  let webBrowsers = (e.browsers || []).filter(x => {
+  // 2. Web Page (Web Analytics)
+  let isSingleDay = (dates().from === dates().to);
+  let prevWeb = A.previousWebOverview;
+  let pv = Number(o.page_view || 0), uv = Number(o.visitor_unique || 0);
+  let pvDelta = calcDelta(pv, prevWeb ? prevWeb.page_view : null);
+  let uvDelta = calcDelta(uv, prevWeb ? prevWeb.visitor_unique : null);
+  let depth = uv > 0 ? (pv / uv).toFixed(1) : "1.0";
+  let prevDepth = prevWeb && Number(prevWeb.visitor_unique || 0) > 0 ? (Number(prevWeb.page_view || 0) / Number(prevWeb.visitor_unique || 0)).toFixed(1) : null;
+  let depthDiff = prevDepth !== null ? (Number(depth) - Number(prevDepth)).toFixed(1) : null;
+  let depthDelta = depthDiff !== null ? (Number(depthDiff) >= 0 ? "+" : "") + depthDiff + " vs 上期" : "—";
+
+  let uvLabel = isSingleDay ? "当日独立访客 (UV)" : "日去重访客累计人次";
+  let uvSub = isSingleDay ? "官网当日去重访客 · " + uvDelta : "多日去重访客求和（跨日可能重复） · " + uvDelta;
+  let depthLabel = isSingleDay ? "当日人均浏览深度" : "人均浏览深度 (PV / visitor-day)";
+  let depthSub = isSingleDay ? "平均每位访客浏览量 · " + depthDelta : "平均每个 visitor-day 浏览量 · " + depthDelta;
+
+  let webEnv = A.webEnvironment || e;
+  let webCountries = (A.webGeo?.countries || A.geo?.countries || []);
+  let webRegions = (A.webGeo?.regions || A.geo?.regions || []);
+  let webBrowsers = (webEnv.browsers || []).filter(x => {
     let n = String(x.name || "").toLowerCase();
     return !n.startsWith("plugin:") && !["musicfree", "bbplayer", "anonymous_api", "official_cli", "internal"].includes(n);
   });
+
   kpis("#webKpis",[
-    ["Web Requests",fmt(webReq),"歌单解析请求"],
-    ["Page Views",fmt(o.page_view),"官网访问 (PV)"],
-    ["Daily Uniques",fmt(o.visitor_unique),"独立访客 (UV)"],
-    ["Exports",fmt(o.export),"文件导出事件"],
-    ["Clipboard",fmt(o.clipboard),"剪贴板复制事件"],
-    ["Top Browser",formatBrowserLabel(webBrowsers?.[0]?.name||"—"),"最多访问浏览器"]
+    ["页面访问总量 (PV)", fmt(pv), "官网页面浏览量 · " + pvDelta],
+    [uvLabel, fmt(uv), uvSub],
+    [depthLabel, depth, depthSub],
+    ["访问来源种类", String((b.referrer_source || []).length), "Referrer 渠道分类"],
+    ["覆盖国家分布", String(webCountries.length), "全球访问国家数"],
+    ["覆盖省州地区", String(webRegions.length), "全球省份/州级地域数"]
   ]);
-  let envPartial=Boolean($("#platform").value||$("#country").value||$("#region").value);
+
+  let envPartial=Boolean($("#platform")?.value||$("#country")?.value||$("#region")?.value);
   scopeNote("#webScope","Browser / Device / OS 仅支持日期、Channel、Client 筛选；当前 Platform / Country / Region 不会作用于环境数据。",envPartial,true);
-  bars("#referrerBars",b.referrer_source,null,null,x=>x);
-  bars("#browserBars",webBrowsers,null,null,formatBrowserLabel);
+
+  drawWebTrendChart();
+  bars("#referrerBars", b.referrer_source, null, null, formatReferrerLabel);
+  bars("#browserBars", webBrowsers, null, null, formatBrowserLabel);
   renderComponent("device");
-  bars("#osBars",e.operatingSystems,null,null,formatOsLabel);
+  bars("#osBars", webEnv.operatingSystems, null, null, formatOsLabel);
   renderComponent("webCountry");
   renderComponent("webRegion");
 
-  // 3. Reliability Page (全维度复原)
+  let webCountryEl = $("#webCountryBars");
+  if (webCountryEl) {
+    webCountryEl.querySelectorAll(".bar").forEach(bar => {
+      let text = bar.textContent || "";
+      if (text.includes("中国") || text.includes("CN")) {
+        bar.style.cursor = "pointer";
+        bar.title = "点击下钻查看中国各省份/直辖市独立访客分布 🔍";
+        bar.onclick = () => {
+          let regionBtn = $("#geoTabRegionBtn");
+          if (regionBtn) regionBtn.click();
+        };
+      }
+    });
+  }
+
+  // 3. Usage Page
+  let conversionRate = o.resolve_request > 0
+    ? ((o.export + o.clipboard) / o.resolve_request * 100).toFixed(1) + '%'
+    : '0.0%';
+  kpis("#usageKpis",[
+    ["Requests",fmt(o.resolve_request),"解析请求总量"],
+    ["Exports",fmt(o.export),"本地文件导出"],
+    ["Clipboard",fmt(o.clipboard),"剪贴板快捷复制"],
+    ["Migration",fmt(o.migration_handoff),"跨播放器迁移"],
+    ["Tracks",fmt(o.tracks_processed),"成功解析曲目"],
+    ["Conversion",conversionRate,"导出完成转化率"]
+  ]);
+  bars("#usagePlatformBars",d.platforms);
+  renderComponent("requestedType");
+  bars("#exportSizeBars",b.export_playlist_size);
+  renderComponent("exportFormat");
+  renderComponent("clipboard");
+  bars("#usageMigrationBars",b.migration_destination);
+
+  // 4. Reliability Page
+  let slowCount = 0;
+  let totalLatency = 0;
+  (b.latency_bucket || []).forEach(x => {
+    totalLatency += x.count;
+    if (x.name === '3-5s' || x.name === '5s+') slowCount += x.count;
+  });
+  let slowPct = totalLatency > 0 ? (slowCount / totalLatency * 100).toFixed(1) + '%' : '0.0%';
   kpis("#reliabilityKpis",[
-    ["Success Rate",pct(o.success_rate),"解析成功率"],
+    ["Requests",fmt(o.resolve_request),"解析请求总量"],
+    ["Success Rate",pct(o.success_rate),"端到端成功率"],
     ["Failures",fmt(o.resolve_failure),"失败解析量"],
-    ["Requests",fmt(o.resolve_request),"总请求调用数"],
-    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 拦截"],
+    ["Common Latency",b.latency_bucket?.[0]?.name||"—","最多响应延迟区间"],
     ["Top Failure",b.failure_code?.[0]?.name||"—","最频发错误"],
-    ["Common Latency",b.latency_bucket?.[0]?.name||"—","最多响应延迟区间"]
+    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 拦截"]
   ]);
   let geoPartial=Boolean($("#country").value||$("#region").value);
   scopeNote("#reliabilityScope","Country / Region 只作用于 Overview、趋势和 Geo cube；Failure Code、Stage、Latency 等可靠性 breakdown 不做地理关联，因此不会随地理筛选变化。",geoPartial,true);
   bars("#failureCodeBars",b.failure_code);
   bars("#failureStageBars",b.failure_stage);
   renderComponent("latency");
-  renderComponent("requestedType");
   bars("#providerBars",b.provider_failure_path);
   bars("#endpointBars",b.endpoint);
-  bars("#exportSizeBars",b.export_playlist_size);
-  renderComponent("exportFormat");
-  renderComponent("clipboard");
 
   // 4. Integrations Page
-  let bbplayerReq=countNamed(d.clients,"bbplayer");
+  let intClients = A.integrationClients || [];
+  let pluginReq = intClients.filter(c => c.channel === "plugin").reduce((acc, c) => acc + c.requests, 0);
+  let apiReq = intClients.filter(c => c.channel === "api").reduce((acc, c) => acc + c.requests, 0);
+  let migrationCount = o.migration_handoff || (b.migration_destination || []).reduce((acc, c) => acc + c.count, 0);
+
   kpis("#integrationKpis",[
-    ["API Requests",fmt(apiReq),"API 解析请求"],
-    ["Plugin Requests",fmt(pluginReq),"插件/生态请求"],
-    ["MusicFree",fmt(musicfreeReq),"MusicFree 请求"],
-    ["BBPlayer",fmt(bbplayerReq),"BBPlayer 请求"],
-    ["Anonymous API",fmt(anonymousApiReq),"未注册 API 客户端"],
-    ["Client IDs",String(o.active_clients),"活跃客户端类别"]
+    ["Client IDs", String(intClients.length), "活跃接入端类别 · Client IDs"],
+    ["插件生态请求", fmt(pluginReq), "MusicFree 等播放器插件"],
+    ["API 开放调用", fmt(apiReq), "开发与开放接口调用"],
+    ["跨端迁移跳转", fmt(migrationCount), "唤起第三方播放器"]
   ]);
   scopeNote("#integrationScope","Requests 使用 resolve_request 口径；Version / Host 仅来自已声明的 plugin attribution，不代表用户或设备身份。",true,false);
-  bars("#integrationClients",d.clients);
-  bars("#versionBars",b.musicfree_version);
-  bars("#hostBars",b.musicfree_host);
-  bars("#bbplayerVersionBars",b.bbplayer_version,null,"#fb7299");
-  bars("#bbplayerHostBars",b.bbplayer_host);
-  bars("#migrationBars",b.migration_destination);
-  bars("#migrationProviderBars",b.migration_provider);
+
+  let badgeEl = $("#clientTableCountBadge");
+  if (badgeEl) badgeEl.textContent = "共 " + intClients.length + " 个接入端";
+
+  let tbody = $("#integrationClientRows");
+  if (tbody) {
+    if (!intClients.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--m)">暂无客户端接入调用记录</td></tr>';
+    } else {
+      if (!selectedIntegrationClient || !intClients.some(c => c.clientId === selectedIntegrationClient)) {
+        selectedIntegrationClient = intClients[0].clientId;
+      }
+      tbody.innerHTML = intClients.map(c => {
+        let isSel = c.clientId === selectedIntegrationClient;
+        let brandColor = getBrandColor(c.clientId);
+        let clientLabel = formatHumanLabel(c.clientId);
+        let succColor = c.requests === 0 ? "var(--m)" : (c.successRate >= 80 ? "var(--g)" : (c.successRate >= 50 ? "var(--w)" : "var(--r)"));
+        let channelBadge = '<span class="badge" style="background:var(--l)">开放 API</span>';
+        if (c.channel === "web") channelBadge = '<span class="badge" style="background:color-mix(in srgb,#206bc4 15%,var(--p));color:#206bc4">网页端</span>';
+        else if (c.channel === "plugin") channelBadge = '<span class="badge" style="background:color-mix(in srgb,#8b5cf6 15%,var(--p));color:#8b5cf6">播放器插件</span>';
+        else if (c.channel === "cli") channelBadge = '<span class="badge" style="background:color-mix(in srgb,#10b981 15%,var(--p));color:#10b981">CLI 终端</span>';
+
+        let topMeta = [c.topVersion ? "v: " + c.topVersion : "", c.topHost ? "os: " + c.topHost : ""].filter(Boolean).join(" · ") || "—";
+        return '<tr class="client-row' + (isSel ? ' selected-row' : '') + '" data-client-id="' + esc(c.clientId) + '" style="cursor:pointer;background:' + (isSel ? 'color-mix(in srgb,var(--a) 8%,var(--p))' : 'transparent') + '">'
+          + '<td><div style="display:flex;align-items:center;gap:6px"><span class="b-dot" style="background:' + brandColor + '"></span><div><strong style="color:var(--t)">' + esc(clientLabel) + '</strong><div class="muted" style="font-size:10.5px;font-family:var(--mono)">' + esc(c.clientId) + '</div></div></div></td>'
+          + '<td>' + channelBadge + '</td>'
+          + '<td style="text-align:right;font-family:var(--mono);font-weight:700">' + fmt(c.requests) + '</td>'
+          + '<td style="text-align:right;font-family:var(--mono);font-weight:700;color:' + succColor + '">' + pct(c.successRate) + '</td>'
+          + '<td style="text-align:right;font-size:11px;font-weight:600;color:' + c.requestDeltaColor + '">' + esc(c.requestDeltaText) + '</td>'
+          + '<td style="font-size:11px;color:var(--m)"><span title="' + esc(topMeta) + '">' + esc(topMeta) + '</span></td>'
+          + '<td style="text-align:right"><button class="btn-sm client-select-btn" data-client-id="' + esc(c.clientId) + '" style="' + (isSel ? 'background:var(--a);color:#fff;border-color:var(--a)' : '') + '">' + (isSel ? '当前查看 ✔' : '查看详情 🔍') + '</button></td>'
+          + '</tr>';
+      }).join("");
+
+      tbody.querySelectorAll(".client-row").forEach(row => {
+        row.addEventListener("click", () => {
+          let cid = row.dataset.clientId;
+          if (cid && cid !== selectedIntegrationClient) {
+            selectedIntegrationClient = cid;
+            render();
+          }
+        });
+      });
+    }
+  }
+
+  let activeClient = intClients.find(c => c.clientId === selectedIntegrationClient) || intClients[0];
+  if (activeClient) {
+    let dotEl = $("#drilldownClientDot");
+    if (dotEl) dotEl.style.background = getBrandColor(activeClient.clientId);
+    let titleEl = $("#drilldownClientTitle");
+    if (titleEl) titleEl.textContent = formatHumanLabel(activeClient.clientId) + " (" + activeClient.clientId + ") 深度下钻分析";
+    let subEl = $("#drilldownClientSub");
+    if (subEl) subEl.textContent = "渠道: " + formatHumanLabel(activeClient.channel) + " · 解析请求量: " + fmt(activeClient.requests) + " · 成功率: " + pct(activeClient.successRate) + " · 环比: " + activeClient.requestDeltaText;
+    let badgesEl = $("#drilldownClientBadges");
+    if (badgesEl) {
+      badgesEl.innerHTML = '<span class="badge" style="background:var(--l);font-size:11px">' + esc(activeClient.channel) + '</span>'
+        + '<span class="badge" style="background:color-mix(in srgb,var(--a) 15%,var(--p));color:var(--a);font-size:11px">' + pct(activeClient.successRate) + ' 成功率</span>';
+    }
+    bars("#clientVersionBars", activeClient.versionDistribution);
+    bars("#clientHostBars", activeClient.hostDistribution);
+  }
+
+  bars("#migrationBars", b.migration_destination);
+  bars("#migrationProviderBars", b.migration_provider);
 
   // 5. Security Page
+  let rateLimitedCount = o.rate_limited || (b.rate_limit_endpoint || []).reduce((acc, c) => acc + c.count, 0);
+  let resolveReq = o.resolve_request || 0;
+  let normalizedRate = resolveReq > 0 ? (rateLimitedCount / resolveReq * 1000).toFixed(1) : '0.0';
+
   kpis("#securityKpis",[
-    ["Rate Limited",fmt(o.rate_limited),"HTTP 429 拦截"],
-    ["API Channel",fmt(apiReq),"正常产品流量"],
-    ["Plugin Channel",fmt(pluginReq),"正常产品流量"],
-    ["Quarantine","见下方","安全取证记录"],
-    ["Legacy Mixed",pct(q.legacyMixedShare),"历史未标记来源"],
-    ["Data Health",q.status==="healthy"?"Healthy":"Error",""]
+    ["429 速率拦截 (Count)", fmt(rateLimitedCount), "HTTP 429 频控拦截"],
+    ["429 拦截率 (Normalized)", normalizedRate + " / 1k req", "每千次请求触发限流率"],
+    ["开放 API 调用 (Product)", fmt(apiReq), "正常产品流量 · 非安全攻击"],
+    ["播放器插件流量 (Product)", fmt(pluginReq), "正常产品流量 · 非安全攻击"],
+    ["Quarantine 存证", "见下方", "安全隔离与取证记录"],
+    ["历史未标来源", pct(q.legacyMixedShare), "历史平滑过渡数据"]
   ]);
+  scopeNote("#securityScope","安全风控与隔离取证仅支持日期、目标平台及地域筛选；Channel 与 Client 为正常产品流量维度，不作用于安全防护层。",true,false);
   bars("#rateBars",b.rate_limit_endpoint);
 
   // 6. DAU Page
@@ -4026,10 +5000,17 @@ async function quarantine(){
     let d=await api("/api/quarantine?"+qp.toString()),rows=d.quarantine||[],m=new Map();
     currentQuarantineRows = rows;
     let totalBadge = $("#quarantineCountBadge");
-    if(totalBadge) totalBadge.textContent = (d.totalRecords || rows.length) + " 条隔离记录";
+    if(totalBadge) totalBadge.textContent = fmt(d.totalRecords || rows.length) + " 条记录 · " + fmt(d.totalEvents || rows.length) + " 次拦截";
 
-    rows.forEach(x=>m.set(x.reason||"unknown",(m.get(x.reason||"unknown")||0)+Number(x.count||0)));
-    bars("#quarantineSummary",Array.from(m,([name,count])=>({name,count})));
+    let trendItems = (d.timeseries || []).map(t => ({ name: (t.date || "").slice(5), count: t.events || t.count }));
+    bars("#quarantineTrendBars", trendItems);
+
+    if (d.reasons && d.reasons.length) {
+      bars("#quarantineSummary", d.reasons);
+    } else {
+      rows.forEach(x=>m.set(x.reason||"unknown",(m.get(x.reason||"unknown")||0)+Number(x.count||0)));
+      bars("#quarantineSummary",Array.from(m,([name,count])=>({name,count})));
+    }
 
     $("#quarantineRows").innerHTML = rows.map((x, idx) => {
       let timeStr = esc(String(x.quarantined_at || x.incident_date || "").replace("T", " ").slice(0, 19));
@@ -4142,6 +5123,90 @@ async function feedbackCountCheck(){
   }catch(e){}
 }
 
+let currentFbStatus = "pending";
+let currentFbSort = "recent";
+let currentFbErrorCode = "";
+let currentFbData = null;
+
+function renderFeedbackRows(){
+  if (!currentFbData) return;
+  let rows = (currentFbData.entries || []).slice();
+  if (currentFbErrorCode) {
+    rows = rows.filter(x => (x.error_code || "") === currentFbErrorCode);
+  }
+  if (currentFbSort === "frequent") {
+    rows.sort((a, b) => (b.report_count || 0) - (a.report_count || 0) || (b.id || 0) - (a.id || 0));
+  } else if (currentFbSort === "oldest_pending") {
+    rows.sort((a, b) => (a.id || 0) - (b.id || 0));
+  } else {
+    // recent
+    rows.sort((a, b) => {
+      let tA = a.last_reported_at || a.first_reported_at || "";
+      let tB = b.last_reported_at || b.first_reported_at || "";
+      return tB.localeCompare(tA) || (b.id || 0) - (a.id || 0);
+    });
+  }
+
+  $("#feedbackRows").innerHTML=rows.map(x=>{
+    let actualUrl = x.source_url || x.url;
+    let urlStr=esc(actualUrl||"—");
+    let urlHtml=actualUrl
+      ? '<div style="display:flex;align-items:center;gap:6px">'
+        + '<span class="url-cell" title="'+urlStr+'">'+urlStr+'</span>'
+        + '<button class="btn-sm cp-btn" data-url="'+urlStr+'">复制</button>'
+        + '<a href="'+urlStr+'" target="_blank" rel="noreferrer" class="btn-sm" style="text-decoration:none;color:var(--a)">测试 ↗</a>'
+        + '</div>'
+      : '<span class="muted">—</span>';
+    let st=x.status||"pending";
+    let stCls=st==="resolved"?"resolved":(st==="ignored"?"ignored":"pending");
+    let stTxt=st==="resolved"?"已修复":(st==="ignored"?"已忽略":"待处理");
+    let actions=['pending','resolved','ignored'].filter(s=>s!==st).map(s=>{
+      let txt=s==="resolved"?"标为修复":(s==="ignored"?"忽略":"重开");
+      let cls=s==="resolved"?"btn-sm ok":"btn-sm";
+      return '<button class="'+cls+' status-btn" data-id="'+x.id+'" data-status="'+s+'">'+txt+'</button>';
+    }).join(" ");
+
+    let geoParts = [];
+    if (x.country && x.country !== "UNKNOWN") geoParts.push(formatHumanLabel(x.country));
+    if (x.region && x.region !== "UNKNOWN") geoParts.push(formatHumanLabel(x.region));
+    if (x.city && x.city !== "UNKNOWN") geoParts.push(esc(x.city));
+    let geoStr = geoParts.length ? geoParts.join(" · ") : "—";
+
+    return '<tr>'
+      + '<td style="font-family:var(--mono)">#'+esc(x.id)+'</td>'
+      + '<td><span style="font-weight:600;color:'+getBrandColor(x.platform)+'">'+esc(formatHumanLabel(x.platform||"unknown"))+'</span></td>'
+      + '<td>'+urlHtml+'</td>'
+      + '<td><span class="badge" style="background:var(--l);font-family:var(--mono)">'+esc(x.error_code||"—")+'</span></td>'
+      + '<td style="font-size:11px;color:var(--m)"><span title="'+esc(geoStr)+'">'+esc(geoStr)+'</span></td>'
+      + '<td style="text-align:center;font-weight:700;font-family:var(--mono)">'+fmt(x.report_count)+'</td>'
+      + '<td class="muted" style="font-size:11px">'+esc(String(x.last_reported_at||x.first_reported_at||"").replace("T"," ").slice(0,19))+'</td>'
+      + '<td><span class="badge '+stCls+'">'+stTxt+'</span></td>'
+      + '<td style="text-align:right">'+actions+'</td>'
+      + '</tr>';
+  }).join("")||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--m)">当前分类无反馈记录</td></tr>';
+
+  $$('#feedbackRows .status-btn').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    let orig=b.textContent;
+    b.textContent="处理中…";
+    try{
+      await api('/api/feedback?id='+encodeURIComponent(b.dataset.id)+'&status='+encodeURIComponent(b.dataset.status),{method:'PUT'});
+      feedbackLoaded=false;
+      await feedback(currentFbStatus);
+    }catch(e){
+      b.disabled=false;
+      b.textContent=orig;
+      alert('更新失败：'+e.message);
+    }
+  });
+
+  $$('#feedbackRows .cp-btn').forEach(b=>b.onclick=()=>{
+    navigator.clipboard.writeText(b.dataset.url).then(()=>{
+      let o=b.textContent;b.textContent="已复制";setTimeout(()=>b.textContent=o,1200);
+    });
+  });
+}
+
 async function feedback(status="pending"){
   currentFbStatus=status;
   $$(".fb-tab").forEach(b=>b.classList.toggle("active",b.dataset.fbStatus===status));
@@ -4150,7 +5215,8 @@ async function feedback(status="pending"){
     qp.set("limit","100");
     if(status&&status!=="all")qp.set("status",status);
     else qp.delete("status");
-    let d=await api("/api/feedback?"+qp.toString()),rows=d.entries||[];
+    let d=await api("/api/feedback?"+qp.toString());
+    currentFbData=d;
     if(d.counts){
       $("#fbCountAll").textContent=d.counts.all||0;
       $("#fbCountPending").textContent=d.counts.pending||0;
@@ -4162,66 +5228,86 @@ async function feedback(status="pending"){
         else{badge.style.display="none"}
       }
     }
-    $("#feedbackRows").innerHTML=rows.map(x=>{
-      let urlStr=esc(x.url||"—");
-      let urlHtml=x.url
-        ? '<div style="display:flex;align-items:center;gap:6px">'
-          + '<span class="url-cell" title="'+urlStr+'">'+urlStr+'</span>'
-          + '<button class="btn-sm cp-btn" data-url="'+urlStr+'">复制</button>'
-          + '<a href="'+urlStr+'" target="_blank" rel="noreferrer" class="btn-sm" style="text-decoration:none;color:var(--a)">测试 ↗</a>'
-          + '</div>'
-        : '<span class="muted">—</span>';
-      let st=x.status||"pending";
-      let stCls=st==="resolved"?"resolved":(st==="ignored"?"ignored":"pending");
-      let stTxt=st==="resolved"?"已修复":(st==="ignored"?"已忽略":"待处理");
-      let actions=['pending','resolved','ignored'].filter(s=>s!==st).map(s=>{
-        let txt=s==="resolved"?"标为修复":(s==="ignored"?"忽略":"重开");
-        let cls=s==="resolved"?"btn-sm ok":"btn-sm";
-        return '<button class="'+cls+' status-btn" data-id="'+x.id+'" data-status="'+s+'">'+txt+'</button>';
-      }).join(" ");
 
-      let geoParts = [];
-      if (x.country && x.country !== "UNKNOWN") geoParts.push(formatHumanLabel(x.country));
-      if (x.region && x.region !== "UNKNOWN") geoParts.push(formatHumanLabel(x.region));
-      if (x.city && x.city !== "UNKNOWN") geoParts.push(esc(x.city));
-      let geoStr = geoParts.length ? geoParts.join(" · ") : "—";
+    // Render Feedback KPIs
+    let stats = d.stats || {};
+    let topPlat = stats.topPlatform && stats.topPlatform !== "—" ? formatHumanLabel(stats.topPlatform) : "—";
+    kpis("#feedbackKpis", [
+      ["待处理歌单", fmt(d.counts?.pending || 0), "等待复现与核验"],
+      ["累计报错人次", fmt(stats.totalReports || 0), "受影响用户上报总量"],
+      ["独立失败链接", fmt(stats.uniqueUrls || 0), "去重歌单 URL 条数"],
+      ["最频发平台", esc(topPlat), "主要失败集中源"],
+      ["主要错误分类", esc(stats.topErrorCode || "—"), "最频发报错原因"]
+    ]);
 
-      return '<tr>'
-        + '<td style="font-family:var(--mono)">#'+esc(x.id)+'</td>'
-        + '<td><span style="font-weight:600;color:'+getBrandColor(x.platform)+'">'+esc(formatHumanLabel(x.platform||"unknown"))+'</span></td>'
-        + '<td>'+urlHtml+'</td>'
-        + '<td><span class="badge" style="background:var(--l);font-family:var(--mono)">'+esc(x.error_code||"—")+'</span></td>'
-        + '<td style="font-size:11px;color:var(--m)"><span title="'+esc(geoStr)+'">'+esc(geoStr)+'</span></td>'
-        + '<td style="text-align:center;font-weight:700;font-family:var(--mono)">'+fmt(x.report_count)+'</td>'
-        + '<td class="muted" style="font-size:11px">'+esc(String(x.last_reported_at||x.first_reported_at||"").replace("T"," ").slice(0,19))+'</td>'
-        + '<td><span class="badge '+stCls+'">'+stTxt+'</span></td>'
-        + '<td style="text-align:right">'+actions+'</td>'
-        + '</tr>';
-    }).join("")||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--m)">当前分类无反馈记录</td></tr>';
+    // Populate error code dropdown
+    let errSelect = $("#feedbackErrorCode");
+    if (errSelect && d.availableErrorCodes) {
+      let oldVal = currentFbErrorCode;
+      errSelect.innerHTML = '<option value="">全部错误分类 (All Errors · ' + (d.total || 0) + ')</option>'
+        + d.availableErrorCodes.map(c => '<option value="' + esc(c.name) + '"' + (c.name === oldVal ? ' selected' : '') + '>' + esc(c.name) + ' (' + c.count + ' 条)</option>').join("");
+    }
 
-    $$('#feedbackRows .status-btn').forEach(b=>b.onclick=async()=>{
-      b.disabled=true;
-      let orig=b.textContent;
-      b.textContent="处理中…";
-      try{
-        await api('/api/feedback?id='+encodeURIComponent(b.dataset.id)+'&status='+encodeURIComponent(b.dataset.status),{method:'PUT'});
-        feedbackLoaded=false;
-        await feedback(currentFbStatus);
-      }catch(e){
-        b.disabled=false;
-        b.textContent=orig;
-        alert('更新失败：'+e.message);
-      }
-    });
+    let sortSelect = $("#feedbackSort");
+    if (sortSelect) sortSelect.value = currentFbSort;
 
-    $$('#feedbackRows .cp-btn').forEach(b=>b.onclick=()=>{
-      navigator.clipboard.writeText(b.dataset.url).then(()=>{
-        let o=b.textContent;b.textContent="已复制";setTimeout(()=>b.textContent=o,1200);
-      });
-    });
+    renderFeedbackRows();
     feedbackLoaded=true;
   }catch(e){
-    $("#feedbackRows").innerHTML='<tr><td colspan="8">'+esc(e.message)+'</td></tr>';
+    $("#feedbackRows").innerHTML='<tr><td colspan="9" style="color:var(--r);padding:14px">'+esc(e.message)+'</td></tr>';
+  }
+}
+
+const PAGE_FILTER_CAPABILITIES = {
+  overview: { supportedDimensions: [], scopeNote: "业务总览展示全站宏观指标与核心趋势，仅支持时间范围筛选。" },
+  web: { supportedDimensions: ["country", "region"], scopeNote: "官网地域分析针对 Web 独立访客 (UV)；环境与来源指标属于事件级分布。" },
+  reliability: { supportedDimensions: ["channel", "client", "platform"], scopeNote: "稳定与性能指标支持渠道、接入端与目标平台筛选（不适用地域维度）。" },
+  usage: { supportedDimensions: ["channel", "client", "platform"], scopeNote: "使用偏好分析覆盖来源渠道、接入端与音乐平台维度。" },
+  integrations: { supportedDimensions: ["client", "channel"], scopeNote: "生态集成分析覆盖客户端与渠道维度（平台维度不适用）。" },
+  feedback: { supportedDimensions: ["platform", "country", "region"], scopeNote: "待审歌单队列支持按音乐平台及上报地域筛选（客户端与渠道维度不适用）。" },
+  security: { supportedDimensions: ["platform", "country", "region"], scopeNote: "安全风控与拦截报文支持按攻击目标平台及来源地域筛选（客户端与渠道维度不适用）。" },
+  dau: { supportedDimensions: ["channel", "country", "region"], scopeNote: "活跃趋势支持按活跃渠道（网页、插件、CLI）与地域筛选。" },
+};
+
+function applyPageFilters(page) {
+  let caps = PAGE_FILTER_CAPABILITIES[page] || { supportedDimensions: [], scopeNote: "" };
+  let supported = new Set(caps.supportedDimensions);
+  let scopeEl = $("#filterScopeNote");
+  if (scopeEl) {
+    scopeEl.textContent = caps.scopeNote || "";
+    scopeEl.style.display = caps.scopeNote ? "inline-block" : "none";
+  }
+  let needsReload = false;
+  ["channel", "client", "platform", "country", "region"].forEach(dim => {
+    let f = document.querySelector('.field[data-filter="' + dim + '"]');
+    let sel = $("#" + dim);
+    if (f) f.style.display = supported.has(dim) ? "" : "none";
+    if (!supported.has(dim) && sel && sel.value) {
+      sel.value = "";
+      needsReload = true;
+    }
+  });
+  let rst = document.querySelector('.field[data-filter="reset"]');
+  if (rst) rst.style.display = caps.supportedDimensions.length > 0 ? "" : "none";
+
+  let chSel = $("#channel");
+  if (page === "dau") {
+    if (chSel) {
+      let cur = chSel.value;
+      chSel.innerHTML = '<option value="">全部渠道 (活跃度有效)</option><option value="web"' + (cur==="web"?" selected":"") + '>网页端 (Web)</option><option value="plugin"' + (cur==="plugin"?" selected":"") + '>播放器插件 (Plugin)</option><option value="cli"' + (cur==="cli"?" selected":"") + '>命令行 (CLI)</option>';
+      if (cur !== "" && cur !== "web" && cur !== "plugin" && cur !== "cli") {
+        chSel.value = "";
+        needsReload = true;
+      }
+    }
+  } else {
+    if (chSel && chSel.options.length <= 4) {
+      let cur = chSel.value;
+      chSel.innerHTML = '<option value="">全部渠道</option><option value="web"' + (cur==="web"?" selected":"") + '>网页端 (Web)</option><option value="cli"' + (cur==="cli"?" selected":"") + '>命令行 (CLI)</option><option value="plugin"' + (cur==="plugin"?" selected":"") + '>播放器插件 (Plugin)</option><option value="api"' + (cur==="api"?" selected":"") + '>开放接口 (API)</option><option value="legacy_mixed"' + (cur==="legacy_mixed"?" selected":"") + '>历史混合渠道 (Legacy V1)</option>';
+    }
+  }
+  if (needsReload) {
+    load();
   }
 }
 
@@ -4234,6 +5320,10 @@ $$(".tab").forEach(b=>b.onclick=()=>{
   if(window.scrollY>150){
     window.scrollTo({top:0,behavior:"instant"});
   }
+  if (window.location.hash !== "#" + b.dataset.page) {
+    history.replaceState(null, "", "#" + b.dataset.page);
+  }
+  applyPageFilters(b.dataset.page);
   if(b.dataset.page==="security"&&!quarantineLoaded)quarantine();
   if(b.dataset.page==="feedback"&&!feedbackLoaded)feedback(currentFbStatus);
   if(b.dataset.page==="overview")requestAnimationFrame(drawCanvasChart);
@@ -4293,12 +5383,34 @@ $("#refreshData").onclick=async()=>{
   }
 };
 $("#reloadFeedback").onclick=()=>{feedbackLoaded=false;feedback(currentFbStatus)};
+let fbSortSelect = $("#feedbackSort");
+if (fbSortSelect) {
+  fbSortSelect.onchange = (e) => {
+    currentFbSort = e.target.value;
+    renderFeedbackRows();
+  };
+}
+let fbErrSelect = $("#feedbackErrorCode");
+if (fbErrSelect) {
+  fbErrSelect.onchange = (e) => {
+    currentFbErrorCode = e.target.value;
+    renderFeedbackRows();
+  };
+}
 
 let closeFModal=$("#closeForensicModal");
 if(closeFModal)closeFModal.onclick=()=>{$("#forensicModal").style.display="none"};
 let fModal=$("#forensicModal");
 if(fModal)fModal.onclick=e=>{if(e.target===fModal)fModal.style.display="none"};
 
+if (window.location.hash) {
+  let h = window.location.hash.replace(/^#/, "");
+  let tabBtn = document.querySelector('.tab[data-page="' + h + '"]');
+  if (tabBtn) tabBtn.click();
+  else applyPageFilters("overview");
+} else {
+  applyPageFilters("overview");
+}
 markPreset("all");
 updateExcludeMyUI();
 initViewSwitches();
