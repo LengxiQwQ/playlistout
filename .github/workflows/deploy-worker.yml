@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'worker/**'
-      - 'scripts/**'
+      - 'scripts/d1/**'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 

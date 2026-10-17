@@ -133,6 +133,20 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(cachesHandle.cache.put).not.toHaveBeenCalled();
   });
 
+  it('bypasses edge cache when ?verify query parameter is present', async () => {
+    cachesHandle.cache.match.mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: { cached: true } }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats?verify=123');
+    const response = await worker.fetch(request, {}, createMockCtx());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate');
+    expect(cachesHandle.cache.match).not.toHaveBeenCalled();
+    expect(cachesHandle.cache.put).not.toHaveBeenCalled();
+  });
+
   it('rejects non-GET methods on /api/playlist with 405 Method Not Allowed', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://y.qq.com/n/ryqq/playlist/123', {
       method: 'POST',

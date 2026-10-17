@@ -50,11 +50,14 @@ const handleStats = async (c: any) => {
   }
 
   // Edge cache: share one stats snapshot across all clients for 90 seconds
+  const shouldBypassCache = url.searchParams.has('verify');
   const statsCache = caches.default;
   const statsCacheKey = 'https://playlistout-api.internal/cache/public-stats';
-  const cachedStatsResponse = await statsCache.match(statsCacheKey);
-  if (cachedStatsResponse) {
-    return cachedStatsResponse;
+  if (!shouldBypassCache) {
+    const cachedStatsResponse = await statsCache.match(statsCacheKey);
+    if (cachedStatsResponse) {
+      return cachedStatsResponse;
+    }
   }
 
   const stats: PublicStatsResponse = await getPublicStats(env.DB);
@@ -67,12 +70,14 @@ const handleStats = async (c: any) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=90, s-maxage=90',
+        'Cache-Control': shouldBypassCache
+          ? 'no-cache, no-store, must-revalidate'
+          : 'public, max-age=90, s-maxage=90',
         ...responseHeaders,
       },
     },
   );
-  if (ctx && typeof ctx.waitUntil === 'function') {
+  if (!shouldBypassCache && ctx && typeof ctx.waitUntil === 'function') {
     ctx.waitUntil(statsCache.put(statsCacheKey, statsResponse.clone()));
   }
   return statsResponse;

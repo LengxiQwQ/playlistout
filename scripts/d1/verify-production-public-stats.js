@@ -10,6 +10,8 @@
  * than merely proving that the database itself is internally consistent.
  */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { executeD1Query } from './verify-migration-history.js';
 
 const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui', 'migu'];
@@ -262,19 +264,36 @@ export function verifyExpectedIsBracketed(first, expected, second) {
 }
 
 export async function verifyProductionPublicStats(options = {}) {
-  const first = await fetchPublicStats(options);
-  const expected = await collectExpectedPublicStats(options);
-  const second = await fetchPublicStats(options);
-  const checks = verifyExpectedIsBracketed(first, expected, second);
+  const maxRetries = options.retries ?? 3;
+  let lastError;
 
-  return {
-    verified: true,
-    checks,
-    generatedAt: second.generatedAt || null,
-  };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const first = await fetchPublicStats(options);
+      const expected = await collectExpectedPublicStats(options);
+      const second = await fetchPublicStats(options);
+      const checks = verifyExpectedIsBracketed(first, expected, second);
+
+      return {
+        verified: true,
+        checks,
+        generatedAt: second.generatedAt || null,
+      };
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        console.warn(
+          `[reconciliation attempt ${attempt}/${maxRetries} failed: ${err.message}. Retrying in 3s...]`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   verifyProductionPublicStats({ remote: true })
     .then((result) => {
       console.log(
