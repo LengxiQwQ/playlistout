@@ -1,0 +1,44 @@
+{
+  "name": "playlistout",
+  "version": "3.0.0",
+  "description": "PlaylistOut (把你的歌单带走) - 全平台音乐歌单统一导出工具",
+  "main": "bin/playlistout.js",
+  "bin": {
+    "playlistout": "bin/playlistout.js",
+    "PlaylistOut": "bin/playlistout.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node bin/playlistout.js --version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LengxiQwQ/playlistout.git"
+  },
+  "keywords": [
+    "playlistout",
+    "playlist",
+    "music",
+    "export",
+    "cli",
+    "qqmusic",
+    "netease",
+    "kugou",
+    "kuwo",
+    "qishui",
+    "migu"
+  ],
+  "author": "LengxiQwQ",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LengxiQwQ/playlistout/issues"
+  },
+  "homepage": "https://github.com/LengxiQwQ/playlistout#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
