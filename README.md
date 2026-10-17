@@ -28,7 +28,7 @@
 
 | 获取方式 | 适合场景 | 安装与使用 |
 | :--- | :--- | :--- |
-| ⚡ **包管理器安装** | 喜欢终端命令的玩家 | `npm install -g playlistout`<br>*(装完输入 `playlistout` 启动)* |
+| ⚡ **包管理器安装** | 喜欢终端命令的玩家 | `npm install -g playlistout` (装完输入 `playlistout` 启动) |
 | 🗂️ **单文件免安装** | 喜欢桌面双击的用户 | [前往 Releases 下载单文件](https://github.com/LengxiQwQ/playlistout/releases/latest) |
 
 > 💡 注：WinGet (`winget install LengxiQwQ.PlaylistOut`) 与 Scoop 官方源正在同步审核中。
