@@ -60,7 +60,7 @@ describe('Activity & DAU Engine Redesign', () => {
     feedback: [],
   };
 
-  it('1. calculates same-hour comparison for Today vs Yesterday (123 vs 100 at 14:00)', () => {
+  it('1. calculates same-hour comparison for Today vs Yesterday strictly up to latest completed full hour (115 vs 90 at 13:00)', () => {
     const slice = buildAnalyticsSlice(baseSnapshot, { from: '2026-10-17', to: '2026-10-17' });
     const dau = slice.dau;
 
@@ -71,11 +71,14 @@ describe('Activity & DAU Engine Redesign', () => {
     const comp = dau.comparison!;
     expect(comp.isSameHour).toBe(true);
     expect(comp.currentHour).toBe(14);
-    expect(comp.targetCount).toBe(123);
-    expect(comp.comparisonCount).toBe(100);
-    expect(comp.deltaCount).toBe(23);
-    expect(comp.deltaPercent).toBe(23.0); // +23%
+    expect(comp.effectiveHour).toBe(13);
+    expect(comp.hasFullHour).toBe(true);
+    expect(comp.targetCount).toBe(115);
+    expect(comp.comparisonCount).toBe(90);
+    expect(comp.deltaCount).toBe(25);
+    expect(comp.deltaPercent).toBe(27.8); // (115 - 90) / 90 = +27.8%
     expect(comp.comparable).toBe(true);
+    expect(comp.label).toContain('00:00~13:00');
   });
 
   it('2. converts hourly increments to cumulative series and leaves future hours null for today', () => {
@@ -229,26 +232,25 @@ describe('Activity & DAU Engine Redesign', () => {
     expect(mfRow).toBeDefined();
     expect(cliRow).toBeDefined();
 
-    // At hour 14 on 2026-10-17:
+    // At snapshot 14:30, hour 14 is in progress, so cutoff is strictly hour 13:
     // Web: 35 (h8) + 55 (h12) = 90
-    // Web yesterday at h14: 30 (h8) + 40 (h12) = 70
+    // Web yesterday at h13: 30 (h8) + 40 (h12) = 70
     expect(webRow.targetCount).toBe(90);
     expect(webRow.comparisonCount).toBe(70);
     expect(webRow.deltaCount).toBe(20);
 
     // MusicFree: 25 (h10)
-    // MusicFree yesterday at h14: 20 (h10)
+    // MusicFree yesterday at h13: 20 (h10)
     expect(mfRow.targetCount).toBe(25);
     expect(mfRow.comparisonCount).toBe(20);
     expect(mfRow.deltaCount).toBe(5);
     expect(mfRow.deltaPercent).toBe(25.0);
 
-    // CLI: 8 (h14)
-    // CLI yesterday at h14: 10 (h14)
-    expect(cliRow.targetCount).toBe(8);
-    expect(cliRow.comparisonCount).toBe(10);
-    expect(cliRow.deltaCount).toBe(-2);
-    expect(cliRow.deltaPercent).toBe(-20.0);
+    // CLI: records are at h14. Since h14 is incomplete, cumulative at h13 is 0.
+    expect(cliRow.targetCount).toBe(0);
+    expect(cliRow.comparisonCount).toBe(0);
+    expect(cliRow.deltaCount).toBe(0);
+    expect(cliRow.deltaPercent).toBeNull();
   });
 
   it('12. enforces fair cutoff to latest completed full hour when current clock hour is in-progress', () => {
@@ -327,6 +329,30 @@ describe('Activity & DAU Engine Redesign', () => {
     // In multi-day mode, targetCount holds currentPeriodDailyAvg and comparisonCount holds previousPeriodDailyAvg
     expect(webRow.targetCount).toBe(webRow.currentPeriodDailyAvg);
     expect(webRow.comparisonCount).toBe(webRow.previousPeriodDailyAvg);
+  });
+
+  it('16. handles midnight 00:xx UTC gracefully without full completed hour', () => {
+    const midnightSnapshot: AnalyticsSnapshot = {
+      ...baseSnapshot,
+      generatedAt: '2026-10-17T00:30:00Z',
+      hourlyCore: [
+        { date: '2026-10-16', hour: 0, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 10 },
+        { date: '2026-10-17', hour: 0, channel: 'web', client_id: 'official_web', metric: 'visitor_unique', count: 5 },
+      ],
+    };
+
+    const slice = buildAnalyticsSlice(midnightSnapshot, { from: '2026-10-17', to: '2026-10-17' });
+    const comp = slice.dau.comparison!;
+    const single = slice.dau.singleDay!;
+
+    expect(comp.isSameHour).toBe(true);
+    expect(comp.currentHour).toBe(0);
+    expect(comp.effectiveHour).toBeNull();
+    expect(comp.hasFullHour).toBe(false);
+    expect(comp.label).toContain('暂无完整小时可比较');
+    expect(single.hasFullHour).toBe(false);
+    expect(comp.comparisonCount).toBe(0);
+    expect(comp.deltaPercent).toBeNull();
   });
 });
 

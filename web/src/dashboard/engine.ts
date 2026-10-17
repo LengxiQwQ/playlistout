@@ -569,19 +569,18 @@ export function detectDauCoverage(rows: SnapshotDailyCoreRow[]): DauCoverage {
   for (const row of rows) {
     const d = String(row.date || '').trim();
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
-    const cnt = Number(row.count || 0);
     const m = String(row.metric || '').trim();
     const ch = String(row.channel || '').trim();
 
     if (m === 'visitor_unique' && (ch === 'web' || !ch)) {
       hasWeb = true;
-      if (cnt > 0 && (!minWeb || d < minWeb)) minWeb = d;
+      if (!minWeb || d < minWeb) minWeb = d;
     } else if (m === 'active_user' && ch === 'plugin') {
       hasPlugin = true;
-      if (cnt > 0 && (!minPlugin || d < minPlugin)) minPlugin = d;
+      if (!minPlugin || d < minPlugin) minPlugin = d;
     } else if (m === 'active_user' && ch === 'cli') {
       hasCli = true;
-      if (cnt > 0 && (!minCli || d < minCli)) minCli = d;
+      if (!minCli || d < minCli) minCli = d;
     }
   }
 
@@ -933,10 +932,12 @@ export function buildAnalyticsSlice(
   const dauToday = dauAllDatesMap.get(targetDate) || dauByDate.get(targetDate) || emptyDauTotals();
   const dauYesterday = dauAllDatesMap.get(comparisonDate) || dauByDate.get(comparisonDate) || emptyDauTotals();
 
-  // Determine currentHour & effectiveHour (for today: fair comparison cutoff up to latest full hour)
+  // Determine currentHour & effectiveHour (for today: fair comparison cutoff up to latest completed full hour)
   let currentHour = 23;
-  let effectiveHour = 23;
+  let effectiveHour: number | null = 23;
+  let hasFullHour = true;
   let isLatestFullHour = true;
+
   if (isToday) {
     const todayHours = hourly
       .filter((r) => r.date === targetDate && DAU_METRICS.has(String(r.metric || '').trim()))
@@ -944,15 +945,19 @@ export function buildAnalyticsSlice(
     const maxH = todayHours.length > 0 ? Math.max(...todayHours) : 0;
     const genDate = snapshot.generatedAt ? new Date(snapshot.generatedAt) : new Date();
     const genH = genDate.getUTCHours();
-    const genMin = genDate.getUTCMinutes();
     currentHour = Math.min(23, Math.max(maxH, genH));
 
-    if (currentHour > 0 && maxH < genH && genMin < 50) {
-      effectiveHour = currentHour - 1;
+    // Today's current clock hour (genH) is underway and incomplete.
+    // The latest completed full hour is strictly genH - 1.
+    // If genH === 0 (e.g. 00:30 UTC), no full hour has elapsed yet today.
+    if (genH > 0) {
+      effectiveHour = Math.min(23, genH - 1);
+      hasFullHour = true;
       isLatestFullHour = true;
     } else {
-      effectiveHour = currentHour;
-      isLatestFullHour = currentHour === 23;
+      effectiveHour = null;
+      hasFullHour = false;
+      isLatestFullHour = false;
     }
   }
 
@@ -1071,7 +1076,10 @@ export function buildAnalyticsSlice(
   // Peak first-active hour on target day
   let peakHour: { hour: number; count: number } | null = null;
   let maxInc = -1;
-  for (let h = 0; h <= (isToday ? effectiveHour : 23); h++) {
+  const maxSearchHour = isToday
+    ? (effectiveHour !== null ? effectiveHour : currentHour)
+    : 23;
+  for (let h = 0; h <= maxSearchHour; h++) {
     const cnt = targetHourly[h].total;
     if (cnt > maxInc) {
       maxInc = cnt;
@@ -1093,35 +1101,76 @@ export function buildAnalyticsSlice(
     incomparableReason = '统计覆盖发生变化（对比日 CLI 尚未采集）';
   }
 
-  const compHourToUse = isToday ? effectiveHour : 23;
-  const targetCount = isSingleDay
-    ? (isToday ? (targetCumulative[compHourToUse]?.targetTotal ?? dauToday.total) : dauToday.total)
-    : dauToday.total;
-  const comparisonCount = isSingleDay
-    ? (isToday ? (targetCumulative[compHourToUse]?.comparisonTotal ?? dauYesterday.total) : dauYesterday.total)
-    : dauYesterday.total;
-  const deltaCount = targetCount - comparisonCount;
-  const deltaPercent = (comparable && comparisonCount > 0)
-    ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
-    : null;
+  let targetCount = 0;
+  let comparisonCount = 0;
+  let deltaCount = 0;
+  let deltaPercent: number | null = null;
+  let baselineCount = 0;
+  let baselineDeltaPercent: number | null = null;
+  let compLabel = '';
+  let targetLabel = '';
 
-  const baselineCount = sevenDayBaseline[compHourToUse]?.total ?? 0;
-  const baselineDelta = targetCount - baselineCount;
-  const baselineDeltaPercent = (comparable && baselineCount > 0)
-    ? Math.round((baselineDelta / baselineCount) * 1000) / 10
-    : null;
+  if (isSingleDay) {
+    if (isToday) {
+      if (effectiveHour !== null) {
+        const hStr = String(effectiveHour).padStart(2, '0') + ':00';
+        compLabel = `较昨日同期 (00:00~${hStr})`;
+        targetLabel = `今日截至 ${hStr}`;
+        targetCount = targetCumulative[effectiveHour]?.targetTotal ?? 0;
+        comparisonCount = targetCumulative[effectiveHour]?.comparisonTotal ?? 0;
+        baselineCount = sevenDayBaseline[effectiveHour]?.total ?? 0;
+        deltaCount = targetCount - comparisonCount;
+        deltaPercent = (comparable && comparisonCount > 0)
+          ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
+          : null;
+        const baselineDelta = targetCount - baselineCount;
+        baselineDeltaPercent = (comparable && baselineCount > 0)
+          ? Math.round((baselineDelta / baselineCount) * 1000) / 10
+          : null;
+      } else {
+        compLabel = '暂无完整小时可比较 (今日 00:00~01:00 尚未结束)';
+        targetLabel = '今日进行中 (未满1小时)';
+        targetCount = targetCumulative[0]?.targetTotal ?? 0;
+        comparisonCount = 0;
+        baselineCount = 0;
+        deltaCount = 0;
+        deltaPercent = null;
+        baselineDeltaPercent = null;
+      }
+    } else {
+      compLabel = '较前日全天';
+      targetLabel = '当日完整';
+      targetCount = dauToday.total;
+      comparisonCount = dauYesterday.total;
+      baselineCount = sevenDayBaseline[23]?.total ?? 0;
+      deltaCount = targetCount - comparisonCount;
+      deltaPercent = (comparable && comparisonCount > 0)
+        ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
+        : null;
+      const baselineDelta = targetCount - baselineCount;
+      baselineDeltaPercent = (comparable && baselineCount > 0)
+        ? Math.round((baselineDelta / baselineCount) * 1000) / 10
+        : null;
+    }
+  } else {
+    compLabel = '较上一等长周期';
+    targetLabel = '期末日';
+    targetCount = dauToday.total;
+    comparisonCount = dauYesterday.total;
+    deltaCount = targetCount - comparisonCount;
+    deltaPercent = (comparable && comparisonCount > 0)
+      ? Math.round(((targetCount - comparisonCount) / comparisonCount) * 1000) / 10
+      : null;
+  }
 
   const comparisonMeta: DauComparisonMeta = {
     mode: isSingleDay ? 'prev_day' : 'prev_period',
-    label: isSingleDay
-      ? (isToday ? `较昨日同期 (00:00~${String(effectiveHour).padStart(2, '0')}:00)` : '较前日全天')
-      : '较上一等长周期',
-    targetLabel: isSingleDay
-      ? (isToday ? `今日截至 ${String(effectiveHour).padStart(2, '0')}:00` : '当日完整')
-      : '期末日',
+    label: compLabel,
+    targetLabel,
     isSameHour: isToday,
     currentHour: isToday ? currentHour : undefined,
     effectiveHour: isToday ? effectiveHour : undefined,
+    hasFullHour: isToday ? hasFullHour : true,
     isLatestFullHour: isToday ? isLatestFullHour : undefined,
     comparable,
     incomparableReason,
@@ -1221,12 +1270,17 @@ export function buildAnalyticsSlice(
 
       if (isSingleDay) {
         if (isToday) {
-          targetCount = isWeb
-            ? (targetCumulative[effectiveHour]?.targetWeb ?? today)
-            : getClientHourlySum(targetDate, client, effectiveHour);
-          compCount = isWeb
-            ? (targetCumulative[effectiveHour]?.comparisonWeb ?? yesterday)
-            : getClientHourlySum(comparisonDate, client, effectiveHour);
+          if (effectiveHour !== null) {
+            targetCount = isWeb
+              ? (targetCumulative[effectiveHour]?.targetWeb ?? today)
+              : getClientHourlySum(targetDate, client, effectiveHour);
+            compCount = isWeb
+              ? (targetCumulative[effectiveHour]?.comparisonWeb ?? yesterday)
+              : getClientHourlySum(comparisonDate, client, effectiveHour);
+          } else {
+            targetCount = 0;
+            compCount = 0;
+          }
         } else {
           targetCount = today;
           compCount = yesterday;
@@ -1358,6 +1412,7 @@ export function buildAnalyticsSlice(
     comparisonDate,
     currentHour,
     effectiveHour,
+    hasFullHour,
     isToday,
     targetCumulative,
     hourlyIncrements: targetHourly,

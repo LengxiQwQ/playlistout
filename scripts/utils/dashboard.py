@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
+from datetime import datetime, timezone, timedelta
 import os
 import sys
 import urllib.error
@@ -77,6 +78,79 @@ def _shift_date(date_str: str, offset_days: int) -> str:
     except Exception:
         return date_str
 
+
+SYSTEM_TELEMETRY_MILESTONES = {
+    "web": {
+        "coverageStart": "2026-03-01",
+        "title": "网页端活跃上线",
+        "description": "Playlist Out Web 统计开始接入",
+    },
+    "plugin": {
+        "coverageStart": "2026-10-15",
+        "title": "生态插件活跃开始采集",
+        "description": "MusicFree 等生态插件接入心跳与活跃遥测",
+    },
+    "cli": {
+        "coverageStart": "2026-10-15",
+        "title": "CLI 活跃开始采集",
+        "description": "Playlist Out CLI 接入使用活跃遥测",
+    },
+}
+
+
+def detect_dau_coverage(rows: list[dict]) -> dict:
+    has_web = False
+    has_plugin = False
+    has_cli = False
+    min_web = None
+    min_plugin = None
+    min_cli = None
+
+    for r in rows:
+        d_str = str(r.get("date", "")).strip()
+        if not d_str:
+            continue
+        m_str = str(r.get("metric", "")).strip()
+        ch_str = str(r.get("channel", "")).strip()
+        if m_str == "visitor_unique" and (ch_str == "web" or not ch_str):
+            has_web = True
+            if not min_web or d_str < min_web:
+                min_web = d_str
+        elif m_str == "active_user" and ch_str == "plugin":
+            has_plugin = True
+            if not min_plugin or d_str < min_plugin:
+                min_plugin = d_str
+        elif m_str == "active_user" and ch_str == "cli":
+            has_cli = True
+            if not min_cli or d_str < min_cli:
+                min_cli = d_str
+
+    web_start = (min_web or SYSTEM_TELEMETRY_MILESTONES["web"]["coverageStart"]) if has_web else None
+    plugin_start = (min_plugin or SYSTEM_TELEMETRY_MILESTONES["plugin"]["coverageStart"]) if has_plugin else None
+    cli_start = (min_cli or SYSTEM_TELEMETRY_MILESTONES["cli"]["coverageStart"]) if has_cli else None
+
+    return {
+        "web": {"earliestDate": web_start, "hasCoverage": has_web},
+        "plugin": {"earliestDate": plugin_start, "hasCoverage": has_plugin},
+        "cli": {"earliestDate": cli_start, "hasCoverage": has_cli},
+    }
+
+
+def generate_dau_annotations(coverage: dict) -> list[dict]:
+    annotations = []
+    for ch in ("web", "plugin", "cli"):
+        info = coverage.get(ch, {})
+        if info.get("hasCoverage") and info.get("earliestDate"):
+            ms = SYSTEM_TELEMETRY_MILESTONES.get(ch, {})
+            annotations.append({
+                "date": info["earliestDate"],
+                "type": "coverage_start",
+                "title": ms.get("title", ""),
+                "description": ms.get("description", ""),
+                "channel": ch,
+            })
+    annotations.sort(key=lambda a: a["date"])
+    return annotations
 
 
 def get_admin_token(repo_root: Path | None = None) -> str | None:
@@ -751,31 +825,11 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
                 client_channel_map[cl] = ch
                 dau_client_window_totals[cl] += count
 
-    min_web = None
-    min_plugin = None
-    min_cli = None
-    for r in snapshot.get("dailyCore", []):
-        cnt = int(r.get("count", 0) or 0)
-        if cnt <= 0:
-            continue
-        d_str = str(r.get("date", "")).strip()
-        m_str = str(r.get("metric", "")).strip()
-        ch_str = str(r.get("channel", "")).strip()
-        if m_str == "visitor_unique" and (ch_str == "web" or not ch_str):
-            if not min_web or d_str < min_web:
-                min_web = d_str
-        elif m_str == "active_user" and ch_str == "plugin":
-            if not min_plugin or d_str < min_plugin:
-                min_plugin = d_str
-        elif m_str == "active_user" and ch_str == "cli":
-            if not min_cli or d_str < min_cli:
-                min_cli = d_str
+    coverage = detect_dau_coverage(snapshot.get("dailyCore", []))
+    annotations = generate_dau_annotations(coverage)
 
-    coverage = {
-        "web": {"earliestDate": min_web, "hasCoverage": min_web is not None},
-        "plugin": {"earliestDate": min_plugin, "hasCoverage": min_plugin is not None},
-        "cli": {"earliestDate": min_cli, "hasCoverage": min_cli is not None},
-    }
+    today_utc = (str(snapshot.get("generatedAt") or "")[:10]) or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    is_today = is_single_day and (target_date == today_utc)
 
     dau_series = [
         {
@@ -791,6 +845,273 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
     dau_today = dau_all_dates_map.get(target_date) or dau_by_date.get(target_date) or _empty_dau_totals()
     dau_yesterday = dau_all_dates_map.get(comparison_date) or dau_by_date.get(comparison_date) or _empty_dau_totals()
 
+    current_hour = 23
+    effective_hour = 23
+    has_full_hour = True
+    is_latest_full_hour = True
+
+    if is_today:
+        today_hours = [
+            int(r.get("hour", 0) or 0)
+            for r in hourly
+            if str(r.get("date", "")).strip() == target_date and str(r.get("metric", "")).strip() in DAU_METRICS
+        ]
+        max_h = max(today_hours) if today_hours else 0
+        gen_str = str(snapshot.get("generatedAt") or "")
+        try:
+            gen_h = int(gen_str[11:13]) if len(gen_str) >= 13 and gen_str[11:13].isdigit() else datetime.now(timezone.utc).hour
+        except Exception:
+            gen_h = datetime.now(timezone.utc).hour
+        current_hour = min(23, max(max_h, gen_h))
+        if gen_h > 0:
+            effective_hour = min(23, gen_h - 1)
+            has_full_hour = True
+            is_latest_full_hour = True
+        else:
+            effective_hour = None
+            has_full_hour = False
+            is_latest_full_hour = False
+
+    def get_hourly_breakdown(date_str: str, is_target_today: bool, cur_h: int) -> list[dict]:
+        hour_map = {h: {"web": 0, "plugin": 0, "cli": 0} for h in range(24)}
+        if not geo_active:
+            for row in hourly:
+                if str(row.get("date", "")).strip() != date_str:
+                    continue
+                m = str(row.get("metric", "")).strip()
+                if m not in DAU_METRICS:
+                    continue
+                if not _matches(row, all_dates_filters, platform_agnostic=True):
+                    continue
+                h = int(row.get("hour", 0) or 0)
+                if h < 0 or h > 23:
+                    continue
+                slot = _dau_channel_for(m, str(row.get("channel", "")))
+                if not slot:
+                    continue
+                hour_map[h][slot] += int(row.get("count", 0) or 0)
+        res = []
+        for h in range(24):
+            entry = hour_map[h]
+            is_future = is_target_today and h > cur_h
+            tot = 0 if is_future else (entry["web"] + entry["plugin"] + entry["cli"])
+            res.append({
+                "hour": h,
+                "total": tot,
+                "web": 0 if is_future else entry["web"],
+                "plugin": 0 if is_future else entry["plugin"],
+                "cli": 0 if is_future else entry["cli"],
+                "isFuture": is_future,
+            })
+        return res
+
+    target_hourly = get_hourly_breakdown(target_date, is_today, current_hour)
+    comp_hourly = get_hourly_breakdown(comparison_date, False, 23)
+
+    c_target_web = 0
+    c_target_plugin = 0
+    c_target_cli = 0
+    c_target_total = 0
+
+    c_comp_web = 0
+    c_comp_plugin = 0
+    c_comp_cli = 0
+    c_comp_total = 0
+
+    target_cumulative = []
+    for h in range(24):
+        t_point = target_hourly[h]
+        c_point = comp_hourly[h]
+
+        c_comp_web += c_point["web"]
+        c_comp_plugin += c_point["plugin"]
+        c_comp_cli += c_point["cli"]
+        c_comp_total += c_point["total"]
+
+        is_future = is_today and h > current_hour
+        if not is_future:
+            c_target_web += t_point["web"]
+            c_target_plugin += t_point["plugin"]
+            c_target_cli += t_point["cli"]
+            c_target_total += t_point["total"]
+
+        target_cumulative.append({
+            "hour": h,
+            "targetTotal": None if is_future else c_target_total,
+            "targetWeb": None if is_future else c_target_web,
+            "targetPlugin": None if is_future else c_target_plugin,
+            "targetCli": None if is_future else c_target_cli,
+            "comparisonTotal": c_comp_total,
+            "comparisonWeb": c_comp_web,
+            "comparisonPlugin": c_comp_plugin,
+            "comparisonCli": c_comp_cli,
+            "baselineTotal": None,
+            "isFuture": is_future,
+        })
+
+    baseline_hourly_cumulative = []
+    for i in range(1, 8):
+        b_date = _shift_date(target_date, -i)
+        day_inc = get_hourly_breakdown(b_date, False, 23)
+        cum = 0
+        day_cum = []
+        has_data = False
+        for h in range(24):
+            cum += day_inc[h]["total"]
+            if day_inc[h]["total"] > 0:
+                has_data = True
+            day_cum.append(cum)
+        if has_data:
+            baseline_hourly_cumulative.append(day_cum)
+
+    seven_day_baseline = []
+    for h in range(24):
+        sum_h = sum(day_cum[h] for day_cum in baseline_hourly_cumulative)
+        avg_h = round(sum_h / len(baseline_hourly_cumulative)) if baseline_hourly_cumulative else 0
+        seven_day_baseline.append({"hour": h, "total": avg_h})
+        target_cumulative[h]["baselineTotal"] = avg_h
+
+    peak_hour = {"hour": 0, "count": 0}
+    max_inc = -1
+    max_search_hour = (effective_hour if effective_hour is not None else current_hour) if is_today else 23
+    for h in range(max_search_hour + 1):
+        cnt = target_hourly[h]["total"]
+        if cnt > max_inc:
+            max_inc = cnt
+            peak_hour = {"hour": h, "count": cnt}
+
+    comparable = True
+    incomparable_reason = None
+    if coverage["plugin"]["earliestDate"] and target_date >= coverage["plugin"]["earliestDate"] and comparison_date < coverage["plugin"]["earliestDate"]:
+        comparable = False
+        incomparable_reason = "统计覆盖发生变化（对比日插件尚未采集）"
+    elif coverage["cli"]["earliestDate"] and target_date >= coverage["cli"]["earliestDate"] and comparison_date < coverage["cli"]["earliestDate"]:
+        comparable = False
+        incomparable_reason = "统计覆盖发生变化（对比日 CLI 尚未采集）"
+
+    target_count = 0
+    comparison_count = 0
+    delta_count = 0
+    delta_percent = None
+    baseline_count = 0
+    baseline_delta_percent = None
+    comp_label = ""
+    target_label = ""
+
+    if is_single_day:
+        if is_today:
+            if effective_hour is not None:
+                h_str = f"{effective_hour:02d}:00"
+                comp_label = f"较昨日同期 (00:00~{h_str})"
+                target_label = f"今日截至 {h_str}"
+                target_count = target_cumulative[effective_hour]["targetTotal"] or 0
+                comparison_count = target_cumulative[effective_hour]["comparisonTotal"] or 0
+                baseline_count = seven_day_baseline[effective_hour]["total"] or 0
+                delta_count = target_count - comparison_count
+                delta_percent = round(((target_count - comparison_count) / comparison_count) * 1000) / 10 if (comparable and comparison_count > 0) else None
+                baseline_delta = target_count - baseline_count
+                baseline_delta_percent = round((baseline_delta / baseline_count) * 1000) / 10 if (comparable and baseline_count > 0) else None
+            else:
+                comp_label = "暂无完整小时可比较 (今日 00:00~01:00 尚未结束)"
+                target_label = "今日进行中 (未满1小时)"
+                target_count = target_cumulative[0]["targetTotal"] or 0
+                comparison_count = 0
+                baseline_count = 0
+                delta_count = 0
+                delta_percent = None
+                baseline_delta_percent = None
+        else:
+            comp_label = "较前日全天"
+            target_label = "当日完整"
+            target_count = dau_today["total"]
+            comparison_count = dau_yesterday["total"]
+            baseline_count = seven_day_baseline[23]["total"] or 0
+            delta_count = target_count - comparison_count
+            delta_percent = round(((target_count - comparison_count) / comparison_count) * 1000) / 10 if (comparable and comparison_count > 0) else None
+            baseline_delta = target_count - baseline_count
+            baseline_delta_percent = round((baseline_delta / baseline_count) * 1000) / 10 if (comparable and baseline_count > 0) else None
+    else:
+        comp_label = "较上一等长周期"
+        target_label = "期末日"
+        target_count = dau_today["total"]
+        comparison_count = dau_yesterday["total"]
+        delta_count = target_count - comparison_count
+        delta_percent = round(((target_count - comparison_count) / comparison_count) * 1000) / 10 if (comparable and comparison_count > 0) else None
+
+    comparison_meta = {
+        "mode": "prev_day" if is_single_day else "prev_period",
+        "label": comp_label,
+        "targetLabel": target_label,
+        "isSameHour": is_today,
+        "currentHour": current_hour if is_today else None,
+        "effectiveHour": effective_hour if is_today else None,
+        "hasFullHour": has_full_hour if is_today else True,
+        "isLatestFullHour": is_latest_full_hour if is_today else None,
+        "comparable": comparable,
+        "incomparableReason": incomparable_reason,
+        "targetCount": target_count,
+        "comparisonCount": comparison_count,
+        "deltaCount": delta_count,
+        "deltaPercent": delta_percent,
+        "baselineCount": baseline_count if is_single_day else None,
+        "baselineDeltaPercent": baseline_delta_percent if is_single_day else None,
+    }
+
+    def get_client_hourly_sum(date_str: str, client: str, max_hour: int) -> int:
+        s = 0
+        is_web = (client == "official_web")
+        for row in hourly:
+            if str(row.get("date", "")).strip() != date_str:
+                continue
+            h = int(row.get("hour", 0) or 0)
+            if h < 0 or h > max_hour:
+                continue
+            m = str(row.get("metric", "")).strip()
+            if m not in DAU_METRICS:
+                continue
+            if not _matches(row, all_dates_filters, platform_agnostic=True):
+                continue
+            ch = str(row.get("channel", "")).strip()
+            cl = str(row.get("client_id", "")).strip()
+            if is_web:
+                if m == "visitor_unique" and (ch == "web" or not ch or cl in {"official_web", "web"}):
+                    s += int(row.get("count", 0) or 0)
+            else:
+                if m == "active_user" and (cl == client or (not cl and ch == client_channel_map.get(client))):
+                    s += int(row.get("count", 0) or 0)
+        return s
+
+    def get_client_period_sum(from_d: str, to_d: str, client: str) -> int:
+        s = 0
+        is_web = (client == "official_web")
+        for row in all_dates_source:
+            d = str(row.get("date", "")).strip()
+            if d < from_d or d > to_d:
+                continue
+            m = str(row.get("metric", "")).strip()
+            if m not in DAU_METRICS:
+                continue
+            ch = str(row.get("channel", "")).strip()
+            cl = str(row.get("client_id", "")).strip()
+            if is_web:
+                if m == "visitor_unique" and (ch == "web" or not ch or cl in {"official_web", "web"}):
+                    s += int(row.get("count", 0) or 0)
+            else:
+                if m == "active_user" and (cl == client or (not cl and ch == client_channel_map.get(client))):
+                    s += int(row.get("count", 0) or 0)
+        return s
+
+    range_includes_today = (not is_single_day) and (to_date >= today_utc)
+    full_days = [p for p in dau_series if p["date"] < today_utc] if range_includes_today else dau_series
+    comp_day_count = max(1, len(full_days))
+    full_days_total = sum(p["total"] for p in full_days)
+    full_day_average = round(full_days_total / comp_day_count)
+    daily_average = full_day_average if range_includes_today else round(window_totals["total"] / max(1, len(dau_series)))
+
+    completed_from_date = full_days[0]["date"] if full_days else from_date
+    prev_to = _shift_date(completed_from_date, -1)
+    prev_from = _shift_date(prev_to, -(comp_day_count - 1))
+
     all_dau_clients = {"official_web"} | set(client_channel_map.keys()) | set(dau_client_window_totals.keys()) | set(client_target_map.keys()) | set(client_comp_map.keys())
     dau_clients = []
     for client in all_dau_clients:
@@ -799,25 +1120,140 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
         tot = (dau_today["web"] if is_single_day else window_totals["web"]) if is_web else dau_client_window_totals.get(client, 0)
         tdy = dau_today["web"] if is_web else client_target_map.get(client, 0)
         yst = dau_yesterday["web"] if is_web else client_comp_map.get(client, 0)
-        comp_count = yst if is_single_day else 0
-        d_count = tdy - comp_count
-        d_pct = round(((tdy - comp_count) / comp_count) * 1000) / 10 if comp_count > 0 else None
-        denom = dau_today["total"] if is_single_day else window_totals["total"]
-        val = tdy if is_single_day else tot
-        share_pct = round((val / (denom or 1)) * 1000) / 10
-        if tot > 0 or tdy > 0 or yst > 0:
+
+        cl_target_count = tdy
+        cl_comp_count = yst
+        current_period_daily_avg = None
+        previous_period_daily_avg = None
+
+        if is_single_day:
+            if is_today:
+                if effective_hour is not None:
+                    cl_target_count = (target_cumulative[effective_hour]["targetWeb"] if target_cumulative[effective_hour]["targetWeb"] is not None else tdy) if is_web else get_client_hourly_sum(target_date, client, effective_hour)
+                    cl_comp_count = (target_cumulative[effective_hour]["comparisonWeb"] if target_cumulative[effective_hour]["comparisonWeb"] is not None else yst) if is_web else get_client_hourly_sum(comparison_date, client, effective_hour)
+                else:
+                    cl_target_count = 0
+                    cl_comp_count = 0
+            else:
+                cl_target_count = tdy
+                cl_comp_count = yst
+        else:
+            completed_from = full_days[0]["date"] if full_days else from_date
+            completed_to = full_days[-1]["date"] if full_days else to_date
+            curr_client_sum = get_client_period_sum(completed_from, completed_to, client)
+            prev_client_sum = get_client_period_sum(prev_from, prev_to, client)
+            current_period_daily_avg = round(curr_client_sum / comp_day_count)
+            previous_period_daily_avg = round(prev_client_sum / comp_day_count)
+            cl_target_count = current_period_daily_avg
+            cl_comp_count = previous_period_daily_avg
+
+        d_count = cl_target_count - cl_comp_count
+        d_pct = round(((cl_target_count - cl_comp_count) / cl_comp_count) * 1000) / 10 if cl_comp_count > 0 else None
+        denom = (dau_today["total"] or 1) if is_single_day else (daily_average or 1)
+        share_pct = round((cl_target_count / denom) * 1000) / 10
+
+        if tot > 0 or tdy > 0 or yst > 0 or cl_target_count > 0 or cl_comp_count > 0:
             dau_clients.append({
                 "client": client,
                 "channel": ch,
                 "total": tot,
                 "today": tdy,
                 "yesterday": yst,
-                "comparisonCount": comp_count,
+                "targetCount": cl_target_count,
+                "comparisonCount": cl_comp_count,
                 "deltaCount": d_count,
                 "deltaPercent": d_pct,
                 "sharePercent": share_pct,
+                "currentPeriodDailyAvg": current_period_daily_avg,
+                "previousPeriodDailyAvg": previous_period_daily_avg,
             })
-    dau_clients.sort(key=lambda item: (-item["total"], -item["today"], item["client"]))
+    dau_clients.sort(key=lambda item: (-(item.get("targetCount") if item.get("targetCount") is not None else item["total"]), -item["total"], item["client"]))
+
+    multi_day_stats = None
+    if not is_single_day:
+        peak_day = None
+        for pt in dau_series:
+            if not peak_day or pt["total"] > peak_day["total"]:
+                peak_day = {"date": pt["date"], "total": pt["total"]}
+
+        latest_full_day = None
+        if full_days:
+            latest_full_day = {"date": full_days[-1]["date"], "total": full_days[-1]["total"]}
+        elif dau_series:
+            latest_full_day = {"date": dau_series[-1]["date"], "total": dau_series[-1]["total"]}
+
+        previous_period_series = []
+        prev_total = 0
+        for i in range(comp_day_count):
+            d_str = _shift_date(prev_from, i)
+            tots = dau_all_dates_map.get(d_str) or _empty_dau_totals()
+            previous_period_series.append({"date": d_str, **tots})
+            prev_total += tots["total"]
+        prev_daily_avg = round(prev_total / comp_day_count)
+
+        multi_comparable = True
+        multi_incomparable_reason = None
+        if coverage["plugin"]["earliestDate"] and to_date >= coverage["plugin"]["earliestDate"] and prev_from < coverage["plugin"]["earliestDate"]:
+            multi_comparable = False
+            multi_incomparable_reason = "统计覆盖发生变化（上一周期插件尚未采集）"
+        elif coverage["cli"]["earliestDate"] and to_date >= coverage["cli"]["earliestDate"] and prev_from < coverage["cli"]["earliestDate"]:
+            multi_comparable = False
+            multi_incomparable_reason = "统计覆盖发生变化（上一周期 CLI 尚未采集）"
+
+        m_delta = daily_average - prev_daily_avg
+        m_delta_pct = round((m_delta / prev_daily_avg) * 1000) / 10 if (multi_comparable and prev_daily_avg > 0) else None
+
+        comparison_meta["comparable"] = multi_comparable
+        comparison_meta["incomparableReason"] = multi_incomparable_reason
+        comparison_meta["targetCount"] = daily_average
+        comparison_meta["comparisonCount"] = prev_daily_avg
+        comparison_meta["deltaCount"] = m_delta
+        comparison_meta["deltaPercent"] = m_delta_pct
+        comparison_meta["label"] = "较上一周期日均"
+
+        seven_day_moving_average = []
+        for pt in dau_series:
+            sum7 = 0
+            valid_days = 0
+            for o in range(7):
+                d = _shift_date(pt["date"], -o)
+                day_totals = dau_all_dates_map.get(d)
+                if day_totals is not None:
+                    sum7 += day_totals["total"]
+                    valid_days += 1
+            ma7_val = round(sum7 / valid_days) if valid_days > 0 else pt["total"]
+            pt["ma7"] = ma7_val
+            seven_day_moving_average.append({"date": pt["date"], "value": ma7_val})
+
+        multi_day_stats = {
+            "fromDate": from_date,
+            "toDate": to_date,
+            "dayCount": len(dau_series),
+            "dailyAverage": daily_average,
+            "fullDayCount": comp_day_count,
+            "fullDayAverage": full_day_average,
+            "rangeIncludesToday": range_includes_today,
+            "latestFullDay": latest_full_day,
+            "peakDay": peak_day,
+            "previousPeriodFrom": prev_from,
+            "previousPeriodTo": prev_to,
+            "previousPeriodSeries": previous_period_series,
+            "sevenDayMovingAverage": seven_day_moving_average,
+        }
+
+    single_day_stats = {
+        "targetDate": target_date,
+        "comparisonDate": comparison_date,
+        "currentHour": current_hour,
+        "effectiveHour": effective_hour,
+        "hasFullHour": has_full_hour,
+        "isToday": is_today,
+        "targetCumulative": target_cumulative,
+        "hourlyIncrements": target_hourly,
+        "comparisonHourlyIncrements": comp_hourly,
+        "peakHour": peak_hour,
+        "sevenDayBaseline": seven_day_baseline,
+    }
 
     dau_hours: list[dict[str, int]] = []
     if not geo_active:
@@ -996,6 +1432,13 @@ def build_local_analytics(snapshot: dict, query: dict[str, str]) -> dict:
             "countries": dau_countries,
             "regions": dau_regions,
             "coverage": coverage,
+            "annotations": annotations,
+            "comparison": comparison_meta,
+            "singleDay": single_day_stats if is_single_day else None,
+            "multiDay": multi_day_stats if not is_single_day else None,
+            "targetCumulative": target_cumulative if is_single_day else None,
+            "comparisonCumulative": [{"hour": p["hour"], "total": p["comparisonTotal"]} for p in target_cumulative] if is_single_day else None,
+            "sevenDayBaseline": seven_day_baseline if is_single_day else None,
         },
         "timeseries": timeseries,
         "hourlyTimeseries": hourly_timeseries,

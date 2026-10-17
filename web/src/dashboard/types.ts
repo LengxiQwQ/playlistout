@@ -202,7 +202,8 @@ export interface DauComparisonMeta {
   targetLabel: string;
   isSameHour: boolean;
   currentHour?: number;
-  effectiveHour?: number;
+  effectiveHour?: number | null;
+  hasFullHour?: boolean;
   isLatestFullHour?: boolean;
   comparable: boolean;
   incomparableReason?: string;
@@ -218,7 +219,8 @@ export interface DauSingleDayStats {
   targetDate: string;
   comparisonDate: string;
   currentHour: number;
-  effectiveHour?: number;
+  effectiveHour?: number | null;
+  hasFullHour?: boolean;
   isToday: boolean;
   targetCumulative: DauCumulativeHourlyPoint[];
   hourlyIncrements: DauHourlyPoint[];

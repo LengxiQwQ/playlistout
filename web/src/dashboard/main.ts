@@ -849,6 +849,7 @@ class DashboardApp {
     'plugin',
     'cli',
     'ma7',
+    'prevPeriod',
   ]);
   private dauCompareMode: 'auto' | 'seven_day_baseline' | 'prev_period' | 'none' = 'auto';
   private dauDrilldownRegion: string | null = null;
@@ -2985,98 +2986,136 @@ class DashboardApp {
     const sStats = dau.singleDay;
     const mStats = dau.multiDay;
     const isToday = isSingle && dau.targetDate === this.isoDayOffset(0);
-    const effH = comp?.effectiveHour ?? sStats?.effectiveHour ?? 0;
-    const effHStr = String(effH).padStart(2, '0') + ':00';
+    const effH = comp?.effectiveHour ?? sStats?.effectiveHour ?? null;
+    const effHStr = effH != null ? (String(effH).padStart(2, '0') + ':00') : null;
 
-    let card2Label = '';
-    let card2Val = '—';
-    let card2Sub = '';
+    let kpiItems: Array<{ label: string; val: string; sub: string; color: string }>;
 
-    if (this.dauCompareMode === 'none') {
-      card2Label = isSingle ? '昨日对比 (已停用)' : '周期对比 (已停用)';
-      card2Val = '—';
-      card2Sub = '在右上角工具栏选择对比基准重新启用';
-    } else if (this.dauCompareMode === 'seven_day_baseline' && isSingle) {
-      card2Label = '近 7 日同期基准 (均值)';
-      card2Val = comp?.baselineCount != null ? fmt(comp.baselineCount) : '—';
-      card2Sub = comp?.baselineDeltaPercent != null
-        ? `波动 ${comp.baselineDeltaPercent >= 0 ? '+' : ''}${comp.baselineDeltaPercent.toFixed(1)}% · 同步小时平均`
-        : '所选日缺少足够历史同期';
-    } else {
-      card2Label = isSingle
-        ? (isToday ? `昨日同期 (00:00~${effHStr})` : `前一天对比 (${dau.comparisonDate.slice(5)})`)
-        : '与上一等长周期相比';
-      card2Val = isSingle
-        ? fmt(comp?.comparisonCount ?? dau.yesterday.total)
-        : (comp?.deltaPercent != null ? `${comp.deltaPercent >= 0 ? '+' : ''}${comp.deltaPercent.toFixed(1)}%` : '—');
-      card2Sub = comp?.comparable === false
-        ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
-        : (isSingle
-            ? `较同期 ${comp?.deltaPercent != null ? (comp.deltaPercent >= 0 ? '+' : '') + comp.deltaPercent.toFixed(1) + '%' : '—'} (${comp?.deltaCount != null ? (comp.deltaCount >= 0 ? '+' : '') + fmt(comp.deltaCount) : '—'})`
-            : `前一周期日均 ${comp?.comparisonCount != null ? fmt(comp.comparisonCount) : '—'} 人次`);
-    }
+    if (isSingle) {
+      const card1Label = isToday
+        ? (effHStr ? `今日活跃人次 (截至 ${effHStr})` : '今日活跃人次 (进行中)')
+        : `当日活跃人次 (${dau.targetDate.slice(5)})`;
+      const card1Val = fmt(comp?.targetCount ?? dau.today.total);
+      const card1Sub = isToday
+        ? (effH != null
+            ? `Web ${fmt(sStats?.targetCumulative[effH]?.targetWeb ?? dau.today.web)} · 插件 ${fmt(sStats?.targetCumulative[effH]?.targetPlugin ?? dau.today.plugin)} · CLI ${fmt(sStats?.targetCumulative[effH]?.targetCli ?? dau.today.cli)}`
+            : '今日首个完整小时进行中，暂无整点累计')
+        : `网页: ${fmt(dau.today.web)} · 插件: ${fmt(dau.today.plugin)} · CLI: ${fmt(dau.today.cli)}`;
 
-    const kpiItems = isSingle
-      ? [
+      const peakHourCard = {
+        label: '首次活跃峰值时段 (UTC)',
+        val: sStats?.peakHour != null ? `${String(sStats.peakHour.hour).padStart(2, '0')}:00` : '—',
+        sub: sStats?.peakHour != null
+          ? `新增 ${fmt(sStats.peakHour.count)} 人次 (北京时间 ${((sStats.peakHour.hour + 8) % 24).toString().padStart(2, '0')}:00)`
+          : '当日各小时平稳',
+        color: 'var(--g)',
+      };
+
+      if (this.dauCompareMode === 'none') {
+        kpiItems = [
+          { label: card1Label, val: card1Val, sub: card1Sub, color: '#0284c7' },
           {
-            label: isToday ? `今日活跃人次 (截至 ${effHStr})` : `当日活跃人次 (${dau.targetDate.slice(5)})`,
-            val: fmt(comp?.targetCount ?? dau.today.total),
-            sub: isToday
-              ? `Web ${fmt(sStats?.targetCumulative[effH]?.targetWeb ?? dau.today.web)} · 插件 ${fmt(sStats?.targetCumulative[effH]?.targetPlugin ?? dau.today.plugin)} · CLI ${fmt(sStats?.targetCumulative[effH]?.targetCli ?? dau.today.cli)}`
-              : `网页: ${fmt(dau.today.web)} · 插件: ${fmt(dau.today.plugin)} · CLI: ${fmt(dau.today.cli)}`,
-            color: '#0284c7',
+            label: '数据比较模式',
+            val: '已停用',
+            sub: '可在右上角对比工具栏重新启用对比基准',
+            color: 'var(--m)',
           },
+          peakHourCard,
           {
-            label: card2Label,
-            val: card2Val,
-            sub: card2Sub,
+            label: '当日活跃客户端',
+            val: `${dau.clients.filter((c) => (c.targetCount ?? c.today) > 0).length} 种客户端`,
+            sub: '跨端独立去重 · Web / Plugin / CLI',
             color: 'var(--t)',
           },
+        ];
+      } else if (this.dauCompareMode === 'seven_day_baseline') {
+        kpiItems = [
+          { label: card1Label, val: card1Val, sub: card1Sub, color: '#0284c7' },
           {
-            label: '近 7 日同期基准 (均值)',
-            val: comp?.baselineCount != null ? fmt(comp.baselineCount) : '—',
-            sub: comp?.baselineDeltaPercent != null
+            label: isToday && effHStr ? `近 7 日同期基准 (00:00~${effHStr})` : '近 7 日同期基准 (均值)',
+            val: comp?.baselineCount != null && (effH != null || !isToday) ? fmt(comp.baselineCount) : '—',
+            sub: comp?.baselineDeltaPercent != null && (effH != null || !isToday)
               ? `波动 ${comp.baselineDeltaPercent >= 0 ? '+' : ''}${comp.baselineDeltaPercent.toFixed(1)}% · 同步小时平均`
               : '所选日缺少足够历史同期',
             color: '#f59e0b',
           },
           {
-            label: '首次活跃峰值时段 (UTC)',
-            val: sStats?.peakHour != null ? `${String(sStats.peakHour.hour).padStart(2, '0')}:00` : '—',
-            sub: sStats?.peakHour != null
-              ? `新增 ${fmt(sStats.peakHour.count)} 人次 (北京时间 ${((sStats.peakHour.hour + 8) % 24).toString().padStart(2, '0')}:00)`
-              : '当日各小时平稳',
-            color: 'var(--g)',
+            label: isToday ? (effHStr ? `昨日同期参考 (00:00~${effHStr})` : '昨日同期对比') : `前一天参考 (${dau.comparisonDate.slice(5)})`,
+            val: (effH != null || !isToday) ? fmt(comp?.comparisonCount ?? dau.yesterday.total) : '—',
+            sub: (effH != null || !isToday)
+              ? `较同期 ${comp?.deltaPercent != null ? (comp.deltaPercent >= 0 ? '+' : '') + comp.deltaPercent.toFixed(1) + '%' : '—'} (${comp?.deltaCount != null ? (comp.deltaCount >= 0 ? '+' : '') + fmt(comp.deltaCount) : '—'})`
+              : '今日首个完整小时进行中',
+            color: 'var(--t)',
           },
-        ]
-      : [
+          peakHourCard,
+        ];
+      } else {
+        // 'auto' / 'prev_day'
+        kpiItems = [
+          { label: card1Label, val: card1Val, sub: card1Sub, color: '#0284c7' },
           {
-            label: '区间日均活跃人次',
-            val: fmt(mStats?.dailyAverage ?? Math.round(dau.windowTotals.total / Math.max(1, dau.series.length))),
-            sub: mStats?.rangeIncludesToday
-              ? `基于 ${mStats.fullDayCount} 个完整日均值 (已排除今日残缺日)`
-              : `跨端独立去重 · 周期累计 ${fmt(dau.windowTotals.total)} 人次`,
-            color: '#0284c7',
-          },
-          {
-            label: '最新完整日活跃',
-            val: mStats?.latestFullDay != null ? fmt(mStats.latestFullDay.total) : '—',
-            sub: `日期 ${mStats?.latestFullDay?.date || '—'} (UTC 完整天)`,
+            label: isToday ? (effHStr ? `昨日同期 (00:00~${effHStr})` : '昨日同期对比') : `前一天对比 (${dau.comparisonDate.slice(5)})`,
+            val: (effH != null || !isToday) ? fmt(comp?.comparisonCount ?? dau.yesterday.total) : '—',
+            sub: (effH != null || !isToday)
+              ? (comp?.comparable === false
+                  ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
+                  : `较同期 ${comp?.deltaPercent != null ? (comp.deltaPercent >= 0 ? '+' : '') + comp.deltaPercent.toFixed(1) + '%' : '—'} (${comp?.deltaCount != null ? (comp.deltaCount >= 0 ? '+' : '') + fmt(comp.deltaCount) : '—'})`)
+              : '今日首个完整小时进行中，暂无同期可比',
             color: 'var(--t)',
           },
           {
-            label: card2Label,
-            val: card2Val,
-            sub: card2Sub,
-            color: 'var(--g)',
-          },
-          {
-            label: '区间最高日活峰值',
-            val: mStats?.peakDay != null ? fmt(mStats.peakDay.total) : '—',
-            sub: `日期 ${mStats?.peakDay?.date || '—'} · 单日最高活跃`,
+            label: '近 7 日同期基准 (均值)',
+            val: comp?.baselineCount != null && (effH != null || !isToday) ? fmt(comp.baselineCount) : '—',
+            sub: comp?.baselineDeltaPercent != null && (effH != null || !isToday)
+              ? `波动 ${comp.baselineDeltaPercent >= 0 ? '+' : ''}${comp.baselineDeltaPercent.toFixed(1)}% · 同步小时平均`
+              : '所选日缺少足够历史同期',
             color: '#f59e0b',
           },
+          peakHourCard,
         ];
+      }
+    } else {
+      // Multi-day
+      const multiCompCard = this.dauCompareMode === 'none'
+        ? {
+            label: '周期对比',
+            val: '已停用',
+            sub: '在右上角对比工具栏重新启用周期基准',
+            color: 'var(--m)',
+          }
+        : {
+            label: '与上一等长周期相比',
+            val: comp?.deltaPercent != null ? `${comp.deltaPercent >= 0 ? '+' : ''}${comp.deltaPercent.toFixed(1)}%` : '—',
+            sub: comp?.comparable === false
+              ? '<span style="color:var(--r)">⚠️ 覆盖范围变化不可直接比较</span>'
+              : `前一周期日均 ${comp?.comparisonCount != null ? fmt(comp.comparisonCount) : '—'} 人次`,
+            color: 'var(--g)',
+          };
+
+      kpiItems = [
+        {
+          label: '区间日均活跃人次',
+          val: fmt(mStats?.dailyAverage ?? Math.round(dau.windowTotals.total / Math.max(1, dau.series.length))),
+          sub: mStats?.rangeIncludesToday
+            ? `基于 ${mStats.fullDayCount} 个完整日均值 (已排除今日残缺日)`
+            : `跨端独立去重 · 周期累计 ${fmt(dau.windowTotals.total)} 人次`,
+          color: '#0284c7',
+        },
+        {
+          label: '最新完整日活跃',
+          val: mStats?.latestFullDay != null ? fmt(mStats.latestFullDay.total) : '—',
+          sub: `日期 ${mStats?.latestFullDay?.date || '—'} (UTC 完整天)`,
+          color: 'var(--t)',
+        },
+        multiCompCard,
+        {
+          label: '区间最高日活峰值',
+          val: mStats?.peakDay != null ? fmt(mStats.peakDay.total) : '—',
+          sub: `日期 ${mStats?.peakDay?.date || '—'} · 单日最高活跃`,
+          color: '#f59e0b',
+        },
+      ];
+    }
 
     const kpiEl = document.getElementById('dauKpis');
     if (kpiEl) {
@@ -3110,11 +3149,13 @@ class DashboardApp {
     if (legendEl) {
       if (isSingle) {
         const hasBase = (sStats?.sevenDayBaseline && sStats.sevenDayBaseline.length > 0) || (dau.sevenDayBaseline && dau.sevenDayBaseline.length > 0);
+        const isAuto = this.dauCompareMode === 'auto' || this.dauCompareMode === 'prev_period';
+        const isBase = this.dauCompareMode === 'seven_day_baseline';
         legendEl.innerHTML = `
           <div style="display:flex;align-items:center;gap:12px;font-size:11px">
             <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:3px;background:#0284c7;display:inline-block;border-radius:2px"></span> 所选日累计</span>
-            ${this.dauCompareMode !== 'none' ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dashed #64748b;display:inline-block"></span> 对比日同期</span>' : ''}
-            ${hasBase ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dotted #f59e0b;display:inline-block"></span> 近7日同期基准</span>' : ''}
+            ${isAuto ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dashed #64748b;display:inline-block"></span> 昨日同期</span>' : ''}
+            ${(isBase && hasBase) ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:2px;border-top:2px dotted #f59e0b;display:inline-block"></span> 近7日同期基准</span>' : ''}
           </div>
         `;
       } else {
@@ -3416,7 +3457,8 @@ class DashboardApp {
       const stepX = plotW / 23;
 
       // 1. Seven-day Baseline (dotted amber)
-      if (basePts.length === 24) {
+      const drawBaseline = this.dauCompareMode === 'seven_day_baseline';
+      if (drawBaseline && basePts.length === 24) {
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([2, 3]);
@@ -3439,7 +3481,8 @@ class DashboardApp {
       }
 
       // 2. Comparison Day (dashed slate)
-      if (this.dauCompareMode !== 'none' && targetPts.length === 24) {
+      const drawYesterday = this.dauCompareMode === 'auto' || this.dauCompareMode === 'prev_period';
+      if (drawYesterday && targetPts.length === 24) {
         ctx.strokeStyle = '#64748b';
         ctx.lineWidth = 1.8;
         ctx.setLineDash([5, 4]);
