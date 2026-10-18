@@ -95,21 +95,30 @@ describe('Header Component', () => {
     expect(screen.queryByTestId('mobile-settings-drawer')).not.toBeInTheDocument();
   });
 
-  it('renders download link in header and moves language switcher into mobile drawer', () => {
+  it('renders separate desktop and mobile download links and moves language switcher into mobile drawer', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <Header />
       </LanguageProvider>
     );
 
-    // Download button in header with "下载" and DownloadIcon
-    const downloadLink = screen.getByRole('link', { name: /下载/i });
-    expect(downloadLink).toBeInTheDocument();
-    expect(downloadLink).toHaveTextContent('下载');
-    expect(downloadLink).toHaveClass('header-desktop-btn');
-    expect(downloadLink).not.toHaveClass('desktop-only');
-    expect(downloadLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
-    expect(downloadLink).toHaveAttribute('target', '_blank');
+    // Desktop download button: 5 characters "下载桌面版", desktop-only
+    const desktopLink = screen.getByRole('link', { name: '下载桌面版' });
+    expect(desktopLink).toBeInTheDocument();
+    expect(desktopLink).toHaveTextContent('下载桌面版');
+    expect(desktopLink).toHaveClass('header-desktop-btn');
+    expect(desktopLink).toHaveClass('desktop-only');
+    expect(desktopLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(desktopLink).toHaveAttribute('target', '_blank');
+
+    // Mobile download button: 2 characters "下载", mobile-only
+    const mobileLink = screen.getByRole('link', { name: '下载' });
+    expect(mobileLink).toBeInTheDocument();
+    expect(mobileLink).toHaveTextContent('下载');
+    expect(mobileLink).toHaveClass('header-desktop-btn');
+    expect(mobileLink).toHaveClass('mobile-only');
+    expect(mobileLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(mobileLink).toHaveAttribute('target', '_blank');
 
     // Open mobile drawer
     const drawerBtn = screen.getByRole('button', { name: /手账百宝箱/i });
@@ -130,12 +139,14 @@ describe('Header Component', () => {
     // Switch to English in mobile drawer
     fireEvent.click(enButton);
     expect(document.documentElement.lang).toBe('en-US');
-    expect(downloadLink).toHaveTextContent('Download');
+    expect(desktopLink).toHaveTextContent('Download Desktop');
+    expect(mobileLink).toHaveTextContent('Download');
 
     // Switch back to Chinese in mobile drawer
     const zhButton = screen.getByRole('button', { name: /简体中文/i });
     fireEvent.click(zhButton);
     expect(document.documentElement.lang).toBe('zh-CN');
-    expect(downloadLink).toHaveTextContent('下载');
+    expect(desktopLink).toHaveTextContent('下载桌面版');
+    expect(mobileLink).toHaveTextContent('下载');
   });
 });
