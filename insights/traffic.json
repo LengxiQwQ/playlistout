@@ -159,6 +159,10 @@
     "2026-10-16": {
       "count": 49,
       "uniques": 34
+    },
+    "2026-10-17": {
+      "count": 104,
+      "uniques": 33
     }
   },
   "clones": {
@@ -321,6 +325,10 @@
     "2026-10-16": {
       "count": 347,
       "uniques": 85
+    },
+    "2026-10-17": {
+      "count": 371,
+      "uniques": 90
     }
   },
   "referrer_snapshots": [
@@ -1911,6 +1919,41 @@
           "referrer": "Bing",
           "count": 67,
           "uniques": 55
+        },
+        {
+          "referrer": "audio-file.org",
+          "count": 1,
+          "uniques": 1
+        },
+        {
+          "referrer": "chatgpt.com",
+          "count": 1,
+          "uniques": 1
+        }
+      ]
+    },
+    {
+      "fetched_at": "2026-10-19T07:44:08Z",
+      "referrers": [
+        {
+          "referrer": "github.com",
+          "count": 118,
+          "uniques": 44
+        },
+        {
+          "referrer": "Google",
+          "count": 78,
+          "uniques": 63
+        },
+        {
+          "referrer": "Bing",
+          "count": 64,
+          "uniques": 57
+        },
+        {
+          "referrer": "Baidu",
+          "count": 1,
+          "uniques": 1
         },
         {
           "referrer": "audio-file.org",
@@ -4655,6 +4698,71 @@
           "uniques": 5
         }
       ]
+    },
+    {
+      "fetched_at": "2026-10-19T07:44:08Z",
+      "paths": [
+        {
+          "path": "/LengxiQwQ/playlistout",
+          "title": "Overview",
+          "count": 448,
+          "uniques": 260
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases",
+          "title": "/releases",
+          "count": 27,
+          "uniques": 10
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/tree/main/plugins/musicfree",
+          "title": "/tree/main/plugins/musicfree",
+          "count": 23,
+          "uniques": 11
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v2.2.0",
+          "title": "/releases/tag/v2.2.0",
+          "count": 19,
+          "uniques": 13
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/issues",
+          "title": "/issues",
+          "count": 16,
+          "uniques": 10
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/pulls",
+          "title": "/pulls",
+          "count": 13,
+          "uniques": 4
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/releases/tag/v3.0.0",
+          "title": "/releases/tag/v3.0.0",
+          "count": 13,
+          "uniques": 2
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/blob/main/plugins/musicfree/README.md",
+          "title": "/blob/main/plugins/musicfree/README.md",
+          "count": 7,
+          "uniques": 7
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/blob/main/docs/ECOSYSTEM-INTEGRATION.md",
+          "title": "/blob/main/docs/ECOSYSTEM-INTEGRATION.md",
+          "count": 7,
+          "uniques": 5
+        },
+        {
+          "path": "/LengxiQwQ/playlistout/tree/main",
+          "title": "/tree/main",
+          "count": 7,
+          "uniques": 4
+        }
+      ]
     }
   ],
   "repo_meta_snapshots": [
@@ -5035,6 +5143,15 @@
       "open_issues": 0,
       "network": 4,
       "pushed_at": "2026-10-17T20:53:52Z"
+    },
+    {
+      "fetched_at": "2026-10-19T07:44:08Z",
+      "stars": 71,
+      "forks": 4,
+      "watchers": 1,
+      "open_issues": 0,
+      "network": 4,
+      "pushed_at": "2026-10-18T13:46:58Z"
     }
   ],
   "website_snapshots": [
@@ -5812,61 +5929,88 @@
         "json": 302,
         "m3u8": 78
       }
+    },
+    {
+      "fetched_at": "2026-10-19T07:44:08Z",
+      "cumulative_daily_visitors": 1495,
+      "total_visitors": 1495,
+      "visitors_today": 38,
+      "total_page_views": 2484,
+      "page_views_today": 37,
+      "total_playlists_parsed": 8426,
+      "playlists_parsed_today": 147,
+      "total_tracks_processed": 1745143,
+      "tracks_processed_today": 38888,
+      "total_exports": 2035,
+      "exports_today": 20,
+      "export_formats_breakdown": {
+        "txt": 328,
+        "csv": 147,
+        "xlsx": 1166,
+        "json": 313,
+        "m3u8": 81
+      }
     }
   ],
-  "updated_at": "2026-10-18T07:12:28Z",
+  "updated_at": "2026-10-19T07:44:08Z",
   "website_latest": {
     "launchedAt": "2026-09-12",
-    "cumulativeDailyVisitors": 1385,
-    "totalVisitors": 1385,
-    "visitorsToday": 28,
-    "totalPageViews": 2345,
-    "pageViewsToday": 31,
-    "totalPlaylistsParsed": 7948,
-    "playlistsParsedToday": 112,
-    "totalTracksProcessed": 1657633,
-    "tracksProcessedToday": 16776,
-    "totalExports": 1948,
-    "exportsToday": 25,
+    "cumulativeDailyVisitors": 1495,
+    "totalVisitors": 1495,
+    "visitorsToday": 38,
+    "totalPageViews": 2484,
+    "pageViewsToday": 37,
+    "totalPlaylistsParsed": 8426,
+    "playlistsParsedToday": 147,
+    "totalTracksProcessed": 1745143,
+    "tracksProcessedToday": 38888,
+    "totalExports": 2035,
+    "exportsToday": 20,
     "exportFormatsBreakdown": {
-      "txt": 311,
-      "csv": 143,
-      "xlsx": 1114,
-      "json": 302,
-      "m3u8": 78
+      "txt": 328,
+      "csv": 147,
+      "xlsx": 1166,
+      "json": 313,
+      "m3u8": 81
     },
     "byPlatform": {
       "qqmusic": {
-        "totalSuccess": 3724,
-        "todaySuccess": 93
+        "totalSuccess": 4087,
+        "todaySuccess": 99
       },
       "netease": {
-        "totalSuccess": 3176,
-        "todaySuccess": 12
+        "totalSuccess": 3218,
+        "todaySuccess": 19
       },
       "kugou": {
-        "totalSuccess": 829,
-        "todaySuccess": 3
+        "totalSuccess": 900,
+        "todaySuccess": 29
       },
       "qishui": {
-        "totalSuccess": 196,
-        "todaySuccess": 3
+        "totalSuccess": 197,
+        "todaySuccess": 0
       },
       "kuwo": {
-        "totalSuccess": 18,
+        "totalSuccess": 19,
         "todaySuccess": 0
       },
       "migu": {
         "totalSuccess": 5,
-        "todaySuccess": 1
+        "todaySuccess": 0
       }
     },
     "recentDays": [
       {
+        "date": "2026-10-19",
+        "parses": 147,
+        "tracks": 38888,
+        "exports": 20
+      },
+      {
         "date": "2026-10-18",
-        "parses": 112,
-        "tracks": 16776,
-        "exports": 25
+        "parses": 443,
+        "tracks": 65398,
+        "exports": 92
       },
       {
         "date": "2026-10-17",
@@ -6035,14 +6179,8 @@
         "parses": 24,
         "tracks": 2082,
         "exports": 1
-      },
-      {
-        "date": "2026-09-19",
-        "parses": 31,
-        "tracks": 8976,
-        "exports": 12
       }
     ],
-    "generatedAt": "2026-10-18T07:12:28.447Z"
+    "generatedAt": "2026-10-19T07:44:08.003Z"
   }
 }
