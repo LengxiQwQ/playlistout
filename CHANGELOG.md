@@ -1,141 +1,64 @@
-# Changelog / 更新日志
+# 更新日志
 
 本项目的所有重要变更均记录于此。遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本 2.0.0](https://semver.org/lang/zh-CN/) 规范。
 
-All notable changes to **PlaylistOut** will be documented in this file. Adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
+## [v3.0.0] - 2026-10-18
 
-## [Unreleased]
+### 🚀 Playlist Out CLI 桌面版独立程序发布、六大主流音乐平台支持与核心架构升级
 
-## [v3.0.0] - 2026-10-17
+#### ✨ 核心功能与亮点
+- **Playlist Out CLI 桌面独立版发布（免装 Python 环境）**：
+  - **Windows**：提供单文件执行程序 `PlaylistOut-CLI-v3.0.0-windows-x64.exe`，下载后直接双击运行；
+  - **macOS**：提供 `tar.gz` 压缩包，解压后直接双击内附的 `PlaylistOut.command` 启动脚本在终端运行；
+  - **Linux**：提供 `tar.gz` 压缩包，解压后终端执行 `./PlaylistOut` 即可；
+  - **包管理器一键安装**：正式上线 NPM 全局包，终端执行 `npm install -g playlistout` 即可全局安装，直接输入 `playlistout` 启动；WinGet 与 Scoop 官方渠道已提交审核。
+- **全新交互式向导与极客批处理双模式**：
+  - **交互向导模式**：直接双击运行，粘贴歌单链接或分享文案即可自动识别平台，回车即解析；导出完成后自动唤起系统资源管理器/访达打开 `output` 保存目录；
+  - **命令行参数模式**：支持通过 `-p`（平台）、`-f`（格式）、`--user`（批量导出用户公开歌单）、`--select`（指定歌单序号）、`--no-open` 等参数进行静默批处理调度，便于脚本集成；
+  - **酷狗双模凭据管理**：CLI 支持终端输入 `login` 生成官方二维码扫码登录，或通过 `--token`/`--userid` 参数免交互传入，凭据安全持久化于本地 `~/.playlistout/kugou_auth.json`。
+- **正式接入酷我音乐与咪咕音乐（全面覆盖六大主流平台）**：
+  - **酷我音乐**：支持歌单链接、短链与 ID 识别，自动并发多页分页拉取完整大歌单，支持 VIP 与下架歌曲状态判定；
+  - **咪咕音乐**：支持移动端分享短链（`c.migu.cn`）与网页链接，突破上游单页 50 首限制，支持大歌单并发分页抓取；
+  - 至此，Playlist Out 完整覆盖**网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐、咪咕音乐**六大主流音乐平台。
+- **新增 M3U8 播放列表格式导出**：
+  - Web 端与 CLI 端同步支持导出标准 Extended M3U 播放列表（`.m3u8`），与已有的 Excel (`.xlsx`)、JSON (`.json`)、CSV (`.csv`)、TXT (`.txt`) 共同组成 **5 大通用导出格式**。
+- **汽水音乐双通道解析**：
+  - 支持“汽水音乐官方清洁正版通道”与“抖音收藏视频原声通道”，Web 端与 CLI 均支持自由切换。
 
-### 🚀 全平台 Unified CLI 独立发行、咪咕音乐六大平台矩阵、P0~P3 模块化架构演进与插件生态全面升级 / Unified CLI Multi-Platform Binaries, Migu Music 6-Platform Matrix, P0-P3 Modular Architecture & Ecosystem Leap
+#### 🛠️ 架构重构与性能优化
+- **网易云千首大歌单秒级解析**：优化详情接口（v6）内联歌曲加载逻辑，当返回数据已包含全量曲目时不再触发二次批量请求，千首歌单解析耗时从 20+ 秒大幅降至 2~3 秒。
+- **Canonical Track JSON 数据规范统一**：全仓库规范歌曲对象结构，淘汰冗余同义字段（`artists` 数组、`publishTime`、`rawIds`），规范统一单字符串 `artist` 与 `album`，严格贯彻“单写宽容读”规范。
+- **Worker 路由解耦与服务中枢化**：引入轻量 Hono 框架，拆分单体入口为单一职责的 RESTful 路由与安全中间件（CORS 分权、安全头、速率限制）；建立平台注册中枢 `ProviderRegistry`。
+- **Web 前端组件化解耦**：主入口 `App.tsx` 瘦身为编排层，抽取自定义 Hooks，大组件完成细粒度拆分。
 
-- **Migu Music Integration / 咪咕音乐全端接入**:
-  - 全栈接入第 6 家音乐平台：咪咕音乐（Migu Music），覆盖 Cloudflare Worker API、本地 Python CLI 与前端 Web UI 三层。
-  - **Worker API**：实现 `miguProvider`，支持 `c.migu.cn` 移动端分享短链（SSRF 安全 302 重定向）、`h5.nf.migu.cn` 与 `music.migu.cn` 网页链接；突破上游单页 50 首数量限制，支持多页并发抓取大歌单；标准化歌曲 VIP、无版权与高清音质（Hi-Res / FLAC / 320kbps / 128kbps）映射，封面规范化至 `https://d.musicapp.migu.cn`。
-  - **Unified Python CLI**：新增平台适配器 `cli/platforms/migu.py`（别名 `migu` / `mg`）与独立脚本 `cli/migu/migu_playlist_export.py`；`SmartDetector` 智能识别咪咕链接与分享文案；支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`）；纳入离线确定性自检（`--self-test`）。
-  - **Web UI & 导出**：前端增加咪咕音乐手账贴纸风格徽章与预设卡片；多语言（中英）完整同步；全导出格式 100% 对齐。
-  - **洞察系统 (Insights)**：全面适配 D1 聚合统计、API 遥测、本地运维看板、自动数据采集器与真实性回归测试。
+#### 🎧 播放器与插件生态
+- **MusicFree 插件升级（v2.0.0 ~ v2.2.2）**：
+  - **v2.0.0**：插件回归纯歌单解析单一职责，曲目保持原生平台归属；桌面稳定版支持跨插件严格自动兜底换源；
+  - **v2.1.0 ~ v2.1.3**：内置兜底音源引擎，保障历史歌单免重导与原生音源缺失时的播放；增加内置接口署名与试听片段保护；
+  - **v2.2.0 ~ v2.2.2**：匿名日活心跳上报；修复播放提示在后台偶发不自动消失的问题；新增「播放提示总开关」（`playbackToast`）与「兜底音源开关」（`fallbackSource`）。
 
-- **MusicFree plugin v2.2.2 — fallback source switch & terse settings hints / 兜底音源开关与极简设置提示**:
-  - 插件设置新增「兜底音源」项（`fallbackSource`）：填 `0` 后不再调用内置兜底音源引擎（QQ / 网易云 / 酷狗公开接口），缺源的极老曲目直接跳过、全程零第三方请求；留空或填 `1` 保持默认开启——跨插件严格换源与歌词兜底不受影响。
-  - 「兜底音源」「播放提示」两项设置提示统一为极简数字语义（`0=关，1=开(默认)`），适配 MusicFree 设置界面的窄输入框。
-  - 版本号提升至 2.2.2；测试套件扩展至 64 项（新增开关解析与「关闭后零第三方请求」行为断言）。
+#### 🐛 问题修复
+- 修复 QQ 音乐短链（`c6.y.qq.com`、`ryqq_v2`）及微信移动端 H5 链接的解析匹配。
+- 修复酷狗自建云端歌单批量解析中的排序与计数不同步问题。
+- 修复汽水音乐歌曲序号未从 1 开始（0-based）的规范一致性问题。
 
-- **MusicFree plugin v2.2.1 — playback toast master switch / 播放提示总开关**:
-  - 插件设置新增「播放提示」项（`playbackToast`）：填入 `0` / `off` / `关闭` 等关闭值后**完全关闭**全部弹窗提示——自动换源成功、未找到可用音源已跳过、仅试听30秒、酷狗限制提示等一律静默，切歌 / 切音质 / 自动兜底都不会再弹窗；留空或其它值保持默认开启（误填内容不会误关，行为不变）。
-  - 版本号提升至 2.2.1；测试套件扩展至 62 项（新增提示开关解析、关闭值契约与设置项元数据断言）。
+#### 🔒 安全与依赖隔离
+- **官方 Web 遥测来源鉴权**：正式环境分析归因强制要求校验白名单 Origin，杜绝通过伪造请求头伪装来源。
+- **本地运维看板安全沙箱**：Dashboard 彻底移除第三方 CDN 脚本引入，完全在本地源运行，配置严格的 CSP、Frame 与权限隔离响应头。
+- **SheetJS 严格写边界限制**：将 SheetJS（`xlsx`）锁定在纯写出沙箱中，CI 强制拦截并禁止生产前端代码引入 `XLSX.read` / `XLSX.readFile`，杜绝潜在的表格解析漏洞隐患。
+- **历史备份数据脱敏与清理**：清理公共仓库中过期的历史 D1 数据库转储文件，公网 CI 新增安全门禁拦截 `insights/backups/` 下的 SQL 备份，数据库备份迁移至 Cloudflare Time Travel 与私有安全存储。
 
-- **MusicFree plugin v2.2.0 — silent daily-active heartbeat & background-safe playback toast / 匿名日活心跳与播放提示后台自动消失修复**:
-  - 插件被播放器加载时静默发送一次匿名日活心跳（每设备每天最多一次：内存门闩 + 电脑端本地标记文件，写入或请求失败均不影响插件加载；无任何弹窗、提示或设置开关）；心跳内容仅 `{"type":"active"}`，不含歌单、账号、Token 或设备标识，服务端仅据此与请求声明头记录渠道 / 客户端版本 / 地区 / 小时与当日去重哈希，用于统计各端每日活跃规模（详见插件 README「匿名活跃统计说明」）。
-  - 修复桌面端胶囊播放提示（「音源：X」「未找到可用音源，已跳过」及酷狗限制提示）在窗口最小化、失焦被遮挡时偶发不自动消失的问题：Chromium 会节流后台页面的 `setTimeout` 并挂起 `requestAnimationFrame`，旧实现里若提示在后台触发，定时器可能先行执行、进场回调却直到窗口恢复才运行，恢复后提示便会常驻；现在页面不可见时不展示提示、页面转入后台立即收起并清空定时器，回到前台再按绝对过期时间自检兜底（进场动画改用同步强制重排，不再依赖 rAF）。
-  - 修复注入脚本忽略 `duration` 参数的问题：酷狗限制提示的 8000ms 长效展示按预期生效（此前被硬编码的 3600ms 提前收起）；提示目标窗口优先选择当前聚焦或可见的非销毁窗口，避免被注入到隐藏窗口。
-  - 版本号提升至 2.2.0；测试套件扩展至 60 项（新增日活心跳契约与播放提示生命周期断言）。
-
-- **MusicFree plugin v2.1.3 — built-in source interface credits / 内置音源接口署名**:
-  - 内置兜底命中的播放提示与「仅试听30秒」提示会在平台名后附上实际取链的接口服务名：QQ 直链「（VKeys）」、网易云「（GD音乐台）」或「（Meting）」；酷狗为官方公开接口不加后缀（如「内置音源：QQ音乐（VKeys）」「网易云音乐仅试听30秒（Meting）」）。
-  - 插件简介（MusicFree 插件详情页）与插件 README 新增「内置音源接口与致谢」：列出各通道对应服务、作者/文档链接与使用边界（只读、低频、最后兜底；60 秒失败负缓存 + 30 分钟结果复用），并注明与本项目无隶属关系、接口方调整时可随版本同步调整或移除。
-  - 版本号提升至 2.1.3；测试套件扩展至 52 项（新增接口署名与提示文案契约断言）。
-
-- **MusicFree plugin v2.1.2 — NetEase trial-clip detection & simplified playback toasts / 网易云试听片段识别与播放提示文案精简**:
-  - 修复网易云 VIP / 受限曲目走兜底链路时可能只播放 30 秒试听片段且毫无提示的问题：内置引擎新增试听片段识别（`jd-musicrep-ts` 直链标记 + 字节数/时长比例校验；Meting 经 Range 探测读取 `Content-Range` 总长，GD Studio 经 `size`/码率反推时长），识别后不再当作完整曲目——先继续严格匹配其它平台的完整版，全部无果时才兜底播放试听并提示「X仅试听30秒」（同一首歌 10 分钟去重）。
-  - 播放提示文案精简：去掉 emoji 与歌名，跨插件 / 内置兜底命中的成功提示统一为「音源：X」「内置音源：X」，全部无源为「未找到可用音源，已跳过」。
-  - `httpGet` 记录 302 重定向后的最终地址用于试听识别（不改变任何请求行为）。
-  - 测试套件扩展至 51 项（新增试听识别契约 + 「试听不顶替完整版、仅作最后兜底」行为断言）。
-
-- **MusicFree plugin v2.1.1 — legacy lyric fallback completeness / 历史歌单歌词兜底补全**:
-  - 修复极早期导入、原始平台身份完全不可识别（无 `_originPlatform` / 无历史 ID / 无 `_src`）的历史曲目在内置通道恢复播放后仍可能无歌词的问题：取词前先对各平台执行一次严格匹配的「搜索定位」（仅检索接口、不拉取音频流），定位成功即复用该身份取词；仍无果则按原有歌词兜底顺序处理。
-  - 测试套件扩展至 49 项（新增「来源不可识别曲目经严格搜索定位补齐歌词」断言）。
-
-- **MusicFree plugin v2.1.0 — embedded fallback sources return as the last-resort playback layer / 内置兜底音源回归（历史歌单兼容 + 原生全灭最后防线）**:
-  - **内置兜底音源引擎**：在原平台插件缺失、跨插件严格匹配无果（或宿主不提供跨插件通道，如手机端）时，自动调用内置兜底通道严格匹配原曲恢复播放 —— QQ音乐（vkeys 直链，无损 / 320k / 128k 按请求音质自动降级）、网易云音乐（GD Studio 直链含无损 + Meting 302 兜底）、酷狗音乐（官方搜索 + getSongInfo 免费曲直链，付费灰歌自动跳过）。
-  - **与跨插件兜底同级的最严匹配**：所有内置候选一律执行「同名 + 同歌手 + 同版本 + 时长偏差 ≤ 12 秒」100% 严格匹配，任何一级匹配不到完全一致的原曲立即跳过；媒体直链一律经过域名白名单（QQ音乐 / 网易云 / 酷狗 CDN 与 Meting 跳转地址）校验，绝不回传未知来源音源。
-  - **历史歌单免重导**：v1.4.1 及更早版本导入的品牌曲目（`platform` 仍为插件名）在播放时自动识别原平台身份（`_originPlatform` / 历史 ID 前缀 / `_src` 凭证）并恢复播放；歌词同样支持内置兜底（s01s / QQ 官方歌词接口 / 网易云官方接口），复用内置取源匹配结果。
-  - **提示体系整合**：跨插件与内置兜底全部失败后统一提示「已自动跳过」；内置通道命中时提示「已自动调用内置「X」音源为您匹配播放」。全部请求都在用户设备本地直连公开接口，不经 PlaylistOut 服务器转发；失败 60 秒负缓存、严格匹配结果 30 分钟复用（含并发去重）。
-  - **边界如实说明**：内置兜底覆盖 QQ音乐 / 网易云音乐 / 酷狗音乐三家公开接口；酷我（风控与广告音源风险）、咪咕 / 汽水（上游接口不可用）、B站（Referer 反爬）暂无内置通道，缺源曲目自动跳过；各平台 VIP / 付费曲目视公开接口返回情况而定，取不到时同样跳过。
-  - 测试套件扩展至 48 项（新增内置兜底取源/取词行为、严格匹配拒播、直链白名单、负缓存与跨插件优先级断言）。
-  - 治理记录：按《项目宪法》§16 变更控制流程，`docs/PROJECT-CONSTITUTION.md` §2 已登记本次「客户端播放器集成边界」例外（仅客户端本地、仅本插件导入的曲目、严格匹配、无下载功能、无服务器转发），并在 `docs/ROADMAP.md` 同步。
-
-- **MusicFree plugin v2.0.0 — pure playlist parser with native platform routing & strict auto-rescue / 纯歌单解析 + 原生音源路由与严格自动兜底**:
-  - 插件回归单一职责：只解析歌单，不再内置、不硬编码任何音源直链；解析出的曲目一律按原曲自然平台归属（qq / netease / kugou / kuwo / qishui / migu / bilibili）并注入 `_originPlatform` 与原生取链字段，播放与歌词交由设备上已安装的原生插件完成。
-  - 新增 `platform` 访问器保护：拦截 MusicFree 三端宿主导入后 `resetMediaItem(item, plugin.name)` 的品牌名覆写，曲目平台归属在 JSON/IPC 持久化后依然保持原生平台。
-  - 桌面稳定版新增自动兜底换源：拦截宿主插件调用通道 `@shared/plugin-manager/call-plugin-method`，在原平台插件缺失或取源/取词失败时按「原平台 → 主流平台 → 其余已安装插件」严格匹配原曲（歌名归一化相等 + 版本标签一致 + 歌手精确相等 + 时长偏差 ≤ 12 秒）后自动换源续播；匹配不到则跳过并提示，宁可跳过绝不播放错歌；匹配与失败均带缓存，音质切换复用结果。
-  - 移除全部内置音源通道、同级插件文件加载器、文件热补丁、「相似音源」宽松匹配与「音源通道 / 换源策略」设置项；插件设置仅保留酷狗 Token 凭据。
-  - 测试套件同步重构为 39 项（原生路由、跨端一致性、防覆写、严格匹配、兜底换源/换词、零内置音源断言、Hermes 语法完整性）。
-
-- **Architecture Evolution (P0–P3 Full Milestone Completion / 架构演进全量大版本重构)**:
-  - **P0 基础设施补全与模块化路由**: Worker 引入轻量高性能的 Hono 路由框架，将 700+ 行单体 `index.ts` 瘦身为纯入口适配器（7 行），解耦为 11 个单一职责路由与独立中间件（CORS 分权、安全头、速率限制），严密保持 HTTP 405 Method Not Allowed 语义；建立 `worker/src/providers/platforms.ts` 作为平台类型单一事实来源；强化 `MusicProvider` 自描述接口契约。
-  - **P1 Provider 注册中枢与 Service 解耦**: 建立 `ProviderRegistry` 注册中枢，将 5 大平台（QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐）全面迁移至自描述 `MusicProvider` 契约；三大核心 Service（`resolve-service.ts`、`playlist-service.ts`、`user-service.ts`）消除硬编码 if-else 瀑布，行数暴降 70%+，转为能力开关与注册表驱动；上线 `GET /api/v1/providers` 与 `GET /api/providers` 自描述元数据端点。
-  - **P2 前端解耦与 CLI 共享核心**: 前端 `App.tsx` 从 857 行上帝组件瘦身为 197 行编排层，提炼 4 个领域 Hooks（`usePlaylistParser`, `useDisambiguation`, `useViewMode`, `useChannelCache`）；拆分 `client.ts` 为单一职责 API 客户端门面；超大组件（`KugouAuthModal`, `StatsJournal`, `PlaylistSummary`, `SearchNote`）完成细粒度组件化；建立声明式校验规则表 `VALIDATION_RULES`；提炼 `cli/core/` 共享核心库（`terminal`, `exporters`, `http`, `models`, `cli_runner`），新增统一主入口 `cli/main.py` / `cli/playlistout.py`，各厂商脚本通过 `sys.path` 自适应完美保持独立运行。
-  - **P3 新厂商接入范式与双端扩展管道**: 制定新厂商标准化接入指南 [`docs/PROVIDER-ONBOARDING.md`](docs/PROVIDER-ONBOARDING.md) 并完成即插即用动态注册测试；构建 Worker 端洋葱模型元数据处理管道 `PlaylistPipeline`（包含 `unavailableAnnotator` 失效标注、`vipAnnotator` VIP 标定、`duplicateDetector` 歌曲去重检测中间件）；构建 Web 端插件化导出架构 `web/src/utils/export/`（`ExportPlugin` + `ExportRegistry`），原生支持 6 大导出格式（**全新支持 Markdown `.md` 表格导出**），并通过 `web/src/utils/export.ts` 保持 100% 同步向后兼容。
-
-- **Kugou Music CLI Exporter / 酷狗音乐 CLI 导出工具**:
-  - 新增酷狗音乐独立 Python CLI 导出工具（[`cli/kugou/`](cli/kugou/)），全面支持酷狗官方精选/专题歌单、酷狗概念版集合歌单、移动端分享页短链与 H5 分享页（`gcid_...` / `src_cid=...`）以及个人云端自建歌单（Cloudlist / 我喜欢的歌）。
-  - 公开歌单（专题、集合、H5）**100% 免登录**直接导出。
-  - 个人云端自建歌单提供**双轨认证与本地持久化保存**：
-    - **方式一（终端扫码）**：运行 `--login` 直接生成酷狗官方登录二维码并自动打开图片，手机酷狗 APP 扫码确认后自动获取 `token` 和 `userid`，并保存至 `~/.playlistout/kugou_auth.json`。
-    - **方式二（官网/抓包凭证）**：支持手动输入在 PlaylistOut 官网或抓包获取的 UserID 与 Token，或通过 `--token`/`--userid` 参数传入，自动保存复用。
-  - 支持高品与无损音质标记（FLAC / 320kbps / 128kbps）及 VIP 专享状态检测。
-  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
-  - 配套 31 项完整的自动化单元与集成测试（[`cli/kugou/test_kugou_utils.py`](cli/kugou/test_kugou_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
-
-- **Qishui Music CLI Exporter / 汽水音乐 CLI 导出工具**:
-  - 新增汽水音乐独立 Python CLI 导出工具（[`cli/qishui/`](cli/qishui/)），支持分享链接、移动端短链（`qishui.douyin.com/s/`、`qishui.com/s/`）、微信长分享文案与纯数字 ID 智能提取。
-  - 基于官方 Luna API 游标分页（Cursor Pagination）自动拉取全量歌单，突破单页限制。
-  - 支持双通道解析：`qishui`（官方清洁正版通道）与 `douyin`（全量抖音收藏原声通道）。
-  - 支持精细化状态判定（正常、VIP专享、付费专辑、视频、下架/无版权）。
-  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
-  - 配套 13 项完整的自动化单元与集成测试（[`cli/qishui/test_qishui_utils.py`](cli/qishui/test_qishui_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
-
-- **Kuwo Music CLI Exporter / 酷我音乐 CLI 导出工具**:
-  - 新增酷我音乐独立 Python CLI 导出工具（[`cli/kuwo/`](cli/kuwo/)），支持歌单 URL、短链与 ID 智能提取。
-  - 支持全量多页自动分页与并发拉取拼接，突破单页数量限制。
-  - 支持歌曲可用性与版权状态判定（正常、VIP专享、下架/无版权）。
-  - 支持全格式导出（`.xlsx`、`.csv`、`.json`、`.txt`、`.m3u8`），导出的 JSON 严格遵循 PlaylistOut Canonical JSON 数据规范。
-  - 配套 11 项完整的自动化单元与集成测试（[`cli/kuwo/test_kuwo_utils.py`](cli/kuwo/test_kuwo_utils.py)），并纳入本地门禁与 GitHub Actions CI 检查。
-
-- **Canonical metadata follow-up fixes**:
-  - 修复 QQ CLI 老接口在生成单曲封面时引用未定义 `cover_url` 的回归问题，并补齐三条 QQ CLI 数据通道的 `releaseDate / trackNumber / discNumber / mvId / mvUrl` 输出。
-  - 修正 QQ Web/API 对真实 `time_public=YYYYMMDD` 与 `index_cd` 的解析，避免发行日期和碟号字段“有 Schema 但实际不出现”。
-  - 酷狗利用歌单响应中已有的 SQ/320 哈希与文件大小零额外请求补充 `maxQuality`；网易发行时间兼容秒/毫秒时间戳。
-  - Web JSON 与 Soundiiz Adapter 清理遗留 `rawIds / artists` 兜底，只消费新的 Canonical Track 字段。
-
-- **Canonical JSON 数据规范统一与跨端输出标准化**:
-  - 全仓库统一规范歌曲对象结构，推荐键顺序：`index` → `title` → `artist` → `album` → `id` → `isrc` → `durationMs` → `releaseDate` → `trackNumber` → `discNumber` → `sourceUrl` → `playbackUrl` → `coverUrl` → `isOriginalSound` → `isVip` → `isAvailable` → `status` → `statusText` → `maxQuality` → `mvId` → `mvUrl`。
-  - 彻底淘汰重复同义表达（`artists` 数组、`artistList`、`albumObj`、`publishTime`）及调试字典 `rawIds`，统一使用单字符串 `artist`（多歌手以 `, ` 连接）与纯字符串 `album`。
-  - 严格贯彻“单写宽容读”架构：Writer 仅输出新规范，严禁为了占位填充 `null` 或假数据；Reader（MusicFree 插件升级至 v1.4.0）深度兼容旧版历史数据。
-  - 同步对齐 QQ 音乐与网易云 Python CLI 导出工具，输出一致的 Canonical Playlist 格式。
-- **Analytics V2 production cutover**: production analytics now runs exclusively on the V2 aggregate model; V1 fact tables and the former `/api/internal/stats` endpoint are retired, while public lifetime counters preserve continuity through the cutover bridge.
-- **Dashboard V3 maintenance surface**: the localhost-only maintainer dashboard now consumes Analytics V2, exposes honest filter-scope boundaries, uses hourly trends for single-day non-geographic views, and shows explicit data-integrity state.
-- **Release/runtime consistency**: v2.2.0 runtime version reporting is centralized, package/workspace versions are aligned, and post-release dependency/toolchain maintenance has been validated through CI and production deployment gates.
-- **Repository governance**: the project constitution and roadmap now describe the real four-provider v2.2.x production baseline instead of the historical QQ-only MVP state. Remote CI also runs repository policy checks that previously existed only in the local pre-push gate.
-- **Live acceptance**: Provider live acceptance now covers all four production providers (QQ Music, NetEase Cloud Music, KuGou Music, and Qishui Music) plus a deployed Public API smoke test for health, CORS, normalized playlist structure, and KuGou preview semantics.
-- **CI/CD runtime hardening**: GitHub Actions now pin the validated Ubuntu 24.04 runner, use current Node 24-compatible official action majors, make Pages deployments latest-wins to clear stale concurrency locks, and serialize/supersede overlapping live-acceptance runs.
-- **Dashboard offline snapshot navigation & performance**: the local maintainer dashboard now performs one authenticated aggregate snapshot fetch when the Python process starts (or on explicit manual refresh), then serves arbitrary single-day/custom-range, platform/client/geography, Reliability, Security/quarantine, and Feedback list views entirely from local memory. Date shortcuts include today/yesterday/day-before-yesterday/three-days-ago/all-history; stale localhost requests are cancelled, recent local results are cached, and the filtered Analytics V2 diagnostic endpoint also collapses breakdown reads into one grouped query.
-
-### Fixed / 修复
-
-- **NetEase playlist inline tracks optimization**: 修复网易云详情接口（v6）已包含全量内联歌曲时仍全量重新批量请求 `api/v3/song/detail` 导致的连接重置、多轮重试风暴和请求超时问题，将常规千首以内歌单解析耗时从 20+ 秒大幅降至 2~3 秒。
-- **Qishui track ordering**: Qishui and Douyin-channel playlist tracks now follow PlaylistOut's shared 1-based `Track.index` contract instead of exposing a 0-based first track through the provider and production Public API.
-
-### Security / 安全
-
-- Official Web analytics attribution now requires an allowed Web Origin; a forged session header alone cannot classify an API caller as `web / official_web`.
-- Dashboard V3 no longer executes third-party CDN JavaScript inside the localhost maintainer origin and sends restrictive local CSP/frame/permissions headers.
-- The current SheetJS dependency is kept behind a **write-only production boundary**. CI rejects `XLSX.read` / `XLSX.readFile` in production Web source so workbook parsing cannot be introduced without first reviewing and remediating the known parser advisories.
-- Removed obsolete V1 D1 SQL dumps/restoration scripts from the public repository because they contained maintainer-only historical analytics dimensions and daily visitor hashes. Public CI now forbids SQL backups under `insights/backups/`; recovery belongs in D1 Time Travel or private external storage.
+---
 
 ## [v2.2.0] - 2026-09-19
 
-### 🎧 四大平台矩阵、Public API v1、酷狗安全授权 & Analytics Foundation 完整交付 / Multi-Platform Matrix, Public API v1, KuGou Safe Auth & Analytics Foundation Complete
+### 🎧 四大平台支持、Public API v1、酷狗安全授权与数据分析基建
 
 在 v2.1.0 完善批量导出后，v2.2.0 迎来了重大的跨平台能力跨越：正式接入**网易云音乐**、**酷狗音乐**与**汽水音乐**，发布高可用、边缘原生的 **Public API v1 开放平台**，推出手机 App 扫码与一键跳转安全解锁机制，全面升级导出格式规范，并完成 **Analytics Foundation R1–R8** 全栈基础设施建设，将 D1 数据库生命周期安全管理提升至生产级标准。
 
-Following v2.1.0 batch export, v2.2.0 delivers a major architectural leap: native support for **NetEase Cloud Music**, **KuGou Music**, and **Soda Music**, the official **Public API v1**, mobile QR & deep link safe auth, a 7-column export spec with VIP/availability status, and the complete **Analytics Foundation R1–R8** — elevating D1 lifecycle safety and analytics pipeline integrity to production grade.
+### 新增功能
 
-### 新增功能 / Added
-
-- **PlaylistOut Public API v1 开放平台 (Public API v1 Open Platform)**：
+- **PlaylistOut Public API v1 开放平台**：
   - 正式发布面向第三方的现代化公共 API，包含：
     - `GET /api/v1/resolve`：万能智能解析器，完整对齐网页大搜索框能力，支持跨平台数字 ID 并发探测与 `409 AMBIGUOUS_INPUT` 消歧义候选推荐；
     - `GET /api/v1/playlist`：单歌单稳定检索接口；
@@ -147,36 +70,36 @@ Following v2.1.0 batch export, v2.2.0 delivers a major architectural leap: nativ
   - 严谨的错误处理与安全脱敏：500 异常对公网严格返回通用脱敏文本，杜绝内部错误堆栈、数据库连接串及敏感凭据外泄。
   - 独立路由速率限制隔离：各解析路由彼此独立享有 30 次/分钟限额，互不影响。
   - 完整开发者接口规范文档 [`docs/API.md`](docs/API.md)（含 cURL / TypeScript / Python 接入示例）。
-- **多平台矩阵拓展 (Multi-Platform Matrix)**：
+- **多平台支持扩展**：
   - **网易云音乐**：支持歌单网页链接、手机短链（`163cn.tv`）、纯歌单 ID 解析与 UID 用户主页批量拉取，内置分批获取引擎突破未登录截断限制。
-  - **汽水音乐 (Soda Music)**：支持分享短链（`qishui.douyin.com/s/...`）及纯数字 ID 识别，完整支持抖音同步收藏歌单与官方原声原唱识别。
+  - **汽水音乐**：支持分享短链（`qishui.douyin.com/s/...`）及纯数字 ID 识别，完整支持抖音同步收藏歌单与官方原声原唱识别。
   - **酷狗音乐**：支持公开歌单网页与 App 分享链接解析，提供免登录极速公开预览。
-- **酷狗双模态安全授权与开发者凭证 (KuGou Dual-Mode Auth & Developer Credentials)**：
+- **酷狗双模态安全授权与开发者凭证**：
   - 桌面端支持动态二维码扫码，手机端支持 `kugouURL://` 协议一键拉起官方 App 完成登录，解决单设备无法扫码的痛点。
   - 授权成功后提供「开发者 API 凭证」卡片，一键复制 cURL 调试命令、原始 Token 与 UserID。
   - 零持久化：凭据保存在本地浏览器 LocalStorage；当用户请求需登录的酷狗数据时，仅通过 `Authorization` / `X-Kugou-Userid` 请求头发送给 PlaylistOut Worker 用于本次上游请求，绝不写入 D1、Analytics、日志或仓库。
-- **歌曲 VIP 与可用性状态识别 (Song VIP & Availability Status)**：
+- **歌曲 VIP 与可用性状态识别**：
   - 全链路自动识别歌曲状态：正常可播、下架/无版权变灰、VIP 专享、付费专辑等。
   - 网页预览表格增加「VIP」与「状态」两列，彩色手绘手账徽章直观呈现。
   - CSV / Excel 扩展为 7 列（含 `VIP`、`歌曲状态`），TXT 自动附带 `[状态]` 后缀，JSON 含完备的 `isVip`、`isAvailable`、`statusText` 字段。
-- **跨平台纯数字 ID 智能消歧义 (Multi-Platform Disambiguation)**：
+- **跨平台纯数字 ID 智能消歧义**：
   - 并发探测各平台的单歌单及用户主页；发现多目标时自动弹出消歧义手账卡片 (`DisambiguationModal`)。
 
-### Analytics Foundation 基础设施全面加固 (R1–R8 Complete) / Analytics Infrastructure
+### 数据分析基建加固 (Analytics Foundation R1–R8)
 
-- **Dashboard 完整性 (R3)**：Rolling 30-day 全维度数据覆盖；CI 加入 Dashboard 完整性断言，消除数据空洞。
+- **看板完整性 (R3)**：滚动 30 天全维度数据覆盖；CI 加入看板完整性断言，消除数据空洞。
 - **客户端事件信任边界 (R4)**：有界流式请求体读取与非放大式 Durable Object 速率限制器，防止 DoS 放大与事件洪水攻击。
 - **Referrer 最小化 (R5)**：服务端截断 Referer 头至 Origin 级别，路径与 Query 参数不进入 D1；同步更新隐私政策。
 - **公开 / 维护者 Analytics 分离 (R6)**：`/api/stats` 仅返回安全聚合数字；`/api/internal/stats` 要求 Bearer 鉴权，未授权严格返回 `401`。
-- **解析失败分类遥测 (R7)**：结构化 `resolve_input_type` 流水线，精确分类每类输入失败原因，支持维护者在 Dashboard 直接观测失败热点。
-- **D1 Provisioning & Migration 安全 (R8/R8.1)**：
-  - **迁移历史预检门**：`verify-migration-history.js --mode=pre-apply` 在 Apply 前验证 DB 历史与仓库文件的严格前缀关系；对「有业务表但无迁移记录」的未追踪数据库**快速失败**。
+- **解析失败分类遥测 (R7)**：结构化 `resolve_input_type` 流水线，精确分类每类输入失败原因，支持维护者在看板直接观测失败热点。
+- **D1 部署与迁移安全 (R8/R8.1)**：
+  - **迁移历史预检门**：`verify-migration-history.js --mode=pre-apply` 在 Apply 前验证 DB 历史与仓库文件的严格前缀关系；对「有业务表但无迁移记录」的未追踪数据库快速失败。
   - **后检精确等价验证**：Apply 完成后三重校验（数量 + 顺序 + 文件名），任何额外迁移均导致部署失败。
   - **生产工作流串行化**：`concurrency: cancel-in-progress: false` 防止并发竞态；明确 9 步部署序列（UUID 校验 → 预检 → Apply → 后检 → Worker 部署）。
-  - **36 项 D1 Migration Safety Tests**：含 11 个对抗性场景（空 DB、未追踪 DB、有间隙、乱序、附加迁移等），全部通过。
-  - **本地 CI Gate**：`npm run gate` 7 项检查（Workflow 语法、机密泄漏、Python、TypeScript、Web、Worker、D1 Migration）推送前 100% 绿灯强制执行。
+  - **36 项 D1 迁移安全测试**：涵盖空 DB、未追踪 DB、有间隙、乱序、附加迁移等对抗性场景，全部通过。
+  - **本地 CI 门禁**：`npm run gate` 强制执行 7 项检查（Workflow 语法、机密泄漏、Python、TypeScript、Web、Worker、D1 Migration），推送前必须 100% 通过。
 
-### 修复与优化 / Fixed & Improved
+### 修复与优化
 
 - **批量导出链接修正**：修复非 QQ 平台歌单链接缺少 sourceUrl 时错误回退至 QQ 域名的 Bug，统一使用 `getPlatformPlaylistUrl` 动态解析。
 - **意外探测错误安全脱敏**：`/api/v1/resolve` 对未预期异常统一脱敏为通用 `500 INTERNAL_ERROR` 响应，避免内部错误栈外泄。
@@ -188,147 +111,105 @@ Following v2.1.0 batch export, v2.2.0 delivers a major architectural leap: nativ
 
 ## [v2.1.0] - 2026-09-15
 
-### 🎵 批量歌单导出 & 手账背景装饰 / Batch Playlist Export & Scrapbook Background
+### 🎵 批量歌单导出与手账背景装饰
 
 继 v2.0.0 全面升级为 Web 版本后，v2.1.0 聚焦于**批量导出体验**的完整落地，并对整体 UI 的手账沉浸感进行了深度打磨。
 
-Following the v2.0.0 Web relaunch, v2.1.0 delivers a complete **batch playlist export** workflow and significantly enriches the music journal visual identity.
+### 新增功能
 
-### 新增功能 / Added
-
-- **QQ 号批量歌单解析与导出 (Batch Playlist Export by QQ Number)**：
+- **QQ 号批量歌单解析与导出**：
   - 输入 QQ 号或用户主页链接（`y.qq.com/portal/profile.html?uin=...`）可一键拉取该用户名下所有公开自建歌单的完整列表。
-  - Input a QQ number or profile URL to fetch all publicly-created playlists for that user in one click.
   - 支持多选 / 全选 / 取消全选，自由选定需要导出的歌单子集。
-  - Multi-select, select-all, and deselect-all to choose any subset of playlists for export.
-  - 支持 5 种批量导出格式：**多 Sheet Excel 合集**（所有歌单在一个 .xlsx 中各占一 Sheet）、**ZIP（各歌单独立 xlsx / csv / txt / json）**。
-  - Supports 5 batch export formats: multi-sheet Excel (all playlists in one workbook) and ZIP archives (xlsx / csv / txt / json per playlist).
+  - 支持 5 种批量导出格式：**多表合一 Excel**（所有歌单在一个 `.xlsx` 中各占一 Sheet）、**ZIP 压缩包**（各歌单独立导出为 xlsx / csv / txt / json）。
   - 实时导出进度条与取消支持，可在导出途中随时中止。
-  - Real-time progress bar during batch fetch with cancel support at any time.
-- **智能双模式识别 (Smart Dual-Detection for Numeric Input)**：
+- **智能双模式识别**：
   - 当输入纯数字时，系统并行探测「单一歌单 ID」与「QQ 用户号」两种可能，自动选取最合理的结果。
-  - Numeric input concurrently probes both single-playlist and user-QQ interpretations, auto-selecting the best match.
   - 若两者均命中（歌单 ID 恰好与 QQ 号同数字），展示「碰撞提示横幅」供用户手动切换。
-  - A collision banner is shown when both interpretations are valid, letting the user switch manually.
-- **歌单详情无缝返回 (Seamless Back-to-Collection Navigation)**：
-  - 在批量列表中点击"查看曲目"下钻单歌单详情页后，左上角出现「🔙 返回歌单集合」按钮。
-  - When viewing a single playlist drilled down from a batch collection, a "🔙 Back to Collection" button appears at the top.
+- **歌单详情无缝返回**：
+  - 在批量列表中点击“查看曲目”下钻单歌单详情页后，左上角出现「🔙 返回歌单集合」按钮。
   - 返回时无需重新请求，之前的歌单列表、勾选状态、格式选择全部完好保留。
-  - Returning is instant with no re-fetch; all selection state and format preferences are preserved.
-- **手账背景板装饰 (Scrapbook Background Decorations)**：
+- **手账背景板装饰**：
   - 新增 `BackgroundDecorations` 组件，在页面背景层随机散落贴纸（"🎵 music"、"♥ favorited"、"chill vibes"、"mix vol.1"、"PLAYLIST OUT"）、胶带与手绘涂鸦符号（♪ ★ ✧ ❥ ♬ 等）。
-  - Added `BackgroundDecorations` component that layers stickers, tape strips, and hand-drawn doodles (♪ ★ ✧ ❥ ♬) across the page background.
   - 所有装饰元素均设置 `pointer-events: none`，不干扰任何交互操作。
-  - All decorations are pointer-events-none and never interfere with interaction.
 
-### 优化 / Changed
+### 优化
 
-- **装饰元素位置优化**：`UserPlaylistsPaper` 的粉色胶带贴到纸张左上角边缘（`top: -1rem`，更大尺寸、更大旋转角度），金色星星 ✦ 移至右侧外边缘，同时避免遮挡标题内容。
-- Repositioned decorative tape (bigger, sharper angle, top-left corner) and star (further right) on the batch paper for better visual balance.
-- **"全选"按钮位置下移**：从「批量打包导出」面板内移至「公开歌单目录」列表标题行的右侧，与选项列表语义对齐，操作更直观。
-- Moved "Select All" button from the export panel to the playlist catalog header row, co-located with the list it controls.
+- **装饰元素位置优化**：`UserPlaylistsPaper` 的粉色胶带贴到纸张左上角边缘（`top: -1rem`，更大尺寸、更大旋转角度），金色星星 ✦ 移至右侧外边缘，避免遮挡标题内容。
+- **“全选”按钮位置调整**：从「批量打包导出」面板内移至「公开歌单目录」列表标题行的右侧，与选项列表语义对齐，操作更直观。
 - **响应式装饰防溢出**：将胶带与星星的绝对定位外移量收窄（`-1.5rem → -1rem`），并外套绝对定位 `<div>` 容器，防止在小屏幕上触发横向滚动条。
-- Tightened absolute-positioned decorative offsets to prevent overflow-x on narrow viewports.
 
-### 修复 / Fixed
+### 修复
 
-- **CI 构建兼容**：`Tape` 组件不支持 `"blue"` 颜色值，本地 Vite 打包未报错但 CI `tsc --noEmit` 严格类型检查会失败，已替换为合法的 `"cyan"`。
-- Fixed `Tape color="blue"` TypeScript error (not in the allowed union) that only surfaces during CI strict typecheck (`tsc --noEmit`), replaced with `"cyan"`.
+- **CI 构建类型兼容**：`Tape` 组件此前误用 `"blue"` 颜色值触发 CI `tsc --noEmit` 严格类型检查错误，已替换为合法的 `"cyan"`。
 
 ---
 
 ## [v2.0.0] - 2026-09-12
 
-### 🌟 升级为全新 Web 网页版 / Evolution to PlaylistOut Web
+### 🌟 升级为全新 Web 网页版
 
-这是 PlaylistOut 的一次重要里程碑升级：项目从最初本地运行的 QQ 音乐 Python 命令行脚本，全面演进为开箱即用的现代化在线 Web 工具 [`playlistout.lengxiqwq.com`](https://playlistout.lengxiqwq.com)。无需安装 Python 环境或第三方依赖，在浏览器中即可直接解析与导出公开歌单。
+这是 Playlist Out 的一次重要里程碑升级：项目从最初本地运行的 QQ 音乐 Python 命令行脚本，全面演进为开箱即用的现代化在线 Web 工具 [`playlistout.lengxiqwq.com`](https://playlistout.lengxiqwq.com)。无需安装 Python 环境或第三方依赖，在浏览器中即可直接解析与导出公开歌单。
 
-This is a major milestone release for PlaylistOut: the project has evolved from a local Python command-line script into a modern, ready-to-use web application at [`playlistout.lengxiqwq.com`](https://playlistout.lengxiqwq.com). Users can now parse and export public playlists directly in their browsers without installing Python or local dependencies.
+### 新增功能
 
-### 新增功能 / Added
-
-- **在线解析与实时预览 (Online Parse & Preview)**:
+- **在线解析与实时预览**:
   - 访问网站直接粘贴 QQ 音乐公开歌单链接（PC 网页端、手机分享链接或纯歌单 ID）即可一键解析。
-  - Direct paste of public QQ Music playlist links (web URLs, mobile share links, or raw IDs) with instant parsing.
   - 展示歌单封面、标题、创建者与歌曲总数，并提供流畅的歌曲列表预览（支持 1000+ 首大型歌单流畅滚动渲染）。
-  - Displays playlist cover, title, creator, and total count with a high-performance track preview table handling 1000+ tracks smoothly.
-- **客户端本地多格式导出 (Browser-Local Exports)**:
+- **客户端本地多格式导出**:
   - 支持将解析结果导出为 **TXT**、**CSV**（带 UTF-8 BOM，Excel 打开不乱码）、**Excel (.xlsx)** 与 **JSON**。
-  - Export songs into TXT, CSV (with UTF-8 BOM), Excel (.xlsx), and JSON formats.
   - **100% 浏览器本地生成**：所有文件构建全部在本地内存沙箱中完成，导出的文件绝不上传至任何服务器。
-  - 100% client-side generation in browser memory; exported files are never uploaded to any server.
   - **防表格公式注入保护**：对以 `=`, `+`, `-`, `@` 开头的歌曲名或专辑名自动转义，防范表格软件中的公式执行隐患。
-  - Spreadsheet formula injection protection (automatic escaping for `=`, `+`, `-`, `@` prefixes).
-- **快速剪贴板复制 (One-Click Clipboard Copy)**:
+- **快速剪贴板复制**:
   - 支持一键将整张歌单按 3 种格式复制到剪贴板（仅歌名 / 歌名 - 歌手 / 完整歌曲信息），方便导入其他工具或播放列表。
-  - Quick clipboard copy in 3 flexible formatting modes (Title only / Title - Artist / Full track info).
-- **超大歌单智能自动翻页 (Automatic Bounded Pagination)**:
+- **超大歌单智能自动翻页**:
   - 后端内置分页拉取机制，支持无损拉取上千首大歌单，内置死循环检测，同时完整保留合法的重复歌曲。
-  - Automatic multi-page fetching for large playlists with stalled-loop protection while faithfully preserving legitimate duplicate tracks.
-- **隐私与轻量架构 (Privacy & Lightweight Infrastructure)**:
+- **隐私与轻量架构**:
   - 无账号体系，无登录门槛，服务端纯无状态运行，不持久化存储任何用户歌单历史与歌曲条目。
-  - Completely stateless architecture: no accounts, no logins, and zero server-side storage of playlist contents.
   - 匿名聚合统计：基于 Cloudflare D1 仅记录按天聚合的成功/失败解析频次，不记录用户 IP、Cookie 或歌单标识。
-  - Anonymous aggregated statistics: Cloudflare D1 stores only high-level counters by date, never tracking user IPs, cookies, or playlist identifiers.
   - 安全标头与防滥用：配置严格的出站域名白名单、OWASP 安全响应头及实例级滑动窗口速率限制。
-  - Security hardening with strict outbound host allowlists, OWASP response headers, and rate limiting.
-- **经典工具保留 (Legacy CLI Preserved)**:
+- **经典工具保留**:
   - 原有的独立 Python 命令行工具完整保留在 [`cli/qqmusic/`](./cli/qqmusic/)，并保持独立测试与功能可用。
-  - The original Python CLI is preserved under [`cli/qqmusic/`](./cli/qqmusic/) with independent unit tests.
 
 ---
 
 ## [v1.1.0] - 2026-06-28
 
-### 🌟 QQ 号批量导出增强版 / Batch Export by QQ Number (Python CLI)
+### 🌟 QQ 号批量导出增强版（Python CLI）
 
 这是早期 QQ 音乐 Python 命令行工具的重要功能更新，引入了基于 QQ 号一键导出用户公开自建歌单的能力。
 
-This release brings a major feature enhancement to the Python CLI tool, enabling batch discovery and export of all public playlists created by a specific user QQ account.
+### 新增功能与优化
 
-### 新增功能与优化 / Added & Improved
-
-- **QQ 号批量获取与导出 (Batch Export by QQ Number)**:
+- **QQ 号批量获取与导出**:
   - 在命令行直接输入用户 QQ 号，自动查询并列出该用户所有公开自建歌单，支持一键按选定格式批量抓取并分别保存。
-  - Input a user's QQ number to list all public playlists and batch-export them in one go.
-- **智能歧义消解 (Smart Disambiguation)**:
+- **智能歧义消解**:
   - 当输入的纯数字既符合歌单 ID 又符合 QQ 号特征时，自动提示用户选择执行“单歌单导出”还是“批量导出”。
-  - Prompts user to choose between single-playlist export and user-batch export when numeric input is ambiguous.
-- **系统预设歌单过滤 (Filter System Playlists)**:
+- **系统预设歌单过滤**:
   - 自动过滤没有独立 ID 的空间背景音乐等系统歌单，避免抓取报错。
-  - Automatically skips system-generated playlists without IDs to avoid fetch failures.
-- **终端乱码修复 (Console Encoding Fix)**:
+- **终端乱码修复**:
   - 优化 Windows 控制台中文输出编码处理，避免歌单名和进度提示乱码。
-  - Fixed character encoding quirks in Windows console environments.
-- **工程规范化 (Project Hygiene)**:
+- **工程规范化**:
   - 添加项目 `.gitignore`，规范临时导出文件忽略规则。
-  - Added `.gitignore` to prevent generated playlist export files from being tracked by git.
 
 ---
 
 ## [v1.0.0] - 2025-11-22
 
-### 🌟 初始开源版本 / Initial Release (Python CLI)
+### 🌟 初始开源版本（Python CLI）
 
-PlaylistOut 最早期的开源版本：一个轻量、实用的 QQ 音乐歌单导出 Python 命令行工具。
+Playlist Out 最早期的开源版本：一个轻量、实用的 QQ 音乐歌单导出 Python 命令行工具。
 
-The first open-source release of PlaylistOut: a lightweight, standalone Python CLI tool for exporting QQ Music playlists.
+### 核心功能
 
-### 核心功能 / Features
-
-- **单歌单解析导出 (Single Playlist Export)**:
+- **单歌单解析导出**:
   - 支持直接输入 QQ 音乐网页链接（`y.qq.com`）或纯数字歌单 ID。
-  - Parse public QQ Music playlists by web link or playlist ID.
-- **支持 4 种文件格式 (4 Output Formats)**:
+- **支持 4 种文件格式**:
   - Excel (`.xlsx`)
   - 标准 CSV (`.csv`，UTF-8 带 BOM)
   - JSON 数组 (`.json`)
   - 纯文本 (`.txt`)
-- **跨平台文件名清洗 (Filename Sanitization)**:
+- **跨平台文件名清洗**:
   - 自动将歌单名称中 Windows 不允许的特殊字符替换为空格，避免保存失败。
-  - Automatically sanitizes illegal characters in playlist names for safe file saving.
-- **交互式循环与自动定位 (Interactive CLI Loop & Auto-reveal)**:
+- **交互式循环与自动定位**:
   - 命令行交互式提示，导出后可继续输入下一个歌单。
-  - Continuous CLI prompt allowing multiple exports in one session.
   - Windows 环境导出完毕后自动在资源管理器中打开目标目录并高亮选中文件。
-  - Automatically opens the output directory and highlights the exported file on Windows.
