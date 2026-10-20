@@ -1756,7 +1756,7 @@ export function buildAnalyticsSlice(
   if (excludeMy) {
     fbRows = fbRows.filter((r) => String(r.country || '').toUpperCase() !== 'MY');
   }
-  const fbPending = fbRows.filter((r) => (r.status || 'pending').toLowerCase() === 'pending').length;
+  const fbPending = fbRows.filter((r) => String(r.status || 'pending').toLowerCase() === 'pending').length;
 
   const successCount = Number(overviewRaw['playlist_success'] || 0) + Number(overviewRaw['user_success'] || 0);
 
@@ -1924,7 +1924,7 @@ export function buildAnalyticsSlice(
         }
       }
 
-      const clKey = clientId.toLowerCase();
+      const clKey = String(clientId || '').toLowerCase();
       const versionDist = breakdowns[`${clKey}_version`] || (clKey === 'musicfree' ? breakdowns['client_version'] : []) || [];
       const hostDist = breakdowns[`${clKey}_host`] || (clKey === 'musicfree' ? breakdowns['host_platform'] : []) || [];
 
@@ -2192,8 +2192,9 @@ export function buildFeedbackSlice(
     if (p) {
       platformCounts.set(p, (platformCounts.get(p) || 0) + 1);
     }
-    if (r.source_url) {
-      uniqueUrls.add(r.source_url);
+    const rawUrl = r.source_url || (r as { url?: string }).url || '';
+    if (rawUrl) {
+      uniqueUrls.add(rawUrl);
     }
     totalReports += Number(r.report_count || 1);
   }
@@ -2242,7 +2243,7 @@ export function buildFeedbackSlice(
   // Filter by status if specified
   const targetStatus = (query.status || '').trim().toLowerCase();
   if (targetStatus && targetStatus !== 'all') {
-    rows = rows.filter((r) => (r.status || 'pending').toLowerCase() === targetStatus);
+    rows = rows.filter((r) => String(r.status || 'pending').toLowerCase() === targetStatus);
   }
 
   // Filter by error_code if specified

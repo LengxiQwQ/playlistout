@@ -54,8 +54,9 @@ export interface SnapshotClientEnvRow {
 
 export interface FeedbackRow {
   id: number;
-  platform: string;
-  source_url: string;
+  platform: string | null;
+  source_url?: string;
+  url?: string;
   error_code: string | null;
   error_message?: string | null;
   country?: string | null;

@@ -452,21 +452,25 @@ const AUTO_PALETTE = [
   '#2563eb', '#7c3aed', '#d97706', '#4f46e5', '#0284c7',
 ];
 
-function getBrandColor(key: string): string {
-  const k = key.toLowerCase();
+export function getBrandColor(key: string | null | undefined): string {
+  const safeKey = String(key ?? '').trim();
+  if (!safeKey) return '#94a3b8';
+  const k = safeKey.toLowerCase();
   if (BRAND_COLORS[k]) return BRAND_COLORS[k];
-  if (COUNTRY_META[key]) return COUNTRY_META[key].color;
+  if (COUNTRY_META[safeKey]) return COUNTRY_META[safeKey].color;
   let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash << 5) - hash + key.charCodeAt(i);
+  for (let i = 0; i < safeKey.length; i++) {
+    hash = (hash << 5) - hash + safeKey.charCodeAt(i);
     hash |= 0;
   }
   return AUTO_PALETTE[Math.abs(hash) % AUTO_PALETTE.length];
 }
 
-function formatHumanLabel(val: string): string {
-  if (COUNTRY_META[val]) return COUNTRY_META[val].name;
-  if (PROVINCE_NAMES[val]) return PROVINCE_NAMES[val];
+export function formatHumanLabel(val: string | null | undefined): string {
+  const s = String(val ?? '').trim();
+  if (!s) return '—';
+  if (COUNTRY_META[s]) return COUNTRY_META[s].name;
+  if (PROVINCE_NAMES[s]) return PROVINCE_NAMES[s];
   const map: Record<string, string> = {
     // 客户端 Client
     official_web: 'Playlist Out Web',
@@ -609,7 +613,7 @@ function formatHumanLabel(val: string): string {
     baidubrowser: '百度浏览器',
     baidu_browser: '百度浏览器',
   };
-  return map[val] || val;
+  return map[s] || s;
 }
 
 function formatBrowserLabel(val: string): string {
@@ -875,7 +879,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--p) 90%, var(--a)); }
 }
 `;
 
-class DashboardApp {
+export class DashboardApp {
   private container: HTMLElement;
   private token: string | null = null;
   private snapshot: AnalyticsSnapshot | null = null;
@@ -4915,14 +4919,15 @@ class DashboardApp {
           `;
         }
 
+        const targetUrl = x.source_url || (x as { url?: string }).url || '';
         return `
           <tr>
             <td style="font-family:var(--mono)">#${esc(x.id)}</td>
-            <td><span style="font-weight:600;color:${getBrandColor(x.platform)}">${esc(formatHumanLabel(x.platform || 'unknown'))}</span></td>
+            <td><span style="font-weight:600;color:${getBrandColor(x.platform || 'unknown')}">${esc(formatHumanLabel(x.platform || 'unknown'))}</span></td>
             <td>
               <div style="display:flex;align-items:center;gap:6px">
-                <a href="${esc(x.source_url)}" target="_blank" rel="noopener noreferrer" class="url-cell" title="${esc(x.source_url)}">${esc(x.source_url)}</a>
-                <button class="btn-sm cp-btn" data-url="${esc(x.source_url)}" style="font-size:10px;padding:1px 5px">复制</button>
+                <a href="${esc(targetUrl)}" target="_blank" rel="noopener noreferrer" class="url-cell" title="${esc(targetUrl)}">${esc(targetUrl)}</a>
+                <button class="btn-sm cp-btn" data-url="${esc(targetUrl)}" style="font-size:10px;padding:1px 5px">复制</button>
               </div>
             </td>
             <td><span class="badge" style="background:var(--l);font-family:var(--mono)">${esc(x.error_code || '—')}</span></td>
