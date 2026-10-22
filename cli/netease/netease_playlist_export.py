@@ -782,15 +782,25 @@ def main():
                         for idx, p in enumerate(sub_pls, len(created_pls) + 1):
                             print(f"    {idx}. {p['name']} ({p['track_count']}首) [ID: {p['id']}]")
 
-                    sel = input("\n请选择要导出的歌单序号（或输入 all 导出所有，0 返回）：").strip()
+                    if sub_pls:
+                        sel = input("\n请选择要导出的歌单序号（输入 all 导出全部，输入 user 仅自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）：").strip()
+                    else:
+                        sel = input("\n请选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）：").strip()
                     print("=" * 64)
-                    if sel == '0':
+                    if not sel or sel in ('0', 'q', 'quit', 'exit'):
                         continue
                     to_export = []
-                    if sel.lower() == 'all':
+                    sel_lower = sel.lower()
+                    if sel_lower in ('all', 'a', '*', '全部', '全量', '全部歌单'):
+                        to_export = pls
+                    elif sel_lower in ('user', 'u', 'created', 'c', '自建', '用户', '自建歌单', '用户歌单'):
                         to_export = created_pls
-                    elif sel.isdigit() and 1 <= int(sel) <= len(pls):
-                        to_export = [pls[int(sel) - 1]]
+                    elif sel_lower in ('sub', 's', 'subscribed', '收藏', '收藏歌单'):
+                        to_export = sub_pls
+                    else:
+                        from cli.core.batch import parse_playlist_selection
+                        indices = parse_playlist_selection(sel, len(pls))
+                        to_export = [pls[i - 1] for i in indices]
 
                     print_format_menu()
                     fmt_input = input("请输入格式编号 [1-5 / 0 全部导出] (默认: 0): ").strip()

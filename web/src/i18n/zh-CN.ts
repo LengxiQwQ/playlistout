@@ -380,7 +380,7 @@ export const zhCN: Translations = {
     singleExport: '导出',
     viewTracks: '查看歌曲',
     listHeaderTitle: '公开歌单目录 ({count})',
-    noPlaylists: '该用户暂无公开的创建歌单',
+    noPlaylists: '该用户暂无公开歌单',
     returnToCollection: '返回歌单合集',
   },
   disambiguation: {

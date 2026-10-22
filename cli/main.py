@@ -203,7 +203,7 @@ def main():
 
     # 平台专属参数透传
     parser.add_argument("-u", "--user", action="store_true", help="指定目标为用户（用于纯数字 UID / QQ号等脚本调用；歌单链接/歌单标签与 --user 互斥）")
-    parser.add_argument("-s", "--select", dest="selection", help="用户歌单批量模式下选择要导出的歌单序号 (例如: 1 或 1,3,5 或 1-3 或 all)")
+    parser.add_argument("-s", "--select", dest="selection", help="用户歌单批量模式下选择要导出的歌单序号 (例如: all 导出全部, user 仅自建, 或 1,3,5、1-3)")
     parser.add_argument("--channel", choices=["qishui", "douyin"], default=None, help="[汽水] 解析通道: qishui 官方正版 / douyin 全量原声")
     login_group = parser.add_mutually_exclusive_group()
     login_group.add_argument("--login", action="store_true", help="[酷狗] 调出终端扫码或凭证登录")
@@ -632,9 +632,9 @@ def main():
                 k2 = color_bold("2") if supports_color() else "2"
                 print(f"  {k1}  歌单 ID (默认)")
                 if target_adapter.platform_id == "qqmusic":
-                    print(f"  {k2}  用户 QQ号 (一键导出该用户全部公开歌单)")
+                    print(f"  {k2}  用户 QQ号 (批量导出该用户全部公开歌单)")
                 else:
-                    print(f"  {k2}  用户 UID (一键导出该用户全部自建/公开歌单)")
+                    print(f"  {k2}  用户 UID (批量导出该用户的公开歌单)")
                 print("")
                 try:
                     k_sel = prompt_input("选择类型 [1/2]", divider_on_empty=True)

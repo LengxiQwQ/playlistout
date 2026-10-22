@@ -203,6 +203,51 @@ def test_run_batch_flow_interactive_selection(tmp_path):
     assert result.exported_files[0].endswith(".json")
 
 
+def test_run_batch_flow_interactive_user_and_all_keywords(tmp_path):
+    """验证交互模式下输入 user 仅导出自建，输入 all 导出全量（自建+收藏）"""
+    adapter = MagicMock()
+    t = NormalizedTrack(index=1, title="测试曲", artist="测试家")
+    adapter.fetch_playlist.side_effect = lambda pid, **kwargs: NormalizedPlaylist(
+        platform="netease", id=pid, name=f"歌单_{pid}", tracks=[t]
+    )
+
+    user_pls = NormalizedUserPlaylists(
+        platform="netease",
+        user_id="uid_interactive",
+        nickname="交互测试用户",
+        playlists=[
+            UserPlaylistSummary(id="p1", name="自建歌单1", is_created=True),
+            UserPlaylistSummary(id="p2", name="自建歌单2", is_created=True),
+            UserPlaylistSummary(id="p3", name="收藏歌单3", is_created=False),
+        ],
+    )
+
+    # 1. 交互输入 'user' -> 仅自建歌单 (2个)
+    with patch("builtins.input", side_effect=["user", "2"]):
+        res_user = run_batch_flow(
+            adapter=adapter,
+            user_playlists=user_pls,
+            output_dir=str(tmp_path / "interactive_user"),
+            interactive=True,
+            reveal_folder_flag=False,
+        )
+    assert res_user.total == 2
+    assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2"]
+
+    adapter.fetch_playlist.reset_mock()
+    # 2. 交互输入 'all' -> 全部歌单 (3个)
+    with patch("builtins.input", side_effect=["all", "2"]):
+        res_all = run_batch_flow(
+            adapter=adapter,
+            user_playlists=user_pls,
+            output_dir=str(tmp_path / "interactive_all"),
+            interactive=True,
+            reveal_folder_flag=False,
+        )
+    assert res_all.total == 3
+    assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2", "p3"]
+
+
 def test_run_batch_flow_headless_selection_subset(tmp_path):
     """验证非交互模式下通过 selection_input 正确导出指定子集歌单"""
     adapter = MagicMock()
@@ -240,7 +285,7 @@ def test_run_batch_flow_headless_selection_subset(tmp_path):
 
 
 def test_run_batch_flow_selection_created_vs_all_inclusive(tmp_path):
-    """验证 selection 为 all 时导出自建歌单，为 * 或 全部 时导出包含收藏的全部歌单"""
+    """验证 selection 为 user 时仅导出自建歌单，为 all 时导出全部歌单（含收藏），为 sub 时仅导出收藏歌单"""
     adapter = MagicMock()
     t = NormalizedTrack(index=1, title="测试曲", artist="测试家")
     adapter.fetch_playlist.side_effect = lambda pid, **kwargs: NormalizedPlaylist(
@@ -258,7 +303,7 @@ def test_run_batch_flow_selection_created_vs_all_inclusive(tmp_path):
         ],
     )
 
-    # 1. selection_input = "all" / "自建" -> 仅导出 2 个自建歌单
+    # 1. selection_input = "user" / "自建" -> 仅导出 2 个自建歌单
     adapter.fetch_playlist.reset_mock()
     res_created = run_batch_flow(
         adapter=adapter,
@@ -266,13 +311,13 @@ def test_run_batch_flow_selection_created_vs_all_inclusive(tmp_path):
         output_dir=str(tmp_path / "out1"),
         formats=["txt"],
         interactive=False,
-        selection_input="all",
+        selection_input="user",
         reveal_folder_flag=False,
     )
     assert res_created.total == 2
     assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2"]
 
-    # 2. selection_input = "*" / "全部" -> 导出全部 3 个歌单
+    # 2. selection_input = "all" / "*" / "全部" -> 导出全部 3 个歌单
     adapter.fetch_playlist.reset_mock()
     res_all = run_batch_flow(
         adapter=adapter,
@@ -280,11 +325,25 @@ def test_run_batch_flow_selection_created_vs_all_inclusive(tmp_path):
         output_dir=str(tmp_path / "out2"),
         formats=["txt"],
         interactive=False,
-        selection_input="*",
+        selection_input="all",
         reveal_folder_flag=False,
     )
     assert res_all.total == 3
     assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2", "p3"]
+
+    # 3. selection_input = "sub" / "收藏" -> 仅导出 1 个收藏歌单
+    adapter.fetch_playlist.reset_mock()
+    res_sub = run_batch_flow(
+        adapter=adapter,
+        user_playlists=user_pls,
+        output_dir=str(tmp_path / "out3"),
+        formats=["txt"],
+        interactive=False,
+        selection_input="sub",
+        reveal_folder_flag=False,
+    )
+    assert res_sub.total == 1
+    assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p3"]
 
 
 def test_run_batch_flow_headless_invalid_selection_fails_closed(tmp_path, capsys):

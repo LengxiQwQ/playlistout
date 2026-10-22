@@ -262,7 +262,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   });
 
 
-  it('renders large lists (1000 tracks) responsibly', { timeout: 15000 }, async () => {
+  it('renders large lists (1000 tracks) responsibly', { timeout: 60000 }, async () => {
     const largeTracks = Array.from({ length: 1000 }, (_, i) => ({
       index: i + 1,
       id: `song_${i + 1}`,

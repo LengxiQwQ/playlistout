@@ -16,6 +16,7 @@ from .batch import (
     BatchResult,
     BatchFailure,
     run_batch_flow,
+    resolve_batch_target_playlists,
     parse_playlist_selection,
     resolve_collision_safe_base_name,
     preprocess_playlist,
