@@ -116,26 +116,24 @@ export async function fetchMultiplePlaylists(
         }
       }
 
-      if (res.success && res.data) {
-        if (!res.data.tracks || res.data.tracks.length === 0) {
-          failedCount++;
-          failures.push({
-            id: summary.id,
-            name: summary.name,
-            code: 'EMPTY_PLAYLIST',
-            message: '无法读取歌单或歌单歌曲为空',
-          });
-        } else {
-          successfulPlaylists.push(res.data);
-        }
-      } else {
+      if (!res.success) {
         failedCount++;
         failures.push({
           id: summary.id,
           name: summary.name,
-          code: res.error?.code || 'FETCH_ERROR',
-          message: res.error?.message || '获取歌单详情失败',
+          code: res.error.code,
+          message: res.error.message,
         });
+      } else if (!res.data.tracks || res.data.tracks.length === 0) {
+        failedCount++;
+        failures.push({
+          id: summary.id,
+          name: summary.name,
+          code: 'EMPTY_PLAYLIST',
+          message: '无法读取歌单或歌单歌曲为空',
+        });
+      } else {
+        successfulPlaylists.push(res.data);
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
