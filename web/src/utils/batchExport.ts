@@ -30,6 +30,19 @@ export interface BatchFetchProgress {
   failedCount: number;
 }
 
+export interface BatchPlaylistFailure {
+  id: string;
+  name: string;
+  code?: string;
+  message?: string;
+}
+
+export interface BatchFetchResult {
+  successfulPlaylists: Playlist[];
+  failedCount: number;
+  failures: BatchPlaylistFailure[];
+}
+
 /**
  * Sanitizes and trims an Excel sheet name (max 31 chars, no forbidden chars: \ / ? * [ ] :)
  */
@@ -55,8 +68,9 @@ export async function fetchMultiplePlaylists(
   signal?: AbortSignal,
   platform?: 'qqmusic' | 'netease' | 'kugou',
   batchTicket?: string,
-): Promise<{ successfulPlaylists: Playlist[]; failedCount: number }> {
+): Promise<BatchFetchResult> {
   const successfulPlaylists: Playlist[] = [];
+  const failures: BatchPlaylistFailure[] = [];
   let failedCount = 0;
   const total = playlists.length;
 
@@ -103,15 +117,37 @@ export async function fetchMultiplePlaylists(
       }
 
       if (res.success && res.data) {
-        successfulPlaylists.push(res.data);
+        if (!res.data.tracks || res.data.tracks.length === 0) {
+          failedCount++;
+          failures.push({
+            id: summary.id,
+            name: summary.name,
+            code: 'EMPTY_PLAYLIST',
+            message: '无法读取歌单或歌单歌曲为空',
+          });
+        } else {
+          successfulPlaylists.push(res.data);
+        }
       } else {
         failedCount++;
+        failures.push({
+          id: summary.id,
+          name: summary.name,
+          code: res.error?.code || 'FETCH_ERROR',
+          message: res.error?.message || '获取歌单详情失败',
+        });
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
         break;
       }
       failedCount++;
+      failures.push({
+        id: summary.id,
+        name: summary.name,
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : '网络请求异常',
+      });
     }
 
     // Courteous smooth pause between items to prevent upstream congestion (450ms + 0~50ms jitter)
@@ -121,7 +157,7 @@ export async function fetchMultiplePlaylists(
     }
   }
 
-  return { successfulPlaylists, failedCount };
+  return { successfulPlaylists, failedCount, failures };
 }
 
 /**

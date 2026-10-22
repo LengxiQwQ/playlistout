@@ -220,6 +220,39 @@ describe('UserPlaylistsPaper Component', () => {
       'kugou',
     );
   });
+
+  it('renders detailed failure banner with error code and playlist info when batch export fails', async () => {
+    const batchExportUtils = await import('../../utils/batchExport');
+    vi.spyOn(batchExportUtils, 'fetchMultiplePlaylists').mockResolvedValueOnce({
+      successfulPlaylists: [],
+      failedCount: 1,
+      failures: [
+        {
+          id: '12345',
+          name: '失败测试歌单',
+          code: 'NETWORK_ERROR',
+          message: 'Failed to fetch',
+        },
+      ],
+    });
+
+    render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <UserPlaylistsPaper
+          userData={mockUserData}
+          onReset={vi.fn()}
+          onSelectSinglePlaylist={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    const exportBtn = screen.getByText(/一键打包导出选中歌单/);
+    fireEvent.click(exportBtn);
+
+    expect(await screen.findByText(/批量导出失败：所有 2 个歌单均未能获取/)).toBeInTheDocument();
+    expect(screen.getByText(/失败测试歌单/)).toBeInTheDocument();
+    expect(screen.getByText(/\[NETWORK_ERROR\] Failed to fetch/)).toBeInTheDocument();
+  });
 });
 
 

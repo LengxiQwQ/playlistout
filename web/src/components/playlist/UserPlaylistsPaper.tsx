@@ -9,6 +9,7 @@ import { MarkerButton } from '../ui/MarkerButton';
 import {
   type BatchExportFormat,
   type BatchFetchProgress,
+  type BatchPlaylistFailure,
   fetchMultiplePlaylists,
   exportToMultiSheetExcel,
   exportToZip,
@@ -46,6 +47,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [progress, setProgress] = useState<BatchFetchProgress | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [batchFailures, setBatchFailures] = useState<BatchPlaylistFailure[]>([]);
+  const [batchResultBanner, setBatchResultBanner] = useState<{
+    total: number;
+    success: number;
+    failed: number;
+  } | null>(null);
 
   // Abort controller for batch operations
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -119,10 +126,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
     const controller = new AbortController();
     abortControllerRef.current = controller;
     setIsExporting(true);
+    setBatchFailures([]);
+    setBatchResultBanner(null);
 
     try {
       const platform = userData.platform === 'netease' ? 'netease' : (userData.platform === 'kugou' ? 'kugou' : 'qqmusic');
-      const { successfulPlaylists, failedCount } = await fetchMultiplePlaylists(
+      const { successfulPlaylists, failedCount, failures } = await fetchMultiplePlaylists(
         targets,
         (p) => setProgress(p),
         controller.signal,
@@ -130,8 +139,17 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
         userData.batchTicket,
       );
 
+      setBatchFailures(failures);
+      setBatchResultBanner({
+        total: targets.length,
+        success: successfulPlaylists.length,
+        failed: failedCount,
+      });
+
       if (successfulPlaylists.length === 0) {
-        showToast('批量导出失败，未能成功获取歌单详情');
+        const firstErr = failures[0];
+        const detailSuffix = firstErr?.code ? ` [${firstErr.code}]` : '';
+        showToast(`批量导出失败${detailSuffix}：未能成功获取歌单详情`);
         return;
       }
 
@@ -478,6 +496,72 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               </div>
             )}
           </div>
+
+          {/* Detailed Batch Result / Failure Summary Banner */}
+          {batchResultBanner && (
+            <div
+              style={{
+                backgroundColor: batchResultBanner.success > 0 ? '#f0fdf4' : '#fef2f2',
+                border: `2px solid ${batchResultBanner.success > 0 ? '#16a34a' : '#dc2626'}`,
+                boxShadow: `3px 3px 0 ${batchResultBanner.success > 0 ? '#16a34a' : '#dc2626'}`,
+                borderRadius: '8px',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '2rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <span style={{ fontSize: '1.35rem' }}>
+                    {batchResultBanner.success > 0 ? (batchResultBanner.failed > 0 ? '⚠️' : '✅') : '❌'}
+                  </span>
+                  <h4 className="font-handwriting" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--ink, #2d3436)' }}>
+                    {batchResultBanner.success === 0
+                      ? `批量导出失败：所有 ${batchResultBanner.total} 个歌单均未能获取`
+                      : `批量导出完成：成功 ${batchResultBanner.success} / ${batchResultBanner.total} 个歌单`}
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBatchResultBanner(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    fontSize: '1.1rem',
+                    padding: '0.2rem 0.5rem',
+                  }}
+                  title="关闭"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {batchFailures.length > 0 && (
+                <div style={{ marginTop: '0.85rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.75rem' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#991b1b', marginBottom: '0.4rem' }}>
+                    共有 {batchFailures.length} 个歌单未能导出：
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', color: '#334155' }}>
+                    {batchFailures.map((f, idx) => (
+                      <li key={idx} style={{ marginBottom: '0.35rem', lineHeight: 1.4 }}>
+                        <span style={{ fontWeight: 600 }}>{f.name}</span>
+                        <span className="font-mono" style={{ color: '#64748b', marginLeft: '0.35rem' }}>[ID: {f.id}]</span>
+                        <span style={{ color: '#b91c1c', marginLeft: '0.4rem' }}>
+                          — {f.code ? `[${f.code}] ` : ''}{f.message}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {batchFailures.some((f) => f.code === 'NETWORK_ERROR') && (
+                    <div style={{ marginTop: '0.65rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.4 }}>
+                      💡 提示：检测到网络连接或跨域请求异常。若是在生产环境使用，请确保已部署最新包含跨域配置的 Worker API。
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Playlist Rows Catalog */}
           <div style={{ marginTop: '1.5rem' }} data-clarity-mask="true">

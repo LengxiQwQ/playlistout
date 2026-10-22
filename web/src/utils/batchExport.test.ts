@@ -126,7 +126,7 @@ describe('batchExport utilities', () => {
           id: '101',
           name: '民谣合集',
           trackCount: 1,
-          tracks: [],
+          tracks: [{ id: 't1', title: 'Song 1', artist: 'Artist 1' }],
         } as any,
       });
 
@@ -138,6 +138,7 @@ describe('batchExport utilities', () => {
 
       expect(res.successfulPlaylists.length).toBe(1);
       expect(res.failedCount).toBe(0);
+      expect(res.failures).toEqual([]);
       expect(parseSpy).toHaveBeenCalledWith(
         'https://test.com/101',
         undefined,
@@ -147,6 +148,61 @@ describe('batchExport utilities', () => {
         undefined,
         'mock_batch_ticket_123',
       );
+    });
+
+    it('collects detailed failures with error code and message on failure', async () => {
+      const { fetchMultiplePlaylists } = await import('./batchExport');
+      const client = await import('../api/client');
+
+      vi.spyOn(client, 'parsePlaylist').mockResolvedValueOnce({
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: 'Failed to fetch',
+        },
+      });
+
+      const summaries = [
+        { id: '999', name: '失败歌单', trackCount: 5, sourceUrl: 'https://test.com/999' },
+      ];
+
+      const res = await fetchMultiplePlaylists(summaries, undefined, undefined, 'netease');
+
+      expect(res.successfulPlaylists.length).toBe(0);
+      expect(res.failedCount).toBe(1);
+      expect(res.failures.length).toBe(1);
+      expect(res.failures[0]).toEqual({
+        id: '999',
+        name: '失败歌单',
+        code: 'NETWORK_ERROR',
+        message: 'Failed to fetch',
+      });
+    });
+
+    it('records empty playlist with EMPTY_PLAYLIST code', async () => {
+      const { fetchMultiplePlaylists } = await import('./batchExport');
+      const client = await import('../api/client');
+
+      vi.spyOn(client, 'parsePlaylist').mockResolvedValueOnce({
+        success: true,
+        data: {
+          platform: 'netease',
+          id: '888',
+          name: '空歌单',
+          trackCount: 0,
+          tracks: [],
+        } as any,
+      });
+
+      const summaries = [
+        { id: '888', name: '空歌单', trackCount: 0, sourceUrl: 'https://test.com/888' },
+      ];
+
+      const res = await fetchMultiplePlaylists(summaries, undefined, undefined, 'netease');
+
+      expect(res.successfulPlaylists.length).toBe(0);
+      expect(res.failedCount).toBe(1);
+      expect(res.failures[0].code).toBe('EMPTY_PLAYLIST');
     });
   });
 });
