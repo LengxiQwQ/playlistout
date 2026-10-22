@@ -179,7 +179,7 @@ def run_batch_flow(
     if interactive:
         print_user_playlists_menu(user_playlists)
         if user_playlists.subscribed_playlists:
-            sel_prompt = "选择要导出的歌单序号（输入 all 导出全部自建歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
+            sel_prompt = "选择要导出的歌单序号（输入 all 导出自建歌单，输入 * 导出全部歌单，可多选如 1,3,5 或 1-3，输入 0 返回）："
         else:
             sel_prompt = "选择要导出的歌单序号（输入 all 全部导出，可多选如 1,3,5 或 1-3，输入 0 返回）："
         try:
@@ -190,8 +190,10 @@ def run_batch_flow(
         if not sel_str or sel_str in ("0", "q", "quit", "exit"):
             return BatchResult(total=0, success=0, failed=0, exported_files=[], failures=[])
 
-        if sel_str.lower() in ("all", "全部"):
+        if sel_str.lower() in ("all", "自建"):
             target_pls = user_playlists.created_playlists or all_pls
+        elif sel_str.lower() in ("*", "全部", "all*", "全量", "全部歌单"):
+            target_pls = all_pls
         else:
             indices = parse_playlist_selection(sel_str, len(all_pls))
             if not indices:
@@ -216,8 +218,10 @@ def run_batch_flow(
     else:
         # 非交互 (Headless) 模式：严格使用传入参数，不发起任何 input()
         if selection_input:
-            if selection_input.lower() in ("all", "全部"):
+            if selection_input.lower() in ("all", "自建"):
                 target_pls = user_playlists.created_playlists or all_pls
+            elif selection_input.lower() in ("*", "全部", "all*", "全量", "全部歌单"):
+                target_pls = all_pls
             else:
                 indices = parse_playlist_selection(selection_input, len(all_pls))
                 if not indices:

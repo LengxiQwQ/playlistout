@@ -239,6 +239,54 @@ def test_run_batch_flow_headless_selection_subset(tmp_path):
     assert called_pids == ["p1", "p3"]
 
 
+def test_run_batch_flow_selection_created_vs_all_inclusive(tmp_path):
+    """验证 selection 为 all 时导出自建歌单，为 * 或 全部 时导出包含收藏的全部歌单"""
+    adapter = MagicMock()
+    t = NormalizedTrack(index=1, title="测试曲", artist="测试家")
+    adapter.fetch_playlist.side_effect = lambda pid, **kwargs: NormalizedPlaylist(
+        platform="netease", id=pid, name=f"歌单_{pid}", tracks=[t]
+    )
+
+    user_pls = NormalizedUserPlaylists(
+        platform="netease",
+        user_id="uid_mixed",
+        nickname="混合用户",
+        playlists=[
+            UserPlaylistSummary(id="p1", name="自建歌单1", is_created=True),
+            UserPlaylistSummary(id="p2", name="自建歌单2", is_created=True),
+            UserPlaylistSummary(id="p3", name="收藏歌单3", is_created=False),
+        ],
+    )
+
+    # 1. selection_input = "all" / "自建" -> 仅导出 2 个自建歌单
+    adapter.fetch_playlist.reset_mock()
+    res_created = run_batch_flow(
+        adapter=adapter,
+        user_playlists=user_pls,
+        output_dir=str(tmp_path / "out1"),
+        formats=["txt"],
+        interactive=False,
+        selection_input="all",
+        reveal_folder_flag=False,
+    )
+    assert res_created.total == 2
+    assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2"]
+
+    # 2. selection_input = "*" / "全部" -> 导出全部 3 个歌单
+    adapter.fetch_playlist.reset_mock()
+    res_all = run_batch_flow(
+        adapter=adapter,
+        user_playlists=user_pls,
+        output_dir=str(tmp_path / "out2"),
+        formats=["txt"],
+        interactive=False,
+        selection_input="*",
+        reveal_folder_flag=False,
+    )
+    assert res_all.total == 3
+    assert [call.args[0] for call in adapter.fetch_playlist.call_args_list] == ["p1", "p2", "p3"]
+
+
 def test_run_batch_flow_headless_invalid_selection_fails_closed(tmp_path, capsys):
     """验证非交互模式下传入越界或非法序号严格 fail-closed，杜绝静默全量导出"""
     adapter = MagicMock()

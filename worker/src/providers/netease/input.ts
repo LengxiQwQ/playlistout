@@ -131,7 +131,7 @@ export async function extractNeteasePlaylistId(input: string): Promise<string> {
   // 3. Match from query params or path in resolved URL
   // e.g. ?id=2756674066 or /playlist/2756674066 or /playlist?id=2756674066
   try {
-    const cleanUrl = resolved.replace(/#\//, ''); // Handle hash routing like #/playlist?id=...
+    const cleanUrl = resolved.replace(/#\/?/, '/'); // Handle hash routing like #/playlist?id=...
     const urlToParse = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
     const parsed = new URL(urlToParse);
 
@@ -188,7 +188,7 @@ export async function extractNeteaseUserId(input: string): Promise<string | null
   const resolved = await resolveShortLinkIfNeeded(trimmed);
 
   try {
-    const cleanUrl = resolved.replace(/#\//, '');
+    const cleanUrl = resolved.replace(/#\/?/, '/');
     const urlToParse = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
     const parsed = new URL(urlToParse);
 
@@ -212,6 +212,6 @@ export async function extractNeteaseUserId(input: string): Promise<string | null
     // Ignore URL parse errors
   }
 
-  const match = resolved.match(/(?:user(?:\/home)?\?id=)(\d{4,18})/i);
+  const match = resolved.match(/(?:user(?:\/home)?[?&]id=|[?&]id=)(\d{4,18})/i);
   return match ? match[1] : null;
 }

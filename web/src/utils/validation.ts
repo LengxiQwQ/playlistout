@@ -72,7 +72,7 @@ export function extractCleanUrlOrInput(input: string): string {
 export function extractUinFromProfileUrl(input: string): string | null {
   try {
     const urlToParse = /^https?:\/\//i.test(input) ? input : `https://${input}`;
-    const cleanUrl = urlToParse.replace(/#\//, '');
+    const cleanUrl = urlToParse.replace(/#\/?/, '/');
     const parsed = new URL(cleanUrl);
 
     // QQ Music profile
@@ -101,10 +101,10 @@ export function extractUinFromProfileUrl(input: string): string | null {
     // NetEase Music profile
     if (parsed.hostname.includes('music.163.com')) {
       const isPlaylist = parsed.pathname.includes('/playlist') || parsed.pathname.includes('/song');
-      if (!isPlaylist && (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home'))) {
-        const uid = parsed.searchParams.get('id');
-        if (uid && /^\d{4,18}$/.test(uid.trim())) {
-          return uid.trim();
+      if (!isPlaylist && (parsed.pathname.includes('/user') || parsed.pathname.includes('/m/user') || parsed.pathname.includes('/home') || input.includes('/user'))) {
+        const id = parsed.searchParams.get('id') || (input.match(/(?:[?&#]id=)(\d{4,18})/i) || [])[1];
+        if (id && /^\d{4,18}$/.test(id.trim())) {
+          return id.trim();
         }
         const match = parsed.pathname.match(/\/user\/(?:home\/)?(\d{4,18})/);
         if (match) {
@@ -189,7 +189,7 @@ export const VALIDATION_RULES: ValidationRule[] = [
     match: (input) => {
       if (!/(?:music\.163\.com|y\.music\.163\.com)/i.test(input)) return false;
       const uid = extractUinFromProfileUrl(input);
-      return Boolean(uid && (input.includes('/user') || input.includes('user/home')));
+      return Boolean(uid && (input.includes('/user') || input.includes('user/home') || input.includes('#/user') || input.includes('#/home')));
     },
     extractUin: (input) => extractUinFromProfileUrl(input),
   },
