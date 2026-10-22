@@ -29,9 +29,9 @@ export function getFriendlyErrorMessage(code?: ApiErrorCode | string, fallbackMe
     case 'INCOMPLETE_PLAYLIST':
       return '歌单数据获取不完整。Playlist Out 遵循严格完整性保障，已中止解析，避免导出不全。';
     case 'UPSTREAM_TIMEOUT':
-      return '连接音乐平台服务器超时，请检查网络或稍后重试。';
+      return '连接音乐平台服务器超时（通常因网络抖动或当前解析并发较多引起，并非无法解析）。建议稍候点击「重试」再试一次。';
     case 'UPSTREAM_ERROR':
-      return '音乐平台服务响应异常，请稍后重试。';
+      return '音乐平台服务响应异常（通常因当前解析人数较多或平台访问过于频繁引起，并非无法解析）。接口正常，建议稍等 3~5 秒后点击「重试」再试一次。';
     case 'METHOD_NOT_ALLOWED':
       return '请求被拒绝，请刷新页面后重试。';
     case 'FORBIDDEN':

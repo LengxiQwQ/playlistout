@@ -233,4 +233,69 @@ describe('SearchNote Component (Phase 4)', () => {
       'playlist',
     );
   });
+
+  it('renders helpful rate-limit explanation for UPSTREAM_ERROR, promotes retry, and delays feedback button', () => {
+    const handleRetry = vi.fn();
+    const handleFeedback = vi.fn();
+
+    const { rerender } = render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl="https://music.163.com/playlist?id=12345"
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={{ code: 'UPSTREAM_ERROR', message: 'NetEase anti-bot' }}
+          onRetry={handleRetry}
+          onFeedback={handleFeedback}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    // 1. First failure: Shows clear message explaining it's not unparseable, but due to platform traffic/rate limit
+    expect(screen.getByText(/并非无法解析/)).toBeInTheDocument();
+    expect(screen.getByText(/接口正常，建议稍等 3~5 秒后点击「重试」/)).toBeInTheDocument();
+
+    // Notice guides to retry first
+    expect(screen.getByText(/上游接口频控或网络抖动通常稍等片刻即可自动恢复/)).toBeInTheDocument();
+
+    // Retry button is prominently labeled "🔄 点击重试"
+    const retryBtn = screen.getByRole('button', { name: '🔄 点击重试' });
+    expect(retryBtn).toBeInTheDocument();
+
+    // Feedback button is NOT shown on initial failure to prevent premature feedback
+    expect(screen.queryByRole('button', { name: '一键反馈' })).not.toBeInTheDocument();
+
+    // 2. User clicks retry
+    fireEvent.click(retryBtn);
+    expect(handleRetry).toHaveBeenCalledTimes(1);
+
+    // 3. If retry still fails with UPSTREAM_ERROR, re-render with the same error (simulating retry response)
+    rerender(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl="https://music.163.com/playlist?id=12345"
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={{ code: 'UPSTREAM_ERROR', message: 'NetEase anti-bot' }}
+          onRetry={handleRetry}
+          onFeedback={handleFeedback}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    // Feedback button is now unlocked after at least 1 retry attempt
+    const feedbackBtn = screen.getByRole('button', { name: '一键反馈' });
+    expect(feedbackBtn).toBeInTheDocument();
+    expect(screen.getByText(/多次重试仍响应异常/)).toBeInTheDocument();
+
+    // User can now report if it persistently fails
+    fireEvent.click(feedbackBtn);
+    expect(handleFeedback).toHaveBeenCalledTimes(1);
+  });
 });

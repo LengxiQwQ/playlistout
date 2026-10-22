@@ -72,6 +72,11 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
     shouldOpenKugouLoginFromUrl(),
   );
   const [hasKugou, setHasKugou] = useState(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+
+  useEffect(() => {
+    setRetryCount(0);
+  }, [inputUrl]);
 
   useEffect(() => {
     setHasKugou(hasKugouAuth());
@@ -341,22 +346,40 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             (error.code === 'FORBIDDEN' && (error.message?.toLowerCase().includes('kugou') || (error.details as any)?.platform === 'kugou')) ||
             (error.code === 'INVALID_INPUT' && error.message?.toLowerCase().includes('kugou') && (error.message?.toLowerCase().includes('authorization') || error.message?.toLowerCase().includes('token')));
 
+          const isUpstreamError = error.code === 'UPSTREAM_ERROR' || error.code === 'UPSTREAM_TIMEOUT';
+
+          const showFeedback =
+            Boolean(onFeedback) &&
+            error.code !== 'RATE_LIMITED' &&
+            error.code !== 'NETWORK_ERROR' &&
+            !isKugouAuth &&
+            (!isUpstreamError || retryCount > 0);
+
+          let feedbackNotice = t.errors.feedbackNotice;
+          if (isUpstreamError) {
+            feedbackNotice =
+              retryCount > 0
+                ? t.errors.feedbackNoticeUpstreamRetry
+                : t.errors.feedbackNoticeUpstreamInitial;
+          }
+
+          const handleRetry = () => {
+            setRetryCount((prev) => prev + 1);
+            onRetry();
+          };
+
           return (
             <StatusAlert
               type="error"
               message={getErrorMessage(error)}
               onAction={isKugouAuth ? () => setIsKugouModalOpen(true) : undefined}
               actionLabel={isKugouAuth ? t.errors.kugouAuthAction : undefined}
-              onRetry={isKugouAuth ? undefined : onRetry}
-              retryLabel={t.errors.retry}
-              onFeedback={
-                onFeedback && error.code !== 'RATE_LIMITED' && error.code !== 'NETWORK_ERROR' && !isKugouAuth
-                  ? onFeedback
-                  : undefined
-              }
+              onRetry={isKugouAuth ? undefined : handleRetry}
+              retryLabel={isUpstreamError ? t.errors.retryUpstream : t.errors.retry}
+              onFeedback={showFeedback ? onFeedback : undefined}
               feedbackLabel={t.errors.feedbackButton}
               feedbackSubmittedLabel={t.errors.feedbackSubmitted}
-              feedbackNotice={t.errors.feedbackNotice}
+              feedbackNotice={feedbackNotice}
               feedbackSubmitted={feedbackSubmitted}
             />
           );

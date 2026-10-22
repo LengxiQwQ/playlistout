@@ -504,7 +504,7 @@ def main():
                     return
 
             report_resolve(adapter.platform_id, "failure", latency_ms=pl_latency, failure_code="upstream_error")
-            print("❌ 获取歌单失败。请检查链接是否有效、歌单是否公开，或稍后重试。", file=sys.stderr)
+            print("❌ 获取歌单失败。请检查链接是否有效、歌单是否公开；若确认无误，通常因平台访问过于频繁引起（并非无法解析），请等待几秒后重试。", file=sys.stderr)
             sys.exit(1)
 
         report_resolve(adapter.platform_id, "success_playlist", track_count=len(playlist.tracks), latency_ms=pl_latency)
@@ -735,7 +735,7 @@ def main():
                     report_resolve(target_adapter.platform_id, "failure", latency_ms=ipl_lat, failure_code="upstream_error")
                     fail_fetch_msg = "\n❌ 获取歌单失败。"
                     print(color_red(fail_fetch_msg) if supports_color() else fail_fetch_msg)
-                    print("  💡 请检查链接是否有效、歌单是否公开，或稍后重试。")
+                    print("  💡 请检查链接是否有效、歌单是否公开；若确认无误，通常因平台访问过于频繁或临时网络波动引起（并非无法解析），建议稍等几秒后重试。")
                     print("")
                     continue
 

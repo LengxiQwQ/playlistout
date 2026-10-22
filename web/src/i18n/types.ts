@@ -101,9 +101,12 @@ export interface Translations {
     kugouAuthRequired: string;
     kugouAuthAction: string;
     retry: string;
+    retryUpstream: string;
     feedbackButton: string;
     feedbackSubmitted: string;
     feedbackNotice: string;
+    feedbackNoticeUpstreamInitial: string;
+    feedbackNoticeUpstreamRetry: string;
   };
   result: {
     doneParsingHint: string;
