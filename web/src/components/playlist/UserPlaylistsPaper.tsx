@@ -423,6 +423,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             {/* Action Row & Progress */}
             {isExporting && progress ? (
               <div
+                className="font-sans"
                 style={{
                   backgroundColor: '#ffffff',
                   border: '1.5px dashed #2d3436',
@@ -431,10 +432,19 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.5rem',
+                  fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="font-handwriting" style={{ fontSize: '1.1rem', color: '#16a34a' }}>
+                  <span
+                    className="font-sans"
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      color: '#16a34a',
+                      fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                    }}
+                  >
                     {formatString(t.userPlaylists.exportingProgress, {
                       current: progress.current,
                       total: progress.total,
@@ -444,6 +454,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                   <button
                     type="button"
                     onClick={handleCancelExport}
+                    className="font-sans"
                     style={{
                       background: 'none',
                       border: 'none',
@@ -451,6 +462,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       cursor: 'pointer',
                       fontSize: '0.9rem',
                       textDecoration: 'underline',
+                      fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                     }}
                   >
                     取消
@@ -500,6 +512,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           {/* Detailed Batch Result / Failure Summary Banner */}
           {batchResultBanner && (
             <div
+              className="font-sans"
               style={{
                 backgroundColor: batchResultBanner.success > 0 ? '#f0fdf4' : '#fef2f2',
                 border: `2px solid ${batchResultBanner.success > 0 ? '#16a34a' : '#dc2626'}`,
@@ -507,14 +520,24 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 borderRadius: '8px',
                 padding: '1.25rem 1.5rem',
                 marginBottom: '2rem',
+                fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <span style={{ fontSize: '1.35rem' }}>
+                  <span style={{ fontSize: '1.25rem' }}>
                     {batchResultBanner.success > 0 ? (batchResultBanner.failed > 0 ? '⚠️' : '✅') : '❌'}
                   </span>
-                  <h4 className="font-handwriting" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--ink, #2d3436)' }}>
+                  <h4
+                    className="font-sans"
+                    style={{
+                      margin: 0,
+                      fontSize: '1.05rem',
+                      fontWeight: 600,
+                      color: 'var(--ink, #2d3436)',
+                      fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                    }}
+                  >
                     {batchResultBanner.success === 0
                       ? `批量导出失败：所有 ${batchResultBanner.total} 个歌单均未能获取`
                       : `批量导出完成：成功 ${batchResultBanner.success} / ${batchResultBanner.total} 个歌单`}
@@ -523,6 +546,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 <button
                   type="button"
                   onClick={() => setBatchResultBanner(null)}
+                  className="font-sans"
                   style={{
                     background: 'none',
                     border: 'none',
@@ -530,6 +554,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     color: '#64748b',
                     fontSize: '1.1rem',
                     padding: '0.2rem 0.5rem',
+                    fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                   }}
                   title="关闭"
                 >
@@ -538,11 +563,37 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               </div>
 
               {batchFailures.length > 0 && (
-                <div style={{ marginTop: '0.85rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.75rem' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#991b1b', marginBottom: '0.4rem' }}>
+                <div
+                  className="font-sans"
+                  style={{
+                    marginTop: '0.85rem',
+                    borderTop: '1px dashed #cbd5e1',
+                    paddingTop: '0.75rem',
+                    fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                  }}
+                >
+                  <div
+                    className="font-sans"
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      color: '#991b1b',
+                      marginBottom: '0.4rem',
+                      fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                    }}
+                  >
                     共有 {batchFailures.length} 个歌单未能导出：
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', color: '#334155' }}>
+                  <ul
+                    className="font-sans"
+                    style={{
+                      margin: 0,
+                      paddingLeft: '1.25rem',
+                      fontSize: '0.9rem',
+                      color: '#334155',
+                      fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                    }}
+                  >
                     {batchFailures.map((f, idx) => (
                       <li key={idx} style={{ marginBottom: '0.35rem', lineHeight: 1.4 }}>
                         <span style={{ fontWeight: 600 }}>{f.name}</span>
@@ -554,7 +605,16 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     ))}
                   </ul>
                   {batchFailures.some((f) => f.code === 'NETWORK_ERROR') && (
-                    <div style={{ marginTop: '0.65rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.4 }}>
+                    <div
+                      className="font-sans"
+                      style={{
+                        marginTop: '0.65rem',
+                        fontSize: '0.85rem',
+                        color: '#475569',
+                        lineHeight: 1.4,
+                        fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
+                      }}
+                    >
                       💡 提示：检测到网络连接或跨域请求异常。若是在生产环境使用，请确保已部署最新包含跨域配置的 Worker API。
                     </div>
                   )}
