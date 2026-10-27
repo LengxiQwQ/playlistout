@@ -86,11 +86,12 @@ describe('PluginEcosystem', () => {
     expect(screen.getByText('Second Player')).toBeInTheDocument();
     expect(screen.getByText('MusicFree 中文简介')).toBeInTheDocument();
     expect(screen.getByText('第二个播放器简介')).toBeInTheDocument();
-    expect(container.querySelector('.plugin-supported-number')).toHaveTextContent('3');
+    expect(container.querySelector('.plugin-supported-number')).toHaveTextContent('4');
 
-    // Planned/proposed integrations remain a separate static roadmap list.
-    expect(screen.getByText('LX Music')).toBeInTheDocument();
-    expect(screen.getByText('Moosync')).toBeInTheDocument();
+    // Featured integrations with direct export/builtin and planned roadmap list
+    expect(screen.getByText('洛雪音乐')).toBeInTheDocument();
+    expect(screen.getByText('Listen 1')).toBeInTheDocument();
+    expect(screen.getByText('BBPlayer')).toBeInTheDocument();
   });
 
   it('uses manifest-provided localized summaries instead of player-specific UI branches', async () => {
@@ -138,35 +139,48 @@ describe('PluginEcosystem', () => {
     expect(buttons[1]).toHaveTextContent('复制插件地址');
   });
 
-  it('renders featured upcoming native integrations with coming soon sticker and download link', async () => {
+  it('renders featured native integrations with download links and ecosystem guidance', async () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <PluginEcosystem />
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('BBPlayer')).toBeInTheDocument();
-    expect(screen.getByText('⏳ 待上线')).toBeInTheDocument();
-    expect(screen.getByText('软件原生功能')).toBeInTheDocument();
+    expect(await screen.findByText('洛雪音乐')).toBeInTheDocument();
+    expect(screen.getByText('Listen 1')).toBeInTheDocument();
     expect(screen.getAllByText('插件')).toHaveLength(2);
-    expect(
-      screen.getByText(
-        '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getAllByText('歌单导入')).toHaveLength(2);
+
+    // Featured download links only include verified/available players
     const downloadLinks = screen.getAllByRole('link', { name: '官网下载' });
-    expect(downloadLinks).toHaveLength(2);
+    expect(downloadLinks).toHaveLength(3);
     expect(downloadLinks[0]).toHaveAttribute(
       'href',
       'https://musicfree.catcat.work/',
     );
     expect(downloadLinks[1]).toHaveAttribute(
       'href',
-      'https://bbplayer.roitium.com',
+      'https://lxmusic.toside.cn/',
     );
+    expect(downloadLinks[2]).toHaveAttribute(
+      'href',
+      'https://listen1.github.io/listen1/',
+    );
+
     expect(downloadLinks[0]).toHaveClass('marker-button', 'marker-btn-ink');
     expect(downloadLinks[1]).toHaveClass('marker-button', 'marker-btn-ink');
-    expect(screen.getByRole('link', { name: '相关讨论 ↗' })).toHaveAttribute(
+
+    const issueLinks = screen.getAllByRole('link', { name: '相关讨论 ↗' });
+    expect(issueLinks).toHaveLength(2);
+    expect(issueLinks[0]).toHaveAttribute(
+      'href',
+      'https://github.com/lyswhut/lx-music-desktop/issues/3001',
+    );
+
+    // BBPlayer is placed in the bottom upcoming/unadapted strip linking to upstream PR/issue
+    const bbplayerChip = screen.getByRole('link', { name: /BBPlayer.*待上线/ });
+    expect(bbplayerChip).toBeInTheDocument();
+    expect(bbplayerChip).toHaveAttribute(
       'href',
       'https://github.com/bbplayer-app/BBPlayer/issues/340',
     );

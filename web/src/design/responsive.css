@@ -22,7 +22,8 @@
 }
 
 @media (max-width: 768px) {
-  .desktop-only {
+  .desktop-only,
+  .hidden-on-mobile {
     display: none !important;
   }
 }
@@ -463,11 +464,66 @@
     display: none !important;
   }
 
+  /* Viewport-centered modals for Author Card and Sponsor Menu on mobile (buttons remain in place) */
+  .author-backdrop,
+  .sponsor-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background-color: rgba(0, 0, 0, 0.45) !important;
+    z-index: 998 !important;
+    backdrop-filter: blur(2px) !important;
+  }
+
   .author-dropup-card {
+    position: fixed !important;
     left: 50% !important;
-    transform: translateX(-50%) !important;
-    max-width: min(95vw, 440px) !important;
-    width: min(95vw, 440px) !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(380px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    z-index: 1000 !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 4px 6px 0 var(--ink, #2d3436) !important;
+    animation: authorModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .author-dropup-card::after {
+    display: none !important;
+  }
+
+  .sponsor-dropup-menu {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(300px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    z-index: 1000 !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 4px 6px 0 var(--ink, #2d3436) !important;
+    animation: sponsorModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .sponsor-dropup-menu::after {
+    display: none !important;
+  }
+
+  .export-action-btn-wrap {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .export-action-btn-wrap .marker-button {
+    width: 100% !important;
+    max-width: 380px !important;
+    justify-content: center !important;
   }
 
   /* Compact padding for paper surfaces */
@@ -653,14 +709,84 @@
     padding-bottom: 0.45rem !important;
   }
 
-  /* Expanded Mobile Mode: shows all columns with horizontal + vertical scroll */
+  /* Expanded Mobile Mode: compact, dense, sleek table for comfortable horizontal & vertical scrolling */
   .track-table-container.is-expanded-mobile .table-responsive {
     overflow-x: auto !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
+
+  .track-table-container.is-expanded-mobile .track-table {
+    min-width: 520px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .track-table-container.is-expanded-mobile .track-table th {
+    padding: 0.38rem 0.3rem !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+  }
+
+  .track-table-container.is-expanded-mobile .song-row td {
+    padding: 0.38rem 0.3rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .track-table-container.is-expanded-mobile .col-index {
+    width: var(--index-width, 32px) !important;
+    min-width: var(--index-width, 32px) !important;
+    padding: 0.38rem 0.15rem !important;
+    font-size: 0.74rem !important;
+    text-align: center !important;
+  }
+
+  .track-table-container.is-expanded-mobile .col-cover {
+    width: 32px !important;
+    min-width: 32px !important;
+    padding: 0.38rem 0.15rem !important;
+  }
+
+  .track-table-container.is-expanded-mobile .track-artwork-thumb {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    box-shadow: 1px 1px 0 var(--ink, #2d3436) !important;
+  }
+
+  .track-table-container.is-expanded-mobile .track-title-text {
+    font-size: 0.8rem !important;
+    line-height: 1.35 !important;
+    max-width: 180px;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  .track-table-container.is-expanded-mobile td.col-artist,
+  .track-table-container.is-expanded-mobile td.col-album {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    max-width: 130px;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .track-table-container.is-expanded-mobile td.col-duration {
+    font-size: 0.74rem !important;
+    white-space: nowrap !important;
   }
 
   .track-table-container.is-expanded-mobile .hide-mobile {
     display: table-cell !important;
+  }
+
+  .track-table-container.is-expanded-mobile .badge-vip,
+  .track-table-container.is-expanded-mobile .badge-status {
+    font-size: 0.68rem !important;
+    padding: 0.08rem 0.3rem !important;
   }
 
   /* =========================

@@ -15,7 +15,8 @@ import { Paper } from '../ui/Paper';
 import { Sticker } from '../ui/Sticker';
 import { MarkerButton } from '../ui/MarkerButton';
 
-const statusColor: Record<IntegrationStatus, 'yellow' | 'blue'> = {
+const statusColor: Record<IntegrationStatus, 'yellow' | 'blue' | 'green'> = {
+  available: 'green',
   proposed: 'yellow',
   planned: 'blue',
   upcoming: 'yellow',
@@ -63,6 +64,7 @@ export const PluginEcosystem: React.FC = () => {
   }, []);
 
   const getStatusLabel = (status: IntegrationStatus) => {
+    if (status === 'available') return t.ecosystem.statusAvailable;
     if (status === 'proposed') return t.ecosystem.statusProposed;
     if (status === 'upcoming') return t.ecosystem.statusUpcoming;
     return t.ecosystem.statusPlanned;
@@ -286,21 +288,30 @@ export const PluginEcosystem: React.FC = () => {
                       <div className="plugin-app-badges-row">
                         <Sticker
                           as="span"
-                          color="yellow"
+                          color={integration.status === 'available' ? 'green' : 'yellow'}
                           rotateDeg={-0.6}
                           className="font-handwriting plugin-status-sticker"
                         >
-                          ⏳ {t.ecosystem.statusUpcoming}
+                          {integration.status === 'available' ? '✓ ' : '⏳ '}
+                          {getStatusLabel(integration.status)}
                         </Sticker>
                         <Sticker
                           as="span"
-                          color="purple"
+                          color={
+                            integration.kind === 'import'
+                              ? 'blue'
+                              : integration.kind === 'builtin'
+                                ? 'purple'
+                                : 'cyan'
+                          }
                           rotateDeg={0.5}
                           className="font-handwriting plugin-status-sticker"
                         >
                           {integration.kind === 'builtin'
                             ? t.ecosystem.kindBuiltin
-                            : t.ecosystem.kindPlugin}
+                            : integration.kind === 'import'
+                              ? t.ecosystem.kindImport
+                              : t.ecosystem.kindPlugin}
                         </Sticker>
                       </div>
                     </div>
@@ -346,7 +357,7 @@ export const PluginEcosystem: React.FC = () => {
                       rel="noopener noreferrer"
                       className="font-handwriting plugin-app-link"
                     >
-                      {t.ecosystem.issueLink} ↗
+                      {integration.prUrl ? t.ecosystem.viewPrProgress : t.ecosystem.issueLink} ↗
                     </a>
                   ) : null}
                 </div>
@@ -374,10 +385,13 @@ export const PluginEcosystem: React.FC = () => {
               </>
             );
 
-            return integration.issueUrl ? (
+            const linkTarget =
+              integration.prUrl || integration.issueUrl || integration.repositoryUrl;
+
+            return linkTarget ? (
               <a
                 key={integration.id}
-                href={integration.issueUrl}
+                href={linkTarget}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="plugin-upcoming-chip"

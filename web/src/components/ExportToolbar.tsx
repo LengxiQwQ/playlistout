@@ -8,6 +8,7 @@ import { useTranslation } from '../i18n';
 import { Sticker } from './ui/Sticker';
 import { MarkerButton } from './ui/MarkerButton';
 import { MigrationPanel } from './migration/MigrationPanel';
+import { PlayerExportSection } from './export/PlayerExportSection';
 
 export interface ExportToolbarProps {
   playlist: Playlist | null;
@@ -169,126 +170,175 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         <div
           style={{
             display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1.25rem',
+            flexDirection: 'column',
+            gap: '0.85rem',
             paddingBottom: '1.25rem',
           }}
         >
-          <div>
-            <div
-              className="font-handwriting"
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                marginBottom: '0.65rem',
-                color: 'var(--ink, #2d3436)',
-              }}
-            >
-              {t.export.pickFormat}
-            </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1.25rem',
+            }}
+          >
+            <div>
+              <div
+                className="font-handwriting"
+                style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  marginBottom: '0.65rem',
+                  color: 'var(--ink, #2d3436)',
+                }}
+              >
+                {t.export.pickFormat}
+              </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
-              {FORMAT_CONFIG.map((item) => {
-                const isSelected = selectedFormats.includes(item.id);
-                return (
-                  <Sticker
-                    key={item.id}
-                    type="button"
-                    color={item.color}
-                    rotateDeg={item.rotateDeg}
-                    disabled={isDisabled}
-                    onClick={() => toggleFormat(item.id)}
-                    aria-pressed={isSelected}
-                    className={`font-mono format-toggle-sticker ${isSelected ? 'active' : ''}`}
-                    style={{
-                      padding: '0.45rem 0.85rem',
-                      fontSize: '0.92rem',
-                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      outline: isSelected ? '2px solid var(--ink, #2d3436)' : undefined,
-                      boxShadow: isSelected
-                        ? 'var(--cutout-shadow, 3px 3px 0 0 #2d3436)'
-                        : '0 1px 3px rgba(0, 0, 0, 0.06)',
-                      opacity: isDisabled ? 0.6 : isSelected ? 1 : 0.75,
-                      transition: 'all 0.15s ease',
-                    }}
-                    aria-label={item.label}
-                  >
-                    <span
-                      className="hand-drawn-checkbox"
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+                {FORMAT_CONFIG.map((item) => {
+                  const isSelected = selectedFormats.includes(item.id);
+                  return (
+                    <Sticker
+                      key={item.id}
+                      type="button"
+                      color={item.color}
+                      rotateDeg={item.rotateDeg}
+                      disabled={isDisabled}
+                      onClick={() => toggleFormat(item.id)}
+                      aria-pressed={isSelected}
+                      className={`font-mono format-toggle-sticker ${isSelected ? 'active' : ''}`}
                       style={{
+                        padding: '0.45rem 0.85rem',
+                        fontSize: '0.92rem',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        borderRadius: '4px',
-                        border: isSelected
-                          ? '2px solid var(--ink, #2d3436)'
-                          : '1.5px dashed rgba(45, 52, 54, 0.45)',
-                        backgroundColor: isSelected
-                          ? '#ffffff'
-                          : 'rgba(255, 255, 255, 0.45)',
-                        boxShadow: isSelected ? '1px 1px 0 rgba(45, 52, 54, 0.25)' : 'none',
-                        flexShrink: 0,
-                        transition: 'all 0.12s ease',
+                        gap: '0.4rem',
+                        outline: isSelected ? '2px solid var(--ink, #2d3436)' : undefined,
+                        boxShadow: isSelected
+                          ? 'var(--cutout-shadow, 3px 3px 0 0 #2d3436)'
+                          : '0 1px 3px rgba(0, 0, 0, 0.06)',
+                        opacity: isDisabled ? 0.6 : isSelected ? 1 : 0.75,
+                        transition: 'all 0.15s ease',
                       }}
+                      aria-label={item.label}
                     >
-                      {isSelected ? <HandDrawnCheck size={14} color="#15803d" /> : null}
-                    </span>
-                    <span>{item.label}</span>
-                  </Sticker>
-                );
-              })}
+                      <span
+                        className="hand-drawn-checkbox"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '1.25rem',
+                          height: '1.25rem',
+                          borderRadius: '4px',
+                          border: isSelected
+                            ? '2px solid var(--ink, #2d3436)'
+                            : '1.5px dashed rgba(45, 52, 54, 0.45)',
+                          backgroundColor: isSelected
+                            ? '#ffffff'
+                            : 'rgba(255, 255, 255, 0.45)',
+                          boxShadow: isSelected ? '1px 1px 0 rgba(45, 52, 54, 0.25)' : 'none',
+                          flexShrink: 0,
+                          transition: 'all 0.12s ease',
+                        }}
+                      >
+                        {isSelected ? <HandDrawnCheck size={14} color="#15803d" /> : null}
+                      </span>
+                      <span>{item.label}</span>
+                    </Sticker>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="export-json-schema-hint">
-              <span>{t.export.jsonSchemaHint}</span>
-              <a
-                href="https://github.com/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md"
-                target="_blank"
-                rel="noopener noreferrer"
+            {/* Big Export Action Button */}
+            <div
+              className="export-action-btn-wrap"
+              style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}
+            >
+              <span
+                className="font-note desktop-only hidden-on-mobile"
+                style={{ fontSize: '1.45rem', color: '#8a8f92', transform: 'rotate(-2deg)' }}
               >
-                {t.export.jsonSchemaLink}
-              </a>
+                {t.export.takeListWithYou}
+              </span>
+              <MarkerButton
+                type="button"
+                variant="ink"
+                rotateDeg={-1}
+                disabled={isDisabled}
+                onClick={handleBatchExport}
+                style={{
+                  fontSize: '1.25rem',
+                  padding: '0.75rem 1.85rem',
+                  opacity: isDisabled || selectedFormats.length === 0 ? 0.65 : 1,
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {selectedFormats.length === 1
+                  ? `${t.export.exportAction.replace('↓', '').trim()} (${
+                      selectedFormats[0] === 'xlsx' ? 'Excel' : selectedFormats[0].toUpperCase()
+                    }) ↓`
+                  : selectedFormats.length > 1
+                    ? `${t.export.exportAction.replace('↓', '').trim()} (${selectedFormats.length}) ↓`
+                    : t.export.exportAction}
+              </MarkerButton>
             </div>
           </div>
 
-          {/* Big Export Action Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span
-              className="font-note hidden-on-mobile"
-              style={{ fontSize: '1.45rem', color: '#8a8f92', transform: 'rotate(-2deg)' }}
-            >
-              {t.export.takeListWithYou}
+          {/* JSON Schema Hint Line — clean spacing, subtle stationery caption */}
+          <div
+            className="export-json-schema-hint"
+            style={{
+              display: 'inline-flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.45rem',
+              marginTop: '0.75rem',
+              marginBottom: '0.25rem',
+              padding: '0.45rem 0.85rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.55)',
+              border: '1px dashed rgba(45, 52, 54, 0.16)',
+              borderRadius: '6px',
+              fontSize: '0.84rem',
+              color: '#636e72',
+              lineHeight: 1.5,
+              alignSelf: 'flex-start',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ color: '#0984e3', fontWeight: 700 }} aria-hidden="true">ℹ</span>
+              {t.export.jsonSchemaHint}
             </span>
-            <MarkerButton
-              type="button"
-              variant="ink"
-              rotateDeg={-1}
-              disabled={isDisabled}
-              onClick={handleBatchExport}
+            <a
+              href="https://github.com/LengxiQwQ/playlistout/blob/main/docs/JSON-SCHEMA.md"
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                fontSize: '1.25rem',
-                padding: '0.75rem 1.85rem',
-                opacity: isDisabled || selectedFormats.length === 0 ? 0.65 : 1,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                color: '#0984e3',
+                fontWeight: 600,
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
               }}
             >
-              {selectedFormats.length === 1
-                ? `${t.export.exportAction.replace('↓', '').trim()} (${
-                    selectedFormats[0] === 'xlsx' ? 'Excel' : selectedFormats[0].toUpperCase()
-                  }) ↓`
-                : selectedFormats.length > 1
-                  ? `${t.export.exportAction.replace('↓', '').trim()} (${selectedFormats.length}) ↓`
-                  : t.export.exportAction}
-            </MarkerButton>
+              {t.export.jsonSchemaLink}
+            </a>
           </div>
         </div>
+
+        {/* Dedicated Open Source Music Player Export Section */}
+        <PlayerExportSection
+          playlist={playlist}
+          onExportSuccess={(filename) =>
+            showToast(formatString(t.export.toastExportSuccess, { filename }))
+          }
+          onExportError={() => showToast(t.export.toastExportFailed)}
+        />
 
         <MigrationPanel playlist={playlist} />
 
@@ -405,18 +455,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               >
                 📋 {t.export.copyJson}
               </Sticker>
-              </div>
-              <div
-                style={{
-                  maxWidth: '34rem',
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-                  fontSize: '0.83rem',
-                  lineHeight: 1.45,
-                  color: '#747c80',
-                }}
-              >
-                {t.export.copyJsonHint}
               </div>
             </div>
           </div>

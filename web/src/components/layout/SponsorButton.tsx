@@ -37,11 +37,11 @@ export const SponsorButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click and Escape
+  // Close on outside click, touch, and Escape
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
@@ -54,9 +54,11 @@ export const SponsorButton: React.FC = () => {
     };
 
     document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
@@ -104,22 +106,50 @@ export const SponsorButton: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div
-          role="dialog"
-          aria-label={t.footer.sponsorMenuTitle}
-          className="sponsor-dropup-menu shadow-cutout"
-        >
+        <>
           <div
-            className="font-marker"
-            style={{
-              fontSize: '1.25rem',
-              color: 'var(--ink, #2d3436)',
-              marginBottom: '0.2rem',
-              lineHeight: 1.2,
-            }}
+            className="sponsor-backdrop mobile-only"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-label={t.footer.sponsorMenuTitle}
+            className="sponsor-dropup-menu shadow-cutout"
           >
-            {t.footer.sponsorMenuTitle}
-          </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="btn-modal-close sponsor-modal-close"
+              aria-label="Close"
+              style={{
+                position: 'absolute',
+                top: '0.65rem',
+                right: '0.65rem',
+                background: 'none',
+                border: 'none',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: 'var(--ink, #2d3436)',
+                cursor: 'pointer',
+                lineHeight: 1,
+                padding: '0.2rem 0.4rem',
+              }}
+            >
+              ×
+            </button>
+            <div
+              className="font-marker"
+              style={{
+                fontSize: '1.25rem',
+                color: 'var(--ink, #2d3436)',
+                marginBottom: '0.2rem',
+                lineHeight: 1.2,
+                paddingRight: '1.5rem',
+              }}
+            >
+              {t.footer.sponsorMenuTitle}
+            </div>
 
           <p
             className="font-handwriting"
@@ -304,6 +334,7 @@ export const SponsorButton: React.FC = () => {
             </a>
           </div>
         </div>
+        </>
       )}
     </div>
   );

@@ -7,3 +7,5 @@ export * from './plugins/xlsx';
 export * from './plugins/json';
 export * from './plugins/m3u8';
 export * from './plugins/markdown';
+export * from './plugins/lxMusic';
+export * from './plugins/listen1';

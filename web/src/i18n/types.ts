@@ -196,6 +196,17 @@ export interface Translations {
     toastCopySuccess: string;
     toastCopyJsonSuccess: string;
     toastCopyFailed: string;
+    playerExportTitle: string;
+    playerExportSubtitle: string;
+    lxMusicButton: string;
+    lxMusicDesc: string;
+    listen1Button: string;
+    listen1Desc: string;
+    musicFreeButton: string;
+    musicFreeDesc: string;
+    bbplayerTag: string;
+    bbplayerDesc: string;
+    viewEcosystemGuide: string;
   };
   migration: {
     title: string;
@@ -239,6 +250,7 @@ export interface Translations {
     statusUpcoming: string;
     kindBuiltin: string;
     kindPlugin: string;
+    kindImport: string;
     officialDownload: string;
     issueLink: string;
     viewPrProgress: string;
@@ -335,6 +347,7 @@ export interface Translations {
     drawnBy: string;
     runningBadge: string;
     copyrightPrefix: string;
+    licensePrefix: string;
     licenseText: string;
     licenseUrl: string;
     disclaimer: string;

@@ -1,7 +1,7 @@
 import type { Language } from '../i18n';
 
-export type IntegrationStatus = 'proposed' | 'planned' | 'upcoming';
-export type IntegrationKind = 'plugin' | 'builtin';
+export type IntegrationStatus = 'available' | 'proposed' | 'planned' | 'upcoming';
+export type IntegrationKind = 'plugin' | 'builtin' | 'import';
 
 export interface UpcomingIntegration {
   id: string;
@@ -50,39 +50,47 @@ export const PLUGIN_MANIFEST_URL = '/plugins/index.json';
 
 export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
   {
-    id: 'bbplayer',
-    name: 'BBPlayer',
-    status: 'upcoming',
-    kind: 'builtin',
-    issueUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
-    homepageUrl: 'https://bbplayer.roitium.com',
-    repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
-    logoUrl: 'https://raw.githubusercontent.com/bbplayer-app/BBPlayer/HEAD/apps/mobile/assets/images/icon_large.png',
+    id: 'lx-music',
+    name: '洛雪音乐',
+    status: 'available',
+    kind: 'import',
+    issueUrl: 'https://github.com/lyswhut/lx-music-desktop/issues/3001',
+    homepageUrl: 'https://lxmusic.toside.cn/',
+    repositoryUrl: 'https://github.com/lyswhut/lx-music-desktop',
+    logoUrl: 'https://raw.githubusercontent.com/lyswhut/lx-music-desktop/master/resources/icons/512x512.png',
     summary: {
-      'zh-CN': '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
-      'en-US': "Open-source, free Bilibili music player that streams songs, covers, and live audio from Bilibili. With Playlist Out natively built in, tap the '+' button on the Playlists page and select 'Import External Playlist' to paste a playlist link or import a local JSON file.",
-      default: '开源免费的 B 站音源音乐播放器，依托 B 站海量音视频与翻唱资源免费听歌。软件已原生内置 Playlist Out，在「播放列表」页面点击「+」号并选择「导入外部歌单」，直接粘贴歌单链接或导入本地 JSON 文件即可。',
+      'zh-CN': '超人气开源桌面音乐播放器。前往官网下载桌面端或移动端，在「我的列表」右键点击列表名或空白处选择「导入列表」，即可直接选择 PlaylistOut 导出的【洛雪音乐】JSON 文件秒级还原歌单并自由换源播放！',
+      'en-US': 'Popular open-source desktop music player. Download from the official website, right-click "My Lists" and select "Import List" to restore playlists exported from PlaylistOut in one click!',
+      default: '超人气开源桌面音乐播放器。前往官网下载桌面端或移动端，在「我的列表」右键点击列表名或空白处选择「导入列表」，即可直接选择 PlaylistOut 导出的【洛雪音乐】JSON 文件秒级还原歌单并自由换源播放！',
+    },
+  },
+  {
+    id: 'listen1',
+    name: 'Listen 1',
+    status: 'available',
+    kind: 'import',
+    issueUrl: 'https://github.com/listen1/listen1_desktop/issues/1413',
+    homepageUrl: 'https://listen1.github.io/listen1/',
+    repositoryUrl: 'https://github.com/listen1/listen1_desktop',
+    logoUrl: 'https://raw.githubusercontent.com/listen1/listen1_desktop/master/app/images/logo.png',
+    summary: {
+      'zh-CN': '经典多合一开源音乐播放器（支持桌面端与 Chrome 扩展）。前往官网下载安装后，在「设置」➜「备份与恢复」点击「从本地文件恢复」，选择 PlaylistOut 导出的【Listen 1】JSON 文件即可直接导入自建歌单！',
+      'en-US': 'Classic multi-platform open-source player (Desktop & Chrome Extension). Download from the official website, go to "Settings" ➜ "Backup & Restore" and click "Restore from local file" to import playlists exported from PlaylistOut!',
+      default: '经典多合一开源音乐播放器（支持桌面端与 Chrome 扩展）。前往官网下载安装后，在「设置」➜「备份与恢复」点击「从本地文件恢复」，选择 PlaylistOut 导出的【Listen 1】JSON 文件即可直接导入自建歌单！',
     },
   },
 ];
 
 export const UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
   {
-    id: 'lx-music',
-    name: 'LX Music',
-    status: 'proposed',
-    issueUrl: 'https://github.com/lyswhut/lx-music-desktop/issues/3001',
-  },
-  {
-    id: 'listen1',
-    name: 'Listen 1',
-    status: 'proposed',
-    issueUrl: 'https://github.com/listen1/listen1_desktop/issues/1413',
-  },
-  {
-    id: 'moosync',
-    name: 'Moosync',
-    status: 'planned',
+    id: 'bbplayer',
+    name: 'BBPlayer',
+    status: 'upcoming',
+    kind: 'builtin',
+    prUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
+    issueUrl: 'https://github.com/bbplayer-app/BBPlayer/issues/340',
+    homepageUrl: 'https://bbplayer.roitium.com',
+    repositoryUrl: 'https://github.com/bbplayer-app/BBPlayer',
   },
 ];
 

@@ -7,6 +7,8 @@ import { xlsxExportPlugin } from './plugins/xlsx';
 import { jsonExportPlugin } from './plugins/json';
 import { m3u8ExportPlugin } from './plugins/m3u8';
 import { markdownExportPlugin } from './plugins/markdown';
+import { lxMusicExportPlugin } from './plugins/lxMusic';
+import { listen1ExportPlugin } from './plugins/listen1';
 
 export class ExportRegistry {
   private plugins = new Map<string, ExportPlugin>();
@@ -19,6 +21,8 @@ export class ExportRegistry {
     this.register(jsonExportPlugin);
     this.register(m3u8ExportPlugin);
     this.register(markdownExportPlugin);
+    this.register(lxMusicExportPlugin);
+    this.register(listen1ExportPlugin);
   }
 
   register(plugin: ExportPlugin): this {

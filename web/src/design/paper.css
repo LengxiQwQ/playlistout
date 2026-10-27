@@ -1164,6 +1164,17 @@ button.sticker:disabled,
   }
 }
 
+@keyframes sponsorModalPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 /* Author Contact Upward Note / Dropup Card */
 .author-dropup-card {
   position: absolute;
@@ -1271,6 +1282,17 @@ button.sticker:disabled,
   to {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+}
+
+@keyframes authorModalPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 

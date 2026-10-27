@@ -16,15 +16,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
   useEffect(() => {
     if (!isAuthorOpen) return;
 
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       if (authorContainerRef.current && !authorContainerRef.current.contains(e.target as Node)) {
         setIsAuthorOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
     };
   }, [isAuthorOpen]);
 
@@ -261,6 +263,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               </span>
             </button>
 
+            {isAuthorOpen && (
+              <div
+                className="author-backdrop mobile-only"
+                onClick={() => setIsAuthorOpen(false)}
+                aria-hidden="true"
+              />
+            )}
             <AuthorCard
               isOpen={isAuthorOpen}
               onClose={() => setIsAuthorOpen(false)}
@@ -343,6 +352,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             }}
           >
             <span>{t.footer.copyrightPrefix}</span>
+            <a
+              href="https://github.com/LengxiQwQ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-license-link"
+            >
+              LengxiQwQ
+            </a>
+            <span>{t.footer.licensePrefix}</span>
             <a
               href={t.footer.licenseUrl}
               target="_blank"

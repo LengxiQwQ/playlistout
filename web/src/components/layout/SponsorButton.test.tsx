@@ -65,4 +65,15 @@ describe('SponsorButton Component', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('closes menu when clicking the close button', () => {
+    render(<SponsorButton />);
+    const button = screen.getByRole('button', { name: /sponsor|赞助/i });
+    fireEvent.click(button);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    const closeBtn = screen.getByRole('button', { name: 'Close' });
+    fireEvent.click(closeBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

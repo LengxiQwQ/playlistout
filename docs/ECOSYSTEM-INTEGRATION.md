@@ -378,10 +378,12 @@ function getPluginHeaders() {
   - 构建产物同步托管至官方分发节点：`https://playlistout.lengxiqwq.com/plugins/musicfree/把你的歌单带走-PlaylistOut.js`，国内用户一键极速安装。
 - [x] **Phase 2: 洛雪音乐 (LX Music)、BBPlayer 与 Listen 1 官方 Issue 正式发起（已完成）**
   - **洛雪音乐 (LX Music)**: 已提交 [#3001](https://github.com/lyswhut/lx-music-desktop/issues/3001) - 建议在“导入列表”中支持自动兼容通用歌单 JSON 结构（附轻量 PR 方案）。
-  - **BBPlayer**: 已提交 [#340](https://github.com/bbplayer-app/BBPlayer/issues/340) 并已在主程序中完成标准化的 PlaylistOut API + 本地/在线 JSON 双通道接入与遥测归因对齐。
+  - **BBPlayer**: 已提交 PR [#340](https://github.com/bbplayer-app/BBPlayer/issues/340)，完成主程序内置 PlaylistOut API + 本地/在线 JSON 双通道接入代码；目前等待上游作者审核合并中（未发版支持）。
   - **Listen 1**: 已提交 [#1413](https://github.com/listen1/listen1_desktop/issues/1413) - 建议在歌单导入/恢复功能中向下兼容通用歌单 JSON 格式（附 PR 意向）。
-- [ ] **Phase 3: 静待作者反馈并提交轻量 PR**
-  - 根据各平台维护者反馈，提交 20~40 行极简、零侵入的本地 JSON 导入兼容 PR。
+- [x] **Phase 3: 洛雪音乐 (LX Music) 与 Listen 1 私有格式反向适配（已完成）**
+  - 不依赖上游合并 PR，网页端增加专属开源播放器导出区。
+  - 原生实现 `lx-music` 专用 `playList` JSON 导出插件，支持在洛雪「我的列表」右键一键还原。
+  - 原生实现 `listen1` 专用 `myplaylist_` 恢复格式导出插件，支持在 Listen 1「从本地文件恢复」一键导入。
 - [ ] **Phase 4: Moosync 扩展接入**
   - 为 Moosync 基于官方 Extension SDK 编写并上架导入扩展。
 - [ ] **Phase 5: 建立跨生态兼容性持续集成验证**

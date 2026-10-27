@@ -44,6 +44,8 @@ describe('ExportRegistry & Plugin System', () => {
     expect(ids).toContain('json');
     expect(ids).toContain('m3u8');
     expect(ids).toContain('markdown');
+    expect(ids).toContain('lx-music');
+    expect(ids).toContain('listen1');
   });
 
   it('allows registering custom third-party plugins dynamically', () => {
