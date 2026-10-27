@@ -154,7 +154,7 @@ export const SponsorButton: React.FC = () => {
           <p
             className="font-handwriting"
             style={{
-              fontSize: '1rem',
+              fontSize: '0.85rem',
               color: '#636e72',
               margin: '0 0 0.85rem 0',
               lineHeight: 1.3,

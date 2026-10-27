@@ -240,6 +240,8 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
 
 export function ensureFontStylesheet(preset: FontPreset): void {
   if (!preset.googleFontsQuery) return;
+  // 'zhnote' and 'original' base fonts are preloaded in index.html, avoid duplicate link injection
+  if (preset.id === 'zhnote' || preset.id === 'original') return;
   const linkId = `font-link-${preset.id}`;
   if (typeof document !== 'undefined' && !document.getElementById(linkId)) {
     try {

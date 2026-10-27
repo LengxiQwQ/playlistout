@@ -37,9 +37,9 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
         return;
       }
 
-      // Desktop: adjust margin-bottom so the next sibling lands on an exact
-      // multiple of the 38px ruled-paper baseline.
-      sections.forEach((sec, idx) => {
+      // Desktop: batch read all geometric metrics first, then batch write margins
+      // to eliminate forced synchronous reflow (Layout Thrashing).
+      const calculatedMargins = Array.from(sections).map((sec, idx) => {
         const rect = sec.getBoundingClientRect();
         const currentBottom = sec.offsetTop + rect.height;
         const rem = currentBottom % H;
@@ -50,7 +50,11 @@ export function useBaselineGrid(dependencies: unknown[] = []) {
           Boolean(sec.querySelector('.info-notes-section')) ||
           Boolean(sec.querySelector('.running-days-stamp-wrap'));
         const baseMargin = idx === sections.length - 1 ? 0 : hasTrailingDecoration ? H : H * 2;
-        sec.style.marginBottom = `${pad + baseMargin}px`;
+        return `${pad + baseMargin}px`;
+      });
+
+      sections.forEach((sec, idx) => {
+        sec.style.marginBottom = calculatedMargins[idx];
       });
     };
 

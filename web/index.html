@@ -12,7 +12,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fonts.font.im">
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Comic+Neue:wght@400;700&family=Covered+By+Your+Grace&family=Kalam:wght@400;700&family=Long+Cang&family=Ma+Shan+Zheng&family=Nanum+Pen+Script&family=Noto+Sans+SC:wght@400;600;700&family=Patrick+Hand&family=Permanent+Marker&family=Schoolbell&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=Zhi+Mang+Xing&display=swap" rel="stylesheet" onerror="this.onerror=null;this.href='https://fonts.font.im/css2?family=Caveat:wght@400;600;700&family=Comic+Neue:wght@400;700&family=Covered+By+Your+Grace&family=Kalam:wght@400;700&family=Long+Cang&family=Ma+Shan+Zheng&family=Nanum+Pen+Script&family=Noto+Sans+SC:wght@400;600;700&family=Patrick+Hand&family=Permanent+Marker&family=Schoolbell&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=Zhi+Mang+Xing&display=swap'">
+    <!-- Non-blocking asynchronous loading for critical initial fonts (zhnote & original presets) -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Ma+Shan+Zheng&family=Permanent+Marker&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+      onerror="this.onerror=null;this.href='https://fonts.font.im/css2?family=Caveat:wght@400;600;700&family=Ma+Shan+Zheng&family=Permanent+Marker&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap'"
+    >
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Ma+Shan+Zheng&family=Permanent+Marker&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      >
+    </noscript>
     <meta name="description" content="你的歌单，不应该只困在一个平台。Playlist Out 支持网易云、QQ音乐、酷狗、酷我、汽水与咪咕音乐公开歌单解析。一键在浏览器本地导出为 JSON、Excel、CSV、TXT、M3U8 等格式，并带到其他开源音乐播放器。" />
     <meta name="keywords" content="把你的歌单带走, 歌单导出, QQ音乐歌单, 网易云歌单, 酷狗歌单, 酷我歌单, 汽水音乐, 咪咕音乐, 歌单备份, 播放列表导出, Excel, XLSX, JSON, TXT, CSV, M3U8, 音乐歌单解析, 歌单迁移, 开源播放器" />
     <meta name="author" content="Playlist Out" />
