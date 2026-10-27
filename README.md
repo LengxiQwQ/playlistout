@@ -33,6 +33,14 @@
 
 > 💡 注：WinGet (`winget install LengxiQwQ.PlaylistOut`) 与 Scoop 官方源正在同步审核中。
 
+#### 桌面 CLI 运行截图（交互式命令行）
+
+> 💡 说明：双击免安装单文件或终端输入 `playlistout` 即可进入交互式向导（如下图）；亦支持纯命令行参数调用与自动化脚本（详见文末常用命令）。
+
+<div align="center">
+  <img src="docs/images/cli-interactive.jpg" alt="Playlist Out 桌面 CLI 运行截图（交互式命令行）" width="720" />
+</div>
+
 ---
 
 ## 🎵 支持的平台

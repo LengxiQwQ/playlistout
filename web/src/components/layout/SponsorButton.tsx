@@ -169,7 +169,7 @@ export const SponsorButton: React.FC = () => {
               href="https://github.com/sponsors/LengxiQwQ"
               target="_blank"
               rel="noopener noreferrer"
-              className="sponsor-action-btn font-handwriting"
+              className="sponsor-action-btn font-sans"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -180,7 +180,8 @@ export const SponsorButton: React.FC = () => {
                 color: '#ffffff',
                 borderRadius: '6px',
                 textDecoration: 'none',
-                fontSize: '1.05rem',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '0.95rem',
                 fontWeight: 600,
                 lineHeight: 1.2,
                 boxShadow: '2px 2px 0 var(--ink, #2d3436)',
@@ -198,7 +199,7 @@ export const SponsorButton: React.FC = () => {
               href="https://afdian.com/a/lengxiqwq"
               target="_blank"
               rel="noopener noreferrer"
-              className="sponsor-action-btn font-handwriting"
+              className="sponsor-action-btn font-sans"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -209,7 +210,8 @@ export const SponsorButton: React.FC = () => {
                 color: '#ffffff',
                 borderRadius: '6px',
                 textDecoration: 'none',
-                fontSize: '1.05rem',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '0.95rem',
                 fontWeight: 600,
                 lineHeight: 1.2,
                 boxShadow: '2px 2px 0 var(--ink, #2d3436)',
