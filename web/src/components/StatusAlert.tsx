@@ -14,6 +14,12 @@ export interface StatusAlertProps {
   feedbackSubmittedLabel?: string;
   feedbackNotice?: string;
   feedbackSubmitted?: boolean;
+  desktopCliHint?: {
+    prefix: string;
+    linkText: string;
+    suffix: string;
+    url?: string;
+  };
 }
 
 export const StatusAlert: React.FC<StatusAlertProps> = ({
@@ -28,6 +34,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
   feedbackNotice,
   feedbackSubmitted = false,
   retryLabel = '重试',
+  desktopCliHint,
 }) => {
   const isError = type === 'error';
   const hasActions = onRetry || onFeedback || Boolean(onAction && actionLabel);
@@ -50,18 +57,47 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
         <span style={{ fontSize: '1.25rem', lineHeight: 1.4, flexShrink: 0 }} aria-hidden="true">
           {isError ? '⚠️' : 'ℹ️'}
         </span>
-        <p
-          className="alert-message font-handwriting"
-          style={{
-            fontSize: '1.15rem',
-            color: 'var(--ink, #2d3436)',
-            lineHeight: 1.4,
-            margin: 0,
-            flex: 1,
-          }}
-        >
-          {message}
-        </p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            className="alert-message font-handwriting"
+            style={{
+              fontSize: '1.15rem',
+              color: 'var(--ink, #2d3436)',
+              lineHeight: 1.4,
+              margin: 0,
+            }}
+          >
+            {message}
+          </p>
+
+          {desktopCliHint && (
+            <div
+              className="alert-cli-hint font-handwriting"
+              style={{
+                marginTop: '0.5rem',
+                fontSize: '0.95rem',
+                color: 'var(--ink-light, #636e72)',
+                lineHeight: 1.4,
+              }}
+            >
+              {desktopCliHint.prefix}
+              <a
+                href={desktopCliHint.url || 'https://github.com/LengxiQwQ/playlistout/releases/latest'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="alert-cli-link"
+                style={{
+                  color: 'var(--ink, #2d3436)',
+                  fontWeight: 700,
+                  textDecoration: 'underline',
+                }}
+              >
+                {desktopCliHint.linkText}
+              </a>
+              {desktopCliHint.suffix}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom action bar */}

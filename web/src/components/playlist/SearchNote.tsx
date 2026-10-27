@@ -347,6 +347,11 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             (error.code === 'INVALID_INPUT' && error.message?.toLowerCase().includes('kugou') && (error.message?.toLowerCase().includes('authorization') || error.message?.toLowerCase().includes('token')));
 
           const isUpstreamError = error.code === 'UPSTREAM_ERROR' || error.code === 'UPSTREAM_TIMEOUT';
+          const isUpstreamOrBusyError =
+            error.code === 'UPSTREAM_ERROR' ||
+            error.code === 'UPSTREAM_TIMEOUT' ||
+            error.code === 'RATE_LIMITED' ||
+            error.code === 'NETWORK_ERROR';
 
           const showFeedback =
             Boolean(onFeedback) &&
@@ -368,6 +373,8 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             onRetry();
           };
 
+          const showDesktopCliHint = isUpstreamOrBusyError && !isKugouAuth;
+
           return (
             <StatusAlert
               type="error"
@@ -381,6 +388,16 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               feedbackSubmittedLabel={t.errors.feedbackSubmitted}
               feedbackNotice={feedbackNotice}
               feedbackSubmitted={feedbackSubmitted}
+              desktopCliHint={
+                showDesktopCliHint
+                  ? {
+                      prefix: t.errors.desktopCliPrefix,
+                      linkText: t.errors.desktopCliLinkText,
+                      suffix: t.errors.desktopCliSuffix,
+                      url: 'https://github.com/LengxiQwQ/playlistout/releases/latest',
+                    }
+                  : undefined
+              }
             />
           );
         })()}

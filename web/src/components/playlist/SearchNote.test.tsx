@@ -298,4 +298,47 @@ describe('SearchNote Component (Phase 4)', () => {
     fireEvent.click(feedbackBtn);
     expect(handleFeedback).toHaveBeenCalledTimes(1);
   });
+
+  it('renders desktop CLI recommendation link for upstream, timeout, rate-limited, and network errors, but not for input errors', () => {
+    // 1. Upstream timeout error: should show concise desktop CLI recommendation link to GitHub Releases
+    const { rerender } = render(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl="https://music.163.com/playlist?id=12345"
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={{ code: 'UPSTREAM_TIMEOUT', message: 'Timeout' }}
+          onRetry={vi.fn()}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText(/不受网络或上游风控影响/)).toBeInTheDocument();
+    const cliLink = screen.getByRole('link', { name: /桌面 CLI 独立版 ↗/ });
+    expect(cliLink).toBeInTheDocument();
+    expect(cliLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
+    expect(cliLink).toHaveAttribute('target', '_blank');
+
+    // 2. Client input error (INVALID_INPUT): should NOT show desktop CLI recommendation
+    rerender(
+      <LanguageProvider defaultLanguage="zh-CN">
+        <SearchNote
+          inputUrl="invalid"
+          onInputChange={vi.fn()}
+          onClear={vi.fn()}
+          onParse={vi.fn()}
+          isLoading={false}
+          error={{ code: 'INVALID_INPUT', message: 'Invalid URL' }}
+          onRetry={vi.fn()}
+          onSelectSample={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.queryByText(/不受网络或上游风控影响/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /桌面 CLI 独立版/ })).not.toBeInTheDocument();
+  });
 });

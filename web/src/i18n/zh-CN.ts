@@ -107,6 +107,9 @@ export const zhCN: Translations = {
     feedbackNotice: '点击「一键反馈」将你的歌单链接发送给作者，用于修复解析问题。',
     feedbackNoticeUpstreamInitial: '上游接口频控或网络抖动通常稍等片刻即可自动恢复，请先点击「重试」；若多次重试仍无法解析，可向作者反馈。',
     feedbackNoticeUpstreamRetry: '多次重试仍响应异常，可能上游平台策略变动，可点击「一键反馈」提交给作者排查。',
+    desktopCliPrefix: '如遇超时或频繁繁忙，可直接下载 ',
+    desktopCliLinkText: '桌面 CLI 独立版 ↗',
+    desktopCliSuffix: ' 本地直接运行，不受网络或上游风控影响。',
   },
   result: {
     doneParsingHint: '解析完毕？↓ 你的结果就在这里',

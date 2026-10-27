@@ -107,6 +107,9 @@ export interface Translations {
     feedbackNotice: string;
     feedbackNoticeUpstreamInitial: string;
     feedbackNoticeUpstreamRetry: string;
+    desktopCliPrefix: string;
+    desktopCliLinkText: string;
+    desktopCliSuffix: string;
   };
   result: {
     doneParsingHint: string;

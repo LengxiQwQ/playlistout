@@ -107,6 +107,9 @@ export const enUS: Translations = {
     feedbackNotice: 'Clicking "Report this" will send your playlist link to the developer to help fix parsing.',
     feedbackNoticeUpstreamInitial: 'Temporary upstream rate limits or network issues usually resolve quickly. Please click "Retry" first; report only if it persists after multiple attempts.',
     feedbackNoticeUpstreamRetry: 'Still failing after multiple retries. The upstream platform may have changed. You can report it to the developer.',
+    desktopCliPrefix: 'If timeouts or busy errors persist, download the ',
+    desktopCliLinkText: 'Desktop CLI ↗',
+    desktopCliSuffix: ' to run locally, unaffected by network or upstream risk control.',
   },
   result: {
     doneParsingHint: 'done parsing? ↓ your result lands right here',
