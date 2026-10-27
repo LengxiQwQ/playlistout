@@ -266,7 +266,7 @@ Playlist Out 使用 [MIT License](LICENSE) 开源。
 **热门来源（近 14 天）：** Google · Bing · github.com · Baidu · audio-file.org · hub.xerj.org  
 **热门内容（近 14 天）：** releases/tag/v3.0.0 · issues · releases · plugins/musicfree/README.md
 
-> 数据开始：2026-09-07 · 最后更新：2026-10-26
+> 数据开始：2026-09-07 · 最后更新：2026-10-27
 <!-- INSIGHTS:END -->
 
 ---
