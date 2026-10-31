@@ -261,12 +261,12 @@ Playlist Out 使用 [MIT License](LICENSE) 开源。
 <!-- INSIGHTS:START -->
 **📊 仓库流量**
 
-访问次数：**2,104** ｜ 不重复访客：**288**（近 14 天） ｜ 仓库克隆：**11,421** ｜ 不重复克隆：**377**（近 14 天）
+访问次数：**2,220** ｜ 不重复访客：**317**（近 14 天） ｜ 仓库克隆：**11,468** ｜ 不重复克隆：**294**（近 14 天）
 
-**热门来源（近 14 天）：** Google · Bing · github.com · Baidu · audio-file.org · hub.xerj.org  
-**热门内容（近 14 天）：** releases/tag/v3.0.0 · issues · releases · plugins/musicfree/README.md
+**热门来源（近 14 天）：** Google · Bing · github.com · Baidu · audio-file.org · kaiyuanbang.cn  
+**热门内容（近 14 天）：** releases/tag/v3.0.0 · issues · plugins/musicfree/README.md · releases
 
-> 数据开始：2026-09-07 · 最后更新：2026-10-30
+> 数据开始：2026-09-07 · 最后更新：2026-10-31
 <!-- INSIGHTS:END -->
 
 ---
