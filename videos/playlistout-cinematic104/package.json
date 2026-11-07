@@ -1,0 +1,27 @@
+{
+  "name": "playlistout-cinematic-journey-104s",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cinematic 104-second continuous travelling playlist film",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts PlaylistOutFull104 out/PlaylistOut_Cinematic_Journey104_Remotion.mp4 --codec h264 --crf 19 --audio-codec aac",
+    "typecheck": "tsc --noEmit",
+    "compile:scene": "tsc -p tsconfig.scene.json",
+    "render:offline": "python scripts/render_full.py",
+    "make:audio": "python scripts/generate_music.py",
+    "quality-check": "python scripts/quality_check.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "remotion": "4.0.541",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "@types/node": "22.0.0"
+  }
+}

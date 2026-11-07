@@ -1,0 +1,28 @@
+{
+  "name": "playlistout-storybook",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playlist Out — 把你的歌单带走 · 音乐手账 Motion Graphics 动画短片 (Remotion + React + TypeScript)",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "build:audio": "python scripts/generate-audio.py",
+    "render": "remotion render src/index.ts PlaylistOutStorybook out/playlistout-storybook.mp4 --codec=h264 --crf=16 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4",
+    "render:preview": "remotion render src/index.ts PlaylistOutStorybook out/preview.mp4 --codec=h264 --crf=21 --scale=0.5 --concurrency=4",
+    "still": "remotion still src/index.ts PlaylistOutStorybook",
+    "typecheck": "tsc --noEmit",
+    "qa": "python scripts/verify-video.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.541"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "typescript": "5.7.3"
+  }
+}

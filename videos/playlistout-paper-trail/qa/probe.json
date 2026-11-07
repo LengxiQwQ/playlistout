@@ -1,0 +1,53 @@
+{
+  "file": "playlistout-paper-trail.mp4",
+  "bytes": 36017299,
+  "duration_seconds": 56.0,
+  "video_codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fps": "30/1",
+  "video_frames": 1680,
+  "audio_codec": "aac",
+  "audio_sample_rate": "48000",
+  "audio_channels": 2,
+  "checks": {
+    "1920x1080": true,
+    "30fps": true,
+    "duration_50_to_60": true,
+    "exact_1680_frames": true,
+    "h264": true,
+    "audio_present": true,
+    "audio_48k_stereo": true
+  },
+  "blackdetect_log": [
+    "  Stream #0:0(und): Video: wrapped_avframe, yuvj420p(pc, bt470bg/unknown/unknown, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)",
+    "    Metadata:",
+    "      encoder         : Lavc63.1.102 wrapped_avframe",
+    "      handler_name    : VideoHandler",
+    "    Side data:",
+    "      ICC Profile: (456 bytes)",
+    "[out#0/null @ 00000174e6801440] video:696KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown",
+    "frame= 1680 fps=1388 q=-0.0 Lsize=N/A time=00:00:56.00 bitrate=N/A speed=46.3x elapsed=0:00:01.21"
+  ],
+  "loudness_tail": [
+    "[Parsed_ebur128_0 @ 0000018c12e197c0] t: 55.899979  TARGET:-23 LUFS    M: -47.7 S: -13.2     I: -14.0 LUFS       LRA:   7.3 LU  FTPK: -62.4 -56.1 dBFS  TPK:  -4.3  -2.2 dBFS",
+    "[Parsed_ebur128_0 @ 0000018c12e197c0] t: 55.999979  TARGET:-23 LUFS    M: -56.6 S: -13.3     I: -14.0 LUFS       LRA:   7.3 LU  FTPK: -78.6 -72.3 dBFS  TPK:  -4.3  -2.2 dBFS",
+    "[Parsed_ebur128_0 @ 0000018c12e197c0] Summary:",
+    "",
+    "  Integrated loudness:",
+    "    I:         -14.0 LUFS",
+    "    Threshold: -24.1 LUFS",
+    "",
+    "  Loudness range:",
+    "    LRA:         7.3 LU",
+    "    Threshold: -34.0 LUFS",
+    "    LRA low:   -18.5 LUFS",
+    "    LRA high:  -11.2 LUFS",
+    "",
+    "  True peak:",
+    "    Peak:       -2.2 dBFS",
+    "[out#0/null @ 0000018c107034c0] video:696KiB audio:10500KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown",
+    "frame= 1680 fps=1389 q=-0.0 Lsize=N/A time=00:00:56.00 bitrate=N/A speed=46.3x elapsed=0:00:01.20"
+  ],
+  "passed": true
+}

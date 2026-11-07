@@ -1,0 +1,26 @@
+{
+  "name": "playlistout-promo-film",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playlist Out — 把你的歌单带走 · 56s Cinematic Music Journal Motion Graphics Film (1920x1080 30fps)",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts PlaylistOutPromo out/PlaylistOut_MusicJournal_Film_1080p.mp4 --codec h264 --crf 18 --pixel-format yuv420p --audio-codec aac",
+    "typecheck": "tsc --noEmit",
+    "fonts": "python scripts/download_fonts.py",
+    "audio": "python scripts/generate_soundtrack.py",
+    "qa": "python scripts/qa_inspect.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "remotion": "4.0.541",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.0.0",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -44,11 +44,12 @@ Thumbs.db
 Desktop.ini
 
 # Output files from exports / CLI runs
-output/
+/output/
 1160951354/
 *.txt
 !web/public/robots.txt
 !**/requirements*.txt
+!videos/**/*.txt
 *.csv
 *.xlsx
 # Specific JSON outputs from exports while preserving config JSONs

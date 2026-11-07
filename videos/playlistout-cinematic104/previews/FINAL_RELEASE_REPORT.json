@@ -1,0 +1,18 @@
+{
+  "revision": "Cinematic Journey V2",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration_sec": 104,
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "source_frames_verified": 3120,
+  "qa_sampled_frames": 90,
+  "mp4_sha256": "74aedc210ff8f12639354a7e41c64958f8c48081e0dc8f876cfe6267a5ca30e9",
+  "scene_sha256": "be1095e7b26084a71277d8fd16cafb960815bde387516c2a9f1c012fcf24ed9f",
+  "audio_sha256": "d71eb0ec70b38ec6a0f38797808856522e69b49167f965a694bd0491f72f2a37",
+  "movie_size_bytes": 33653520,
+  "authenticity": "Demo UI recreation, not real live API/success footage",
+  "native_remotion_cli_verified": false,
+  "offline_typescript_svg_ffmpeg_verified": true
+}

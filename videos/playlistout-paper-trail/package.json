@@ -1,0 +1,29 @@
+{
+  "name": "playlistout-paper-trail",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playlist Out — 把你的歌单带走. A 56-second music-journal motion film built with Remotion.",
+  "scripts": {
+    "studio": "remotion studio src/index.tsx",
+    "typecheck": "tsc --noEmit",
+    "render": "remotion render src/index.tsx PlaylistOutPaperTrail out/playlistout-paper-trail.mp4 --codec h264 --crf 17 --pixel-format yuv420p --concurrency 3",
+    "render:preview": "remotion render src/index.tsx PlaylistOutPaperTrail out/playlistout-paper-trail-preview.mp4 --codec h264 --crf 24 --scale 0.5 --pixel-format yuv420p --concurrency 3",
+    "still": "remotion still src/index.tsx PlaylistOutPaperTrail",
+    "audio": "python tools/make_soundtrack.py",
+    "qa:frames": "python qa/extract_frames.py",
+    "qa:sheet": "python qa/contact_sheet.py",
+    "qa:probe": "python qa/probe.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "remotion": "4.0.541",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
+    "typescript": "5.8.3"
+  }
+}

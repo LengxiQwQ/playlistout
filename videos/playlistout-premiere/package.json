@@ -1,0 +1,28 @@
+{
+  "name": "playlistout-premiere",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playlist Out — an animated music-journal short film built with Remotion.",
+  "scripts": {
+    "studio": "remotion studio src/index.tsx",
+    "render": "remotion render src/index.tsx PlaylistOutPremiere output/playlistout-premiere.mp4 --codec=h264 --crf=16 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4",
+    "render:draft": "remotion render src/index.tsx PlaylistOutPremiere output/preview.mp4 --codec=h264 --crf=22 --scale=0.5 --concurrency=4",
+    "still": "remotion still src/index.tsx PlaylistOutPremiere",
+    "typecheck": "tsc --noEmit",
+    "audio": "python tools/make_score.py",
+    "qa": "python tools/qa.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.541"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "typescript": "5.7.3"
+  }
+}

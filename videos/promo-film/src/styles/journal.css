@@ -1,0 +1,188 @@
+/* Playlist Out — Music Journal Motion Graphics Stylesheet */
+
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('../../public/fonts/MaShanZheng-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'ZCOOL KuaiLe';
+  src: url('../../public/fonts/ZCOOLKuaiLe-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('../../public/fonts/Caveat-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Permanent Marker';
+  src: url('../../public/fonts/PermanentMarker-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('../../public/fonts/SpaceMono-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('../../public/fonts/SpaceMono-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  /* Paper & Ink Palette (from web/src/design/tokens.css) */
+  --paper: #f6f1e5;
+  --paper-cream: #faf5ea;
+  --paper-white: #ffffff;
+  --ink: #2d3436;
+  --ink-light: #576064;
+  --ink-muted: #7f868a;
+  --line: #e2dacd;
+  --ruled-line-height: 38px;
+  --margin-red: #ff8a80;
+
+  /* Stationery Palette */
+  --note-yellow: #fff8bd;
+  --note-yellow-dark: #fff3a8;
+  --highlight-yellow: #ffeaa7;
+  --note-mint: #dff7ef;
+  --note-blue: #e8f8ff;
+  --note-pink: #fde8ec;
+  --note-purple: #f3e8ff;
+  --note-lime: #f7fee7;
+
+  /* Washi Tape Palette */
+  --tape-pink: rgba(244, 114, 182, 0.62);
+  --tape-cyan: rgba(103, 232, 249, 0.62);
+  --tape-green: rgba(134, 239, 172, 0.58);
+  --tape-yellow: rgba(253, 224, 71, 0.72);
+
+  /* Typography Stacks */
+  --font-brush: 'Ma Shan Zheng', 'Permanent Marker', cursive;
+  --font-playful: 'ZCOOL KuaiLe', 'Caveat', cursive;
+  --font-en-marker: 'Permanent Marker', 'Ma Shan Zheng', cursive;
+  --font-en-hand: 'Caveat', 'ZCOOL KuaiLe', cursive;
+  --font-mono: 'Space Mono', 'Consolas', 'Microsoft YaHei', monospace;
+  --font-sans: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.font-brush {
+  font-family: var(--font-brush);
+}
+
+.font-playful {
+  font-family: var(--font-playful);
+}
+
+.font-en-marker {
+  font-family: var(--font-en-marker);
+}
+
+.font-en-hand {
+  font-family: var(--font-en-hand);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Hand-drawn organic borders from web/src/design/paper.css */
+.hand-border {
+  border: 3px solid var(--ink);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+
+.hand-border-alt {
+  border: 3px solid var(--ink);
+  border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+}
+
+.hand-border-subtle {
+  border: 2.5px solid var(--ink);
+  border-radius: 18px 180px 16px 190px / 190px 16px 180px 18px;
+}
+
+/* Authentic tactile shadows */
+.shadow-paper {
+  box-shadow:
+    0 2px 3px rgba(50, 36, 6, 0.25),
+    7px 9px 0 rgba(45, 52, 54, 0.16);
+}
+
+.shadow-sticky {
+  box-shadow:
+    0 1.5px 2px rgba(50, 36, 6, 0.55),
+    5px 6px 0 rgba(65, 48, 12, 0.72);
+}
+
+.shadow-cutout {
+  box-shadow: 5px 5px 0 0 #2d3436;
+}
+
+.shadow-cutout-sm {
+  box-shadow: 3px 3px 0 0 #2d3436;
+}
+
+/* Washi Tape with Torn Polygon Edges & Specular Sheen */
+.washi-tape {
+  clip-path: polygon(
+    0 8%, 8% 0, 16% 7%, 24% 1%, 32% 8%, 40% 1%, 48% 7%, 56% 0, 64% 8%, 72% 1%, 80% 8%, 88% 0, 100% 7%,
+    100% 93%, 91% 100%, 83% 93%, 75% 100%, 67% 92%, 59% 100%, 51% 94%, 43% 100%, 35% 93%, 27% 100%, 19% 94%, 11% 100%, 0 93%
+  );
+  position: relative;
+  overflow: hidden;
+  filter: drop-shadow(0 2px 2.5px rgba(45, 52, 54, 0.24));
+}
+
+.washi-tape::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.18) 38%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(255, 255, 255, 0.18) 62%,
+    transparent 80%
+  );
+  pointer-events: none;
+}
+
+/* Paper grain texture overlay for cards */
+.paper-textured {
+  background-image:
+    url('../../public/images/paper-creases.png'),
+    url('../../public/images/paper-grain.png');
+  background-repeat: repeat, repeat;
+  background-size: 900px 900px, 256px 256px;
+}

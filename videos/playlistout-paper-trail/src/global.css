@@ -1,0 +1,42 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f6f1e5;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+::selection {
+  background: #ffeaa7;
+}
+
+.paper-texture {
+  background-image: var(--paper-texture, none);
+  background-size: 1024px 1024px, 256px 256px;
+  background-repeat: repeat;
+}
+
+.hand-underline {
+  position: relative;
+}
+
+.hand-underline::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: -0.11em;
+  height: 0.13em;
+  border-radius: 999px;
+  background: #e8a23a;
+  transform: rotate(-0.65deg);
+  opacity: 0.7;
+}

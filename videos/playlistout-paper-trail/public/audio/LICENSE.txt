@@ -1,0 +1,20 @@
+Playlist Out — Paper Trail — original score and sound design
+============================================================
+
+Copyright (c) 2026 LengxiQwQ / Playlist Out.
+
+This audio was composed and synthesized programmatically for this film.
+No third-party recordings, music library cues, sample packs, or downloaded
+sound effects are used.
+
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+You may share and adapt the audio for any purpose, including commercial use,
+provided that appropriate credit is given and changes are indicated.
+
+Suggested attribution:
+"Music & sound design: Playlist Out — Paper Trail (original score, CC BY 4.0)"
+
+The full generation source is in tools/make_soundtrack.py. The render uses
+film-mix.wav (loudness-mastered to -14 LUFS integrated, -1.5 dBTP).

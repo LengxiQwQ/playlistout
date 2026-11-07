@@ -1,0 +1,129 @@
+{
+  "video": "playlistout-paper-trail.mp4",
+  "decoded_frames": 1680,
+  "resolution_for_scan": "160x90",
+  "mean_luminance": {
+    "min": 61.11486053466797,
+    "max": 239.24188232421875,
+    "avg": 197.91468811035156
+  },
+  "near_black_frames": 0,
+  "near_white_frames": 0,
+  "static_runs_ge_0_5s": [
+    {
+      "start_s": 0.0,
+      "end_s": 0.63,
+      "frames": 19
+    },
+    {
+      "start_s": 0.67,
+      "end_s": 2.47,
+      "frames": 54
+    },
+    {
+      "start_s": 2.87,
+      "end_s": 3.53,
+      "frames": 20
+    },
+    {
+      "start_s": 6.17,
+      "end_s": 6.67,
+      "frames": 15
+    },
+    {
+      "start_s": 6.7,
+      "end_s": 7.33,
+      "frames": 19
+    },
+    {
+      "start_s": 7.4,
+      "end_s": 8.6,
+      "frames": 36
+    },
+    {
+      "start_s": 17.83,
+      "end_s": 18.43,
+      "frames": 18
+    },
+    {
+      "start_s": 18.83,
+      "end_s": 20.23,
+      "frames": 42
+    },
+    {
+      "start_s": 20.7,
+      "end_s": 22.23,
+      "frames": 46
+    },
+    {
+      "start_s": 22.43,
+      "end_s": 24.03,
+      "frames": 48
+    },
+    {
+      "start_s": 25.93,
+      "end_s": 28.17,
+      "frames": 67
+    },
+    {
+      "start_s": 28.93,
+      "end_s": 29.77,
+      "frames": 25
+    },
+    {
+      "start_s": 30.5,
+      "end_s": 32.93,
+      "frames": 73
+    },
+    {
+      "start_s": 34.33,
+      "end_s": 34.83,
+      "frames": 15
+    },
+    {
+      "start_s": 36.3,
+      "end_s": 38.63,
+      "frames": 70
+    },
+    {
+      "start_s": 39.0,
+      "end_s": 39.63,
+      "frames": 19
+    },
+    {
+      "start_s": 40.2,
+      "end_s": 41.03,
+      "frames": 25
+    },
+    {
+      "start_s": 41.43,
+      "end_s": 41.97,
+      "frames": 16
+    },
+    {
+      "start_s": 42.63,
+      "end_s": 45.3,
+      "frames": 80
+    },
+    {
+      "start_s": 47.03,
+      "end_s": 47.8,
+      "frames": 23
+    },
+    {
+      "start_s": 47.97,
+      "end_s": 51.33,
+      "frames": 101
+    },
+    {
+      "start_s": 51.97,
+      "end_s": 55.77,
+      "frames": 114
+    }
+  ],
+  "mean_interframe_difference": 0.7999306917190552,
+  "notes": [
+    "The 54-56 s end-card hold is intentional.",
+    "The chapter card around 25.5 s intentionally holds for a few frames."
+  ]
+}

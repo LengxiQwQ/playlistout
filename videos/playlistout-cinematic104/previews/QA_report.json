@@ -1,0 +1,16 @@
+{
+  "source_frames": 3120,
+  "duration_s": 104,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "sampled_frames": 90,
+  "errors": [],
+  "notes": [
+    "Vector SVG checks validate 3120/3120 frames.",
+    "3-column contact sheets sampled every 2s and around all transitions.",
+    "Demo UI is explicitly illustrative; it does not claim actual API or file-import results."
+  ]
+}
