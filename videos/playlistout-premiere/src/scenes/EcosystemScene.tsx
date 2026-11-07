@@ -77,7 +77,7 @@ const PlayerCardView: React.FC<{
               <PlayerGlyph id={card.logo} ink={card.ink} />
             </div>
             <div>
-              <div style={{ fontFamily: F.sans, fontSize: 26, fontWeight: 800, lineHeight: 1.12, color: C.ink, letterSpacing: '-.02em' }}>{card.name}</div>
+              <div style={{ fontFamily: F.sans, fontSize: 28, fontWeight: 800, lineHeight: 1.12, color: C.ink, letterSpacing: '-.02em' }}>{card.name}</div>
               <div style={{ fontFamily: F.mono, fontSize: 8.5, color: card.ink, letterSpacing: '.12em', marginTop: 4 }}>{card.id === 'musicfree' ? 'OPEN-SOURCE PLAYER' : card.id === 'lx' ? 'LX MUSIC' : 'LISTEN 1'}</div>
             </div>
           </div>
@@ -94,13 +94,13 @@ const PlayerCardView: React.FC<{
           <span style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.08em' }}>{card.kind}</span>
         </div>
 
-        <div style={{ marginTop: 12, fontFamily: F.hand, fontSize: 25, lineHeight: 1.25, color: C.ink, minHeight: 76 }}>
+        <div style={{ marginTop: 12, fontFamily: F.hand, fontSize: 27, lineHeight: 1.25, color: C.ink, minHeight: 76 }}>
           {card.id === 'musicfree' ? '把歌单，交给下一首播放。' : card.id === 'lx' ? '导入一张列表，继续换源播放。' : '从一份备份，捡回整张歌单。'}
         </div>
 
         <div style={{ marginTop: 14, background: 'rgba(255,253,246,.57)', border: '1px dashed rgba(45,52,54,.23)', borderRadius: 5, padding: '10px 12px' }}>
           <div style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.12em' }}>HOW TO BRING IT IN</div>
-          <div style={{ fontFamily: F.sans, fontSize: 11.5, color: C.inkSoft, lineHeight: 1.6, marginTop: 5 }}>{card.route}</div>
+          <div style={{ fontFamily: F.sans, fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginTop: 5 }}>{card.route}</div>
         </div>
 
         <div style={{ position: 'absolute', left: 23, right: 23, bottom: 17, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -120,7 +120,7 @@ export const EcosystemScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 22, stiffness: 88, mass: 0.9 }, durationInFrames: 40 });
   const exit = easeInOut(frame, 148, 30, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 8, 148, 168], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const outerOpacity = interpolate(frame, [0, 1, 148, 168], [1, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const headline = easeOut(frame, 4, 24);
   const apiIn = spring({ frame: frame - L.api, fps, config: { damping: 17, stiffness: 100 }, durationInFrames: 36 });
   const migrationIn = easeOut(frame, L.migration, 22);
@@ -196,14 +196,14 @@ export const EcosystemScene: React.FC = () => {
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <div style={{ fontFamily: F.sans, fontSize: 18, fontWeight: 750 }}>给开发者 / Public API + Canonical JSON</div>
+              <div style={{ fontFamily: F.sans, fontSize: 19.5, fontWeight: 750 }}>给开发者 / Public API + Canonical JSON</div>
               <Badge tone={C.yellowLight} ink="#80621e">无需注册</Badge>
               <Badge tone={C.blue} ink="#356676">统一数据结构</Badge>
             </div>
-            <div style={{ fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontFamily: F.mono, fontSize: 12, color: C.inkSoft, marginTop: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               GET&nbsp;&nbsp;https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=...
             </div>
-            <div style={{ fontFamily: F.sans, fontSize: 9.5, color: C.inkMuted, marginTop: 5 }}>把同一张歌单，接进你的播放器、插件、脚本和下一个想法。</div>
+            <div style={{ fontFamily: F.sans, fontSize: 10.5, color: C.inkMuted, marginTop: 5 }}>把同一张歌单，接进你的播放器、插件、脚本和下一个想法。</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
             <span style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.12em' }}>OPEN FOR BUILDERS</span>

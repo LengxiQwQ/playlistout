@@ -4,7 +4,7 @@
 
 | 文件 | 来源 | 用途 |
 |---|---|---|
-| `public/brand/logo-512.png` | 主项目 `web/public/logo-512.png` | 片头/片尾品牌音符、贴纸 |
+| `public/brand/logo-512.png` | 主项目 `web/public/logo-512.png` | 片尾品牌音符、贴纸 |
 | `public/brand/logo-128.png` | 主项目 `web/public/logo-128.png` | 网页与片尾小 Logo |
 | `public/textures/paper-grain.png` | 主项目 `web/public/paper-grain.png` | 纸张纤维叠加 |
 | `public/textures/paper-creases.png` | 主项目 `web/public/paper-creases.png` | 纸张折痕 |
@@ -16,7 +16,6 @@
 | 字体 | 实际用途 | 授权 |
 |---|---|---|
 | Ma Shan Zheng（马善政毛笔体） | 中文主标题、章节标题、正文手写 | SIL Open Font License 1.1 |
-| ZCOOL KuaiLe（站酷快乐体） | 手账贴纸、辅助标题 | SIL Open Font License 1.1 |
 | Caveat | 英文手写批注、日期 | SIL Open Font License 1.1 |
 | Space Mono | 网址、CLI、JSON、编号 | SIL Open Font License 1.1 |
 | Permanent Marker | 英文品牌字、结尾标牌 | Apache License 2.0 |
@@ -28,7 +27,8 @@
 - `public/audio/soundtrack.wav`：56 秒最终混音，48 kHz / 16-bit / 双声道。
 - `public/audio/music-only.wav`：纯音乐分轨。
 - `public/audio/sfx-only.wav`：纸张、胶带、按键、印章、拉链等拟音分轨。
-- 生成源码：`tools/make_score.py`；所有波形、鼓组、旋律与拟音均由代码合成。
+- `public/audio/page-turn-a.wav` / `page-turn-b.wav`：v2 新增的翻页拟音，一左一右，0.86 秒，48 kHz / 16-bit / 双声道。
+- 生成源码：`tools/make_score.py`、`tools/make_page_turn.py`；所有波形、鼓组、旋律与拟音均由代码合成。
 - 授权：CC0 1.0 / MIT；详见 `public/audio/AUDIO_LICENSE.md`。
 - 不包含任何第三方音乐、录音、采样或歌词。
 
@@ -38,4 +38,4 @@
 
 ## 参考图
 
-网站长截图与 `docs/images/cli-interactive.jpg` 仅作为 UI 设计、文案与布局核对参考，不作为成片画面直接使用。所有网页 UI 均为动画重绘。
+网站长截图与 `docs/images/cli-interactive.jpg` 仅作为 UI 设计、文案与布局核对参考，不作为成片画面直接使用。所有网页 UI 均为动画重绘。小音符角色是 v2 新增的原创纸偶，不是站点现有 Logo 的替换版；片尾仍使用正式 Logo。

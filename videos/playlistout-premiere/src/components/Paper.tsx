@@ -66,7 +66,7 @@ export const PaperSheet: React.FC<{
       {texture ? (
         <div
           className="paper-texture"
-          style={{ opacity: palette.texture, zIndex: 0, backgroundImage: `url(${ASSETS.grain})` }}
+          style={{ opacity: Math.min(0.35, palette.texture + 0.1), zIndex: 0, backgroundImage: `url(${ASSETS.grain})` }}
           aria-hidden="true"
         />
       ) : null}

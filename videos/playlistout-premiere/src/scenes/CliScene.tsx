@@ -27,7 +27,7 @@ const T = {
   chrome: 40,
 };
 
-const lineH = 22.7;
+const lineH = 25;
 
 type Line = {
   at: number;
@@ -75,7 +75,7 @@ export const CliScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 22, stiffness: 92, mass: 0.95 }, durationInFrames: 44 });
   const exit = easeInOut(frame, 338, 26, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 3, 336, 358], [0, 1, 1, 0], {
+  const outerOpacity = interpolate(frame, [0, 1, 336, 358], [1, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -259,7 +259,7 @@ export const CliScene: React.FC = () => {
                 style={{
                   padding: '22px 28px',
                   fontFamily: F.mono,
-                  fontSize: 14.5,
+                  fontSize: 16,
                   lineHeight: `${lineH}px`,
                   color: '#c6c4b6',
                   transform: `translateY(${-Math.min(540, scroll)}px)`,

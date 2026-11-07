@@ -84,7 +84,7 @@ def main() -> int:
         str(QA / "audio-waveform.png"))
     keyframes = {
         45: "intro-title", 155: "intro-handed-off", 300: "parse-result", 390: "parse-complete",
-        480: "export-toolbar", 560: "export-files", 640: "excel-json", 760: "batch-entry",
+        480: "export-toolbar", 560: "export-files", 640: "excel-json", 800: "batch-entry",
         900: "batch-selected", 970: "batch-pack", 1020: "cli-boot", 1240: "cli-complete",
         1320: "cli-os", 1450: "eco", 1500: "eco-api", 1560: "finale-entry", 1620: "finale",
         1670: "end",

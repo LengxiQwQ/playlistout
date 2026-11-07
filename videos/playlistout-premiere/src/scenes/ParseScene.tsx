@@ -771,7 +771,7 @@ export const ParseScene: React.FC = () => {
   const browserIn = spring({ frame, fps, config: { damping: 20, stiffness: 88, mass: 0.95 }, durationInFrames: 42 });
   const push = easeInOut(frame, L.results - 8, 120, 0, 1);
   const exit = easeInOut(frame, L.peel + 6, 34, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 8, 330, 356], [0, 1, 1, 0], {
+  const outerOpacity = interpolate(frame, [0, 1, 350, 352], [1, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });

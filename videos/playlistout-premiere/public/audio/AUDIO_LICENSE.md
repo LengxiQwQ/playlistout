@@ -1,11 +1,14 @@
 # Audio Licensing
 
 All audio in this folder is original, procedurally synthesised material created
-for the Playlist Out promotional film by `tools/make_score.py`.
+for the Playlist Out promotional film by `tools/make_score.py` and
+`tools/make_page_turn.py`.
 
 - `soundtrack.wav` — original 120 BPM / 28-bar score + synchronised foley, 56 s.
 - `music-only.wav` — music stem.
 - `sfx-only.wav` — foley / UI effects stem.
+- `page-turn-a.wav` / `page-turn-b.wav` — two 0.86 s page-turn foley variants
+  used under the six chapter turns in v2.
 
 There are no third-party samples, loops, recordings, commercial songs, or
 lyrics. The composition and sound design are generated from code.

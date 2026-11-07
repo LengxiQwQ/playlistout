@@ -1,0 +1,95 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f2ecdf;
+}
+
+body {
+  font-family: 'NotoSansSC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.film-root {
+  overflow: hidden;
+  color: #2d3436;
+}
+
+.film-root * {
+  -webkit-font-smoothing: antialiased;
+}
+
+.tape {
+  position: relative;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.13), transparent 32%, rgba(255, 255, 255, 0.1) 67%, transparent),
+    var(--tape-color, rgba(244, 181, 192, 0.57));
+  box-shadow: 0 1px 1px rgba(74, 58, 40, 0.07);
+  clip-path: polygon(1.3% 3%, 98.4% 0%, 100% 93%, 97.8% 100%, 2.2% 97%, 0% 8%);
+}
+
+.tape::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 7px 100%;
+  opacity: 0.38;
+  mix-blend-mode: soft-light;
+}
+
+.paper-texture {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: multiply;
+  opacity: 0.26;
+  pointer-events: none;
+}
+
+.hand-underline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.1em;
+  height: 0.16em;
+  opacity: 0.9;
+  overflow: visible;
+}
+
+.tiny-caps {
+  font-family: 'SpaceMono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.no-select {
+  user-select: none;
+}
+
+.shadow-ink {
+  box-shadow: 4px 4px 0 #2d3436;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

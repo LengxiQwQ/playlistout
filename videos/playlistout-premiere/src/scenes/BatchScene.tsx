@@ -258,8 +258,8 @@ export const BatchScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 21, stiffness: 90, mass: 0.9 }, durationInFrames: 42 });
   const exit = easeInOut(frame, 226, 26, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 3, 232, 248], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const cards = spring({ frame: frame - L.cards, fps, config: { damping: 18, stiffness: 100 }, durationInFrames: 46 });
+  const outerOpacity = interpolate(frame, [0, 1, 244, 246], [1, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const cards = spring({ frame: frame - L.cards + 18, fps, config: { damping: 18, stiffness: 100 }, durationInFrames: 46 });
   const selected = easeOut(frame, L.cards + 12, 26);
   const clickProgress = easeInOut(frame, L.click, 26, 0, 1);
   const workbookIn = spring({ frame: frame - L.workbook, fps, config: { damping: 18, stiffness: 90, mass: 0.9 }, durationInFrames: 42 });
@@ -503,7 +503,7 @@ export const BatchScene: React.FC = () => {
         </div>
 
         {/* focus dim, then outputs */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(243,237,225,.82)', opacity: focus, zIndex: 25 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(243,237,225,.96)', opacity: focus, zIndex: 25 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(65,58,43,.08)', opacity: focus, zIndex: 25 }} />
         <div
           style={{

@@ -60,10 +60,10 @@ export const F = {
 } as const;
 
 export const SHADOW = {
-  soft: '0 18px 45px rgba(72, 58, 37, 0.14), 0 3px 0 rgba(255,255,255,0.4) inset',
+  soft: '0 6px 14px rgba(72, 58, 37, 0.10), 0 1px 2px rgba(72, 58, 37, 0.08), 0 1px 0 rgba(255,255,255,0.35) inset',
   paper:
     '0 26px 55px rgba(66, 52, 31, 0.18), 0 8px 16px rgba(66, 52, 31, 0.08), 0 1px 0 rgba(255,255,255,0.55) inset',
-  lifted: '0 42px 80px rgba(60, 46, 26, 0.24), 0 10px 24px rgba(60, 46, 26, 0.12)',
+  lifted: '0 18px 34px rgba(60, 46, 26, 0.14), 0 3px 7px rgba(60, 46, 26, 0.09)',
   cutout: '6px 7px 0 rgba(45, 52, 54, 0.9)',
   cutoutSm: '3px 3px 0 rgba(45, 52, 54, 0.9)',
 } as const;

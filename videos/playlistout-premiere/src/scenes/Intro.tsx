@@ -177,16 +177,7 @@ const CageBack: React.FC<{ frame: number }> = ({ frame }) => {
             />
           ))}
 
-          {/* the small lock */}
-          <g
-            transform={`translate(305 86) rotate(${breakT * 26}) translate(0 ${-breakT * 72})`}
-            opacity={1 - Math.max(0, (frame - 164) / 22)}
-          >
-            <path d="M-17 2v-9a17 17 0 0 1 34 0v9" stroke={C.ink} strokeWidth="2.8" fill="none" />
-            <rect x="-28" y="1" width="56" height="40" rx="7" fill={C.marginRed} stroke={C.ink} strokeWidth="2.4" />
-            <circle cx="0" cy="19" r="4.2" fill={C.ink} />
-            <path d="M0 22v9" stroke={C.ink} strokeWidth="2.2" strokeLinecap="round" />
-          </g>
+          {/* the lock is drawn in the foreground layer, over the bars and the note */}
         </svg>
 
         {/* trapped playlist receipt */}
@@ -322,10 +313,10 @@ export const Intro: React.FC = () => {
   const { fps } = useVideoConfig();
 
   const enter = spring({ frame, fps, config: { damping: 20, stiffness: 85, mass: 0.9 }, durationInFrames: 50 });
-  const titleOut = easeInOut(frame, 130, 20, 0, 1);
-  const secondIn = spring({ frame: frame - 139, fps, config: { damping: 17, stiffness: 100, mass: 0.8 }, durationInFrames: 34 });
+  const titleOut = easeInOut(frame, 118, 14, 0, 1);
+  const secondIn = spring({ frame: frame - 138, fps, config: { damping: 17, stiffness: 100, mass: 0.8 }, durationInFrames: 34 });
   const secondOut = easeInOut(frame, 182, 22, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 5, 168, 186], [0, 1, 1, 0], {
+  const sceneOpacity = interpolate(frame, [0, 5, 168, 170], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -571,56 +562,110 @@ export const Intro: React.FC = () => {
   );
 };
 
-/* Above-the-note foreground cage bars. Rendered by Main after the traveling note. */
+/* Foreground cage: the bars and the big padlock sit over the note. */
 export const IntroFrontBars: React.FC = () => {
   const frame = useCurrentFrame();
-  if (frame > 210) return null;
-  const breakT = easeInOut(frame, 150, 22, 0, 1);
-  const fade = interpolate(frame, [0, 8, 156, 190], [0, 0.9, 0.9, 0], {
+  if (frame > 205) return null;
+
+  const settle = easeOut(frame, 4, 24);
+  const shake = frame > 120 && frame < 154 ? Math.sin(frame * 1.9) * Math.exp(-(frame - 120) / 28) * 3.2 : 0;
+  const unlock = easeInOut(frame, 138, 12, 0, 1);
+  const doorOpen = easeInOut(frame, 150, 18, 0, 1);
+  const lockFall = easeInOut(frame, 154, 28, 0, 1);
+  const fade = interpolate(frame, [0, 8, 188, 205], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-  const segments = [
-    { x: 1258, top: 286, height: 308, direction: -1, delay: 0 },
-    { x: 1482, top: 286, height: 308, direction: 1, delay: 2 },
-  ];
+
+  const hinge = 1218;
+  const doorWidth = 306;
+  const doorScale = 1 - doorOpen * 0.84;
+  const barXs = [0, 62, 124, 186, 248, 306].map((x) => hinge + x);
+  const frontFix = [1156, 1660];
+
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 900 }}>
-      <svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" style={{ position: 'absolute', inset: 0, opacity: fade }} aria-hidden="true">
-        {segments.map((bar, index) => {
-          const fly = easeOut(frame, 151 + bar.delay, 28);
-          const fall = easeOut(frame, 160 + bar.delay, 30);
-          return (
-            <g key={bar.x}>
-              <g
-                transform={`translate(${bar.x + fly * bar.direction * (54 + index * 12)} ${bar.top - fly * 38}) rotate(${fly * bar.direction * 16} 0 ${bar.height / 2})`}
-                opacity={1 - fly * 0.78}
-              >
-                <path d={`M0 0c-2 ${bar.height * 0.32} 3 ${bar.height * 0.55} -1 ${bar.height * 0.82}`} stroke="rgba(45,52,54,.62)" strokeWidth="1.7" strokeLinecap="round" />
-              </g>
-              <g
-                transform={`translate(${bar.x + fall * bar.direction * 74} ${bar.top + bar.height * 0.5 + fall * 180}) rotate(${fall * bar.direction * 44} 0 0)`}
-                opacity={1 - fall}
-              >
-                <path d={`M0 0c2 ${bar.height * 0.15} -2 ${bar.height * 0.22} 1 ${bar.height * 0.34}`} stroke="rgba(45,52,54,.56)" strokeWidth="1.5" strokeLinecap="round" />
-              </g>
+      <svg
+        width="1920"
+        height="1080"
+        viewBox="0 0 1920 1080"
+        fill="none"
+        style={{ position: 'absolute', inset: 0, opacity: fade, overflow: 'visible' }}
+        aria-hidden="true"
+      >
+        <g transform={`translate(${shake} 0)`}>
+          {/* the front frame */}
+          <path d="M1136 823c131 22 452 22 586 0" stroke="rgba(45,52,54,.66)" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M1136 250c146-23 427-23 586 0" stroke="rgba(45,52,54,.58)" strokeWidth="2" strokeLinecap="round" />
+          <path d="M1138 250v573M1721 250v573" stroke="rgba(45,52,54,.64)" strokeWidth="2.4" strokeLinecap="round" />
+
+          {/* fixed bars to the right of the door */}
+          {frontFix.map((x) => (
+            <path key={x} d={`M${x} 265c-2 180 3 350 -1 542`} stroke="rgba(45,52,54,.56)" strokeWidth="1.7" strokeLinecap="round" />
+          ))}
+
+          {/* hinged door, with bars passing in front of the note */}
+          <g transform={`translate(${hinge} 0) scale(${doorScale} 1) translate(${-hinge} 0)`}>
+            <path d={`M${hinge} 286v532`} stroke="rgba(45,52,54,.74)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={`M${hinge + doorWidth} 286v532`} stroke="rgba(45,52,54,.74)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={`M${hinge} 291c100-12 208-12 ${doorWidth} 0`} stroke="rgba(45,52,54,.62)" strokeWidth="2" strokeLinecap="round" />
+            <path d={`M${hinge} 812c99 12 207 12 ${doorWidth} 0`} stroke="rgba(45,52,54,.6)" strokeWidth="2" strokeLinecap="round" />
+            {barXs.slice(1, -1).map((x) => (
+              <path key={x} d={`M${x} 292c-2 163 3 340 -1 518`} stroke="rgba(45,52,54,.55)" strokeWidth="1.75" strokeLinecap="round" />
+            ))}
+            {/* handle and hinge plates */}
+            <circle cx={hinge + 266} cy={556} r="5.5" stroke="rgba(45,52,54,.72)" strokeWidth="1.8" fill="rgba(255,249,234,.55)" />
+            <path d={`M${hinge + 6} 385h20M${hinge + 6} 716h20`} stroke="rgba(45,52,54,.52)" strokeWidth="3" strokeLinecap="round" />
+          </g>
+
+          {/* front bar shadows, very subtle, to give the cage depth */}
+          <path d="M1250 292v518M1312 292v518M1374 292v518" stroke="rgba(45,52,54,.07)" strokeWidth="7" strokeLinecap="round" transform="translate(5 7)" />
+
+          {/* the large padlock */}
+          <g
+            transform={`translate(${hinge + doorWidth + 6} ${462 + shake * 0.5 + lockFall * 210}) rotate(${lockFall * 34} 0 0)`}
+            opacity={1 - lockFall * 0.78}
+          >
+            <path
+              d="M-23 1v-16c0-25 17-39 38-39s38 14 38 39v16"
+              stroke={C.ink}
+              strokeWidth="5.2"
+              strokeLinecap="round"
+              fill="none"
+              transform={`rotate(${unlock * -26} 15 -35)`}
+            />
+            <rect x="-38" y="0" width="76" height="86" rx="10" fill={C.marginRed} stroke={C.ink} strokeWidth="4.2" />
+            <path d="M-22 19h44" stroke="rgba(255,247,223,.55)" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="0" cy="38" r="7.5" fill={C.ink} />
+            <path d="M0 46v18" stroke={C.ink} strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M-16 63h32" stroke="rgba(45,52,54,.35)" strokeWidth="2" strokeLinecap="round" />
+          </g>
+
+          {/* the click of the lock */}
+          {frame > 136 && frame < 166 ? (
+            <g opacity={easeOut(frame, 136, 8) * (1 - easeInOut(frame, 158, 8, 0, 1))}>
+              <text x={hinge + 357} y={430} fontFamily={F.hand} fontSize="24" fill={C.marginRed} transform="rotate(7 1500 430)">
+                咔哒。
+              </text>
+              <path d="M1536 447l10-13 5 15 14-8-6 16" stroke={C.yellowDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </g>
-          );
-        })}
-        {/* front rim of the cage */}
+          ) : null}
+        </g>
+
+        {/* the open doorway, a visible gap after the door swings */}
         <path
-          d="M1118 825c112 24 396 24 606 0"
-          stroke="rgba(45,52,54,.52)"
-          strokeWidth="1.8"
+          d={`M${hinge + doorWidth - 12} 302v500`}
+          stroke="rgba(255,247,227,.65)"
+          strokeWidth="5"
           strokeLinecap="round"
-          opacity={0.8 * (1 - breakT)}
+          opacity={doorOpen * 0.45}
         />
         <path
-          d="M1120 241c140-26 394-26 600 0"
-          stroke="rgba(45,52,54,.42)"
-          strokeWidth="1.3"
+          d={`M1136 823c131 22 452 22 586 0`}
+          stroke="rgba(45,52,54,.72)"
+          strokeWidth="2.4"
           strokeLinecap="round"
-          opacity={0.75 * (1 - breakT)}
+          opacity={settle}
         />
       </svg>
     </AbsoluteFill>

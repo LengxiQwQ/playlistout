@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { AbsoluteFill, Audio, continueRender, delayRender, Sequence, staticFile, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Audio, continueRender, delayRender, Sequence, staticFile } from 'remotion';
 import './global.css';
-import { C, DURATION, SCENES } from './theme';
+import { C } from './theme';
 import { Atmosphere, PaperBackground } from './components/Background';
-import { TravelingNote } from './components/TravelingNote';
+import { MascotJourney } from './components/MascotJourney';
 import { Intro, IntroFrontBars } from './scenes/Intro';
 import { ParseScene } from './scenes/ParseScene';
 import { ExportScene } from './scenes/ExportScene';
@@ -11,6 +11,7 @@ import { BatchScene } from './scenes/BatchScene';
 import { CliScene } from './scenes/CliScene';
 import { EcosystemScene } from './scenes/EcosystemScene';
 import { FinaleScene } from './scenes/FinaleScene';
+import { SCENES } from './theme';
 
 const loadImage = (src: string) =>
   new Promise<void>((resolve) => {
@@ -50,7 +51,6 @@ const waitForAssets = async () => {
 };
 
 export const Main: React.FC = () => {
-  const frame = useCurrentFrame();
   const [ready, setReady] = useState(false);
   const [handle] = useState(() => delayRender('Loading Playlist Out film assets'));
 
@@ -71,20 +71,8 @@ export const Main: React.FC = () => {
     return <AbsoluteFill style={{ background: C.paper }} />;
   }
 
-  // A slow camera breath keeps quiet passages alive. It is intentionally
-  // tiny so that text remains crisp and the hand-made layouts stay readable.
-  const driftX = Math.sin(frame / 71) * 1.8;
-  const driftY = Math.cos(frame / 89) * 1.1;
-  const driftScale = 1.0045 + Math.sin(frame / 107) * 0.0008;
-
   return (
     <AbsoluteFill className="film-root" style={{ background: C.paper }}>
-      <AbsoluteFill
-        style={{
-          transform: `translate(${driftX}px, ${driftY}px) scale(${driftScale})`,
-          transformOrigin: 'center center',
-        }}
-      >
       <PaperBackground />
 
       <Sequence name="Intro" from={SCENES.intro.in} durationInFrames={SCENES.intro.end - SCENES.intro.in}>
@@ -115,14 +103,13 @@ export const Main: React.FC = () => {
         <FinaleScene />
       </Sequence>
 
-      <TravelingNote />
+      <MascotJourney />
       <Sequence name="Intro front bars" from={SCENES.intro.in} durationInFrames={SCENES.intro.end - SCENES.intro.in}>
         <IntroFrontBars />
       </Sequence>
 
       <Atmosphere />
       <Audio src={staticFile('audio/soundtrack.wav')} volume={1} />
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
