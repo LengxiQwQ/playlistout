@@ -116,7 +116,7 @@ const expressionFor = (frame: number): MascotExpression => {
 
 const poseFor = (frame: number): MascotPose => {
   if ((frame >= 255 && frame < 276) || (frame >= 470 && frame < 490) || (frame >= 878 && frame < 900)) {
-    return 'press';
+    return 'click';
   }
   if (frame < 145 || (frame >= 166 && frame < 210) || (frame >= 500 && frame < 530) || (frame >= 1000 && frame < 1030) || (frame >= 1540 && frame < 1580)) {
     return 'wave';

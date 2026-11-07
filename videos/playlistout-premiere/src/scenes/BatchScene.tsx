@@ -547,7 +547,7 @@ export const BatchScene: React.FC = () => {
         </div>
 
         <div style={{ position: 'absolute', left: 166, bottom: 48, fontFamily: F.mono, fontSize: 9, letterSpacing: '.16em', color: C.inkMuted, opacity: 0.7 }}>
-          P.04 / THE WHOLE LIBRARY, FOLDED NEATLY
+          THE WHOLE LIBRARY, FOLDED NEATLY
         </div>
         <div style={{ position: 'absolute', right: 166, top: 122, fontFamily: F.hand, fontSize: 22, color: C.inkSoft, transform: 'rotate(2deg)', opacity: 0.75 }}>
           整本打包，不用一张张点。

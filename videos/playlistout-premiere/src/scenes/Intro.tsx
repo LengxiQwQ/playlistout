@@ -530,7 +530,7 @@ export const Intro: React.FC = () => {
         <div style={{ position: 'absolute', left: 181, top: 988, display: 'flex', alignItems: 'center', gap: 14, opacity: 0.6 }}>
           <Sparkle size={20} color={C.pinkDeep} rotate={12} />
           <StarDoodle frame={frame} size={13} color={C.yellowDeep} seed={9} />
-          <div style={{ fontFamily: F.mono, fontSize: 9.5, letterSpacing: '.18em', color: C.inkMuted }}>PAGE 01 / A LITTLE MUSIC JOURNEY</div>
+          <div style={{ fontFamily: F.mono, fontSize: 9.5, letterSpacing: '.18em', color: C.inkMuted }}>A LITTLE MUSIC JOURNEY</div>
         </div>
 
         <div style={{ position: 'absolute', right: 84, bottom: 48, fontFamily: F.hand, fontSize: 24, color: C.inkSoft, transform: 'rotate(-3deg)', opacity: 0.62 }}>
@@ -570,9 +570,9 @@ export const IntroFrontBars: React.FC = () => {
   const settle = easeOut(frame, 4, 24);
   const shake = frame > 120 && frame < 154 ? Math.sin(frame * 1.9) * Math.exp(-(frame - 120) / 28) * 3.2 : 0;
   const unlock = easeInOut(frame, 138, 12, 0, 1);
-  const doorOpen = easeInOut(frame, 150, 18, 0, 1);
-  const lockFall = easeInOut(frame, 154, 28, 0, 1);
-  const fade = interpolate(frame, [0, 8, 188, 205], [0, 1, 1, 0], {
+  const doorOpen = easeInOut(frame, 146, 16, 0, 1);
+  const lockFall = easeInOut(frame, 152, 28, 0, 1);
+  const fade = interpolate(frame, [0, 8, 162, 169], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -623,7 +623,7 @@ export const IntroFrontBars: React.FC = () => {
 
           {/* the large padlock */}
           <g
-            transform={`translate(${hinge + doorWidth + 6} ${462 + shake * 0.5 + lockFall * 210}) rotate(${lockFall * 34} 0 0)`}
+            transform={`translate(${hinge + doorWidth + 6} ${462 + shake * 0.5 + lockFall * 210}) rotate(${lockFall * 34} 0 0) scale(1.14)`}
             opacity={1 - lockFall * 0.78}
           >
             <path

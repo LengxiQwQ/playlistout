@@ -203,7 +203,7 @@ export const FinaleScene: React.FC = () => {
           <div style={{ height: 1.5, flex: 1, background: 'rgba(241,126,118,.74)' }} />
         </div>
         <div style={{ position: 'absolute', left: 172, bottom: 56, fontFamily: F.mono, fontSize: 9, letterSpacing: '.17em', color: C.inkMuted, opacity: 0.7 }}>
-          P.07 / THE PLAYLIST IS YOURS
+          THE PLAYLIST IS YOURS
         </div>
         <div style={{ position: 'absolute', right: 173, bottom: 56, display: 'flex', alignItems: 'center', gap: 10, opacity: 0.8 }}>
           <StarDoodle frame={frame} size={14} color={C.yellowDeep} seed={14} />

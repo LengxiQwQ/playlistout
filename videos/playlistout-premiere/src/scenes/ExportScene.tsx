@@ -503,7 +503,7 @@ export const ExportScene: React.FC = () => {
           <div style={{ fontFamily: F.hand, fontSize: 21, color: C.inkSoft, transform: 'rotate(-1deg)' }}>导出之后，歌单就不再被锁在某个标签页里。</div>
         </div>
         <div style={{ position: 'absolute', left: 150, bottom: 48, fontFamily: F.mono, fontSize: 9, letterSpacing: '.16em', color: C.inkMuted, opacity: 0.72 }}>
-          P.03 / TAKE THE PAPER, LEAVE THE PLATFORM
+          TAKE THE PAPER, LEAVE THE PLATFORM
         </div>
         <div style={{ position: 'absolute', right: 122, top: 132, fontFamily: F.hand, fontSize: 25, color: C.inkSoft, transform: 'rotate(3deg)', opacity: 0.72 }}>
           点一下，五张纸一起落下来 ↓

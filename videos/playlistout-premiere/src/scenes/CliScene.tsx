@@ -75,7 +75,7 @@ export const CliScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 22, stiffness: 92, mass: 0.95 }, durationInFrames: 44 });
   const exit = easeInOut(frame, 338, 26, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 1, 336, 358], [1, 1, 1, 0], {
+  const outerOpacity = interpolate(frame, [0, 1, 352, 363], [1, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -334,7 +334,7 @@ export const CliScene: React.FC = () => {
           <span style={{ fontFamily: F.hand, fontSize: 21, color: C.inkSoft, transform: 'rotate(-1deg)' }}>不用等浏览器，也不用离开键盘。</span>
         </div>
         <div style={{ position: 'absolute', right: 166, bottom: 45, fontFamily: F.mono, fontSize: 9, letterSpacing: '.16em', color: C.inkMuted, opacity: 0.7 }}>
-          P.05 / TYPE. TAKE. GO.
+          TYPE. TAKE. GO.
         </div>
       </div>
     </AbsoluteFill>

@@ -120,7 +120,7 @@ export const EcosystemScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 22, stiffness: 88, mass: 0.9 }, durationInFrames: 40 });
   const exit = easeInOut(frame, 148, 30, 0, 1);
-  const outerOpacity = interpolate(frame, [0, 1, 148, 168], [1, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const outerOpacity = interpolate(frame, [0, 1, 166, 171], [1, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const headline = easeOut(frame, 4, 24);
   const apiIn = spring({ frame: frame - L.api, fps, config: { damping: 17, stiffness: 100 }, durationInFrames: 36 });
   const migrationIn = easeOut(frame, L.migration, 22);
@@ -234,7 +234,7 @@ export const EcosystemScene: React.FC = () => {
           歌单不是终点，是下一首歌的起点。
         </div>
         <div style={{ position: 'absolute', left: 166, bottom: 46, fontFamily: F.mono, fontSize: 9, letterSpacing: '.16em', color: C.inkMuted, opacity: 0.7 }}>
-          P.06 / PASS IT ON
+          PASS IT ON
         </div>
       </div>
     </AbsoluteFill>

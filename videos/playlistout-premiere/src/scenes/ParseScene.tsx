@@ -897,7 +897,7 @@ export const ParseScene: React.FC = () => {
         <span style={{ fontFamily: F.hand, fontSize: 22, color: C.inkSoft, transform: 'rotate(-1deg)' }}>一张链接，就够了。</span>
       </div>
       <div style={{ position: 'absolute', right: 150, bottom: 48, opacity: chapterFade * 0.6, fontFamily: F.mono, fontSize: 9, letterSpacing: '.18em', color: C.inkMuted }}>
-        P.02 / PARSED IN A FEW BEATS
+        PARSED IN A FEW BEATS
       </div>
     </AbsoluteFill>
   );

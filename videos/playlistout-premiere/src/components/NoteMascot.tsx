@@ -2,7 +2,7 @@ import React from 'react';
 import { C, F } from '../theme';
 
 export type MascotExpression = 'happy' | 'wow' | 'focus' | 'sleepy' | 'proud' | 'wink';
-export type MascotPose = 'idle' | 'wave' | 'press' | 'point';
+export type MascotPose = 'idle' | 'wave' | 'press' | 'point' | 'click';
 
 type Props = {
   size?: number;
@@ -51,9 +51,9 @@ export const NoteMascot: React.FC<Props> = ({
             : 'M116 236c5 8 18 9 24 1';
 
   const armLeft = pose === 'wave' ? 'M72 205C46 195 35 171 29 150' : pose === 'press' ? 'M72 209C49 219 37 231 31 243' : pose === 'point' ? 'M72 204C48 197 33 191 22 185' : 'M72 206C52 217 42 228 37 238';
-  const armRight = pose === 'wave' ? 'M178 201C203 181 217 159 230 132' : pose === 'press' ? 'M178 209C202 220 216 233 225 247' : pose === 'point' ? 'M178 204C204 196 217 190 232 185' : 'M178 207C202 217 214 228 224 238';
+  const armRight = pose === 'wave' ? 'M178 201C203 181 217 159 230 132' : pose === 'press' ? 'M178 209C202 220 216 233 225 247' : pose === 'point' ? 'M178 204C204 196 217 190 232 185' : pose === 'click' ? 'M178 208C205 219 228 221 246 205' : 'M178 207C202 217 214 228 224 238';
   const handLeft = pose === 'press' ? { x: 31, y: 243 } : pose === 'point' ? { x: 22, y: 185 } : { x: 37, y: 238 };
-  const handRight = pose === 'press' ? { x: 225, y: 247 } : pose === 'wave' ? { x: 230, y: 132 } : pose === 'point' ? { x: 232, y: 185 } : { x: 224, y: 238 };
+  const handRight = pose === 'press' ? { x: 225, y: 247 } : pose === 'wave' ? { x: 230, y: 132 } : pose === 'point' ? { x: 232, y: 185 } : pose === 'click' ? { x: 246, y: 205 } : { x: 224, y: 238 };
 
   return (
     <div
