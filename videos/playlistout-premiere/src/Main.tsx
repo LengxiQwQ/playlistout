@@ -47,6 +47,8 @@ const waitForAssets = async () => {
     loadImage(staticFile('brand/logo-128.png')),
     loadImage(staticFile('textures/paper-grain.png')),
     loadImage(staticFile('textures/paper-creases.png')),
+    loadImage(staticFile('textures/paper-fibre-page.png')),
+    loadImage(staticFile('textures/paper-fibre-tile.png')),
   ]);
 };
 

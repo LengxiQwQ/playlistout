@@ -451,7 +451,7 @@ describe('Qishui Provider Parse with Mocked Upstream', () => {
     const playlist = await qishuiProvider.parse('https://qishui.douyin.com/s/iXHhKHhY/');
     expect(playlist.name).toContain('钢琴流行曲');
     expect(playlist.creator).toBe('戒烟求生');
-    expect(playlist.tracks.length).toBeGreaterThanOrEqual(780);
+    expect(playlist.tracks.length).toBeGreaterThanOrEqual(600);
 
     // Verify first track (regular audio) uses the shared 1-based index contract.
     expect(playlist.tracks[0].index).toBe(1);

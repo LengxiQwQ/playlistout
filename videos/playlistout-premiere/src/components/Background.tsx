@@ -25,8 +25,17 @@ export const PaperBackground: React.FC = () => {
       />
       <AbsoluteFill
         style={{
+          backgroundImage: `url(${ASSETS.paperPage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          mixBlendMode: 'multiply',
+          opacity: 0.75,
+        }}
+      />
+      <AbsoluteFill
+        style={{
           background:
-            'radial-gradient(ellipse at 32% 18%, rgba(255,255,255,.21), transparent 56%), radial-gradient(ellipse at 84% 78%, rgba(132,108,72,.045), transparent 62%)',
+            'radial-gradient(ellipse at 30% 18%, rgba(255,255,255,.2), transparent 58%), radial-gradient(ellipse at 82% 80%, rgba(132,108,72,.04), transparent 64%)',
         }}
       />
 
@@ -139,7 +148,7 @@ export const PaperBackground: React.FC = () => {
       <div
         className="paper-texture"
         style={{
-          opacity: 0.46,
+          opacity: 0.34,
           backgroundImage: `url(${ASSETS.grain})`,
           backgroundPosition: '17px 9px',
         }}
@@ -147,10 +156,10 @@ export const PaperBackground: React.FC = () => {
       <AbsoluteFill
         style={{
           backgroundImage: `url(${ASSETS.creases})`,
-          backgroundSize: '1050px 1050px',
+          backgroundSize: '1180px 1180px',
           backgroundPosition: '34% 20%',
           mixBlendMode: 'multiply',
-          opacity: 0.12,
+          opacity: 0.2,
         }}
       />
       <svg

@@ -8,201 +8,170 @@ type Key = {
   y: number;
   size: number;
   r: number;
-  o: number;
+  /** Height of the jump that leads into this pose, in screen pixels. */
+  lift?: number;
 };
 
 /**
- * The note is the protagonist and the hand of the film. It is kept in the same
- * world space as the interface, so the camera can push in without the mascot
- * drifting away from the button it is pressing.
+ * The note is the protagonist and the hand of the film. It stays on screen for
+ * the whole story, stands on real window edges, and jumps between them with a
+ * gravity-shaped arc instead of sliding through the frame.
  */
 const KEYS: Key[] = [
-  { f: 0, x: 1362, y: 548, size: 230, r: -4, o: 0 },
-  { f: 8, x: 1362, y: 548, size: 230, r: -4, o: 1 },
-  { f: 112, x: 1365, y: 548, size: 230, r: 1, o: 1 },
-  { f: 145, x: 1360, y: 530, size: 235, r: 5, o: 1 },
-  { f: 158, x: 1430, y: 385, size: 200, r: 18, o: 1 },
-  { f: 172, x: 1568, y: 282, size: 180, r: -12, o: 1 },
-  { f: 190, x: 1250, y: 400, size: 150, r: 10, o: 1 },
-  { f: 203, x: 930, y: 492, size: 130, r: -4, o: 1 },
-  { f: 214, x: 895, y: 500, size: 48, r: 8, o: 1 },
-  { f: 220, x: 890, y: 500, size: 8, r: 16, o: 0 },
-  { f: 247, x: 1487, y: 422, size: 12, r: -6, o: 0 },
-  { f: 251, x: 1487, y: 420, size: 96, r: 2, o: 1 },
-  { f: 258, x: 1487, y: 410, size: 112, r: -2, o: 1 },
-  { f: 264, x: 1487, y: 412, size: 112, r: 1, o: 1 },
-  { f: 276, x: 1450, y: 390, size: 108, r: -8, o: 1 },
-  { f: 310, x: 1560, y: 350, size: 105, r: 4, o: 1 },
-  { f: 410, x: 1580, y: 350, size: 105, r: 4, o: 1 },
-  { f: 440, x: 1540, y: 600, size: 100, r: -4, o: 1 },
-  { f: 456, x: 1330, y: 790, size: 98, r: -6, o: 1 },
-  { f: 472, x: 1330, y: 810, size: 98, r: 0, o: 1 },
-  { f: 482, x: 1330, y: 808, size: 98, r: 1, o: 1 },
-  { f: 498, x: 1460, y: 720, size: 96, r: 9, o: 1 },
-  { f: 516, x: 1450, y: 650, size: 90, r: 4, o: 0 },
-  { f: 528, x: 1680, y: 250, size: 100, r: -5, o: 1 },
-  { f: 570, x: 1680, y: 250, size: 100, r: 3, o: 1 },
-  { f: 620, x: 1680, y: 250, size: 100, r: -7, o: 1 },
-  { f: 675, x: 1700, y: 720, size: 100, r: 4, o: 1 },
-  { f: 725, x: 1700, y: 720, size: 98, r: 2, o: 1 },
-  { f: 748, x: 1580, y: 620, size: 92, r: 6, o: 0 },
-  { f: 762, x: 1680, y: 230, size: 98, r: -2, o: 1 },
-  { f: 835, x: 1640, y: 240, size: 98, r: 2, o: 1 },
-  { f: 862, x: 1332, y: 610, size: 98, r: 2, o: 1 },
-  { f: 882, x: 1332, y: 635, size: 98, r: 1, o: 1 },
-  { f: 890, x: 1332, y: 630, size: 98, r: 0, o: 1 },
-  { f: 908, x: 1420, y: 540, size: 96, r: -7, o: 1 },
-  { f: 935, x: 1430, y: 640, size: 96, r: 3, o: 1 },
-  { f: 950, x: 1430, y: 650, size: 94, r: 1, o: 1 },
-  { f: 978, x: 1450, y: 560, size: 92, r: -6, o: 1 },
-  { f: 995, x: 1490, y: 480, size: 90, r: 4, o: 0 },
-  { f: 1012, x: 1480, y: 320, size: 96, r: -3, o: 1 },
-  { f: 1080, x: 1410, y: 760, size: 92, r: 2, o: 1 },
-  { f: 1160, x: 1370, y: 760, size: 92, r: -2, o: 1 },
-  { f: 1228, x: 1350, y: 760, size: 92, r: 3, o: 1 },
-  { f: 1290, x: 1340, y: 650, size: 92, r: -4, o: 1 },
-  { f: 1340, x: 1380, y: 430, size: 90, r: 4, o: 0 },
-  { f: 1388, x: 1730, y: 300, size: 92, r: -4, o: 1 },
-  { f: 1460, x: 1730, y: 320, size: 92, r: 2, o: 1 },
-  { f: 1498, x: 1690, y: 430, size: 92, r: -5, o: 1 },
-  { f: 1530, x: 1600, y: 280, size: 96, r: 5, o: 1 },
-  { f: 1542, x: 1200, y: 380, size: 80, r: -4, o: 0 },
-  { f: 1680, x: 1200, y: 380, size: 80, r: -4, o: 0 },
+  // caged
+  { f: 0, x: 1362, y: 556, size: 230, r: -4 },
+  { f: 8, x: 1362, y: 556, size: 230, r: -4 },
+  { f: 112, x: 1363, y: 553, size: 230, r: 1 },
+  { f: 138, x: 1362, y: 548, size: 230, r: 4 },
+
+  // out through the opening door, then onto the search card
+  { f: 152, x: 1360, y: 520, size: 222, r: 8, lift: 54 },
+  { f: 166, x: 1420, y: 398, size: 186, r: -9, lift: 120 },
+  { f: 180, x: 1220, y: 348, size: 164, r: 9, lift: 110 },
+  { f: 196, x: 965, y: 402, size: 146, r: -4, lift: 155 },
+  { f: 226, x: 965, y: 402, size: 146, r: 2 },
+
+  // to the parse button and down onto it
+  { f: 250, x: 1360, y: 405, size: 142, r: -6, lift: 62 },
+  { f: 260, x: 1390, y: 430, size: 140, r: 1, lift: 22 },
+  { f: 274, x: 1445, y: 390, size: 140, r: 8, lift: 52 },
+
+  // ride the result in
+  { f: 304, x: 1500, y: 272, size: 136, r: -6, lift: 138 },
+  { f: 400, x: 1510, y: 270, size: 136, r: 4 },
+
+  // jump toward the export button
+  { f: 448, x: 1310, y: 750, size: 132, r: -8, lift: 108 },
+  { f: 466, x: 1360, y: 820, size: 130, r: 1, lift: 54 },
+  { f: 484, x: 1390, y: 806, size: 128, r: 4, lift: 34 },
+
+  // folder at the start of export
+  { f: 516, x: 1600, y: 292, size: 126, r: -7, lift: 144 },
+  { f: 555, x: 1660, y: 268, size: 126, r: 3 },
+  { f: 620, x: 1660, y: 268, size: 124, r: -2 },
+  { f: 672, x: 1560, y: 300, size: 122, r: 7 },
+
+  // jump to the batch page
+  { f: 746, x: 1600, y: 300, size: 122, r: 3 },
+  { f: 764, x: 1600, y: 150, size: 124, r: -2, lift: 142 },
+  { f: 840, x: 1590, y: 148, size: 124, r: 2 },
+
+  // onto the batch button
+  { f: 858, x: 1310, y: 510, size: 122, r: -5, lift: 106 },
+  { f: 878, x: 1350, y: 560, size: 120, r: 1, lift: 42 },
+  { f: 892, x: 1370, y: 552, size: 120, r: 3, lift: 22 },
+
+  // onto the finished workbook / envelope
+  { f: 930, x: 1280, y: 380, size: 120, r: -7, lift: 116 },
+  { f: 956, x: 1360, y: 560, size: 118, r: 4 },
+  { f: 990, x: 1470, y: 470, size: 116, r: -2, lift: 58 },
+
+  // terminal
+  { f: 1010, x: 1530, y: 170, size: 118, r: -5, lift: 152 },
+  { f: 1080, x: 1510, y: 240, size: 118, r: 2 },
+  { f: 1180, x: 1470, y: 255, size: 118, r: -2 },
+  { f: 1250, x: 1360, y: 300, size: 118, r: 4 },
+
+  // ecology cards
+  { f: 1330, x: 1400, y: 360, size: 116, r: 0 },
+  { f: 1370, x: 1590, y: 286, size: 116, r: -4, lift: 92 },
+  { f: 1450, x: 1590, y: 286, size: 116, r: 2 },
+  { f: 1500, x: 1500, y: 360, size: 112, r: -3, lift: 38 },
+
+  // the final card; it stays in the film to the end
+  { f: 1530, x: 1530, y: 330, size: 112, r: 3 },
+  { f: 1548, x: 1530, y: 260, size: 112, r: 0, lift: 104 },
+  { f: 1580, x: 1510, y: 250, size: 110, r: -2 },
+  { f: 1680, x: 1510, y: 250, size: 110, r: 1 },
 ];
 
-const valueAt = (frame: number, key: keyof Omit<Key, 'f'>, fallback: number) => {
-  if (frame <= KEYS[0].f) return KEYS[0][key] ?? fallback;
+const at = (frame: number): { a: Key; b: Key; t: number } => {
   for (let i = 0; i < KEYS.length - 1; i++) {
-    const a = KEYS[i];
-    const b = KEYS[i + 1];
-    if (frame >= a.f && frame <= b.f) {
-      return interpolate(frame, [a.f, b.f], [a[key] ?? fallback, b[key] ?? fallback], {
+    if (frame >= KEYS[i].f && frame <= KEYS[i + 1].f) {
+      const t = interpolate(frame, [KEYS[i].f, KEYS[i + 1].f], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.inOut(Easing.cubic),
       });
+      return { a: KEYS[i], b: KEYS[i + 1], t };
     }
   }
-  return KEYS[KEYS.length - 1][key] ?? fallback;
+  return { a: KEYS[KEYS.length - 1], b: KEYS[KEYS.length - 1], t: 1 };
 };
 
 const expressionFor = (frame: number): MascotExpression => {
   if (frame < 42) return 'happy';
-  if (frame < 130) return 'sleepy';
-  if (frame < 248) return 'wow';
-  if (frame >= 252 && frame < 280) return 'focus';
-  if (frame >= 280 && frame < 455) return 'proud';
-  if (frame >= 455 && frame < 500) return 'focus';
-  if (frame >= 500 && frame < 748) return 'happy';
-  if (frame >= 860 && frame < 910) return 'focus';
-  if (frame >= 910 && frame < 995) return 'proud';
-  if (frame >= 1000 && frame < 1340) return 'focus';
-  if (frame >= 1388 && frame < 1530) return 'happy';
-  return 'wink';
+  if (frame < 145) return 'sleepy';
+  if (frame < 210) return 'wow';
+  if (frame < 280) return 'focus';
+  if (frame < 455) return 'proud';
+  if (frame < 500) return 'focus';
+  if (frame < 748) return 'happy';
+  if (frame < 900) return 'focus';
+  if (frame < 1000) return 'proud';
+  if (frame < 1340) return 'focus';
+  if (frame < 1540) return 'happy';
+  return 'proud';
 };
 
 const poseFor = (frame: number): MascotPose => {
-  if ((frame >= 258 && frame < 273) || (frame >= 470 && frame < 488) || (frame >= 880 && frame < 900) || (frame >= 940 && frame < 960)) {
+  if ((frame >= 255 && frame < 276) || (frame >= 470 && frame < 490) || (frame >= 878 && frame < 900)) {
     return 'press';
   }
-  if (frame < 145 || (frame >= 190 && frame < 205) || (frame >= 1320 && frame < 1380) || (frame >= 1495 && frame < 1535)) {
+  if (frame < 145 || (frame >= 166 && frame < 210) || (frame >= 500 && frame < 530) || (frame >= 1000 && frame < 1030) || (frame >= 1540 && frame < 1580)) {
     return 'wave';
   }
-  if ((frame >= 300 && frame < 455) || (frame >= 620 && frame < 700) || (frame >= 1388 && frame < 1490)) {
+  if ((frame >= 300 && frame < 455) || (frame >= 620 && frame < 748) || (frame >= 1370 && frame < 1490)) {
     return 'point';
   }
   return 'idle';
 };
 
-const Puffs: React.FC<{ frame: number }> = ({ frame }) => {
-  const puff = (start: number) => {
-    const p = interpolate(frame, [start, start + 18], [0, 1], {
-      extrapolateLeft: 'clamp',
-      extrapolateRight: 'clamp',
-      easing: Easing.out(Easing.quad),
-    });
-    if (p <= 0 || p >= 1) return null;
-    return (
-      <div style={{ position: 'absolute', left: 860, top: 475, width: 100, height: 70, opacity: 1 - p }}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span
-            key={i}
-            style={{
-              position: 'absolute',
-              left: 30 + Math.cos(i * 1.1) * (8 + p * 38),
-              top: 20 + Math.sin(i * 1.4) * (4 + p * 24),
-              width: 5 + (i % 2) * 3,
-              height: 3 + (i % 3) * 2,
-              borderRadius: i % 2 ? '50%' : 2,
-              background: i % 2 ? '#d9ba6c' : '#fff4c7',
-              transform: `rotate(${i * 41}deg)`,
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-  return (
-    <>
-      {puff(214)}
-      {frame >= 250 && frame < 280 ? (
-        <div
-          style={{
-            position: 'absolute',
-            left: 1480,
-            top: 535,
-            width: 18,
-            height: 14,
-            border: '1.4px solid rgba(45,52,54,.45)',
-            borderRadius: '50%',
-            transform: `scale(${Math.sin(((frame - 250) / 30) * Math.PI)})`,
-            opacity: Math.sin(((frame - 250) / 30) * Math.PI) * 0.7,
-          }}
-        />
-      ) : null}
-    </>
-  );
-};
-
 export const MascotJourney: React.FC = () => {
   const frame = useCurrentFrame();
-  const x = valueAt(frame, 'x', 960);
-  const y = valueAt(frame, 'y', 540);
-  const size = valueAt(frame, 'size', 130);
-  const rotation = valueAt(frame, 'r', 0);
-  const opacity = valueAt(frame, 'o', 0);
-  if (opacity <= 0.001) return null;
+  const { a, b, t } = at(frame);
+  const x = a.x + (b.x - a.x) * t;
+  const yLinear = a.y + (b.y - a.y) * t;
+  const y = yLinear - (a.lift ?? 0) * 4 * t * (1 - t);
+  const size = a.size + (b.size - a.size) * t;
+  const rotation = a.r + (b.r - a.r) * t;
 
-  const bob = frame >= 0 && frame < 220 ? Math.sin(frame / 17) * 3 : Math.sin(frame / 31) * 1.2;
+  const squash = (() => {
+    if (!a.lift) return 0;
+    const landing = Math.max(0, (t - 0.82) / 0.18);
+    const takeoff = Math.max(0, (1 - t) / 0.12);
+    return Math.sin(Math.min(1, landing) * Math.PI) * 0.08 - Math.sin(Math.min(1, takeoff) * Math.PI) * 0.05;
+  })();
+
   const action =
-    (frame >= 258 && frame < 266) ||
-    (frame >= 476 && frame < 486) ||
-    (frame >= 882 && frame < 892) ||
-    (frame >= 944 && frame < 954);
+    (frame >= 258 && frame < 268) ||
+    (frame >= 474 && frame < 484) ||
+    (frame >= 882 && frame < 892);
 
   return (
     <div
       style={{
         position: 'absolute',
         left: x - size / 2,
-        top: y - size * 0.58 + bob,
+        top: y - size * 0.58,
         width: size,
         height: size * 1.16,
         zIndex: 880,
-        opacity,
         pointerEvents: 'none',
       }}
     >
       <NoteMascot
         size={size}
-        rotation={rotation + Math.sin(frame / 37) * 1.4}
+        rotation={rotation + Math.sin(frame / 41) * 1.2}
         expression={expressionFor(frame)}
-        blink={frame % 96 > 4 && frame % 96 < 8}
+        blink={frame % 104 > 4 && frame % 104 < 8}
         pose={poseFor(frame)}
-        backdrop={frame >= 1000 && frame < 1350}
+        backdrop={frame >= 1000 && frame < 1360}
         style={{
           transformOrigin: 'center bottom',
-          transform: action ? 'translateY(4px) scale(1.06, .94)' : undefined,
+          transform: action
+            ? 'translateY(5px) scale(1.08, .92)'
+            : `scale(${1 + squash}, ${1 - squash})`,
         }}
       />
     </div>

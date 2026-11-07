@@ -64,11 +64,24 @@ export const PaperSheet: React.FC<{
       }}
     >
       {texture ? (
-        <div
-          className="paper-texture"
-          style={{ opacity: Math.min(0.35, palette.texture + 0.1), zIndex: 0, backgroundImage: `url(${ASSETS.grain})` }}
-          aria-hidden="true"
-        />
+        <>
+          <div
+            className="paper-texture"
+            style={{
+              opacity: Math.min(0.6, palette.texture + 0.24),
+              zIndex: 0,
+              backgroundImage: `url(${ASSETS.paperTile})`,
+              backgroundSize: '330px 330px',
+              mixBlendMode: 'multiply',
+            }}
+            aria-hidden="true"
+          />
+          <div
+            className="paper-texture"
+            style={{ opacity: 0.1, zIndex: 0, backgroundImage: `url(${ASSETS.grain})` }}
+            aria-hidden="true"
+          />
+        </>
       ) : null}
       <div
         aria-hidden="true"
