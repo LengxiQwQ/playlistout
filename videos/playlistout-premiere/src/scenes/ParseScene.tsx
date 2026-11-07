@@ -146,7 +146,7 @@ const BrowserChrome: React.FC = () => (
         justifyContent: 'center',
         gap: 8,
         fontFamily: F.mono,
-        fontSize: 11,
+        fontSize: 12,
         color: '#6b6b61',
         boxShadow: 'inset 0 1px 2px rgba(80,60,30,.05)',
       }}
@@ -194,7 +194,7 @@ const SiteHeader: React.FC = () => (
             border: '1px solid rgba(45,52,54,.22)',
             borderRadius: 999,
             padding: '4px 10px',
-            fontSize: 10.5,
+            fontSize: 11.5,
             color: i === 0 ? C.ink : C.inkSoft,
             fontWeight: 550,
             background: i === 2 ? 'rgba(255,255,255,.38)' : 'transparent',
@@ -323,7 +323,7 @@ const initialSearchNote: React.FC<{ frame: number }> = ({ frame }) => {
               padding: '0 16px',
               gap: 10,
               fontFamily: F.mono,
-              fontSize: 14.5,
+              fontSize: 16,
               color: typed ? C.ink : C.inkMuted,
               letterSpacing: '-.015em',
               overflow: 'hidden',
@@ -365,7 +365,7 @@ const initialSearchNote: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 13, flexWrap: 'nowrap', overflow: 'hidden' }}>
-          <div style={{ fontFamily: F.sans, fontSize: 10.5, color: C.inkSoft, marginRight: 2 }}>支持公开歌单</div>
+          <div style={{ fontFamily: F.sans, fontSize: 11.5, color: C.inkSoft, marginRight: 2 }}>支持公开歌单</div>
           {PLATFORMS.map((p) => (
             <div
               key={p.id}
@@ -374,7 +374,7 @@ const initialSearchNote: React.FC<{ frame: number }> = ({ frame }) => {
                 alignItems: 'center',
                 gap: 4,
                 fontFamily: F.sans,
-                fontSize: 10.5,
+                fontSize: 11.5,
                 color: p.ink,
                 borderBottom: `1.5px solid ${p.ink}55`,
                 paddingBottom: 1,
@@ -433,7 +433,7 @@ const initialSearchNote: React.FC<{ frame: number }> = ({ frame }) => {
 
 const Stat: React.FC<{ label: string; value: React.ReactNode; tone?: string }> = ({ label, value, tone = C.ink }) => (
   <div style={{ minWidth: 68, paddingLeft: 14, borderLeft: '1px dashed rgba(45,52,54,.2)' }}>
-    <div style={{ fontFamily: F.sans, fontSize: 9.5, color: C.inkMuted, letterSpacing: '.09em', textTransform: 'uppercase' }}>{label}</div>
+    <div style={{ fontFamily: F.sans, fontSize: 11.5, color: C.inkMuted, letterSpacing: '.09em', textTransform: 'uppercase' }}>{label}</div>
     <div style={{ fontFamily: F.sans, fontSize: 19, fontWeight: 700, color: tone, marginTop: 3, whiteSpace: 'nowrap' }}>{value}</div>
   </div>
 );
@@ -460,7 +460,7 @@ const TrackRow: React.FC<{
         padding: '0 6px',
         borderBottom: '1px solid rgba(45,52,54,.075)',
         fontFamily: F.sans,
-        fontSize: 14.5,
+        fontSize: 16,
         color: C.ink,
         opacity: enter * (1 - staggerPeel),
         transform: `translateY(${(1 - enter) * 14 - staggerPeel * (52 + index * 7) + float * (1 - staggerPeel)}px) rotate(${staggerPeel * (index % 2 === 0 ? -2.4 : 2.1)}deg) scale(${1 - staggerPeel * 0.015})`,
@@ -469,7 +469,7 @@ const TrackRow: React.FC<{
         background: highlight > 0 ? `linear-gradient(to right, rgba(255,224,120,${0.26 * highlight * (1 - staggerPeel)}), transparent 72%)` : 'transparent',
       }}
     >
-      <div style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMuted, textAlign: 'center' }}>{String(track.index).padStart(2, '0')}</div>
+      <div style={{ fontFamily: F.mono, fontSize: 12, color: C.inkMuted, textAlign: 'center' }}>{String(track.index).padStart(2, '0')}</div>
       <div
         style={{
           width: 31,
@@ -496,7 +496,7 @@ const TrackRow: React.FC<{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
-            fontSize: 10.5,
+            fontSize: 11.5,
             color: isVip ? '#7a5315' : '#3e7650',
             background: isVip ? '#fcf1cd' : '#edf8ee',
             border: `1px solid ${isVip ? '#e8ce84' : '#bfe2c5'}`,
@@ -508,7 +508,7 @@ const TrackRow: React.FC<{
           {isVip ? 'VIP' : '✓'} {isVip ? '专享' : '正常'}
         </span>
       </div>
-      <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMuted, textAlign: 'right' }}>{track.duration}</div>
+      <div style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMuted, textAlign: 'right' }}>{track.duration}</div>
     </div>
   );
 };
@@ -567,7 +567,7 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
                     transform: `rotate(-13deg) scale(${0.55 + done * 0.45})`,
                     opacity: Math.min(1, done * 1.4) * (1 - exit),
                     fontFamily: F.marker,
-                    fontSize: 11,
+                    fontSize: 12,
                     lineHeight: 1.05,
                     letterSpacing: '.04em',
                     zIndex: 4,
@@ -580,12 +580,12 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <StickerTag tone="#f6d4d8" ink="#964652" rotate={-1.2} style={{ fontSize: 11, fontFamily: F.sans, padding: '3px 8px', boxShadow: 'none' }}>
+                <StickerTag tone="#f6d4d8" ink="#964652" rotate={-1.2} style={{ fontSize: 12, fontFamily: F.sans, padding: '3px 8px', boxShadow: 'none' }}>
                   QQ 音乐 · 公开歌单
                 </StickerTag>
                 <span style={{ fontFamily: F.mono, fontSize: 9, color: C.inkMuted, letterSpacing: '.08em' }}>RESOLVED ✓</span>
               </div>
-              <div style={{ fontFamily: F.sans, fontSize: 28, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 650 }}>
+              <div style={{ fontFamily: F.sans, fontSize: 30, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 650 }}>
                 {PLAYLIST.name}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 2, fontFamily: F.sans, fontSize: 12.5, color: C.inkSoft }}>
@@ -617,7 +617,7 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
               padding: '0 6px 5px',
               borderBottom: '1.2px solid rgba(45,52,54,.22)',
               fontFamily: F.sans,
-              fontSize: 9.5,
+              fontSize: 11.5,
               fontWeight: 650,
               letterSpacing: '.06em',
               color: C.inkMuted,
@@ -635,7 +635,7 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
           {rows.map((track, i) => (
             <TrackRow key={track.index} track={track} frame={frame} index={i} peel={easeInOut(frame, L.peel, 28)} />
           ))}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', fontFamily: F.sans, fontSize: 10.5, color: C.inkMuted }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', fontFamily: F.sans, fontSize: 11.5, color: C.inkMuted }}>
             <span>显示 7 / 104 首 · 完整歌单将全部写入导出文件</span>
             <span style={{ fontFamily: F.hand, fontSize: 17, color: C.inkSoft }}>还有 97 首，正排队等你 ♪</span>
           </div>
@@ -670,7 +670,7 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
                       border: selected ? `1.2px solid ${format.toneDeep}` : '1px dashed rgba(45,52,54,.22)',
                       borderRadius: '3px 5px 3px 5px',
                       fontFamily: F.mono,
-                      fontSize: 10.5,
+                      fontSize: 11.5,
                       color: selected ? format.toneDeep : C.inkSoft,
                       boxShadow: selected ? '1px 1px 0 rgba(45,52,54,.12)' : 'none',
                       transform: selected ? 'translateY(-1px)' : undefined,
@@ -704,7 +704,7 @@ const ResultPanel: React.FC<{ frame: number }> = ({ frame }) => {
               {pressed ? <span style={{ position: 'absolute', left: '50%', top: '50%', width: 10, height: 10, borderRadius: '50%', background: C.yellow, transform: `translate(-50%,-50%) scale(${(frame - L.exportClick) / 5})`, opacity: 0.7 }} /> : null}
             </div>
           </div>
-          <div style={{ marginTop: 7, fontFamily: F.sans, fontSize: 9.5, color: C.inkMuted }}>
+          <div style={{ marginTop: 7, fontFamily: F.sans, fontSize: 11.5, color: C.inkMuted }}>
             所有文件在浏览器本地生成 · 只带走歌单数据，不下载音频
           </div>
         </div>

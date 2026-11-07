@@ -64,7 +64,7 @@ const PlatformMenu: React.FC = () => (
       <div key={p.id} style={{ display: 'flex', alignItems: 'baseline', whiteSpace: 'pre' }}>
         <span style={{ color: '#b8b9ad', width: 20 }}>{i + 1}</span>
         <span style={{ color: p.color === '#dff0b0' ? '#c8d89c' : p.id === 'netease' ? '#e59196' : p.id === 'kugou' ? '#90bad2' : p.id === 'kuwo' ? '#e2b87e' : p.id === 'qishui' ? '#8dc7b1' : '#c0a6dc', width: 128 }}>{p.name}</span>
-        <span style={{ color: '#9a9d91', fontSize: 13 }}>{platformDescriptions[p.id]}</span>
+        <span style={{ color: '#9a9d91', fontSize: 14 }}>{platformDescriptions[p.id]}</span>
       </div>
     ))}
   </div>
@@ -87,7 +87,7 @@ export const CliScene: React.FC = () => {
   const bootBlock =
     frame >= L.boot + 20
       ? [
-          <div key="banner" style={{ fontFamily: F.mono, fontSize: 16, color: '#e5bd78', fontWeight: 700, letterSpacing: '.02em' }}>Playlist Out CLI v3.0.0</div>,
+          <div key="banner" style={{ fontFamily: F.mono, fontSize: 17, color: '#e5bd78', fontWeight: 700, letterSpacing: '.02em' }}>Playlist Out CLI v3.0.0</div>,
           <div key="subtitle" style={{ color: '#d6d3c3', fontSize: 14 }}>把你的歌单带走 - 命令行版</div>,
           <div key="space" style={{ height: 12 }} />,
           <div key="desc1" style={{ color: '#c7c4b7' }}>你的歌单，不应该只困在一个音乐平台里。</div>,
@@ -230,7 +230,7 @@ export const CliScene: React.FC = () => {
               <div style={{ display: 'flex', gap: 6 }}>
                 {['#d9968e', '#d8bf79', '#91b88f'].map((color) => <span key={color} style={{ width: 9, height: 9, borderRadius: '50%', background: color, opacity: 0.92 }} />)}
               </div>
-              <div style={{ fontFamily: F.mono, fontSize: 10.5, color: '#c9cec2', margin: '0 auto', letterSpacing: '.02em' }}>Windows PowerShell — playlistout</div>
+              <div style={{ fontFamily: F.mono, fontSize: 11.5, color: '#c9cec2', margin: '0 auto', letterSpacing: '.02em' }}>Windows PowerShell — playlistout</div>
               <div style={{ display: 'flex', gap: 10, color: '#777e74', fontFamily: F.mono, fontSize: 10 }}>
                 <span>—</span><span>□</span><span>×</span>
               </div>
@@ -259,7 +259,7 @@ export const CliScene: React.FC = () => {
                 style={{
                   padding: '22px 28px',
                   fontFamily: F.mono,
-                  fontSize: 16,
+                  fontSize: 17,
                   lineHeight: `${lineH}px`,
                   color: '#c6c4b6',
                   transform: `translateY(${-Math.min(540, scroll)}px)`,
@@ -281,7 +281,7 @@ export const CliScene: React.FC = () => {
                 )}
                 {frame < L.boot ? <div style={{ marginTop: 10, color: '#d7c18d', opacity: 0.7 }}>正在启动本地歌单导出工具…</div> : null}
               </div>
-              <div style={{ position: 'absolute', left: 22, right: 24, bottom: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: F.mono, fontSize: 8.5, color: '#596358', letterSpacing: '.09em' }}>
+              <div style={{ position: 'absolute', left: 22, right: 24, bottom: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: F.mono, fontSize: 9.5, color: '#596358', letterSpacing: '.09em' }}>
                 <span>LOCAL SESSION · UTF-8 · 120 × 30</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: '#78b58e' }} /> READY</span>
               </div>

@@ -82,16 +82,16 @@ const PlayerCardView: React.FC<{
             </div>
           </div>
           <div style={{ marginTop: 1 }}>
-            <StickerTag tone="rgba(235,250,232,.76)" ink="#3d764e" rotate={1.5} style={{ fontFamily: F.sans, fontSize: 9.5, padding: '4px 7px' }}>
+            <StickerTag tone="rgba(235,250,232,.76)" ink="#3d764e" rotate={1.5} style={{ fontFamily: F.sans, fontSize: 10.5, padding: '4px 7px' }}>
               <CheckDoodle size={10} color="#3d764e" /> {card.status}
             </StickerTag>
           </div>
         </div>
 
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontFamily: F.sans, fontSize: 9, color: C.inkMuted }}>接入方式</span>
+          <span style={{ fontFamily: F.sans, fontSize: 10, color: C.inkMuted }}>接入方式</span>
           <span style={{ height: 1, flex: 1, background: 'rgba(45,52,54,.17)' }} />
-          <span style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.08em' }}>{card.kind}</span>
+          <span style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMuted, letterSpacing: '.08em' }}>{card.kind}</span>
         </div>
 
         <div style={{ marginTop: 12, fontFamily: F.hand, fontSize: 27, lineHeight: 1.25, color: C.ink, minHeight: 76 }}>
@@ -99,14 +99,14 @@ const PlayerCardView: React.FC<{
         </div>
 
         <div style={{ marginTop: 14, background: 'rgba(255,253,246,.57)', border: '1px dashed rgba(45,52,54,.23)', borderRadius: 5, padding: '10px 12px' }}>
-          <div style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.12em' }}>HOW TO BRING IT IN</div>
-          <div style={{ fontFamily: F.sans, fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginTop: 5 }}>{card.route}</div>
+          <div style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMuted, letterSpacing: '.12em' }}>HOW TO BRING IT IN</div>
+          <div style={{ fontFamily: F.sans, fontSize: 14, color: C.inkSoft, lineHeight: 1.6, marginTop: 5 }}>{card.route}</div>
         </div>
 
         <div style={{ position: 'absolute', left: 23, right: 23, bottom: 17, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 15, height: 15, borderRadius: 3, border: '1px solid rgba(45,52,54,.27)', display: 'grid', placeItems: 'center', fontFamily: F.mono, fontSize: 6, color: C.inkMuted }}>{index === 0 ? 'MF' : index === 1 ? 'LX' : 'L1'}</span>
-            <span style={{ fontFamily: F.sans, fontSize: 9, color: C.inkMuted }}>{index === 0 ? '官方插件' : index === 1 ? '专用 JSON' : '备份 JSON'}</span>
+            <span style={{ fontFamily: F.sans, fontSize: 10, color: C.inkMuted }}>{index === 0 ? '官方插件' : index === 1 ? '专用 JSON' : '备份 JSON'}</span>
           </div>
           <span style={{ fontFamily: F.hand, fontSize: 18, color: C.inkMuted }}>{index === 0 ? 'install →' : 'import →'}</span>
         </div>
@@ -200,13 +200,13 @@ export const EcosystemScene: React.FC = () => {
               <Badge tone={C.yellowLight} ink="#80621e">无需注册</Badge>
               <Badge tone={C.blue} ink="#356676">统一数据结构</Badge>
             </div>
-            <div style={{ fontFamily: F.mono, fontSize: 12, color: C.inkSoft, marginTop: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontFamily: F.mono, fontSize: 13, color: C.inkSoft, marginTop: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               GET&nbsp;&nbsp;https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=...
             </div>
-            <div style={{ fontFamily: F.sans, fontSize: 10.5, color: C.inkMuted, marginTop: 5 }}>把同一张歌单，接进你的播放器、插件、脚本和下一个想法。</div>
+            <div style={{ fontFamily: F.sans, fontSize: 11.5, color: C.inkMuted, marginTop: 5 }}>把同一张歌单，接进你的播放器、插件、脚本和下一个想法。</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-            <span style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted, letterSpacing: '.12em' }}>OPEN FOR BUILDERS</span>
+            <span style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMuted, letterSpacing: '.12em' }}>OPEN FOR BUILDERS</span>
             <span style={{ fontFamily: F.hand, fontSize: 21, color: C.inkSoft, transform: 'rotate(-2deg)' }}>API / JSON / CLI →</span>
           </div>
         </div>

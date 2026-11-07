@@ -40,16 +40,16 @@ def make_surface(w: int, h: int, seed: int) -> Image.Image:
     draw = ImageDraw.Draw(full, "RGBA")
 
     # long, mostly horizontal paper fibres
-    for _ in range(int(w * h * 0.0028)):
+    for _ in range(int(w * h * 0.0018)):
         x = rng.uniform(-20, w + 20)
         y = rng.uniform(-20, h + 20)
         length = rng.uniform(3, 28)
-        angle = rng.normal(0.08, 0.32)
+        angle = rng.uniform(0, np.pi) if rng.random() < 0.58 else rng.normal(0.12, 0.22)
         x2 = x + np.cos(angle) * length
         y2 = y + np.sin(angle) * length
         if rng.random() < 0.22:
             color = (120, 102, 76, rng.integers(20, 52))
-        elif rng.random() < 0.3:
+        elif rng.random() < 0.22:
             color = (255, 251, 237, rng.integers(35, 85))
         else:
             color = (196, 177, 145, rng.integers(14, 36))

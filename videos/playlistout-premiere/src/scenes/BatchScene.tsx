@@ -76,10 +76,10 @@ const PlaylistRow: React.FC<{
       <MiniCover tone={item.tone} deep={item.deep} motif={item.motif} size={72} rotate={-2 + index * 1.1} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: F.sans, fontSize: 18, fontWeight: 700, color: C.ink }}>{item.name}</span>
+          <span style={{ fontFamily: F.sans, fontSize: 20, fontWeight: 700, color: C.ink }}>{item.name}</span>
           {index === 0 ? <Badge tone={C.yellowLight} ink="#82621b">刚刚更新</Badge> : null}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4, fontFamily: F.sans, fontSize: 11.5, color: C.inkMuted }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4, fontFamily: F.sans, fontSize: 13, color: C.inkMuted }}>
           <span>{item.count} 首</span>
           <span>·</span>
           <span>{item.artist}</span>
@@ -88,7 +88,7 @@ const PlaylistRow: React.FC<{
         </div>
         <div style={{ display: 'flex', gap: 7, marginTop: 8 }}>
           {['QQ 音乐', '私人收藏', '可直接导出'].map((tag, i) => (
-            <span key={tag} style={{ fontFamily: F.sans, fontSize: 8.5, color: i === 0 ? '#566a29' : C.inkSoft, background: i === 0 ? '#e9f1d5' : 'rgba(255,255,255,.5)', border: '1px solid rgba(45,52,54,.12)', padding: '2px 6px', borderRadius: 999 }}>{tag}</span>
+            <span key={tag} style={{ fontFamily: F.sans, fontSize: 9.5, color: i === 0 ? '#566a29' : C.inkSoft, background: i === 0 ? '#e9f1d5' : 'rgba(255,255,255,.5)', border: '1px solid rgba(45,52,54,.12)', padding: '2px 6px', borderRadius: 999 }}>{tag}</span>
           ))}
         </div>
       </div>
@@ -145,7 +145,7 @@ const Workbook: React.FC<{ frame: number; enter: number; zipT: number }> = ({ fr
               ['02', '鎖那 · 深夜散步'],
               ['03', '日系女声私藏'],
             ].map(([n, label], i) => (
-              <div key={n} style={{ padding: '8px 8px', marginBottom: 4, borderRadius: 3, background: i === 0 ? '#dfeddc' : 'transparent', fontFamily: F.sans, fontSize: 9, color: i === 0 ? '#3f6848' : C.inkSoft }}>
+              <div key={n} style={{ padding: '8px 8px', marginBottom: 4, borderRadius: 3, background: i === 0 ? '#dfeddc' : 'transparent', fontFamily: F.sans, fontSize: 10, color: i === 0 ? '#3f6848' : C.inkSoft }}>
                 <span style={{ fontFamily: F.mono, marginRight: 7, fontSize: 8 }}>{n}</span>{label}
               </div>
             ))}
@@ -155,7 +155,7 @@ const Workbook: React.FC<{ frame: number; enter: number; zipT: number }> = ({ fr
               <span>INDEX / 歌单索引</span><span>3 PLAYLISTS · 151 TRACKS</span>
             </div>
             {BATCH_PLAYLISTS.map((p, i) => (
-              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 55px 65px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(45,52,54,.07)', fontFamily: F.sans, fontSize: 9.5 }}>
+              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 55px 65px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(45,52,54,.07)', fontFamily: F.sans, fontSize: 10.5 }}>
                 <span style={{ fontFamily: F.mono, fontSize: 8, color: C.inkMuted }}>0{i + 1}</span>
                 <span style={{ fontWeight: 600 }}>{p.name}</span>
                 <span style={{ color: C.inkMuted }}>{p.count} 首</span>
@@ -314,7 +314,7 @@ export const BatchScene: React.FC = () => {
                   <span style={{ fontFamily: F.mono, fontSize: 8.5, color: C.inkMuted, letterSpacing: '.12em' }}>PUBLIC LIBRARY</span>
                 </div>
                 <div style={{ fontFamily: F.display, fontSize: 41, lineHeight: 1.05, color: C.ink }}>琴心月满的公开歌单</div>
-                <div style={{ display: 'flex', gap: 17, alignItems: 'center', marginTop: 8, fontFamily: F.sans, fontSize: 11.5, color: C.inkSoft }}>
+                <div style={{ display: 'flex', gap: 17, alignItems: 'center', marginTop: 8, fontFamily: F.sans, fontSize: 13, color: C.inkSoft }}>
                   <span>{BATCH_PLAYLISTS.length} 个歌单</span>
                   <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.inkMuted }} />
                   <span>{BATCH_TOTAL} 首歌曲</span>

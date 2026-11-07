@@ -68,7 +68,7 @@ export const PaperSheet: React.FC<{
           <div
             className="paper-texture"
             style={{
-              opacity: Math.min(0.6, palette.texture + 0.24),
+              opacity: Math.min(0.48, palette.texture + 0.18),
               zIndex: 0,
               backgroundImage: `url(${ASSETS.paperTile})`,
               backgroundSize: '330px 330px',
@@ -152,7 +152,7 @@ export const Badge: React.FC<{
       background: tone,
       color: ink,
       fontFamily: F.sans,
-      fontSize: 12,
+      fontSize: 13.5,
       fontWeight: 550,
       letterSpacing: '0.02em',
       whiteSpace: 'nowrap',
@@ -171,9 +171,9 @@ export const PlatformChip: React.FC<{
   style?: React.CSSProperties;
 }> = ({ platform, active = false, size = 'md', rotate = 0, style }) => {
   const sizes = {
-    sm: { fontSize: 14, padding: '4px 8px', dot: 8, mark: 13 },
-    md: { fontSize: 17, padding: '6px 11px', dot: 10, mark: 15 },
-    lg: { fontSize: 23, padding: '9px 15px', dot: 12, mark: 20 },
+    sm: { fontSize: 15.5, padding: '4px 8px', dot: 8, mark: 14 },
+    md: { fontSize: 19, padding: '6px 11px', dot: 10, mark: 16 },
+    lg: { fontSize: 25, padding: '9px 15px', dot: 12, mark: 21 },
   }[size];
   return (
     <div

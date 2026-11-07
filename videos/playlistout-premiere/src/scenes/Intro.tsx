@@ -197,13 +197,13 @@ const CageBack: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontFamily: F.mono, fontSize: 8.5, color: C.inkMuted, letterSpacing: '.14em' }}>TRAPPED PLAYLIST</span>
+            <span style={{ fontFamily: F.mono, fontSize: 9.5, color: C.inkMuted, letterSpacing: '.14em' }}>TRAPPED PLAYLIST</span>
             <span style={{ fontFamily: F.hand, fontSize: 20, color: C.ink }}>No. 01</span>
           </div>
-          <div style={{ fontFamily: F.sans, fontSize: 14.5, fontWeight: 700, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontFamily: F.sans, fontSize: 16, fontWeight: 700, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {PLAYLIST.name}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontFamily: F.mono, fontSize: 9.5, color: C.inkSoft }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontFamily: F.mono, fontSize: 10.5, color: C.inkSoft }}>
             <span>104 TRACKS</span>
             <span>7H 06M</span>
           </div>

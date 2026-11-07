@@ -139,7 +139,7 @@ const JsonPreview: React.FC<{ frame: number; open: number; cardW: number }> = ({
             key={i}
             style={{
               fontFamily: F.mono,
-              fontSize: 12.5,
+              fontSize: 13.5,
               lineHeight: 1.55,
               color: line.color === C.ink && line.text.includes('"') ? '#48646b' : line.color,
               opacity: reveal,
@@ -194,11 +194,11 @@ const FileCard: React.FC<{
           <FormatGlyph icon={glyph === 'xlsx' ? 'grid' : 'braces'} size={27} color={ink} accent={ink} />
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontFamily: F.sans, fontWeight: 700, fontSize: 14, color: C.ink, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <div style={{ fontFamily: F.sans, fontWeight: 700, fontSize: 15.5, color: C.ink, display: 'flex', alignItems: 'baseline', gap: 6 }}>
             {title}
             <span style={{ fontFamily: F.mono, fontSize: 9, color: C.inkMuted, fontWeight: 400 }}>{ext}</span>
           </div>
-          <div style={{ fontFamily: F.sans, fontSize: 10, color: C.inkMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{file}</div>
+          <div style={{ fontFamily: F.sans, fontSize: 11, color: C.inkMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{file}</div>
         </div>
         <div style={{ width: 30, height: 30, borderRadius: '50%', border: '1.2px solid rgba(45,52,54,.2)', display: 'grid', placeItems: 'center', fontFamily: F.mono, fontSize: 8, color: C.inkMuted, transform: 'rotate(6deg)' }}>LOCAL</div>
       </div>
@@ -483,8 +483,8 @@ export const ExportScene: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 12px', height: '100%' }}>
                   <FormatGlyph icon={item.format.icon} size={35} color={item.format.toneDeep} accent={item.format.toneDeep} />
                   <div>
-                    <div style={{ fontFamily: F.sans, fontWeight: 700, fontSize: 14.5, color: C.ink, display: 'flex', alignItems: 'baseline', gap: 5 }}>{item.format.name}<span style={{ fontFamily: F.mono, fontSize: 8, color: item.format.toneDeep }}>{item.format.ext}</span></div>
-                    <div style={{ fontFamily: F.sans, fontSize: 10.5, color: C.inkSoft, marginTop: 3 }}>{item.format.blurb}</div>
+                    <div style={{ fontFamily: F.sans, fontWeight: 700, fontSize: 16, color: C.ink, display: 'flex', alignItems: 'baseline', gap: 5 }}>{item.format.name}<span style={{ fontFamily: F.mono, fontSize: 8, color: item.format.toneDeep }}>{item.format.ext}</span></div>
+                    <div style={{ fontFamily: F.sans, fontSize: 11.5, color: C.inkSoft, marginTop: 3 }}>{item.format.blurb}</div>
                   </div>
                 </div>
               </div>
@@ -524,7 +524,7 @@ export const ExportScene: React.FC = () => {
             alignItems: 'center',
             gap: 9,
             fontFamily: F.sans,
-            fontSize: 12.5,
+            fontSize: 13.5,
             color: C.ink,
             opacity: toastIn,
             transform: `translateY(${(1 - toastIn) * 18}px) rotate(-.4deg)`,
