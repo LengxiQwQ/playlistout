@@ -10,6 +10,9 @@
     "render:draft": "remotion render src/index.tsx PlaylistOutFilm output/preview.mp4 --codec=h264 --crf=22 --scale=0.5 --concurrency=4",
     "still": "remotion still src/index.tsx PlaylistOutFilm",
     "stills": "node tools/render_stills.mjs",
+    "cover:bilibili": "remotion still src/index.tsx CoverBilibili output/cover-bilibili-4x3.png",
+    "cover:youtube": "remotion still src/index.tsx CoverYouTube output/cover-youtube-16x9.png",
+    "covers": "npm run cover:bilibili && npm run cover:youtube",
     "typecheck": "tsc --noEmit",
     "audio": "python tools/make_score.py",
     "qa": "python tools/qa.py"
