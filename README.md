@@ -13,7 +13,7 @@
 [![Stars](https://img.shields.io/github/stars/LengxiQwQ/playlistout?style=flat-square&logo=github&color=D97706)](https://github.com/LengxiQwQ/playlistout/stargazers)
 [![CI](https://img.shields.io/github/actions/workflow/status/LengxiQwQ/playlistout/ci.yml?style=flat-square&label=CI)](https://github.com/LengxiQwQ/playlistout/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
-[![YouTube](https://img.shields.io/badge/YouTube-演示视频-FF0000?style=flat-square&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=BpgjXNl53xw)
+[![Bilibili](https://img.shields.io/badge/Bilibili-演示视频-00A1D6?style=flat-square&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1JwWH6REU6/)
 
 </div>
 
@@ -30,10 +30,10 @@
 > 💡 想要直观了解如何使用？点击下方封面观看官方宣传与功能演示视频：
 
 <div align="center">
-  <a href="https://www.youtube.com/watch?v=BpgjXNl53xw" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.youtube.com/vi/BpgjXNl53xw/maxresdefault.jpg" alt="别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器" width="720" style="border-radius: 8px;" />
+  <a href="https://www.bilibili.com/video/BV1JwWH6REU6/" target="_blank" rel="noopener noreferrer">
+    <img src="docs/images/video-cover.jpg" alt="别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器" width="720" style="border-radius: 8px;" />
   </a>
-  <p><em>🍿 观看视频：别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器（点击跳转 YouTube）</em></p>
+  <p><em>🍿 观看视频：别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器（点击前往哔哩哔哩）</em></p>
 </div>
 
 ---
