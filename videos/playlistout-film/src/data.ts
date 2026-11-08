@@ -1,4 +1,5 @@
 import { C } from './theme';
+import { ASSETS } from './assets';
 
 export type PlatformInfo = {
   id: 'qq' | 'netease' | 'kugou' | 'kuwo' | 'qishui' | 'migu';
@@ -88,13 +89,14 @@ export const DEMO_PLAYLIST = {
   platform: 'QQ 音乐',
   platformId: 'qq',
   name: '日语动漫',
-  creator: '冷夕QwQ',
+  creator: '冷汐QwQ',
+  coverUrl: ASSETS.covers.folkSong,
   trackCount: 128,
   duration: '8 小时 42 分',
   vipCount: 6,
   sourceUrl: 'https://y.qq.com/n/ryqq/playlist/9140654872',
-  excelFile: '【QQ 音乐】日语动漫 - 冷夕QwQ.xlsx',
-  jsonFile: '【QQ 音乐】日语动漫 - 冷夕QwQ.json',
+  excelFile: '【QQ 音乐】日语动漫 - 冷汐QwQ.xlsx',
+  jsonFile: '【QQ 音乐】日语动漫 - 冷汐QwQ.json',
   tracks: [
     { index: 1, title: '残酷な天使のテーゼ', artist: '高橋洋子', album: '新世紀エヴァンゲリオン', duration: '04:05', status: '正常' },
     { index: 2, title: 'only my railgun', artist: 'fripSide', album: 'とある科学の超電磁砲', duration: '04:17', vip: true, status: 'VIP专享' },
@@ -142,12 +144,13 @@ export type BatchSheetItem = {
   tag: string;
   bg: string;
   accent: string;
+  cover: string;
 };
 
 export const BATCH_PLAYLISTS: BatchSheetItem[] = [
-  { id: 'p1', title: '中文民谣', count: 48, creator: '冷夕QwQ', tag: '自建公开歌单', bg: '#fff5c0', accent: '#c48b1b' },
-  { id: 'p2', title: '英语流行', count: 62, creator: '冷夕QwQ', tag: '自建公开歌单', bg: '#dff2fa', accent: '#2b6f91' },
-  { id: 'p3', title: '日语动漫', count: 128, creator: '冷夕QwQ', tag: '自建公开歌单', bg: '#fde2ea', accent: '#ad4967' },
+  { id: 'p1', title: '中文民谣', count: 48, creator: '冷汐QwQ', tag: '自建公开歌单', bg: '#fff5c0', accent: '#c48b1b', cover: ASSETS.covers.folkPlaylist },
+  { id: 'p2', title: '英语流行', count: 62, creator: '冷汐QwQ', tag: '自建公开歌单', bg: '#dff2fa', accent: '#2b6f91', cover: ASSETS.covers.englishPlaylist },
+  { id: 'p3', title: '日语动漫', count: 128, creator: '冷汐QwQ', tag: '自建公开歌单', bg: '#fde2ea', accent: '#ad4967', cover: ASSETS.covers.animePlaylist },
 ];
 
 export const BATCH_TOTAL_TRACKS = 238;

@@ -267,7 +267,7 @@ export const BatchScene: React.FC = () => {
                 ♪ QQ 音乐用户歌单
               </StickyBadge>
               <span style={{ fontFamily: F.sans, fontSize: 28, fontWeight: 900, color: C.ink }}>
-                冷夕QwQ 的公开歌单
+                冷汐QwQ 的公开歌单
               </span>
             </div>
             <span
@@ -323,17 +323,23 @@ export const BatchScene: React.FC = () => {
                       width: 70,
                       height: 70,
                       borderRadius: 16,
-                      backgroundColor: C.paperWhite,
+                      backgroundColor: pl.bg,
                       border: `3px solid ${C.ink}`,
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontFamily: F.display,
-                      fontSize: 36,
-                      color: pl.accent,
+                      boxShadow: '2px 2px 0 rgba(45, 52, 54, 0.35)',
+                      overflow: 'hidden',
                       flexShrink: 0,
                     }}
                   >
-                    0{idx + 1}
+                    <img
+                      src={pl.cover}
+                      alt={pl.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
                   </div>
 
                   <div style={{ flex: 1 }}>
@@ -583,7 +589,7 @@ export const BatchScene: React.FC = () => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                📦 【QQ音乐歌单合集】冷夕QwQ - 共3个歌单.zip
+                📦 【QQ音乐歌单合集】冷汐QwQ - 共3个歌单.zip
               </div>
 
               {/* Tactile Zipper Track (leaves right side open for Mascot!) */}

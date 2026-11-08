@@ -21,10 +21,10 @@ export const ParseScene: React.FC = () => {
   const exportClickFrame = rel('export_click');
   const splitFrame = rel('files_split');
 
-  const cardIn = spring({ frame, fps, config: { damping: 18, stiffness: 95 } });
+  const cardIn = easeInOut(frame, 0, 22, 0, 1);
   const unfoldProgress = easeInOut(frame, unfoldFrame, 20, 0, 1);
   const exitProgress = easeInOut(frame, splitFrame - 8, 14, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 10, splitFrame - 6, splitFrame + 4], [0, 1, 1, 0], {
+  const sceneOpacity = interpolate(frame, [0, 18, splitFrame - 6, splitFrame + 4], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -55,7 +55,7 @@ export const ParseScene: React.FC = () => {
         tagBg={C.yellow}
         style={{
           marginTop: 38,
-          opacity: easeOut(frame, 0, 16),
+          opacity: easeOut(frame, 2, 20),
         }}
       />
 
@@ -66,7 +66,7 @@ export const ParseScene: React.FC = () => {
           left: 162,
           top: searchTop,
           width: 1676,
-          transform: `translateY(${(1 - cardIn) * 65}px)`,
+          transform: `translateY(${(1 - cardIn) * 55}px) rotate(${(1 - cardIn) * 1.2}deg)`,
           zIndex: 25,
         }}
       >
@@ -413,20 +413,26 @@ export const ParseScene: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                 <div
                   style={{
-                    width: 74,
-                    height: 74,
+                    width: 76,
+                    height: 76,
                     borderRadius: 18,
-                    backgroundColor: C.pink,
                     border: `3px solid ${C.ink}`,
                     boxShadow: SHADOW.cutoutSm,
-                    display: 'grid',
-                    placeItems: 'center',
-                    fontFamily: F.display,
-                    fontSize: 38,
-                    color: C.pinkDeep,
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    backgroundColor: C.pink,
                   }}
                 >
-                  ♫
+                  <img
+                    src={DEMO_PLAYLIST.coverUrl}
+                    alt={DEMO_PLAYLIST.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

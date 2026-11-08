@@ -109,7 +109,7 @@ describe('UserPlaylistsPaper Component', () => {
     const mockNeteaseUser: UserPlaylistsData = {
       platform: 'netease',
       userId: '1825474783',
-      nickname: '冷夕QwQ',
+      nickname: '冷汐QwQ',
       total: 1,
       playlists: [
         {
@@ -134,7 +134,7 @@ describe('UserPlaylistsPaper Component', () => {
 
     expect(screen.getByText('网易云音乐 · 歌单收藏册')).toBeInTheDocument();
     expect(screen.getByText(/网易云 UID: 1825474783/)).toBeInTheDocument();
-    expect(screen.getByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
+    expect(screen.getByText('冷汐QwQ 的音乐手账')).toBeInTheDocument();
   });
 
   it('renders KuGou user header with KuGou UID and brand sticker, and drills down with kugou platform', () => {

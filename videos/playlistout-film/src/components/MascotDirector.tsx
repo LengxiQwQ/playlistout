@@ -40,11 +40,11 @@ const WAYPOINTS: Waypoint[] = [
   { f: 195, x: 830, y: 615, size: 240, pose: 'guide', expression: 'wink', pointDir: 'right', reachProgress: 0, bubble: '六大平台都能解！' },
   // 自信叉腰小骄傲 (Preset 12: idle + proud)
   { f: 216, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
-  { f: 236, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
+  { f: 222, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
 
   // ================= SCENE 2: WEB PARSE (CURSOR TRACKING -> PRESS PARSE -> COMPANION STAGE -> EXPORT) =================
-  // 破笼后轻快落入输入框首端 (x=240, y=205)，准备跟随打字光标 (249 开始打字)
-  { f: 240, x: 240, y: 205, size: 140, pose: 'idle', expression: 'happy', reachProgress: 0, arc: 90, bubble: '快把链接粘进来 ♪' },
+  // 随翻页柔和起跳纵身跃入输入框首端 (x=240, y=205)，优美抛物线平滑着陆，准备跟随打字光标 (249 开始打字)
+  { f: 244, x: 240, y: 205, size: 140, pose: 'idle', expression: 'happy', reachProgress: 0, arc: 140, bubble: '快把链接粘进来 ♪' },
   // 249 ~ 288: 随打字匀速平滑奔跑紧贴光标，双手自然摆臂奔跑，绝对不分两步走、不卡顿、不伸手！(urlStart=249, 42 chars @ 32cps -> frame 288)
   { f: 249, x: 240, y: 205, size: 140, pose: 'run', expression: 'happy', reachProgress: 0, linear: true, bubble: '快把链接粘进来 ♪' },
   { f: 288, x: 1010, y: 205, size: 140, pose: 'run', expression: 'happy', reachProgress: 0, linear: true, bubble: '快把链接粘进来 ♪' },

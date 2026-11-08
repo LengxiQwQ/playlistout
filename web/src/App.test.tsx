@@ -330,7 +330,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
       data: {
         platform: 'netease',
         userId: '1825474783',
-        nickname: '冷夕QwQ',
+        nickname: '冷汐QwQ',
         total: 1,
         playlists: [
           {
@@ -355,7 +355,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
 
     // 1. Collection view is shown
     expect(await screen.findByText('我喜欢的音乐')).toBeInTheDocument();
-    expect(screen.getByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
+    expect(screen.getByText('冷汐QwQ 的音乐手账')).toBeInTheDocument();
 
     // Reset spy before drilldown
     scrollToSpy.mockClear();
@@ -377,7 +377,7 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
     fireEvent.click(returnBtn);
 
     // Collection view should be visible again
-    expect(await screen.findByText('冷夕QwQ 的音乐手账')).toBeInTheDocument();
+    expect(await screen.findByText('冷汐QwQ 的音乐手账')).toBeInTheDocument();
     // Must NOT jump to top: 0
     expect(scrollToSpy).not.toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });

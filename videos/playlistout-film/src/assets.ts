@@ -16,4 +16,10 @@ export const ASSETS = {
     qishui: staticFile('images/platforms/qishui.jpg'),
     migu: staticFile('images/platforms/migu.jpg'),
   },
+  covers: {
+    folkSong: staticFile('covers/folk_song_geyuqing.jpg'),
+    folkPlaylist: staticFile('covers/folk_playlist_cover.jpg'),
+    animePlaylist: staticFile('covers/anime_playlist_cover.jpg'),
+    englishPlaylist: staticFile('covers/english_playlist_cover.jpg'),
+  },
 };

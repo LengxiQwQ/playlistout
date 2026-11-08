@@ -32,8 +32,8 @@ export const IntroScene: React.FC = () => {
   const cageShake = rattle1 + rattle2;
 
   const cageExit = easeInOut(frame, jumpFrame + 8, 26, 0, 1);
-  const handoffExit = easeInOut(frame, handoffFrame - 6, 14, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 6, handoffFrame - 4, handoffFrame + 6], [0, 1, 1, 0], {
+  const handoffExit = easeInOut(frame, handoffFrame - 8, 24, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 6, handoffFrame - 6, handoffFrame + 14], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -44,7 +44,7 @@ export const IntroScene: React.FC = () => {
     <AbsoluteFill
       style={{
         opacity: sceneOpacity,
-        transform: `translateY(${-handoffExit * 90}px) scale(${1 - handoffExit * 0.04})`,
+        transform: `translate(${-handoffExit * 110}px, ${-handoffExit * 45}px) rotate(${-handoffExit * 2.2}deg) scale(${1 - handoffExit * 0.04})`,
       }}
     >
       {/* ================= TOP RIGHT: PERMANENT OFFICIAL URL BANNER ================= */}
