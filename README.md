@@ -33,7 +33,7 @@
   <a href="https://www.bilibili.com/video/BV1JwWH6REU6/" target="_blank" rel="noopener noreferrer">
     <img src="docs/images/video-cover.jpg" alt="别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器" width="720" style="border-radius: 8px;" />
   </a>
-  <p><em>🍿 观看视频：别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器（点击前往哔哩哔哩）</em></p>
+  <p>🍿 观看视频：别让歌单被平台困住！Playlist Out - 开源跨平台歌单导出神器（点击前往哔哩哔哩）</p>
 </div>
 
 ---
