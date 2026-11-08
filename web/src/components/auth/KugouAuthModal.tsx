@@ -16,6 +16,8 @@ import {
   setKugouAuth,
   getKugouAuth,
   clearKugouAuth,
+  getStoredKugouProfile,
+  setStoredKugouProfile,
   checkKugouSession,
   type KugouAuthState,
 } from '../../utils/kugouAuth';
@@ -40,7 +42,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
   const [status, setStatus] = useState<'waiting' | 'scanned' | 'success' | 'expired' | 'failed'>('waiting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authState, setAuthState] = useState<KugouAuthState>('none');
-  const [profile, setProfile] = useState<KugouUserProfile | null>(null);
+  const [profile, setProfile] = useState<KugouUserProfile | null>(() => getStoredKugouProfile());
   const [profileLoading, setProfileLoading] = useState<boolean>(false);
 
   const pollTimerRef = useRef<any>(null);
@@ -122,7 +124,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     let cancelled = false;
 
     if (!isOpen || authState !== 'valid') {
-      if (!isOpen) {
+      if (!isOpen && !getKugouAuth()) {
         setProfile(null);
         setProfileLoading(false);
       }
@@ -134,20 +136,33 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
     const auth = getKugouAuth();
     if (!auth) {
       setProfile(null);
+      setStoredKugouProfile(null);
       setProfileLoading(false);
       return () => {
         cancelled = true;
       };
     }
 
-    setProfileLoading(true);
+    // Use cached profile immediately so avatar is ready on frame 0
+    const cached = getStoredKugouProfile();
+    if (cached) {
+      setProfile(cached);
+    } else {
+      setProfileLoading(true);
+    }
+
     fetchKugouProfile(auth.token, auth.userid)
       .then((res) => {
         if (cancelled) return;
-        setProfile(res.success ? res.data : null);
+        if (res.success && res.data) {
+          setProfile(res.data);
+          setStoredKugouProfile(res.data);
+        } else if (!cached) {
+          setProfile(null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setProfile(null);
+        if (!cancelled && !cached) setProfile(null);
       })
       .finally(() => {
         if (!cancelled) setProfileLoading(false);

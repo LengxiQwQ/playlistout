@@ -56,12 +56,18 @@ function runCommand(cmd, args, cwd = REPO_ROOT, options = {}) {
   const displayCmd = [cmd, ...args].join(' ');
   console.log(`  ${COLORS.gray}$ ${displayCmd}${COLORS.reset}`);
 
-  const res = spawnSync(cmd, args, {
-    cwd,
-    stdio: options.silent ? 'pipe' : 'inherit',
-    shell: true,
-    env: { ...process.env, ...options.env },
-  });
+  const isWindows = process.platform === 'win32';
+  const res = isWindows
+    ? spawnSync('powershell.exe', ['-NoProfile', '-Command', `Set-Location "${cwd.replace(/\\/g, '/')}"; ${cmd} ${args.join(' ')}`], {
+        stdio: options.silent ? 'pipe' : 'inherit',
+        env: { ...process.env, ...options.env },
+      })
+    : spawnSync(cmd, args, {
+        cwd,
+        stdio: options.silent ? 'pipe' : 'inherit',
+        shell: true,
+        env: { ...process.env, ...options.env },
+      });
 
   if (res.status !== 0) {
     if (options.silent && res.stderr) {
@@ -279,10 +285,10 @@ function validateWeb() {
   runCommand('node', ['scripts/verify-plugin-registry.js']);
   logPass('Committed plugin registry matches discovered plugins');
 
-  runCommand('npm', ['--prefix', 'web', 'test']);
+  runCommand('npm', ['test'], join(REPO_ROOT, 'web'));
   logPass('Web unit tests passed');
 
-  runCommand('npm', ['--prefix', 'web', 'run', 'build']);
+  runCommand('npm', ['run', 'build'], join(REPO_ROOT, 'web'));
   logPass('Web production build passed');
 }
 

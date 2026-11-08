@@ -164,7 +164,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             flexShrink: 0,
             border: '2px solid var(--ink, #2d3436)',
             overflow: 'hidden',
-            backgroundColor: '#ffffff',
+            backgroundColor: '#f5efe0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -176,6 +176,8 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               alt={`${AUTHOR_NAME} Avatar`}
               width={46}
               height={46}
+              loading="eager"
+              decoding="sync"
               style={{
                 width: '100%',
                 height: '100%',

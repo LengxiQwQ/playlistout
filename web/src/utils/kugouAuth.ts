@@ -4,7 +4,7 @@
  * Aligns with zero-database / privacy-first principles (stored exclusively on client).
  */
 
-import { validateKugouAuth } from '../api/client';
+import { validateKugouAuth, type KugouUserProfile } from '../api/client';
 
 export type KugouAuthState = 'none' | 'checking' | 'valid' | 'invalid' | 'unknown';
 
@@ -15,6 +15,7 @@ export interface KugouAuthData {
 
 export const KUGOU_TOKEN_KEY = 'kugou_token';
 export const KUGOU_USERID_KEY = 'kugou_userid';
+export const KUGOU_PROFILE_KEY = 'kugou_profile';
 
 let currentAuthState: KugouAuthState = 'none';
 
@@ -32,6 +33,52 @@ export function getKugouAuth(): KugouAuthData | null {
     // localStorage security restrictions
   }
   return null;
+}
+
+export function getStoredKugouProfile(): KugouUserProfile | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    const raw = window.localStorage.getItem(KUGOU_PROFILE_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {
+    // localStorage security restrictions or JSON parse error
+  }
+  return null;
+}
+
+export function setStoredKugouProfile(profile: KugouUserProfile | null): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (profile) {
+        window.localStorage.setItem(KUGOU_PROFILE_KEY, JSON.stringify(profile));
+        if (profile.avatarUrl) {
+          const img = new Image();
+          img.src = profile.avatarUrl;
+        }
+      } else {
+        window.localStorage.removeItem(KUGOU_PROFILE_KEY);
+      }
+    }
+  } catch {
+    // localStorage security restrictions
+  }
+}
+
+// Preload cached Kugou avatar immediately on boot so it never flashes blank
+if (typeof window !== 'undefined') {
+  try {
+    const cached = getStoredKugouProfile();
+    if (cached?.avatarUrl) {
+      const img = new Image();
+      img.src = cached.avatarUrl;
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export function setKugouAuth(token: string, userid: string): void {
@@ -56,6 +103,7 @@ export function clearKugouAuth(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem(KUGOU_TOKEN_KEY);
       window.localStorage.removeItem(KUGOU_USERID_KEY);
+      window.localStorage.removeItem(KUGOU_PROFILE_KEY);
       currentAuthState = 'none';
       window.dispatchEvent(
         new CustomEvent('playlistout:kugou-auth-changed', {

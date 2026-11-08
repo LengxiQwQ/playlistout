@@ -127,6 +127,31 @@ describe('KugouAuthModal Component State Machine & UX Loop', () => {
     );
   });
 
+  it('instantly renders cached Kugou profile from localStorage on valid session without waiting for profile API', async () => {
+    kugouAuthUtil.setKugouAuth('cached_token', '1425711902');
+    kugouAuthUtil.setStoredKugouProfile({
+      userId: '1425711902',
+      nickname: '缓存冷汐',
+      avatarUrl: 'https://c1.kgimg.com/v2/kugouicon/cached.jpg',
+      signature: '秒开不闪白',
+    });
+    vi.spyOn(apiClient, 'validateKugouAuth').mockResolvedValue({
+      success: true,
+      data: { status: 'valid' },
+    });
+    // fetchKugouProfile is slow or pending
+    vi.spyOn(apiClient, 'fetchKugouProfile').mockImplementation(() => new Promise(() => {}));
+
+    render(<KugouAuthModal isOpen={true} onClose={vi.fn()} />);
+
+    // As soon as session is validated, cached profile renders immediately without waiting for fetchKugouProfile
+    const card = await screen.findByTestId('kugou-profile-card');
+    expect(card).toHaveTextContent('缓存冷汐');
+    const avatar = screen.getByAltText('缓存冷汐');
+    expect(avatar).toHaveAttribute('src', 'https://c1.kgimg.com/v2/kugouicon/cached.jpg');
+    expect(avatar).toHaveAttribute('loading', 'eager');
+  });
+
   it('keeps the modal open after QR login, shows the profile, and refreshes only after user closes it', async () => {
     vi.useFakeTimers();
     try {

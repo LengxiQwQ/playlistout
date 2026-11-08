@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { SponsorButton } from './SponsorButton';
 import { AuthorCard } from './AuthorCard';
+import { AUTHOR_AVATAR_URL } from '../../constants/author';
 
 export interface FooterProps {
   onOpenPrivacy: () => void;
@@ -11,6 +12,14 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
   const { t } = useTranslation();
   const [isAuthorOpen, setIsAuthorOpen] = useState(false);
   const authorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Preload author avatar immediately so clicking Author pill never flashes white
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const img = new Image();
+      img.src = AUTHOR_AVATAR_URL;
+    }
+  }, []);
 
   // Close on outside click for the Author pill container
   useEffect(() => {

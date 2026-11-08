@@ -134,12 +134,24 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   const trendBars = useMemo(() => {
     const recent = stats?.recentDays || [];
     if (recent.length > 0) {
-      const maxVal = Math.max(...recent.map((d) => d.parses + d.exports), 1);
-      return recent.slice(0, 30).reverse().map((d) => ({
-        date: d.date.slice(5),
-        height: Math.max(15, Math.min(100, Math.round(((d.parses + d.exports) / maxVal) * 100))),
-        count: d.parses + d.exports,
-      }));
+      const counts = recent.map((d) => d.parses + d.exports);
+      const maxVal = Math.max(...counts, 1);
+      const minVal = Math.min(...counts);
+      // Soft dynamic baseline: when data is concentrated in a high band (e.g. 300~750),
+      // scaling strictly from 0 makes all 30 bars look almost flat and identical (60%~100%).
+      // We set a soft baseline (minVal * 0.7) so peaks and troughs have vivid contrast,
+      // while keeping the peak day at 100% and preserving a visible base for the lowest day.
+      const baseline = counts.length > 1 && maxVal > minVal ? Math.floor(minVal * 0.7) : 0;
+      const range = maxVal - baseline || 1;
+      return recent.slice(0, 30).reverse().map((d) => {
+        const count = d.parses + d.exports;
+        const normalized = Math.round(((count - baseline) / range) * 100);
+        return {
+          date: d.date.slice(5),
+          height: Math.max(16, Math.min(100, normalized)),
+          count,
+        };
+      });
     }
     return [];
   }, [stats?.recentDays]);
@@ -184,16 +196,14 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   }, [stats?.byPlatform, language]);
 
   const handleDashboardNavigate = useCallback((e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      window.open('/dashboard/', '_blank');
-    } else {
-      window.location.href = '/dashboard/';
-    }
+    e.preventDefault();
+    window.open('/dashboard/', '_blank', 'noopener,noreferrer');
   }, []);
 
   const handleDashboardAuxClick = useCallback((e: React.MouseEvent) => {
     if (e.button === 1) {
-      window.open('/dashboard/', '_blank');
+      e.preventDefault();
+      window.open('/dashboard/', '_blank', 'noopener,noreferrer');
     }
   }, []);
 
@@ -214,13 +224,14 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             className="secret-dashboard-heart"
             onClick={handleDashboardNavigate}
             onAuxClick={handleDashboardAuxClick}
+            title={language === 'zh-CN' ? '后台数据面板 (在新标签页打开)' : 'Admin Dashboard (Open in new tab)'}
           >
             {heartChar}
           </span>
         </>
       );
     },
-    [handleDashboardNavigate, handleDashboardAuxClick],
+    [handleDashboardNavigate, handleDashboardAuxClick, language],
   );
 
   return (
@@ -692,13 +703,23 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               <div
                 style={{
                   width: '100%',
-                  maxWidth: '18px',
-                  height: `${bar.height}%`,
-                  backgroundColor: 'rgba(230, 126, 34, 0.75)',
-                  borderRadius: '3px 3px 0 0',
-                  transition: 'height 0.4s ease',
+                  height: '56px',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: '18px',
+                    height: `${bar.height}%`,
+                    backgroundColor: 'rgba(230, 126, 34, 0.75)',
+                    borderRadius: '3px 3px 0 0',
+                    transition: 'height 0.4s ease',
+                  }}
+                />
+              </div>
               <span
                 className="font-note stats-trend-date"
                 style={{

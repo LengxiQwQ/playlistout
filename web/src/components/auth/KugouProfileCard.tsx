@@ -53,6 +53,8 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
             src={profile.avatarUrl}
             alt={profile.nickname}
             referrerPolicy="no-referrer"
+            loading="eager"
+            decoding="sync"
             style={{
               position: 'absolute',
               inset: 0,

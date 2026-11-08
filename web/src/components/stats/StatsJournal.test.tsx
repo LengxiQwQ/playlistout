@@ -402,42 +402,22 @@ describe('StatsJournal Component (Phase 7)', () => {
       expect(heart?.textContent).toBe('♡');
 
       // Test standard click navigation
-      const originalLocation = window.location;
-      let targetHref = '';
-      Object.defineProperty(window, 'location', {
-        writable: true,
-        configurable: true,
-        value: {
-          ...originalLocation,
-          get href() {
-            return targetHref;
-          },
-          set href(val: string) {
-            targetHref = val;
-          },
-        },
-      });
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
       if (heart) {
+        // Normal click opens in a new tab without replacing the current page
         fireEvent.click(heart);
-        expect(targetHref).toBe('/dashboard/');
+        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank', 'noopener,noreferrer');
 
         // Test Ctrl+Click opens new tab
-        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
         fireEvent.click(heart, { ctrlKey: true });
-        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank');
+        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank', 'noopener,noreferrer');
 
         // Test Middle click opens new tab
         fireEvent.mouseUp(heart, { button: 1 });
         fireEvent(heart, new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 }));
-        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank');
+        expect(openSpy).toHaveBeenCalledWith('/dashboard/', '_blank', 'noopener,noreferrer');
       }
-
-      Object.defineProperty(window, 'location', {
-        writable: true,
-        configurable: true,
-        value: originalLocation,
-      });
     });
   });
 });
