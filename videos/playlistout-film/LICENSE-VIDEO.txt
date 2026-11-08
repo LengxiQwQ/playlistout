@@ -1,0 +1,8 @@
+MIT License
+
+Copyright (c) 2026 Playlist Out / LengxiQwQ
+
+The video, its original soundtrack and the project-specific artwork in this
+folder are released under the MIT License together with the Playlist Out
+project. See ../../LICENSE. Fonts remain under their respective OFL/Apache
+licenses; see public/fonts/licenses and ASSETS.md.
