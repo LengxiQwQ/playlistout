@@ -1,5 +1,4 @@
 import React from 'react';
-import { C, F } from '../theme';
 
 export type MascotExpression = 'happy' | 'wow' | 'focus' | 'sleepy' | 'proud' | 'wink';
 export type MascotPose = 'idle' | 'wave' | 'press' | 'point' | 'click';
@@ -10,23 +9,40 @@ type Props = {
   expression?: MascotExpression;
   blink?: boolean;
   pose?: MascotPose;
-  /** A small paper sticker behind the ink, used on dark terminal panels. */
+  /** A small paper sticker behind the character, used on dark terminal panels. */
   backdrop?: boolean;
   style?: React.CSSProperties;
 };
 
-const INK = '#22211d';
-const CREAM = '#fff7df';
-const BLUSH = '#e9a2ac';
-const YELLOW = '#ffe48f';
+const PINK = '#f3b6c2';
+const PINK_LIGHT = '#fbd3dc';
+const PINK_DEEP = '#de93a7';
+const ROSE = '#c96f88';
+const INK = '#4b2c38';
+const CREAM = '#fff9ea';
+const BLUSH = '#ea8fa5';
+const YELLOW = '#ffdf85';
+
+const Glove: React.FC<{ x: number; y: number; flip: 1 | -1 }> = ({ x, y, flip }) => (
+  <g transform={`translate(${x} ${y}) scale(${flip} 1) rotate(-8)`}>
+    <path
+      d="M-11-3c-6 0-10 5-10 10 0 7 7 12 16 12 9 0 15-4 15-11 0-4-3-7-8-8 2-3 1-6-2-7-3-1-6 0-7 3-1-2-2-3-4-3Z"
+      fill={CREAM}
+      stroke={INK}
+      strokeWidth="3.4"
+      strokeLinejoin="round"
+    />
+    <path d="M-7 8c4 3 10 3 14 0" stroke={PINK_DEEP} strokeWidth="2" strokeLinecap="round" opacity=".55" />
+  </g>
+);
 
 /**
- * A hand-cut eighth-note paper doll. The note head is the face; the stem and
- * flag are one continuous ink stroke. Deliberately imperfect, tactile, and
- * small enough to act as a cursor inside the UI.
+ * A pink cat-ear headphone note, built as a paper puppet for the film. The
+ * white gloves are rig parts: each pose moves the arm and the glove together,
+ * so the character can actually touch a button instead of floating over it.
  */
 export const NoteMascot: React.FC<Props> = ({
-  size = 160,
+  size = 170,
   rotation = 0,
   expression = 'happy',
   blink = false,
@@ -34,26 +50,35 @@ export const NoteMascot: React.FC<Props> = ({
   backdrop = false,
   style,
 }) => {
-  const eyeClosed = blink || expression === 'sleepy' || expression === 'proud';
-  const winkRight = expression === 'wink';
-  const wideEyes = expression === 'wow';
+  const wide = expression === 'wow';
   const squint = expression === 'focus';
+  const closed = blink || expression === 'sleepy' || expression === 'proud';
+  const winkRight = expression === 'wink';
 
-  const mouth =
-    expression === 'wow'
-      ? 'M116 237c5 8 18 9 24 1'
-      : expression === 'focus'
-        ? 'M119 239c7 3 15 2 20-1'
-        : expression === 'proud'
-          ? 'M113 235c5 11 25 12 32 1'
-          : expression === 'sleepy'
-            ? 'M120 239c4 2 9 2 13 0'
-            : 'M116 236c5 8 18 9 24 1';
-
-  const armLeft = pose === 'wave' ? 'M72 205C46 195 35 171 29 150' : pose === 'press' ? 'M72 209C49 219 37 231 31 243' : pose === 'point' ? 'M72 204C48 197 33 191 22 185' : 'M72 206C52 217 42 228 37 238';
-  const armRight = pose === 'wave' ? 'M178 201C203 181 217 159 230 132' : pose === 'press' ? 'M178 209C202 220 216 233 225 247' : pose === 'point' ? 'M178 204C204 196 217 190 232 185' : pose === 'click' ? 'M178 208C205 219 228 221 246 205' : 'M178 207C202 217 214 228 224 238';
-  const handLeft = pose === 'press' ? { x: 31, y: 243 } : pose === 'point' ? { x: 22, y: 185 } : { x: 37, y: 238 };
-  const handRight = pose === 'press' ? { x: 225, y: 247 } : pose === 'wave' ? { x: 230, y: 132 } : pose === 'point' ? { x: 232, y: 185 } : pose === 'click' ? { x: 246, y: 205 } : { x: 224, y: 238 };
+  const armLeft = pose === 'wave'
+    ? 'M74 228C50 214 37 190 31 164'
+    : pose === 'press'
+      ? 'M74 232C50 240 38 252 34 264'
+      : 'M74 229C54 239 43 253 37 266';
+  const armRight = pose === 'wave'
+    ? 'M227 226C253 206 263 182 270 154'
+    : pose === 'press'
+      ? 'M227 232C252 241 264 253 270 266'
+      : pose === 'point'
+        ? 'M227 225C252 216 264 209 278 204'
+        : pose === 'click'
+          ? 'M227 231C254 241 270 238 284 221'
+          : 'M227 230C250 239 262 251 270 264';
+  const handLeft = { x: 35, y: 267 };
+  const handRight = pose === 'wave'
+    ? { x: 270, y: 154 }
+    : pose === 'press'
+      ? { x: 270, y: 267 }
+      : pose === 'point'
+        ? { x: 278, y: 204 }
+        : pose === 'click'
+          ? { x: 284, y: 221 }
+          : { x: 270, y: 264 };
 
   return (
     <div
@@ -61,110 +86,135 @@ export const NoteMascot: React.FC<Props> = ({
         width: size,
         height: size * 1.16,
         transform: `rotate(${rotation}deg)`,
-        filter: 'drop-shadow(0 10px 8px rgba(67,48,24,.20)) drop-shadow(0 2px 1px rgba(67,48,24,.12))',
+        filter: 'drop-shadow(0 12px 9px rgba(78,44,42,.18)) drop-shadow(0 2px 2px rgba(78,44,42,.1))',
         ...style,
       }}
       aria-hidden="true"
     >
-      <svg width="100%" height="100%" viewBox="0 0 260 302" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 300 348" fill="none">
         {backdrop ? (
-          <g transform="rotate(-2 130 190)">
-            <ellipse cx="130" cy="190" rx="110" ry="102" fill="#fbf4e2" stroke="#d8c8a8" strokeWidth="1.6" opacity=".98" />
-            <ellipse cx="130" cy="190" rx="101" ry="93" fill="none" stroke="rgba(96,76,48,.13)" strokeWidth="1" strokeDasharray="2 5" />
+          <g transform="rotate(-2 150 205)">
+            <ellipse cx="150" cy="205" rx="133" ry="126" fill="#fff7e7" stroke="#dcc6b4" strokeWidth="1.7" opacity=".98" />
+            <ellipse cx="150" cy="205" rx="122" ry="115" fill="none" stroke="rgba(92,61,58,.13)" strokeWidth="1" strokeDasharray="2 6" />
           </g>
         ) : null}
-        {/* paper contact shadow */}
-        <ellipse cx="130" cy="287" rx="76" ry="10" fill="rgba(65,49,27,.13)" />
 
-        {/* cream die-cut halo keeps the ink silhouette readable on dark cards */}
-        <path d="M104 258c-5 10-8 18-8 25" stroke={CREAM} strokeWidth="18" strokeLinecap="round" opacity=".96" />
-        <path d="M157 258c5 10 8 18 8 25" stroke={CREAM} strokeWidth="18" strokeLinecap="round" opacity=".96" />
-        <ellipse cx="126" cy="204" rx="78" ry="60" fill={CREAM} opacity=".96" />
+        <ellipse cx="150" cy="322" rx="96" ry="13" fill="rgba(79,47,42,.14)" />
 
-        {/* legs / little shoes */}
-        <path d="M104 258c-5 10-8 18-8 25" stroke={INK} strokeWidth="9" strokeLinecap="round" />
-        <path d="M157 258c5 10 8 18 8 25" stroke={INK} strokeWidth="9" strokeLinecap="round" />
-        <path d="M84 283c10-4 19-3 25 1 2 6-3 10-14 10-10 0-15-4-11-11Z" fill={YELLOW} stroke={INK} strokeWidth="3" />
-        <path d="M151 284c10-4 19-2 25 2 1 6-5 9-16 8-10-1-13-4-9-10Z" fill={YELLOW} stroke={INK} strokeWidth="3" />
+        {/* cream cut edge, important on the dark terminal */}
+        <ellipse cx="150" cy="206" rx="103" ry="93" fill={CREAM} opacity=".96" />
+        <path d="M235 178c5-65 8-110 12-139 1-8 7-12 14-10" stroke={CREAM} strokeWidth="27" strokeLinecap="round" opacity=".96" />
+        <path d="M250 36c20-11 37-4 45 13-15 1-27 8-35 20-6-8-9-19-10-33Z" fill={CREAM} stroke={CREAM} strokeWidth="12" strokeLinejoin="round" opacity=".96" />
 
-        {/* body: a chubby note head with an inked rim */}
-        <ellipse cx="126" cy="204" rx="73" ry="55" fill={CREAM} stroke={INK} strokeWidth="3" />
-        <ellipse cx="126" cy="204" rx="66" ry="49" fill={INK} />
+        {/* musical note stem and flag */}
+        <path d="M235 178c5-65 8-110 12-139 1-8 7-12 14-10" stroke={ROSE} strokeWidth="14" strokeLinecap="round" />
+        <path d="M250 36c20-11 37-4 45 13-15 1-27 8-35 20-6-8-9-19-10-33Z" fill={ROSE} stroke={INK} strokeWidth="3.5" strokeLinejoin="round" />
+        <path d="M258 40c11-4 21-1 28 6" stroke={PINK_LIGHT} strokeWidth="3" strokeLinecap="round" />
 
-        {/* stem + flag, each with a cream cut edge */}
-        <path d="M181 188c6-48 10-84 11-125 0-8 5-13 12-12" stroke={CREAM} strokeWidth="23" strokeLinecap="round" opacity=".96" />
-        <path d="M193 51c19-12 38-9 54 7 8 8 11 17 10 28-11-12-24-17-39-15-10 1-18 5-25 10V51Z" fill={CREAM} stroke={CREAM} strokeWidth="12" strokeLinejoin="round" opacity=".96" />
-        <path d="M181 188c6-48 10-84 11-125 0-8 5-13 12-12" stroke={INK} strokeWidth="14" strokeLinecap="round" />
-        <path d="M193 51c19-12 38-9 54 7 8 8 11 17 10 28-11-12-24-17-39-15-10 1-18 5-25 10V51Z" fill={INK} />
-        <path d="M200 57c14-5 29-2 41 8" stroke="rgba(255,247,223,.22)" strokeWidth="3" strokeLinecap="round" />
+        {/* cat ears and headphone band */}
+        <path d="M74 157 54 96c-2-8 5-14 12-10l48 28" fill={PINK} stroke={INK} strokeWidth="4.5" strokeLinejoin="round" />
+        <path d="M226 157 246 96c2-8-5-14-12-10l-48 28" fill={PINK} stroke={INK} strokeWidth="4.5" strokeLinejoin="round" />
+        <path d="M72 139 60 105l27 16Z" fill={PINK_DEEP} opacity=".7" />
+        <path d="M228 139 240 105l-27 16Z" fill={PINK_DEEP} opacity=".7" />
+        <path d="M63 185c0-55 39-86 87-86s87 31 87 86" stroke={INK} strokeWidth="14" strokeLinecap="round" />
+        <path d="M66 180c2-47 38-73 84-73s82 26 84 73" stroke={PINK_DEEP} strokeWidth="7" strokeLinecap="round" />
 
-        {/* yellow scarf / paper cuff */}
-        <path d="M158 171c15-7 34-6 48 3l-7 18c-12-7-24-8-36-3l-5-18Z" fill={YELLOW} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
-        <path d="M191 188c7 8 11 18 12 28l-13 2c-2-8-5-15-11-21l12-9Z" fill={YELLOW} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+        {/* head and body */}
+        <ellipse cx="150" cy="210" rx="94" ry="86" fill={PINK} stroke={INK} strokeWidth="5" />
+        <ellipse cx="150" cy="202" rx="88" ry="78" fill="url(#pinkWash)" stroke="none" opacity=".8" />
+        <defs>
+          <radialGradient id="pinkWash" cx="0.36" cy="0.28" r="0.82">
+            <stop offset="0" stopColor={PINK_LIGHT} />
+            <stop offset="0.62" stopColor={PINK} />
+            <stop offset="1" stopColor={PINK_DEEP} />
+          </radialGradient>
+        </defs>
 
-        {/* little arms */}
-        <path d={armLeft} stroke={CREAM} strokeWidth="17" strokeLinecap="round" opacity=".96" />
-        <path d={armRight} stroke={CREAM} strokeWidth="17" strokeLinecap="round" opacity=".96" />
-        <path d={armLeft} stroke={INK} strokeWidth="8" strokeLinecap="round" />
-        <path d={armRight} stroke={INK} strokeWidth="8" strokeLinecap="round" />
-        <circle cx={handLeft.x} cy={handLeft.y} r="10" fill={CREAM} stroke={INK} strokeWidth="3" />
-        <circle cx={handRight.x} cy={handRight.y} r="10" fill={CREAM} stroke={INK} strokeWidth="3" />
+        {/* headphone cups over the cat ears */}
+        <g>
+          <rect x="25" y="174" width="55" height="76" rx="27" fill={PINK_LIGHT} stroke={INK} strokeWidth="4.5" transform="rotate(-7 52 212)" />
+          <rect x="34" y="185" width="36" height="54" rx="18" fill="rgba(255,250,236,.48)" transform="rotate(-7 52 212)" />
+          <path d="M45 201c8-6 16-6 23 0M45 219c8-6 16-6 23 0" stroke={ROSE} strokeWidth="3" strokeLinecap="round" opacity=".55" />
+          <rect x="220" y="174" width="55" height="76" rx="27" fill={PINK_LIGHT} stroke={INK} strokeWidth="4.5" transform="rotate(7 248 212)" />
+          <rect x="230" y="185" width="36" height="54" rx="18" fill="rgba(255,250,236,.48)" transform="rotate(7 248 212)" />
+          <g transform="translate(238 204) rotate(7)">
+            <ellipse cx="0" cy="9" rx="7" ry="5" fill={INK} />
+            <path d="M6 9V-8" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M6-8c8 1 12 5 12 10" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+            <circle cx="3" cy="6" r="1.8" fill={YELLOW} />
+          </g>
+        </g>
 
         {/* face */}
         <g transform={`translate(0 ${squint ? 3 : 0})`}>
-          {/* brows */}
           {squint ? (
             <>
-              <path d="M79 180l20 5" stroke={CREAM} strokeWidth="4" strokeLinecap="round" opacity=".9" />
-              <path d="M173 180l-19 5" stroke={CREAM} strokeWidth="4" strokeLinecap="round" opacity=".9" />
+              <path d="M91 192l20 4" stroke={INK} strokeWidth="4" strokeLinecap="round" />
+              <path d="M209 192l-20 4" stroke={INK} strokeWidth="4" strokeLinecap="round" />
             </>
           ) : (
             <>
-              <path d="M82 178c6-5 14-5 20-1" stroke={CREAM} strokeWidth="3.5" strokeLinecap="round" opacity=".85" />
-              <path d="M152 178c6-4 14-4 20 0" stroke={CREAM} strokeWidth="3.5" strokeLinecap="round" opacity=".85" />
+              <path d="M95 188c7-5 16-4 22 0" stroke={INK} strokeWidth="3.4" strokeLinecap="round" opacity=".55" />
+              <path d="M183 188c7-4 15-4 22 0" stroke={INK} strokeWidth="3.4" strokeLinecap="round" opacity=".55" />
             </>
           )}
 
-          {/* eyes */}
-          {eyeClosed ? (
+          {closed ? (
             <>
-              <path d="M83 200c7 6 17 6 24 0" stroke={CREAM} strokeWidth="4" strokeLinecap="round" />
-              <path d="M146 199c7 6 17 6 24 0" stroke={CREAM} strokeWidth="4" strokeLinecap="round" />
+              <path d="M95 211c8 7 19 7 27 0" stroke={INK} strokeWidth="4.2" strokeLinecap="round" />
+              <path d="M178 210c8 7 19 7 27 0" stroke={INK} strokeWidth="4.2" strokeLinecap="round" />
             </>
           ) : (
             <>
-              <g transform={`translate(95 198) scale(1 ${winkRight ? 1 : 1})`}>
-                <ellipse cx="0" cy="0" rx={wideEyes ? 17 : 14} ry={wideEyes ? 21 : 19} fill={CREAM} />
-                <ellipse cx={squint ? 2 : 1} cy={squint ? -4 : 2} rx={wideEyes ? 7 : 6} ry={wideEyes ? 9 : 8} fill={INK} />
-                <circle cx="5" cy="-5" r="2.5" fill="rgba(255,255,255,.85)" />
+              <g transform="translate(110 209)">
+                <ellipse cx="0" cy="0" rx={wide ? 15 : 13} ry={wide ? 19 : 17} fill={INK} />
+                <circle cx="-4" cy="-5" r={wide ? 4 : 3.4} fill={CREAM} />
+                <circle cx="4" cy="4" r="1.8" fill={CREAM} opacity=".7" />
               </g>
               {winkRight ? (
-                <path d="M146 200c7 6 17 6 24 0" stroke={CREAM} strokeWidth="4" strokeLinecap="round" />
+                <path d="M178 210c8 7 19 7 27 0" stroke={INK} strokeWidth="4.2" strokeLinecap="round" />
               ) : (
-                <g transform="translate(158 197)">
-                  <ellipse cx="0" cy="0" rx={wideEyes ? 17 : 14} ry={wideEyes ? 21 : 19} fill={CREAM} />
-                  <ellipse cx={squint ? 1 : 0} cy={squint ? -4 : 2} rx={wideEyes ? 7 : 6} ry={wideEyes ? 9 : 8} fill={INK} />
-                  <circle cx="5" cy="-5" r="2.5" fill="rgba(255,255,255,.85)" />
+                <g transform="translate(193 208)">
+                  <ellipse cx="0" cy="0" rx={wide ? 15 : 13} ry={wide ? 19 : 17} fill={INK} />
+                  <circle cx="-4" cy="-5" r={wide ? 4 : 3.4} fill={CREAM} />
+                  <circle cx="4" cy="4" r="1.8" fill={CREAM} opacity=".7" />
                 </g>
               )}
             </>
           )}
 
-          {/* nose */}
-          <path d="M126 216c4-3 8-3 11 0-3 4-7 5-11 0Z" fill={YELLOW} opacity=".9" />
-          {/* mouth */}
-          <path d={mouth} stroke={CREAM} strokeWidth="3.6" strokeLinecap="round" />
-          {/* blush */}
-          <circle cx="71" cy="222" r="10" fill={BLUSH} opacity=".72" />
-          <circle cx="181" cy="221" r="10" fill={BLUSH} opacity=".72" />
+          <path d="M147 223c4-3 9-3 13 0-4 5-9 5-13 0Z" fill={ROSE} />
+          {expression === 'wow' ? (
+            <ellipse cx="153" cy="242" rx="9" ry="12" fill={INK} />
+          ) : expression === 'proud' ? (
+            <path d="M137 238c9 11 27 11 36 0" stroke={INK} strokeWidth="4" strokeLinecap="round" fill="none" />
+          ) : expression === 'focus' ? (
+            <path d="M145 243c7 3 14 2 20-1" stroke={INK} strokeWidth="4" strokeLinecap="round" fill="none" />
+          ) : (
+            <path d="M137 236c9 12 27 12 36 0-11 4-25 4-36 0Z" fill={INK} />
+          )}
+          <path d="M153 247c4 3 8 3 11 0" stroke={PINK_LIGHT} strokeWidth="3" strokeLinecap="round" opacity={expression === 'wow' ? 0 : 0.55} />
+
+          <ellipse cx="83" cy="238" rx="14" ry="9" fill={BLUSH} opacity=".72" />
+          <ellipse cx="217" cy="236" rx="14" ry="9" fill={BLUSH} opacity=".72" />
         </g>
 
-        {/* tiny ink flecks, keeping the character hand-cut */}
-        <circle cx="72" cy="247" r="1.3" fill="rgba(255,247,223,.22)" />
-        <circle cx="190" cy="254" r="1" fill="rgba(255,247,223,.2)" />
-        <path d="M172 221c10 2 16 7 19 13" stroke="rgba(255,247,223,.12)" strokeWidth="3" strokeLinecap="round" />
+        {/* little legs and white shoes */}
+        <path d="M116 288c-3 10-5 16-5 22" stroke={INK} strokeWidth="9" strokeLinecap="round" />
+        <path d="M184 288c3 10 5 16 5 22" stroke={INK} strokeWidth="9" strokeLinecap="round" />
+        <path d="M92 311c10-4 20-3 27 1 2 6-4 10-16 10-11 0-16-4-11-11Z" fill={CREAM} stroke={INK} strokeWidth="3.3" />
+        <path d="M181 312c10-4 20-2 27 2 1 6-6 9-17 8-11-1-15-4-10-10Z" fill={CREAM} stroke={INK} strokeWidth="3.3" />
+        <path d="M99 320h15M191 320h15" stroke={PINK_DEEP} strokeWidth="2.5" strokeLinecap="round" opacity=".7" />
+
+        {/* arms and white gloves */}
+        <path d={armLeft} stroke={INK} strokeWidth="8" strokeLinecap="round" />
+        <path d={armRight} stroke={INK} strokeWidth="8" strokeLinecap="round" />
+        <Glove x={handLeft.x} y={handLeft.y} flip={1} />
+        <Glove x={handRight.x} y={handRight.y} flip={-1} />
+
+        <circle cx="104" cy="265" r="1.5" fill="rgba(75,44,56,.28)" />
+        <circle cx="200" cy="268" r="1.2" fill="rgba(75,44,56,.24)" />
       </svg>
-      <span style={{ display: 'none', fontFamily: F.sans }}>music note</span>
     </div>
   );
 };

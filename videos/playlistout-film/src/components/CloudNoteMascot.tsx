@@ -28,7 +28,7 @@ export type CloudExpression = MascotExpression;
 
 export type MascotPose =
   | 'trapped' | 'idle' | 'run' | 'jump' | 'press'
-  | 'guide' | 'push' | 'laptop' | 'star' | 'cheer' | 'pull' | 'chill';
+  | 'guide' | 'push' | 'laptop' | 'star' | 'cheer' | 'pull' | 'chill' | 'wave';
 
 export type CloudPose = MascotPose;
 
@@ -450,7 +450,9 @@ export function CloudNoteMascot({
       ? Math.sin(frame * 1.8) * 1.0
       : 0;
   const swayDeg =
-    pose === 'run'
+    reachTarget
+      ? 0
+      : pose === 'run'
       ? walkCycle * 3.5
       : pose === 'chill' || expression === 'chill'
       ? Math.sin(frame * 0.08) * 2.5
@@ -513,6 +515,11 @@ export function CloudNoteMascot({
     if (pointDir === 'left') leftHand = { x: -128, y: 12 };
     else if (pointDir === 'down') rightHand = { x: 44, y: 94 };
     else rightHand = { x: 108, y: 10 };
+  } else if (pose === 'wave') {
+    // 招手道别：左手自然垂于身侧，右手高高举起欢快摆动招手
+    const waveSin = Math.sin(frame * 0.42);
+    leftHand = { x: -96, y: 46 };
+    rightHand = { x: 76 + waveSin * 18, y: -44 + Math.cos(frame * 0.42) * 6 };
   }
 
   // 记录未伸展时的默认姿态手部坐标
@@ -1104,36 +1111,33 @@ export function CloudNoteMascot({
           {renderArm(-82, 34, leftHand, 'left')}
           {renderArm(34, 34, rightHand, 'right')}
 
-          {/* 迷你手账笔记本道具（pose === 'laptop' 时出现，按用户要求放大并带双音符徽标） */}
+          {/* 迷你手账笔记本道具（pose === 'laptop' 时出现，按用户要求呈上宽下窄透视，背盖双音符严格几何居中） */}
           {pose === 'laptop' && (
             <g transform="translate(-24 72) scale(1.42)">
-              {/* 笔记本屏幕背盖 */}
-              <rect
-                x={-30}
-                y={-18}
-                width={60}
-                height={34}
-                rx={6}
+              {/* 笔记本屏幕背盖：上宽下窄透视 (上宽 74, 下宽 54, 高 33, 中心点 (0, -2.5)) */}
+              <path
+                d="M -32 -19 L 32 -19 Q 37 -19 36 -15 L 29 11 Q 28 14 24 14 L -24 14 Q -28 14 -29 11 L -36 -15 Q -37 -19 -32 -19 Z"
                 fill={p.headphones}
                 stroke={p.outline}
                 strokeWidth={3.2}
+                strokeLinejoin="round"
               />
-              {/* 电脑背盖双音符音乐徽标 (Beamed Double Note ♫) */}
-              <g transform="translate(0 -2)">
-                <ellipse cx={-6.8} cy={4.8} rx={4.2} ry={3.2} transform="rotate(-18 -6.8 4.8)" fill={p.accent} />
-                <ellipse cx={6.8} cy={2.8} rx={4.2} ry={3.2} transform="rotate(-18 6.8 2.8)" fill={p.accent} />
-                <line x1={-3.6} y1={4.8} x2={-3.6} y2={-7.2} stroke={p.accent} strokeWidth={2.5} strokeLinecap="round" />
-                <line x1={10} y1={2.8} x2={10} y2={-9.2} stroke={p.accent} strokeWidth={2.5} strokeLinecap="round" />
+              {/* 电脑背盖双音符音乐徽标 (Beamed Double Note ♫) · 严格数学对称居中于 (0, -2.5) */}
+              <g transform="translate(0 0)">
+                <ellipse cx={-6.8} cy={3.5} rx={4.2} ry={3.2} transform="rotate(-18 -6.8 3.5)" fill={p.accent} />
+                <ellipse cx={6.2} cy={1.5} rx={4.2} ry={3.2} transform="rotate(-18 6.2 1.5)" fill={p.accent} />
+                <line x1={-3.5} y1={3.5} x2={-3.5} y2={-8.5} stroke={p.accent} strokeWidth={2.5} strokeLinecap="round" />
+                <line x1={9.5} y1={1.5} x2={9.5} y2={-10.5} stroke={p.accent} strokeWidth={2.5} strokeLinecap="round" />
                 <polygon
-                  points="-4.6,-5.2 11.2,-7.2 11.2,-10.4 -4.6,-8.4"
+                  points="-4.5,-6.5 10.5,-8.5 10.5,-11.5 -4.5,-9.5"
                   fill={p.accent}
                 />
               </g>
               {/* 笔记本键盘底座 */}
               <rect
-                x={-36}
-                y={14}
-                width={72}
+                x={-33}
+                y={13}
+                width={66}
                 height={6.5}
                 rx={3.2}
                 fill={p.headphonesShade}

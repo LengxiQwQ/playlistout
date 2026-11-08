@@ -51,6 +51,7 @@ const waitForAssets = async () => {
     loadImage(ASSETS.creases),
     loadImage(ASSETS.fibrePage),
     loadImage(ASSETS.fibreTile),
+    ...Object.values(ASSETS.platforms).map(loadImage),
   ]);
 };
 
@@ -108,8 +109,8 @@ export const Main: React.FC = () => {
       {/* Continuous Pink Note Mascot Protagonist across all 1,740 frames */}
       <MascotDirector />
 
-      {/* Front bars of the birdcage (only in front of Mascot before unlock at 3.5s) */}
-      <Sequence name="01-CageFront" from={SCENES.intro.in} durationInFrames={130}>
+      {/* Front bars of the birdcage (only in front of Mascot before unlock at 5.5s) */}
+      <Sequence name="01-CageFront" from={SCENES.intro.in} durationInFrames={190}>
         <IntroCageFrontOverlay />
       </Sequence>
 

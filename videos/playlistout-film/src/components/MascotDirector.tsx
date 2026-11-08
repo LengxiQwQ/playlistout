@@ -28,19 +28,19 @@ interface Waypoint {
 
 const WAYPOINTS: Waypoint[] = [
   // ================= SCENE 1: CAGE -> BREAKOUT -> 6 PLATFORMS =================
-  // 笼中受困：大眼泪汪汪 ＞﹏＜、抱头瑟瑟发抖、晶莹泪滴滑落 (Preset 05: trapped + panic)
+  // 笼中受困 (0.0s - 4.5s)：大眼泪汪汪 ＞﹏＜、抱头瑟瑟发抖、晶莹泪滴滑落 (Preset 05: trapped + panic)
   { f: 0, x: 1455, y: 455, size: 235, pose: 'trapped', expression: 'panic', reachProgress: 0 },
-  { f: 86, x: 1455, y: 455, size: 235, pose: 'trapped', expression: 'panic', reachProgress: 0 },
-  // 金钥匙解锁笼锁 (87-96)：灵光一闪亮起小黄灯泡 💡，惊喜察觉破笼时机！(Preset 07: star + idea)
-  { f: 90, x: 1455, y: 448, size: 245, pose: 'cheer', expression: 'idea', reachProgress: 0 },
-  { f: 104, x: 1455, y: 448, size: 245, pose: 'cheer', expression: 'idea', reachProgress: 0 },
-  // 破笼抛物线大跳 (mascot_jump_out = 105)：破笼而出高举双臂，月牙笑眼露粉舌，星芒音符环绕！(Preset 04: cheer + rescued)
-  { f: 128, x: 830, y: 615, size: 240, pose: 'cheer', expression: 'rescued', reachProgress: 0, arc: 210, bubble: '自由啦！出发！' },
-  // 6 大平台徽章依次弹出：俏皮眨眼指引右侧 (Preset 10: guide + wink)
-  { f: 145, x: 830, y: 615, size: 240, pose: 'guide', expression: 'wink', pointDir: 'right', reachProgress: 0, bubble: '六大平台都能解！' },
+  { f: 125, x: 1455, y: 455, size: 235, pose: 'trapped', expression: 'panic', reachProgress: 0 },
+  // 金钥匙解锁笼锁 (135-164 / 4.5s-5.5s)：灵光一闪亮起小黄灯泡 💡，惊喜察觉破笼时机！(Preset 07: star + idea)
+  { f: 135, x: 1455, y: 448, size: 245, pose: 'cheer', expression: 'idea', reachProgress: 0 },
+  { f: 164, x: 1455, y: 448, size: 245, pose: 'cheer', expression: 'idea', reachProgress: 0 },
+  // 破笼抛物线大跳 (mascot_jump_out = 165 / 5.5s -> 180 / 6.0s 落地)：破笼而出高举双臂，月牙笑眼露粉舌，星芒音符环绕！(Preset 04: cheer + rescued)
+  { f: 180, x: 830, y: 615, size: 240, pose: 'cheer', expression: 'rescued', reachProgress: 0, arc: 210, bubble: '自由啦！出发！' },
+  // 6 大平台徽章依次弹出 (195 / 6.5s)：俏皮眨眼指引右侧 (Preset 10: guide + wink)
+  { f: 195, x: 830, y: 615, size: 240, pose: 'guide', expression: 'wink', pointDir: 'right', reachProgress: 0, bubble: '六大平台都能解！' },
   // 自信叉腰小骄傲 (Preset 12: idle + proud)
-  { f: 185, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
-  { f: 222, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
+  { f: 216, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
+  { f: 236, x: 830, y: 615, size: 240, pose: 'idle', expression: 'proud', reachProgress: 0 },
 
   // ================= SCENE 2: WEB PARSE (CURSOR TRACKING -> PRESS PARSE -> COMPANION STAGE -> EXPORT) =================
   // 破笼后轻快落入输入框首端 (x=240, y=205)，准备跟随打字光标 (249 开始打字)
@@ -57,18 +57,16 @@ const WAYPOINTS: Waypoint[] = [
   // 321 点击时刻：手心精准落在按钮中心，金色放射冲击波爆发！身体微抖但手指坚如磐石！
   { f: 321, x: 1825, y: 280, size: 185, pose: 'press', expression: 'focus', reachDir: 'left', reachTarget: { x: -219, y: -22 }, reachProgress: 1, isContact: true, bubble: '点这里解析！' },
   { f: 332, x: 1825, y: 280, size: 185, pose: 'press', expression: 'focus', reachDir: 'left', reachTarget: { x: -219, y: -22 }, reachProgress: 1, isContact: true, bubble: '点这里解析！' },
-  // 336 点完后将小手自然收回 (reachProgress: 0)，随后准备纵身跳向歌单表格右侧
+  // 336 点完后将小手自然收回 (reachProgress: 0)，随后准备纵身跳向歌单表格右侧粉色伴奏区
   { f: 336, x: 1825, y: 280, size: 185, pose: 'idle', expression: 'happy', reachProgress: 0, isContact: false },
-  // 356 歌单展开：吉祥物大跳飞奔至右侧伴奏舞台 (x=1635, y=615)，双手自然收于身侧
-  { f: 356, x: 1635, y: 615, size: 210, pose: 'idle', expression: 'happy', reachProgress: 0, arc: 110, bubble: '128 首超全动漫曲库！' },
-  // 376 凑近表格边框，准备用小手向下扒拉滚动曲目
-  { f: 376, x: 1635, y: 615, size: 210, pose: 'pull', expression: 'focus', reachProgress: 0, bubble: '往下扒拉，歌单超级多！' },
-  // 380 ~ 438 表格自然平滑滚动阶段：小手实实在在抓在表格边缘向下扒拉带动曲目滚动！
-  { f: 382, x: 1635, y: 615, size: 210, pose: 'pull', expression: 'focus', reachDir: 'left', reachTarget: { x: -205, y: -15 }, reachProgress: 1, isContact: true, bubble: '往下扒拉，歌单超级多！' },
-  { f: 410, x: 1635, y: 638, size: 210, pose: 'pull', expression: 'focus', reachDir: 'left', reachTarget: { x: -205, y: 25 }, reachProgress: 1, isContact: true, bubble: '往下扒拉，歌单超级多！' },
-  { f: 436, x: 1635, y: 615, size: 210, pose: 'pull', expression: 'proud', reachDir: 'left', reachTarget: { x: -205, y: -10 }, reachProgress: 1, isContact: true, bubble: '128 首全部齐整！' },
-  // 445 滚动展示完毕收手站稳，准备跃向上方导出按钮
-  { f: 445, x: 1635, y: 615, size: 210, pose: 'idle', expression: 'happy', reachProgress: 0, isContact: false },
+  // 356 歌单展开：吉祥物大跳飞奔至右侧粉色区域 (x=1630, y=602)，双手自然收于身侧
+  { f: 356, x: 1630, y: 602, size: 210, pose: 'idle', expression: 'happy', reachProgress: 0, arc: 110, bubble: '128 首超全动漫曲库！' },
+  // 374 抓住表格右侧滚动条滑块：左手 100% 紧贴抓住滚动条滑块中心 (x=-172, y=0)
+  { f: 374, x: 1630, y: 602, size: 210, pose: 'pull', expression: 'focus', reachDir: 'left', reachTarget: { x: -172, y: 0 }, reachProgress: 1, isContact: true, bubble: '往下扒拉，歌单超级多！' },
+  // 374 ~ 438 表格一次性单关键帧顺滑滚到底部！中间绝无停顿，身体与滑块同步下沉到底 y=825，手部全程死锁滑块！
+  { f: 438, x: 1630, y: 825, size: 210, pose: 'pull', expression: 'proud', reachDir: 'left', reachTarget: { x: -172, y: 0 }, reachProgress: 1, isContact: true, bubble: '128 首全部滚到底啦！' },
+  // 450 滚到底后得意起身回弹至站位 y=615，收手站稳准备跃向上方导出按钮
+  { f: 450, x: 1630, y: 615, size: 210, pose: 'idle', expression: 'proud', reachProgress: 0, isContact: false },
   // 跃至上方导出工具栏「导出 Excel」按钮左侧旁空白区 (458 ~ 483 空中跳跃正常姿态)
   // 483 落地：双手在身侧 (reachProgress: 0)
   { f: 483, x: 1130, y: 425, size: 180, pose: 'idle', expression: 'focus', reachProgress: 0, arc: 135, bubble: '一键本地导出！' },
@@ -143,20 +141,25 @@ const WAYPOINTS: Waypoint[] = [
   { f: 1374, x: 1575, y: 505, size: 245, pose: 'star', expression: 'idea', reachProgress: 0 },
 
   // ================= SCENE 6: OPEN-SOURCE PLAYERS & ECOSYSTEM =================
-  // 依次在 MusicFree、LX Music、BBPlayer 卡片间欢快跳动引导
+  // ================= SCENE 6: ECOSYSTEM (MUSICFREE -> LX MUSIC -> LISTEN 1 -> API) =================
+  // 依次在 MusicFree、LX Music、BBPlayer 卡片间欢快跳动引导，落地轻微弹性缓震
   { f: 1404, x: 585, y: 565, size: 175, pose: 'guide', expression: 'happy', pointDir: 'left', reachProgress: 0, arc: 180 },
   { f: 1438, x: 585, y: 565, size: 175, pose: 'guide', expression: 'happy', pointDir: 'left', reachProgress: 0 },
   { f: 1462, x: 1150, y: 565, size: 175, pose: 'cheer', expression: 'wink', reachProgress: 0, arc: 140 },
   { f: 1484, x: 1150, y: 565, size: 175, pose: 'cheer', expression: 'wink', reachProgress: 0 },
   { f: 1506, x: 1715, y: 565, size: 175, pose: 'star', expression: 'proud', reachProgress: 0, arc: 140 },
-  { f: 1566, x: 1715, y: 565, size: 175, pose: 'star', expression: 'proud', reachProgress: 0 },
+  { f: 1524, x: 1715, y: 565, size: 175, pose: 'star', expression: 'proud', reachProgress: 0 },
+  // 1538 纵身跃入下方 Public API 开发者卡片：欢呼庆祝并引发金色礼花绽放！
+  { f: 1538, x: 1000, y: 835, size: 175, pose: 'cheer', expression: 'rescued', reachProgress: 0, arc: 140, bubble: '开放 API，免注册即用！' },
+  { f: 1572, x: 1000, y: 835, size: 175, pose: 'cheer', expression: 'rescued', reachProgress: 0 },
 
   // ================= SCENE 7: GRAND BRAND FINALE =================
-  // 压轴舞台定格：破笼欢呼与金色四角星眨眼闪耀
+  // 压轴舞台定格：破笼欢呼与金色四角星眨眼闪耀 -> 招招手表示再见！
   { f: 1598, x: 1465, y: 520, size: 295, pose: 'star', expression: 'rescued', reachProgress: 0, arc: 190 },
-  { f: 1662, x: 1465, y: 520, size: 295, pose: 'star', expression: 'rescued', reachProgress: 0 },
-  { f: 1680, x: 1465, y: 515, size: 300, pose: 'star', expression: 'wink', reachProgress: 0, arc: 85 },
-  { f: 1740, x: 1465, y: 515, size: 300, pose: 'star', expression: 'wink', reachProgress: 0 },
+  { f: 1656, x: 1465, y: 520, size: 295, pose: 'star', expression: 'rescued', reachProgress: 0 },
+  // 1668 ~ 1740 招手道别：右手欢快左右挥舞招手，气泡框显示「歌单自由啦，下次见！」
+  { f: 1668, x: 1465, y: 515, size: 300, pose: 'wave', expression: 'happy', reachProgress: 0, bubble: '歌单自由啦，下次见！' },
+  { f: 1740, x: 1465, y: 515, size: 300, pose: 'wave', expression: 'happy', reachProgress: 0, bubble: '歌单自由啦，下次见！' },
 ];
 
 /**
@@ -172,16 +175,30 @@ function getMemeBeatPhysics(
   _isPressing: boolean,
   _isLaptop: boolean
 ) {
+  // 落地瞬间缓震 (Landing Squash): 破笼着陆 (180)、生态跳跃与压轴着陆瞬间前 2-3 帧微幅弹性下压弹起
+  const landingFrames = [180, 1404, 1462, 1506, 1538, 1598];
+  for (const lf of landingFrames) {
+    if (frame >= lf && frame <= lf + 2) {
+      const ls = frame === lf ? 1.14 : frame === lf + 1 ? 1.07 : 0.98;
+      return {
+        beatBounceY: 0,
+        drumJitterY: frame === lf ? 1.8 : 0,
+        squash: ls,
+        tilt: 0,
+        shiverX: 0,
+      };
+    }
+  }
+
   const bFrame = frame % 15;
 
-  // 1. 关笼受困状态 (微弱恐惧微颤)
+  // 1. 关笼受困状态 (微弱恐惧微颤，无欢快鼓点弹跳)
   if (isTrapped) {
-    const flinchSquash = bFrame === 0 ? 1.04 : bFrame === 1 ? 0.97 : 1.0;
     const shiver = Math.sin(frame * 1.5) * 0.8;
     return {
       beatBounceY: 0,
-      drumJitterY: bFrame === 0 ? 0.8 : 0,
-      squash: flinchSquash,
+      drumJitterY: 0,
+      squash: 1.0,
       tilt: 0,
       shiverX: shiver,
     };
@@ -198,18 +215,32 @@ function getMemeBeatPhysics(
     };
   }
 
-  // 3. 常规状态：仅在鼓点时刻轻微抽一下 (仅 1-2 帧微幅轻抖，立马归位)
+  // 3. 压轴定格优雅收官 (52.0s / 1560 帧之后)：音乐鼓点已全部停歇，彻底停止随鼓点一抖一抖！
+  if (frame >= 1560) {
+    return {
+      beatBounceY: 0,
+      drumJitterY: 0,
+      squash: 1.0,
+      tilt: 0,
+      shiverX: 0,
+    };
+  }
+
+  // 4. 常规欢快自由状态 (180 ~ 1560 帧)：紧随 120 BPM 鼓点 (Kick / Snare) 踩准弹性下压回弹律动
   let drumSquash = 1.0;
   let drumJitterY = 0;
 
   if (bFrame === 0) {
-    // 鼓点落下：轻微下压扁一下 (仅 5% 微幅压扁)
-    drumSquash = 1.05;
-    drumJitterY = 1.2;
+    // 鼓点落下 (Kick / Snare)：下沉压扁
+    drumSquash = 1.06;
+    drumJitterY = 1.6;
   } else if (bFrame === 1) {
-    // 瞬间微弹回位 (仅 3% 微幅回弹)
-    drumSquash = 0.97;
-    drumJitterY = -1.0;
+    // 瞬间微弹回位
+    drumSquash = 0.96;
+    drumJitterY = -1.2;
+  } else if (bFrame === 2) {
+    drumSquash = 0.99;
+    drumJitterY = -0.4;
   }
 
   return {
@@ -255,7 +286,7 @@ export const MascotDirector: React.FC = () => {
   y -= arcHeight * jumpParabola;
 
   const isJumping = arcHeight > 0 && rawT > 0.05 && rawT < 0.95;
-  const isTrapped = (rawT < 0.5 ? prev.pose : next.pose) === 'trapped' || frame < 87;
+  const isTrapped = (rawT < 0.5 ? prev.pose : next.pose) === 'trapped' || frame < 135;
   const isPressing = (rawT < 0.5 ? prev.pose : next.pose) === 'press';
   const isLaptop = (rawT < 0.5 ? prev.pose : next.pose) === 'laptop';
 
@@ -333,6 +364,27 @@ export const MascotDirector: React.FC = () => {
           ♪ ✦
         </div>
       ) : null}
+
+      {/* 落地瞬间脚底纸质烟尘微波纹 */}
+      {[180, 1404, 1462, 1506, 1538, 1598].some((lf) => frame >= lf && frame <= lf + 4) && (
+        <div
+          style={{
+            position: 'absolute',
+            left: x - 45,
+            top: y + size * 0.44,
+            width: 90,
+            height: 24,
+            pointerEvents: 'none',
+            zIndex: 840,
+          }}
+        >
+          <svg width="90" height="24" viewBox="-45 -12 90 24" style={{ overflow: 'visible' }}>
+            <ellipse cx={0} cy={0} rx={36} ry={7} fill="none" stroke={C.ink} strokeWidth={2.4} strokeDasharray="6 4" opacity={0.65} />
+            <path d="M -30 -1 Q -38 -6 -44 -3" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round" fill="none" opacity={0.7} />
+            <path d="M 30 -1 Q 38 -6 44 -3" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round" fill="none" opacity={0.7} />
+          </svg>
+        </div>
+      )}
 
       {/* 吉祥物主体包裹层：响应音乐鼓点下压回弹、表情包拉伸跳动与微颤 */}
       <div

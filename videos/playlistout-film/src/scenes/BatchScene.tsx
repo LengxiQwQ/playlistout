@@ -200,8 +200,8 @@ export const BatchScene: React.FC = () => {
   const cliSlideIn = rel('cli_slide_in');
 
   const enter = spring({ frame, fps, config: { damping: 18, stiffness: 95 } });
-  const exitProgress = easeInOut(frame, cliSlideIn, 24, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 10, cliSlideIn + 8, cliSlideIn + 24], [0, 1, 1, 0], {
+  const exitProgress = easeInOut(frame, cliSlideIn - 8, 14, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 10, cliSlideIn - 6, cliSlideIn + 4], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -221,7 +221,7 @@ export const BatchScene: React.FC = () => {
       <SceneHeaderBanner
         stepTag="STEP 03 · 用户歌单批量导出"
         title="不止一张歌单，整个曲库一起带走"
-        subtitle="支持 QQ号 / 网易云 UID / 酷狗批量导出"
+        subtitle="多歌单批量汇总 · ZIP 打包"
         tagBg={C.pink}
         style={{
           marginTop: 38,
@@ -439,8 +439,8 @@ export const BatchScene: React.FC = () => {
         <div
           style={{
             flex: 1.05,
-            opacity: easeOut(frame, workbookOpen - 12, 16),
-            transform: `translateY(${(1 - easeBackOut(frame, workbookOpen - 10, 22)) * 45}px) rotate(0.6deg)`,
+            opacity: easeOut(frame, 4, 14),
+            transform: `translateY(${(1 - easeBackOut(frame, 6, 22)) * 45}px) rotate(0.6deg)`,
           }}
         >
           <JournalCard
@@ -459,30 +459,30 @@ export const BatchScene: React.FC = () => {
                   一册汇总全部歌单
                 </span>
               </div>
-              <span style={{ fontFamily: F.mono, fontSize: 19, fontWeight: 700, color: C.mintDeep, whiteSpace: 'nowrap' }}>
-                4 SHEETS · 238 首
+              <span style={{ fontFamily: F.mono, fontSize: 19, fontWeight: 700, color: checkedCount > 0 ? C.mintDeep : C.inkMuted, whiteSpace: 'nowrap' }}>
+                {checkedCount === 3 ? '4 SHEETS · 238 首' : checkedCount === 2 ? '3 SHEETS · 110 首' : checkedCount === 1 ? '2 SHEETS · 48 首' : '装订就绪槽位'}
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
               {[
-                { label: '📑 【目录】索引', active: true },
-                { label: '01 中文民谣 (48首)', active: false },
-                { label: '02 英语流行 (62首)', active: false },
-                { label: '03 日语动漫 (128首)', active: false },
+                { label: '📑 【目录】索引', active: true, loaded: true },
+                { label: checks[0] ? '01 中文民谣 (48首)' : '01 [待勾选]', active: false, loaded: checks[0] },
+                { label: checks[1] ? '02 英语流行 (62首)' : '02 [待勾选]', active: false, loaded: checks[1] },
+                { label: checks[2] ? '03 日语动漫 (128首)' : '03 [待勾选]', active: false, loaded: checks[2] },
               ].map((tab) => (
                 <div
                   key={tab.label}
                   style={{
-                    padding: '9px 14px',
+                    padding: '8px 10px',
                     borderRadius: '12px 12px 0 0',
-                    backgroundColor: tab.active ? C.mint : C.paperCream,
-                    border: `2.8px solid ${C.ink}`,
+                    backgroundColor: tab.active ? C.mint : tab.loaded ? 'rgba(223, 246, 236, 0.65)' : C.paperCream,
+                    border: tab.loaded ? `2.8px solid ${C.ink}` : `2px dashed #94a3b8`,
                     borderBottom: 'none',
                     fontFamily: F.sans,
-                    fontSize: 19,
+                    fontSize: 16.5,
                     fontWeight: 900,
-                    color: tab.active ? C.mintDeep : C.inkSoft,
+                    color: tab.active ? C.mintDeep : tab.loaded ? C.mintDeep : '#94a3b8',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -499,28 +499,33 @@ export const BatchScene: React.FC = () => {
                 backgroundColor: '#f8fdf9',
               }}
             >
-              {BATCH_PLAYLISTS.map((pl, i) => (
-                <div
-                  key={pl.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '52px 1fr 96px 150px',
-                    alignItems: 'center',
-                    padding: '10px 0',
-                    borderBottom: i < 2 ? `2px dashed ${C.line}` : 'none',
-                    fontFamily: F.sans,
-                    fontSize: 22,
-                    fontWeight: 800,
-                    color: C.ink,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <span style={{ fontFamily: F.mono, color: C.inkMuted }}>0{i + 1}</span>
-                  <span>{pl.title}</span>
-                  <span style={{ color: C.inkSoft }}>{pl.count} 首</span>
-                  <span style={{ color: C.mintDeep, textAlign: 'right' }}>✓ 已写入分表</span>
-                </div>
-              ))}
+              {BATCH_PLAYLISTS.map((pl, i) => {
+                const isLoaded = checks[i];
+                return (
+                  <div
+                    key={pl.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '52px 1fr 96px 150px',
+                      alignItems: 'center',
+                      padding: '10px 0',
+                      borderBottom: i < 2 ? `2px dashed ${C.line}` : 'none',
+                      fontFamily: F.sans,
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: isLoaded ? C.ink : '#94a3b8',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span style={{ fontFamily: F.mono, color: isLoaded ? C.inkMuted : '#cbd5e1' }}>0{i + 1}</span>
+                    <span>{pl.title}</span>
+                    <span style={{ color: isLoaded ? C.inkSoft : '#cbd5e1' }}>{pl.count} 首</span>
+                    <span style={{ color: isLoaded ? C.mintDeep : '#94a3b8', textAlign: 'right', fontWeight: isLoaded ? 900 : 700 }}>
+                      {isLoaded ? '✓ 已写入分表' : '· 等待勾选装入'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </JournalCard>
         </div>
@@ -529,8 +534,8 @@ export const BatchScene: React.FC = () => {
         <div
           style={{
             flex: 0.95,
-            opacity: easeOut(frame, zipClose - 18, 16),
-            transform: `translateY(${(1 - easeBackOut(frame, zipClose - 16, 22)) * 45}px) rotate(-0.5deg)`,
+            opacity: easeOut(frame, 6, 14),
+            transform: `translateY(${(1 - easeBackOut(frame, 8, 22)) * 45}px) rotate(-0.5deg)`,
           }}
         >
           <JournalCard
@@ -538,107 +543,137 @@ export const BatchScene: React.FC = () => {
             tapePos="top-center"
             tapeColor={C.tapeYellow}
             shadow="cutoutLg"
-            style={{ width: '100%', height: '100%', padding: '22px 26px' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              padding: '24px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <StickyBadge bg={C.paperWhite} ink={C.peachDeep} fontSize={21} rotate={1.5}>
-                  方式 B · 歌单合集 ZIP
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <StickyBadge bg={C.paperWhite} ink={C.peachDeep} fontSize={21} rotate={1.5}>
+                    方式 B · 歌单合集 ZIP
+                  </StickyBadge>
+                  <span style={{ fontFamily: F.sans, fontSize: 28, fontWeight: 900, color: C.ink, whiteSpace: 'nowrap' }}>
+                    独立文件一键打包
+                  </span>
+                </div>
+                <StickyBadge bg={zipProgress > 0.8 ? C.mint : frame < zipClose - 10 ? C.paperWhite : '#fde68a'} ink={zipProgress > 0.8 ? C.mintDeep : frame < zipClose - 10 ? C.inkSoft : '#b45309'} fontSize={19} rotate={-1.5}>
+                  {zipProgress > 0.8 ? '🔒 已封口打包' : frame < zipClose - 10 ? '📦 打包槽位就绪' : '正在拉上拉链…'}
                 </StickyBadge>
-                <span style={{ fontFamily: F.sans, fontSize: 28, fontWeight: 900, color: C.ink, whiteSpace: 'nowrap' }}>
-                  独立文件一键打包
-                </span>
               </div>
-              <StickyBadge bg={C.mint} ink={C.mintDeep} fontSize={19} rotate={-1.5}>
-                {zipProgress > 0.8 ? '🔒 已封口打包' : '正在拉上拉链…'}
-              </StickyBadge>
-            </div>
 
-            {/* Filename Box kept on left 520px so Mascot on the right never covers it! */}
-            <div
-              style={{
-                marginTop: 16,
-                width: 530,
-                padding: '13px 18px',
-                borderRadius: 14,
-                backgroundColor: C.paperWhite,
-                border: `3px solid ${C.ink}`,
-                fontFamily: F.mono,
-                fontSize: 20,
-                fontWeight: 700,
-                color: C.ink,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              📦 【QQ音乐歌单合集】冷夕QwQ - 共3个歌单.zip
-            </div>
-
-            {/* Tactile Zipper Track (leaves right side open for Mascot!) */}
-            <div
-              style={{
-                marginTop: 20,
-                position: 'relative',
-                maxWidth: 530,
-                height: 52,
-                borderRadius: 14,
-                backgroundColor: '#e8c39e',
-                border: `3px solid ${C.ink}`,
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 18px',
-                overflow: 'hidden',
-              }}
-            >
-              {Array.from({ length: 16 }).map((_, tIdx) => {
-                const sealed = tIdx / 16 <= zipProgress;
-                return (
-                  <div
-                    key={tIdx}
-                    style={{
-                      width: 18,
-                      height: sealed ? 22 : 30,
-                      marginRight: 12,
-                      borderRadius: 4,
-                      backgroundColor: sealed ? '#d49b35' : C.paperWhite,
-                      border: `2.4px solid ${C.ink}`,
-                    }}
-                  />
-                );
-              })}
+              {/* Filename Box kept on left 520px so Mascot on the right never covers it! */}
               <div
                 style={{
-                  position: 'absolute',
-                  left: `${10 + zipProgress * 76}%`,
-                  width: 54,
-                  height: 42,
-                  borderRadius: 10,
-                  backgroundColor: '#ffd32a',
-                  border: `3.5px solid ${C.ink}`,
-                  boxShadow: '3px 3px 0 #2d3436',
-                  display: 'grid',
-                  placeItems: 'center',
+                  marginTop: 18,
+                  width: 530,
+                  padding: '14px 20px',
+                  borderRadius: 14,
+                  backgroundColor: C.paperWhite,
+                  border: `3px solid ${C.ink}`,
                   fontFamily: F.mono,
-                  fontSize: 18,
-                  fontWeight: 900,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: C.ink,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                ZIP
+                📦 【QQ音乐歌单合集】冷夕QwQ - 共3个歌单.zip
+              </div>
+
+              {/* Tactile Zipper Track (leaves right side open for Mascot!) */}
+              <div
+                style={{
+                  marginTop: 18,
+                  position: 'relative',
+                  maxWidth: 530,
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: '#e8c39e',
+                  border: `3px solid ${C.ink}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 18px',
+                  overflow: 'hidden',
+                }}
+              >
+                {Array.from({ length: 16 }).map((_, tIdx) => {
+                  const sealed = tIdx / 16 <= zipProgress;
+                  return (
+                    <div
+                      key={tIdx}
+                      style={{
+                        width: 18,
+                        height: sealed ? 24 : 32,
+                        marginRight: 12,
+                        borderRadius: 4,
+                        backgroundColor: sealed ? '#d49b35' : C.paperWhite,
+                        border: `2.4px solid ${C.ink}`,
+                      }}
+                    />
+                  );
+                })}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${10 + zipProgress * 76}%`,
+                    width: 58,
+                    height: 44,
+                    borderRadius: 10,
+                    backgroundColor: '#ffd32a',
+                    border: `3.5px solid ${C.ink}`,
+                    boxShadow: '3px 3px 0 #2d3436',
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontFamily: F.mono,
+                    fontSize: 18.5,
+                    fontWeight: 900,
+                  }}
+                >
+                  ZIP
+                </div>
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 14,
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontFamily: F.sans,
-                fontSize: 20,
-                fontWeight: 800,
-                color: C.peachDeep,
-              }}
-            >
-              <span>✓ 包内重名自动追加 (2) 防覆盖</span>
-              <span style={{ fontFamily: F.kuaile, fontSize: 23 }}>多张歌单，一次带走！</span>
+            <div style={{ marginTop: 16 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontFamily: F.sans,
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: C.peachDeep,
+                  marginBottom: 10,
+                }}
+              >
+                <span>✓ 包内重名自动追加 (2) 防覆盖</span>
+                <span style={{ fontFamily: F.kuaile, fontSize: 23 }}>多张歌单，一次带走！</span>
+              </div>
+              <div
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(255, 255, 255, 0.72)',
+                  border: `2px dashed ${C.peachDeep}`,
+                  fontFamily: F.sans,
+                  fontSize: 18.5,
+                  fontWeight: 700,
+                  color: C.inkSoft,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>📁 内含 3 个独立歌单文件 (Excel / JSON / CSV)</span>
+                <span style={{ color: C.mintDeep, fontWeight: 900 }}>免解压直接预览 ✓</span>
+              </div>
             </div>
           </JournalCard>
         </div>

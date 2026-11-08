@@ -203,8 +203,8 @@ export const CliScene: React.FC = () => {
   const ecoEnter = rel('eco_enter');
 
   const enter = spring({ frame, fps, config: { damping: 18, stiffness: 95 } });
-  const exitProgress = easeInOut(frame, ecoEnter, 24, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 10, ecoEnter + 8, ecoEnter + 24], [0, 1, 1, 0], {
+  const exitProgress = easeInOut(frame, ecoEnter - 8, 14, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 10, ecoEnter - 6, ecoEnter + 4], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -223,7 +223,7 @@ export const CliScene: React.FC = () => {
       <SceneHeaderBanner
         stepTag="STEP 04 · 本地 CLI 命令行版"
         title="偏爱终端或双击运行？CLI 同样顺手"
-        subtitle="交互向导 + 命令行参数双模式"
+        subtitle="跨平台独立单文件"
         tagBg={C.blue}
         style={{
           marginTop: 38,
@@ -286,7 +286,7 @@ export const CliScene: React.FC = () => {
                 color: '#8b949e',
               }}
             >
-              python -m cli / playlistout.exe
+              .\PlaylistOut.exe (单文件免安装即用)
             </div>
           </div>
 
@@ -312,7 +312,7 @@ export const CliScene: React.FC = () => {
               <div>
                 <div style={{ fontSize: 24, color: '#8b949e' }}>
                   PS C:\Users\LengxiQwQ&gt;{' '}
-                  <span style={{ color: '#fde047', fontWeight: 700 }}>playlistout</span>
+                  <span style={{ color: '#fde047', fontWeight: 700 }}>.\PlaylistOut.exe</span>
                 </div>
                 <div
                   style={{
@@ -426,7 +426,7 @@ export const CliScene: React.FC = () => {
                     选择格式 (直接回车全部导出) &gt;{' '}
                     <span style={{ color: '#38bdf8' }}>{typedChoice}</span>
                   </div>
-                  {frame >= doneFrame ? (
+                  {frame >= pressEnter + 4 ? (
                     <div
                       style={{
                         marginTop: 8,
@@ -474,7 +474,7 @@ export const CliScene: React.FC = () => {
                   width: '100%',
                   padding: '20px 24px',
                   borderRadius: 18,
-                  backgroundColor: isEnterPressed ? '#207544' : frame >= doneFrame ? C.mint : C.yellow,
+                  backgroundColor: isEnterPressed ? '#207544' : frame >= pressEnter + 4 ? C.mint : C.yellow,
                   color: isEnterPressed ? '#ffffff' : C.ink,
                   border: `4px solid ${C.ink}`,
                   boxShadow: isEnterPressed ? '2px 2px 0 #2d3436' : '6px 8px 0 #2d3436',
@@ -486,13 +486,13 @@ export const CliScene: React.FC = () => {
               >
                 <div>
                   <div style={{ fontFamily: F.mono, fontSize: 28, fontWeight: 900 }}>
-                    {frame >= doneFrame ? '✓ EXPORT DONE' : 'Enter ↵'}
+                    {frame >= pressEnter + 4 ? '✓ EXPORT DONE' : 'Enter ↵'}
                   </div>
                   <div style={{ fontFamily: F.sans, fontSize: 20, fontWeight: 800, marginTop: 2 }}>
-                    {frame >= doneFrame ? '已导出到 output/ 目录' : '敲下回车，立即本地导出'}
+                    {frame >= pressEnter + 4 ? '已导出到 output/ 目录' : '敲下回车，立即本地导出'}
                   </div>
                 </div>
-                <span style={{ fontSize: 38 }}>{frame >= doneFrame ? '🎉' : '⏎'}</span>
+                <span style={{ fontSize: 38 }}>{frame >= pressEnter + 4 ? '🎉' : '⏎'}</span>
               </div>
             </div>
           </div>
@@ -500,7 +500,7 @@ export const CliScene: React.FC = () => {
       </div>
 
       {/* ================= CELEBRATION FIREWORKS UPON CLI EXPORT COMPLETION ================= */}
-      <CliCelebrationFireworks frame={frame} burstFrame={doneFrame} />
+      <CliCelebrationFireworks frame={frame} burstFrame={pressEnter} />
 
       {/* ================= BOTTOM CROSS-PLATFORM & INSTALL BAR ================= */}
       <div
@@ -510,23 +510,24 @@ export const CliScene: React.FC = () => {
           top: 888,
           width: 1676,
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1.35fr',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 20,
           zIndex: 25,
         }}
       >
         {[
           { logo: <WindowsLogo size={42} />, title: 'Windows x64', sub: '单文件 .exe 双击即用', bg: C.blue },
-          { logo: <AppleLogo size={42} />, title: 'macOS (M系列/Intel)', sub: '内置 .command 启动器', bg: C.pink },
+          { logo: <span style={{ fontSize: 36, display: 'grid', placeItems: 'center', width: 42, height: 42 }}>🌐</span>, title: 'Web 网页版', sub: '免安装 · 手机电脑全兼容', bg: C.mint },
+          { logo: <AppleLogo size={42} />, title: 'macOS (M/Intel)', sub: '内置 .command 启动器', bg: C.pink },
           { logo: <LinuxLogo size={42} />, title: 'Linux x64', sub: '独立二进制免配环境', bg: C.yellowCard },
-          { logo: <NpmLogo size={42} />, title: 'npm install -g playlistout', sub: '全局安装 · 终端输入 playlistout 启动', bg: C.mint },
         ].map((item, idx) => {
-          const pop = easeBackOut(frame, osFrame - 20 + idx * 4, 18);
+          const entryFrame = 6 + idx * 4;
+          const pop = easeBackOut(frame, entryFrame, 18);
           return (
             <div
               key={item.title}
               style={{
-                opacity: easeOut(frame, osFrame - 20 + idx * 4, 14),
+                opacity: easeOut(frame, entryFrame, 14),
                 transform: `translateY(${(1 - pop) * 36}px) rotate(${idx % 2 === 0 ? -0.8 : 0.8}deg)`,
               }}
             >
@@ -534,7 +535,7 @@ export const CliScene: React.FC = () => {
                 bg={item.bg}
                 shadow="cutout"
                 style={{
-                  padding: '16px 22px',
+                  padding: '16px 20px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
@@ -542,10 +543,10 @@ export const CliScene: React.FC = () => {
               >
                 {item.logo}
                 <div>
-                  <div style={{ fontFamily: idx === 3 ? F.mono : F.sans, fontSize: 23, fontWeight: 900, color: C.ink }}>
+                  <div style={{ fontFamily: F.sans, fontSize: 23, fontWeight: 900, color: C.ink }}>
                     {item.title}
                   </div>
-                  <div style={{ fontFamily: F.sans, fontSize: 19, fontWeight: 700, color: C.inkSoft, marginTop: 2 }}>
+                  <div style={{ fontFamily: F.sans, fontSize: 18.5, fontWeight: 700, color: C.inkSoft, marginTop: 2 }}>
                     {item.sub}
                   </div>
                 </div>

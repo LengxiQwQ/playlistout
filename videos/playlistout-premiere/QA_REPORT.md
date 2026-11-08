@@ -1,76 +1,92 @@
-# Playlist Out 宣传片 v2 — 质量检查记录
+# Playlist Out 宣传片 v4 — 质量检查记录
 
 成片：`output/playlistout-premiere.mp4`  
 检查环境：Windows / Chrome 156 / Remotion 4.0.541 / ffmpeg 9.0.2  
-检查日期：2026-11-07
+检查日期：2026-11-08
 
 ## 1. 媒体检查
 
 | 项目 | 实测结果 |
 |---|---|
-| 容器 | MP4 |
-| 视频 | H.264，1920 × 1080，30 fps，yuv420p |
-| 帧数 | 1680 |
-| 时长 | 56.000 s，视频轨与音频轨一致 |
-| 视频码率 | 6,140,934 bps |
-| 音频 | AAC，48 kHz，2 声道，317,375 bps |
-| 文件 | 45,272,428 bytes（43.2 MiB） |
-| 完整解码 | 通过，无错误输出 |
-| 黑屏检测 | 0 段（blackdetect，阈值 0.3 s） |
-| 静态区间检测 | 0 段（freezedetect，>= 1.5 s） |
-| 响度 | Integrated -14.9 LUFS，LRA 3.5 LU，True Peak -1.2 dBFS |
+| 容器 / 编码 | MP4 / H.264 High |
+| 画面 | 1920 × 1080，yuv420p，30 fps |
+| 帧数 | 1740 帧（58.005 s 容器时长） |
+| 视频码率 | 4,917,496 bit/s |
+| 音频 | AAC-LC，48 kHz，双声道，317,376 bit/s |
+| 文件大小 | 38,019,706 bytes（36.3 MiB） |
+| 完整解码 | 通过 |
+| 黑帧区间 | 0 |
+| 静止检测（freezedetect，≥1.5 s） | 0 |
+| 综合响度 | −15.3 LUFS |
+| 响度范围 | 6.8 LU |
+| True Peak | −1.2 dBFS |
 
-完整解码命令：
-
-```powershell
-ffmpeg -v error -i output/playlistout-premiere.mp4 -f null -
-```
-
-## 2. 视觉抽检
-
-- `qa/contact-sheet.jpg`：最终成片按 1 秒抽帧，56 格总览。
-- `qa/keyframes/`：18 张按段落命名的关键帧，覆盖片头、解析、导出、批量、CLI、生态和结尾。
-- 已逐张检查主体文字、URL、卡片边界、按钮、表格、终端行和结尾信息：关键内容在安全区内，未发现明显裁切或文字互相覆盖。
-- v2 的纸张层使用纤维、短纤维、纸屑、折痕和接触阴影；已去掉旧版的大面积暖色聚光灯、暗角和曝光呼吸。`Atmosphere` 只保留约 4.5% 的纸纹叠加。
-- 镜头按动作用近景重新取景：解析的输入框/结果、导出的 Excel/JSON、批量的控制面板、CLI 的终端正文、生态卡片和结尾均有独立可读的构图。
-- 左下方新增 46px 的手账步骤标签，按“交给它 / 落到纸上 / 挑方式 / 一起打包 / 终端 / 下一站”推进；标签不随镜头缩放，作为手机和窗口化观看时的主叙事线。
-- 小音符角色在片头、输入框、解析按钮、导出文件、批量按钮、终端和生态段落出现；黑色纸偶在深色终端上使用奶白纸贴背板，避免与终端背景混在一起。
-- 六个章节边界新增完整纸页翻页；翻页页上只保留页码和“下一页”，没有把两页内容半透明叠在一起。
-
-## 3. v2 的主要修正
-
-- 纸张：移除电影化灯光/暗角，增加纸纤维与接触阴影。
-- 可读性：用镜头近景与分步骤构图替代整页缩小；关键 UI 与说明适当放大；新增 46px 的常驻步骤标签，保证手机横屏也能先读到动作。
-- 角色：新增有眼睛、鼻子、嘴、手和脚的纸剪音符；从纸笼逃出、钻进输入框、从解析按钮后出现，并继续作为操作者。
-- 转场：添加六个纸页翻页过场，遮住场景交界，不再使用长时全屏交叉淡入。
-- 声音：新增由代码合成的翻页拟音，按转场时间叠加进最终 AVC/AAC 渲染。
-- 工程：补充 `tools/make_page_turn.py`、v2 说明与最终抽帧。
-
-## 4. 已知限制
-
-- **未进行人耳听审**。本环境只能验证音频解码、响度、峰值、声道和音画时长；发布前建议戴耳机完整试听一次。
-- **不是实际线上操作录屏**。网页、CLI 与数据均为按源码和设计规范重绘/演示，歌单与统计是示意数据。
-- **Markdown** 在当前 Web 主工具栏没有独立按钮；源码有 Markdown 导出器，成片仅以“源码内置 Markdown 导出器”的小字呈现，主工具栏的五个格式为 XLSX / JSON / CSV / TXT / M3U8。
-- **批量能力**主要在 QQ 音乐、网易云音乐与酷狗音乐；酷狗完整批量需要登录，成片批量演示使用 QQ 音乐。
-- 洛雪音乐与 Listen 1 是专用 JSON 导入/导出，不是 MusicFree 同类的官方插件；BBPlayer 为待上线，Soundiiz 等为第三方服务（一键迁移上限约 200 首）。
-- 视觉检查基于完整解码与抽帧/关键帧目视检查，不是逐帧 OCR、字形包围盒或自动布局证明。
-- 手机横屏不保证所有 UI 小字逐字可读；v2 优先保证主标题、步骤标签、动词与结论可读。若要求手机读清全部细节，需要另做竖屏或重新排版的手机版。
-- 六个翻页过场是有意的章节页，不是内容缺失；其中翻页全遮罩约 0.2 秒，画面只保留页码与“下一页”。
-
-## 5. 可复现检查
+检查命令：
 
 ```bash
-cd videos/playlistout-premiere
-npm install
-npm run typecheck
-python tools/qa.py
-npm run render
+ffprobe -v error -show_entries format=duration,size,bit_rate \
+  -show_entries stream=codec_name,width,height,r_frame_rate,sample_rate,channels \
+  -of json output/playlistout-premiere.mp4
+
+ffmpeg -v error -i output/playlistout-premiere.mp4 -f null -
+
+ffmpeg -hide_banner -i output/playlistout-premiere.mp4 \
+  -vf "freezedetect=n=0.003:d=1.5" -an -f null -
+
+ffmpeg -hide_banner -i output/playlistout-premiere.mp4 \
+  -filter_complex "ebur128=peak=true" -f null -
 ```
 
-`python tools/qa.py` 会重新输出媒体规格、解码结果、黑屏/静止区间、响度、Contact Sheet 和关键帧。v2 最终渲染使用：
+## 2. 全片抽帧检查
 
-```powershell
-npx remotion render src/index.tsx PlaylistOutPremiere output/playlistout-premiere.mp4 `
-  --codec=h264 --crf=16 --pixel-format=yuv420p `
-  --audio-codec=aac --audio-bitrate=320k --concurrency=4 --overwrite
-```
+截图：`qa/keyframes/`；Contact Sheet：`qa/contact-sheet.jpg`；手机宽度 844px：`qa/phone-sheet-v4.jpg`。
+
+| 时间 | 检查点 | 结果 |
+|---|---|---|
+| 00.0–02.0 s | Cold Open：笼子线条慢画、左侧标题先读 | 通过 |
+| 02.0–07.7 s | Intro：主标题保持 122；粉色音符在大锁/前景栏杆内 | 通过；装饰性平台标签仍偏小 |
+| 07.7–20.9 s | 大版 Parse：搜索输入、6 行结果、平台标签、导出格式 | 通过；手机宽度可读 |
+| 19.4–28.8 s | 大版 Export：Excel / JSON 双卡、五种格式、Markdown 说明 | 通过 |
+| 27.2–36.8 s | 大版 Batch：3 个歌单、151 首、多 Sheet / ZIP、50 个上限 | 通过 |
+| 35.4–49.1 s | 大版 CLI：24–25px 正文、平台列表、详情、格式、导出、跨平台 | 通过；22 行完整在框内 |
+| 47.5–54.6 s | 大版 Ecosystem：三张播放器卡、Public API、BBPlayer/第三方迁移说明 | 通过 |
+| 53.2–58.0 s | Finale：主标题不放大；网址/GitHub/MIT 放大 | 通过 |
+| 全片 | 页码 / 页脚编号 / STEP / 翻页遮罩 | 0 处 |
+| 全片 | 全局镜头推拉摇移 | 0 处 |
+| 全片 | 主标题被放大 | 0 处 |
+| 全片 | 音符消失 / 被裁切 | 0 处（纸张右缘 170–220px 可见） |
+| 全片 | 静态 ≥1.5 s | 0 段；UI 卡以亚像素纸呼吸持续变化 |
+
+## 3. 尺度验收
+
+- `src/scale.ts`：`UI_SCALE = 1.75`。
+- 主标题不进 `u()`；UI 字号、行高、按钮、卡片、终端走 1.75×。
+- 1920 全尺寸下没有全局 zoom；页面、装订孔、红色页边线仍是原尺度。
+- 844px 手机宽抽帧见 `qa/phone-sheet-v4.jpg`；693px 宽度也保留了对应样张。
+- 大版 UI 比 v3 一屏内容更少：Parse 6 行、Batch 3 行、CLI 22 行；通过减少一屏信息量而不是压缩字号。
+
+## 4. 声音检查
+
+- 使用 `public/audio/soundtrack-v3.wav`：2 秒纸面/铅笔冷开场 + 原 56 秒配乐，58 秒。
+- 音频与视频时长一致；AAC 48 kHz 双声道。
+- 未做人耳听审；本环境只验证解码、声道、采样率、响度、True Peak 和时长。
+
+## 5. 功能真实性
+
+- 六平台单歌单解析；批量演示以 QQ 音乐为例；酷狗完整批量需登录。
+- Web 主导出：Excel / JSON / CSV / TXT / M3U8；Markdown 只作源码内置导出器说明。
+- MusicFree 官方插件；洛雪 / Listen 1 专用 JSON；BBPlayer 待上线；Soundiiz 等第三方迁移。
+- 不下载音频、不抓歌词、不代理媒体。
+- 演示数据，不是实际录屏。
+
+## 6. 这一版没解决的
+
+- 转场仍是硬切，没有恢复 v1 的连续过渡；第 2 轮处理。
+- 角色仍是旧造型，手没有真正点击、没有 120 BPM 鼓点；第 3 轮处理。
+- Intro / Cold Open 的装饰性小字没有全部进入 1.75×；细节轮统一。
+- 大版 Export / Batch / CLI 为容纳大字减少了局部装饰细节，功能点保留。
+- 没有竖屏版本，没有逐帧 OCR。
+
+## 7. 结论
+
+v4 已完成全片 1740 帧实际渲染、完整解码、0 黑帧、0 静态区间、手机宽度抽帧和响度检查。全片 UI 已按批准尺度重排，主标题保持原大小，字体恢复为 v3 的字体组合。叙事转场和角色表演按路线图继续。

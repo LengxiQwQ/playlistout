@@ -316,7 +316,7 @@ export const ChapterMark: React.FC<{
         background: 'rgba(255, 253, 246, .45)',
       }}
     >
-      {number}
+      <span style={{ fontFamily: F.display, fontSize: compact ? 19 : 23, lineHeight: 1 }}>♪</span>
     </div>
     <div style={{ lineHeight: 1.15, minWidth: 0 }}>
       <div

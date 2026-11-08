@@ -6,9 +6,9 @@
   "description": "Playlist Out — an animated music-journal short film built with Remotion.",
   "scripts": {
     "studio": "remotion studio src/index.tsx",
-    "render": "remotion render src/index.tsx PlaylistOutPremiere output/playlistout-premiere.mp4 --codec=h264 --crf=16 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4",
-    "render:draft": "remotion render src/index.tsx PlaylistOutPremiere output/preview.mp4 --codec=h264 --crf=22 --scale=0.5 --concurrency=4",
-    "still": "remotion still src/index.tsx PlaylistOutPremiere",
+    "render": "remotion render src/index.tsx PlaylistOutV4 output/playlistout-premiere.mp4 --codec=h264 --crf=16 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4",
+    "render:draft": "remotion render src/index.tsx PlaylistOutV4 output/preview.mp4 --codec=h264 --crf=22 --scale=0.5 --concurrency=4",
+    "still": "remotion still src/index.tsx PlaylistOutV4",
     "typecheck": "tsc --noEmit",
     "audio": "python tools/make_score.py",
     "qa": "python tools/qa.py"

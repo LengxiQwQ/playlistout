@@ -259,13 +259,13 @@ export const BatchScene: React.FC = () => {
   const enter = spring({ frame, fps, config: { damping: 21, stiffness: 90, mass: 0.9 }, durationInFrames: 42 });
   const exit = easeInOut(frame, 226, 26, 0, 1);
   const outerOpacity = interpolate(frame, [0, 1, 244, 246], [1, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const cards = spring({ frame: frame - L.cards + 18, fps, config: { damping: 18, stiffness: 100 }, durationInFrames: 46 });
-  const selected = easeOut(frame, L.cards + 12, 26);
+  const cards = 1;
+  const selected = easeOut(frame, L.cards + 6, 80);
   const clickProgress = easeInOut(frame, L.click, 26, 0, 1);
-  const workbookIn = spring({ frame: frame - L.workbook, fps, config: { damping: 18, stiffness: 90, mass: 0.9 }, durationInFrames: 42 });
+  const workbookIn = spring({ frame: frame - (L.workbook + 4), fps, config: { damping: 18, stiffness: 90, mass: 0.9 }, durationInFrames: 42 });
   const zipIn = spring({ frame: frame - L.zip, fps, config: { damping: 17, stiffness: 100 }, durationInFrames: 40 });
   const zipClose = easeInOut(frame, L.zip + 8, 28, 0, 1);
-  const focus = easeInOut(frame, L.click + 12, 50, 0, 1);
+  const focus = easeInOut(frame, L.click + 4, 8, 0, 1);
   const buttonPress = frame >= L.click - 2 && frame < L.click + 10;
   const cursorX = 1290 + clickProgress * 106;
   const cursorY = 632 + clickProgress * 18;
@@ -292,7 +292,7 @@ export const BatchScene: React.FC = () => {
           多个歌单 · 多张工作表 · 一个压缩包
         </div>
 
-        <div style={{ position: 'absolute', left: outer.left, top: outer.top, width: outer.width, height: outer.height, transform: `rotate(${0.2 + (1 - enter) * 0.7}deg)` }}>
+        <div style={{ position: 'absolute', left: outer.left, top: outer.top, width: outer.width, height: outer.height, transform: `rotate(${0.2 + (1 - enter) * 0.7}deg)`, opacity: 1 - focus }}>
           <PaperSheet
             tone="white"
             shadow="lifted"
@@ -340,7 +340,7 @@ export const BatchScene: React.FC = () => {
                   <div style={{ fontFamily: F.hand, fontSize: 18, color: C.inkMuted, transform: 'rotate(-1deg)' }}>勾选后，一起翻页 ♪</div>
                 </div>
                 {BATCH_PLAYLISTS.map((item, i) => {
-                  const cardIn = easeOut(frame, L.cards + i * 6, 26);
+                  const cardIn = easeOut(frame, -30 + i * 6, 26);
                   const rowSelected = Math.min(1, Math.max(0, (selected - i * 0.1) * 1.22));
                   const leaving = easeInOut(frame, L.workbook + i * 3, 24, 0, 1);
                   return (
@@ -502,9 +502,8 @@ export const BatchScene: React.FC = () => {
           </PaperSheet>
         </div>
 
-        {/* focus dim, then outputs */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(243,237,225,.96)', opacity: focus, zIndex: 25 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(65,58,43,.08)', opacity: focus, zIndex: 25 }} />
+        {/* the paper page stays visible; only the list card hands over to the outputs */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(65,58,43,.06)', opacity: focus, zIndex: 25 }} />
         <div
           style={{
             position: 'absolute',

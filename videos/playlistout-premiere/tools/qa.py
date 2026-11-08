@@ -78,16 +78,16 @@ def main() -> int:
           f"true peak={loud_tp[-1] if loud_tp else '?'} dBFS")
 
     run("ffmpeg", "-y", "-v", "error", "-i", str(VIDEO),
-        "-vf", "fps=1,scale=320:-1,tile=8x7", "-frames:v", "1", str(QA / "contact-sheet.jpg"))
+        "-vf", "fps=1,scale=320:-1,tile=8x8:color=#f1eadc", "-frames:v", "1", str(QA / "contact-sheet.jpg"))
     run("ffmpeg", "-y", "-v", "error", "-i", str(VIDEO),
         "-filter_complex", "showwavespic=s=1600x320:colors=#4f7d69", "-frames:v", "1",
         str(QA / "audio-waveform.png"))
     keyframes = {
-        45: "intro-title", 155: "intro-handed-off", 300: "parse-result", 390: "parse-complete",
-        480: "export-toolbar", 560: "export-files", 640: "excel-json", 800: "batch-entry",
-        900: "batch-selected", 970: "batch-pack", 1020: "cli-boot", 1240: "cli-complete",
-        1320: "cli-os", 1450: "eco", 1500: "eco-api", 1560: "finale-entry", 1620: "finale",
-        1670: "end",
+        30: "cold-open", 60: "intro-reveal", 105: "intro-title", 215: "intro-handed-off",
+        360: "parse-result", 450: "parse-complete", 540: "export-toolbar", 620: "export-files",
+        700: "excel-json", 860: "batch-entry", 960: "batch-selected", 1030: "batch-pack",
+        1080: "cli-boot", 1300: "cli-complete", 1380: "cli-os", 1510: "eco", 1560: "eco-api",
+        1620: "finale-entry", 1680: "finale", 1730: "end",
     }
     keydir = QA / "keyframes"
     keydir.mkdir(exist_ok=True)

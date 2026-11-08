@@ -5,6 +5,7 @@ import { DEMO_PLAYLIST, PLATFORMS } from '../data';
 import { C, F, SCENES, SHADOW, cue } from '../theme';
 import { HandCheck, JournalCard, SceneHeaderBanner, StickyBadge } from '../components/Stationery';
 import { PlatformLogo } from '../components/BrandLogos';
+import { CelebrationFireworks } from '../components/CelebrationFireworks';
 
 const rel = (name: Parameters<typeof cue>[0]) => cue(name) - SCENES.parse.in;
 
@@ -22,8 +23,8 @@ export const ParseScene: React.FC = () => {
 
   const cardIn = spring({ frame, fps, config: { damping: 18, stiffness: 95 } });
   const unfoldProgress = easeInOut(frame, unfoldFrame, 20, 0, 1);
-  const exitProgress = easeInOut(frame, splitFrame, 22, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 10, splitFrame + 6, splitFrame + 22], [0, 1, 1, 0], {
+  const exitProgress = easeInOut(frame, splitFrame - 8, 14, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 10, splitFrame - 6, splitFrame + 4], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -50,7 +51,7 @@ export const ParseScene: React.FC = () => {
       <SceneHeaderBanner
         stepTag="STEP 01 · 网页解析歌单"
         title="粘贴歌单链接，一键解析曲目"
-        subtitle="playlistout.com · 免安装即用"
+        subtitle="免安装即用"
         tagBg={C.yellow}
         style={{
           marginTop: 38,
@@ -231,6 +232,154 @@ export const ParseScene: React.FC = () => {
         </JournalCard>
       </div>
 
+      {/* ================= STANDBY PLAYLIST BENCH BLUEPRINT (0s - 11.2s before unfold) ================= */}
+      {frame < unfoldFrame + 6 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: 162,
+            top: interpolate(unfoldProgress, [0, 1], [452, 348]),
+            width: 1676,
+            height: interpolate(unfoldProgress, [0, 1], [576, 682]),
+            opacity: interpolate(frame, [unfoldFrame - 6, unfoldFrame + 2], [1, 0], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            }),
+            transform: `translateY(${(1 - cardIn) * 45}px) rotate(0.15deg)`,
+            zIndex: 18,
+            pointerEvents: 'none',
+          }}
+        >
+          <JournalCard
+            bg={C.paperWhite}
+            rotate={0.15}
+            shadow="cutoutLg"
+            style={{
+              width: '100%',
+              height: '100%',
+              padding: '26px 34px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {/* Standby Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: 18,
+                borderBottom: `3px dashed ${C.line}`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                <div
+                  style={{
+                    width: 74,
+                    height: 74,
+                    borderRadius: 18,
+                    backgroundColor: C.paperCream,
+                    border: `3px dashed #94a3b8`,
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontFamily: F.display,
+                    fontSize: 36,
+                    color: '#94a3b8',
+                  }}
+                >
+                  ♪
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ fontFamily: F.sans, fontSize: 30, fontWeight: 900, color: '#475569' }}>
+                      歌单解析就绪区 · 待命状态
+                    </span>
+                    <StickyBadge bg={C.yellowCard} ink={C.yellowDeep} fontSize={18} rotate={-1}>
+                      等待点击「解析」
+                    </StickyBadge>
+                  </div>
+                  <div style={{ marginTop: 6, fontFamily: F.sans, fontSize: 20, fontWeight: 700, color: C.inkMuted }}>
+                    输入公开歌单链接后 · 点击右侧「解析」按钮瞬间提取完整曲目与状态标定
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <StickyBadge bg="#f1f5f9" ink="#475569" fontSize={18} rotate={0.8}>
+                  🔒 纯端侧解析 · 零服务端存储
+                </StickyBadge>
+                <StickyBadge bg={C.mint} ink={C.mintDeep} fontSize={18} rotate={-1}>
+                  ⚡ 自动分页获取全量曲目
+                </StickyBadge>
+              </div>
+            </div>
+
+            {/* Skeleton Table Rows */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, justifyContent: 'center' }}>
+              {[
+                { no: '01', title: '残酷な天使のテーゼ', artist: '高橋洋子', album: '新世紀エヴァンゲリオン', tag: '正常' },
+                { no: '02', title: 'only my railgun', artist: 'fripSide', album: 'とある科学の超電磁砲', tag: 'VIP专享' },
+                { no: '03', title: '打上花火', artist: 'DAOKO × 米津玄師', album: '打ち上げ花火', tag: '正常' },
+                { no: '04', title: '前前前世 (movie ver.)', artist: 'RADWIMPS', album: '君の名は。', tag: '正常' },
+              ].map((sk, skIdx) => (
+                <div
+                  key={sk.no}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '64px 1.4fr 1fr 1fr 110px',
+                    alignItems: 'center',
+                    padding: '12px 18px',
+                    borderRadius: 14,
+                    backgroundColor: skIdx % 2 === 0 ? 'rgba(241, 245, 249, 0.65)' : C.paperCream,
+                    border: '2px dashed #cbd5e1',
+                    fontFamily: F.sans,
+                    fontSize: 21,
+                    fontWeight: 700,
+                    color: '#94a3b8',
+                  }}
+                >
+                  <span style={{ fontFamily: F.mono, fontSize: 19 }}>{sk.no}</span>
+                  <span style={{ fontWeight: 800 }}>{sk.title}</span>
+                  <span>{sk.artist}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sk.album}</span>
+                  <span style={{ fontSize: 18, color: sk.tag === 'VIP专享' ? '#f59e0b' : '#10b981' }}>{sk.tag}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Standby Bottom Guidance Bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderRadius: 14,
+                backgroundColor: C.paperCream,
+                border: `2px dashed ${C.line}`,
+                fontFamily: F.sans,
+                fontSize: 20,
+                fontWeight: 700,
+                color: C.inkSoft,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>💡 待命格式：</span>
+                <span style={{ color: C.mintDeep, fontWeight: 900 }}>Excel (.xlsx) 双表</span>
+                <span>·</span>
+                <span style={{ color: C.blueDeep, fontWeight: 900 }}>Canonical JSON</span>
+                <span>·</span>
+                <span>CSV / TXT / M3U8</span>
+              </div>
+              <span style={{ fontFamily: F.kuaile, fontSize: 22, color: '#475569' }}>
+                支持 1000+ 首超大歌单全量导出 ♪
+              </span>
+            </div>
+          </JournalCard>
+        </div>
+      ) : null}
+
       {/* ================= PARSED PLAYLIST RESULT SHEET (11.2s - 18.2s) ================= */}
       {frame >= unfoldFrame - 4 ? (
         <div
@@ -326,7 +475,6 @@ export const ParseScene: React.FC = () => {
                   borderRadius: 16,
                   backgroundColor: frame >= toolbarFrame ? C.yellowLight : 'transparent',
                   border: frame >= toolbarFrame ? `3px solid ${C.yellowDeep}` : '3px solid transparent',
-                  transform: isExportPressed ? 'scale(0.95)' : 'scale(1)',
                 }}
               >
                 {[
@@ -335,24 +483,28 @@ export const ParseScene: React.FC = () => {
                   { label: 'CSV', bg: C.peach, ink: C.peachDeep, hot: false },
                   { label: 'TXT', bg: C.yellowCard, ink: C.yellowDeep, hot: false },
                   { label: 'M3U8', bg: C.lilac, ink: C.lilacDeep, hot: false },
-                ].map((btn) => (
-                  <div
-                    key={btn.label}
-                    style={{
-                      padding: btn.hot ? '11px 20px' : '11px 15px',
-                      borderRadius: 12,
-                      backgroundColor: btn.bg,
-                      color: btn.ink,
-                      border: `2.8px solid ${C.ink}`,
-                      boxShadow: isExportPressed && btn.hot ? '1px 1px 0 #2d3436' : '3px 4px 0 #2d3436',
-                      fontFamily: F.sans,
-                      fontSize: 21,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {btn.label}
-                  </div>
-                ))}
+                ].map((btn) => {
+                  const isThisPressed = isExportPressed && btn.label === '导出 Excel';
+                  return (
+                    <div
+                      key={btn.label}
+                      style={{
+                        padding: btn.hot ? '11px 20px' : '11px 15px',
+                        borderRadius: 12,
+                        backgroundColor: btn.bg,
+                        color: btn.ink,
+                        border: `2.8px solid ${C.ink}`,
+                        boxShadow: isThisPressed ? '1px 1px 0 #2d3436' : '3px 4px 0 #2d3436',
+                        transform: isThisPressed ? 'translate(2px, 3px) scale(0.93)' : 'none',
+                        fontFamily: F.sans,
+                        fontSize: 21,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {btn.label}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -452,27 +604,39 @@ export const ParseScene: React.FC = () => {
                     })}
                   </div>
 
-                  {/* 纸质质感迷你滚动条 */}
+                  {/* 纸质质感高对比度滚动条 */}
                   <div
                     style={{
                       position: 'absolute',
-                      right: 2,
+                      right: 4,
                       top: 8,
                       bottom: 8,
-                      width: 6,
-                      borderRadius: 3,
-                      backgroundColor: 'rgba(45, 52, 54, 0.08)',
+                      width: 10,
+                      borderRadius: 6,
+                      backgroundColor: 'rgba(45, 52, 54, 0.12)',
+                      border: '1.5px solid rgba(45, 52, 54, 0.22)',
                     }}
                   >
                     <div
                       style={{
                         width: '100%',
-                        height: '36%',
-                        borderRadius: 3,
-                        backgroundColor: '#475569',
-                        transform: `translateY(${scrollProgress * 175}%)`,
+                        height: '32%',
+                        borderRadius: 5,
+                        backgroundColor: '#334155',
+                        border: `2px solid ${C.ink}`,
+                        boxShadow: '1px 1px 0 #2d3436',
+                        transform: `translateY(${scrollProgress * 212}%)`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 2.5,
                       }}
-                    />
+                    >
+                      <span style={{ width: 4, height: 1.5, backgroundColor: '#94a3b8', borderRadius: 1 }} />
+                      <span style={{ width: 4, height: 1.5, backgroundColor: '#94a3b8', borderRadius: 1 }} />
+                      <span style={{ width: 4, height: 1.5, backgroundColor: '#94a3b8', borderRadius: 1 }} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -535,6 +699,25 @@ export const ParseScene: React.FC = () => {
           </JournalCard>
         </div>
       ) : null}
+
+      {/* ================= CELEBRATION FIREWORKS ================= */}
+      {/* 1. 解析成功：从搜索/解析按钮中心迸发 */}
+      <CelebrationFireworks
+        frame={frame}
+        burstFrame={unfoldFrame}
+        cx={1686}
+        cy={182}
+        scale={1.05}
+      />
+
+      {/* 2. 导出 Excel：从「导出 Excel」按钮中心迸发 */}
+      <CelebrationFireworks
+        frame={frame}
+        burstFrame={exportClickFrame}
+        cx={1340}
+        cy={402}
+        scale={0.96}
+      />
     </AbsoluteFill>
   );
 };

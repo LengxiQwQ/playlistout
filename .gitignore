@@ -46,6 +46,9 @@ Desktop.ini
 # Output files from exports / CLI runs
 /output/
 1160951354/
+*.zip
+videos/**/output/
+videos/**/out/
 *.txt
 !web/public/robots.txt
 !**/requirements*.txt

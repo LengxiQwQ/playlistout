@@ -39,15 +39,20 @@ const Wire: React.FC<{ d: string; color: string; progress: number; width?: numbe
   />
 );
 
-const CageBack: React.FC<{ frame: number }> = ({ frame }) => {
+const CageBack: React.FC<{ frame: number; ready?: boolean }> = ({ frame, ready = false }) => {
   const { fps } = useVideoConfig();
-  const enter = spring({ frame, fps, config: { damping: 22, stiffness: 90, mass: 0.9 }, durationInFrames: 45 });
+  const enter = ready ? 1 : spring({ frame, fps, config: { damping: 22, stiffness: 90, mass: 0.9 }, durationInFrames: 45 });
   const jolt = frame > 120 ? Math.sin((frame - 120) * 0.9) * Math.exp(-(frame - 120) / 36) * 2.4 : 0;
   const breakT = easeInOut(frame, 150, 18, 0, 1);
-  const fade = interpolate(frame, [0, 5, 175, 204], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
+  const fade = ready
+    ? interpolate(frame, [0, 175, 204], [1, 1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : interpolate(frame, [0, 5, 175, 204], [0, 1, 1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
 
   return (
     <div
@@ -308,7 +313,7 @@ const Ticket: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-export const Intro: React.FC = () => {
+export const Intro: React.FC<{ cageReady?: boolean }> = ({ cageReady = false }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -316,10 +321,15 @@ export const Intro: React.FC = () => {
   const titleOut = easeInOut(frame, 118, 14, 0, 1);
   const secondIn = spring({ frame: frame - 138, fps, config: { damping: 17, stiffness: 100, mass: 0.8 }, durationInFrames: 34 });
   const secondOut = easeInOut(frame, 182, 22, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 5, 168, 170], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
+  const sceneOpacity = cageReady
+    ? interpolate(frame, [0, 168, 170], [1, 1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : interpolate(frame, [0, 5, 168, 170], [0, 1, 1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
   const shake = frame > 145 && frame < 175 ? Math.sin(frame * 1.8) * Math.exp(-(frame - 145) / 20) * 1.7 : 0;
   const lockBreak = frame > 150;
 
@@ -462,7 +472,7 @@ export const Intro: React.FC = () => {
         </div>
 
         <Ticket frame={frame} />
-        <CageBack frame={frame} />
+        <CageBack frame={frame} ready={cageReady} />
 
         {/* platform tags holding the cage */}
         {PLATFORMS.map((platform, i) => {
@@ -572,7 +582,7 @@ export const IntroFrontBars: React.FC = () => {
   const unlock = easeInOut(frame, 138, 12, 0, 1);
   const doorOpen = easeInOut(frame, 146, 16, 0, 1);
   const lockFall = easeInOut(frame, 152, 28, 0, 1);
-  const fade = interpolate(frame, [0, 8, 162, 169], [0, 1, 1, 0], {
+  const fade = interpolate(frame, [0, 1, 166, 170], [1, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -601,17 +611,17 @@ export const IntroFrontBars: React.FC = () => {
 
           {/* fixed bars to the right of the door */}
           {frontFix.map((x) => (
-            <path key={x} d={`M${x} 265c-2 180 3 350 -1 542`} stroke="rgba(45,52,54,.56)" strokeWidth="1.7" strokeLinecap="round" />
+            <path key={x} d={`M${x} 265c-2 180 3 350 -1 542`} stroke="rgba(45,52,54,.7)" strokeWidth="2" strokeLinecap="round" />
           ))}
 
           {/* hinged door, with bars passing in front of the note */}
           <g transform={`translate(${hinge} 0) scale(${doorScale} 1) translate(${-hinge} 0)`}>
-            <path d={`M${hinge} 286v532`} stroke="rgba(45,52,54,.74)" strokeWidth="2.5" strokeLinecap="round" />
-            <path d={`M${hinge + doorWidth} 286v532`} stroke="rgba(45,52,54,.74)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={`M${hinge} 286v532`} stroke="rgba(45,52,54,.82)" strokeWidth="2.7" strokeLinecap="round" />
+            <path d={`M${hinge + doorWidth} 286v532`} stroke="rgba(45,52,54,.82)" strokeWidth="2.7" strokeLinecap="round" />
             <path d={`M${hinge} 291c100-12 208-12 ${doorWidth} 0`} stroke="rgba(45,52,54,.62)" strokeWidth="2" strokeLinecap="round" />
             <path d={`M${hinge} 812c99 12 207 12 ${doorWidth} 0`} stroke="rgba(45,52,54,.6)" strokeWidth="2" strokeLinecap="round" />
             {barXs.slice(1, -1).map((x) => (
-              <path key={x} d={`M${x} 292c-2 163 3 340 -1 518`} stroke="rgba(45,52,54,.55)" strokeWidth="1.75" strokeLinecap="round" />
+              <path key={x} d={`M${x} 292c-2 163 3 340 -1 518`} stroke="rgba(45,52,54,.68)" strokeWidth="2" strokeLinecap="round" />
             ))}
             {/* handle and hinge plates */}
             <circle cx={hinge + 266} cy={556} r="5.5" stroke="rgba(45,52,54,.72)" strokeWidth="1.8" fill="rgba(255,249,234,.55)" />
@@ -640,6 +650,13 @@ export const IntroFrontBars: React.FC = () => {
             <path d="M0 46v18" stroke={C.ink} strokeWidth="3.5" strokeLinecap="round" />
             <path d="M-16 63h32" stroke="rgba(45,52,54,.35)" strokeWidth="2" strokeLinecap="round" />
           </g>
+
+          {/* the door creaks open after the clasp gives */}
+          {frame > 146 && frame < 166 ? (
+            <text x={hinge - 34} y={610} fontFamily={F.hand} fontSize="22" fill={C.inkMuted} transform={`rotate(${-8 + doorOpen * 10} ${hinge - 34} 610)`} opacity={1 - doorOpen * 0.7}>
+              吱呀——
+            </text>
+          ) : null}
 
           {/* the click of the lock */}
           {frame > 136 && frame < 166 ? (

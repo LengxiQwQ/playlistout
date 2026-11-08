@@ -4,7 +4,7 @@ import { ASSETS } from '../assets';
 import { easeBackOut, easeOut } from '../anim';
 import { PLATFORMS } from '../data';
 import { C, F, SCENES, SHADOW, cue } from '../theme';
-import { CrayonUnderline, JournalCard, SparkleDoodle, StickyBadge } from '../components/Stationery';
+import { CrayonUnderline, JournalCard, SparkleDoodle, StickyBadge, TopRightUrlBanner } from '../components/Stationery';
 import { PlatformLogo } from '../components/BrandLogos';
 
 const rel = (name: Parameters<typeof cue>[0]) => cue(name) - SCENES.finale.in;
@@ -184,6 +184,19 @@ export const FinaleScene: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
+      {/* ================= TOP RIGHT: PERMANENT OFFICIAL URL BANNER ================= */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 38,
+          right: 82,
+          zIndex: 35,
+          opacity: easeOut(frame, 0, 14),
+        }}
+      >
+        <TopRightUrlBanner subtitle="开源 · 纯本地导出" />
+      </div>
+
       {/* ================= CELEBRATION FIREWORKS ON WEBSITE URL POP ("噔噔噔") ================= */}
       <FinaleCelebrationFireworks frame={frame} burstFrame={urlPop} />
 

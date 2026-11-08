@@ -47,14 +47,14 @@ const KEYS: Key[] = [
 
   // folder at the start of export
   { f: 516, x: 1600, y: 292, size: 126, r: -7, lift: 144 },
-  { f: 555, x: 1660, y: 268, size: 126, r: 3 },
+  { f: 555, x: 1660, y: 268, size: 138, r: 3 },
   { f: 620, x: 1660, y: 268, size: 124, r: -2 },
   { f: 672, x: 1560, y: 300, size: 122, r: 7 },
 
   // jump to the batch page
   { f: 746, x: 1600, y: 300, size: 122, r: 3 },
   { f: 764, x: 1600, y: 150, size: 124, r: -2, lift: 142 },
-  { f: 840, x: 1590, y: 148, size: 124, r: 2 },
+  { f: 840, x: 1590, y: 148, size: 138, r: 2 },
 
   // onto the batch button
   { f: 858, x: 1310, y: 510, size: 122, r: -5, lift: 106 },
@@ -68,7 +68,7 @@ const KEYS: Key[] = [
 
   // terminal
   { f: 1010, x: 1530, y: 170, size: 118, r: -5, lift: 152 },
-  { f: 1080, x: 1510, y: 240, size: 118, r: 2 },
+  { f: 1080, x: 1510, y: 240, size: 132, r: 2 },
   { f: 1180, x: 1470, y: 255, size: 118, r: -2 },
   { f: 1250, x: 1360, y: 300, size: 118, r: 4 },
 
@@ -80,7 +80,7 @@ const KEYS: Key[] = [
 
   // the final card; it stays in the film to the end
   { f: 1530, x: 1530, y: 330, size: 112, r: 3 },
-  { f: 1548, x: 1530, y: 260, size: 112, r: 0, lift: 104 },
+  { f: 1548, x: 1530, y: 260, size: 120, r: 0, lift: 104 },
   { f: 1580, x: 1510, y: 250, size: 110, r: -2 },
   { f: 1680, x: 1510, y: 250, size: 110, r: 1 },
 ];
@@ -99,6 +99,54 @@ const at = (frame: number): { a: Key; b: Key; t: number } => {
   return { a: KEYS[KEYS.length - 1], b: KEYS[KEYS.length - 1], t: 1 };
 };
 
+const CLICKS = [
+  { f: 258, x: 1480, y: 500 },
+  { f: 474, x: 1510, y: 900 },
+  { f: 880, x: 1320, y: 590 },
+];
+
+const ClickMarks: React.FC<{ frame: number }> = ({ frame }) => {
+  const active = CLICKS.find((c) => frame >= c.f && frame < c.f + 14);
+  if (!active) return null;
+  const t = (frame - active.f) / 14;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: active.x - 24,
+        top: active.y - 24,
+        width: 48,
+        height: 48,
+        zIndex: 875,
+        pointerEvents: 'none',
+      }}
+      aria-hidden="true"
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          border: '1.4px solid rgba(45,52,54,.55)',
+          transform: `scale(${0.5 + t * 1.4})`,
+          opacity: (1 - t) * 0.7,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 18,
+          top: 18,
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          background: 'rgba(45,52,54,.38)',
+          opacity: (1 - t) * 0.8,
+        }}
+      />
+    </div>
+  );
+};
 const expressionFor = (frame: number): MascotExpression => {
   if (frame < 42) return 'happy';
   if (frame < 145) return 'sleepy';
@@ -128,12 +176,20 @@ const poseFor = (frame: number): MascotPose => {
 };
 
 export const MascotJourney: React.FC = () => {
-  const frame = useCurrentFrame();
+  const globalFrame = useCurrentFrame();
+  if (globalFrame < 60) return null;
+  const frame = globalFrame - 60;
   const { a, b, t } = at(frame);
   const x = a.x + (b.x - a.x) * t;
   const yLinear = a.y + (b.y - a.y) * t;
   const y = yLinear - (a.lift ?? 0) * 4 * t * (1 - t);
   const size = a.size + (b.size - a.size) * t;
+  // A small grounded weight-shift. The character never becomes a frozen
+  // sticker while it is thinking or waiting for a click.
+  const idleX = Math.sin(frame / 10) * 8.5;
+  const idleY = Math.sin(frame / 7) * 3.2;
+  const idleRot = Math.sin(frame / 12) * 4.5;
+  const breathe = Math.sin(frame / 16) * 0.01;
   const rotation = a.r + (b.r - a.r) * t;
 
   const squash = (() => {
@@ -152,17 +208,18 @@ export const MascotJourney: React.FC = () => {
     <div
       style={{
         position: 'absolute',
-        left: x - size / 2,
-        top: y - size * 0.58,
+        left: x - size / 2 + idleX,
+        top: y - size * 0.58 + idleY,
         width: size,
         height: size * 1.16,
         zIndex: 880,
         pointerEvents: 'none',
       }}
     >
+      <ClickMarks frame={frame} />
       <NoteMascot
         size={size}
-        rotation={rotation + Math.sin(frame / 41) * 1.2}
+        rotation={rotation + Math.sin(frame / 41) * 1.2 + idleRot}
         expression={expressionFor(frame)}
         blink={frame % 104 > 4 && frame % 104 < 8}
         pose={poseFor(frame)}
@@ -171,7 +228,7 @@ export const MascotJourney: React.FC = () => {
           transformOrigin: 'center bottom',
           transform: action
             ? 'translateY(5px) scale(1.08, .92)'
-            : `scale(${1 + squash}, ${1 - squash})`,
+            : `translateY(${Math.sin(frame / 12) * 1.1}px) scale(${1 + squash + breathe}, ${1 - squash + breathe * 0.6})`,
         }}
       />
     </div>

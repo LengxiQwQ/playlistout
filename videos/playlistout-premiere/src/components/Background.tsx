@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { C } from '../theme';
 import { seeded } from '../anim';
 import { ASSETS } from '../assets';
@@ -14,6 +14,7 @@ const HOLES = Array.from({ length: 8 }).map((_, i) => ({
  * work here: pulp, fibers, soft creases and the slightly darker cut edge.
  */
 export const PaperBackground: React.FC = () => {
+  const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: C.paper, overflow: 'hidden' }}>
       {/* Flat, natural paper tone. No lamp pool, no vignette. */}
@@ -148,9 +149,9 @@ export const PaperBackground: React.FC = () => {
       <div
         className="paper-texture"
         style={{
-          opacity: 0.34,
+          opacity: 0.32,
           backgroundImage: `url(${ASSETS.grain})`,
-          backgroundPosition: '17px 9px',
+          backgroundPosition: `${17 + (frame * 0.38) % 64}px ${9 + (frame * 0.24) % 64}px`,
         }}
       />
       <AbsoluteFill
@@ -207,6 +208,11 @@ export const PaperBackground: React.FC = () => {
 
 /** Very restrained top layer: no vignette, no warm bloom, only a little tooth. */
 export const Atmosphere: React.FC = () => {
+  const frame = useCurrentFrame();
+  // The page is held still, but the paper tooth keeps breathing. This is not
+  // a camera move: the ruling, cards and margins do not shift, only the grain.
+  const grainX = (frame * 0.55) % 256;
+  const grainY = (frame * 0.37) % 256;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 1000 }}>
       <div
@@ -215,7 +221,7 @@ export const Atmosphere: React.FC = () => {
           inset: 0,
           backgroundImage: `url(${ASSETS.grain})`,
           backgroundSize: '256px 256px',
-          backgroundPosition: '3px 7px',
+          backgroundPosition: `${grainX}px ${grainY}px`,
           mixBlendMode: 'multiply',
           opacity: 0.045,
         }}

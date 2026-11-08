@@ -1,13 +1,33 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
 import { ASSETS } from '../assets';
 import { C, F } from '../theme';
 
 export const JournalStage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const frame = useCurrentFrame();
-  // Very gentle organic camera float so the paper world feels alive without shaking UI text
-  const breathX = Math.sin(frame / 65) * 1.4;
-  const breathY = Math.cos(frame / 80) * 1.0;
+  // 微幅运镜跟随与有机纸张呼吸（10-16px范围的平滑缓动，绝不晃眼，赋予全局连续空间质感）
+  const breathX = Math.sin(frame / 65) * 1.6;
+  const breathY = Math.cos(frame / 80) * 1.2;
+
+  // 场景动线宏观镜头推移（跟随视觉叙事重心平滑侧移与高潮微推）
+  const camX = interpolate(
+    frame,
+    [0, 222, 336, 534, 648, 816, 960, 1074, 1374, 1566, 1740],
+    [0, 4, -8, 10, -10, 8, -6, 0, 0, 0, 0],
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+  );
+  const camY = interpolate(
+    frame,
+    [0, 222, 534, 816, 1074, 1566, 1740],
+    [0, -4, 0, -4, 0, -6, -2],
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+  );
+  const camScale = interpolate(
+    frame,
+    [0, 1566, 1680, 1740],
+    [1.0, 1.0, 1.016, 1.02],
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+  );
 
   const holes = Array.from({ length: 12 }, (_, i) => i);
   const ruledLines = Array.from({ length: 23 }, (_, i) => i);
@@ -22,7 +42,8 @@ export const JournalStage: React.FC<{ children?: React.ReactNode }> = ({ childre
     >
       <AbsoluteFill
         style={{
-          transform: `translate(${breathX}px, ${breathY}px)`,
+          transform: `translate(${breathX + camX}px, ${breathY + camY}px) scale(${camScale})`,
+          transformOrigin: '50% 50%',
         }}
       >
         {/* 1. Paper Fibre & Pulp Base Texture */}

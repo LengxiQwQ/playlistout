@@ -5,6 +5,7 @@ import { C } from './theme';
 import { Atmosphere, PaperBackground } from './components/Background';
 import { MascotJourney } from './components/MascotJourney';
 import { Intro, IntroFrontBars } from './scenes/Intro';
+import { ColdOpen } from './scenes/ColdOpen';
 import { ParseScene } from './scenes/ParseScene';
 import { ExportScene } from './scenes/ExportScene';
 import { BatchScene } from './scenes/BatchScene';
@@ -77,8 +78,12 @@ export const Main: React.FC = () => {
     <AbsoluteFill className="film-root" style={{ background: C.paper }}>
       <PaperBackground />
 
+      <Sequence name="Cold Open" from={0} durationInFrames={60}>
+        <ColdOpen />
+      </Sequence>
+
       <Sequence name="Intro" from={SCENES.intro.in} durationInFrames={SCENES.intro.end - SCENES.intro.in}>
-        <Intro />
+        <Intro cageReady />
       </Sequence>
 
       <Sequence name="Parse" from={SCENES.parse.in} durationInFrames={SCENES.parse.end - SCENES.parse.in}>
@@ -111,7 +116,7 @@ export const Main: React.FC = () => {
       </Sequence>
 
       <Atmosphere />
-      <Audio src={staticFile('audio/soundtrack.wav')} volume={1} />
+      <Audio src={staticFile('audio/soundtrack-v3.wav')} volume={1} />
     </AbsoluteFill>
   );
 };

@@ -4,7 +4,7 @@ import { ASSETS } from '../assets';
 import { easeBackOut, easeInOut, easeOut } from '../anim';
 import { PLATFORMS } from '../data';
 import { C, F, SHADOW, SCENES, cue } from '../theme';
-import { CrayonUnderline, JournalCard, SparkleDoodle, StickyBadge } from '../components/Stationery';
+import { CrayonUnderline, JournalCard, SparkleDoodle, StickyBadge, TopRightUrlBanner } from '../components/Stationery';
 import { PlatformLogo } from '../components/BrandLogos';
 
 const rel = (name: Parameters<typeof cue>[0]) => cue(name) - SCENES.intro.in;
@@ -22,18 +22,18 @@ export const IntroScene: React.FC = () => {
   const handoffFrame = rel('intro_handoff'); // 222
 
   const rattle1 =
-    frame >= 12 && frame <= 34
-      ? Math.sin((frame - 12) * 1.4) * Math.exp(-(frame - 12) / 14) * 7
+    frame >= 20 && frame <= 42
+      ? Math.sin((frame - 20) * 1.4) * Math.exp(-(frame - 20) / 14) * 7
       : 0;
   const rattle2 =
-    frame >= 44 && frame <= 68
-      ? Math.sin((frame - 44) * 1.5) * Math.exp(-(frame - 44) / 14) * 8
+    frame >= 60 && frame <= 88
+      ? Math.sin((frame - 60) * 1.5) * Math.exp(-(frame - 60) / 14) * 8
       : 0;
   const cageShake = rattle1 + rattle2;
 
   const cageExit = easeInOut(frame, jumpFrame + 8, 26, 0, 1);
-  const handoffExit = easeInOut(frame, handoffFrame, 22, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 6, handoffFrame + 6, handoffFrame + 22], [0, 1, 1, 0], {
+  const handoffExit = easeInOut(frame, handoffFrame - 6, 14, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 6, handoffFrame - 4, handoffFrame + 6], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -47,6 +47,19 @@ export const IntroScene: React.FC = () => {
         transform: `translateY(${-handoffExit * 90}px) scale(${1 - handoffExit * 0.04})`,
       }}
     >
+      {/* ================= TOP RIGHT: PERMANENT OFFICIAL URL BANNER ================= */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 38,
+          right: 82,
+          zIndex: 35,
+          opacity: easeOut(frame, 0, 14),
+        }}
+      >
+        <TopRightUrlBanner subtitle="把你的歌单带走" />
+      </div>
+
       {/* ================= LEFT COLUMN: STORY & BRAND HERO ================= */}
       <div
         style={{
@@ -332,39 +345,6 @@ export const IntroScene: React.FC = () => {
               />
               <path d="M 110 579 L 560 579" stroke={C.yellowDeep} strokeWidth="3" strokeDasharray="8 8" />
             </svg>
-
-            {PLATFORMS.map((p, idx) => {
-              const positions = [
-                { left: 26, top: 175, rot: -5 },
-                { left: 500, top: 175, rot: 5 },
-                { left: 18, top: 365, rot: -3 },
-                { left: 512, top: 365, rot: 4 },
-                { left: 56, top: 545, rot: -4 },
-                { left: 486, top: 545, rot: 3 },
-              ][idx];
-              return (
-                <div
-                  key={p.id}
-                  style={{
-                    position: 'absolute',
-                    left: positions.left,
-                    top: positions.top,
-                    zIndex: 12,
-                  }}
-                >
-                  <StickyBadge
-                    bg={p.badgeBg}
-                    ink={p.badgeInk}
-                    borderColor={C.ink}
-                    fontSize={24}
-                    rotate={positions.rot}
-                  >
-                    <PlatformLogo platform={p.id} size={26} shape="squircle" style={{ marginRight: 6 }} />
-                    <span>{p.name}</span>
-                  </StickyBadge>
-                </div>
-              );
-            })}
           </JournalCard>
         </div>
       ) : null}
@@ -503,13 +483,19 @@ export const IntroCageFrontOverlay: React.FC = () => {
       <div
         style={{
           position: 'absolute',
-          left: CAGE_BOX.x + 30,
-          top: CAGE_BOX.y + 82,
-          width: 670,
-          height: 680,
+          left: CAGE_BOX.x,
+          top: CAGE_BOX.y,
+          width: CAGE_BOX.w,
+          height: CAGE_BOX.h,
         }}
       >
-        <svg width="670" height="680" viewBox="0 0 670 680" fill="none" style={{ overflow: 'visible' }}>
+        <svg
+          width="670"
+          height="680"
+          viewBox="0 0 670 680"
+          fill="none"
+          style={{ position: 'absolute', left: 30, top: 82, overflow: 'visible' }}
+        >
           {/* Front Cage Door (wide center gap at x=255..415 so Mascot's face is 100% unobstructed!) */}
           <g
             transform={`translate(520 350) scale(${1 - doorOpenProgress * 0.78} 1) translate(-520 -350)`}
@@ -570,8 +556,51 @@ export const IntroCageFrontOverlay: React.FC = () => {
           ) : null}
         </svg>
 
+        {/* 平台真实官方图标标签环绕笼身：层级位于鸟笼门栏之上，100% 清晰不被任何铁杆遮挡 */}
+        {PLATFORMS.map((p, idx) => {
+          const positions = [
+            { left: 24, top: 175, rot: -5 },
+            { left: 496, top: 175, rot: 5 },
+            { left: 16, top: 365, rot: -3 },
+            { left: 508, top: 365, rot: 4 },
+            { left: 52, top: 545, rot: -4 },
+            { left: 482, top: 545, rot: 3 },
+          ][idx];
+          return (
+            <div
+              key={p.id}
+              style={{
+                position: 'absolute',
+                left: positions.left,
+                top: positions.top,
+                zIndex: 30,
+              }}
+            >
+              <StickyBadge
+                bg={p.badgeBg}
+                ink={p.badgeInk}
+                borderColor={C.ink}
+                fontSize={24}
+                rotate={positions.rot}
+              >
+                <PlatformLogo
+                  platform={p.id}
+                  size={30}
+                  shape="squircle"
+                  style={{
+                    marginRight: 8,
+                    border: `2px solid ${C.ink}`,
+                    borderRadius: 9,
+                  }}
+                />
+                <span>{p.name}</span>
+              </StickyBadge>
+            </div>
+          );
+        })}
+
         {frame >= unlockFrame && frame <= unlockFrame + 24 ? (
-          <div style={{ position: 'absolute', left: 265, top: 515 }}>
+          <div style={{ position: 'absolute', left: 295, top: 597, zIndex: 35 }}>
             <SparkleDoodle size={52} color="#ffd32a" rotate={frame * 8} />
             <StickyBadge
               bg={C.yellow}

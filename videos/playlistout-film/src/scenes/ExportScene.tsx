@@ -4,6 +4,7 @@ import { easeBackOut, easeInOut, easeOut } from '../anim';
 import { DEMO_PLAYLIST, EXPORT_FORMATS } from '../data';
 import { C, F, SCENES, SHADOW, cue } from '../theme';
 import { HandCheck, JournalCard, SceneHeaderBanner, StickyBadge } from '../components/Stationery';
+import { CelebrationFireworks } from '../components/CelebrationFireworks';
 
 const rel = (name: Parameters<typeof cue>[0]) => cue(name) - SCENES.export.in;
 
@@ -29,9 +30,10 @@ export const ExportScene: React.FC = () => {
   const batchEnter = rel('batch_enter');
 
   const enter = spring({ frame, fps, config: { damping: 18, stiffness: 95 } });
-  const jsonCardIn = easeBackOut(frame, jsonFrame - 18, 22);
-  const exitProgress = easeInOut(frame, batchEnter, 24, 0, 1);
-  const sceneOpacity = interpolate(frame, [0, 10, batchEnter + 8, batchEnter + 24], [0, 1, 1, 0], {
+  const jsonCardIn = easeBackOut(frame, 6, 22);
+  const isJsonActive = frame >= jsonFrame - 6;
+  const exitProgress = easeInOut(frame, batchEnter - 8, 14, 0, 1);
+  const sceneOpacity = interpolate(frame, [0, 10, batchEnter - 6, batchEnter + 4], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -49,7 +51,7 @@ export const ExportScene: React.FC = () => {
       <SceneHeaderBanner
         stepTag="STEP 02 · 多格式本地导出"
         title="歌单变形：表格归档与标准 JSON"
-        subtitle="纯浏览器端本地生成 · 零服务端存储"
+        subtitle="纯端侧本地生成"
         tagBg={C.mint}
         style={{
           marginTop: 38,
@@ -289,7 +291,7 @@ export const ExportScene: React.FC = () => {
           top: 140,
           width: 820,
           height: 618,
-          opacity: easeOut(frame, jsonFrame - 20, 16),
+          opacity: easeOut(frame, 4, 14),
           transform: `translateX(${(1 - jsonCardIn) * 60}px) rotate(0.6deg)`,
           zIndex: 21,
         }}
@@ -299,7 +301,14 @@ export const ExportScene: React.FC = () => {
           tapePos="top-right"
           tapeColor={C.tapeCyan}
           shadow="cutoutLg"
-          style={{ width: '100%', height: '100%', padding: '24px 28px' }}
+          borderColor={isJsonActive ? '#0284c7' : C.ink}
+          borderWidth={isJsonActive ? 4 : 3.5}
+          style={{
+            width: '100%',
+            height: '100%',
+            padding: '24px 28px',
+            boxShadow: isJsonActive ? '9px 10px 0 0 #2d3436, 0 0 22px rgba(56, 189, 248, 0.28)' : SHADOW.cutoutLg,
+          }}
         >
           <div
             style={{
@@ -334,8 +343,8 @@ export const ExportScene: React.FC = () => {
                   <span style={{ fontFamily: F.sans, fontSize: 31, fontWeight: 900, color: C.ink }}>
                     Canonical JSON 标准格式
                   </span>
-                  <StickyBadge bg={C.blue} ink={C.blueDeep} fontSize={18} rotate={-1}>
-                    ★ 播放器与程序接入
+                  <StickyBadge bg={isJsonActive ? C.blue : C.paperCream} ink={isJsonActive ? C.blueDeep : C.inkMuted} fontSize={18} rotate={-1}>
+                    {isJsonActive ? '★ 播放器与程序接入' : '待命 · 规范数据标准'}
                   </StickyBadge>
                 </div>
                 <div
@@ -369,7 +378,8 @@ export const ExportScene: React.FC = () => {
             }}
           >
             {JSON_PREVIEW_LINES.map((line, i) => {
-              const lineIn = easeOut(frame, jsonFrame - 6 + i * 3, 14);
+              const lineActiveIn = easeOut(frame, jsonFrame - 6 + i * 3, 14);
+              const lineIn = isJsonActive ? lineActiveIn : 0.62;
               return (
                 <div
                   key={i}
@@ -508,6 +518,15 @@ export const ExportScene: React.FC = () => {
           );
         })}
       </div>
+
+      {/* ================= CELEBRATION FIREWORKS (6 FORMATS FAN AROUND MASCOT) ================= */}
+      <CelebrationFireworks
+        frame={frame}
+        burstFrame={fanFrame + 6}
+        cx={995}
+        cy={560}
+        scale={1.12}
+      />
     </AbsoluteFill>
   );
 };

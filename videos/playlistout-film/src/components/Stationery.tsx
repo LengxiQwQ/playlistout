@@ -137,6 +137,54 @@ export const StickyBadge: React.FC<{
   </span>
 );
 
+/**
+ * 最右上角黄色短横线区域：全片从头到尾永远高亮显示官方网址，随后紧跟当前场景特性
+ */
+export const TopRightUrlBanner: React.FC<{
+  subtitle?: string;
+  style?: React.CSSProperties;
+}> = ({ subtitle, style }) => (
+  <div
+    style={{
+      fontFamily: F.kuaile,
+      fontSize: 23,
+      color: C.inkSoft,
+      backgroundColor: 'rgba(255, 248, 189, 0.94)',
+      padding: '7px 20px',
+      borderRadius: 14,
+      border: `2.6px dashed ${C.ink}`,
+      boxShadow: '2px 3px 0 rgba(45, 52, 54, 0.15)',
+      transform: 'rotate(0.8deg)',
+      whiteSpace: 'nowrap',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 10,
+      ...style,
+    }}
+  >
+    <span
+      style={{
+        fontFamily: F.mono,
+        fontSize: 24,
+        fontWeight: 900,
+        color: C.ink,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+      }}
+    >
+      <span>🌐</span>
+      <span>playlistout.com</span>
+    </span>
+    {subtitle ? (
+      <>
+        <span style={{ color: '#94a3b8', fontWeight: 900 }}>·</span>
+        <span style={{ fontSize: 21, color: C.inkSoft }}>{subtitle}</span>
+      </>
+    ) : null}
+  </div>
+);
+
 export const SceneHeaderBanner: React.FC<{
   stepTag: string;
   title: string;
@@ -171,23 +219,7 @@ export const SceneHeaderBanner: React.FC<{
         {title}
       </h2>
     </div>
-    {subtitle ? (
-      <div
-        style={{
-          fontFamily: F.kuaile,
-          fontSize: 24,
-          color: C.inkSoft,
-          backgroundColor: 'rgba(255, 248, 189, 0.85)',
-          padding: '8px 20px',
-          borderRadius: 12,
-          border: `2.4px dashed ${C.ink}`,
-          transform: 'rotate(1deg)',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {subtitle}
-      </div>
-    ) : null}
+    <TopRightUrlBanner subtitle={subtitle} />
   </div>
 );
 
