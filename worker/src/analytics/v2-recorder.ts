@@ -138,6 +138,8 @@ async function recordAutomatedSecurityEvent(
   platform: AnalyticsPlatformV2,
   input: ResolveV2Input,
 ): Promise<void> {
+  // 自动化/爬虫请求按 5% 抽样记录，防止扫描器高频轰炸瞬间耗尽 D1 每日 10 万行写入额度
+  if (Math.random() > 0.05) return;
   const details = JSON.stringify({
     channel: ctx.channel,
     clientId: ctx.clientId,

@@ -111,6 +111,15 @@ const handleAnalytics = async (c: any) => {
   }
 
   if (url.pathname.endsWith('/snapshot')) {
+    const edgeCache = typeof caches !== 'undefined' ? caches.default : undefined;
+    const bypassCache = url.searchParams.get('refresh') === '1' || url.searchParams.get('nocache') === '1';
+    const snapshotCacheKey = 'https://playlistout-api.internal/cache/analytics-v2-snapshot';
+
+    if (!bypassCache && edgeCache) {
+      const cached = await edgeCache.match(snapshotCacheKey);
+      if (cached) return cached;
+    }
+
     const analytics = await getAnalyticsV2Snapshot(env.DB);
 
     let quarantine: unknown[] = [];
@@ -124,7 +133,7 @@ const handleAnalytics = async (c: any) => {
             ).first();
             if (!table) return [];
             const rows = await env.DB!.prepare(
-              'SELECT * FROM quarantined_stats ORDER BY incident_date DESC, id DESC',
+              'SELECT * FROM quarantined_stats ORDER BY incident_date DESC, id DESC LIMIT 500',
             ).all();
             return rows.results || [];
           } catch {
@@ -138,7 +147,7 @@ const handleAnalytics = async (c: any) => {
             ).first();
             if (!table) return [];
             const rows = await env.DB!.prepare(
-              'SELECT * FROM parse_feedback ORDER BY last_reported_at DESC, id DESC',
+              'SELECT * FROM parse_feedback ORDER BY last_reported_at DESC, id DESC LIMIT 500',
             ).all();
             return rows.results || [];
           } catch {
@@ -150,7 +159,7 @@ const handleAnalytics = async (c: any) => {
       feedback = feedbackResult;
     }
 
-    return new Response(
+    const snapshotResponse = new Response(
       JSON.stringify({
         success: true,
         data: {
@@ -163,12 +172,19 @@ const handleAnalytics = async (c: any) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          Pragma: 'no-cache',
+          'Cache-Control': bypassCache
+            ? 'no-store, no-cache, must-revalidate'
+            : 'private, max-age=60, s-maxage=120, stale-while-revalidate=300',
           ...responseHeaders,
         },
       },
     );
+
+    if (!bypassCache && edgeCache && c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      c.executionCtx.waitUntil(edgeCache.put(snapshotCacheKey, snapshotResponse.clone()));
+    }
+
+    return snapshotResponse;
   }
 
   const analytics = await getAnalyticsV2(env.DB, parseAnalyticsV2Filters(url));
@@ -176,8 +192,7 @@ const handleAnalytics = async (c: any) => {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-      Pragma: 'no-cache',
+      'Cache-Control': 'private, max-age=30, s-maxage=60',
       ...responseHeaders,
     },
   });
