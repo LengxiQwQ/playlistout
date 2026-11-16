@@ -280,7 +280,7 @@ Playlist Out 使用 [MIT License](LICENSE) 开源。
 **热门来源（近 14 天）：** Google · Bing · github.com · Baidu · l.meta.ai · claude.ai  
 **热门内容（近 14 天）：** releases/tag/v3.0.0 · docs/JSON-SCHEMA.md · plugins/musicfree/README.md · README.md
 
-> 数据开始：2026-09-07 · 最后更新：2026-11-15
+> 数据开始：2026-09-07 · 最后更新：2026-11-16
 <!-- INSIGHTS:END -->
 
 ---
