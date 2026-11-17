@@ -78,15 +78,15 @@ describe('FontSwitcher Component (Phase 3)', () => {
     localStorage.clear();
   });
 
-  it('renders with Chinese curated presets and defaults to 毛笔手账 in zh-CN', () => {
+  it('renders with Chinese curated presets and defaults to 快乐手绘 in zh-CN', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <FontSwitcher />
       </LanguageProvider>,
     );
 
-    // In Chinese, default is 毛笔手账
-    const button = screen.getByRole('button', { name: /毛笔手账/ });
+    // In Chinese, default is 快乐手绘
+    const button = screen.getByRole('button', { name: /快乐手绘/ });
     expect(button).toBeInTheDocument();
 
     // Open dropdown
@@ -109,7 +109,7 @@ describe('FontSwitcher Component (Phase 3)', () => {
       </LanguageProvider>,
     );
 
-    const button = screen.getByRole('button', { name: /毛笔手账/ });
+    const button = screen.getByRole('button', { name: /快乐手绘/ });
     fireEvent.click(button);
 
     const origOpt = screen.getByRole('option', { name: /原稿经典/ });
@@ -127,7 +127,7 @@ describe('FontSwitcher Component (Phase 3)', () => {
     );
 
     // In Chinese, button and sample preview are pure Chinese
-    fireEvent.click(screen.getByRole('button', { name: /毛笔手账/ }));
+    fireEvent.click(screen.getByRole('button', { name: /快乐手绘/ }));
     expect(screen.getAllByText('音乐手账').length).toBeGreaterThan(0);
     expect(screen.getByRole('option', { name: /毛笔手账/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /快乐手绘/ })).toBeInTheDocument();

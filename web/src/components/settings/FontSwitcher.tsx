@@ -144,7 +144,7 @@ export const FONT_PRESETS = ALL_FONT_PRESETS;
 export const FONT_STORAGE_PREFIX = 'playlistout-font-preset';
 
 // Track font presets confirmed ready in browser session
-const loadedFontPresets = new Set<string>(['original', 'zhnote']);
+const loadedFontPresets = new Set<string>(['original', 'zhnote', 'zh_kuaile']);
 
 export function checkFontLoaded(fontFamily: string): boolean {
   if (typeof document !== 'undefined' && 'fonts' in document && document.fonts?.check) {
@@ -240,8 +240,8 @@ export function loadPresetFont(preset: FontPreset, timeoutMs = 3500): Promise<bo
 
 export function ensureFontStylesheet(preset: FontPreset): void {
   if (!preset.googleFontsQuery) return;
-  // 'zhnote' and 'original' base fonts are preloaded in index.html, avoid duplicate link injection
-  if (preset.id === 'zhnote' || preset.id === 'original') return;
+  // Initial presets are preloaded in index.html; avoid duplicate link injection.
+  if (preset.id === 'zhnote' || preset.id === 'original' || preset.id === 'zh_kuaile') return;
   const linkId = `font-link-${preset.id}`;
   if (typeof document !== 'undefined' && !document.getElementById(linkId)) {
     try {

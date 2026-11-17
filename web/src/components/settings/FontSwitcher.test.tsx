@@ -20,7 +20,7 @@ describe('FontSwitcher Component', () => {
     const button = screen.getByRole('button', { name: /字体/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent('字体');
-    expect(document.body.dataset.fontPreset).toBe('zhnote');
+    expect(document.body.dataset.fontPreset).toBe('zh_kuaile');
   });
 
   it('opens font dropdown menu on click and lists all Chinese presets', () => {

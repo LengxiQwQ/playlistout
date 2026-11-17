@@ -9,13 +9,13 @@
 }
 
 /* Chinese Handwriting Presets (Dedicated Chinese Font List) */
-body[data-font-preset="zhnote"], body:not([data-font-preset]) {
+body[data-font-preset="zhnote"] {
   --font-marker: 'ZCOOL KuaiLe', 'Ma Shan Zheng', 'Permanent Marker', 'Yuanti SC', 'YouYuan', '幼圆', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-handwriting: 'Ma Shan Zheng', 'Caveat', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-note: 'Ma Shan Zheng', 'Nanum Pen Script', 'Kaiti SC', 'STKaiti', 'KaiTi', '楷体', cursive, serif;
   --font-mono: 'Space Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'Noto Sans SC', monospace;
 }
-body[data-font-preset="zh_kuaile"] {
+body[data-font-preset="zh_kuaile"], body:not([data-font-preset]) {
   --font-marker: 'ZCOOL KuaiLe', 'Permanent Marker', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;
   --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;
   --font-note: 'ZCOOL KuaiLe', 'Nanum Pen Script', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'STHupo', '华文琥珀', 'Noto Sans SC', cursive, sans-serif;

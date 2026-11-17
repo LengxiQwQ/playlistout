@@ -16,7 +16,7 @@ export function useFontPreset() {
   const isZh = language === 'zh-CN';
   const currentPresets = isZh ? CHINESE_FONT_PRESETS : ENGLISH_FONT_PRESETS;
   const storageKey = isZh ? `${FONT_STORAGE_PREFIX}-zh` : `${FONT_STORAGE_PREFIX}-en`;
-  const defaultPresetId = isZh ? 'zhnote' : 'original';
+  const defaultPresetId = isZh ? 'zh_kuaile' : 'original';
 
   const [selectedPresetId, setSelectedPresetId] = useState<string>(() => {
     try {

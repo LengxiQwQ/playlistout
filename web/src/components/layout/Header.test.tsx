@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Header } from './Header';
 import { LanguageProvider } from '../../i18n';
 
@@ -81,12 +81,12 @@ describe('Header Component', () => {
     expect(screen.getByTestId('mobile-settings-drawer')).toBeInTheDocument();
     expect(screen.getByText('🎨 手账字体风格')).toBeInTheDocument();
 
-    // Click 快乐手绘
-    const kuaileCard = screen.getByRole('button', { name: /快乐手绘/i });
-    fireEvent.click(kuaileCard);
+    // Choose another font from the drawer, separately from the desktop picker.
+    const brushCard = within(screen.getByTestId('mobile-settings-drawer')).getByRole('button', { name: /毛笔手账/i });
+    fireEvent.click(brushCard);
 
-    expect(document.body.dataset.fontPreset).toBe('zh_kuaile');
-    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zh_kuaile');
+    expect(document.body.dataset.fontPreset).toBe('zhnote');
+    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zhnote');
 
     // Close button
     const closeBtn = screen.getByRole('button', { name: /关闭对话框/i });
