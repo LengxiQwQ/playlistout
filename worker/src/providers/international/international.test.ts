@@ -92,6 +92,27 @@ describe('International playlist boundaries', () => {
     await expect(budget.get('https://allowed.test/')).rejects.toMatchObject({code:'UPSTREAM_TIMEOUT'});
     expect(fetch).not.toHaveBeenCalled();
   });
+  it('cancels the unneeded response tail after extraction without consuming it', async () => {
+    const cancel = vi.fn();
+    const read = vi.fn().mockResolvedValueOnce({done:false,value:new TextEncoder().encode('prefix target;')});
+    const getReader = vi.fn().mockReturnValue({read,cancel});
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,status:200,headers:new Headers(),body:{getReader}}));
+    const result=await new RequestBudget(new Set(['allowed.test'])).get('https://allowed.test/',{},false,chunk=>chunk.includes('target')?'target':undefined);
+    expect(result).toBe('target');
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it('uses the Workers bulk reader to coalesce small network packets', async () => {
+    const readAtLeast=vi.fn().mockResolvedValueOnce({done:false,value:new TextEncoder().encode('target;')});
+    const cancel=vi.fn();
+    const getReader=vi.fn().mockReturnValue({readAtLeast,cancel});
+    vi.stubGlobal('ReadableStreamBYOBReader',class {readAtLeast(){}});
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,status:200,headers:new Headers(),body:{getReader}}));
+    await expect(new RequestBudget(new Set(['allowed.test'])).get('https://allowed.test/',{},false,()=> 'target')).resolves.toBe('target');
+    expect(getReader).toHaveBeenCalledWith({mode:'byob'});
+    expect(readAtLeast).toHaveBeenCalledWith(65_536,expect.any(Uint8Array));
+    expect(cancel).toHaveBeenCalledOnce();
+  });
   it('refreshes authorization at most once within the same request budget', async () => {
     const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response(null, {status:401})));
     const refresh = vi.fn().mockResolvedValue('fixture-refreshed');

@@ -1,6 +1,6 @@
 # PlaylistOut Public API Specification (v1)
 
-> 候选分支新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。尚未生产部署。输入、字段、格式兼容性和免费额度阻碍见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
+> v3.1.0 新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
 
 
 > Governed by `docs/PROJECT-CONSTITUTION.md` and `docs/ROADMAP.md`.
@@ -18,7 +18,7 @@ The Public API v1 powers both the official PlaylistOut web application and exter
 
 ## 2. Supported Music Platforms
 
-This candidate supports 8 music platforms (Spotify and Apple Music are not deployed yet):
+PlaylistOut supports 8 music platforms:
 
 | Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
 | :--- | :--- | :--- | :---: | :---: | :---: |

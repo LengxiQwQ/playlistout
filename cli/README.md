@@ -1,6 +1,6 @@
 # Playlist Out CLI · 把你的歌单带走
 
-> 候选分支新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。尚未生产部署。输入、字段、格式兼容性和免费额度阻碍见 [国际平台接入说明](../docs/INTERNATIONAL-PLATFORMS.md)。
+> v3.1.0 新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](../docs/INTERNATIONAL-PLATFORMS.md)。
 
 
 Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地解析并导出网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐、咪咕音乐、Spotify 与 Apple Music 八个平台的公开歌单。

@@ -13,6 +13,8 @@ async function connectionSlot(): Promise<() => void> {
 }
 
 // Per-invocation budget: includes redirects, token refresh and retries.
+export type TextExtractor = (chunk: string, done: boolean) => string | undefined;
+
 export class RequestBudget {
   count = 0;
   lastUrl = '';
@@ -20,7 +22,7 @@ export class RequestBudget {
   readonly deadline = Date.now() + 25_000;
   constructor(private readonly hosts: ReadonlySet<string>) {}
 
-  async get(url: string, headers: Record<string, string> = {}, allow404 = false): Promise<string> {
+  async get(url: string, headers: Record<string, string> = {}, allow404 = false, extract?: TextExtractor): Promise<string> {
     let target = new URL(url);
     let retry = 0;
     for (let redirect = 0; redirect <= 3; redirect++) {
@@ -68,21 +70,39 @@ export class RequestBudget {
         }
         // Bound response memory, including chunked bodies without Content-Length.
         this.lastUrl = target.toString();
-        const reader = response.body?.getReader();
-        if (!reader) throw new ProviderError('PARSE_ERROR', '上游返回空响应。', 502);
+        if (!response.body) throw new ProviderError('PARSE_ERROR', '上游返回空响应。', 502);
+        // Native fetch bodies can arrive in ~2 KiB pieces. Coalesce them inside
+        // workerd rather than scheduling a JS continuation for each tiny chunk.
+        // Node/test streams retain the portable default-reader path.
+        const bulk = typeof ReadableStreamBYOBReader !== 'undefined' &&
+          typeof ReadableStreamBYOBReader.prototype.readAtLeast === 'function';
+        const byob = bulk ? response.body.getReader({ mode: 'byob' }) : undefined;
+        const reader = byob || response.body.getReader();
         const decoder = new TextDecoder();
         const chunks: string[] = [];
         let size = 0;
         for (;;) {
-          const { done, value } = await reader.read();
+          const { done, value } = byob
+            ? await byob.readAtLeast(65_536, new Uint8Array(65_536))
+            : await (reader as ReadableStreamDefaultReader<Uint8Array>).read();
           if (done) break;
           size += value.byteLength;
           if (size > 8 * 1024 * 1024) {
             await reader.cancel();
             throw new ProviderError('UPSTREAM_ERROR', '上游响应超过安全大小限制。', 502);
           }
-          chunks.push(decoder.decode(value, { stream: true }));
+          const text = decoder.decode(value, { stream: true });
+          if (extract) {
+            const result = extract(text, false);
+            if (result !== undefined) {
+              await reader.cancel();
+              return result;
+            }
+          } else {
+            chunks.push(text);
+          }
         }
+        if (extract) return extract(decoder.decode(), true) ?? '';
         chunks.push(decoder.decode());
         return chunks.join('');
       } catch (error) {

@@ -3,17 +3,11 @@ import { ProviderError, type Playlist, type Track } from '../../models/playlist'
 import { RequestBudget, json, requireTotal, complete, setRequestCost } from '../international/http';
 import { appleInput } from './input';
 import { normalizeAppleTrack } from './normalize';
+import { appleTokenPayload, createAppleTokenExtractor } from './token';
 
 const HOSTS = new Set(['music.apple.com', 'amp-api.music.apple.com', 'geo.music.apple.com']);
 let session: { token: string; expires: number } | undefined;
 let blockedUntil = 0;
-
-
-function payload(token: string): any {
-  try { return json(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
-  catch { return {}; }
-}
-
 
 export async function fetchApplePlaylist(input: string): Promise<Playlist> {
   const budget = new RequestBudget(HOSTS);
@@ -25,14 +19,13 @@ export async function fetchApplePlaylist(input: string): Promise<Playlist> {
   if (Date.now() < blockedUntil) throw new ProviderError('RATE_LIMITED', 'Apple Music 暂时限制访问，请稍后再试。', 429, { retryAfterSeconds: Math.ceil((blockedUntil - Date.now()) / 1000) });
   try {
     const token = async (force = false): Promise<string> => {
-      if (force || !session || session.expires < Date.now() + 86_400_000) {
+      if (force || !session || session.expires < Date.now() + 60_000) {
         const html = await budget.get('https://music.apple.com/us/404', {}, true);
         const asset = html.match(/src="(\/assets\/index~[^\"]+\.js)"/)?.[1];
         if (!asset) throw new ProviderError('PARSE_ERROR', 'Apple Music 网页格式已变化。', 502);
-        const bundle = await budget.get('https://music.apple.com' + asset);
-        const token = (bundle.match(/eyJ[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g) || []).find(t => payload(t).iss === 'AMPWebPlay');
-        if (!token || !Number.isFinite(payload(token).exp)) throw new ProviderError('PARSE_ERROR', 'Apple Music 令牌格式已变化。', 502);
-        session = { token, expires: payload(token).exp * 1000 };
+        const token = await budget.get('https://music.apple.com' + asset, {}, false, createAppleTokenExtractor());
+        if (!token) throw new ProviderError('PARSE_ERROR', 'Apple Music 令牌格式已变化。', 502);
+        session = { token, expires: appleTokenPayload(token).exp! * 1000 };
       }
       return session!.token;
     };
