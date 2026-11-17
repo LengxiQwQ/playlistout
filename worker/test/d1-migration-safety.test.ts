@@ -559,7 +559,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         tracksProcessedToday: 40,
         totalExports: 20,
         exportsToday: 2,
-        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4 },
+        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4, markdown: 0 },
         byPlatform: {
           qqmusic: { totalSuccess: 10, todaySuccess: 1 },
           netease: { totalSuccess: 10, todaySuccess: 1 },
@@ -567,6 +567,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
           migu: { totalSuccess: 10, todaySuccess: 1 },
+          spotify: { totalSuccess: 0, todaySuccess: 0 },
+          applemusic: { totalSuccess: 0, todaySuccess: 0 },
         },
       };
       const expected = {
@@ -596,7 +598,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         tracksProcessedToday: 40,
         totalExports: 20,
         exportsToday: 2,
-        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4 },
+        exportFormatsBreakdown: { txt: 4, csv: 4, xlsx: 4, json: 4, m3u8: 4, markdown: 0 },
         byPlatform: {
           qqmusic: { totalSuccess: 10, todaySuccess: 1 },
           netease: { totalSuccess: 10, todaySuccess: 1 },
@@ -604,6 +606,8 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
           kuwo: { totalSuccess: 10, todaySuccess: 1 },
           qishui: { totalSuccess: 10, todaySuccess: 1 },
           migu: { totalSuccess: 10, todaySuccess: 1 },
+          spotify: { totalSuccess: 0, todaySuccess: 0 },
+          applemusic: { totalSuccess: 0, todaySuccess: 0 },
         },
       };
       const expected = { ...sample, totalPageViews: 105 };

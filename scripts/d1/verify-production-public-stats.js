@@ -14,8 +14,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { executeD1Query } from './verify-migration-history.js';
 
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui', 'migu'];
-const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'];
+const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'kuwo', 'qishui', 'migu', 'spotify', 'applemusic'];
+const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8', 'markdown'];
 const DEFAULT_API_BASE = 'https://playlistout-api.lengxiqwq.com';
 
 async function query(sql, options) {
@@ -133,7 +133,7 @@ export async function collectExpectedPublicStats(options = {}) {
       SUM(CASE WHEN date = date('now') THEN count ELSE 0 END) AS today
     FROM analytics_v2_daily_core
     WHERE metric='playlist_success'
-      AND platform IN ('qqmusic','netease','kugou','kuwo','qishui','migu')
+      AND platform IN ('qqmusic','netease','kugou','kuwo','qishui','migu','spotify','applemusic')
     GROUP BY platform;
   `, options);
   const platformMap = new Map(platformRows.map((row) => [row.platform, row]));
@@ -166,13 +166,17 @@ export async function collectExpectedPublicStats(options = {}) {
       SUM(CASE WHEN date = date('now') THEN count ELSE 0 END) AS today
     FROM analytics_v2_breakdown
     WHERE dimension='export_format'
-      AND value IN ('txt','csv','xlsx','json','m3u8')
+      AND value IN ('txt','csv','xlsx','json','m3u8','markdown')
     GROUP BY value;
   `, options);
   const formatMap = new Map(formatRows.map((row) => [row.value, row]));
   const exportFormatsBreakdown = {};
   for (const format of EXPORT_FORMATS) {
     const row = formatMap.get(format) || {};
+    if (format === 'markdown') {
+      exportFormatsBreakdown[format] = Number(row.total || 0);
+      continue;
+    }
     exportFormatsBreakdown[format] = bridge(
       baselines.get(`export_format:${format}`),
       row.total,
