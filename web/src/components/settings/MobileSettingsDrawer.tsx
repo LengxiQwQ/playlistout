@@ -58,7 +58,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
               padding: '0.45rem 1.25rem',
               fontSize: '1.1rem',
               cursor: 'pointer',
-              border: '2px solid var(--ink, #2d3436)',
+              border: '2px solid var(--ink-line)',
               borderRadius: '8px',
             }}
           >
@@ -82,7 +82,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
               className="font-marker"
               style={{
                 fontSize: '1.25rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
               }}
             >
               🎨 {t.header.mobileDrawerFontTitle}
@@ -93,7 +93,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
             className="font-note"
             style={{
               fontSize: '1.15rem',
-              color: '#636e72',
+              color: '#8a7569',
               marginBottom: '0.9rem',
               lineHeight: 1.2,
             }}
@@ -154,7 +154,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
               className="font-marker"
               style={{
                 fontSize: '1.25rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
               }}
             >
               🌐 {t.header.mobileDrawerLangTitle}
@@ -165,7 +165,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
             className="font-note"
             style={{
               fontSize: '1.15rem',
-              color: '#636e72',
+              color: '#8a7569',
               marginBottom: '0.9rem',
               lineHeight: 1.2,
             }}
@@ -226,7 +226,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
             className="font-marker"
             style={{
               fontSize: '1.25rem',
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               marginBottom: '0.75rem',
             }}
           >
@@ -244,11 +244,11 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '0.75rem 1rem',
-                backgroundColor: 'var(--note-yellow, #fff8bd)',
+                backgroundColor: 'var(--note-yellow, #fff4c7)',
                 textDecoration: 'none',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 borderRadius: '8px',
-                border: '2px solid var(--ink, #2d3436)',
+                border: '2px solid var(--ink-line)',
                 fontSize: '1.15rem',
                 fontWeight: 700,
               }}

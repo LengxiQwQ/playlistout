@@ -44,7 +44,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(45, 52, 54, 0.45)',
+        backgroundColor: 'rgba(90, 74, 66, 0.45)',
         backdropFilter: 'blur(3px)',
         display: 'flex',
         alignItems: 'center',
@@ -90,7 +90,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
           className="modal-header"
           style={{
             padding: '1.25rem 1.75rem',
-            borderBottom: '2px dashed var(--line, #dfe6e9)',
+            borderBottom: '2px dashed var(--line, #efe4da)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -126,7 +126,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             padding: '1.5rem 1.75rem',
             overflowY: 'auto',
             lineHeight: 1.65,
-            color: 'var(--ink, #2d3436)',
+            color: 'var(--ink, #5a4a42)',
             fontSize: '0.95rem',
           }}
         >
@@ -134,7 +134,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section1Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
+            <p className="font-sans" style={{ color: '#7a665b', margin: 0 }}>
               {t.privacy.section1Content}
             </p>
           </section>
@@ -143,7 +143,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section2Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
+            <p className="font-sans" style={{ color: '#7a665b', margin: 0 }}>
               {t.privacy.section2Content}
             </p>
           </section>
@@ -152,7 +152,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section3Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
+            <p className="font-sans" style={{ color: '#7a665b', margin: 0 }}>
               {t.privacy.section3Content}
             </p>
           </section>
@@ -161,7 +161,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section4Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
+            <p className="font-sans" style={{ color: '#7a665b', margin: 0 }}>
               {t.privacy.section4Content}
             </p>
           </section>
@@ -170,7 +170,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             <h3 className="font-marker" style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
               {t.privacy.section5Title}
             </h3>
-            <p className="font-sans" style={{ color: '#4b5563', margin: 0 }}>
+            <p className="font-sans" style={{ color: '#7a665b', margin: 0 }}>
               {t.privacy.section5Content}
             </p>
           </section>
@@ -180,10 +180,10 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
           className="modal-footer"
           style={{
             padding: '1rem 1.75rem',
-            borderTop: '2px dashed var(--line, #dfe6e9)',
+            borderTop: '2px dashed var(--line, #efe4da)',
             display: 'flex',
             justifyContent: 'flex-end',
-            backgroundColor: 'var(--paper, #fdfbf7)',
+            backgroundColor: 'var(--paper, #fffcf6)',
           }}
         >
           <MarkerButton

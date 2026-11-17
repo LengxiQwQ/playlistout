@@ -34,7 +34,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingBottom: '0.75rem',
-          borderBottom: '2px dashed var(--line, #dfe6e9)',
+          borderBottom: '2px dashed var(--line, #efe4da)',
           gap: '0.5rem',
         }}
       >
@@ -42,7 +42,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           style={{
             fontSize: '1.15rem',
             fontWeight: 700,
-            color: 'var(--ink, #2d3436)',
+            color: 'var(--ink, #5a4a42)',
             margin: 0,
             fontFamily: 'var(--font-sans, sans-serif)',
           }}
@@ -60,14 +60,14 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
             fontSize: '0.85rem',
             fontWeight: 700,
             borderRadius: '4px',
-            backgroundColor: showMoreMobile ? '#fef3c7' : '#f0fdf4',
-            color: showMoreMobile ? '#92400e' : '#166534',
-            border: `1.5px solid ${showMoreMobile ? '#f59e0b' : '#22c55e'}`,
+            backgroundColor: showMoreMobile ? '#fff1cf' : '#effaf5',
+            color: showMoreMobile ? '#9a5a2c' : '#34775e',
+            border: `1.5px solid ${showMoreMobile ? '#f2b25c' : '#5fbf9a'}`,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.25rem',
-            boxShadow: '1.5px 1.5px 0 rgba(45, 52, 54, 0.2)',
+            boxShadow: '1.5px 1.5px 0 rgba(90, 74, 66, 0.2)',
           }}
           aria-label={showMoreMobile ? t.table.showLess : t.table.showMore}
         >
@@ -91,46 +91,46 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
           <thead>
             <tr
               style={{
-                borderBottom: '2px dashed var(--line, #dfe6e9)',
+                borderBottom: '2px dashed var(--line, #efe4da)',
                 position: 'sticky',
                 top: 0,
-                backgroundColor: '#ffffff',
+                backgroundColor: '#fff8ee',
                 zIndex: 10,
               }}
             >
-              <th scope="col" className="col-index" style={{ width: 'var(--index-width, 48px)', minWidth: 'var(--index-width, 48px)', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)', textAlign: 'center' }}>
+              <th scope="col" className="col-index" style={{ width: 'var(--index-width, 48px)', minWidth: 'var(--index-width, 48px)', padding: '0.75rem 0.5rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)', textAlign: 'center' }}>
                 {t.table.colIndex}
               </th>
-              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
+              <th scope="col" className="col-cover" style={{ width: '52px', padding: '0.75rem 0.5rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colCover}
               </th>
-              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
+              <th scope="col" className="col-title" style={{ padding: '0.75rem 0.75rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colTitle}
               </th>
-              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
+              <th scope="col" className="col-artist" style={{ padding: '0.75rem 0.75rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colArtist}
               </th>
-              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
+              <th scope="col" className="col-album hide-mobile" style={{ padding: '0.75rem 0.75rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}>
                 {t.table.colAlbum}
               </th>
               <th
                 scope="col"
                 className="col-vip"
-                style={{ width: '64px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
+                style={{ width: '64px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
               >
                 {t.table.colVip}
               </th>
               <th
                 scope="col"
                 className="col-status"
-                style={{ width: '95px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
+                style={{ width: '95px', textAlign: 'center', padding: '0.75rem 0.5rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
               >
                 {t.table.colStatus}
               </th>
               <th
                 scope="col"
                 className="col-duration hide-mobile"
-                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#8a8f92', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
+                style={{ width: '70px', textAlign: 'right', padding: '0.75rem 0.75rem', color: '#a8968b', fontWeight: 600, fontFamily: 'var(--font-sans, sans-serif)' }}
               >
                 {t.table.colDuration}
               </th>
@@ -147,20 +147,20 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
 
               // Derive status display (only flags unplayable or paid, overseas-only restrictions are treated as normal)
               let statusLabel = t.table.statusPlayable;
-              let statusBg = '#f0fdf4';
-              let statusColor = '#166534';
-              let statusBorder = '#bbf7d0';
+              let statusBg = '#effaf5';
+              let statusColor = '#34775e';
+              let statusBorder = '#cdeee0';
 
               if (isUnplayable) {
                 statusLabel = t.table.statusUnplayable;
-                statusBg = '#fef2f2';
-                statusColor = '#991b1b';
-                statusBorder = '#fecaca';
+                statusBg = '#fff3f4';
+                statusColor = '#a63e55';
+                statusBorder = '#ffd3dc';
               } else if (track.status === 'paid') {
                 statusLabel = t.table.statusPaid;
                 statusBg = '#f3e8ff';
-                statusColor = '#6b21a8';
-                statusBorder = '#d8b4fe';
+                statusColor = '#7a55b8';
+                statusBorder = '#d9c6fb';
               }
 
               return (
@@ -168,19 +168,19 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   key={`${track.id || track.title}-${track.index}-${i}`}
                   className={`song-row track-row ${isGreyedOut ? 'track-greyed-out' : ''}`}
                   style={{
-                    borderBottom: '1px solid rgba(45, 52, 54, 0.08)',
+                    borderBottom: '1px solid rgba(90, 74, 66, 0.08)',
                     opacity: isGreyedOut ? 0.65 : 1,
                     backgroundColor: isGreyedOut ? 'rgba(243, 244, 246, 0.4)' : 'transparent',
                     transition: 'background-color 0.15s ease',
                   }}
                 >
-                  <td className="col-index" style={{ textAlign: 'center', color: '#a0a5a8', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem', width: 'var(--index-width, 48px)', whiteSpace: 'nowrap' }}>
+                  <td className="col-index" style={{ textAlign: 'center', color: '#b8a79c', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem', width: 'var(--index-width, 48px)', whiteSpace: 'nowrap' }}>
                     {formatTrackIndex(track.index)}
                   </td>
                   <td className="col-cover" style={{ padding: '0.65rem 0.5rem' }}>
                     <TrackArtwork coverUrl={track.coverUrl} title={track.title} size={38} />
                   </td>
-                  <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: isGreyedOut ? '#6b7280' : 'var(--ink, #2d3436)' }}>
+                  <td className="col-title" style={{ padding: '0.65rem 0.75rem', color: isGreyedOut ? '#8a7569' : 'var(--ink, #5a4a42)' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
                       <span
                         className="track-title-text"
@@ -190,7 +190,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                           fontSize: '0.95rem',
                           display: 'inline-block',
                           fontFamily: 'var(--font-sans, sans-serif)',
-                          color: isGreyedOut ? '#6b7280' : 'inherit',
+                          color: isGreyedOut ? '#8a7569' : 'inherit',
                         }}
                       >
                         {track.title}
@@ -203,9 +203,9 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                             fontWeight: 600,
                             padding: '0.1rem 0.35rem',
                             borderRadius: '4px',
-                            backgroundColor: '#eff6ff',
-                            color: '#1d4ed8',
-                            border: '1px solid #bfdbfe',
+                            backgroundColor: '#f2f5ff',
+                            color: '#5670c4',
+                            border: '1px solid #d4defc',
                             display: 'inline-block',
                             lineHeight: '1.2',
                             whiteSpace: 'nowrap',
@@ -221,9 +221,9 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                             fontWeight: 600,
                             padding: '0.1rem 0.35rem',
                             borderRadius: '4px',
-                            backgroundColor: '#fef3c7',
-                            color: '#b45309',
-                            border: '1px solid #fde68a',
+                            backgroundColor: '#fff1cf',
+                            color: '#b8692f',
+                            border: '1px solid #ffe49a',
                             display: 'inline-block',
                             lineHeight: '1.2',
                             whiteSpace: 'nowrap',
@@ -236,7 +236,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   </td>
                   <td
                     className="col-artist"
-                    style={{ color: isGreyedOut ? '#9ca3af' : '#4b5563', padding: '0.65rem 0.75rem', fontSize: '0.925rem', fontFamily: 'var(--font-sans, sans-serif)' }}
+                    style={{ color: isGreyedOut ? '#b8a79c' : '#7a665b', padding: '0.65rem 0.75rem', fontSize: '0.925rem', fontFamily: 'var(--font-sans, sans-serif)' }}
                     title={artistsText}
                   >
                     {artistsText}
@@ -244,7 +244,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                   <td
                     className="col-album hide-mobile"
                     style={{
-                      color: isGreyedOut ? '#9ca3af' : '#6b7280',
+                      color: isGreyedOut ? '#b8a79c' : '#8a7569',
                       padding: '0.65rem 0.75rem',
                       fontSize: '0.9rem',
                       fontFamily: 'var(--font-sans, sans-serif)',
@@ -265,11 +265,11 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                         style={{
                           fontSize: '0.725rem',
                           fontWeight: 700,
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '4px',
-                          backgroundColor: '#fef3c7',
-                          color: '#92400e',
-                          border: '1px solid #fcd34d',
+                          padding: '0.15rem 0.55rem',
+                          borderRadius: '999px',
+                          backgroundColor: '#fff1cf',
+                          color: '#9a5a2c',
+                          border: '1px solid #ffd77a',
                           display: 'inline-block',
                           whiteSpace: 'nowrap',
                         }}
@@ -289,8 +289,8 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                       style={{
                         fontSize: '0.725rem',
                         fontWeight: 600,
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: '4px',
+                        padding: '0.15rem 0.55rem',
+                        borderRadius: '999px',
                         backgroundColor: statusBg,
                         color: statusColor,
                         border: `1px solid ${statusBorder}`,
@@ -305,7 +305,7 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
                     className="col-duration hide-mobile"
                     style={{
                       textAlign: 'right',
-                      color: '#8a8f92',
+                      color: '#a8968b',
                       fontVariantNumeric: 'tabular-nums',
                       fontFamily: 'var(--font-mono, monospace)',
                       fontSize: '0.85rem',

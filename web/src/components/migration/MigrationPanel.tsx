@@ -79,9 +79,9 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
           width: '1.65rem',
           height: '1.65rem',
           borderRadius: '999px',
-          border: '1.5px dashed rgba(45, 52, 54, 0.45)',
+          border: '1.5px dashed rgba(90, 74, 66, 0.45)',
           background: 'rgba(255,255,255,0.72)',
-          color: 'var(--ink, #2d3436)',
+          color: 'var(--ink, #5a4a42)',
           fontFamily: SYSTEM_FONT,
           fontWeight: 700,
           cursor: 'help',
@@ -104,10 +104,10 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
             width: 'min(22rem, 78vw)',
             padding: '0.7rem 0.8rem',
             borderRadius: '10px',
-            border: '1px solid rgba(45, 52, 54, 0.2)',
-            background: 'var(--paper, #fdfbf7)',
-            boxShadow: '0 8px 24px rgba(45, 52, 54, 0.14)',
-            color: '#4b5356',
+            border: '1px solid rgba(90, 74, 66, 0.2)',
+            background: 'var(--paper, #fffcf6)',
+            boxShadow: '0 8px 24px rgba(90, 74, 66, 0.14)',
+            color: '#6b574c',
             fontFamily: SYSTEM_FONT,
             fontSize: '0.92rem',
             lineHeight: 1.5,
@@ -187,7 +187,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
       style={{
         paddingTop: '1.25rem',
         paddingBottom: '1.25rem',
-        borderTop: '1px dashed rgba(45, 52, 54, 0.18)',
+        borderTop: '1px dashed rgba(90, 74, 66, 0.18)',
       }}
     >
       <div style={{ marginBottom: '0.7rem' }}>
@@ -196,7 +196,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           style={{
             fontSize: '1.5rem',
             fontWeight: 700,
-            color: 'var(--ink, #2d3436)',
+            color: 'var(--ink, #5a4a42)',
           }}
         >
           {t.migration.title}
@@ -206,7 +206,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           style={{
             marginTop: '0.15rem',
             fontSize: '0.95rem',
-            color: '#7a8184',
+            color: '#9a877c',
             lineHeight: 1.45,
           }}
         >
@@ -231,7 +231,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
               justifyContent: 'space-between',
               gap: '0.6rem 0.85rem',
               padding: '0.55rem 0.65rem',
-              border: '1px dashed rgba(45, 52, 54, 0.2)',
+              border: '1px dashed rgba(90, 74, 66, 0.2)',
               borderRadius: '10px',
               background: index % 2 === 0 ? 'rgba(255,255,255,0.38)' : 'transparent',
             }}
@@ -243,7 +243,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
                 fontFamily: SYSTEM_FONT,
                 fontSize: '1.02rem',
                 fontWeight: 700,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
               }}
             >
               {service.name}
@@ -293,7 +293,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
                 style={{
                   fontSize: '0.92rem',
                   padding: '0.4rem 0.72rem',
-                  border: '1.5px dashed rgba(45, 52, 54, 0.42)',
+                  border: '1.5px dashed rgba(90, 74, 66, 0.42)',
                 }}
               >
                 {t.migration.visit} ↗
@@ -314,7 +314,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           role="status"
           style={{
             marginTop: '0.55rem',
-            color: '#92400e',
+            color: '#9a5a2c',
             fontSize: '0.86rem',
             lineHeight: 1.4,
           }}
@@ -332,7 +332,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           role="status"
           style={{
             marginTop: '0.55rem',
-            color: '#73797c',
+            color: '#8a7569',
             fontSize: '0.86rem',
             lineHeight: 1.4,
           }}
@@ -351,7 +351,7 @@ export const MigrationPanel: React.FC<MigrationPanelProps> = ({ playlist }) => {
           style={{
             marginTop: '0.55rem',
             fontSize: '0.9rem',
-            color: '#b91c1c',
+            color: '#c44b63',
           }}
         >
           {errorMessage}

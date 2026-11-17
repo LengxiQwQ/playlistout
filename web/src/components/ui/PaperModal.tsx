@@ -52,7 +52,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(45, 52, 54, 0.45)',
+        backgroundColor: 'rgba(90, 74, 66, 0.45)',
         backdropFilter: 'blur(3px)',
         WebkitBackdropFilter: 'blur(3px)',
         display: 'flex',
@@ -101,7 +101,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
           className="modal-header"
           style={{
             padding: '1.25rem 1.75rem',
-            borderBottom: '2px dashed var(--line, #dfe6e9)',
+            borderBottom: '2px dashed var(--line, #efe4da)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -137,7 +137,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
             padding: '1.5rem 1.75rem',
             overflowY: 'auto',
             lineHeight: 1.65,
-            color: 'var(--ink, #2d3436)',
+            color: 'var(--ink, #5a4a42)',
           }}
         >
           {children}
@@ -148,10 +148,10 @@ export const PaperModal: React.FC<PaperModalProps> = ({
             className="modal-footer"
             style={{
               padding: '1rem 1.75rem',
-              borderTop: '2px dashed var(--line, #dfe6e9)',
+              borderTop: '2px dashed var(--line, #efe4da)',
               display: 'flex',
               justifyContent: 'flex-end',
-              backgroundColor: 'var(--paper, #fdfbf7)',
+              backgroundColor: 'var(--paper, #fffcf6)',
             }}
           >
             {footer}

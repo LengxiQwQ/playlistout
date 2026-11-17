@@ -23,10 +23,12 @@ export const PaperInput: React.FC<PaperInputProps> = ({
         display: 'flex',
         alignItems: 'center',
         width: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
-        borderBottom: '2px dashed #636e72',
-        borderRadius: '4px 4px 0 0',
-        padding: '0.25rem 0.5rem',
+        backgroundColor: '#fffdf9',
+        border: '2px solid var(--ink-line)',
+        borderRadius: '14px 225px 14px 255px / 255px 14px 225px 14px',
+        boxShadow: 'inset 0 2px 4px rgba(150, 112, 92, 0.07), 2px 3px 0 rgba(150, 112, 92, 0.14)',
+        padding: '0.2rem 0.65rem',
+        transition: 'border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease',
         ...style,
       }}
     >
@@ -42,7 +44,7 @@ export const PaperInput: React.FC<PaperInputProps> = ({
           border: 'none',
           outline: 'none',
           backgroundColor: 'transparent',
-          color: 'var(--ink, #2d3436)',
+          color: 'var(--ink, #5a4a42)',
           fontSize: '0.925rem',
           padding: '0.65rem 0.5rem',
         }}

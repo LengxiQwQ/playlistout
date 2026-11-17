@@ -24,9 +24,9 @@ export const LanguageSwitcher: React.FC = () => {
         lineHeight: 1.2,
       }}
     >
-      <span style={{ color: language === 'zh-CN' ? 'var(--ink)' : '#a0a5a8' }}>中</span>
-      <span style={{ color: '#a0a5a8' }}>/</span>
-      <span style={{ color: language === 'en-US' ? 'var(--ink)' : '#a0a5a8' }}>EN</span>
+      <span style={{ color: language === 'zh-CN' ? 'var(--ink)' : '#b8a79c' }}>中</span>
+      <span style={{ color: '#b8a79c' }}>/</span>
+      <span style={{ color: language === 'en-US' ? 'var(--ink)' : '#b8a79c' }}>EN</span>
     </Sticker>
   );
 };

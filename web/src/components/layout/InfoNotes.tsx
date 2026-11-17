@@ -31,22 +31,27 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
         borderVariant="default"
         rotateDeg={-1}
         shadow="paper"
-        style={{ padding: '2rem 1.75rem' }}
+        style={{ padding: '2rem 1.75rem', position: 'relative' }}
       >
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
+        <Tape
+          color="cyan"
+          rotateDeg={-4}
+          style={{ position: 'absolute', top: '-0.75rem', left: '2rem', width: '5.5rem', height: '1.45rem', zIndex: 20 }}
+        />
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
           {t.infoNotes.whyTitle}
         </div>
         <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
           {t.infoNotes.whyContent}
         </p>
-        <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: '#636e72' }}>
+        <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: '#8a7569' }}>
           {t.infoNotes.whySubtext}
         </div>
       </Paper>
 
       {/* Note 2: What you get */}
       <Paper
-        color="white"
+        color="pink"
         borderVariant="default"
         rotateDeg={1}
         shadow="paper"
@@ -57,7 +62,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
           rotateDeg={5}
           style={{ position: 'absolute', top: '-0.75rem', right: '2rem', width: '6rem', height: '1.5rem', zIndex: 20 }}
         />
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
           {t.infoNotes.whatTitle}
         </div>
         <div className="ruled-paper-list font-handwriting" style={{ fontSize: '1.25rem' }}>
@@ -70,19 +75,24 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
 
       {/* Note 3: Little note */}
       <Paper
-        color="blue"
+        color="mint"
         borderVariant="default"
         rotateDeg={-0.5}
         shadow="paper"
-        style={{ padding: '2rem 1.75rem' }}
+        style={{ padding: '2rem 1.75rem', position: 'relative' }}
       >
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #2d3436)' }}>
+        <Tape
+          color="yellow"
+          rotateDeg={-3}
+          style={{ position: 'absolute', top: '-0.75rem', left: '50%', transform: 'translateX(-50%) rotate(-3deg)', width: '5.8rem', height: '1.45rem', zIndex: 20 }}
+        />
+        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
           {t.infoNotes.noteTitle}
         </div>
         <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
           {t.infoNotes.noteContent}
         </p>
-        <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#636e72' }}>
+        <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#8a7569' }}>
           {t.infoNotes.noteSubtext}
         </div>
       </Paper>

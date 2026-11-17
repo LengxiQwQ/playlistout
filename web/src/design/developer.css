@@ -22,14 +22,14 @@
 
 .developer-title {
   margin: 0;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   font-size: clamp(1.65rem, 2.8vw, 2.15rem);
   line-height: 1.25;
 }
 
 .developer-subtitle {
   margin: 0.45rem 0 0;
-  color: var(--ink-light, #636e72);
+  color: var(--ink-light, #8a7569);
   font-size: 1.15rem;
   line-height: 1.5;
 }
@@ -55,10 +55,10 @@
 .developer-method {
   min-width: 0;
   background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid rgba(45, 52, 54, 0.25);
+  border: 1.5px solid rgba(90, 74, 66, 0.25);
   border-radius: 10px;
   padding: 1.15rem 1.15rem;
-  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.08);
+  box-shadow: 2px 2px 0 rgba(90, 74, 66, 0.08);
   display: flex;
   flex-direction: column;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
@@ -66,23 +66,55 @@
 
 .developer-method:nth-child(1) {
   transform: rotate(-0.3deg);
+  background: #fff7fa;
+  border-color: rgba(236, 127, 159, 0.35);
 }
 
 .developer-method:nth-child(2) {
   transform: rotate(0.35deg);
+  background: #f4fbf8;
+  border-color: rgba(79, 174, 138, 0.35);
 }
 
 .developer-method:nth-child(3) {
   transform: rotate(-0.25deg);
+  background: #fffdf2;
+  border-color: rgba(227, 178, 60, 0.38);
 }
 
 .developer-method:nth-child(4) {
   transform: rotate(0.3deg);
+  background: #f8f5ff;
+  border-color: rgba(139, 108, 196, 0.35);
+}
+
+.developer-method-api .developer-method-mark {
+  background: #ffd8e6;
+  color: #a63e55;
+  border-color: #f3a6c0;
+}
+
+.developer-method-cli .developer-method-mark {
+  background: #cdeee0;
+  color: #2f755b;
+  border-color: #8fd4b7;
+}
+
+.developer-method-json .developer-method-mark {
+  background: #fff0b3;
+  color: #8a5a24;
+  border-color: #f0d065;
+}
+
+.developer-method-integration .developer-method-mark {
+  background: #e8ddff;
+  color: #6b4ba6;
+  border-color: #c5aff5;
 }
 
 .developer-method:hover {
   transform: translateY(-2px);
-  box-shadow: 3px 3px 0 rgba(45, 52, 54, 0.16);
+  box-shadow: 3px 3px 0 rgba(90, 74, 66, 0.16);
   background: #ffffff;
 }
 
@@ -94,20 +126,20 @@
 }
 
 .developer-method-mark {
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   font-family: var(--font-mono, "SFMono-Regular", Consolas, Menlo, monospace);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1;
-  background: rgba(45, 52, 54, 0.06);
+  background: rgba(90, 74, 66, 0.06);
   padding: 0.22rem 0.45rem;
   border-radius: 6px;
-  border: 1px solid rgba(45, 52, 54, 0.12);
+  border: 1px solid rgba(90, 74, 66, 0.12);
 }
 
 .developer-method-meta {
   min-width: 0;
-  color: #64748b;
+  color: #8a7569;
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   font-size: 0.8rem;
   font-weight: 500;
@@ -118,7 +150,7 @@
 
 .developer-method-title {
   margin: 0.65rem 0 0;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 1.15rem;
   font-weight: 700;
@@ -127,7 +159,7 @@
 
 .developer-method-description {
   margin: 0.4rem 0 0;
-  color: #4b5563;
+  color: #7a665b;
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 0.92rem;
   line-height: 1.58;
@@ -141,19 +173,19 @@
   flex-wrap: wrap;
   margin-top: 0.95rem;
   padding-top: 0.65rem;
-  border-top: 1px dashed rgba(45, 52, 54, 0.16);
+  border-top: 1px dashed rgba(90, 74, 66, 0.16);
 }
 
 .developer-method-link,
 .developer-copy-api {
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.35;
   text-decoration: none;
   border: 0;
-  border-bottom: 1.5px dashed rgba(45, 52, 54, 0.45);
+  border-bottom: 1.5px dashed rgba(90, 74, 66, 0.45);
   background: transparent;
   padding: 0 0 1px 0;
   cursor: pointer;
@@ -162,19 +194,19 @@
 
 .developer-method-link:hover,
 .developer-copy-api:hover {
-  color: #0984e3;
-  border-bottom-color: #0984e3;
+  color: #6a82d4;
+  border-bottom-color: #6a82d4;
 }
 
 .developer-copy-api.is-copied {
-  color: #15803d;
-  border-bottom-color: #15803d;
+  color: #3d8f70;
+  border-bottom-color: #3d8f70;
   font-weight: 700;
 }
 
 .developer-footer-note {
   margin-top: 1.25rem;
-  color: #718096;
+  color: #8a7569;
   font-size: 1.05rem;
   line-height: 1.45;
   text-align: center;

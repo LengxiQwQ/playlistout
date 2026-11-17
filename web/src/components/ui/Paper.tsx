@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 
 export interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
-  color?: 'white' | 'yellow' | 'mint' | 'blue' | 'error' | 'pink';
+  color?: 'white' | 'yellow' | 'mint' | 'blue' | 'error' | 'pink' | 'peach' | 'taro';
   borderVariant?: 'default' | 'alt' | 'subtle' | 'none';
   shadow?: 'paper' | 'paper-sm' | 'cutout' | 'cutout-sm' | 'none';
   rotateDeg?: number;
@@ -12,11 +12,13 @@ export interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const colorMap = {
-  white: '#ffffff',
-  yellow: 'var(--note-yellow, #fff8bd)',
-  mint: 'var(--note-mint, #dff7ef)',
-  blue: 'var(--note-blue, #e8f8ff)',
-  pink: 'var(--note-pink, #fde8ec)',
+  white: 'var(--paper-white, #fffdf9)',
+  yellow: 'var(--note-yellow, #fff4c7)',
+  mint: 'var(--note-mint, #d8f3e8)',
+  blue: 'var(--note-blue, #e6f3ff)',
+  pink: 'var(--note-pink, #ffe4ea)',
+  peach: 'var(--mac-peach, #ffe9dc)',
+  taro: 'var(--mac-taro, #efe8ff)',
   error: 'var(--note-error, #ffebee)',
 };
 

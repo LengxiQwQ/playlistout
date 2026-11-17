@@ -25,12 +25,12 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
 
   const bg =
     color === 'yellow'
-      ? 'var(--note-yellow, #fff8bd)'
+      ? 'var(--note-yellow, #fff4c7)'
       : color === 'mint'
-      ? 'var(--note-mint, #dff7ef)'
+      ? 'var(--note-mint, #d8f3e8)'
       : color === 'pink'
       ? '#ffebee'
-      : 'var(--note-blue, #e8f8ff)';
+      : 'var(--note-blue, #e6f3ff)';
 
   const { transform: inlineTransform, ...restStyle } = (style || {}) as Record<string, any>;
   let rot = `${rotateDeg}deg`;

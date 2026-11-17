@@ -151,7 +151,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
           gap: '0.8rem',
           marginBottom: '0.75rem',
           paddingBottom: '0.65rem',
-          borderBottom: '1.5px dashed rgba(45, 52, 54, 0.2)',
+          borderBottom: '1.5px dashed rgba(90, 74, 66, 0.2)',
         }}
       >
         {/* Circular Avatar */}
@@ -162,9 +162,9 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             height: '46px',
             borderRadius: '50%',
             flexShrink: 0,
-            border: '2px solid var(--ink, #2d3436)',
+            border: '2px solid var(--ink-line)',
             overflow: 'hidden',
-            backgroundColor: '#f5efe0',
+            backgroundColor: '#fdf6ec',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -192,7 +192,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontSize: '1.2rem',
                 fontWeight: 700,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 userSelect: 'none',
               }}
             >
@@ -219,7 +219,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
                 '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif',
               fontSize: '1.18rem',
               fontWeight: 700,
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               lineHeight: 1.2,
             }}
           >
@@ -230,7 +230,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             className="font-handwriting"
             style={{
               fontSize: '0.9rem',
-              color: 'var(--ink-light, #636e72)',
+              color: 'var(--ink-light, #8a7569)',
               margin: 0,
               lineHeight: 1.25,
             }}
@@ -248,7 +248,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
           style={{
             background: 'transparent',
             border: 'none',
-            color: 'var(--ink-light, #636e72)',
+            color: 'var(--ink-light, #8a7569)',
             cursor: 'pointer',
             padding: '0.15rem 0.35rem',
             fontSize: '1rem',
@@ -279,7 +279,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.95rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 fontWeight: 600,
                 letterSpacing: '0.01em',
                 userSelect: 'text',
@@ -318,7 +318,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontFamily: 'var(--font-sans, sans-serif)',
                 fontSize: '0.95rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 fontWeight: 600,
                 userSelect: 'text',
                 overflow: 'hidden',
@@ -359,7 +359,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.88rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 userSelect: 'text',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -408,7 +408,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.92rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 userSelect: 'text',
                 fontWeight: 600,
               }}

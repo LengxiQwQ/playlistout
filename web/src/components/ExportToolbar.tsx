@@ -18,7 +18,7 @@ export type ExportFormat = 'xlsx' | 'json' | 'txt' | 'csv' | 'm3u8';
 
 const HandDrawnCheck: React.FC<{ size?: number; color?: string }> = ({
   size = 14,
-  color = '#15803d',
+  color = '#3d8f70',
 }) => (
   <svg
     width={size}
@@ -155,7 +155,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
       style={{
         marginTop: '2rem',
         paddingTop: '1.75rem',
-        borderTop: '2px dashed var(--line, #dfe6e9)',
+        borderTop: '2px dashed var(--line, #efe4da)',
         position: 'relative',
       }}
     >
@@ -191,7 +191,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                   fontSize: '1.5rem',
                   fontWeight: 700,
                   marginBottom: '0.65rem',
-                  color: 'var(--ink, #2d3436)',
+                  color: 'var(--ink, #5a4a42)',
                 }}
               >
                 {t.export.pickFormat}
@@ -217,9 +217,9 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.4rem',
-                        outline: isSelected ? '2px solid var(--ink, #2d3436)' : undefined,
+                        outline: isSelected ? '2px solid var(--ink-line)' : undefined,
                         boxShadow: isSelected
-                          ? 'var(--cutout-shadow, 3px 3px 0 0 #2d3436)'
+                          ? 'var(--cutout-shadow, 3px 3px 0 0 var(--shadow-ink))'
                           : '0 1px 3px rgba(0, 0, 0, 0.06)',
                         opacity: isDisabled ? 0.6 : isSelected ? 1 : 0.75,
                         transition: 'all 0.15s ease',
@@ -236,17 +236,17 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                           height: '1.25rem',
                           borderRadius: '4px',
                           border: isSelected
-                            ? '2px solid var(--ink, #2d3436)'
-                            : '1.5px dashed rgba(45, 52, 54, 0.45)',
+                            ? '2px solid var(--ink-line)'
+                            : '1.5px dashed rgba(90, 74, 66, 0.45)',
                           backgroundColor: isSelected
                             ? '#ffffff'
                             : 'rgba(255, 255, 255, 0.45)',
-                          boxShadow: isSelected ? '1px 1px 0 rgba(45, 52, 54, 0.25)' : 'none',
+                          boxShadow: isSelected ? '1px 1px 0 rgba(90, 74, 66, 0.25)' : 'none',
                           flexShrink: 0,
                           transition: 'all 0.12s ease',
                         }}
                       >
-                        {isSelected ? <HandDrawnCheck size={14} color="#15803d" /> : null}
+                        {isSelected ? <HandDrawnCheck size={14} color="#3d8f70" /> : null}
                       </span>
                       <span>{item.label}</span>
                     </Sticker>
@@ -262,7 +262,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             >
               <span
                 className="font-note desktop-only hidden-on-mobile"
-                style={{ fontSize: '1.45rem', color: '#8a8f92', transform: 'rotate(-2deg)' }}
+                style={{ fontSize: '1.45rem', color: '#a8968b', transform: 'rotate(-2deg)' }}
               >
                 {t.export.takeListWithYou}
               </span>
@@ -302,17 +302,17 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               marginBottom: '0.25rem',
               padding: '0.45rem 0.85rem',
               backgroundColor: 'rgba(255, 255, 255, 0.55)',
-              border: '1px dashed rgba(45, 52, 54, 0.16)',
+              border: '1px dashed rgba(90, 74, 66, 0.16)',
               borderRadius: '6px',
               fontSize: '0.84rem',
-              color: '#636e72',
+              color: '#8a7569',
               lineHeight: 1.5,
               alignSelf: 'flex-start',
               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ color: '#0984e3', fontWeight: 700 }} aria-hidden="true">ℹ</span>
+              <span style={{ color: '#6a82d4', fontWeight: 700 }} aria-hidden="true">ℹ</span>
               {t.export.jsonSchemaHint}
             </span>
             <a
@@ -320,7 +320,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: '#0984e3',
+                color: '#6a82d4',
                 fontWeight: 600,
                 textDecoration: 'underline',
                 textUnderlineOffset: '2px',
@@ -346,14 +346,14 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
         <div
           style={{
             paddingTop: '1.25rem',
-            borderTop: '1px dashed rgba(45, 52, 54, 0.18)',
+            borderTop: '1px dashed rgba(90, 74, 66, 0.18)',
           }}
         >
           <div
             className="font-handwriting"
             style={{
               fontSize: '1.5rem',
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               fontWeight: 700,
               marginBottom: '0.65rem',
             }}
@@ -371,7 +371,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
                   fontSize: '0.9rem',
                   fontWeight: 600,
-                  color: '#636e72',
+                  color: '#8a7569',
                   flexShrink: 0,
                 }}
               >
@@ -379,7 +379,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
               </span>
               <Sticker
               type="button"
-              color="white"
+              color="yellow"
               rotateDeg={-0.5}
               disabled={isDisabled}
               onClick={() => handleCopy('title', t.export.copyTitleOnly)}
@@ -391,7 +391,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
 
             <Sticker
               type="button"
-              color="white"
+              color="pink"
               rotateDeg={1}
               disabled={isDisabled}
               onClick={() => handleCopy('title-artist', t.export.copyTitleArtist)}
@@ -403,7 +403,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
 
             <Sticker
               type="button"
-              color="white"
+              color="green"
               rotateDeg={-1}
               disabled={isDisabled}
               onClick={() => handleCopy('title-artist-album', t.export.copyTitleArtistAlbum)}
@@ -432,7 +432,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                       'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
                     fontSize: '0.9rem',
                     fontWeight: 600,
-                    color: '#636e72',
+                    color: '#8a7569',
                     flexShrink: 0,
                   }}
                 >
@@ -450,7 +450,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                   fontSize: '1.05rem',
                   cursor: isDisabled ? 'not-allowed' : 'pointer',
                   fontWeight: 700,
-                  border: '1.5px solid var(--ink, #2d3436)',
+                  border: '1.5px solid var(--ink-line)',
                 }}
               >
                 📋 {t.export.copyJson}
@@ -474,7 +474,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             left: '50%',
             transform: 'translateX(-50%)',
             backgroundColor: '#ffffff',
-            color: 'var(--ink, #2d3436)',
+            color: 'var(--ink, #5a4a42)',
             padding: '0.65rem 1.5rem',
             borderRadius: '9999px',
             fontSize: '1.25rem',
@@ -484,12 +484,12 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
             alignItems: 'center',
             gap: '0.5rem',
             animation: 'toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: 'var(--cutout-shadow, 6px 6px 0 0 #2d3436)',
-            border: '2.5px solid var(--ink, #2d3436)',
+            boxShadow: 'var(--cutout-shadow, 6px 6px 0 0 var(--shadow-ink))',
+            border: '2.5px solid var(--ink-line)',
             whiteSpace: 'nowrap',
           }}
         >
-          <span style={{ color: '#16a34a' }}>✓</span> {toastMessage}
+          <span style={{ color: '#4fae8a' }}>✓</span> {toastMessage}
         </div>
       )}
     </div>

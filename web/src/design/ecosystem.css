@@ -4,7 +4,7 @@
   max-width: var(--result-paper-width, 1050px);
   margin: 0 auto;
   padding: 1.8rem 2rem 1.9rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .plugin-ecosystem-heading-row {
@@ -21,14 +21,14 @@
 
 .plugin-ecosystem-title {
   margin: 0;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   font-size: clamp(1.85rem, 3vw, 2.45rem);
   line-height: 1.2;
 }
 
 .plugin-ecosystem-subtitle {
   margin: 0.45rem 0 0;
-  color: #566065;
+  color: #7a665b;
   font-size: 1.18rem;
   line-height: 1.45;
   max-width: none;
@@ -39,23 +39,25 @@
   align-items: baseline;
   gap: 0.45rem;
   flex: 0 0 auto;
-  padding: 0.7rem 0.9rem;
-  border: 1.5px dashed rgba(45, 52, 54, 0.3);
-  background: rgba(255, 248, 189, 0.55);
-  transform: rotate(0.6deg);
+  padding: 0.7rem 1rem;
+  border: 2px dashed #e8a0b4;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fffdf9 0%, #ffeef3 100%);
+  box-shadow: 3px 3px 0 rgba(150, 112, 92, 0.16);
+  transform: rotate(0.8deg);
 }
 
 .plugin-supported-number {
   font-size: 2.2rem;
   line-height: 1;
-  color: #d97706;
+  color: #ec7f9f;
 }
 
 .plugin-supported-label {
   font-size: 1.05rem;
   font-weight: 700;
   white-space: nowrap;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
 }
 
 .plugin-app-grid {
@@ -104,9 +106,9 @@
   place-items: center;
   overflow: hidden;
   background: #ffffff;
-  border: 1.5px solid rgba(45, 52, 54, 0.3);
+  border: 1.5px solid rgba(90, 74, 66, 0.3);
   border-radius: 12px;
-  box-shadow: 2px 2px 0 rgba(45, 52, 54, 0.18);
+  box-shadow: 2px 2px 0 rgba(90, 74, 66, 0.18);
 }
 
 .plugin-app-logo {
@@ -118,7 +120,7 @@
 
 .plugin-app-logo-fallback {
   font-size: 1.05rem;
-  color: #0a95c8;
+  color: #6a82d4;
 }
 
 .plugin-app-card-title {
@@ -146,7 +148,7 @@
   font-size: 1.32rem;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   white-space: nowrap;
 }
 
@@ -160,14 +162,14 @@
 .plugin-app-meta {
   margin-top: 0.22rem;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: #8a7569;
   line-height: 1.3;
 }
 
 .plugin-app-summary {
   margin: 0;
   width: 100%;
-  color: #4f5a60;
+  color: #6b574c;
   font-size: 1rem;
   line-height: 1.45;
 }
@@ -206,23 +208,23 @@
 
 .plugin-copy-button-secondary {
   background-color: #ffffff !important;
-  color: var(--ink, #2d3436) !important;
+  color: var(--ink, #5a4a42) !important;
   border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
 }
 
 .plugin-copy-button-secondary:not(:disabled):hover {
-  background-color: var(--note-yellow, #fff8bd) !important;
-  color: var(--ink, #2d3436) !important;
+  background-color: var(--note-yellow, #fff4c7) !important;
+  color: var(--ink, #5a4a42) !important;
 }
 
 .plugin-copy-button-secondary.is-copied,
 .plugin-copy-button-secondary.is-copied:not(:disabled):hover {
-  background-color: #d1fae5 !important;
-  color: var(--ink, #2d3436) !important;
+  background-color: #d8f3e8 !important;
+  color: var(--ink, #5a4a42) !important;
 }
 
 .plugin-action-link {
-  background-color: var(--ink, #2d3436);
+  background-color: var(--btn-primary-bg, #ec7f9f);
   color: #ffffff !important;
   text-decoration: none;
   cursor: pointer;
@@ -230,6 +232,7 @@
 }
 
 .plugin-action-link:hover {
+  background-color: var(--btn-primary-bg-hover, #e66d92) !important;
   color: #ffffff !important;
 }
 
@@ -242,17 +245,17 @@
 }
 
 .plugin-app-link {
-  color: #53616a;
+  color: #7a665b;
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
-  border-bottom: 1px dashed rgba(83, 97, 106, 0.55);
+  border-bottom: 1px dashed rgba(122, 102, 91, 0.55);
 }
 
 .plugin-app-link:hover {
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   border-bottom-color: currentColor;
 }
 
@@ -262,13 +265,13 @@
   gap: 0.85rem;
   margin-top: 1.2rem;
   padding-top: 1rem;
-  border-top: 1px dashed rgba(45, 52, 54, 0.2);
+  border-top: 1px dashed rgba(90, 74, 66, 0.2);
 }
 
 .plugin-upcoming-label {
   flex: 0 0 auto;
   font-size: 1.05rem;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
 }
 
 .plugin-upcoming-list {
@@ -284,15 +287,15 @@
   gap: 0.45rem;
   min-width: 0;
   padding: 0.38rem 0.5rem;
-  color: var(--ink, #2d3436);
+  color: var(--ink, #5a4a42);
   text-decoration: none;
-  border: 1px dashed rgba(45, 52, 54, 0.25);
+  border: 1px dashed rgba(90, 74, 66, 0.25);
   background: rgba(255, 255, 255, 0.66);
 }
 
 .plugin-upcoming-chip:hover {
   background: #ffffff;
-  border-color: rgba(45, 52, 54, 0.45);
+  border-color: rgba(90, 74, 66, 0.45);
 }
 
 .plugin-upcoming-chip.is-planned {

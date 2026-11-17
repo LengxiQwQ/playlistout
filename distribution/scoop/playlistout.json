@@ -13,19 +13,14 @@
             "hash": "9dce2acdd2c2f9ac1c8bde256a65e58bf7c865ceed9da2078bfa944f0a9bf271"
         }
     },
-    "bin": [
-        "playlistout.exe",
-        [
-            "playlistout.exe",
-            "PlaylistOut"
-        ]
-    ],
+    "bin": "playlistout.exe",
     "shortcuts": [
         [
             "playlistout.exe",
             "PlaylistOut"
         ]
     ],
+    "persist": "output",
     "checkver": "github",
     "autoupdate": {
         "architecture": {

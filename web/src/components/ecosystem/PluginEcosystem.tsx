@@ -12,6 +12,7 @@ import {
   type PublishedPlugin,
 } from '../../data/integrations';
 import { Paper } from '../ui/Paper';
+import { Tape } from '../ui/Tape';
 import { Sticker } from '../ui/Sticker';
 import { MarkerButton } from '../ui/MarkerButton';
 
@@ -103,6 +104,18 @@ export const PluginEcosystem: React.FC = () => {
       interactive={false}
       className="plugin-ecosystem-panel"
     >
+      <Tape
+        color="taro"
+        rotateDeg={-3}
+        style={{
+          position: 'absolute',
+          top: '-0.8rem',
+          left: '2.2rem',
+          width: '7.5rem',
+          height: '1.65rem',
+          zIndex: 20,
+        }}
+      />
       <div className="plugin-ecosystem-heading-row">
         <div className="plugin-ecosystem-heading-copy">
           <h2 id="ecosystem-title" className="font-marker plugin-ecosystem-title">
@@ -249,13 +262,13 @@ export const PluginEcosystem: React.FC = () => {
           </Paper>
         ))}
 
-        {FEATURED_UPCOMING_INTEGRATIONS.map((integration) => (
+        {FEATURED_UPCOMING_INTEGRATIONS.map((integration, idx) => (
           <Paper
             key={integration.id}
-            color="white"
+            color={idx % 2 === 0 ? 'mint' : 'yellow'}
             borderVariant="alt"
             shadow="paper-sm"
-            rotateDeg={0.2}
+            rotateDeg={idx % 2 === 0 ? 0.25 : -0.25}
             tiltFactor={0.2}
             interactive={false}
             className="plugin-app-card is-upcoming"

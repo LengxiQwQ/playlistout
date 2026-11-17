@@ -29,7 +29,7 @@ export const Hero: React.FC = () => {
         style={{
           fontSize: 'clamp(2.5rem, 6vw, 4.25rem)',
           lineHeight: 'calc(var(--ruled-line-height, 38px) * 3)',
-          color: 'var(--ink, #2d3436)',
+          color: 'var(--ink, #5a4a42)',
           margin: 0,
         }}
       >

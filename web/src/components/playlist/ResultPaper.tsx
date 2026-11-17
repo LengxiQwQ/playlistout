@@ -41,7 +41,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
           justifyContent: onReturnToBatch ? 'flex-start' : 'center',
           gap: '0.65rem',
           fontSize: '1.65rem',
-          color: '#8a8f92',
+          color: '#a8968b',
           height: 'var(--ruled-line-height, 38px)',
           lineHeight: 'var(--ruled-line-height, 38px)',
         }}
@@ -51,24 +51,25 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
             type="button"
             onClick={onReturnToBatch}
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#475569',
+              backgroundColor: '#ffeef3',
+              border: '1.75px solid var(--ink-line)',
+              borderRadius: '999px',
+              boxShadow: '2px 2px 0 var(--shadow-ink)',
+              padding: '0.2rem 0.9rem',
+              color: '#5a4a42',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.45rem',
               fontFamily: 'inherit',
-              fontSize: '1.45rem',
-              transition: 'color 0.2s',
+              fontSize: '1.25rem',
+              lineHeight: 1.3,
+              fontWeight: 700,
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
-            onMouseOver={(e) => (e.currentTarget.style.color = '#0f172a')}
-            onMouseOut={(e) => (e.currentTarget.style.color = '#475569')}
           >
-            <span style={{ fontSize: '1.2em' }}>🔙</span> 
-            <span style={{ textDecoration: 'underline', textDecorationStyle: 'wavy', textUnderlineOffset: '4px' }}>
-              {t.userPlaylists.returnToCollection}
-            </span>
+            <span aria-hidden="true">←</span>
+            <span>{t.userPlaylists.returnToCollection}</span>
           </button>
         ) : (
           <span>{t.result.doneParsingHint}</span>
@@ -91,7 +92,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
             position: 'absolute',
             right: '1rem',
             top: '-2rem',
-            color: '#a0a5a8',
+            color: '#b8a79c',
             fontSize: '3rem',
             userSelect: 'none',
             zIndex: 15,
@@ -157,10 +158,10 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   alignItems: 'center',
                   gap: '0.85rem',
                   padding: '1rem 1.75rem',
-                  backgroundColor: '#ffffff',
-                  border: '1.5px dashed #2563eb',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.12)',
+                  backgroundColor: '#fffdf9',
+                  border: '2px dashed #ec7f9f',
+                  borderRadius: '14px',
+                  boxShadow: '3px 4px 0 rgba(150, 112, 92, 0.2)',
                 }}
               >
                 <div
@@ -168,8 +169,8 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   style={{
                     width: '1.5rem',
                     height: '1.5rem',
-                    border: '2.5px solid #dbeafe',
-                    borderTopColor: '#2563eb',
+                    border: '2.5px solid #ffd8e6',
+                    borderTopColor: '#ec7f9f',
                     borderRadius: '50%',
                   }}
                 />
@@ -177,8 +178,8 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   className="font-note"
                   style={{
                     fontSize: '1.35rem',
-                    color: '#1e3a8a',
-                    fontWeight: 600,
+                    color: '#a63e55',
+                    fontWeight: 700,
                   }}
                 >
                   {t.result.reloadingHint}

@@ -1,52 +1,90 @@
-/* PlaylistOut Music Journal - Design Tokens */
+/* PlaylistOut Music Journal - Design Tokens
+ * Macaron Journal palette: warm cream paper, cocoa ink, soft pastel stationery.
+ */
 :root {
   /* Paper & Ink */
-  --paper: #f6f1e5;
-  --paper-cream: #faf5ea;
-  --paper-white: #ffffff;
-  --ink: #2d3436;
-  --ink-light: #636e72;
-  --ink-muted: #8a8f92;
-  --ink-faint: rgba(45, 52, 54, 0.18);
+  --paper: #fdf6ec;
+  --paper-cream: #fffaf2;
+  --paper-white: #fffdf8;
+  --ink: #5a4a42;
+  --ink-light: #8a7569;
+  --ink-muted: #a8968b;
+  --ink-faint: rgba(90, 74, 66, 0.16);
+  /* Outline colour for hand-drawn borders: a touch lighter than text ink */
+  --ink-line: #6e5a50;
+  /* Soft "lifted sticker" offset shadow (replaces hard charcoal shadows) */
+  --shadow-ink: rgba(150, 112, 92, 0.3);
+  --shadow-soft: 0 6px 18px -8px rgba(150, 112, 92, 0.35);
 
-  /* Notebook ruling */
-  --line: #e2dacd;
+  /* Notebook ruling / dot grid */
+  --line: #efe3d3;
+  --dot: rgba(196, 160, 136, 0.42);
   --ruled-line-height: 38px;
-  --margin-red: #ff8a80;
+  --margin-red: #f4a7b9;
 
-  /* Stationery Palette */
-  --note-yellow: #fff8bd;
-  --note-yellow-dark: #fff3a8;
-  --highlight-yellow: #ffeaa7;
-  --note-mint: #dff7ef;
-  --note-blue: #e8f8ff;
-  --note-pink: #fde8ec;
-  --note-error: #ffebee;
-  --note-error-border: #ffcdd2;
-  --error-ink: #c0392b;
+  /* Macaron palette (fills) */
+  --mac-strawberry: #ffd6e0;
+  --mac-peach: #ffdcc7;
+  --mac-lemon: #fff1b8;
+  --mac-mint: #cdefe3;
+  --mac-sky: #d4ecff;
+  --mac-taro: #e3d9ff;
+  --mac-matcha: #e2f2c9;
+  --mac-milk: #fffaf2;
+
+  /* Macaron palette (deeper accents for text, icons, active states) */
+  --accent-strawberry: #e8789a;
+  --accent-strawberry-ink: #c25478;
+  --accent-peach: #ee9a6c;
+  --accent-lemon: #e3b23c;
+  --accent-mint: #4fae8a;
+  --accent-sky: #6a82d4;
+  --accent-taro: #9a7fd8;
+
+  /* Stationery Palette (legacy names, mapped onto macarons) */
+  --note-yellow: #fff4c7;
+  --note-yellow-dark: #ffeeb0;
+  --highlight-yellow: #ffe39b;
+  --highlight-pink: rgba(255, 182, 203, 0.7);
+  --note-mint: #d8f3e8;
+  --note-blue: #e6f3ff;
+  --note-pink: #ffe4ea;
+  --note-peach: #ffe9dc;
+  --note-taro: #efe8ff;
+  --note-error: #fff0f2;
+  --note-error-border: #ffcbd6;
+  --error-ink: #c44b63;
 
   /* Tape Palette */
-  --tape-pink: rgba(244, 114, 182, 0.55);
-  --tape-cyan: rgba(129, 236, 236, 0.55);
-  --tape-green: rgba(134, 239, 172, 0.45);
-  --tape-yellow: rgba(254, 240, 138, 0.65);
+  --tape-pink: rgba(245, 155, 189, 0.62);
+  --tape-cyan: rgba(150, 222, 208, 0.66);
+  --tape-green: rgba(170, 222, 160, 0.6);
+  --tape-yellow: rgba(255, 220, 120, 0.66);
+  --tape-taro: rgba(190, 170, 240, 0.6);
+  --tape-peach: rgba(255, 190, 150, 0.66);
 
   /* Shadows */
-  --paper-shadow: 8px 10px 0 rgba(45, 52, 54, 0.15);
-  --paper-shadow-hover: 10px 12px 0 rgba(45, 52, 54, 0.18);
-  --cutout-shadow: 6px 6px 0 0 #2d3436;
-  --cutout-shadow-sm: 3px 3px 0 0 #2d3436;
-  --sticker-shadow: 3px 3px 0 #2d3436;
-  --sticker-shadow-hover: 5px 5px 0 #2d3436;
+  --paper-shadow: 6px 8px 0 rgba(150, 112, 92, 0.16);
+  --paper-shadow-hover: 8px 10px 0 rgba(150, 112, 92, 0.2);
+  --cutout-shadow: 5px 5px 0 0 var(--shadow-ink);
+  --cutout-shadow-sm: 3px 3px 0 0 var(--shadow-ink);
+  --sticker-shadow: 3px 3px 0 var(--shadow-ink);
+  --sticker-shadow-hover: 4px 5px 0 var(--shadow-ink);
+
+  /* Primary action (replaces solid black buttons) */
+  --btn-primary-bg: #ec7f9f;
+  --btn-primary-bg-hover: #e66d92;
+  --btn-primary-ink: #ffffff;
+  --btn-primary-shadow: #c9a08f;
 
   /* Layout widths */
   --max-content-width: 1280px;
   --search-note-width: 980px;
   --result-paper-width: 1180px;
 
-
   /* Transitions */
   --ease-journal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
 }

@@ -23,7 +23,7 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
         gap: '0.9rem',
         padding: '0.9rem 1rem',
         backgroundColor: '#ffffff',
-        border: '1px solid #bfdbfe',
+        border: '1px solid #d4defc',
         borderRadius: '10px',
         textAlign: 'left',
         marginBottom: '1rem',
@@ -39,11 +39,11 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
           overflow: 'hidden',
           display: 'grid',
           placeItems: 'center',
-          backgroundColor: '#dbeafe',
-          color: '#2563eb',
+          backgroundColor: '#e5ebff',
+          color: '#6a82d4',
           fontSize: '1.55rem',
           fontWeight: 700,
-          border: '2px solid #93c5fd',
+          border: '2px solid #b7c8f5',
         }}
         aria-label={profile?.nickname || t.kugouAuth.profileFallbackName}
       >
@@ -82,7 +82,7 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
           <strong
             className="font-sans"
             style={{
-              color: '#1e3a8a',
+              color: '#4a5c9e',
               fontSize: '1rem',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -101,7 +101,7 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
           <div
             className="font-sans"
             style={{
-              color: '#64748b',
+              color: '#8a7569',
               fontSize: '0.8rem',
               lineHeight: 1.4,
               marginBottom: '0.25rem',
@@ -112,7 +112,7 @@ export const KugouProfileCard: React.FC<KugouProfileCardProps> = ({
           </div>
         ) : null}
 
-        <div className="font-sans" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+        <div className="font-sans" style={{ color: '#b8a79c', fontSize: '0.75rem' }}>
           {t.kugouAuth.profileUserIdLabel}：{profile?.userId || getKugouAuth()?.userid || '—'}
         </div>
       </div>

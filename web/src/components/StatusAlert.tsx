@@ -45,7 +45,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
       role="alert"
       data-testid={`status-alert-${type}`}
       style={{
-        backgroundColor: isError ? 'var(--note-error, #ffebee)' : 'var(--note-blue, #e8f8ff)',
+        backgroundColor: isError ? 'var(--note-error, #ffebee)' : 'var(--note-blue, #e6f3ff)',
         padding: '1rem 1.25rem',
         marginTop: '1.25rem',
         ['--rot' as any]: '-0.5deg',
@@ -62,7 +62,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
             className="alert-message font-handwriting"
             style={{
               fontSize: '1.15rem',
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               lineHeight: 1.4,
               margin: 0,
             }}
@@ -76,7 +76,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
               style={{
                 marginTop: '0.5rem',
                 fontSize: '0.95rem',
-                color: 'var(--ink-light, #636e72)',
+                color: 'var(--ink-light, #8a7569)',
                 lineHeight: 1.4,
               }}
             >
@@ -87,7 +87,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 rel="noopener noreferrer"
                 className="alert-cli-link"
                 style={{
-                  color: 'var(--ink, #2d3436)',
+                  color: 'var(--ink, #5a4a42)',
                   fontWeight: 700,
                   textDecoration: 'underline',
                 }}
@@ -106,7 +106,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
           style={{
             paddingTop: '0.75rem',
             marginTop: '0.75rem',
-            borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
+            borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
@@ -120,7 +120,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 flex: '1 1 0',
                 minWidth: 0,
                 fontSize: '0.82rem',
-                color: 'var(--ink-light, #636e72)',
+                color: 'var(--ink-light, #8a7569)',
                 lineHeight: 1.5,
               }}
             >
@@ -134,7 +134,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 onClick={onAction}
                 className="btn-action sticker font-handwriting"
                 style={{
-                  backgroundColor: '#2563eb',
+                  backgroundColor: '#6a82d4',
                   color: '#ffffff',
                   padding: '0.35rem 1rem',
                   fontSize: '1.05rem',
@@ -178,8 +178,8 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                   cursor: feedbackSubmitted ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
                   opacity: feedbackSubmitted ? 0.85 : 1,
-                  border: '1px solid #81c784',
-                  color: '#2e7d32',
+                  border: '1px solid #8fd0b0',
+                  color: '#3d8f70',
                 }}
               >
                 {feedbackSubmitted ? feedbackSubmittedLabel : feedbackLabel}

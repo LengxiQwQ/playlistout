@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface TapeProps extends React.HTMLAttributes<HTMLDivElement> {
-  color?: 'pink' | 'cyan' | 'green' | 'yellow';
+  color?: 'pink' | 'cyan' | 'green' | 'yellow' | 'taro' | 'peach';
   rotateDeg?: number;
   width?: string | number;
   height?: string | number;

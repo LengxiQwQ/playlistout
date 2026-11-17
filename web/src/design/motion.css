@@ -112,6 +112,27 @@
   }
 }
 
+/* Stationery Sticker Float */
+@keyframes stickerFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--sticker-rot, 0deg));
+  }
+  50% {
+    transform: translateY(-6px) rotate(calc(var(--sticker-rot, 0deg) + 2.5deg));
+  }
+}
+
+.stationery-sticker {
+  --sticker-rot: 0deg;
+  display: inline-block;
+  filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.22));
+  animation: stickerFloat 5.5s ease-in-out infinite;
+}
+
+.stationery-sticker.delay-1 { animation-delay: -1.4s; }
+.stationery-sticker.delay-2 { animation-delay: -2.8s; }
+.stationery-sticker.delay-3 { animation-delay: -4.1s; }
+
 .result-doodle {
   animation: doodleFloat 3.5s ease-in-out infinite;
   transform-origin: center center;
@@ -122,7 +143,7 @@
 .result-doodle:hover {
   animation-play-state: paused;
   transform: scale(1.25) rotate(-15deg);
-  color: var(--ink, #2d3436) !important;
+  color: var(--ink, #5a4a42) !important;
 }
 
 /* Result Paper Unfold Entrance */

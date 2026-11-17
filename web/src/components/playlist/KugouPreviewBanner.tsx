@@ -37,8 +37,8 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
         flexWrap: 'wrap',
         gap: '0.75rem',
         padding: '0.85rem 1.25rem',
-        backgroundColor: retrievalReason === 'auth_invalid' ? '#fef2f2' : '#eff6ff',
-        border: `2px dashed ${retrievalReason === 'auth_invalid' ? '#ef4444' : '#3b82f6'}`,
+        backgroundColor: retrievalReason === 'auth_invalid' ? '#fff3f4' : '#f2f5ff',
+        border: `2px dashed ${retrievalReason === 'auth_invalid' ? '#ec7088' : '#8aa0e6'}`,
         borderRadius: '6px',
       }}
     >
@@ -51,7 +51,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
           style={{
             fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             fontSize: '0.92rem',
-            color: retrievalReason === 'auth_invalid' ? '#991b1b' : '#1e40af',
+            color: retrievalReason === 'auth_invalid' ? '#a63e55' : '#4a5c9e',
             fontWeight: 500,
             lineHeight: 1.4,
           }}
@@ -91,7 +91,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
           <MarkerButton
             variant="ink"
             onClick={onOpenModal}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+            style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 1rem' }}
           >
             {t.result.kugouConnectBtn}
           </MarkerButton>
@@ -101,7 +101,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
           <MarkerButton
             variant="ink"
             onClick={onOpenModal}
-            style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '0.45rem 1rem' }}
+            style={{ backgroundColor: '#e0607a', color: '#ffffff', padding: '0.45rem 1rem' }}
           >
             {t.result.kugouReLoginBtn}
           </MarkerButton>
@@ -119,7 +119,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
             <MarkerButton
               variant="ink"
               onClick={onOpenModal}
-              style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+              style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 0.85rem' }}
             >
               {t.result.kugouSwitchAccountBtn}
             </MarkerButton>
@@ -130,7 +130,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
           <MarkerButton
             variant="ink"
             onClick={onOpenModal}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+            style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 1rem' }}
           >
             {t.result.kugouSwitchAccountBtn}
           </MarkerButton>
@@ -148,7 +148,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
             <MarkerButton
               variant="ink"
               onClick={onOpenModal}
-              style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+              style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 0.85rem' }}
             >
               {t.result.kugouSwitchAccountBtn}
             </MarkerButton>
@@ -167,7 +167,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
             <MarkerButton
               variant="ink"
               onClick={onOpenModal}
-              style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 0.85rem' }}
+              style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 0.85rem' }}
             >
               {t.result.kugouReLoginBtn}
             </MarkerButton>
@@ -178,7 +178,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
           <MarkerButton
             variant="ink"
             onClick={onOpenModal}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '0.45rem 1rem' }}
+            style={{ backgroundColor: '#6a82d4', color: '#ffffff', padding: '0.45rem 1rem' }}
           >
             {format(t.result.kugouUnlockAllBtn, { totalCount: playlist.trackCount })}
           </MarkerButton>
@@ -199,7 +199,7 @@ export const KugouPreviewBanner: React.FC<KugouPreviewBannerProps> = ({
               variant={isLoggedIn ? 'paper' : 'ink'}
               onClick={onOpenModal}
               style={{
-                backgroundColor: isLoggedIn ? undefined : '#2563eb',
+                backgroundColor: isLoggedIn ? undefined : '#6a82d4',
                 color: isLoggedIn ? undefined : '#ffffff',
                 padding: '0.45rem 0.85rem',
               }}

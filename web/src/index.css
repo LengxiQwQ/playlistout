@@ -14,18 +14,18 @@ html {
 
 :root {
   --font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-  --bg-color: var(--paper, #f6f1e5);
+  --bg-color: var(--paper, #fdf6ec);
   --card-bg: #ffffff;
-  --text-main: var(--ink, #2d3436);
-  --text-muted: var(--ink-light, #636e72);
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --border-color: #e2e8f0;
-  --badge-bg: #eff6ff;
-  --badge-text: #1d4ed8;
-  --error-bg: #fef2f2;
-  --error-border: #fecaca;
-  --error-text: #991b1b;
+  --text-main: var(--ink, #5a4a42);
+  --text-muted: var(--ink-light, #8a7569);
+  --primary: #6a82d4;
+  --primary-hover: #5670c4;
+  --border-color: #f0e6dc;
+  --badge-bg: #f2f5ff;
+  --badge-text: #5670c4;
+  --error-bg: #fff3f4;
+  --error-border: #ffd3dc;
+  --error-text: #a63e55;
 }
 
 * {
@@ -103,7 +103,7 @@ h1 {
 
 .input-field:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(106, 130, 212, 0.15);
 }
 
 .btn-clear {
@@ -158,18 +158,18 @@ h1 {
 }
 
 .btn-sample {
-  background: #f1f5f9;
+  background: #faf3ea;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;
-  color: #334155;
+  color: #6b574c;
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .btn-sample:hover {
-  background: #e2e8f0;
+  background: #f0e6dc;
   color: var(--text-main);
 }
 
@@ -225,7 +225,7 @@ h1 {
 }
 
 .btn-retry:hover {
-  background: #fee2e2;
+  background: #ffe4ea;
 }
 
 /* Loading */
@@ -241,7 +241,7 @@ h1 {
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #e2e8f0;
+  border: 3px solid #f0e6dc;
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -267,7 +267,7 @@ h1 {
 }
 
 .feature-item {
-  background: #f8fafc;
+  background: #fffaf3;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.15rem;
@@ -313,7 +313,7 @@ h1 {
   width: 110px;
   height: 110px;
   border-radius: 8px;
-  background: #e2e8f0;
+  background: #f0e6dc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,8 +333,8 @@ h1 {
 }
 
 .platform-tag {
-  background: #dcfce7;
-  color: #15803d;
+  background: #dcf5ea;
+  color: #3d8f70;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
@@ -342,7 +342,7 @@ h1 {
 }
 
 .track-count-badge {
-  background: #eff6ff;
+  background: #f2f5ff;
   color: var(--primary);
   font-size: 0.75rem;
   font-weight: 600;
@@ -389,7 +389,7 @@ h1 {
 }
 
 .btn-outline-small:hover {
-  background: #eff6ff;
+  background: #f2f5ff;
   border-color: var(--primary);
 }
 
@@ -419,7 +419,7 @@ h1 {
 .table-header-info {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
-  background: #f8fafc;
+  background: #fffaf3;
 }
 
 .table-header-info h3 {
@@ -442,7 +442,7 @@ h1 {
 }
 
 .track-table th {
-  background: #f8fafc;
+  background: #fffaf3;
   color: var(--text-muted);
   font-weight: 600;
   font-size: 0.8rem;
@@ -464,7 +464,7 @@ h1 {
 }
 
 .track-row:hover td {
-  background-color: #f8fafc;
+  background-color: #fffaf3;
 }
 
 .col-index {
@@ -484,7 +484,7 @@ h1 {
 
 .col-artist {
   max-width: 180px;
-  color: #334155;
+  color: #6b574c;
 }
 
 .col-album {
@@ -556,8 +556,8 @@ h1 {
 
 .btn-export:hover:not(:disabled),
 .btn-copy:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: #faf3ea;
+  border-color: #e6d8cc;
 }
 
 .btn-export:disabled,
@@ -567,14 +567,14 @@ h1 {
 }
 
 .btn-export-highlight {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: #f2f5ff;
+  border-color: #d4defc;
   color: var(--primary);
   font-weight: 600;
 }
 
 .btn-export-highlight:hover:not(:disabled) {
-  background: #dbeafe;
+  background: #e5ebff;
   border-color: var(--primary);
 }
 
@@ -590,7 +590,7 @@ h1 {
   bottom: -3.2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #0f172a;
+  background: #4a3b34;
   color: #ffffff;
   padding: 0.5rem 1.25rem;
   border-radius: 9999px;
@@ -606,7 +606,7 @@ h1 {
 }
 
 .export-toast span {
-  color: #4ade80;
+  color: #8fdcb6;
   font-weight: bold;
 }
 
@@ -678,7 +678,7 @@ a:focus-visible {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgba(74, 59, 52, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -736,7 +736,7 @@ a:focus-visible {
 }
 
 .btn-modal-close {
-  background: #f1f5f9;
+  background: #faf3ea;
   border: none;
   border-radius: 50%;
   width: 2rem;
@@ -751,7 +751,7 @@ a:focus-visible {
 }
 
 .btn-modal-close:hover {
-  background: #e2e8f0;
+  background: #f0e6dc;
   color: var(--text-main);
 }
 
@@ -759,7 +759,7 @@ a:focus-visible {
   padding: 1.75rem;
   overflow-y: auto;
   line-height: 1.65;
-  color: #334155;
+  color: #6b574c;
   font-size: 0.925rem;
 }
 
@@ -783,7 +783,7 @@ a:focus-visible {
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
-  background-color: #f8fafc;
+  background-color: #fffaf3;
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
 }

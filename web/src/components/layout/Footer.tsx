@@ -75,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           style={{
             flex: 1,
             height: '2px',
-            backgroundColor: 'var(--margin-red, #ff8a80)',
+            backgroundColor: 'var(--margin-red, #f4a7b9)',
             opacity: 0.9,
             borderRadius: '2px',
           }}
@@ -89,7 +89,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             border: 'none',
             boxShadow: 'none',
             padding: '0 0.5rem',
-            color: 'var(--margin-red, #ff8a80)',
+            color: 'var(--margin-red, #f4a7b9)',
             fontSize: '1.25rem',
             fontWeight: 700,
             letterSpacing: '0.12em',
@@ -106,7 +106,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           style={{
             flex: 1,
             height: '2px',
-            backgroundColor: 'var(--margin-red, #ff8a80)',
+            backgroundColor: 'var(--margin-red, #f4a7b9)',
             opacity: 0.9,
             borderRadius: '2px',
           }}
@@ -162,7 +162,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               style={{
                 fontSize: '1.65rem',
                 lineHeight: 'var(--ruled-line-height, 38px)',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
               }}
             >
               Playlist Out
@@ -186,7 +186,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             className="font-handwriting footer-tagline-text"
             style={{
               fontSize: '1.3rem',
-              color: 'var(--ink-light, #636e72)',
+              color: 'var(--ink-light, #8a7569)',
               lineHeight: 1.45,
               margin: 0,
             }}
@@ -223,7 +223,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               fontSize: '1.05rem',
               fontWeight: 600,
               textDecoration: 'none',
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               borderRadius: '6px',
               lineHeight: 1.2,
             }}
@@ -252,7 +252,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 padding: '0.35rem 0.85rem',
                 fontSize: '1.05rem',
                 fontWeight: 600,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 lineHeight: 1.2,
@@ -299,7 +299,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               padding: '0.35rem 0.85rem',
               fontSize: '1.05rem',
               fontWeight: 600,
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               borderRadius: '6px',
               cursor: 'pointer',
               lineHeight: 1.2,
@@ -322,7 +322,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               fontSize: '1.05rem',
               fontWeight: 600,
               textDecoration: 'none',
-              color: 'var(--ink, #2d3436)',
+              color: 'var(--ink, #5a4a42)',
               borderRadius: '6px',
               lineHeight: 1.2,
             }}
@@ -350,7 +350,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               minHeight: 'var(--ruled-line-height, 38px)',
               lineHeight: 1.5,
               fontSize: '0.85rem',
-              color: '#8a8f92',
+              color: '#a8968b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -385,7 +385,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               minHeight: 'var(--ruled-line-height, 38px)',
               lineHeight: 1.5,
               fontSize: '0.8rem',
-              color: '#a0a5a8',
+              color: '#b8a79c',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

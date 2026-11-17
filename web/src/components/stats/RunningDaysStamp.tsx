@@ -44,22 +44,22 @@ export const RunningDaysStamp: React.FC<RunningDaysStampProps> = ({ today }) => 
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '1px dashed rgba(160, 150, 140, 0.45)',
-          borderRadius: '12px',
-          padding: '0.75rem 1.85rem 0.65rem',
+          border: '2px dashed #e8a0b4',
+          borderRadius: '14px',
+          padding: '0.85rem 2rem 0.75rem',
           transform: 'rotate(-0.8deg)',
-          backgroundColor: 'rgba(255, 253, 247, 0.85)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+          background: 'linear-gradient(135deg, #fffdf9 0%, #fff2f6 100%)',
+          boxShadow: '3px 4px 0 rgba(150, 112, 92, 0.18)',
           position: 'relative',
         }}
       >
-        <span style={{ position: 'absolute', top: '-7px', right: '-6px', fontSize: '0.95rem', color: 'rgba(160, 150, 140, 0.6)' }}>✦</span>
-        <span style={{ position: 'absolute', bottom: '-7px', left: '-6px', fontSize: '0.95rem', color: 'rgba(160, 150, 140, 0.6)' }}>⋆</span>
+        <span style={{ position: 'absolute', top: '-9px', right: '-8px', fontSize: '1.05rem', color: '#ec7f9f' }}>✦</span>
+        <span style={{ position: 'absolute', bottom: '-9px', left: '-8px', fontSize: '1.05rem', color: '#e3b23c' }}>⋆</span>
         <div
           className="font-marker"
           style={{
             fontSize: '1.25rem',
-            color: '#57606f',
+            color: '#7a665b',
             letterSpacing: '0.03em',
             lineHeight: 1.2,
           }}
@@ -72,7 +72,7 @@ export const RunningDaysStamp: React.FC<RunningDaysStampProps> = ({ today }) => 
           className="font-handwriting"
           style={{
             fontSize: '1.05rem',
-            color: '#8a8f92',
+            color: '#a8968b',
             marginTop: '0.35rem',
             display: 'flex',
             alignItems: 'center',

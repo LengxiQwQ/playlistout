@@ -69,21 +69,26 @@ export function notifyStatsIncrement(detail: StatsIncrementDetail): void {
   }
 }
 
-export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
-  const timestamp = Date.now();
+export async function fetchStats(options: { force?: boolean } = {}): Promise<ApiResponse<StatsResponse>> {
+  const url = options.force
+    ? `${API_BASE_URL}/api/stats?_t=${Date.now()}`
+    : `${API_BASE_URL}/api/stats`;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/stats?_t=${timestamp}`, {
+    const res = await fetch(url, {
       headers: { Accept: 'application/json' },
-      cache: 'no-store',
+      ...(options.force ? { cache: 'no-store' } : {}),
     });
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
       return await res.json();
     }
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
-      const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats?_t=${timestamp}`, {
+      const fallbackUrl = options.force
+        ? `${REMOTE_API_BASE_URL}/api/stats?_t=${Date.now()}`
+        : `${REMOTE_API_BASE_URL}/api/stats`;
+      const fallbackRes = await fetch(fallbackUrl, {
         headers: { Accept: 'application/json' },
-        cache: 'no-store',
+        ...(options.force ? { cache: 'no-store' } : {}),
       });
       if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
         return await fallbackRes.json();
@@ -99,9 +104,12 @@ export async function fetchStats(): Promise<ApiResponse<StatsResponse>> {
   } catch (err: unknown) {
     if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
       try {
-        const fallbackRes = await fetch(`${REMOTE_API_BASE_URL}/api/stats?_t=${timestamp}`, {
+        const fallbackUrl = options.force
+          ? `${REMOTE_API_BASE_URL}/api/stats?_t=${Date.now()}`
+          : `${REMOTE_API_BASE_URL}/api/stats`;
+        const fallbackRes = await fetch(fallbackUrl, {
           headers: { Accept: 'application/json' },
-          cache: 'no-store',
+          ...(options.force ? { cache: 'no-store' } : {}),
         });
         if (fallbackRes.headers.get('content-type')?.includes('application/json')) {
           return await fallbackRes.json();

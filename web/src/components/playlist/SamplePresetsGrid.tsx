@@ -22,7 +22,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
       style={{
         marginTop: '1.25rem',
         paddingTop: '0.85rem',
-        borderTop: '2px dashed rgba(45, 52, 54, 0.2)',
+        borderTop: '2px dashed rgba(90, 74, 66, 0.2)',
       }}
     >
       <button
@@ -34,13 +34,14 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.45rem',
-          background: isSamplesExpanded ? 'rgba(45, 52, 54, 0.08)' : 'transparent',
-          border: '1.5px dashed rgba(45, 52, 54, 0.35)',
+          background: isSamplesExpanded ? '#ffeef3' : '#fffaf0',
+          border: '1.75px dashed rgba(110, 90, 80, 0.45)',
           borderRadius: '20px',
-          padding: '0.25rem 0.85rem',
+          padding: '0.28rem 0.9rem',
           fontSize: '1rem',
-          fontWeight: 600,
-          color: '#636e72',
+          fontWeight: 700,
+          color: '#7a5e52',
+          boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.14)',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           fontFamily: 'var(--font-handwriting, cursive)',
@@ -70,13 +71,13 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           gap: '1rem',
           marginTop: '0.85rem',
           fontSize: '1.1rem',
-          color: '#636e72',
+          color: '#8a7569',
           fontFamily: 'var(--font-handwriting, cursive)',
         }}
       >
         <Sticker
           type="button"
-          color="white"
+          color="green"
           rotateDeg={-1}
           onClick={() => onSelectSample('3197635836', 'qqmusic', 'user')}
           className="font-handwriting"
@@ -92,7 +93,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         </Sticker>
         <Sticker
           type="button"
-          color="white"
+          color="pink"
           rotateDeg={1}
           onClick={() => onSelectSample('https://163cn.tv/bgx9GaCN', 'netease', 'user')}
           className="font-handwriting"
@@ -108,7 +109,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         </Sticker>
         <Sticker
           type="button"
-          color="white"
+          color="lime"
           rotateDeg={-0.5}
           onClick={() => onSelectSample('https://qishui.douyin.com/s/iXHhKHhY/', 'qishui', 'playlist')}
           className="font-handwriting"
@@ -124,7 +125,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         </Sticker>
         <Sticker
           type="button"
-          color="white"
+          color="yellow"
           rotateDeg={-0.5}
           onClick={() =>
             onSelectSample(
@@ -146,7 +147,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         </Sticker>
         <Sticker
           type="button"
-          color="white"
+          color="purple"
           rotateDeg={0.5}
           onClick={() =>
             onSelectSample(
@@ -168,7 +169,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         </Sticker>
         <Sticker
           type="button"
-          color="white"
+          color="blue"
           rotateDeg={1}
           onClick={() =>
             onSelectSample(

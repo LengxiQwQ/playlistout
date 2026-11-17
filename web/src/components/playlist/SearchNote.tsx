@@ -146,7 +146,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           position: 'absolute',
           right: '-1.5rem',
           top: '-2rem',
-          color: '#eab308',
+          color: '#e3b23c',
           fontSize: '2.5rem',
           userSelect: 'none',
           zIndex: 25,
@@ -172,7 +172,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               style={{
                 fontSize: '1.5rem',
                 fontWeight: 700,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
               }}
             >
               {t.search.inputLabel}
@@ -180,10 +180,10 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             <span
               className="brand-badge sticker font-mono"
               style={{
-                backgroundColor: '#eff6ff',
+                backgroundColor: '#efe8ff',
                 fontSize: '0.75rem',
-                padding: '0.2rem 0.6rem',
-                color: '#1d4ed8',
+                padding: '0.22rem 0.65rem',
+                color: '#7a55b8',
               }}
             >
               {t.search.badge}

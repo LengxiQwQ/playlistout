@@ -19,7 +19,7 @@ const WeChatIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   </svg>
 );
 
-const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = '#e11d48' }) => (
+const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = '#e8678a' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1" aria-hidden="true">
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
   </svg>
@@ -84,14 +84,14 @@ export const SponsorButton: React.FC = () => {
           padding: '0.35rem 0.85rem',
           fontSize: '1.05rem',
           fontWeight: 600,
-          color: 'var(--ink, #2d3436)',
+          color: 'var(--ink, #5a4a42)',
           borderRadius: '6px',
           cursor: 'pointer',
           lineHeight: 1.2,
           transition: 'all 0.15s ease',
         }}
       >
-        <HeartIcon size={14} color="#e11d48" />
+        <HeartIcon size={14} color="#e8678a" />
         <span>{t.footer.sponsorLink}</span>
         <span
           style={{
@@ -130,7 +130,7 @@ export const SponsorButton: React.FC = () => {
                 border: 'none',
                 fontSize: '1.25rem',
                 fontWeight: 700,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 cursor: 'pointer',
                 lineHeight: 1,
                 padding: '0.2rem 0.4rem',
@@ -142,7 +142,7 @@ export const SponsorButton: React.FC = () => {
               className="font-marker"
               style={{
                 fontSize: '1.25rem',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 marginBottom: '0.2rem',
                 lineHeight: 1.2,
                 paddingRight: '1.5rem',
@@ -155,7 +155,7 @@ export const SponsorButton: React.FC = () => {
             className="font-handwriting"
             style={{
               fontSize: '0.85rem',
-              color: '#636e72',
+              color: '#8a7569',
               margin: '0 0 0.85rem 0',
               lineHeight: 1.3,
             }}
@@ -184,8 +184,8 @@ export const SponsorButton: React.FC = () => {
                 fontSize: '0.95rem',
                 fontWeight: 600,
                 lineHeight: 1.2,
-                boxShadow: '2px 2px 0 var(--ink, #2d3436)',
-                border: '1.5px solid var(--ink, #2d3436)',
+                boxShadow: '2px 2px 0 var(--shadow-ink)',
+                border: '1.5px solid var(--ink-line)',
                 transition: 'transform 0.15s ease, box-shadow 0.15s ease',
               }}
             >
@@ -206,7 +206,7 @@ export const SponsorButton: React.FC = () => {
                 justifyContent: 'center',
                 gap: '0.5rem',
                 padding: '0.45rem 0.85rem',
-                backgroundColor: '#946ce6',
+                backgroundColor: '#9a7fd8',
                 color: '#ffffff',
                 borderRadius: '6px',
                 textDecoration: 'none',
@@ -214,8 +214,8 @@ export const SponsorButton: React.FC = () => {
                 fontSize: '0.95rem',
                 fontWeight: 600,
                 lineHeight: 1.2,
-                boxShadow: '2px 2px 0 var(--ink, #2d3436)',
-                border: '1.5px solid #7c4dff',
+                boxShadow: '2px 2px 0 var(--shadow-ink)',
+                border: '1.5px solid #9a7fd8',
                 transition: 'transform 0.15s ease, box-shadow 0.15s ease',
               }}
             >
@@ -229,7 +229,7 @@ export const SponsorButton: React.FC = () => {
           <div
             style={{
               paddingTop: '0.75rem',
-              borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
+              borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -239,7 +239,7 @@ export const SponsorButton: React.FC = () => {
               style={{
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 fontFamily: 'var(--font-sans, sans-serif)',
                 display: 'flex',
                 alignItems: 'center',
@@ -256,9 +256,9 @@ export const SponsorButton: React.FC = () => {
                 display: 'inline-block',
                 padding: '4px',
                 backgroundColor: '#ffffff',
-                border: '2px solid var(--ink, #2d3436)',
+                border: '2px solid var(--ink-line)',
                 borderRadius: '8px',
-                boxShadow: '3px 3px 0 rgba(45, 52, 54, 0.15)',
+                boxShadow: '3px 3px 0 rgba(90, 74, 66, 0.15)',
               }}
             >
               <img
@@ -276,7 +276,7 @@ export const SponsorButton: React.FC = () => {
             <div
               style={{
                 fontSize: '0.75rem',
-                color: '#8a8f92',
+                color: '#a8968b',
                 marginTop: '0.35rem',
                 fontFamily: 'var(--font-sans, sans-serif)',
               }}
@@ -289,7 +289,7 @@ export const SponsorButton: React.FC = () => {
           <div
             style={{
               paddingTop: '0.75rem',
-              borderTop: '1px dashed rgba(45, 52, 54, 0.2)',
+              borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -300,7 +300,7 @@ export const SponsorButton: React.FC = () => {
               className="font-handwriting"
               style={{
                 fontSize: '0.9rem',
-                color: '#636e72',
+                color: '#8a7569',
                 margin: 0,
                 lineHeight: 1.35,
                 textAlign: 'center',
@@ -320,13 +320,13 @@ export const SponsorButton: React.FC = () => {
                 gap: '0.5rem',
                 padding: '0.4rem 0.85rem',
                 backgroundColor: '#ffffff',
-                color: 'var(--ink, #2d3436)',
+                color: 'var(--ink, #5a4a42)',
                 borderRadius: '6px',
                 textDecoration: 'none',
                 fontSize: '0.95rem',
                 fontWeight: 600,
                 lineHeight: 1.2,
-                border: '1.5px dashed var(--ink, #2d3436)',
+                border: '1.5px dashed var(--ink-line)',
                 transition: 'transform 0.15s ease, box-shadow 0.15s ease',
               }}
             >

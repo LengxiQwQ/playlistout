@@ -11,14 +11,14 @@ export interface StickerProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
 
 const stickerColorMap = {
   white: '#ffffff',
-  yellow: '#fef08a',
-  pink: '#fbcfe8',
-  cyan: '#81ecec',
-  green: '#bbf7d0',
-  blue: '#bfdbfe',
-  purple: '#e9d5ff',
-  red: '#fecaca',
-  lime: '#d9f99d',
+  yellow: '#fff0b3',
+  pink: '#ffd8e6',
+  cyan: '#c3efe6',
+  green: '#cdeee0',
+  blue: '#d4defc',
+  purple: '#e8ddff',
+  red: '#ffd3dc',
+  lime: '#e6f5c6',
 };
 
 export const Sticker: React.FC<StickerProps> = ({

@@ -32,14 +32,14 @@ export const KugouQrCodeBox: React.FC<KugouQrCodeBoxProps> = ({
         height: '210px',
         backgroundColor: '#ffffff',
         borderRadius: '8px',
-        border: '2px solid #2563eb',
+        border: '2px solid #6a82d4',
         position: 'relative',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden',
       }}
     >
       {loading ? (
-        <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+        <div style={{ color: '#8a7569', fontSize: '0.9rem' }}>
           <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>⏳</div>
           <div>生成中...</div>
         </div>
@@ -56,7 +56,7 @@ export const KugouQrCodeBox: React.FC<KugouQrCodeBoxProps> = ({
           onClick={onReload}
         >
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔄</div>
-          <div style={{ color: '#ef4444', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+          <div style={{ color: '#ec7088', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
             {t.kugouAuth.loginExpired}
           </div>
           <MarkerButton variant="paper" onClick={onReload}>
@@ -74,7 +74,7 @@ export const KugouQrCodeBox: React.FC<KugouQrCodeBoxProps> = ({
           }}
         >
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📱</div>
-          <div style={{ color: '#2563eb', fontWeight: 700, fontSize: '0.95rem' }}>
+          <div style={{ color: '#6a82d4', fontWeight: 700, fontSize: '0.95rem' }}>
             {t.kugouAuth.scannedConfirm}
           </div>
         </div>
@@ -88,8 +88,8 @@ export const KugouQrCodeBox: React.FC<KugouQrCodeBoxProps> = ({
             padding: '1rem',
           }}
         >
-          <div style={{ fontSize: '2.5rem', color: '#16a34a', marginBottom: '0.5rem' }}>✓</div>
-          <div style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.95rem' }}>
+          <div style={{ fontSize: '2.5rem', color: '#4fae8a', marginBottom: '0.5rem' }}>✓</div>
+          <div style={{ color: '#4fae8a', fontWeight: 700, fontSize: '0.95rem' }}>
             {t.kugouAuth.loginSuccess}
           </div>
         </div>
@@ -100,7 +100,7 @@ export const KugouQrCodeBox: React.FC<KugouQrCodeBoxProps> = ({
           style={{ width: '190px', height: '190px', objectFit: 'contain' }}
         />
       ) : (
-        <div style={{ color: '#ef4444', padding: '1rem', fontSize: '0.85rem' }}>
+        <div style={{ color: '#ec7088', padding: '1rem', fontSize: '0.85rem' }}>
           {errorMessage || '无法载入二维码'}
           <div style={{ marginTop: '0.75rem' }}>
             <MarkerButton variant="paper" onClick={onReload}>
