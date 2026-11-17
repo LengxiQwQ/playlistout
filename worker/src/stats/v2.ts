@@ -34,6 +34,7 @@ interface CountRow {
 
 const CORE_METRICS = [
   'resolve_request',
+  'upstream_requests',
   'playlist_success',
   'user_success',
   'resolve_failure',

@@ -146,10 +146,10 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
               const isVipTrack = Boolean(track.isVip || track.status === 'vip');
 
               // Derive status display (only flags unplayable or paid, overseas-only restrictions are treated as normal)
-              let statusLabel = t.table.statusPlayable;
-              let statusBg = '#effaf5';
-              let statusColor = '#34775e';
-              let statusBorder = '#cdeee0';
+              let statusLabel = track.status === 'unknown' ? t.search.statusUnknown : t.table.statusPlayable;
+              let statusBg = track.status === 'unknown' ? '#f2eee9' : '#effaf5';
+              let statusColor = track.status === 'unknown' ? '#75665d' : '#34775e';
+              let statusBorder = track.status === 'unknown' ? '#ded5cd' : '#cdeee0';
 
               if (isUnplayable) {
                 statusLabel = t.table.statusUnplayable;

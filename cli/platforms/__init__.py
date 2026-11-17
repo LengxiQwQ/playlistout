@@ -15,6 +15,8 @@ from .kugou import KugouAdapter
 from .kuwo import KuwoAdapter
 from .qishui import QishuiAdapter
 from .migu import MiguAdapter
+from .spotify import SpotifyAdapter
+from .applemusic import AppleMusicAdapter
 
 from cli.core.http import reset_gai_family
 

@@ -44,6 +44,20 @@ function findStatement(captured: CapturedStatement[], table: string): CapturedSt
 }
 
 describe('Analytics V2 recorder attribution', () => {
+  it.each(['spotify', 'applemusic'])('records %s once with bounded upstream cost, without content fields', async platform => {
+    const captured: CapturedStatement[] = [];
+    await recordResolveV2(createDb(captured), {
+      request: apiRequest({'Origin':'https://playlistout.lengxiqwq.com','User-Agent':'Mozilla/5.0'}),
+      outcome:'success_playlist',platform,trackCount:118,upstreamRequestCount:4,
+      inputType:'web_url',requestedType:'playlist',requestedPlatform:platform,latencyMs:1000,endpoint:'playlist',
+    });
+    const requests=captured.filter(x=>x.binds.includes('resolve_request'));
+    const costs=captured.filter(x=>x.binds.includes('upstream_requests'));
+    expect(requests).toHaveLength(3); // daily, hourly, geo; one logical event
+    expect(costs).toHaveLength(3);
+    expect(costs.every(x=>x.binds.includes(4) && x.binds.includes(platform))).toBe(true);
+    expect(captured).toHaveLength(19);
+  });
   it('records a registered plugin request with Host-derived environment and version dims', async () => {
     const captured: CapturedStatement[] = [];
     await recordResolveV2(createDb(captured), {

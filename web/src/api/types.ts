@@ -3,7 +3,7 @@
  * Defined in docs/PROJECT-CONSTITUTION.md Section 6
  */
 
-export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
+export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid' | 'unknown';
 
 export interface Track {
   index: number;

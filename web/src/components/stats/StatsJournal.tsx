@@ -3,7 +3,7 @@ import { fetchStats, type StatsResponse, type StatsIncrementDetail } from '../..
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Sticker } from '../ui/Sticker';
-import { getPlatformName } from '../../utils/platform';
+import { PLATFORMS, getPlatformName } from '../../utils/platform';
 import { calculateRunningDays } from '../../utils/uptime';
 import { AnimatedCounter } from './AnimatedCounter';
 import { RunningDaysStamp, type RunningDaysStampProps } from './RunningDaysStamp';
@@ -116,9 +116,10 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     const txt = raw.txt || 0;
     const json = raw.json || 0;
     const m3u8 = raw.m3u8 || 0;
-    const sum = xlsx + csv + txt + json + m3u8;
+    const markdown = raw.markdown || 0;
+    const sum = xlsx + csv + txt + json + m3u8 + markdown;
     if (sum === 0) {
-      return { xlsx: 0, csv: 0, txt: 0, json: 0, m3u8: 0, hasRealData: false };
+      return { xlsx: 0, csv: 0, txt: 0, json: 0, m3u8: 0, markdown: 0, hasRealData: false };
     }
     return {
       xlsx: Math.round((xlsx / sum) * 100),
@@ -126,6 +127,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       txt: Math.round((txt / sum) * 100),
       json: Math.round((json / sum) * 100),
       m3u8: Math.round((m3u8 / sum) * 100),
+      markdown: Math.round((markdown / sum) * 100),
       hasRealData: true,
     };
   }, [stats?.exportFormatsBreakdown]);
@@ -159,40 +161,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   // Platform shares calculation
   const platformShares = useMemo(() => {
     const raw = stats?.byPlatform || {};
-    const qq = raw.qqmusic?.totalSuccess || 0;
-    const netease = raw.netease?.totalSuccess || 0;
-    const kugou = raw.kugou?.totalSuccess || 0;
-    const qishui = raw.qishui?.totalSuccess || 0;
-    const kuwo = raw.kuwo?.totalSuccess || 0;
-    const migu = raw.migu?.totalSuccess || 0;
-    const total = qq + netease + kugou + qishui + kuwo + migu;
-
-    if (total === 0) {
-      return [
-        { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: 0, pct: 0, color: '#4fae8a' },
-        { id: 'netease', name: getPlatformName('netease', language), count: 0, pct: 0, color: '#e8678a' },
-        { id: 'qishui', name: getPlatformName('qishui', language), count: 0, pct: 0, color: '#86b25a' },
-        { id: 'kugou', name: getPlatformName('kugou', language), count: 0, pct: 0, color: '#6a82d4' },
-        { id: 'kuwo', name: getPlatformName('kuwo', language), count: 0, pct: 0, color: '#c9952f' },
-        { id: 'migu', name: getPlatformName('migu', language), count: 0, pct: 0, color: '#e0709a' },
-      ];
-    }
-
-    const qqPct = Math.round((qq / total) * 100);
-    const neteasePct = Math.round((netease / total) * 100);
-    const qishuiPct = Math.round((qishui / total) * 100);
-    const kugouPct = Math.round((kugou / total) * 100);
-    const kuwoPct = Math.round((kuwo / total) * 100);
-    const miguPct = Math.round((migu / total) * 100);
-
-    return [
-      { id: 'qqmusic', name: getPlatformName('qqmusic', language), count: qq, pct: qqPct, color: '#4fae8a' },
-      { id: 'netease', name: getPlatformName('netease', language), count: netease, pct: neteasePct, color: '#e8678a' },
-      { id: 'qishui', name: getPlatformName('qishui', language), count: qishui, pct: qishuiPct, color: '#86b25a' },
-      { id: 'kugou', name: getPlatformName('kugou', language), count: kugou, pct: kugouPct, color: '#6a82d4' },
-      { id: 'kuwo', name: getPlatformName('kuwo', language), count: kuwo, pct: kuwoPct, color: '#c9952f' },
-      { id: 'migu', name: getPlatformName('migu', language), count: migu, pct: miguPct, color: '#e0709a' },
-    ];
+    const entries = Object.values(PLATFORMS).map(config => ({
+      id: config.id, name: getPlatformName(config.id, language),
+      count: raw[config.id]?.totalSuccess || 0, color: config.badgeBorder,
+    }));
+    const total = entries.reduce((sum, item) => sum + item.count, 0);
+    return entries.map(item => ({...item, pct: total ? Math.round(item.count / total * 100) : 0}));
   }, [stats?.byPlatform, language]);
 
   const handleDashboardNavigate = useCallback((e: React.MouseEvent) => {
@@ -609,6 +583,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 <div style={{ width: `${formatStats.json}%`, backgroundColor: '#a98ae6' }} title={`JSON: ${formatStats.json}%`} />
                 <div style={{ width: `${formatStats.txt}%`, backgroundColor: '#6a82d4' }} title={`TXT: ${formatStats.txt}%`} />
                 <div style={{ width: `${formatStats.csv}%`, backgroundColor: '#ee9a6c' }} title={`CSV: ${formatStats.csv}%`} />
+                <div style={{ width: `${formatStats.markdown}%`, backgroundColor: '#64748b' }} title={`Markdown: ${formatStats.markdown}%`} />
                 <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: '#9a7fd8' }} title={`M3U8: ${formatStats.m3u8}%`} />
               </div>
 
@@ -643,6 +618,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                   <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#9a7fd8' }} />
                   M3U8 ({formatStats.m3u8}%)
                 </span>
+                <span>Markdown ({formatStats.markdown}%)</span>
               </div>
             </div>
           </div>

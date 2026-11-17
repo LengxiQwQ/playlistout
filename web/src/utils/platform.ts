@@ -4,7 +4,7 @@
  * Designed for seamless extensibility across QQ Music, NetEase Cloud Music, KuGou, Kuwo, etc.
  */
 
-export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | string;
+export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | string;
 
 export interface PlatformConfig {
   id: string;
@@ -151,6 +151,46 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
         : /^https?:\/\//i.test(id)
         ? id
         : `https://music.migu.cn/v5/#/playlist/${id}`,
+  },
+  spotify: {
+    id: 'spotify',
+    name: 'Spotify',
+    nameEn: 'Spotify',
+    color: 'green',
+    badgeBg: '#f0fdf4',
+    badgeBorder: '#166534',
+    userIdLabelZh: '用户 ID',
+    userIdLabelEn: 'User ID',
+    playlistStickerZh: 'Spotify歌单',
+    playlistStickerEn: 'Spotify Playlist',
+    viewActionZh: '在Spotify中查看 ↗',
+    viewActionEn: 'View on Spotify ↗',
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://open.spotify.com/playlist/${id}`,
+  },
+  applemusic: {
+    id: 'applemusic',
+    name: 'Apple Music',
+    nameEn: 'Apple Music',
+    color: 'red',
+    badgeBg: '#fff1f2',
+    badgeBorder: '#be123c',
+    userIdLabelZh: '用户 ID',
+    userIdLabelEn: 'User ID',
+    playlistStickerZh: 'Apple Music歌单',
+    playlistStickerEn: 'Apple Music Playlist',
+    viewActionZh: '在Apple Music中查看 ↗',
+    viewActionEn: 'View on Apple Music ↗',
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://music.apple.com/us/playlist/${id}`,
   },
 };
 

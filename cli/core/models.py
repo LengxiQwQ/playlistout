@@ -24,8 +24,8 @@ class NormalizedTrack:
     release_date: Optional[str] = None
     track_number: Optional[int] = None
     disc_number: Optional[int] = None
-    is_available: bool = True
-    is_vip: bool = False
+    is_available: Optional[bool] = True
+    is_vip: Optional[bool] = False
     status: str = "playable"           # playable, vip, paid, unplayable, geo_blocked
     status_text: str = "正常"          # 正常, VIP专享, 下架/无版权, 付费专辑, 仅海外受限
     max_quality: Optional[str] = None  # FLAC, Hi-Res, 320kbps, etc.
@@ -70,8 +70,10 @@ class NormalizedTrack:
         if self.is_duplicate:
             entry["isDuplicate"] = True
 
-        entry["isVip"] = bool(self.is_vip)
-        entry["isAvailable"] = bool(self.is_available)
+        if self.is_vip is not None:
+            entry["isVip"] = bool(self.is_vip)
+        if self.is_available is not None:
+            entry["isAvailable"] = bool(self.is_available)
         entry["status"] = self.status
         entry["statusText"] = self.status_text or "正常"
 

@@ -47,6 +47,8 @@ export const ANALYTICS_PLATFORMS_V2 = [
   'qishui',
   'kuwo',
   'migu',
+  'spotify',
+  'applemusic',
   'unknown',
   'none',
 ] as const;

@@ -74,7 +74,7 @@ export function generateCSV(playlist: Playlist, options?: CsvExportOptions): str
       track.sourceUrl || '',
       String(track.index),
       getTrackTypeCode(track),
-      getTrackIsVip(track) ? 'true' : 'false',
+      getTrackIsVip(track) === undefined ? '' : getTrackIsVip(track) ? 'true' : 'false',
       getTrackStatusCode(track),
     ]);
   }

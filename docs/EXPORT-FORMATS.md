@@ -1,5 +1,8 @@
 # Playlist Out Web 导出格式规范
 
+> 候选分支新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。尚未生产部署。输入、字段、格式兼容性和免费额度阻碍见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
+
+
 本文档描述 **Playlist Out 网页版** 当前生成的导出文件结构，以及这些格式各自适合的使用场景。
 
 > 注意：Web 端已全面升级为基于 `web/src/utils/export/` 的插件化注册制架构（`ExportPlugin` 接口与 `ExportRegistry`），`web/src/utils/export.ts` 作为统一门面提供 100% 向后兼容。CLI 工具共享 `cli/core/exporters.py`。本文档规定 Web 导出插件生成的规范。

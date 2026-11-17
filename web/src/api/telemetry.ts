@@ -250,7 +250,7 @@ export async function recordVisit(): Promise<void> {
  * Fires an anonymous file export event (TXT, CSV, XLSX, JSON, M3U8).
  */
 export async function recordExportEvent(
-  format: 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8',
+  format: 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8' | 'markdown',
   trackCount?: number,
   platform: string = 'qqmusic',
 ): Promise<void> {
@@ -286,7 +286,7 @@ export async function recordExportEvent(
   }
 }
 
-export type ExportFormat = 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8';
+export type ExportFormat = 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8' | 'markdown';
 
 /**
  * Fires an export event for multiple formats generated in a single user action.

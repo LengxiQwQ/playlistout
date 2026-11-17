@@ -70,6 +70,16 @@ async function runAllTests() {
   // ── 1. Contract & Metadata Specification ──────────────────────────
   logSection('1. Plugin Contract & Specification');
 
+  await test('Imports international metadata without inventing a native player source', async () => {
+    for (const platform of ['spotify', 'applemusic']) {
+      const items = await plugin.importMusicSheet(JSON.stringify({ platform, name: 'Example', tracks: [{id:'original-id',title:'Example',artist:'Artist',durationMs:180000,status:'unknown'}] }));
+      assert.strictEqual(items.length, 1);
+      assert.strictEqual(items[0]._originPlatform, platform);
+      assert.strictEqual(items[0].platform, '把你的歌单带走');
+      assert.strictEqual(items[0].id, 'original-id');
+    }
+  });
+
   await test('Exports valid metadata conforming to MusicFree standards', () => {
     assert.strictEqual(plugin.platform, '把你的歌单带走', 'Platform must be 把你的歌单带走');
     assert.strictEqual(plugin.author, 'LengxiQwQ', 'Author must be LengxiQwQ');
@@ -554,10 +564,10 @@ async function runAllTests() {
       );
     });
 
-    await test('Mobile mode: Local file path rejects with mobile-friendly guidance to paste JSON directly', async () => {
+    await test('Mobile mode: Local file path rejects with link/file guidance for mobile', async () => {
       await assert.rejects(
         async () => await plugin.importMusicSheet('/sdcard/Music/playlist.json'),
-        /移动端无法直接读取设备文件路径/
+        /移动端请使用歌单链接或播放器支持的文件导入/
       );
     });
   } finally {

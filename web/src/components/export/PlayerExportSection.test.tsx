@@ -17,6 +17,12 @@ const mockPlaylist: Playlist = {
 };
 
 describe('PlayerExportSection Component', () => {
+  it.each(['spotify', 'applemusic'])('keeps MusicFree JSON enabled while refusing unsupported %s player sources', platform => {
+    render(<PlayerExportSection playlist={{...mockPlaylist,platform}} onExportSuccess={vi.fn()} onExportError={vi.fn()} />);
+    expect(screen.getByRole('button',{name:/洛雪音乐/})).toBeDisabled();
+    expect(screen.getByRole('button',{name:/Listen 1/})).toBeDisabled();
+    expect(screen.getByRole('button',{name:/MusicFree/})).not.toBeDisabled();
+  });
   afterEach(() => {
     vi.restoreAllMocks();
   });

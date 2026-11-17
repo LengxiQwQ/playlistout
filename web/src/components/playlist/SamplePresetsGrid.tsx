@@ -5,7 +5,7 @@ import { Sticker } from '../ui/Sticker';
 export interface SamplePresetsGridProps {
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
     modeHint?: 'user' | 'playlist',
   ) => void;
 }
@@ -167,6 +167,8 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         >
           {t.search.sampleMigu}
         </Sticker>
+        <Sticker type="button" color="green" onClick={() => onSelectSample('https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF', 'spotify', 'playlist')}>Spotify</Sticker>
+        <Sticker type="button" color="red" onClick={() => onSelectSample('https://music.apple.com/us/playlist/pl.f4d106fed2bd41149aaacabb233eb5eb', 'applemusic', 'playlist')}>Apple Music</Sticker>
         <Sticker
           type="button"
           color="blue"

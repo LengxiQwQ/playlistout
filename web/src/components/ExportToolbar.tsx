@@ -14,7 +14,7 @@ export interface ExportToolbarProps {
   playlist: Playlist | null;
 }
 
-export type ExportFormat = 'xlsx' | 'json' | 'txt' | 'csv' | 'm3u8';
+export type ExportFormat = 'xlsx' | 'json' | 'txt' | 'csv' | 'm3u8' | 'markdown';
 
 const HandDrawnCheck: React.FC<{ size?: number; color?: string }> = ({
   size = 14,
@@ -50,6 +50,7 @@ const FORMAT_CONFIG: {
   { id: 'txt', label: 'TXT', color: 'yellow', rotateDeg: -2 },
   { id: 'csv', label: 'CSV', color: 'pink', rotateDeg: 1 },
   { id: 'm3u8', label: 'M3U8', color: 'purple', rotateDeg: -1 },
+  { id: 'markdown', label: 'Markdown', color: 'blue', rotateDeg: 1 },
 ];
 
 export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {

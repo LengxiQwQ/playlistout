@@ -22,6 +22,8 @@ class PlatformType(str, Enum):
     KUWO = "kuwo"
     QISHUI = "qishui"
     MIGU = "migu"
+    SPOTIFY = "spotify"
+    APPLEMUSIC = "applemusic"
     AMBIGUOUS_DIGITS = "ambiguous_digits"
     UNKNOWN = "unknown"
 
@@ -214,6 +216,11 @@ class SmartDetector:
         if "kuwo.cn" in hostname:
             return PlatformType.KUWO, url_to_check
 
+        if hostname in {"open.spotify.com", "spotify.link", "spoti.fi"}:
+            return PlatformType.SPOTIFY, url_to_check
+        if hostname in {"music.apple.com", "geo.music.apple.com"}:
+            return PlatformType.APPLEMUSIC, url_to_check
+
         # 咪咕音乐
         if "migu.cn" in hostname:
             return PlatformType.MIGU, url_to_check
@@ -285,6 +292,10 @@ class SmartDetector:
                 explicit_platform = PlatformType.KUWO
             elif norm_p in ("qishui", "douyin"):
                 explicit_platform = PlatformType.QISHUI
+            elif norm_p == "spotify":
+                explicit_platform = PlatformType.SPOTIFY
+            elif norm_p in ("applemusic", "apple", "apple-music"):
+                explicit_platform = PlatformType.APPLEMUSIC
             elif norm_p in ("migu", "mg"):
                 explicit_platform = PlatformType.MIGU
 

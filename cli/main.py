@@ -68,7 +68,7 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     """展示简洁歌单摘要并执行导出"""
     dup_count = preprocess_playlist(playlist)
     tracks = playlist.tracks
-    unavail = sum(1 for t in tracks if not t.is_available)
+    unavail = sum(1 for t in tracks if t.is_available is False)
     vip_cnt = sum(1 for t in tracks if t.is_vip)
 
     if interactive:
@@ -102,7 +102,7 @@ def run_export_flow(playlist: NormalizedPlaylist, output_dir: str, default_forma
     if status_parts:
         print(f"  状态：{' · '.join(status_parts)}")
     else:
-        normal_msg = color_green("全部正常") if supports_color() else "全部正常"
+        normal_msg = "播放状态未知" if any(t.status == "unknown" for t in tracks) else (color_green("全部正常") if supports_color() else "全部正常")
         print(f"  状态：{normal_msg}")
 
     formats = default_formats

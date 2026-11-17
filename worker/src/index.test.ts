@@ -206,7 +206,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   });
 
   it('returns 400 when /api/playlist is queried with unsupported music platform', async () => {
-    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/playlist?url=https://unsupported.example/playlist/37i9dQZF1DXcBWIGoYBM5M');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(400);
     const body = (await response.json()) as ErrorResponseBody;

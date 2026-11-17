@@ -36,7 +36,7 @@ def run_self_test() -> int:
     try:
         from cli.platforms.registry import PlatformRegistry
         adapters = PlatformRegistry.list_all()
-        required_platforms = ["qqmusic", "netease", "kugou", "kuwo", "qishui", "migu"]
+        required_platforms = ["qqmusic", "netease", "kugou", "kuwo", "qishui", "migu", "spotify", "applemusic"]
         missing = [p for p in required_platforms if not PlatformRegistry.get(p)]
         if missing:
             print(f"[-] Platform registry failure: missing adapters {missing}", file=sys.stderr)
@@ -76,6 +76,7 @@ def run_self_test() -> int:
             export_json,
             export_txt,
             export_m3u8,
+            export_markdown,
         )
 
         tracks = [
@@ -232,7 +233,20 @@ def run_self_test() -> int:
             print(f"[-] M3U8 test failed: {e}", file=sys.stderr)
             return 1
 
-        # F. Unified Batch Export Flow (Offline Synthetic)
+        # F. Markdown Export & Readback
+        try:
+            markdown_path = os.path.join(tmpdir, "test.md")
+            export_markdown(test_playlist, markdown_path)
+            with open(markdown_path, encoding="utf-8") as f:
+                content = f.read()
+            if "晴天 (Sunshine) 🎵" not in content or "周杰伦 / Jay Chou" not in content:
+                raise ValueError("Markdown track content missing")
+            print("  [✓] Markdown export & readback verified")
+        except Exception as e:
+            print(f"[-] Markdown test failed: {e}", file=sys.stderr)
+            return 1
+
+        # G. Unified Batch Export Flow (Offline Synthetic)
         try:
             from cli.core.batch import run_batch_flow
             from cli.core.models import NormalizedUserPlaylists, UserPlaylistSummary

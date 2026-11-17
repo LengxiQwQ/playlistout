@@ -1,3 +1,5 @@
+import { checkDurableRateLimit, getClientIp } from '../security/rate-limit';
+import { getRequestCost } from '../providers/international/http';
 /**
  * Shared Playlist Service
  * Encapsulates single playlist fetching, platform resolution, validation,
@@ -81,7 +83,7 @@ export async function parsePlaylistService(
   if (!matchedProvider) {
     throw new ProviderError(
       'UNSUPPORTED_URL',
-      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music, Kuwo Music, or Migu Music playlist URL.',
+      'The provided URL is not a supported QQ Music, NetEase Cloud Music, KuGou Music, Qishui Music, Kuwo Music, Migu Music, Spotify, or Apple Music playlist URL.',
       400,
     );
   }
@@ -98,6 +100,11 @@ export async function parsePlaylistService(
       `Input URL belongs to "${targetPlatform}", which conflicts with specified platform constraint "${platformParam}".`,
       400,
     );
+  }
+
+  if (request && ['spotify', 'applemusic'].includes(targetPlatform)) {
+    const limit = await checkDurableRateLimit(db, getClientIp(request), 6, 60, 'international_playlist');
+    if (!db || !limit.allowed || limit.limiterFailed) throw new ProviderError('RATE_LIMITED', '解析过于频繁或限流服务不可用，请稍后重试。', 429);
   }
 
   const startTime = Date.now();
@@ -150,6 +157,7 @@ export async function parsePlaylistService(
           platform: actualPlatform,
           outcome: 'success_playlist',
           trackCount: playlist.tracks.length,
+          upstreamRequestCount: getRequestCost(playlist),
           latencyMs,
           inputType,
           requestedType: 'playlist',

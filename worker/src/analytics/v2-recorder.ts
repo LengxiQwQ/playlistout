@@ -13,6 +13,7 @@ export interface ResolveV2Input {
   platform?: string;
   outcome: 'success_playlist' | 'success_user' | 'failure';
   trackCount?: number;
+  upstreamRequestCount?: number;
   latencyMs?: number;
   inputType?: string;
   requestedType?: string;
@@ -253,6 +254,9 @@ export function buildResolveStatementsV2(
   const statements: D1PreparedStatement[] = [];
 
   statements.push(...coreUpsert(db, ctx, platform, 'resolve_request', 1));
+  if (Number.isInteger(input.upstreamRequestCount) && input.upstreamRequestCount! > 0 && input.upstreamRequestCount! <= 40) {
+    statements.push(...coreUpsert(db, ctx, platform, 'upstream_requests', input.upstreamRequestCount!));
+  }
 
   if (input.outcome === 'success_playlist') {
     statements.push(...coreUpsert(db, ctx, platform, 'playlist_success', 1));

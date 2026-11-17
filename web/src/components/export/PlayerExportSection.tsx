@@ -18,10 +18,12 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
   onExportError,
 }) => {
   const { t } = useTranslation();
+  const incompatible = !!playlist && ['spotify', 'applemusic'].includes(playlist.platform);
   const isDisabled = !playlist || playlist.tracks.length === 0;
+  const playerDisabled = isDisabled || incompatible;
 
   const handleExport = (formatId: string) => {
-    if (!playlist || isDisabled) return;
+    if (!playlist || isDisabled || (incompatible && formatId !== 'json')) return;
     try {
       const { filename } = exportPlaylist(playlist, formatId);
       setClarityTag('export_format', 'json');
@@ -83,7 +85,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
               color: '#8a7569',
             }}
           >
-            {t.export.playerExportSubtitle}
+            {incompatible ? t.search.incompatiblePlayerFormat : t.export.playerExportSubtitle}
           </div>
         </div>
 
@@ -169,15 +171,15 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
               type="button"
               color="purple"
               rotateDeg={-1}
-              disabled={isDisabled}
+              disabled={playerDisabled}
               onClick={() => handleExport('lx-music')}
               className="font-mono"
               style={{
                 padding: '0.35rem 0.75rem',
                 fontSize: '0.88rem',
                 fontWeight: 600,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                opacity: isDisabled ? 0.6 : 1,
+                cursor: playerDisabled ? 'not-allowed' : 'pointer',
+                opacity: playerDisabled ? 0.6 : 1,
                 whiteSpace: 'nowrap',
               }}
               aria-label={t.export.lxMusicButton}
@@ -237,15 +239,15 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
               type="button"
               color="green"
               rotateDeg={1}
-              disabled={isDisabled}
+              disabled={playerDisabled}
               onClick={() => handleExport('listen1')}
               className="font-mono"
               style={{
                 padding: '0.35rem 0.75rem',
                 fontSize: '0.88rem',
                 fontWeight: 600,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                opacity: isDisabled ? 0.6 : 1,
+                cursor: playerDisabled ? 'not-allowed' : 'pointer',
+                opacity: playerDisabled ? 0.6 : 1,
                 whiteSpace: 'nowrap',
               }}
               aria-label={t.export.listen1Button}

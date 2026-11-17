@@ -147,7 +147,7 @@ describe('PlaylistOut Public API v1', () => {
 
     it('rejects unsupported platform parameter with 400 UNSUPPORTED_PLATFORM', async () => {
       const request = new Request(
-        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=12345&platform=spotify',
+        'https://playlistout-api.lengxiqwq.com/api/v1/resolve?q=12345&platform=unsupported_vendor',
       );
       const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(400);

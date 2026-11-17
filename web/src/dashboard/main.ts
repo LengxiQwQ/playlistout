@@ -370,6 +370,8 @@ const BRAND_COLORS: Record<string, string> = {
   kugou: '#3b82f6',
   kuwo: '#ca8a04',
   migu: '#db2777',
+  spotify: '#1db954',
+  applemusic: '#fa243c',
   qishui: '#f59e0b',
   'plugin:musicfree': '#8b5cf6',
   musicfree: '#8b5cf6',
@@ -497,6 +499,8 @@ export function formatHumanLabel(val: string | null | undefined): string {
     kugou: '酷狗音乐',
     kuwo: '酷我音乐',
     migu: '咪咕音乐',
+    spotify: 'Spotify',
+    applemusic: 'Apple Music',
     qishui: '汽水音乐',
     auto: '全自动识别',
     unknown: '未识别平台',
@@ -1151,7 +1155,7 @@ export class DashboardApp {
             </div>
             <div class="field" data-filter="channel"><label for="filterChannel">来源渠道 Channel</label><select id="filterChannel"><option value="">全部渠道</option><option value="web">网页端 (Web)</option><option value="cli">命令行 (CLI)</option><option value="plugin">播放器插件 (Plugin)</option><option value="api">开放接口 (API)</option><option value="legacy_mixed">历史混合渠道 (Legacy V1)</option></select></div>
             <div class="field" data-filter="client"><label for="filterClient">接入端 Client</label><select id="filterClient"><option value="">全部端</option></select></div>
-            <div class="field" data-filter="platform"><label for="filterPlatform">目标平台 Platform</label><select id="filterPlatform"><option value="">全部平台</option><option value="qqmusic">QQ 音乐</option><option value="netease">网易云音乐</option><option value="kugou">酷狗音乐</option><option value="kuwo">酷我音乐</option><option value="qishui">汽水音乐</option><option value="migu">咪咕音乐</option></select></div>
+            <div class="field" data-filter="platform"><label for="filterPlatform">目标平台 Platform</label><select id="filterPlatform"><option value="">全部平台</option><option value="qqmusic">QQ 音乐</option><option value="netease">网易云音乐</option><option value="kugou">酷狗音乐</option><option value="kuwo">酷我音乐</option><option value="qishui">汽水音乐</option><option value="migu">咪咕音乐</option><option value="spotify">Spotify</option><option value="applemusic">Apple Music</option></select></div>
             <div class="field" data-filter="country"><label for="filterCountry">国家 Country</label><select id="filterCountry"><option value="">全部国家</option></select></div>
             <div class="field" data-filter="region"><label for="filterRegion">省份 (中国) Region</label><select id="filterRegion"><option value="">全部省份</option></select></div>
             <div class="field" data-filter="reset" style="display:flex;align-items:end"><button id="resetFiltersBtn" class="ghost" style="width:100%">重置</button></div>

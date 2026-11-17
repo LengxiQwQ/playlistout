@@ -1,0 +1,1 @@
+export { spotifyProvider } from './provider';

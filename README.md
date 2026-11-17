@@ -17,6 +17,8 @@
 
 </div>
 
+> 当前候选分支增加 Spotify 与 Apple Music，尚未部署。免费 Workers 的 CPU 与 D1 余量验证未通过，详见 [接入与用量报告](docs/INTERNATIONAL-PLATFORMS.md)。
+
 ---
 
 ## 🚀 快速使用

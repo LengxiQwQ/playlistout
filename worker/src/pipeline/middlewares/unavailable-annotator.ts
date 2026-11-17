@@ -13,7 +13,7 @@ export const unavailableAnnotator: PipelineMiddleware = async (ctx, next) => {
       if (track.status === 'unplayable' && track.isAvailable === undefined) {
         track.isAvailable = false;
       }
-      if (track.isAvailable === undefined) {
+      if (track.isAvailable === undefined && track.status !== 'unknown') {
         track.isAvailable = true;
       }
     }

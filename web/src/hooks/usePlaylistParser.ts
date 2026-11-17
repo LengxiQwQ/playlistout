@@ -50,7 +50,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const inFlightTargetRef = useRef<string | null>(null);
 
   const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic') {
       setClarityTag('platform', platform);
     }
     const bucket = classifyPlaylistSize(trackCount);
@@ -61,7 +61,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   }, []);
 
   const recordClarityParseFailure = useCallback((platform?: string) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui') {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic') {
       setClarityTag('platform', platform);
     }
     trackClarityEvent('playlist_parse_failure');
@@ -70,7 +70,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleParse = useCallback(
     async (
       urlToParse?: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
       modeHint?: 'user' | 'playlist',
       isSample?: boolean,
       channelHint?: 'qishui' | 'douyin',
@@ -170,6 +170,10 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'qishui'
               : platformHint === 'kuwo'
               ? 'kuwo'
+              : platformHint === 'spotify'
+              ? 'spotify'
+              : platformHint === 'applemusic'
+              ? 'applemusic'
               : platformHint === 'migu'
               ? 'migu'
               : platformHint === 'qqmusic'
@@ -252,6 +256,10 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'kugou'
               : validation.platform === 'qishui'
               ? 'qishui'
+              : validation.platform === 'spotify'
+              ? 'spotify'
+              : validation.platform === 'applemusic'
+              ? 'applemusic'
               : validation.platform === 'migu'
               ? 'migu'
               : validation.platform === 'qqmusic'
@@ -322,6 +330,10 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'qishui'
               : validation.platform === 'kuwo'
               ? 'kuwo'
+              : validation.platform === 'spotify'
+              ? 'spotify'
+              : validation.platform === 'applemusic'
+              ? 'applemusic'
               : validation.platform === 'migu'
               ? 'migu'
               : 'qqmusic';
@@ -582,7 +594,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleQuickSample = useCallback(
     (
       sampleInput: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
+      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
       modeHint?: 'user' | 'playlist',
     ) => {
       setInputUrl(sampleInput);

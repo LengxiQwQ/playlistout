@@ -60,7 +60,8 @@ export function classifyInputType(input: string): InputType {
     /qishui\.douyin\.com/i.test(trimmed) ||
     /music\.douyin\.com/i.test(trimmed) ||
     /kuwo\.cn/i.test(trimmed) ||
-    /migu\.cn/i.test(trimmed)
+    /migu\.cn/i.test(trimmed) ||
+    /https:\/\/(?:open\.spotify\.com|music\.apple\.com)\//i.test(trimmed)
   ) {
     return 'web_url';
   }

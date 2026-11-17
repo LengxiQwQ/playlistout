@@ -5,7 +5,7 @@
 
 import type { DeviceClass, ResolveFailureStage } from '../analytics/types';
 
-export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid';
+export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid' | 'unknown';
 
 export interface Track {
   index: number;

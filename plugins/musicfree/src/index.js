@@ -1,5 +1,5 @@
 /**
- * PlaylistOut 官方 MusicFree 插件 (v2.2.2)
+ * PlaylistOut 官方 MusicFree 插件 (v2.3.0)
  *
  * 定位：歌单解析器 + 原生音源路由 + 双层自动兜底（跨插件严格匹配 + 内置兜底音源）
  *   1. 歌单解析：在线链接解析（QQ音乐 / 网易云 / 酷狗 / 汽水）+ 本地 JSON 文件导入
@@ -210,7 +210,7 @@ async function readLocalFileText(targetPath) {
 
 const PLUGIN_PLATFORM = '把你的歌单带走';
 const LEGACY_PLATFORM = 'PlaylistOut';
-const PLUGIN_VERSION = '2.2.2';
+const PLUGIN_VERSION = '2.3.0';
 
 /**
  * 宿主运行环境与形态全方位智能探测
@@ -968,6 +968,7 @@ function resolveMusicPlatform(sourcePlatform) {
   if (sp === 'bilibili' || sp === 'bili' || sp.includes('哔哩') || sp.includes('b站')) {
     return 'bilibili';
   }
+  if (sp === 'spotify' || sp === 'applemusic') return sp;
   if (sp === 'migu' || sp.includes('咪咕')) {
     return 'migu';
   }
@@ -1105,7 +1106,7 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   // 无法识别来源的曲目回退为本插件平台；原生插件缺失或取源失败时，跨插件严格匹配兜底链
   // 与内置兜底音源引擎（历史老歌单最后防线，同名同歌手同版本严格匹配）将依次接管。
   let finalPlatform = PLUGIN_PLATFORM;
-  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && !isSelfPlatform(naturalPlatform)) {
+  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && naturalPlatform !== 'spotify' && naturalPlatform !== 'applemusic' && !isSelfPlatform(naturalPlatform)) {
     finalPlatform = naturalPlatform;
   }
 
@@ -1463,7 +1464,7 @@ async function importMusicSheet(urlLike) {
   // 4. 本地 JSON 文件路径导入 (支持普通路径、带引号路径与 file:/// 协议 - 仅桌面端支持)
   if (isLocalJsonPath(trimmed)) {
     if (!isHostElectron()) {
-      throw new Error('移动端无法直接读取设备文件路径，请打开该文件全选复制并直接粘贴 JSON 文本导入');
+      throw new Error('移动端请使用歌单链接或播放器支持的文件导入；大段 JSON 文本粘贴仅适合桌面端');
     }
     const targetPath = resolveLocalPath(trimmed);
     const fileContent = await readLocalFileText(targetPath);

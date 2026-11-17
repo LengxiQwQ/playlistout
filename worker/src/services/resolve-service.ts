@@ -1,3 +1,4 @@
+import { getRequestCost } from '../providers/international/http';
 /**
  * Universal Input Resolver Service (Public API v1)
  *
@@ -182,6 +183,7 @@ function recordResolveSuccess(
         outcome,
         platform,
         trackCount: playlist?.tracks.length,
+        upstreamRequestCount: getRequestCost(playlist),
         latencyMs,
         inputType,
         requestedType: tracking.requestedType,
@@ -327,7 +329,9 @@ async function resolveServiceCore(
     rawPlatform === 'kugou' ||
     rawPlatform === 'qishui' ||
     rawPlatform === 'kuwo' ||
-    rawPlatform === 'migu'
+    rawPlatform === 'migu' ||
+    rawPlatform === 'spotify' ||
+    rawPlatform === 'applemusic'
   ) {
     normalizedPlatform = rawPlatform;
     tracking.requestedPlatform = rawPlatform;
@@ -338,7 +342,7 @@ async function resolveServiceCore(
     tracking.requestedPlatform = 'unknown';
     throw new ProviderError(
       'UNSUPPORTED_PLATFORM',
-      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui, kuwo, migu.`,
+      `Unsupported platform "${platform}". Supported platforms: auto, qqmusic, netease, kugou, qishui, kuwo, migu, spotify, applemusic.`,
       400,
     );
   }

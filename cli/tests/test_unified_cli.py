@@ -15,8 +15,8 @@ from cli.core.ui import resolve_export_formats
 
 def test_registry_registration_and_aliases():
     adapters = PlatformRegistry.list_all()
-    assert len(adapters) == 6
-    assert set(PlatformRegistry.platform_id_list()) == {"netease", "qqmusic", "kugou", "kuwo", "qishui", "migu"}
+    assert len(adapters) == 8
+    assert set(PlatformRegistry.platform_id_list()) == {"netease", "qqmusic", "kugou", "kuwo", "qishui", "migu", "spotify", "applemusic"}
 
     # 验证各平台 ID 与别名正确映射
     assert PlatformRegistry.get("netease").platform_id == "netease"
@@ -187,8 +187,8 @@ def test_cli_help_flag_source_and_frozen(capsys):
 
 
 def test_export_format_selection_semantics():
-    assert resolve_export_formats("") == ["xlsx", "json", "csv", "txt", "m3u8"]
-    assert resolve_export_formats("all") == ["xlsx", "json", "csv", "txt", "m3u8"]
+    assert resolve_export_formats("") == ["xlsx", "json", "csv", "txt", "m3u8", "md"]
+    assert resolve_export_formats("all") == ["xlsx", "json", "csv", "txt", "m3u8", "md"]
     assert resolve_export_formats("1,2") == ["xlsx", "json"]
     assert resolve_export_formats("1, 2") == ["xlsx", "json"]
     assert resolve_export_formats("(1, 2)") == ["xlsx", "json"]
@@ -346,14 +346,14 @@ def test_cli_all_five_formats_exported(tmp_path):
         "99999",
         "-p", "netease",
         "-o", out_dir,
-        "-f", "xlsx,json,csv,txt,m3u8",
+        "-f", "xlsx,json,csv,txt,m3u8,md",
         "--no-open"
     ]
     with patch.object(sys, "argv", test_args):
         with patch.object(PlatformRegistry.get("netease"), "fetch_playlist", return_value=mock_playlist):
             main()
 
-    for ext in ["xlsx", "json", "csv", "txt", "m3u8"]:
+    for ext in ["xlsx", "json", "csv", "txt", "m3u8", "md"]:
         assert (tmp_path / "all_formats_out" / f"【网易云音乐】全格式测试 - 全格式作者.{ext}").exists()
 
 

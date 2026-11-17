@@ -42,7 +42,7 @@ export const m3u8ExportPlugin: ExportPlugin = {
   name: '播放列表 (M3U8)',
   fileExtension: 'm3u8',
   mimeType: 'application/x-mpegurl;charset=utf-8',
-  description: 'Extended M3U8 格式，兼容各类本地音乐播放器及流媒体服务',
+  description: '本地文件播放列表，需自行持有对应音频；不包含音频或完整播放链接',
   export(ctx: ExportContext): ExportResult {
     const baseName = buildExportBaseName(ctx.playlist);
     const content = generateM3U8(ctx.playlist);

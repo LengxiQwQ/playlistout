@@ -2405,7 +2405,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--p) 90%,var(--a))}
     </div>
     <div class="field" data-filter="channel"><label for="channel">来源渠道 Channel</label><select id="channel"><option value="">全部</option><option>web</option><option>plugin</option><option>api</option><option>legacy_mixed</option></select></div>
     <div class="field" data-filter="client"><label for="client">接入端 Client</label><select id="client"><option value="">全部</option></select></div>
-    <div class="field" data-filter="platform"><label for="platform">目标平台 Platform</label><select id="platform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option></select></div>
+    <div class="field" data-filter="platform"><label for="platform">目标平台 Platform</label><select id="platform"><option value="">全部</option><option>qqmusic</option><option>netease</option><option>kugou</option><option>kuwo</option><option>qishui</option><option>migu</option><option>spotify</option><option>applemusic</option></select></div>
     <div class="field" data-filter="country"><label for="country">国家 Country</label><select id="country"><option value="">全部</option></select></div>
     <div class="field" data-filter="region"><label for="region">省份 (中国) Region</label><select id="region"><option value="">全部</option></select></div>
     <div class="field" data-filter="reset" style="display:flex;align-items:end"><button id="reset" class="ghost" style="width:100%">重置</button></div>
@@ -3463,7 +3463,7 @@ const PROVINCE_NAMES = {
 };
 
 const CORE_BRAND_COLORS = {
-  "qqmusic": "#10b981", "netease": "#ef4444", "kugou": "#3b82f6", "kuwo": "#ca8a04", "qishui": "#f59e0b", "migu": "#db2777",
+  "qqmusic": "#10b981", "netease": "#ef4444", "kugou": "#3b82f6", "kuwo": "#ca8a04", "qishui": "#f59e0b", "migu": "#db2777", "spotify": "#1db954", "applemusic": "#fa243c",
   "plugin:musicfree": "#8b5cf6", "musicfree": "#8b5cf6", "plugin": "#8b5cf6",
   "plugin:bbplayer": "#fb7299", "bbplayer": "#fb7299",
   "official_web": "#0284c7", "web": "#0284c7",
@@ -3548,7 +3548,7 @@ function formatHumanLabel(name){
     "legacy_mixed": "未标记历史端",
 
     // 目标音乐平台
-    "qqmusic": "QQ 音乐", "netease": "网易云音乐", "kugou": "酷狗音乐", "kuwo": "酷我音乐", "qishui": "汽水音乐", "migu": "咪咕音乐",
+    "qqmusic": "QQ 音乐", "netease": "网易云音乐", "kugou": "酷狗音乐", "kuwo": "酷我音乐", "qishui": "汽水音乐", "migu": "咪咕音乐", "spotify": "Spotify", "applemusic": "Apple Music",
     "auto": "全自动识别",
     "unknown": "未识别平台",
     "none": "全局汇总",

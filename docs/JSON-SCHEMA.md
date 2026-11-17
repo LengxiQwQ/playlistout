@@ -1,5 +1,8 @@
 # PlaylistOut JSON 数据格式规范 (Canonical Schema Document)
 
+> 候选分支新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。尚未生产部署。输入、字段、格式兼容性和免费额度阻碍见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
+
+
 本文档详细描述了 PlaylistOut 统一歌单与歌曲 JSON 数据规范（Canonical Playlist & Track Schema），用于指导第三方开发者、音乐迁移工具、播放器插件进行标准化解析与接入。其他导出格式（CSV、XLSX、M3U8、TXT）的结构与兼容性约定见 [Web 导出格式规范](EXPORT-FORMATS.md)。
 
 ---
@@ -35,7 +38,7 @@ PlaylistOut 的核心使命是**“采集和交换通用歌单数据”**，同�
 | `name` | `string` | **必填**。歌单完整名称 |
 | `creator` | `string` | 可选。歌单创建者昵称 |
 | `coverUrl` | `string` | 可选。歌单封面高清图片直链 URL |
-| `platform` | `string` | **必填**。歌单所属音源平台标识（`"qqmusic"` \| `"netease"` \| `"kugou"` \| `"qishui"` \| `"kuwo"` \| `"migu"` \| `"bilibili"`） |
+| `platform` | `string` | **必填**。歌单所属音源平台标识（`"qqmusic"` \| `"netease"` \| `"kugou"` \| `"qishui"` \| `"kuwo"` \| `"migu"` \| `"spotify"` \| `"applemusic"` \| `"bilibili"`） |
 | `id` | `string` | **必填**。歌单唯一标识（在线平台歌单 ID 或宿主本地歌单 ID） |
 | `sourceUrl` | `string` | 条件必填。歌单在来源平台的网页直链 URL。在线平台歌单**必填**；客户端纯本地创建的歌单（如无对应远端网页链接）直接省略 |
 | `trackCount` | `number` | **必填**。歌单包含的曲目条目总数（整型） |
@@ -78,7 +81,7 @@ PlaylistOut 的核心使命是**“采集和交换通用歌单数据”**，同�
 | `isOriginalSound` | `boolean` | 可选。是否为抖音/汽水视频原声音频 |
 | `isVip` | `boolean` | 可选。是否为 VIP 专享歌曲 |
 | `isAvailable` | `boolean` | 可选。来源平台是否正常可播（下架/无版权/B 站视频失效时为 `false`） |
-| `status` | `string` | 可选。机器标准枚举：`"playable"` \| `"unplayable"` \| `"vip"` \| `"paid"` \| `"geo_blocked"` |
+| `status` | `string` | 可选。机器标准枚举：`"playable"` \| `"unplayable"` \| `"vip"` \| `"paid"` \| `"geo_blocked"` \| `"unknown"`。`unknown` 不推导 isVip / isAvailable |
 | `statusText` | `string` | 可选。用户友好展示文本（如 `"正常"`、`"下架/无版权"`、`"视频已失效"`、`"VIP专享"`、`"付费专辑"`） |
 | `maxQuality` | `string` | 可选。平台最高可用音质档位（如 `"FLAC"`、`"320kbps"`、`"lossless"`） |
 | `mvId` | `string` | 可选。官方 MV 平台唯一 ID |

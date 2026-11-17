@@ -103,6 +103,7 @@ const handleResolve = async (c: any) => {
       return new Response(JSON.stringify(errorResponse), {
         status: err.statusCode,
         headers: {
+          ...(err.code === 'RATE_LIMITED' ? { 'Retry-After': String((err.details as any)?.retryAfterSeconds || 60) } : {}),
           'Content-Type': 'application/json',
           ...responseHeaders,
         },

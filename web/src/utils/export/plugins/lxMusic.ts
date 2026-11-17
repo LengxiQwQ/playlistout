@@ -72,6 +72,7 @@ export interface LxExportPayload {
  * Converts a PlaylistOut Playlist into LX Music native list export format.
  */
 export function generateLxMusicJSON(playlist: Playlist): string {
+  if (['spotify', 'applemusic'].includes(playlist.platform)) throw new Error('此播放器格式不支持该来源，请使用通用 JSON、CSV 或 XLSX。');
   const source = mapPlatformToLxSource(playlist.platform);
   const listName = cleanSingleLine(playlist.name) || 'PlaylistOut 歌单';
   const listId = `playlist_${cleanSingleLine(playlist.id) || Date.now()}`;

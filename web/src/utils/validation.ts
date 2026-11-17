@@ -1,5 +1,5 @@
 export type InputKind = 'single_playlist_url' | 'user_profile_url' | 'numeric' | 'short_link' | 'unknown';
-export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'numeric' | 'unknown';
+export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'numeric' | 'unknown';
 
 export interface ValidationResult {
   valid: boolean;
@@ -134,6 +134,10 @@ export interface ValidationRule {
 }
 
 export const VALIDATION_RULES: ValidationRule[] = [
+  { platform: 'spotify', kind: 'short_link', match: input => { try { const u = new URL(input); return u.protocol === 'https:' && ['spotify.link', 'spoti.fi'].includes(u.hostname); } catch { return false; } } },
+  { platform: 'applemusic', kind: 'short_link', match: input => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'geo.music.apple.com'; } catch { return false; } } },
+  { platform: 'spotify', kind: 'single_playlist_url', match: (input) => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'open.spotify.com' && /^\/(?:intl-[A-Za-z-]+\/)?playlist\/[A-Za-z0-9]{22}\/?$/i.test(u.pathname); } catch { return false; } } },
+  { platform: 'applemusic', kind: 'single_playlist_url', match: (input) => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'music.apple.com' && /^\/[a-z]{2}\/playlist\/(?:[^\/]+\/)?pl\.[A-Za-z0-9.-]+\/?$/i.test(u.pathname); } catch { return false; } } },
   // 1. Check if it's a numeric ID (4-20 digits)
   {
     platform: 'numeric',
@@ -276,11 +280,11 @@ export function validatePlaylistInput(input: string): ValidationResult {
   }
 
   // Check if user submitted a link from other music platforms
-  if (/spotify\.com|apple\.com|tidal\.com/i.test(trimmed)) {
+  if (/tidal\.com/i.test(trimmed)) {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐公开歌单。',
+      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music 公开歌单。',
     };
   }
 
@@ -301,6 +305,6 @@ export function validatePlaylistInput(input: string): ValidationResult {
   return {
     valid: false,
     code: 'UNSUPPORTED_URL',
-    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐或咪咕音乐歌单链接、用户主页链接或数字 ID。',
+    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 或 Apple Music 歌单链接、用户主页链接或数字 ID。',
   };
 }

@@ -74,6 +74,11 @@ export interface Translations {
     platformKuwoDesc: string;
     platformMigu: string;
     platformMiguDesc: string;
+    platformSpotify: string;
+    platformAppleMusic: string;
+    internationalPlaylistDesc: string;
+    incompatiblePlayerFormat: string;
+    statusUnknown: string;
     kugouLoggedIn: string;
     kugouNotLoggedIn: string;
     kugouLoginBadge: string;

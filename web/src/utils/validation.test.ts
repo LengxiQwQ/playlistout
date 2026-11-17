@@ -192,19 +192,19 @@ describe('Client-Side Input Validation', () => {
   });
 
   it('rejects other platforms with friendly notification', () => {
-    const res1 = validatePlaylistInput('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    const res1 = validatePlaylistInput('https://tidal.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music');
 
-    const res2 = validatePlaylistInput('https://music.apple.com/us/playlist/today-hits/pl.f4d1060b52a24e1d9541540f92e4386f');
+    const res2 = validatePlaylistInput('https://tidal.com/browse/album/example');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐与咪咕音乐');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐或咪咕音乐歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 或 Apple Music 歌单链接');
   });
 });
 

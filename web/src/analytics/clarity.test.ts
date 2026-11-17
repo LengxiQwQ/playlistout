@@ -184,7 +184,7 @@ describe('Microsoft Clarity Adapter', () => {
       expect(isClarityInitialized()).toBe(true);
 
       // Attempt to pass arbitrary or sensitive values
-      setClarityTag('platform', 'spotify' as any);
+      setClarityTag('platform', 'unsupported_vendor' as any);
       setClarityTag('platform', 'https://y.qq.com/n/ryqq/playlist/12345' as any);
       setClarityTag('export_format', 'pdf' as any);
       setClarityTag('clipboard_mode', 'unknown_mode' as any);

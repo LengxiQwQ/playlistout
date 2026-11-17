@@ -196,7 +196,7 @@ def report_export(
     payload = {
         "type": "export",
         "platform": platform.lower().strip(),
-        "format": format.lower().strip(),
+        "format": "markdown" if format.lower().strip() == "md" else format.lower().strip(),
     }
     if track_count is not None and isinstance(track_count, int) and track_count >= 0:
         payload["trackCount"] = min(track_count, 50000)

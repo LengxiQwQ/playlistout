@@ -310,7 +310,8 @@ def print_format_menu():
     print(f"  {k2}  JSON  (.json)  适合第三方工具和程序导入")
     print(f"  {k3}  CSV   (.csv)   适合表格软件和迁移工具")
     print(f"  {k4}  TXT   (.txt)   简单的歌曲清单")
-    print(f"  {k5}  M3U8  (.m3u8)  通用播放列表")
+    print(f"  {k5}  M3U8  (.m3u8)  本地文件播放列表（需自行持有音频）")
+    print("  6  Markdown (.md)  可阅读的歌单表格")
     print("")
     print(f"  {k_enter}  全部导出")
     print(f"  {k0}      返回")
@@ -325,7 +326,7 @@ def resolve_export_formats(choice: str, strict: bool = False) -> List[str]:
     choice = str(choice or "").strip().lower()
     # 兼容用户输入的各种括号 (中英文小括号、方括号等)
     choice = re.sub(r'[()（）\[\]]', '', choice).strip()
-    all_formats = ["xlsx", "json", "csv", "txt", "m3u8"]
+    all_formats = ["xlsx", "json", "csv", "txt", "m3u8", "md"]
     if not choice or choice in ("all", "全部"):
         return all_formats
     if choice == "0":
@@ -339,6 +340,7 @@ def resolve_export_formats(choice: str, strict: bool = False) -> List[str]:
         "3": "csv", "csv": "csv",
         "4": "txt", "txt": "txt",
         "5": "m3u8", "m3u8": "m3u8",
+        "6": "md", "md": "md", "markdown": "md",
     }
     items = [x.strip() for x in choice.replace("，", ",").replace(" ", ",").split(",") if x.strip()]
     res = []
@@ -355,7 +357,7 @@ def resolve_export_formats(choice: str, strict: bool = False) -> List[str]:
                 res.append(fmt)
         else:
             if strict:
-                raise ValueError(f"不支持的导出格式 '{item}'。有效格式: 1~5 或 xlsx, json, csv, txt, m3u8, all")
+                raise ValueError(f"不支持的导出格式 '{item}'。有效格式: 1~6 或 xlsx, json, csv, txt, m3u8, md, all")
             return []
     return res if res else ([] if strict else all_formats)
 

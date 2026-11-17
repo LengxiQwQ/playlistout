@@ -5,8 +5,10 @@ import type {
 } from '../analytics/types';
 
 const LAUNCHED_AT = '2026-09-12';
-const PUBLIC_PLATFORMS = ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu'] as const;
-const EXPORT_FORMATS = ['txt', 'csv', 'xlsx', 'json', 'm3u8'] as const;
+import { VALID_EXPORT_FORMATS } from '../analytics/types';
+import { SUPPORTED_PLATFORMS } from '../providers/platforms';
+const PUBLIC_PLATFORMS = SUPPORTED_PLATFORMS;
+const EXPORT_FORMATS = VALID_EXPORT_FORMATS;
 
 interface BaselineRow {
   key: string;
@@ -48,7 +50,7 @@ function emptyPublicStats(): PublicStatsResponse {
     tracksProcessedToday: 0,
     totalExports: 0,
     exportsToday: 0,
-    exportFormatsBreakdown: { txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0 },
+    exportFormatsBreakdown: { txt: 0, csv: 0, xlsx: 0, json: 0, m3u8: 0, markdown: 0 },
     byPlatform: {
       qqmusic: { totalSuccess: 0, todaySuccess: 0 },
       netease: { totalSuccess: 0, todaySuccess: 0 },
@@ -56,6 +58,8 @@ function emptyPublicStats(): PublicStatsResponse {
       qishui: { totalSuccess: 0, todaySuccess: 0 },
       kuwo: { totalSuccess: 0, todaySuccess: 0 },
       migu: { totalSuccess: 0, todaySuccess: 0 },
+      spotify: { totalSuccess: 0, todaySuccess: 0 },
+      applemusic: { totalSuccess: 0, todaySuccess: 0 },
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),
@@ -123,7 +127,9 @@ export async function getPublicStatsV2Cutover(
     'platform_success:netease',
     'platform_success:kugou',
     'platform_success:qishui',
-    ...EXPORT_FORMATS.map((f) => `export_format:${f}`),
+    // These five formats existed at the historical V1/V2 cutover. New formats
+    // have no legacy baseline and must start from their real V2 aggregate.
+    ...['txt', 'csv', 'xlsx', 'json', 'm3u8'].map((f) => `export_format:${f}`),
   ];
   for (const key of requiredKeys) {
     if (!baselines.has(key)) {
@@ -240,7 +246,7 @@ export async function getPublicStatsV2Cutover(
       SUM(CASE WHEN date = ?2 THEN count ELSE 0 END) AS baseline_day
     FROM analytics_v2_breakdown
     WHERE dimension = 'export_format'
-      AND value IN ('txt','csv','xlsx','json','m3u8')
+      AND value IN ('txt','csv','xlsx','json','m3u8','markdown')
     GROUP BY value
   `).bind(today, state.baseline_date)
     .all<{ value: string; total: number; today: number; baseline_day: number }>();
@@ -248,6 +254,10 @@ export async function getPublicStatsV2Cutover(
   const exportFormatsBreakdown: Record<string, number> = {};
   for (const format of EXPORT_FORMATS) {
     const row = formatMap.get(format);
+    if (format === 'markdown') {
+      exportFormatsBreakdown[format] = Number(row?.total || 0);
+      continue;
+    }
     const bridged = bridgedValue(
       baselines.get(`export_format:${format}`)!,
       Number(row?.total || 0),
@@ -344,6 +354,7 @@ export async function getPublicStatsV2Cutover(
       xlsx: exportFormatsBreakdown.xlsx || 0,
       json: exportFormatsBreakdown.json || 0,
       m3u8: exportFormatsBreakdown.m3u8 || 0,
+      markdown: exportFormatsBreakdown.markdown || 0,
     },
     byPlatform,
     recentDays: Array.from(dayMap.values())

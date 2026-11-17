@@ -26,7 +26,7 @@ export interface SearchNoteProps {
   feedbackSubmitted?: boolean;
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
     modeHint?: 'user' | 'playlist',
   ) => void;
 }
@@ -316,6 +316,8 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           >
             {t.search.platformMigu}
           </Sticker>
+          <Sticker color="green" title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
+          <Sticker color="red" title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
           {/* Kugou: single unified sticker showing login state — placed last */}
           <Sticker
             type="button"

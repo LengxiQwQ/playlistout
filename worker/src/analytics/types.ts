@@ -56,7 +56,7 @@ export interface PublicStatsResponse {
 import { SUPPORTED_PLATFORMS, type SupportedPlatform } from '../providers/platforms';
 export { SUPPORTED_PLATFORMS, type SupportedPlatform };
 
-export const VALID_EXPORT_FORMATS = ['xlsx', 'json', 'txt', 'csv', 'm3u8'] as const;
+export const VALID_EXPORT_FORMATS = ['xlsx', 'json', 'txt', 'csv', 'm3u8', 'markdown'] as const;
 export type ExportFormat = typeof VALID_EXPORT_FORMATS[number];
 
 export const VALID_CLIPBOARD_MODES = [
@@ -288,6 +288,8 @@ export const RESOLVE_REQUESTED_PLATFORMS = [
   'qishui',
   'kuwo',
   'migu',
+  'spotify',
+  'applemusic',
   'unknown',
 ] as const;
 export type ResolveRequestedPlatform = typeof RESOLVE_REQUESTED_PLATFORMS[number];
@@ -300,6 +302,8 @@ export const ANALYTICS_PLATFORMS = [
   'qishui',
   'kuwo',
   'migu',
+  'spotify',
+  'applemusic',
   'unknown',
 ] as const;
 export type AnalyticsPlatform = typeof ANALYTICS_PLATFORMS[number];

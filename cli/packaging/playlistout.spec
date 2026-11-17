@@ -17,6 +17,7 @@ REPO_ROOT = os.path.abspath(os.path.join(SPEC_DIR, "..", ".."))
 # 1. package.json for version single-source-of-truth in frozen mode
 datas = [
     (os.path.join(REPO_ROOT, "package.json"), "."),
+    (os.path.join(REPO_ROOT, "THIRD-PARTY-NOTICES.md"), "."),
 ]
 
 # Exclusions: only exclude pytest and project tests, preserve standard library

@@ -632,7 +632,7 @@ describe('POST /api/event — Frontend Event Ingestion (Adversarial & Acceptance
     });
 
     it.each([
-      'spotify',
+      'unsupported_vendor',
       'apple',
       'tidal',
       'arbitrary_platform',

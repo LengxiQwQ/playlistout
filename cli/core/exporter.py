@@ -156,7 +156,7 @@ def export_csv(playlist: NormalizedPlaylist, output_file: str):
                 sanitize_spreadsheet_cell(t.source_url or ""),
                 t.index,
                 get_track_type_code(t),
-                "true" if t.is_vip else "false",
+                "" if t.is_vip is None else "true" if t.is_vip else "false",
                 t.status or ("unplayable" if not t.is_available else "playable")
             ])
 
@@ -298,6 +298,19 @@ def export_m3u8(playlist: NormalizedPlaylist, output_file: str):
                 f.write(f"{safe_track_file}.mp3\n")
 
 
+def export_markdown(playlist: NormalizedPlaylist, output_file: str):
+    def cell(value):
+        return str(value or '').replace('|', '\\|').replace('\n', ' ').replace('\r', ' ')
+    lines = [f'# {cell(playlist.name)}', '', f'平台：{cell(playlist.platform)}',
+             f'来源：{playlist.source_url}', '', '| 序号 | 歌名 | 歌手 | 专辑 | ISRC | 时长（秒） | 状态 |',
+             '|---|---|---|---|---|---|---|']
+    for t in playlist.tracks:
+        values = [t.index, t.title, t.artist, t.album, t.isrc, get_track_duration_seconds(t.duration_ms), t.status_text]
+        lines.append('| ' + ' | '.join(cell(v) for v in values) + ' |')
+    with open(output_file, 'w', encoding='utf-8') as stream:
+        stream.write('\n'.join(lines) + '\n')
+
+
 def perform_export(
     playlist: NormalizedPlaylist,
     output_dir: str = "output",
@@ -311,7 +324,7 @@ def perform_export(
 ) -> List[str]:
     """统一执行导出，并以简洁一致的方式反馈结果"""
     if formats is None:
-        formats = ["xlsx", "json", "csv", "txt", "m3u8"]
+        formats = ["xlsx", "json", "csv", "txt", "m3u8", "md"]
     if not formats:
         return []
 
@@ -346,6 +359,8 @@ def perform_export(
                 export_txt(playlist, target_path)
             elif fmt == "m3u8":
                 export_m3u8(playlist, target_path)
+            elif fmt == "md":
+                export_markdown(playlist, target_path)
             else:
                 continue
             exported_files.append(target_path)

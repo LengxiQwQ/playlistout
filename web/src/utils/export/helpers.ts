@@ -195,7 +195,8 @@ export function getTrackStatusText(track: { statusText?: string; isAvailable?: b
   return '正常';
 }
 
-export function getTrackIsVip(track: { isVip?: boolean; status?: string }): boolean {
+export function getTrackIsVip(track: { isVip?: boolean; status?: string }): boolean | undefined {
+  if (track.status === 'unknown' && track.isVip === undefined) return undefined;
   return Boolean(track.isVip || track.status === 'vip');
 }
 
