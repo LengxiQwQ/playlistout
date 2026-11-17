@@ -116,11 +116,11 @@ async function verifyAnalyticsV1FrozenForTest(db: DatabaseSync): Promise<boolean
 
 describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () => {
   describe('1. Migration File Integrity, Naming & Immutability', () => {
-    it('passes validation for current 0001-0018 migrations with matching manifest hashes', () => {
+    it('passes validation for current 0001-0019 migrations with matching manifest hashes', () => {
       const result = validateMigrations();
       expect(result.valid).toBe(true);
-      expect(result.count).toBe(18);
-      expect(result.files).toHaveLength(18);
+      expect(result.count).toBe(19);
+      expect(result.files).toHaveLength(19);
       expect(result.files[0]).toBe('0001_initial_stats.sql');
       expect(result.files[8]).toBe('0009_parse_feedback.sql');
       expect(result.files[9]).toBe('0010_geo_attribution_expansion.sql');
@@ -132,6 +132,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       expect(result.files[15]).toBe('0016_reconcile_legacy_analytics.sql');
       expect(result.files[16]).toBe('0017_reconcile_plugin_and_breakdown_formats.sql');
       expect(result.files[17]).toBe('0018_daily_active_hashes.sql');
+      expect(result.files[18]).toBe('0019_optimize_stats_indexes.sql');
     });
 
     it('rejects invalid migration filename format', () => {
@@ -193,9 +194,9 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('applies all 18 migrations sequentially from empty database', () => {
+    it('applies all 19 migrations sequentially from empty database', () => {
       const applied = applyMigrationsToDb(db);
-      expect(applied).toHaveLength(18);
+      expect(applied).toHaveLength(19);
       expect(applied).toEqual([
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -215,6 +216,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0016_reconcile_legacy_analytics.sql',
         '0017_reconcile_plugin_and_breakdown_formats.sql',
         '0018_daily_active_hashes.sql',
+        '0019_optimize_stats_indexes.sql',
       ]);
     });
 
@@ -224,7 +226,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
 
       const verification = await verifyD1Schema({ queryFn });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(18);
+      expect(verification.appliedMigrationsCount).toBe(19);
       expect(verification.pendingCount).toBe(0);
 
       const existingTables = new Set(
@@ -333,7 +335,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       db.close();
     });
 
-    it('resumes from partially applied state (0001-0004 -> applies 0005-0018)', async () => {
+    it('resumes from partially applied state (0001-0004 -> applies 0005-0019)', async () => {
       const firstBatch = [
         '0001_initial_stats.sql',
         '0002_analytics_foundation.sql',
@@ -368,11 +370,12 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
         '0016_reconcile_legacy_analytics.sql',
         '0017_reconcile_plugin_and_breakdown_formats.sql',
         '0018_daily_active_hashes.sql',
+        '0019_optimize_stats_indexes.sql',
       ]);
 
       const verification = await verifyD1Schema({ queryFn: makeQueryFn(db) });
       expect(verification.verified).toBe(true);
-      expect(verification.appliedMigrationsCount).toBe(18);
+      expect(verification.appliedMigrationsCount).toBe(19);
       expect(verification.pendingCount).toBe(0);
 
       const retired = db.prepare(
@@ -955,7 +958,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const res = await validateMigrationHistory({ mode: 'pre-apply', queryFn });
       expect(res.valid).toBe(true);
       expect(res.appliedCount).toBe(3);
-      expect(res.pendingCount).toBe(15);
+      expect(res.pendingCount).toBe(16);
       expect(res.pendingFiles[0]).toBe('0004_visitors_and_site_metrics.sql');
     });
 
@@ -987,7 +990,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       for (const file of fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()) {
         db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run(file);
       }
-      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0019_unexpected_extra.sql');
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?);").run('0020_unexpected_extra.sql');
 
       const queryFn = makeQueryFn(db);
       await expect(
@@ -1010,7 +1013,7 @@ describe('PlaylistOut Insights R8 — D1 Provisioning & Migration Safety', () =>
       const queryFn = makeQueryFn(db);
       const res = await validateMigrationHistory({ mode: 'post-apply', queryFn });
       expect(res.valid).toBe(true);
-      expect(res.appliedCount).toBe(18);
+      expect(res.appliedCount).toBe(19);
       expect(res.pendingCount).toBe(0);
     });
 

@@ -4,6 +4,7 @@ import { qqMusicProvider } from './providers/qqmusic';
 import { neteaseProvider } from './providers/netease';
 import { ProviderError } from './models/playlist';
 import { resetRateLimits } from './security/rate-limit';
+import { resetStatsMemoryCache } from './routes/stats';
 import { installMockCaches, type MockCachesHandle } from './test-utils/caches-mock';
 
 interface HealthResponseBody {
@@ -34,6 +35,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
   let cachesHandle: MockCachesHandle;
   beforeEach(() => {
     resetRateLimits();
+    resetStatsMemoryCache();
     cachesHandle = installMockCaches();
   });
   afterEach(() => {
@@ -111,15 +113,31 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://playlistout.lengxiqwq.com');
   });
 
-  it('edge-caches /api/stats for 90 seconds on a cache miss', async () => {
+  it('edge-caches /api/stats for 600 seconds on a cache miss', async () => {
     const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
     const response = await worker.fetch(request, {}, createMockCtx());
     expect(response.status).toBe(200);
-    expect(response.headers.get('Cache-Control')).toBe('public, max-age=90, s-maxage=90');
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=600, s-maxage=600');
     expect(cachesHandle.cache.put).toHaveBeenCalledTimes(1);
   });
 
-  it('serves /api/stats from edge cache without recomputing', async () => {
+  it('serves /api/stats from in-memory isolate cache on subsequent calls without touching edge cache', async () => {
+    const request = new Request('https://playlistout-api.lengxiqwq.com/api/stats');
+    const firstResponse = await worker.fetch(request, {}, createMockCtx());
+    expect(firstResponse.status).toBe(200);
+    expect(cachesHandle.cache.put).toHaveBeenCalledTimes(1);
+
+    // Second call should hit in-memory isolate cache directly
+    cachesHandle.cache.match.mockClear();
+    cachesHandle.cache.put.mockClear();
+
+    const secondResponse = await worker.fetch(request, {}, createMockCtx());
+    expect(secondResponse.status).toBe(200);
+    expect(cachesHandle.cache.match).not.toHaveBeenCalled();
+    expect(cachesHandle.cache.put).not.toHaveBeenCalled();
+  });
+
+  it('serves /api/stats from edge cache without recomputing when memory cache is cold', async () => {
     cachesHandle.cache.match.mockResolvedValue(
       new Response(JSON.stringify({ success: true, data: { cached: true } }), {
         headers: { 'Content-Type': 'application/json' },

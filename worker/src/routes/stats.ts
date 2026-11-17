@@ -8,6 +8,18 @@ import { getStandardResponseHeaders, methodNotAllowed } from '../utils/response'
 import { getClientIp } from '../security/client-auth';
 import type { Env } from '../env';
 
+interface MemoryStatsCache {
+  responsePayload: string;
+  cachedAt: number;
+}
+
+let inMemoryStatsCache: MemoryStatsCache | null = null;
+const MEMORY_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes in-memory isolate cache
+
+export function resetStatsMemoryCache(): void {
+  inMemoryStatsCache = null;
+}
+
 export const statsRoutes = new Hono<{ Bindings: Env }>();
 
 const handleStats = async (c: any) => {
@@ -49,35 +61,65 @@ const handleStats = async (c: any) => {
     );
   }
 
-  // Edge cache: share one stats snapshot across all clients for 90 seconds
+  // 1. Edge & In-Memory cache: share one stats snapshot across all clients
   const shouldBypassCache = url.searchParams.has('verify');
-  const statsCache = caches.default;
+  const now = Date.now();
   const statsCacheKey = 'https://playlistout-api.internal/cache/public-stats';
-  if (!shouldBypassCache) {
+
+  if (shouldBypassCache) {
+    inMemoryStatsCache = null;
+  } else {
+    // Check in-memory isolate cache first (0ms, 0 I/O)
+    if (inMemoryStatsCache && now - inMemoryStatsCache.cachedAt < MEMORY_CACHE_TTL_MS) {
+      return new Response(inMemoryStatsCache.responsePayload, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=600, s-maxage=600',
+          ...responseHeaders,
+        },
+      });
+    }
+
+    // Check Cloudflare Edge Cache API second
+    const statsCache = caches.default;
     const cachedStatsResponse = await statsCache.match(statsCacheKey);
     if (cachedStatsResponse) {
+      try {
+        const text = await cachedStatsResponse.clone().text();
+        inMemoryStatsCache = { responsePayload: text, cachedAt: now };
+      } catch {
+        // best-effort memory population
+      }
       return cachedStatsResponse;
     }
   }
 
   const stats: PublicStatsResponse = await getPublicStats(env.DB);
+  const responsePayload = JSON.stringify({
+    success: true,
+    data: stats,
+  } satisfies ApiResponse<PublicStatsResponse>);
+
+  if (!shouldBypassCache) {
+    inMemoryStatsCache = { responsePayload, cachedAt: now };
+  }
+
   const statsResponse = new Response(
-    JSON.stringify({
-      success: true,
-      data: stats,
-    } satisfies ApiResponse<PublicStatsResponse>),
+    responsePayload,
     {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': shouldBypassCache
           ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=90, s-maxage=90',
+          : 'public, max-age=600, s-maxage=600',
         ...responseHeaders,
       },
     },
   );
   if (!shouldBypassCache && ctx && typeof ctx.waitUntil === 'function') {
+    const statsCache = caches.default;
     ctx.waitUntil(statsCache.put(statsCacheKey, statsResponse.clone()));
   }
   return statsResponse;
