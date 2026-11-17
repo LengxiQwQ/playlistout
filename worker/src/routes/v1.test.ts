@@ -1,3 +1,4 @@
+import { version as applicationVersion } from '../../../package.json';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from '../index';
 import { qqMusicProvider } from '../providers/qqmusic';
@@ -76,7 +77,7 @@ describe('PlaylistOut Public API v1', () => {
       const body: any = await response.json();
       expect(body.status).toBe('ok');
       expect(body.service).toBe('playlistout-api');
-      expect(body.version).toBe('2.2.0');
+      expect(body.version).toBe(applicationVersion);
     });
 
     it('rejects POST with 405 Method Not Allowed', async () => {
@@ -295,14 +296,14 @@ describe('PlaylistOut Public API v1', () => {
       );
       const response = await worker.fetch(request, {}, createMockCtx());
       expect(response.status).toBe(200);
-      expect(response.headers.get('X-PlaylistOut-Server-Version')).toBe('2.2.0');
+      expect(response.headers.get('X-PlaylistOut-Server-Version')).toBe(applicationVersion);
       expect(response.headers.get('X-PlaylistOut-Client-Device')).toBe('desktop');
       expect(response.headers.get('X-PlaylistOut-Client-Id')).toBe('musicfree');
 
       const body: any = await response.json();
       expect(body.success).toBe(true);
       expect(body.meta).toBeDefined();
-      expect(body.meta.server.version).toBe('2.2.0');
+      expect(body.meta.server.version).toBe(applicationVersion);
       expect(body.meta.client.id).toBe('musicfree');
       expect(body.meta.client.channel).toBe('plugin');
       expect(body.meta.client.version).toBe('1.4.0');

@@ -1,3 +1,4 @@
+import { version as applicationVersion } from '../../package.json';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from './index';
 import { qqMusicProvider } from './providers/qqmusic';
@@ -48,7 +49,7 @@ describe('Worker Endpoints (Phase 2 Public API Contract & Reliability)', () => {
     const body = (await response.json()) as HealthResponseBody;
     expect(body.status).toBe('ok');
     expect(body.service).toBe('playlistout-api');
-    expect(body.version).toBe('2.2.0');
+    expect(body.version).toBe(applicationVersion);
   });
 
   it('rejects non-GET methods on /health with 405 Method Not Allowed', async () => {
