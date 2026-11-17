@@ -55,16 +55,18 @@ describe('App Frontend Parse Flow (Phase 3)', () => {
   });
 
   it('shows client validation error when submitting empty or invalid input', async () => {
+    const parse = vi.spyOn(client, 'parsePlaylist').mockRejectedValue(new Error('Unsupported input must not reach the API'));
     render(<App />);
     const input = screen.getByPlaceholderText(/粘贴公开歌单链接/);
     const submitBtn = screen.getByRole('button', { name: '解析' });
 
     // Try submitting unsupported link
-    fireEvent.change(input, { target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' } });
+    fireEvent.change(input, { target: { value: 'https://tidal.com/browse/playlist/example' } });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByTestId('status-alert-error')).toBeInTheDocument();
     expect(screen.getByText(/Spotify 与 Apple Music 请使用歌单分享链接/)).toBeInTheDocument();
+    expect(parse).not.toHaveBeenCalled();
   });
 
   it('renders loading state and successful playlist preview with repeated tracks preserved', async () => {
