@@ -5,7 +5,7 @@ import json
 import re
 from .base import BasePlatformAdapter
 from .registry import register_platform
-from .international import _Requests, _total, _url, _track
+from .international import _Requests, _total, _url, _track, _reverse_tracks
 from ..core.models import NormalizedPlaylist
 
 
@@ -70,6 +70,7 @@ class AppleMusicAdapter(BasePlatformAdapter):
                 block = json.loads(net.get(u.geturl(), headers))
             if len(tracks) != total:
                 raise ValueError('未取得完整歌单')
+            _reverse_tracks(tracks)
             notes = a.get('description') or {}
             return NormalizedPlaylist(platform='applemusic', id=pid, name=a['name'], creator=a.get('curatorName', ''), description=notes.get('standard', '') if isinstance(notes, dict) else notes, source_url=f'https://music.apple.com/{country}/playlist/{pid}', cover_url=a.get('artwork', {}).get('url', '').replace('{w}', '600').replace('{h}', '600'), track_count=total, tracks=tracks)
         finally:

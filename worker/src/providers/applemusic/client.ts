@@ -4,6 +4,7 @@ import { RequestBudget, json, requireTotal, complete, setRequestCost } from '../
 import { appleInput } from './input';
 import { normalizeAppleTrack } from './normalize';
 import { appleTokenPayload, createAppleTokenExtractor } from './token';
+import { reversePlaylistTracks } from '../international/order';
 
 const HOSTS = new Set(['music.apple.com', 'amp-api.music.apple.com', 'geo.music.apple.com']);
 let session: { token: string; expires: number } | undefined;
@@ -50,6 +51,7 @@ export async function fetchApplePlaylist(input: string): Promise<Playlist> {
       block = json(await budget.authorized(next.toString(), headers, () => token(true)));
     }
     complete(tracks.length, total);
+    reversePlaylistTracks(tracks);
     const result: Playlist = {
       platform: 'applemusic', id: ref.id, name: p.attributes.name, creator: p.attributes.curatorName,
       description: p.attributes.description?.standard ?? p.attributes.description?.short,

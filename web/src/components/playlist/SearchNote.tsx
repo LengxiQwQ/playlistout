@@ -31,6 +31,13 @@ export interface SearchNoteProps {
   ) => void;
 }
 
+const internationalStickerStyle: React.CSSProperties = {
+  padding: '0.25rem 0.75rem',
+  fontSize: '1rem',
+  fontFamily: 'var(--font-handwriting, cursive)',
+  fontWeight: 700,
+};
+
 function shouldOpenKugouLoginFromUrl(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -316,8 +323,8 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           >
             {t.search.platformMigu}
           </Sticker>
-          <Sticker color="green" title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
-          <Sticker color="red" title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
+          <Sticker color="green" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
+          <Sticker color="red" rotateDeg={0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
           {/* Kugou: single unified sticker showing login state — placed last */}
           <Sticker
             type="button"

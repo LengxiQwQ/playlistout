@@ -4,7 +4,7 @@ import json
 import re
 from .base import BasePlatformAdapter
 from .registry import register_platform
-from .international import _Requests, _total, _url, _track
+from .international import _Requests, _total, _url, _track, _reverse_tracks
 from ..core.models import NormalizedPlaylist
 
 
@@ -63,6 +63,7 @@ class SpotifyAdapter(BasePlatformAdapter):
                 if offset >= total:
                     if len(tracks) != total:
                         raise ValueError('歌单数量不符')
+                    _reverse_tracks(tracks)
                     return playlist
         finally:
             net.session.close()

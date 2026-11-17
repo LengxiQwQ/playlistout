@@ -3,6 +3,7 @@ import { ProviderError, type Playlist, type Track } from '../../models/playlist'
 import { RequestBudget, json, requireTotal, complete, setRequestCost } from '../international/http';
 import { spotifyId } from './input';
 import { normalizeSpotifyTrack } from './normalize';
+import { reversePlaylistTracks } from '../international/order';
 
 export const SPOTIFY_HOSTS = new Set(['open.spotify.com', 'api-partner.spotify.com', 'spotify.link', 'spoti.fi']);
 let session: { token: string; expires: number } | undefined;
@@ -60,6 +61,7 @@ export async function fetchSpotifyPlaylist(input: string): Promise<Playlist> {
       offset += items.length;
       if (offset >= total) { complete(tracks.length, total); break; }
     }
+    reversePlaylistTracks(tracks);
     setRequestCost(result, budget.count);
     return result;
   } catch (error) {

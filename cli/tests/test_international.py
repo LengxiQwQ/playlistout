@@ -63,3 +63,40 @@ def test_invalid_total_and_nonplaylist_inputs_fail_closed():
                          (AppleMusicAdapter(), 'https://music.apple.com/cn/album/example/123')]:
         with pytest.raises(ValueError):
             adapter.fetch_playlist(url)
+
+
+@pytest.mark.parametrize('adapter,url', [
+    (SpotifyAdapter(), 'https://open.spotify.com/playlist/1234567890123456789012'),
+    (AppleMusicAdapter(), 'https://music.apple.com/cn/playlist/pl.u-example'),
+])
+def test_complete_vendor_playlist_is_reversed_once_before_export(tmp_path, monkeypatch, adapter, url):
+    import base64
+    from urllib.parse import parse_qs, urlparse
+    monkeypatch.setenv('PLAYLISTOUT_NO_TELEMETRY', '1')
+    def read(net, target, headers=None, allow404=False):
+        if '/embed/track/' in target:
+            session = {'isAnonymous': True, 'accessToken': 'fixture-only'}
+            return '<script id="__NEXT_DATA__" type="application/json">' + json.dumps({'props': {'pageProps': {'state': {'settings': {'session': session}}}}}) + '</script>'
+        if target.endswith('/us/404'):
+            return '<script src="/assets/index~fixture.js"></script>'
+        if target.endswith('.js'):
+            payload = base64.urlsafe_b64encode(json.dumps({'iss': 'AMPWebPlay'}).encode()).decode().rstrip('=')
+            return 'eyJ' + 'a'*25 + '.' + payload + '.' + 'a'*30
+        if 'spotify.com/pathfinder/' in target:
+            offset = json.loads(parse_qs(urlparse(target).query)['variables'][0])['offset']
+            names = ['older', 'middle'] if offset == 0 else ['newer']
+            items = [{'itemV2': {'data': {'__typename': 'Track', 'uri': 'spotify:track:' + name, 'name': name, 'artists': {'items': [{'profile': {'name': 'Artist'}}]}}}} for name in names]
+            return json.dumps({'data': {'playlistV2': {'name': 'Example', 'content': {'totalCount': 3, 'items': items}}}})
+        items = lambda names: [{'type': 'songs', 'id': name, 'attributes': {'name': name, 'artistName': 'Artist'}} for name in names]
+        if '/tracks?' in target:
+            return json.dumps({'data': items(['newer'])})
+        return json.dumps({'data': [{'attributes': {'name': 'Example', 'trackCount': 3}, 'relationships': {'tracks': {'data': items(['older', 'middle']), 'next': '/v1/catalog/cn/playlists/pl.u-example/tracks?offset=2'}}}]})
+    with patch.object(_Requests, 'get', autospec=True, side_effect=read):
+        playlist = adapter.fetch_playlist(url)
+    assert [t.title for t in playlist.tracks] == ['newer', 'middle', 'older']
+    assert [t.index for t in playlist.tracks] == [1, 2, 3]
+    perform_export(playlist, str(tmp_path), formats=['json', 'csv'], show_header=False, show_summary=False)
+    data = json.loads(next(tmp_path.glob('*.json')).read_text(encoding='utf-8'))
+    assert [t['title'] for t in data['tracks']] == ['newer', 'middle', 'older']
+    with next(tmp_path.glob('*.csv')).open(encoding='utf-8-sig', newline='') as stream:
+        assert [row['title'] for row in csv.DictReader(stream)] == ['newer', 'middle', 'older']

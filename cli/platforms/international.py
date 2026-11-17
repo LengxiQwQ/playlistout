@@ -73,3 +73,9 @@ def _track(index, title, artist, **kwargs):
         raise ValueError('歌曲缺少必要信息，未导出部分歌单')
     return NormalizedTrack(index=index, title=title, artist=artist, status='unknown',
                            status_text='未知', is_available=None, is_vip=None, **kwargs)
+
+
+def _reverse_tracks(tracks):
+    tracks.reverse()
+    for index, track in enumerate(tracks, 1):
+        track.index = index

@@ -21,13 +21,16 @@ describe('International playlist boundaries', () => {
         boots++;
         return new Response('<script id="__NEXT_DATA__" type="application/json">'+JSON.stringify({props:{pageProps:{state:{settings:{session:{accessToken:'fixture-only',isAnonymous:true,accessTokenExpirationTimestampMs:Date.now()+300000}}}}}})+'</script>');
       }
-      offsets.push(JSON.parse(u.searchParams.get('variables')!).offset);
-      return Response.json({data:{playlistV2:{name:'Example',content:{totalCount:2,items:[item]}}}});
+      const offset = JSON.parse(u.searchParams.get('variables')!).offset;
+      offsets.push(offset);
+      const pageItem = {itemV2:{data:{...item.itemV2.data,name:offset === 0 ? 'older' : 'newer'}}};
+      return Response.json({data:{playlistV2:{name:'Example',content:{totalCount:2,items:[pageItem]}}}});
     }));
     const { fetchSpotifyPlaylist } = await import('../spotify/client');
     const url = 'https://open.spotify.com/playlist/1234567890123456789012';
     const p = await fetchSpotifyPlaylist(url);
-    expect(p.tracks).toHaveLength(2);
+    expect(p.tracks.map(t=>t.title)).toEqual(['newer','older']);
+    expect(p.tracks.map(t=>t.index)).toEqual([1,2]);
     await fetchSpotifyPlaylist(url);
     expect(offsets).toEqual([0,1,0,1]);
     expect(boots).toBe(1);
@@ -39,13 +42,14 @@ describe('International playlist boundaries', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: string) => {
       if (input.endsWith('/us/404')) return new Response('<script src="/assets/index~fixture.js"></script>',{status:404});
       if (input.endsWith('.js')) return new Response(jwt);
-      if (input.includes('/tracks')) return Response.json({data:[item]});
+      if (input.includes('/tracks')) return Response.json({data:[{...item,attributes:{...item.attributes,name:'newer'}}]});
       return Response.json({data:[{attributes:{name:'Example',trackCount:2},relationships:{tracks:{data:[item],next:'/v1/catalog/cn/playlists/pl.u-example/tracks?offset=1'}}}]});
     }));
     const { fetchApplePlaylist } = await import('../applemusic/client');
     const p = await fetchApplePlaylist('https://music.apple.com/cn/playlist/pl.u-example');
     expect(p.tracks).toHaveLength(2);
-    expect(p.tracks[1].index).toBe(2);
+    expect(p.tracks.map(t=>t.title)).toEqual(['newer','A']);
+    expect(p.tracks.map(t=>t.index)).toEqual([1,2]);
     expect(p.sourceUrl).toContain('/cn/');
   });
   it('validates playlist IDs, country and hostile URLs', () => {
