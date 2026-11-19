@@ -2,10 +2,16 @@
 @import './design/typography.css';
 @import './design/paper.css';
 @import './design/motion.css';
+@import './design/reveal.css';
 @import './design/ecosystem.css';
 @import './design/desktop.css';
 @import './design/developer.css';
 @import './design/responsive.css';
+@import './design/layout-demos.css';
+@import './design/layout-a.css';
+@import './design/layout-b.css';
+@import './design/layout-c.css';
+@import './design/layout-d.css';
 
 html {
   scrollbar-gutter: stable;

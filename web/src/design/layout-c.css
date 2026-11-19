@@ -1,0 +1,1182 @@
+/* ==========================================================================
+ * LAYOUT C · 侧栏手帐 (Open Hobonichi Loose-Leaf Planner Book Edition)
+ * Completely distinct visual & interaction language from Layouts A & B:
+ * - Warm Milk-Tea Desk framing an Open Two-Part Loose-Leaf Planner Book
+ * - Left Sticky Stitched Blush-Leather Cover + 6 Rose-Gold Metallic Rings
+ *   + Active Scroll-Spy Stepped Index Tabs + Fountain Pen + Ribbon Bookmark
+ * - Right Open Ivory Cotton Book Page with ZERO nested outer boxes
+ * - Dog-Eared Folded Corner Note, Horizontal Catalogue Rows, Editorial Quote
+ *   Insert, 3-Col Slim Metric Slips, Tabbed Appendix Spec Cards
+ * - 100% silky bi-directional hover transitions via translate/rotate/scale
+ * ========================================================================== */
+
+/* ---------------- 1. Layout C Tokens & Desk Surface ---------------- */
+[data-layout-demo='c'] {
+  --search-note-width: 100%;
+
+  --c-paper-fiber: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%2399735d' stroke-linecap='round'%3E%3Cpath d='M12 16l5 2M48 12l-4 3M78 22l5-1M20 52l5-2M62 48l4 3M84 72l-5 2M14 82l5 1M52 76l3-4' stroke-width='0.8' opacity='0.12'/%3E%3C/g%3E%3Cg fill='%238a6652'%3E%3Ccircle cx='10' cy='34' r='0.75' opacity='0.12'/%3E%3Ccircle cx='36' cy='26' r='0.65' opacity='0.11'/%3E%3Ccircle cx='70' cy='16' r='0.75' opacity='0.12'/%3E%3Ccircle cx='86' cy='46' r='0.7' opacity='0.11'/%3E%3Ccircle cx='50' cy='62' r='0.75' opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+
+  --c-card-shadow:
+    0 1px 2px rgba(132, 96, 78, 0.08),
+    0 5px 14px -6px rgba(132, 96, 78, 0.14);
+  --c-card-shadow-hover:
+    0 2px 4px rgba(132, 96, 78, 0.1),
+    0 14px 26px -8px rgba(132, 96, 78, 0.22);
+
+  --c-spring: 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --c-smooth: 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-layout-demo='c'] .binder-holes,
+[data-layout-demo='c'] .journal-margin-line,
+[data-layout-demo='c'] .background-decorations {
+  display: none !important;
+}
+
+/* Soft Warm Milk-Tea Wooden-Free Desk Surface framing the Open Planner Book */
+[data-layout-demo='c'] body {
+  background-color: #f3e9de !important;
+  background-image:
+    var(--c-paper-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 96px 96px, 256px 256px !important;
+}
+
+[data-layout-demo='c'] body::before {
+  background:
+    radial-gradient(38rem 28rem at 6% 10%, rgba(255, 208, 224, 0.44), transparent 68%),
+    radial-gradient(40rem 28rem at 94% 12%, rgba(204, 238, 226, 0.42), transparent 68%),
+    radial-gradient(42rem 30rem at 88% 88%, rgba(255, 232, 184, 0.4), transparent 68%),
+    radial-gradient(36rem 28rem at 8% 85%, rgba(224, 212, 255, 0.4), transparent 68%) !important;
+}
+
+[data-layout-demo='c'] .journal-container {
+  max-width: 1380px !important;
+  padding: 1.4rem clamp(1rem, 2.6vw, 2rem) 3rem !important;
+}
+
+/* Strip legacy wobbly comic borders & tapes */
+[data-layout-demo='c'] .hand-drawn-border,
+[data-layout-demo='c'] .hand-drawn-border-alt,
+[data-layout-demo='c'] .hand-drawn-border-subtle {
+  border-radius: 16px !important;
+  border: 1.5px solid rgba(208, 178, 160, 0.46) !important;
+}
+
+[data-layout-demo='c'] .paper-shadow,
+[data-layout-demo='c'] .paper-shadow-sm,
+[data-layout-demo='c'] .shadow-cutout,
+[data-layout-demo='c'] .shadow-cutout-sm {
+  box-shadow: var(--c-card-shadow) !important;
+}
+
+[data-layout-demo='c'] .tape,
+[data-layout-demo='c'] .tape-top-left,
+[data-layout-demo='c'] .tape-bottom-right {
+  display: none !important;
+}
+
+/* Neutralize legacy :hover transform jumps so ONLY silky translate/rotate/scale run */
+[data-layout-demo='c'] .journal-paper.is-interactive,
+[data-layout-demo='c'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='c'] .sticky-note-card,
+[data-layout-demo='c'] .sticky-note-card.is-tracking,
+[data-layout-demo='c'] .plugin-app-card,
+[data-layout-demo='c'] .plugin-app-card:hover,
+[data-layout-demo='c'] .developer-method,
+[data-layout-demo='c'] .developer-method:hover,
+[data-layout-demo='c'] .header-desktop-btn,
+[data-layout-demo='c'] .header-desktop-btn:hover,
+[data-layout-demo='c'] .header-github-btn,
+[data-layout-demo='c'] .header-github-btn:hover,
+[data-layout-demo='c'] .search-platforms-row .sticker,
+[data-layout-demo='c'] .search-platforms-row .sticker:hover,
+[data-layout-demo='c'] .search-sample-row .sticker,
+[data-layout-demo='c'] .search-sample-row .sticker:hover,
+[data-layout-demo='c'] .journal-footer .sticker,
+[data-layout-demo='c'] .journal-footer .sticker:hover {
+  transform: rotate(var(--rot, 0deg)) !important;
+}
+
+[data-layout-demo='c'] .journal-paper.is-interactive,
+[data-layout-demo='c'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='c'] .sticky-note-card,
+[data-layout-demo='c'] .sticky-note-card.is-tracking {
+  transition:
+    translate var(--c-spring),
+    rotate var(--c-spring),
+    scale var(--c-spring),
+    box-shadow var(--c-smooth),
+    border-color var(--c-smooth) !important;
+}
+
+/* ---------------- 2. Open Book Two-Column Shell ---------------- */
+[data-layout-demo='c'] .layout-c-shell {
+  display: grid;
+  grid-template-columns: 274px minmax(0, 1fr);
+  gap: 1.45rem;
+  align-items: start;
+  padding-top: 0;
+}
+
+/* ---------------- 3. Left Sticky Stitched Blush-Leather Planner Cover ---------------- */
+[data-layout-demo='c'] .layout-c-sidebar {
+  position: sticky;
+  top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.35rem 1.25rem 1.2rem;
+  background-color: #fff3f6;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.65), transparent 60%),
+    var(--c-paper-fiber),
+    url('/paper-grain.png');
+  background-size: 100% 100%, 96px 96px, 240px 240px;
+  border: 2px solid rgba(232, 168, 188, 0.68);
+  border-radius: 26px 14px 14px 26px;
+  box-shadow:
+    inset 0 0 0 6px rgba(255, 255, 255, 0.55),
+    inset -8px 0 18px -12px rgba(176, 118, 134, 0.22),
+    0 18px 36px -18px rgba(146, 98, 108, 0.25);
+  overflow: visible;
+}
+
+/* Stitched inner leather seam */
+[data-layout-demo='c'] .layout-c-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 18px 8px 8px 18px;
+  border: 1.5px dashed rgba(226, 148, 174, 0.45);
+  pointer-events: none;
+}
+
+/* 6 Rose-Gold Metallic Binder Rings bridging Left Cover & Right Book Page */
+.layout-c-rings {
+  position: absolute;
+  top: 2.2rem;
+  bottom: 2.2rem;
+  right: -1.45rem;
+  width: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.layout-c-ring {
+  position: relative;
+  display: block;
+  width: 2.15rem;
+  height: 0.68rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6f2 0%, #f1c6b6 45%, #d29684 80%, #f4d6ca 100%);
+  border: 1px solid rgba(176, 120, 104, 0.55);
+  box-shadow: 0 3px 6px rgba(132, 96, 78, 0.22);
+}
+
+.layout-c-ring::before,
+.layout-c-ring::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: #d8b2a6;
+  box-shadow: inset 0 1px 2px rgba(90, 62, 54, 0.35);
+}
+
+.layout-c-ring::before { left: -4px; }
+.layout-c-ring::after  { right: -4px; }
+
+/* Embossed Ivory Brand Plaque on Cover */
+[data-layout-demo='c'] .layout-c-brand-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  background: #fffdf9;
+  background-image: var(--c-paper-fiber);
+  border: 1.5px solid rgba(232, 184, 198, 0.55);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px -6px rgba(164, 108, 124, 0.2);
+  cursor: pointer;
+  translate: 0 0;
+  transition: translate var(--c-spring), box-shadow var(--c-smooth);
+}
+
+[data-layout-demo='c'] .layout-c-brand-card:hover {
+  translate: 0 -2px;
+  box-shadow: 0 10px 20px -8px rgba(164, 108, 124, 0.28);
+}
+
+[data-layout-demo='c'] .layout-c-brand-card img {
+  border-radius: 10px;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--c-spring), scale var(--c-spring);
+}
+
+[data-layout-demo='c'] .layout-c-brand-card:hover img {
+  rotate: -8deg;
+  scale: 1.08;
+}
+
+.layout-c-index-heading {
+  position: relative;
+  z-index: 2;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #b57c8c;
+  padding: 0 0.25rem;
+  margin-top: 0.15rem;
+}
+
+/* 5 Stepped Index Divider Tabs with Active Scroll-Spy Highlight */
+[data-layout-demo='c'] .layout-c-bookmarks {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+[data-layout-demo='c'] .layout-c-bookmark {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  border: 1.5px solid rgba(196, 158, 144, 0.42);
+  border-radius: 10px 16px 16px 10px;
+  background-image: var(--c-paper-fiber);
+  box-shadow: 0 2px 6px -2px rgba(132, 96, 78, 0.12);
+  cursor: pointer;
+  translate: 0 0;
+  scale: 1;
+  transition:
+    translate var(--c-spring),
+    scale var(--c-spring),
+    box-shadow var(--c-smooth),
+    border-color 200ms ease;
+}
+
+[data-layout-demo='c'] .layout-c-bookmark:hover {
+  translate: 6px 0;
+  box-shadow: 0 6px 14px -4px rgba(132, 96, 78, 0.2);
+}
+
+[data-layout-demo='c'] .layout-c-bookmark.is-active {
+  translate: 8px 0;
+  border-color: rgba(226, 114, 148, 0.75);
+  box-shadow: 0 8px 18px -6px rgba(226, 114, 148, 0.32);
+}
+
+.layout-c-tab-num {
+  font-size: 0.72rem;
+  opacity: 0.68;
+  padding: 0.08rem 0.36rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.layout-c-tab-label {
+  flex: 1;
+}
+
+.layout-c-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(154, 116, 102, 0.25);
+  transition: background-color 200ms ease, scale var(--c-spring);
+}
+
+.layout-c-bookmark.is-active .layout-c-tab-dot {
+  background: #e56d92;
+  scale: 1.35;
+}
+
+[data-layout-demo='c'] .layout-c-bookmark.is-lemon { background-color: #fff6d4; }
+[data-layout-demo='c'] .layout-c-bookmark.is-sky   { background-color: #e2f1ff; }
+[data-layout-demo='c'] .layout-c-bookmark.is-pink  { background-color: #ffe2ec; }
+[data-layout-demo='c'] .layout-c-bookmark.is-mint  { background-color: #daf6eb; }
+[data-layout-demo='c'] .layout-c-bookmark.is-taro  { background-color: #ece4ff; }
+
+/* Woven Ribbon Bookmark Tag for RunningDaysStamp inside Sidebar (immediately visible above the fold) */
+[data-layout-demo='c'] .layout-c-sidebar-stamp {
+  position: relative;
+  z-index: 2;
+  margin-top: 0.25rem;
+}
+
+[data-layout-demo='c'] .layout-c-sidebar-stamp .reveal {
+  opacity: 1 !important;
+}
+
+[data-layout-demo='c'] .layout-c-sidebar-stamp .running-days-stamp-wrap {
+  margin: 0 !important;
+}
+
+[data-layout-demo='c'] .layout-c-sidebar-stamp .running-days-stamp {
+  width: 100%;
+  padding: 0.75rem 0.9rem 1.05rem !important;
+  border-radius: 12px 12px 4px 4px !important;
+  border: 1.5px dashed rgba(226, 134, 162, 0.62) !important;
+  background: linear-gradient(180deg, #fffdf9 0%, #ffeef4 100%) !important;
+  box-shadow: 0 4px 12px -6px rgba(186, 112, 136, 0.25) !important;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring);
+}
+
+[data-layout-demo='c'] .layout-c-sidebar-stamp .running-days-stamp:hover {
+  translate: 0 -3px;
+  rotate: -1.5deg;
+}
+
+[data-layout-demo='c'] .layout-c-sidebar-stamp .running-days-stamp div {
+  white-space: normal !important;
+  text-align: center;
+  font-size: 0.95rem !important;
+}
+
+.layout-c-sidebar-pen {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.2rem;
+}
+
+.layout-c-pen-svg {
+  rotate: -2deg;
+  translate: 0 0;
+  transition: rotate var(--c-spring), translate var(--c-spring);
+}
+
+.layout-c-sidebar:hover .layout-c-pen-svg {
+  rotate: 2deg;
+  translate: 3px -2px;
+}
+
+/* ---------------- 4. Right Open Ivory Cotton Notebook Page (NO Nested Outer Boxes!) ---------------- */
+[data-layout-demo='c'] .layout-c-content {
+  position: relative;
+  min-width: 0;
+  background-color: #fffdf8;
+  background-image:
+    var(--c-paper-fiber),
+    url('/paper-grain.png'),
+    radial-gradient(circle, rgba(200, 168, 150, 0.25) 0.95px, transparent 1.25px);
+  background-size: 96px 96px, 256px 256px, 24px 24px;
+  border: 1.5px solid rgba(214, 184, 164, 0.65);
+  border-radius: 14px 28px 28px 14px;
+  box-shadow:
+    inset 14px 0 24px -18px rgba(154, 112, 92, 0.24),
+    0 22px 46px -22px rgba(132, 96, 78, 0.24);
+  padding: 1.15rem clamp(1.35rem, 3vw, 2.5rem) 2.25rem clamp(1.75rem, 3.4vw, 2.85rem);
+}
+
+/* Sticky Top Pencil-Tray Utility Strip inside Open Book Page */
+[data-layout-demo='c'] .layout-c-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: rgba(255, 253, 248, 0.94);
+  backdrop-filter: blur(10px);
+  margin: -1.15rem -1rem 0.75rem -1rem;
+  padding: 0.75rem 1rem 0;
+  border-radius: 14px 24px 0 0;
+}
+
+[data-layout-demo='c'] .layout-c-topbar .journal-header {
+  min-height: auto !important;
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1.5px dashed rgba(214, 182, 164, 0.45);
+}
+
+[data-layout-demo='c'] .layout-c-content .header-brand-container {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-layout-demo='c'] .header-desktop-btn,
+[data-layout-demo='c'] .header-github-btn,
+[data-layout-demo='c'] .header-actions button:not(.style-option),
+[data-layout-demo='c'] .header-actions .sticker {
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(204, 170, 154, 0.48) !important;
+  box-shadow: 0 2px 6px -2px rgba(132, 96, 78, 0.14) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .header-desktop-btn {
+  background: #ffe8f0 !important;
+  color: #ad4366 !important;
+}
+
+[data-layout-demo='c'] .header-github-btn {
+  background: #e2f7ee !important;
+  color: #2e755a !important;
+}
+
+[data-layout-demo='c'] .header-desktop-btn:hover,
+[data-layout-demo='c'] .header-github-btn:hover,
+[data-layout-demo='c'] .header-actions button:not(.style-option):hover {
+  translate: 0 -2px;
+  rotate: -1deg;
+  box-shadow: 0 8px 16px -6px rgba(132, 96, 78, 0.24) !important;
+}
+
+/* Printed Page Chapter Dividers (PAGE 01 ... PAGE 05) */
+.layout-c-section {
+  scroll-margin-top: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.layout-c-chapter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
+}
+
+.layout-c-chapter-code {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #b4788b;
+  background: #fff2f6;
+  border: 1px solid rgba(232, 166, 188, 0.45);
+  border-radius: 999px;
+  padding: 0.14rem 0.65rem;
+  white-space: nowrap;
+}
+
+.layout-c-chapter-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(226, 174, 190, 0.55), rgba(226, 174, 190, 0.08));
+}
+
+/* Universal Silky Title Hover on Open Book Page */
+[data-layout-demo='c'] .journal-hero-title,
+[data-layout-demo='c'] .plugin-ecosystem-title,
+[data-layout-demo='c'] .stats-journal-title,
+[data-layout-demo='c'] .developer-title,
+[data-layout-demo='c'] .info-notes-section .font-marker {
+  display: inline-block;
+  cursor: default;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition: translate var(--c-spring), rotate var(--c-spring), scale var(--c-spring), color 220ms ease;
+}
+
+[data-layout-demo='c'] .scribble-line::after {
+  transition: transform var(--c-spring), filter 260ms ease;
+}
+
+[data-layout-demo='c'] .journal-hero-title:hover {
+  translate: 4px -2px;
+  rotate: -0.5deg;
+}
+
+[data-layout-demo='c'] .journal-hero-title:hover .scribble-line::after {
+  transform: scaleX(1.06) scaleY(1.22);
+}
+
+[data-layout-demo='c'] .plugin-ecosystem-title:hover,
+[data-layout-demo='c'] .stats-journal-title:hover,
+[data-layout-demo='c'] .developer-title:hover,
+[data-layout-demo='c'] .info-notes-section .font-marker:hover {
+  translate: 4px -2px;
+  color: #c25478 !important;
+}
+
+/* ---------------- 5. PAGE 01: Editorial Hero + Left-Spined Cream Search Slip ---------------- */
+[data-layout-demo='c'] .layout-c-content .journal-hero {
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 0 1.25rem !important;
+  max-width: 100% !important;
+}
+
+[data-layout-demo='c'] .hero-doodle-right {
+  position: static !important;
+  display: flex !important;
+  width: fit-content;
+  margin: 0 0 0.55rem 0 !important;
+  padding: 0.2rem 0.78rem;
+  font-size: 0.92rem !important;
+  color: #8f6250 !important;
+  background: #fff6df;
+  border: 1px solid rgba(226, 188, 108, 0.5);
+  border-radius: 8px;
+  animation: none !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring);
+  cursor: default;
+}
+
+[data-layout-demo='c'] .hero-doodle-right:hover {
+  translate: 3px -2px;
+  rotate: -1.2deg;
+}
+
+[data-layout-demo='c'] .hero-doodle-mobile {
+  display: none !important;
+}
+
+[data-layout-demo='c'] .layout-c-content .journal-hero-title {
+  font-size: clamp(2.15rem, 3.8vw, 3.15rem) !important;
+  line-height: 1.3 !important;
+}
+
+/* Clean Rose-Spined Editorial Search Slip (NO yellow sticky note!) */
+[data-layout-demo='c'] .search-note-section .sticky-note-card {
+  --rot: 0deg;
+  background-color: #fffaf0 !important;
+  background-image: var(--c-paper-fiber) !important;
+  border-radius: 10px 18px 18px 10px !important;
+  border: 1.5px solid rgba(222, 188, 166, 0.55) !important;
+  border-left: 5px solid #ec7f9f !important;
+  box-shadow: var(--c-card-shadow) !important;
+  padding: 1.65rem 1.75rem 1.55rem !important;
+  translate: 0 0;
+}
+
+[data-layout-demo='c'] .search-note-section .sticky-note-card:hover {
+  translate: 0 -2px;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .search-note-section .brand-badge.sticker {
+  border-radius: 999px !important;
+  border: 1px solid rgba(154, 127, 216, 0.35) !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='c'] .search-input-wrapper {
+  min-width: 0;
+}
+
+[data-layout-demo='c'] .search-input-wrapper .paper-input-container {
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(212, 178, 160, 0.58) !important;
+  box-shadow: inset 0 2px 5px rgba(132, 96, 78, 0.06) !important;
+  padding: 0.2rem 0.8rem 0.2rem 1rem !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+[data-layout-demo='c'] .search-input-wrapper .paper-input-container:focus-within {
+  border-color: #ec7f9f !important;
+  box-shadow: 0 0 0 4px rgba(236, 127, 159, 0.16) !important;
+}
+
+[data-layout-demo='c'] .search-input-wrapper .paper-input-field {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='c'] .search-input-row .marker-button {
+  border-radius: 12px !important;
+  padding: 0.78rem 1.75rem !important;
+  border: none !important;
+  background: linear-gradient(180deg, #f594b1 0%, #e56d92 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px -4px rgba(228, 108, 145, 0.45) !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--c-spring), scale var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .search-input-row .marker-button:hover:not(:disabled) {
+  translate: 0 -2px;
+  scale: 1.03;
+  box-shadow: 0 10px 20px -6px rgba(228, 108, 145, 0.55) !important;
+}
+
+/* Pastel Bookmark-Dot Platform Chips (Distinct from A's pills & B's left-spine flags!) */
+[data-layout-demo='c'] .search-platforms-row .sticker,
+[data-layout-demo='c'] .search-sample-row .sticker {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px !important;
+  border: 1px solid rgba(186, 154, 140, 0.36) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(132, 96, 78, 0.08) !important;
+  padding: 0.22rem 0.76rem !important;
+  font-size: 0.88rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .search-platforms-row .sticker::before,
+[data-layout-demo='c'] .search-sample-row .sticker::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ec7f9f;
+  flex-shrink: 0;
+}
+
+[data-layout-demo='c'] .search-platforms-row .sticker:nth-child(4n + 1)::before,
+[data-layout-demo='c'] .search-sample-row .sticker:nth-child(4n + 1)::before { background: #64be9c; }
+[data-layout-demo='c'] .search-platforms-row .sticker:nth-child(4n + 2)::before,
+[data-layout-demo='c'] .search-sample-row .sticker:nth-child(4n + 2)::before { background: #ec7f9f; }
+[data-layout-demo='c'] .search-platforms-row .sticker:nth-child(4n + 3)::before,
+[data-layout-demo='c'] .search-sample-row .sticker:nth-child(4n + 3)::before { background: #e8b848; }
+[data-layout-demo='c'] .search-platforms-row .sticker:nth-child(4n + 4)::before,
+[data-layout-demo='c'] .search-sample-row .sticker:nth-child(4n + 4)::before { background: #9b82dc; }
+
+[data-layout-demo='c'] .search-platforms-row .sticker:hover,
+[data-layout-demo='c'] .search-sample-row .sticker:hover {
+  translate: 0 -3px;
+  rotate: -1.5deg;
+  box-shadow: 0 6px 12px -4px rgba(132, 96, 78, 0.18) !important;
+}
+
+[data-layout-demo='c'] .quick-samples-toggle {
+  border-radius: 999px !important;
+  border: 1.5px dashed rgba(214, 162, 142, 0.6) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  translate: 0 0;
+  transition: translate var(--c-spring) !important;
+}
+
+[data-layout-demo='c'] .quick-samples-toggle:hover {
+  translate: 0 -2px;
+}
+
+/* ---------------- 6. PAGE 02: Unwrapped Horizontal Catalogue Rows (PluginEcosystem) ---------------- */
+[data-layout-demo='c'] .plugin-ecosystem-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='c'] .plugin-supported-count {
+  border-radius: 999px !important;
+  border: 1.5px dashed rgba(226, 120, 152, 0.58) !important;
+  background: #fff3f7 !important;
+  box-shadow: none !important;
+  padding: 0.4rem 0.95rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring) !important;
+}
+
+[data-layout-demo='c'] .plugin-supported-count:hover {
+  translate: 0 -2px;
+  rotate: 3deg;
+}
+
+[data-layout-demo='c'] .plugin-app-grid {
+  grid-template-columns: 1fr !important;
+  gap: 0.95rem !important;
+  margin-top: 1.15rem !important;
+}
+
+/* Sleek Horizontal Record Catalogue Rows with Colored Left Swatch Edge */
+[data-layout-demo='c'] .plugin-app-card {
+  border-radius: 10px 18px 18px 10px !important;
+  background-color: #ffffff !important;
+  background-image: var(--c-paper-fiber) !important;
+  border: 1.5px solid rgba(214, 184, 166, 0.45) !important;
+  border-left: 6px solid #a6d4ff !important;
+  box-shadow: var(--c-card-shadow) !important;
+  padding: 1.15rem 1.35rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .plugin-app-grid > :nth-child(2) .plugin-app-card { border-left-color: #96e0c4 !important; }
+[data-layout-demo='c'] .plugin-app-grid > :nth-child(3) .plugin-app-card { border-left-color: #ffd978 !important; }
+[data-layout-demo='c'] .plugin-app-grid > :nth-child(4) .plugin-app-card { border-left-color: #c8b2ff !important; }
+
+[data-layout-demo='c'] .plugin-app-card:hover {
+  translate: 5px -3px;
+  rotate: -0.5deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .plugin-app-logo-wrap {
+  border-radius: 12px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--c-spring), scale var(--c-spring);
+}
+
+[data-layout-demo='c'] .plugin-app-card:hover .plugin-app-logo-wrap {
+  rotate: -8deg;
+  scale: 1.08;
+}
+
+[data-layout-demo='c'] .plugin-status-sticker,
+[data-layout-demo='c'] .plugin-ecosystem-panel .sticker {
+  border-radius: 999px !important;
+  border: 1px solid rgba(192, 162, 146, 0.35) !important;
+  box-shadow: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.74rem !important;
+}
+
+[data-layout-demo='c'] .plugin-app-primary-buttons .marker-button,
+[data-layout-demo='c'] .plugin-copy-button {
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(204, 170, 154, 0.48) !important;
+  box-shadow: 0 2px 6px -2px rgba(132, 96, 78, 0.14) !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--c-spring), scale var(--c-spring) !important;
+}
+
+[data-layout-demo='c'] .plugin-app-primary-buttons .marker-button:hover,
+[data-layout-demo='c'] .plugin-copy-button:hover {
+  translate: 0 -2px;
+  scale: 1.03;
+}
+
+[data-layout-demo='c'] .plugin-action-link {
+  background: linear-gradient(180deg, #f594b1 0%, #e56d92 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* ---------------- 7. PAGE 03: 3 Distinct Planner Inserts (InfoNotes) ---------------- */
+[data-layout-demo='c'] .info-notes-section {
+  margin: 0 !important;
+  padding: 0 0 0.75rem !important;
+}
+
+[data-layout-demo='c'] .info-notes-section .info-notes-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+  align-items: stretch !important;
+}
+
+[data-layout-demo='c'] .info-notes-grid > * {
+  margin-top: 0 !important;
+}
+
+[data-layout-demo='c'] .info-notes-section .ruled-paper-text,
+[data-layout-demo='c'] .info-notes-section .ruled-paper-list {
+  background-image: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.75 !important;
+  color: #624e45 !important;
+}
+
+/* Insert 1: Dog-Eared Folded Page-Corner Note! */
+[data-layout-demo='c'] .info-notes-grid > :nth-child(1) .journal-paper {
+  position: relative;
+  height: 100%;
+  border-radius: 14px 4px 14px 14px !important;
+  background:
+    linear-gradient(225deg, #fffdf8 18px, rgba(226, 192, 114, 0.38) 18.5px, #fff7d8 20px) !important;
+  border: 1.5px solid rgba(226, 192, 114, 0.52) !important;
+  padding: 1.45rem 1.35rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Realistic folded corner triangle */
+[data-layout-demo='c'] .info-notes-grid > :nth-child(1) .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(225deg, #fffdf8 50%, #f5df9c 50.5%);
+  border-bottom-left-radius: 6px;
+  box-shadow: -2px 2px 4px rgba(154, 122, 68, 0.14);
+  pointer-events: none;
+}
+
+[data-layout-demo='c'] .info-notes-grid > :nth-child(1) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -1.6deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+/* Insert 2: Strawberry Ribbon-Notched Checklist Card */
+[data-layout-demo='c'] .info-notes-grid > :nth-child(2) .journal-paper {
+  position: relative;
+  height: 100%;
+  border-radius: 16px !important;
+  background-color: #fff2f6 !important;
+  background-image:
+    var(--c-paper-fiber),
+    radial-gradient(circle, rgba(226, 148, 174, 0.24) 0.9px, transparent 1.2px) !important;
+  background-size: 96px 96px, 16px 16px !important;
+  border: 1.5px solid rgba(232, 160, 184, 0.55) !important;
+  padding: 1.45rem 1.35rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Dainty ribbon bookmark notch on top-left */
+[data-layout-demo='c'] .info-notes-grid > :nth-child(2) .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 1.15rem;
+  width: 18px;
+  height: 22px;
+  background: #f49bb6;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
+  box-shadow: 0 2px 4px rgba(212, 112, 144, 0.25);
+  pointer-events: none;
+}
+
+[data-layout-demo='c'] .info-notes-grid > :nth-child(2) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: 1.5deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+/* Insert 3: Mint-Taro Editorial Double-Rule Quote Card */
+[data-layout-demo='c'] .info-notes-grid > :nth-child(3) .journal-paper {
+  position: relative;
+  height: 100%;
+  border-radius: 16px !important;
+  background-color: #eefaf4 !important;
+  background-image: var(--c-paper-fiber) !important;
+  border: 1.5px solid rgba(126, 202, 172, 0.52) !important;
+  border-top: 4px double rgba(94, 178, 146, 0.65) !important;
+  border-bottom: 4px double rgba(94, 178, 146, 0.65) !important;
+  padding: 1.45rem 1.35rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='c'] .info-notes-grid > :nth-child(3) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -1.4deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .info-notes-favorited .sticker,
+[data-layout-demo='c'] .stats-chill-vibes-row .sticker {
+  border-radius: 999px !important;
+  border: 1px dashed rgba(212, 152, 170, 0.55) !important;
+  box-shadow: 0 2px 6px rgba(132, 96, 78, 0.1) !important;
+}
+
+/* ---------------- 8. PAGE 04: Unwrapped 3-Col Slim Metric Slips (StatsJournal) ---------------- */
+[data-layout-demo='c'] .stats-journal-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='c'] .stats-deco-headphones,
+[data-layout-demo='c'] .stats-deco-stamp {
+  display: none !important;
+}
+
+[data-layout-demo='c'] .stats-journal-header {
+  text-align: left !important;
+  margin-bottom: 0.9rem !important;
+}
+
+[data-layout-demo='c'] .stats-journal-title {
+  height: auto !important;
+  line-height: 1.3 !important;
+  margin-top: 0.25rem !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+  margin-bottom: 1.15rem !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid .journal-paper {
+  border-radius: 16px !important;
+  padding: 1.35rem 1.25rem !important;
+  background-image: var(--c-paper-fiber) !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='c'] .stats-main-grid > :nth-child(1) .journal-paper {
+  background-color: #fff9e2 !important;
+  border: 1.5px solid rgba(226, 192, 114, 0.52) !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid > :nth-child(2) .journal-paper {
+  background-color: #fff3f7 !important;
+  border: 1.5px solid rgba(232, 160, 184, 0.52) !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid > :nth-child(3) .journal-paper {
+  background-color: #eefaf5 !important;
+  border: 1.5px solid rgba(126, 202, 172, 0.52) !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid > :nth-child(odd) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -1.4deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid > :nth-child(even) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: 1.4deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .stats-main-grid .font-num {
+  display: inline-block;
+  scale: 1;
+  transition: scale var(--c-spring), color 220ms ease;
+}
+
+[data-layout-demo='c'] .stats-main-grid .journal-paper:hover .font-num {
+  scale: 1.07;
+  color: #c25478;
+}
+
+[data-layout-demo='c'] .stats-journal-section > .reveal:last-of-type .journal-paper {
+  border-radius: 16px !important;
+  background-color: #ffffff !important;
+  background-image: var(--c-paper-fiber) !important;
+  border: 1.5px solid rgba(212, 180, 160, 0.48) !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='c'] .stats-journal-section > .reveal:last-of-type .journal-paper:hover {
+  translate: 0 -3px;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
+[data-layout-demo='c'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+  border-radius: 999px 999px 4px 4px !important;
+  scale: 1 1;
+  transform-origin: bottom center;
+  transition: scale var(--c-spring), filter 220ms ease;
+}
+
+[data-layout-demo='c'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
+[data-layout-demo='c'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+  scale: 1 1.18;
+  filter: saturate(1.28);
+}
+
+/* ---------------- 9. PAGE 05: Unwrapped Tabbed Protocol Cards (DeveloperPanel) ---------------- */
+[data-layout-demo='c'] .developer-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='c'] .developer-method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+  margin-top: 1.2rem !important;
+}
+
+[data-layout-demo='c'] .developer-method {
+  border-radius: 10px 16px 16px 16px !important;
+  background-image: var(--c-paper-fiber) !important;
+  border: 1.5px solid rgba(208, 176, 158, 0.48) !important;
+  border-top: 4px solid rgba(236, 127, 159, 0.55) !important;
+  box-shadow: var(--c-card-shadow) !important;
+  padding: 1.15rem 1.2rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .developer-method:nth-child(2) { border-top-color: rgba(79, 174, 138, 0.55) !important; }
+[data-layout-demo='c'] .developer-method:nth-child(3) { border-top-color: rgba(227, 178, 60, 0.58) !important; }
+[data-layout-demo='c'] .developer-method:nth-child(4) { border-top-color: rgba(154, 127, 216, 0.55) !important; }
+
+[data-layout-demo='c'] .developer-method:nth-child(odd):hover {
+  translate: 0 -5px;
+  rotate: -1.4deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .developer-method:nth-child(even):hover {
+  translate: 0 -5px;
+  rotate: 1.4deg;
+  box-shadow: var(--c-card-shadow-hover) !important;
+}
+
+[data-layout-demo='c'] .developer-method-mark {
+  border-radius: 8px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--c-spring), scale var(--c-spring);
+}
+
+[data-layout-demo='c'] .developer-method:hover .developer-method-mark {
+  rotate: -10deg;
+  scale: 1.15;
+}
+
+/* ---------------- 10. Clean Open-Book Footer ---------------- */
+[data-layout-demo='c'] .journal-footer .sticker,
+[data-layout-demo='c'] .journal-footer button.sticker,
+[data-layout-demo='c'] .journal-footer a.sticker {
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(204, 170, 154, 0.46) !important;
+  box-shadow: 0 2px 6px -2px rgba(132, 96, 78, 0.14) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--c-spring), rotate var(--c-spring), box-shadow var(--c-smooth) !important;
+}
+
+[data-layout-demo='c'] .journal-footer .sticker:hover {
+  translate: 0 -3px;
+  rotate: -1.2deg;
+  box-shadow: 0 8px 16px -6px rgba(132, 96, 78, 0.22) !important;
+}
+
+/* ---------------- 11. Size-Adaptive Breakpoints for Layout C ---------------- */
+
+/* Tablet & Mobile (<= 1079px): Sticky Horizontal Top Bookmark Ribbon + 100% Book Page */
+@media (max-width: 1079px) {
+  [data-layout-demo='c'] .layout-c-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  [data-layout-demo='c'] .layout-c-rings,
+  [data-layout-demo='c'] .layout-c-index-heading,
+  [data-layout-demo='c'] .layout-c-sidebar-stamp,
+  [data-layout-demo='c'] .layout-c-sidebar-pen {
+    display: none;
+  }
+
+  [data-layout-demo='c'] .layout-c-sidebar {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 80;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 18px;
+  }
+
+  [data-layout-demo='c'] .layout-c-sidebar::before {
+    display: none;
+  }
+
+  [data-layout-demo='c'] .layout-c-brand-card {
+    display: none;
+  }
+
+  [data-layout-demo='c'] .layout-c-bookmarks {
+    flex-direction: row;
+    overflow-x: auto;
+    flex: 1;
+    gap: 0.45rem;
+    padding: 0.1rem 0;
+  }
+
+  [data-layout-demo='c'] .layout-c-bookmark {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 0.36rem 0.72rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+  }
+
+  [data-layout-demo='c'] .layout-c-bookmark.is-active,
+  [data-layout-demo='c'] .layout-c-bookmark:hover {
+    translate: 0 -2px;
+  }
+
+  [data-layout-demo='c'] .layout-c-content {
+    border-radius: 20px;
+    padding: 1rem 1.15rem 1.75rem;
+  }
+
+  [data-layout-demo='c'] .layout-c-content .header-brand-container {
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-layout-demo='c'] .journal-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 0.75rem 0.75rem 2.5rem !important;
+    overflow-x: clip;
+  }
+
+  [data-layout-demo='c'] .info-notes-section .info-notes-grid,
+  [data-layout-demo='c'] .stats-main-grid,
+  [data-layout-demo='c'] .developer-method-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-layout-demo='c'] .search-input-wrapper {
+    flex: 1 1 100% !important;
+  }
+
+  [data-layout-demo='c'] .search-input-row .marker-button {
+    width: 100%;
+  }
+
+  [data-layout-demo='c'] .plugin-app-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  [data-layout-demo='c'] .developer-heading-row,
+  [data-layout-demo='c'] .plugin-ecosystem-heading-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  [data-layout-demo='c'] .developer-value-note {
+    white-space: normal !important;
+    text-align: left !important;
+  }
+}

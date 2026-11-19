@@ -87,4 +87,12 @@
   --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
+
+  /* Scroll-reveal motion tokens */
+  --reveal-duration: 650ms;
+  --reveal-duration-fast: 420ms;
+  --reveal-stagger: 90ms;
+  --reveal-distance: 28px;
+  --reveal-lift-shadow: 10px 16px 0 rgba(150, 112, 92, 0.18);
+  --font-num: 'Caveat', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive;
 }

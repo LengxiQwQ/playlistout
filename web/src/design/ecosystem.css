@@ -40,17 +40,16 @@
   gap: 0.45rem;
   flex: 0 0 auto;
   padding: 0.7rem 1rem;
-  border: 2px dashed #e8a0b4;
+  border: 2px dashed var(--accent-strawberry, #e8789a);
   border-radius: 10px;
-  background: linear-gradient(135deg, #fffdf9 0%, #ffeef3 100%);
-  box-shadow: 3px 3px 0 rgba(150, 112, 92, 0.16);
-  transform: rotate(0.8deg);
+  background: linear-gradient(135deg, var(--paper-white, #fffdf8) 0%, var(--mac-strawberry, #ffd6e0) 100%);
+  box-shadow: 3px 3px 0 var(--shadow-ink);
 }
 
 .plugin-supported-number {
   font-size: 2.2rem;
   line-height: 1;
-  color: #ec7f9f;
+  color: var(--btn-primary-bg, #ec7f9f);
 }
 
 .plugin-supported-label {
@@ -169,9 +168,47 @@
 .plugin-app-summary {
   margin: 0;
   width: 100%;
-  color: #6b574c;
-  font-size: 1rem;
-  line-height: 1.45;
+  color: var(--ink-light, #8a7569);
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.plugin-app-summary.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.plugin-summary-toggle {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent-taro, #9a7fd8);
+  font-family: var(--font-handwriting, cursive);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+.plugin-summary-toggle:hover {
+  color: var(--ink, #5a4a42);
+  transform: translateY(-1px);
+}
+
+/* Cassette-shelf tactile styling for player cards */
+.plugin-app-card {
+  position: relative;
+  transition: transform 200ms var(--ease-bouncy), box-shadow 200ms ease;
+}
+
+.plugin-app-card:hover {
+  transform: translateX(-4px) rotate(var(--rot, 0deg)) !important;
+  box-shadow: 6px 7px 0 var(--shadow-ink);
 }
 
 .plugin-app-actions {

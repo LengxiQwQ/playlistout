@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
 import { copyToClipboard } from '../../utils/clipboard';
 import { Paper } from '../ui/Paper';
+import { Reveal } from '../motion/Reveal';
 
 const API_BASE_URL = 'https://playlistout-api.lengxiqwq.com';
 const REPOSITORY_DOC_BASE = 'https://github.com/LengxiQwQ/playlistout/blob/main';
@@ -89,66 +90,73 @@ export const DeveloperPanel: React.FC = () => {
         : t.developer.copyApi;
 
   return (
-    <Paper
-      as="section"
-      id="developers"
-      aria-labelledby="developers-title"
-      color="white"
-      borderVariant="default"
-      shadow="paper"
-      rotateDeg={-0.1}
-      interactive={false}
-      className="developer-panel"
-    >
-      <div className="developer-heading-row">
-        <div className="developer-heading-copy">
-          <h2 id="developers-title" className="font-marker developer-title">
-            {t.developer.title}
-          </h2>
-          <p className="font-handwriting developer-subtitle">{t.developer.subtitle}</p>
+    <Reveal effect="fade-up" delay={0} rot={-0.1}>
+      <Paper
+        as="section"
+        id="developers"
+        aria-labelledby="developers-title"
+        color="white"
+        borderVariant="default"
+        shadow="paper"
+        rotateDeg={0}
+        interactive={false}
+        className="developer-panel"
+      >
+        <div className="developer-heading-row">
+          <div className="developer-heading-copy">
+            <h2 id="developers-title" className="font-marker developer-title">
+              {t.developer.title}
+            </h2>
+            <p className="font-handwriting developer-subtitle">{t.developer.subtitle}</p>
+          </div>
+          <div className="developer-value-note font-handwriting">{t.developer.valueNote}</div>
         </div>
-        <div className="developer-value-note font-handwriting">{t.developer.valueNote}</div>
-      </div>
 
-      <div className="developer-method-grid">
-        {methods.map((method) => (
-          <article key={method.id} className={`developer-method developer-method-${method.id}`}>
-            <div className="developer-method-topline">
-              <span className="font-mono developer-method-mark" aria-hidden="true">
-                {method.mark}
-              </span>
-              <span className="developer-method-meta">{method.meta}</span>
-            </div>
+        <Reveal stagger effect="fade-up" delay={200} className="developer-method-grid">
+          {methods.map((method, idx) => (
+            <article
+              key={method.id}
+              data-reveal-item=""
+              className={`developer-method developer-method-${method.id}`}
+              style={{ ['--i' as any]: idx }}
+            >
+              <div className="developer-method-topline">
+                <span className="font-mono developer-method-mark" aria-hidden="true">
+                  {method.mark}
+                </span>
+                <span className="developer-method-meta">{method.meta}</span>
+              </div>
 
-            <h3 className="developer-method-title">{method.title}</h3>
-            <p className="developer-method-description">{method.description}</p>
+              <h3 className="developer-method-title">{method.title}</h3>
+              <p className="developer-method-description">{method.description}</p>
 
-            <div className="developer-method-actions">
-              <a
-                href={method.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="developer-method-link"
-              >
-                {method.action}
-              </a>
-
-              {method.id === 'api' ? (
-                <button
-                  type="button"
-                  onClick={handleCopyApi}
-                  className={`developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
-                  aria-label={copyLabel}
+              <div className="developer-method-actions">
+                <a
+                  href={method.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="developer-method-link"
                 >
-                  {copyLabel}
-                </button>
-              ) : null}
-            </div>
-          </article>
-        ))}
-      </div>
+                  {method.action}
+                </a>
 
-      <div className="developer-footer-note font-handwriting">{t.developer.footerNote}</div>
-    </Paper>
+                {method.id === 'api' ? (
+                  <button
+                    type="button"
+                    onClick={handleCopyApi}
+                    className={`developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
+                    aria-label={copyLabel}
+                  >
+                    {copyLabel}
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </Reveal>
+
+        <div className="developer-footer-note font-handwriting">{t.developer.footerNote}</div>
+      </Paper>
+    </Reveal>
   );
 };

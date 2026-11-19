@@ -15,6 +15,7 @@ import { Paper } from '../ui/Paper';
 import { Tape } from '../ui/Tape';
 import { Sticker } from '../ui/Sticker';
 import { MarkerButton } from '../ui/MarkerButton';
+import { Reveal } from '../motion/Reveal';
 
 const statusColor: Record<IntegrationStatus, 'yellow' | 'blue' | 'green'> = {
   available: 'green',
@@ -23,11 +24,14 @@ const statusColor: Record<IntegrationStatus, 'yellow' | 'blue' | 'green'> = {
   upcoming: 'yellow',
 };
 
+const cardColors = ['blue', 'mint', 'taro'] as const;
+
 export const PluginEcosystem: React.FC = () => {
   const { t, format, language } = useTranslation();
   const [available, setAvailable] = useState<PublishedPlugin[]>([]);
   const [copyState, setCopyState] = useState<Record<string, 'copied' | 'failed'>>({});
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
+  const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
   const resetTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -90,336 +94,429 @@ export const PluginEcosystem: React.FC = () => {
     }, 2600);
   };
 
+  const toggleSummary = (id: string) => {
+    setExpandedSummaries((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const supportedCardCount = available.length + FEATURED_UPCOMING_INTEGRATIONS.length;
+  const upcomingDelay = 500 + Math.min(supportedCardCount, 6) * 120 + 150;
 
   return (
-    <Paper
-      as="section"
-      id="ecosystem"
-      aria-labelledby="ecosystem-title"
-      color="white"
-      borderVariant="default"
-      shadow="paper"
-      rotateDeg={0.2}
-      interactive={false}
-      className="plugin-ecosystem-panel"
-    >
-      <Tape
-        color="taro"
-        rotateDeg={-3}
-        style={{
-          position: 'absolute',
-          top: '-0.8rem',
-          left: '2.2rem',
-          width: '7.5rem',
-          height: '1.65rem',
-          zIndex: 20,
-        }}
-      />
-      <div className="plugin-ecosystem-heading-row">
-        <div className="plugin-ecosystem-heading-copy">
-          <h2 id="ecosystem-title" className="font-marker plugin-ecosystem-title">
-            {t.ecosystem.title}
-          </h2>
-          <p className="font-handwriting plugin-ecosystem-subtitle">
-            {t.ecosystem.subtitle}
-          </p>
-        </div>
-
-        <div
-          className="plugin-supported-count"
-          aria-label={format(t.ecosystem.supportedCount, { count: supportedCardCount })}
+    <Reveal effect="stick" rot={-0.3} className="plugin-ecosystem-section-wrap">
+      <Paper
+        as="section"
+        id="ecosystem"
+        aria-labelledby="ecosystem-title"
+        color="white"
+        borderVariant="default"
+        shadow="paper"
+        rotateDeg={0}
+        interactive={false}
+        className="plugin-ecosystem-panel"
+      >
+        {/* Act 2 Deco 1: Taro washi tape */}
+        <Reveal
+          effect="tape"
+          delay={300}
+          rot={-3}
+          style={{
+            position: 'absolute',
+            top: '-0.8rem',
+            left: '2.2rem',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}
         >
-          <span className="font-marker plugin-supported-number">{supportedCardCount}</span>
-          <span className="font-handwriting plugin-supported-label">
-            {t.ecosystem.supportedShort}
-          </span>
+          <Tape
+            color="taro"
+            rotateDeg={0}
+            style={{
+              width: '7.5rem',
+              height: '1.65rem',
+            }}
+          />
+        </Reveal>
+
+        <div className="plugin-ecosystem-heading-row">
+          <Reveal effect="fade-up" delay={150} className="plugin-ecosystem-heading-copy">
+            <h2 id="ecosystem-title" className="font-marker plugin-ecosystem-title">
+              {t.ecosystem.title}
+            </h2>
+            <p className="font-handwriting plugin-ecosystem-subtitle">
+              {t.ecosystem.subtitle}
+            </p>
+          </Reveal>
+
+          {/* Act 2 Deco 2: Ticket stub stamp */}
+          <Reveal
+            effect="stamp"
+            delay={450}
+            rot={-4}
+            className="plugin-supported-count"
+            aria-label={format(t.ecosystem.supportedCount, { count: supportedCardCount })}
+          >
+            <span className="font-marker font-num plugin-supported-number">{supportedCardCount}</span>
+            <span className="font-handwriting plugin-supported-label">
+              {t.ecosystem.supportedShort}
+            </span>
+          </Reveal>
         </div>
-      </div>
 
-      <div className="plugin-app-grid">
-        {available.map((plugin) => (
-          <Paper
-            key={plugin.id}
-            color="blue"
-            borderVariant="alt"
-            shadow="paper-sm"
-            rotateDeg={-0.3}
-            tiltFactor={0.2}
-            interactive={false}
-            className="plugin-app-card"
-          >
-            <div className="plugin-app-row">
-              <div className="plugin-app-card-header">
-                <div className="plugin-app-card-identity">
-                  <div className="plugin-app-logo-wrap">
-                    {plugin.logoUrl && !logoFailed[plugin.id] ? (
-                      <img
-                        src={plugin.logoUrl}
-                        alt=""
-                        className="plugin-app-logo"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        onError={() =>
-                          setLogoFailed((prev) => ({ ...prev, [plugin.id]: true }))
-                        }
-                      />
-                    ) : (
-                      <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                        {plugin.name.slice(0, 2)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="plugin-app-card-title">
-                    <div className="plugin-app-name-row">
-                      <h3 className="plugin-app-name">{plugin.name}</h3>
-                      <div className="plugin-app-badges-row">
-                        <Sticker
-                          as="span"
-                          color="green"
-                          rotateDeg={0.7}
-                          className="font-handwriting plugin-status-sticker"
-                        >
-                          ✓ {t.ecosystem.statusAvailable}
-                        </Sticker>
-                        <Sticker
-                          as="span"
-                          color="cyan"
-                          rotateDeg={-0.5}
-                          className="font-handwriting plugin-status-sticker"
-                        >
-                          {t.ecosystem.kindPlugin}
-                        </Sticker>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="font-handwriting plugin-app-summary">
-                  {getPluginSummary(plugin, language)}
-                </p>
-              </div>
-
-              <div className="plugin-app-actions">
-                <div className="plugin-app-primary-buttons">
-                  {plugin.entrypoint ? (
-                    <MarkerButton
-                      type="button"
-                      variant="paper"
-                      rotateDeg={-0.3}
-                      onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
-                      className={`plugin-copy-button plugin-copy-button-secondary${
-                        copyState[plugin.id] === 'copied' ? ' is-copied' : ''
-                      }`}
-                    >
-                      {copyState[plugin.id] === 'copied'
-                        ? t.ecosystem.copiedInstallUrl
-                        : copyState[plugin.id] === 'failed'
-                          ? t.ecosystem.copyFailed
-                          : t.ecosystem.copyInstallUrl}
-                    </MarkerButton>
-                  ) : null}
-
-                  {plugin.homepageUrl ? (
-                    <a
-                      href={plugin.homepageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
-                      style={{ ['--rot' as any]: '0.3deg' }}
-                    >
-                      {t.ecosystem.officialDownload}
-                    </a>
-                  ) : null}
-                </div>
-
-                <div className="plugin-app-links">
-                  {plugin.repositoryUrl ? (
-                    <a
-                      href={plugin.repositoryUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
-                    >
-                      GitHub ↗
-                    </a>
-                  ) : null}
-
-                  {plugin.guideUrl ? (
-                    <a
-                      href={plugin.guideUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
-                    >
-                      {t.ecosystem.guideLink} ↗
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </Paper>
-        ))}
-
-        {FEATURED_UPCOMING_INTEGRATIONS.map((integration, idx) => (
-          <Paper
-            key={integration.id}
-            color={idx % 2 === 0 ? 'mint' : 'yellow'}
-            borderVariant="alt"
-            shadow="paper-sm"
-            rotateDeg={idx % 2 === 0 ? 0.25 : -0.25}
-            tiltFactor={0.2}
-            interactive={false}
-            className="plugin-app-card is-upcoming"
-          >
-            <div className="plugin-app-row">
-              <div className="plugin-app-card-header">
-                <div className="plugin-app-card-identity">
-                  <div className="plugin-app-logo-wrap">
-                    {integration.logoUrl && !logoFailed[integration.id] ? (
-                      <img
-                        src={integration.logoUrl}
-                        alt=""
-                        className="plugin-app-logo"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        onError={() =>
-                          setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
-                        }
-                      />
-                    ) : (
-                      <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
-                        {integration.name.slice(0, 2)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="plugin-app-card-title">
-                    <div className="plugin-app-name-row">
-                      <h3 className="plugin-app-name">{integration.name}</h3>
-                      <div className="plugin-app-badges-row">
-                        <Sticker
-                          as="span"
-                          color={integration.status === 'available' ? 'green' : 'yellow'}
-                          rotateDeg={-0.6}
-                          className="font-handwriting plugin-status-sticker"
-                        >
-                          {integration.status === 'available' ? '✓ ' : '⏳ '}
-                          {getStatusLabel(integration.status)}
-                        </Sticker>
-                        <Sticker
-                          as="span"
-                          color={
-                            integration.kind === 'import'
-                              ? 'blue'
-                              : integration.kind === 'builtin'
-                                ? 'purple'
-                                : 'cyan'
-                          }
-                          rotateDeg={0.5}
-                          className="font-handwriting plugin-status-sticker"
-                        >
-                          {integration.kind === 'builtin'
-                            ? t.ecosystem.kindBuiltin
-                            : integration.kind === 'import'
-                              ? t.ecosystem.kindImport
-                              : t.ecosystem.kindPlugin}
-                        </Sticker>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="font-handwriting plugin-app-summary">
-                  {getIntegrationSummary(integration, language)}
-                </p>
-              </div>
-
-              <div className="plugin-app-actions">
-                <div className="plugin-app-primary-buttons">
-                  {integration.homepageUrl ? (
-                    <a
-                      href={integration.homepageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
-                      style={{ ['--rot' as any]: '-0.3deg' }}
-                    >
-                      {t.ecosystem.officialDownload}
-                    </a>
-                  ) : null}
-                </div>
-
-                <div className="plugin-app-links">
-                  {integration.repositoryUrl ? (
-                    <a
-                      href={integration.repositoryUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
-                    >
-                      GitHub ↗
-                    </a>
-                  ) : null}
-
-                  {integration.prUrl || integration.issueUrl ? (
-                    <a
-                      href={integration.prUrl || integration.issueUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-handwriting plugin-app-link"
-                    >
-                      {integration.prUrl ? t.ecosystem.viewPrProgress : t.ecosystem.issueLink} ↗
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </Paper>
-        ))}
-      </div>
-
-      <div className="plugin-upcoming-strip">
-        <span className="font-marker plugin-upcoming-label">{t.ecosystem.nextTitle}</span>
-        <div className="plugin-upcoming-list">
-          {UPCOMING_INTEGRATIONS.map((integration, index) => {
-            const inner = (
-              <>
-                <span className="plugin-upcoming-name">{integration.name}</span>
-                <Sticker
-                  as="span"
-                  color={statusColor[integration.status]}
-                  rotateDeg={index % 2 === 0 ? -0.7 : 0.7}
-                  className="font-note plugin-upcoming-status"
-                >
-                  {getStatusLabel(integration.status)}
-                </Sticker>
-              </>
-            );
-
-            const linkTarget =
-              integration.prUrl || integration.issueUrl || integration.repositoryUrl;
-
-            return linkTarget ? (
-              <a
-                key={integration.id}
-                href={linkTarget}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="plugin-upcoming-chip"
+        <Reveal stagger delay={500} className="plugin-app-grid">
+          {available.map((plugin, idx) => {
+            const isExpanded = Boolean(expandedSummaries[plugin.id]);
+            return (
+              <div
+                key={plugin.id}
+                data-reveal-item=""
+                style={{ ['--i' as any]: Math.min(idx, 5), ['--rot' as any]: '-0.3deg' }}
               >
-                {inner}
-                <span aria-hidden="true">↗</span>
-              </a>
-            ) : (
-              <div key={integration.id} className="plugin-upcoming-chip is-planned">
-                {inner}
+                <Paper
+                  color={cardColors[idx % cardColors.length]}
+                  borderVariant="alt"
+                  shadow="paper-sm"
+                  rotateDeg={0}
+                  tiltFactor={0.2}
+                  interactive={false}
+                  className="plugin-app-card"
+                >
+                  <div className="plugin-app-row">
+                    <div className="plugin-app-card-header">
+                      <div className="plugin-app-card-identity">
+                        <div className="plugin-app-logo-wrap">
+                          {plugin.logoUrl && !logoFailed[plugin.id] ? (
+                            <img
+                              src={plugin.logoUrl}
+                              alt=""
+                              className="plugin-app-logo"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              onError={() =>
+                                setLogoFailed((prev) => ({ ...prev, [plugin.id]: true }))
+                              }
+                            />
+                          ) : (
+                            <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                              {plugin.name.slice(0, 2)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="plugin-app-card-title">
+                          <div className="plugin-app-name-row">
+                            <h3 className="plugin-app-name">{plugin.name}</h3>
+                            <div className="plugin-app-badges-row">
+                              <Sticker
+                                as="span"
+                                color="green"
+                                rotateDeg={0.7}
+                                className="font-handwriting plugin-status-sticker"
+                              >
+                                ✓ {t.ecosystem.statusAvailable}
+                              </Sticker>
+                              <Sticker
+                                as="span"
+                                color="cyan"
+                                rotateDeg={-0.5}
+                                className="font-handwriting plugin-status-sticker"
+                              >
+                                {t.ecosystem.kindPlugin}
+                              </Sticker>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className={`plugin-app-summary${isExpanded ? '' : ' is-clamped'}`}>
+                          {getPluginSummary(plugin, language)}
+                        </p>
+                        <button
+                          type="button"
+                          className="plugin-summary-toggle"
+                          aria-expanded={isExpanded}
+                          onClick={() => toggleSummary(plugin.id)}
+                        >
+                          {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="plugin-app-actions">
+                      <div className="plugin-app-primary-buttons">
+                        {plugin.entrypoint ? (
+                          <MarkerButton
+                            type="button"
+                            variant="paper"
+                            rotateDeg={-0.3}
+                            onClick={() => handleCopyPluginUrl(plugin.id, plugin.entrypoint!)}
+                            className={`plugin-copy-button plugin-copy-button-secondary${
+                              copyState[plugin.id] === 'copied' ? ' is-copied' : ''
+                            }`}
+                          >
+                            {copyState[plugin.id] === 'copied'
+                              ? t.ecosystem.copiedInstallUrl
+                              : copyState[plugin.id] === 'failed'
+                                ? t.ecosystem.copyFailed
+                                : t.ecosystem.copyInstallUrl}
+                          </MarkerButton>
+                        ) : null}
+
+                        {plugin.homepageUrl ? (
+                          <a
+                            href={plugin.homepageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                            style={{ ['--rot' as any]: '0.3deg' }}
+                          >
+                            {t.ecosystem.officialDownload}
+                          </a>
+                        ) : null}
+                      </div>
+
+                      <div className="plugin-app-links">
+                        {plugin.repositoryUrl ? (
+                          <a
+                            href={plugin.repositoryUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-handwriting plugin-app-link"
+                          >
+                            GitHub ↗
+                          </a>
+                        ) : null}
+
+                        {plugin.guideUrl ? (
+                          <a
+                            href={plugin.guideUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-handwriting plugin-app-link"
+                          >
+                            {t.ecosystem.guideLink} ↗
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </Paper>
               </div>
             );
           })}
-        </div>
-      </div>
-    </Paper>
+
+          {FEATURED_UPCOMING_INTEGRATIONS.map((integration, idx) => {
+            const cardIdx = available.length + idx;
+            const rotDeg = idx % 2 === 0 ? 0.25 : -0.25;
+            const isExpanded = Boolean(expandedSummaries[integration.id]);
+            return (
+              <div
+                key={integration.id}
+                data-reveal-item=""
+                style={{ ['--i' as any]: Math.min(cardIdx, 5), ['--rot' as any]: `${rotDeg}deg` }}
+              >
+                <Paper
+                  color={cardColors[cardIdx % cardColors.length]}
+                  borderVariant="alt"
+                  shadow="paper-sm"
+                  rotateDeg={0}
+                  tiltFactor={0.2}
+                  interactive={false}
+                  className="plugin-app-card is-upcoming"
+                >
+                  <div className="plugin-app-row">
+                    <div className="plugin-app-card-header">
+                      <div className="plugin-app-card-identity">
+                        <div className="plugin-app-logo-wrap">
+                          {integration.logoUrl && !logoFailed[integration.id] ? (
+                            <img
+                              src={integration.logoUrl}
+                              alt=""
+                              className="plugin-app-logo"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              onError={() =>
+                                setLogoFailed((prev) => ({ ...prev, [integration.id]: true }))
+                              }
+                            />
+                          ) : (
+                            <span className="font-marker plugin-app-logo-fallback" aria-hidden="true">
+                              {integration.name.slice(0, 2)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="plugin-app-card-title">
+                          <div className="plugin-app-name-row">
+                            <h3 className="plugin-app-name">{integration.name}</h3>
+                            <div className="plugin-app-badges-row">
+                              <Sticker
+                                as="span"
+                                color={integration.status === 'available' ? 'green' : 'yellow'}
+                                rotateDeg={-0.6}
+                                className="font-handwriting plugin-status-sticker"
+                              >
+                                {integration.status === 'available' ? '✓ ' : '⏳ '}
+                                {getStatusLabel(integration.status)}
+                              </Sticker>
+                              <Sticker
+                                as="span"
+                                color={
+                                  integration.kind === 'import'
+                                    ? 'blue'
+                                    : integration.kind === 'builtin'
+                                      ? 'purple'
+                                      : 'cyan'
+                                }
+                                rotateDeg={0.5}
+                                className="font-handwriting plugin-status-sticker"
+                              >
+                                {integration.kind === 'builtin'
+                                  ? t.ecosystem.kindBuiltin
+                                  : integration.kind === 'import'
+                                    ? t.ecosystem.kindImport
+                                    : t.ecosystem.kindPlugin}
+                              </Sticker>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className={`plugin-app-summary${isExpanded ? '' : ' is-clamped'}`}>
+                          {getIntegrationSummary(integration, language)}
+                        </p>
+                        <button
+                          type="button"
+                          className="plugin-summary-toggle"
+                          aria-expanded={isExpanded}
+                          onClick={() => toggleSummary(integration.id)}
+                        >
+                          {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="plugin-app-actions">
+                      <div className="plugin-app-primary-buttons">
+                        {integration.homepageUrl ? (
+                          <a
+                            href={integration.homepageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                            style={{ ['--rot' as any]: '-0.3deg' }}
+                          >
+                            {t.ecosystem.officialDownload}
+                          </a>
+                        ) : null}
+                      </div>
+
+                      <div className="plugin-app-links">
+                        {integration.repositoryUrl ? (
+                          <a
+                            href={integration.repositoryUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-handwriting plugin-app-link"
+                          >
+                            GitHub ↗
+                          </a>
+                        ) : null}
+
+                        {integration.prUrl || integration.issueUrl ? (
+                          <a
+                            href={integration.prUrl || integration.issueUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-handwriting plugin-app-link"
+                          >
+                            {integration.prUrl ? t.ecosystem.viewPrProgress : t.ecosystem.issueLink} ↗
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </Paper>
+              </div>
+            );
+          })}
+        </Reveal>
+
+        <Reveal effect="fade-up" delay={upcomingDelay} className="plugin-upcoming-strip">
+          <span className="font-marker plugin-upcoming-label">{t.ecosystem.nextTitle}</span>
+          <div className="plugin-upcoming-list">
+            {UPCOMING_INTEGRATIONS.map((integration, index) => {
+              const inner = (
+                <>
+                  <span className="plugin-upcoming-name">{integration.name}</span>
+                  <Sticker
+                    as="span"
+                    color={statusColor[integration.status]}
+                    rotateDeg={index % 2 === 0 ? -0.7 : 0.7}
+                    className="font-note plugin-upcoming-status"
+                  >
+                    {getStatusLabel(integration.status)}
+                  </Sticker>
+                </>
+              );
+
+              const linkTarget =
+                integration.prUrl || integration.issueUrl || integration.repositoryUrl;
+
+              return linkTarget ? (
+                <a
+                  key={integration.id}
+                  href={linkTarget}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="plugin-upcoming-chip"
+                >
+                  {inner}
+                  <span aria-hidden="true">↗</span>
+                </a>
+              ) : (
+                <div key={integration.id} className="plugin-upcoming-chip is-planned">
+                  {inner}
+                </div>
+              );
+            })}
+          </div>
+        </Reveal>
+
+        {/* Act 2 Deco 3: Right-side musical note sticker */}
+        <Reveal
+          effect="pop"
+          delay={upcomingDelay}
+          rot={10}
+          data-deco-mobile="hide"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            right: '-1.35rem',
+            bottom: '1.1rem',
+            pointerEvents: 'none',
+            zIndex: 15,
+          }}
+        >
+          <div
+            className="stationery-sticker delay-2"
+            style={{
+              ['--sticker-rot' as any]: '10deg',
+              fontSize: '2rem',
+              color: 'var(--accent-taro, #9a7fd8)',
+              background: 'var(--paper-white, #fffdf8)',
+              border: '1.5px solid var(--ink-line)',
+              borderRadius: '12px',
+              padding: '0.2rem 0.55rem',
+              boxShadow: '2px 3px 0 var(--shadow-ink)',
+              lineHeight: 1.1,
+            }}
+          >
+            ♬
+          </div>
+        </Reveal>
+      </Paper>
+    </Reveal>
   );
 };

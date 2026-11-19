@@ -300,7 +300,7 @@
   .stats-trend-chart {
     width: 100%;
     min-width: 0;
-    gap: 0.18rem !important;
+    gap: clamp(1.5px, 0.4vw, 3px) !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
@@ -311,6 +311,15 @@
 
   .stats-trend-date {
     display: none;
+  }
+
+  .stats-trend-axis {
+    margin-top: 0.45rem;
+  }
+
+  .stats-trend-axis-start,
+  .stats-trend-axis-end {
+    font-size: 0.72rem;
   }
 
   .stats-trend-mobile-axis {

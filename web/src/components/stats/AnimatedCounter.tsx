@@ -1,19 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export interface AnimatedCounterProps {
   value: number;
+  start?: boolean;
 }
 
-export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value }) => {
-  const [displayValue, setDisplayValue] = useState(value);
+export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, start = true }) => {
+  const isTestMode = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const effectiveStart = isTestMode || prefersReducedMotion || start;
+
+  const [displayValue, setDisplayValue] = useState(() => (effectiveStart ? value : 0));
+  const latestDisplayRef = useRef(displayValue);
+  latestDisplayRef.current = displayValue;
 
   useEffect(() => {
-    if (typeof window === 'undefined' || (import.meta as any).env?.MODE === 'test') {
+    if (typeof window === 'undefined' || isTestMode || prefersReducedMotion) {
       setDisplayValue(value);
       return;
     }
+    if (!effectiveStart) {
+      setDisplayValue(0);
+      return;
+    }
     let startTimestamp: number | null = null;
-    const startVal = displayValue;
+    const startVal = latestDisplayRef.current;
     const duration = 750;
 
     let frameId: number;
@@ -28,7 +41,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value }) => {
     };
     frameId = window.requestAnimationFrame(step);
     return () => window.cancelAnimationFrame(frameId);
-  }, [value]);
+  }, [value, effectiveStart, isTestMode, prefersReducedMotion]);
 
   return <>{displayValue.toLocaleString()}</>;
 };

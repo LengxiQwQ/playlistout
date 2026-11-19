@@ -75,20 +75,17 @@ export const SponsorButton: React.FC = () => {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={t.footer.sponsorAriaLabel}
-        className={`sticker font-handwriting footer-pill-link ${isOpen ? 'is-active' : ''}`}
+        className={`sticker font-handwriting footer-pill-link footer-pill-strawberry ${isOpen ? 'is-active' : ''}`}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.35rem',
-          backgroundColor: isOpen ? 'var(--highlight-yellow, #ffeaa7)' : '#ffffff',
           padding: '0.35rem 0.85rem',
           fontSize: '1.05rem',
           fontWeight: 600,
           color: 'var(--ink, #5a4a42)',
-          borderRadius: '6px',
           cursor: 'pointer',
           lineHeight: 1.2,
-          transition: 'all 0.15s ease',
         }}
       >
         <HeartIcon size={14} color="#e8678a" />

@@ -3,6 +3,7 @@ import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Tape } from '../ui/Tape';
 import { Sticker } from '../ui/Sticker';
+import { Reveal } from '../motion/Reveal';
 
 export interface InfoNotesProps {
   onOpenPrivacy?: () => void;
@@ -10,95 +11,166 @@ export interface InfoNotesProps {
 
 export const InfoNotes: React.FC<InfoNotesProps> = () => {
   const { t } = useTranslation();
+  const isWhyLong = t.infoNotes.whyContent.length > 40;
+  const isNoteLong = t.infoNotes.noteContent.length > 40;
 
   return (
-    <section
-      className="info-notes-section"
-      style={{
-        maxWidth: 'var(--result-paper-width, 1180px)',
-        margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '2.5rem',
-        alignItems: 'start',
-        position: 'relative',
-        paddingBottom: '2.5rem',
-      }}
-    >
-      {/* Note 1: Why this exists */}
-      <Paper
-        color="yellow"
-        borderVariant="default"
-        rotateDeg={-1}
-        shadow="paper"
-        style={{ padding: '2rem 1.75rem', position: 'relative' }}
-      >
-        <Tape
-          color="cyan"
-          rotateDeg={-4}
-          style={{ position: 'absolute', top: '-0.75rem', left: '2rem', width: '5.5rem', height: '1.45rem', zIndex: 20 }}
-        />
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
-          {t.infoNotes.whyTitle}
-        </div>
-        <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
-          {t.infoNotes.whyContent}
-        </p>
-        <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: '#8a7569' }}>
-          {t.infoNotes.whySubtext}
-        </div>
-      </Paper>
+    <section className="info-notes-section">
+      <div className="info-notes-grid">
+        {/* Note 1: Why this exists (Lemon, rot -2deg, toss-left) */}
+        <Reveal effect="toss-left" delay={0} rot={-2}>
+          <Paper
+            color="yellow"
+            borderVariant="default"
+            rotateDeg={0}
+            shadow="paper"
+            style={{ padding: '2rem 1.75rem', position: 'relative' }}
+          >
+            <Reveal
+              effect="tape"
+              delay={450}
+              rot={-4}
+              style={{ position: 'absolute', top: '-0.75rem', left: '2rem', zIndex: 20, pointerEvents: 'none' }}
+            >
+              <Tape
+                color="cyan"
+                rotateDeg={0}
+                style={{ width: '5.5rem', height: '1.45rem' }}
+              />
+            </Reveal>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+              {t.infoNotes.whyTitle}
+            </div>
+            <p
+              className={isWhyLong ? undefined : 'ruled-paper-text font-handwriting'}
+              style={
+                isWhyLong
+                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--ink, #5a4a42)', margin: 0 }
+                  : { fontSize: '1.3rem' }
+              }
+            >
+              {t.infoNotes.whyContent}
+            </p>
+            <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: 'var(--ink-light, #8a7569)' }}>
+              {t.infoNotes.whySubtext}
+            </div>
+          </Paper>
+        </Reveal>
 
-      {/* Note 2: What you get */}
-      <Paper
-        color="pink"
-        borderVariant="default"
-        rotateDeg={1}
-        shadow="paper"
-        style={{ padding: '2rem 1.75rem', position: 'relative' }}
-      >
-        <Tape
-          color="pink"
-          rotateDeg={5}
-          style={{ position: 'absolute', top: '-0.75rem', right: '2rem', width: '6rem', height: '1.5rem', zIndex: 20 }}
-        />
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
-          {t.infoNotes.whatTitle}
-        </div>
-        <div className="ruled-paper-list font-handwriting" style={{ fontSize: '1.25rem' }}>
-          <div>{t.infoNotes.whatItem1}</div>
-          <div>{t.infoNotes.whatItem2}</div>
-          <div>{t.infoNotes.whatItem3}</div>
-          <div>{t.infoNotes.whatItem4}</div>
-        </div>
-      </Paper>
+        {/* Note 2: What you get (Strawberry, rot 1.5deg, stick) */}
+        <Reveal effect="stick" delay={180} rot={1.5}>
+          <Paper
+            color="pink"
+            borderVariant="default"
+            rotateDeg={0}
+            shadow="paper"
+            style={{ padding: '2rem 1.75rem', position: 'relative' }}
+          >
+            <Reveal
+              effect="tape"
+              delay={630}
+              rot={5}
+              style={{ position: 'absolute', top: '-0.75rem', right: '2rem', zIndex: 20, pointerEvents: 'none' }}
+            >
+              <Tape
+                color="pink"
+                rotateDeg={0}
+                style={{ width: '6rem', height: '1.5rem' }}
+              />
+            </Reveal>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+              {t.infoNotes.whatTitle}
+            </div>
+            <div className="ruled-paper-list font-handwriting" style={{ fontSize: '1.25rem' }}>
+              <div>{t.infoNotes.whatItem1}</div>
+              <div>{t.infoNotes.whatItem2}</div>
+              <div>{t.infoNotes.whatItem3}</div>
+              <div>{t.infoNotes.whatItem4}</div>
+            </div>
+          </Paper>
+        </Reveal>
 
-      {/* Note 3: Little note */}
-      <Paper
-        color="mint"
-        borderVariant="default"
-        rotateDeg={-0.5}
-        shadow="paper"
-        style={{ padding: '2rem 1.75rem', position: 'relative' }}
-      >
-        <Tape
-          color="yellow"
-          rotateDeg={-3}
-          style={{ position: 'absolute', top: '-0.75rem', left: '50%', transform: 'translateX(-50%) rotate(-3deg)', width: '5.8rem', height: '1.45rem', zIndex: 20 }}
-        />
-        <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
-          {t.infoNotes.noteTitle}
-        </div>
-        <p className="ruled-paper-text font-handwriting" style={{ fontSize: '1.3rem' }}>
-          {t.infoNotes.noteContent}
-        </p>
-        <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: '#8a7569' }}>
-          {t.infoNotes.noteSubtext}
-        </div>
-      </Paper>
+        {/* Note 3: Little note (Mint, rot -1deg, toss-right) */}
+        <Reveal effect="toss-right" delay={360} rot={-1}>
+          <Paper
+            color="mint"
+            borderVariant="default"
+            rotateDeg={0}
+            shadow="paper"
+            style={{ padding: '2rem 1.75rem', position: 'relative' }}
+          >
+            <Reveal
+              effect="tape"
+              delay={810}
+              rot={-3}
+              style={{
+                position: 'absolute',
+                top: '-0.75rem',
+                left: '50%',
+                marginLeft: '-2.9rem',
+                zIndex: 20,
+                pointerEvents: 'none',
+              }}
+            >
+              <Tape
+                color="yellow"
+                rotateDeg={0}
+                style={{ width: '5.8rem', height: '1.45rem' }}
+              />
+            </Reveal>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+              {t.infoNotes.noteTitle}
+            </div>
+            <p
+              className={isNoteLong ? undefined : 'ruled-paper-text font-handwriting'}
+              style={
+                isNoteLong
+                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--ink, #5a4a42)', margin: 0 }
+                  : { fontSize: '1.3rem' }
+              }
+            >
+              {t.infoNotes.noteContent}
+            </p>
+            <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: 'var(--ink-light, #8a7569)' }}>
+              {t.infoNotes.noteSubtext}
+            </div>
+          </Paper>
+        </Reveal>
+      </div>
 
-      {/* Independent decoration inside the InfoNotes content width. */}
-      <div
+      {/* Act 3 Deco 4: Sakura blossom sticker (migrated from BackgroundDecorations) */}
+      <Reveal
+        effect="pop"
+        delay={900}
+        rot={-8}
+        data-deco-mobile="hide"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '0.25rem',
+          bottom: '0.45rem',
+          pointerEvents: 'none',
+          zIndex: 2,
+        }}
+      >
+        <div
+          className="stationery-sticker delay-1"
+          style={{
+            ['--sticker-rot' as any]: '-8deg',
+            fontSize: '2.1rem',
+            color: 'var(--accent-strawberry, #e8789a)',
+            opacity: 0.85,
+          }}
+        >
+          ✿
+        </div>
+      </Reveal>
+
+      {/* Act 3 Deco 5: Favorited sticker */}
+      <Reveal
+        effect="pop"
+        delay={1050}
+        rot={6}
         className="info-notes-favorited"
         aria-hidden="true"
         style={{
@@ -112,7 +184,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
         <Sticker
           as="div"
           color="pink"
-          rotateDeg={8}
+          rotateDeg={0}
           style={{
             opacity: 0.88,
             fontSize: '0.9rem',
@@ -122,7 +194,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
         >
           ♥ favorited
         </Sticker>
-      </div>
+      </Reveal>
     </section>
   );
 };

@@ -85,21 +85,22 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
           position: 'relative',
         }}
       >
-        {/* Decorative doodle on top right */}
+        {/* Decorative 4-pointed star on top right (Act 1: 1 decoration) */}
         <div
-          className="result-doodle"
+          className="result-doodle result-star-reveal"
           style={{
             position: 'absolute',
             right: '1rem',
             top: '-2rem',
-            color: '#b8a79c',
-            fontSize: '3rem',
+            color: '#e3b23c',
+            fontSize: '2.5rem',
             userSelect: 'none',
             zIndex: 15,
+            ['--rot' as any]: '12deg',
           }}
           aria-hidden="true"
         >
-          ⌇
+          ✦
         </div>
 
         {/* Decorative green washi tape — pinned to the paper edge, clear of the cover art */}
@@ -116,9 +117,11 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
           <Tape
             color="green"
             rotateDeg={-5}
+            className="result-tape-reveal"
             style={{
               width: '6.5rem',
               height: '1.55rem',
+              ['--rot' as any]: '-5deg',
             }}
           />
         </div>
@@ -197,7 +200,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
               isSwitchingChannel={isReloading}
               onViewAllUserPlaylists={onViewAllUserPlaylists}
             />
-            <TrackTable tracks={playlist.tracks} />
+            <TrackTable key={playlist.id} tracks={playlist.tracks} />
           </div>
           <ExportToolbar playlist={playlist} />
         </Paper>

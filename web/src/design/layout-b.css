@@ -1,0 +1,1305 @@
+/* ==========================================================================
+ * LAYOUT B · 甜品剪贴墙 (Pastel Linen Pinboard & Bento Scrapbook Edition)
+ * Completely distinct visual & motion language from Layout A:
+ * - Warm Japanese Graph-Grid desk + Woven Linen-Cork Pinboard Mat
+ * - Glossy Enamel Pushpins + Rose-Gold Top Binder Clip on Search Sheet
+ * - Pendulum Pin-Swing hover physics (pivoting from top pushpin/clip!)
+ * - Peeking Vinyl Discs sliding out of Player Album Sleeves on hover
+ * - Corner-Taped Graph Slip, Torn-Bottom Memo Sheet, Spiral-Ring Dev Pad
+ * - 100% silky bi-directional transitions via individual translate/rotate/scale
+ * ========================================================================== */
+
+/* ---------------- 1. Layout B Texture & Physics Tokens ---------------- */
+[data-layout-demo='b'] {
+  --search-note-width: 780px;
+
+  /* Fine matte cotton paper fiber (zero-filter, 60fps) */
+  --b-paper-fiber: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%2399735d' stroke-linecap='round'%3E%3Cpath d='M10 14l5 2M46 12l-4 3M80 20l5-1M22 50l5-2M64 46l4 3M82 70l-5 2M14 80l5 1M52 76l3-4' stroke-width='0.8' opacity='0.14'/%3E%3C/g%3E%3Cg fill='%238a6652'%3E%3Ccircle cx='12' cy='36' r='0.8' opacity='0.14'/%3E%3Ccircle cx='38' cy='24' r='0.7' opacity='0.12'/%3E%3Ccircle cx='72' cy='16' r='0.8' opacity='0.14'/%3E%3Ccircle cx='86' cy='46' r='0.7' opacity='0.13'/%3E%3Ccircle cx='50' cy='64' r='0.8' opacity='0.14'/%3E%3Ccircle cx='26' cy='74' r='0.7' opacity='0.14'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Soft wafer-thin pinned-paper shadow (light paper pinned to linen board) */
+  --b-pin-shadow:
+    0 1px 2px rgba(132, 96, 78, 0.12),
+    0 6px 18px -6px rgba(132, 96, 78, 0.16);
+  --b-pin-shadow-hover:
+    0 2px 4px rgba(132, 96, 78, 0.14),
+    0 16px 32px -10px rgba(132, 96, 78, 0.24);
+
+  --b-spring: 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --b-smooth: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Remove legacy binder spine & floating dots in Layout B */
+[data-layout-demo='b'] .binder-holes,
+[data-layout-demo='b'] .journal-margin-line,
+[data-layout-demo='b'] .background-decorations {
+  display: none !important;
+}
+
+/* Japanese Fine Graph-Grid Stationery Desk (distinct from Layout A's dot-grid!) */
+[data-layout-demo='b'] body {
+  background-color: #fbf4ea !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(to right, rgba(206, 174, 152, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(206, 174, 152, 0.22) 1px, transparent 1px) !important;
+  background-size: 96px 96px, 256px 256px, 26px 26px, 26px 26px !important;
+  background-position: 0 0, 0 0, 0 0, 0 0 !important;
+}
+
+[data-layout-demo='b'] body::before {
+  background:
+    radial-gradient(40rem 28rem at 12% 6%, rgba(255, 224, 192, 0.45), transparent 68%),
+    radial-gradient(38rem 26rem at 90% 10%, rgba(255, 206, 224, 0.42), transparent 68%),
+    radial-gradient(42rem 30rem at 86% 86%, rgba(196, 238, 222, 0.42), transparent 68%),
+    radial-gradient(36rem 28rem at 10% 82%, rgba(226, 214, 255, 0.38), transparent 68%) !important;
+}
+
+[data-layout-demo='b'] .journal-container {
+  max-width: 1340px !important;
+  padding-left: clamp(1rem, 2.8vw, 2rem) !important;
+  padding-right: clamp(1rem, 2.8vw, 2rem) !important;
+}
+
+/* Strip legacy wobbly comic borders & flat shadows cleanly */
+[data-layout-demo='b'] .hand-drawn-border,
+[data-layout-demo='b'] .hand-drawn-border-alt,
+[data-layout-demo='b'] .hand-drawn-border-subtle {
+  border-radius: 16px !important;
+  border: 1.5px solid rgba(204, 172, 152, 0.48) !important;
+}
+
+[data-layout-demo='b'] .paper-shadow,
+[data-layout-demo='b'] .paper-shadow-sm,
+[data-layout-demo='b'] .shadow-cutout,
+[data-layout-demo='b'] .shadow-cutout-sm {
+  box-shadow: var(--b-pin-shadow) !important;
+}
+
+/* Hide legacy sticky tapes (Layout B uses custom binder clips, pushpins & corner tapes) */
+[data-layout-demo='b'] .tape,
+[data-layout-demo='b'] .tape-top-left,
+[data-layout-demo='b'] .tape-bottom-right {
+  display: none !important;
+}
+
+/* Neutralize legacy :hover transform snaps so ONLY silky translate/rotate/scale run */
+[data-layout-demo='b'] .journal-paper.is-interactive,
+[data-layout-demo='b'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='b'] .sticky-note-card,
+[data-layout-demo='b'] .sticky-note-card.is-tracking,
+[data-layout-demo='b'] .plugin-app-card,
+[data-layout-demo='b'] .plugin-app-card:hover,
+[data-layout-demo='b'] .developer-method,
+[data-layout-demo='b'] .developer-method:hover,
+[data-layout-demo='b'] .header-desktop-btn,
+[data-layout-demo='b'] .header-desktop-btn:hover,
+[data-layout-demo='b'] .header-github-btn,
+[data-layout-demo='b'] .header-github-btn:hover,
+[data-layout-demo='b'] .search-platforms-row .sticker,
+[data-layout-demo='b'] .search-platforms-row .sticker:hover,
+[data-layout-demo='b'] .search-sample-row .sticker,
+[data-layout-demo='b'] .search-sample-row .sticker:hover,
+[data-layout-demo='b'] .journal-footer .sticker,
+[data-layout-demo='b'] .journal-footer .sticker:hover {
+  transform: rotate(var(--rot, 0deg)) !important;
+}
+
+[data-layout-demo='b'] .journal-paper.is-interactive,
+[data-layout-demo='b'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='b'] .sticky-note-card,
+[data-layout-demo='b'] .sticky-note-card.is-tracking {
+  transition:
+    translate var(--b-spring),
+    rotate var(--b-spring),
+    scale var(--b-spring),
+    box-shadow var(--b-smooth),
+    border-color var(--b-smooth) !important;
+}
+
+/* ---------------- 2. Keyframes & Universal Silky Title Hover ---------------- */
+@keyframes layoutBEntrance {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.98); }
+  65%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+[data-layout-demo='b'] .journal-hero-title,
+[data-layout-demo='b'] .plugin-ecosystem-title,
+[data-layout-demo='b'] .stats-journal-title,
+[data-layout-demo='b'] .developer-title,
+[data-layout-demo='b'] .info-notes-section .font-marker,
+[data-layout-demo='b'] .header-brand-title,
+[data-layout-demo='b'] .layout-b-board-title {
+  display: inline-block;
+  cursor: default;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--b-spring),
+    rotate var(--b-spring),
+    scale var(--b-spring),
+    color 220ms ease;
+}
+
+[data-layout-demo='b'] .scribble-line::after {
+  transition: transform var(--b-spring), filter 260ms ease;
+}
+
+[data-layout-demo='b'] .journal-hero-title:hover {
+  translate: 0 -4px;
+  rotate: 0.7deg;
+  scale: 1.02;
+}
+
+[data-layout-demo='b'] .journal-hero-title:hover .scribble-line::after {
+  transform: scaleX(1.06) scaleY(1.22);
+  filter: saturate(1.22);
+}
+
+[data-layout-demo='b'] .plugin-ecosystem-title:hover,
+[data-layout-demo='b'] .stats-journal-title:hover,
+[data-layout-demo='b'] .developer-title:hover,
+[data-layout-demo='b'] .layout-b-board-title:hover {
+  translate: 0 -3px;
+  rotate: -0.9deg;
+  color: #c25478 !important;
+}
+
+[data-layout-demo='b'] .info-notes-section .font-marker:hover {
+  translate: 4px 0;
+  color: #c25478 !important;
+}
+
+/* ---------------- 3. Sticky Stationery Bookmark-Ribbon Header ---------------- */
+[data-layout-demo='b'] .journal-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 120 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem !important;
+  padding: 0.7rem 0.75rem 0.85rem !important;
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+  border-bottom: 2px dashed rgba(206, 170, 148, 0.55);
+  border-radius: 0 0 18px 18px;
+  background: rgba(251, 244, 234, 0.94);
+  backdrop-filter: blur(10px);
+  animation: none !important;
+}
+
+[data-layout-demo='b'] .header-logo-img {
+  border-radius: 12px;
+  rotate: -3deg;
+  scale: 1;
+  box-shadow: 0 3px 10px -3px rgba(132, 96, 78, 0.24);
+  transition: rotate var(--b-spring), scale var(--b-spring);
+}
+
+[data-layout-demo='b'] .header-brand-container:hover .header-logo-img {
+  rotate: 8deg;
+  scale: 1.1;
+}
+
+[data-layout-demo='b'] .header-brand-container:hover .header-brand-title {
+  translate: 3px 0;
+  color: #c25478;
+}
+
+/* Hanging Bookmark-Tab Buttons in Header */
+[data-layout-demo='b'] .header-desktop-btn,
+[data-layout-demo='b'] .header-github-btn,
+[data-layout-demo='b'] .header-actions button:not(.style-option),
+[data-layout-demo='b'] .header-actions .sticker {
+  border-radius: 6px 6px 14px 14px !important;
+  border: 1.5px solid rgba(196, 160, 140, 0.45) !important;
+  border-top: 3px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 4px 10px -4px rgba(132, 96, 78, 0.18) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition:
+    translate var(--b-spring),
+    rotate var(--b-spring),
+    box-shadow var(--b-smooth) !important;
+}
+
+[data-layout-demo='b'] .header-desktop-btn {
+  background: linear-gradient(180deg, #ffe8ef 0%, #ffd8e5 100%) !important;
+  color: #ad4366 !important;
+}
+
+[data-layout-demo='b'] .header-github-btn {
+  background: linear-gradient(180deg, #e5f8f0 0%, #d2f1e5 100%) !important;
+  color: #2e755a !important;
+}
+
+[data-layout-demo='b'] .header-desktop-btn:hover,
+[data-layout-demo='b'] .header-github-btn:hover,
+[data-layout-demo='b'] .header-actions button:not(.style-option):hover {
+  translate: 0 3px;
+  rotate: -1deg;
+  box-shadow: 0 8px 16px -6px rgba(132, 96, 78, 0.28) !important;
+}
+
+/* ---------------- 4. Act 0: Washi Eyebrow + Binder-Clipped Graph Search Sheet ---------------- */
+.layout-b-hero-wrap {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+[data-layout-demo='b'] .journal-hero {
+  padding-bottom: 1.85rem !important;
+  animation: layoutBEntrance 520ms var(--ease-bouncy) 60ms both;
+}
+
+[data-layout-demo='b'] .journal-hero-title {
+  line-height: 1.32 !important;
+}
+
+/* Translucent striped masking-tape eyebrow strip */
+[data-layout-demo='b'] .hero-doodle-right {
+  position: static !important;
+  display: flex !important;
+  width: fit-content;
+  margin: 0 auto 0.75rem auto !important;
+  padding: 0.25rem 1.25rem;
+  font-size: 0.98rem !important;
+  color: #8f6046 !important;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 224, 150, 0.55) 0 8px,
+      rgba(255, 240, 198, 0.72) 8px 16px
+    );
+  border: 1px dashed rgba(214, 168, 92, 0.52);
+  border-radius: 4px;
+  box-shadow: 0 3px 10px -4px rgba(168, 128, 76, 0.22);
+  animation: none !important;
+  rotate: -1.4deg;
+  scale: 1;
+  transition: rotate var(--b-spring), scale var(--b-spring);
+  cursor: default;
+}
+
+[data-layout-demo='b'] .hero-doodle-right:hover {
+  rotate: 1.4deg;
+  scale: 1.05;
+}
+
+[data-layout-demo='b'] .hero-doodle-mobile {
+  display: none !important;
+}
+
+/* Binder-clipped Search Sheet container */
+.layout-b-search-clipped {
+  position: relative;
+  padding-top: 1.1rem;
+  animation: layoutBEntrance 580ms var(--ease-bouncy) 120ms both;
+}
+
+.layout-b-binder-clip {
+  position: absolute;
+  top: 0.12rem;
+  left: 50%;
+  margin-left: -38px;
+  z-index: 25;
+  pointer-events: none;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring);
+}
+
+.layout-b-search-clipped:hover .layout-b-binder-clip {
+  translate: 0 -3px;
+  rotate: -2deg;
+}
+
+/* Graph-paper Butter-Milk Search Sheet (pivots gently from top binder clip on hover!) */
+[data-layout-demo='b'] .search-note-section {
+  max-width: 780px !important;
+}
+
+[data-layout-demo='b'] .search-note-section .sticky-note-card {
+  --rot: 0deg;
+  background-color: #fffdf6 !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(to right, rgba(226, 196, 160, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 196, 160, 0.18) 1px, transparent 1px) !important;
+  background-size: 96px 96px, 240px 240px, 20px 20px, 20px 20px !important;
+  border-radius: 18px !important;
+  border: 1.5px solid rgba(218, 186, 152, 0.62) !important;
+  box-shadow: var(--b-pin-shadow) !important;
+  padding: 2.25rem 2.1rem 1.85rem !important;
+  transform-origin: 50% 0%;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Keep wide Search Sheet level on hover (no crooked big sheet — only subtle lift & binder clip bounce) */
+.layout-b-search-clipped:hover .sticky-note-card {
+  translate: 0 -2px;
+  rotate: 0deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .search-note-section .brand-badge.sticker {
+  border-radius: 6px !important;
+  border: 1px dashed rgba(154, 127, 216, 0.48) !important;
+  box-shadow: none !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring) !important;
+}
+
+[data-layout-demo='b'] .search-note-section .brand-badge.sticker:hover {
+  translate: 0 -2px;
+  rotate: 2deg;
+}
+
+/* Crisp recessed white card-slot input */
+[data-layout-demo='b'] .search-input-wrapper {
+  min-width: 0;
+}
+
+[data-layout-demo='b'] .search-input-wrapper .paper-input-container {
+  border-radius: 14px !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid rgba(212, 178, 154, 0.58) !important;
+  box-shadow: inset 0 2px 6px rgba(142, 102, 84, 0.07) !important;
+  padding: 0.22rem 0.75rem 0.22rem 1rem !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+[data-layout-demo='b'] .search-input-wrapper .paper-input-container:focus-within {
+  border-color: #ec7f9f !important;
+  box-shadow: 0 0 0 4px rgba(236, 127, 159, 0.16) !important;
+}
+
+[data-layout-demo='b'] .search-input-wrapper .paper-input-field {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Candy Bookmark-Tab Parse Button */
+[data-layout-demo='b'] .search-input-row .marker-button {
+  border-radius: 14px !important;
+  padding: 0.78rem 1.8rem !important;
+  border: 1.5px solid #d45d82 !important;
+  background: linear-gradient(180deg, #f592b0 0%, #e56b90 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px -4px rgba(228, 108, 145, 0.44) !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--b-spring), scale var(--b-spring), box-shadow var(--b-smooth) !important;
+}
+
+[data-layout-demo='b'] .search-input-row .marker-button:hover:not(:disabled) {
+  translate: 0 -3px;
+  scale: 1.03;
+  box-shadow: 0 10px 20px -6px rgba(228, 108, 145, 0.54) !important;
+}
+
+[data-layout-demo='b'] .search-input-row .marker-button:disabled {
+  background: linear-gradient(180deg, #f8c6d5 0%, #efb0c4 100%) !important;
+  border-color: #e4a2b6 !important;
+  box-shadow: none !important;
+}
+
+/* Mini Colored Index-Flag Platform Tabs (Distinct from Layout A's round pills!) */
+[data-layout-demo='b'] .search-platforms-row .sticker,
+[data-layout-demo='b'] .search-sample-row .sticker {
+  border-radius: 6px 12px 12px 6px !important;
+  border: 1px solid rgba(182, 148, 132, 0.34) !important;
+  border-left: 4px solid rgba(226, 128, 158, 0.65) !important;
+  background-image: var(--b-paper-fiber) !important;
+  box-shadow: 0 2px 5px rgba(132, 96, 78, 0.1) !important;
+  padding: 0.24rem 0.78rem !important;
+  font-size: 0.88rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
+}
+
+[data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 1),
+[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 1) { border-left-color: #6cc5a3 !important; }
+[data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 2),
+[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 2) { border-left-color: #eb85a3 !important; }
+[data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 3),
+[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 3) { border-left-color: #e6ba4c !important; }
+[data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 4),
+[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 4) { border-left-color: #9e84db !important; }
+
+[data-layout-demo='b'] .search-platforms-row .sticker:hover,
+[data-layout-demo='b'] .search-sample-row .sticker:hover {
+  translate: 2px -3px;
+  rotate: -1.5deg;
+  box-shadow: 0 6px 12px -4px rgba(132, 96, 78, 0.2) !important;
+}
+
+[data-layout-demo='b'] .quick-samples-toggle {
+  border-radius: 10px !important;
+  border: 1.5px dashed rgba(212, 158, 118, 0.6) !important;
+  background: #fff9ec !important;
+  box-shadow: none !important;
+  translate: 0 0;
+  transition: translate var(--b-spring), background-color 200ms ease !important;
+}
+
+[data-layout-demo='b'] .quick-samples-toggle:hover {
+  translate: 0 -2px;
+  background: #fff2d6 !important;
+}
+
+/* ---------------- 5. Framed Pastel Linen-Cork Pinboard Mat ---------------- */
+[data-layout-demo='b'] .layout-b-result-wrap {
+  margin-top: 2rem;
+}
+
+[data-layout-demo='b'] .layout-b-board {
+  position: relative;
+  margin-top: 2.75rem;
+  padding: 2.1rem 1.85rem 2.25rem;
+  /* Warm woven linen-cork texture */
+  background-color: #f3e6d6;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(164, 124, 96, 0.045) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, rgba(164, 124, 96, 0.045) 0 1px, transparent 1px 5px),
+    var(--b-paper-fiber),
+    url('/paper-grain.png');
+  background-size: 5px 5px, 5px 5px, 96px 96px, 256px 256px;
+  border: 2px solid rgba(208, 174, 146, 0.68);
+  border-radius: 26px;
+  box-shadow:
+    inset 0 0 0 8px rgba(255, 250, 242, 0.6),
+    inset 0 0 0 9.5px rgba(208, 174, 146, 0.35),
+    0 18px 42px -18px rgba(132, 96, 78, 0.22);
+}
+
+/* Glossy 3D Enamel Pushpins */
+.layout-b-pushpin {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  scale: 1;
+  transition: scale var(--b-spring), translate var(--b-spring);
+}
+
+.layout-b-pushpin.is-corner-tl { top: 10px; left: 12px; }
+.layout-b-pushpin.is-corner-tr { top: 10px; right: 12px; }
+.layout-b-pushpin.is-corner-bl { bottom: 10px; left: 12px; }
+.layout-b-pushpin.is-corner-br { bottom: 10px; right: 12px; }
+
+.layout-b-pushpin.is-card-pin {
+  top: -13px;
+  left: 50%;
+  margin-left: -14px;
+}
+
+.layout-b-pushpin.is-card-pin.is-small {
+  width: 24px;
+  height: 24px;
+  top: -11px;
+  margin-left: -12px;
+}
+
+.layout-b-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.85rem;
+}
+
+.layout-b-board-washi {
+  display: inline-block;
+  width: 3.6rem;
+  height: 0.95rem;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+.layout-b-board-washi.is-left {
+  background: repeating-linear-gradient(45deg, #ffc4d6 0 6px, #ffe6ee 6px 12px);
+  transform: rotate(-5deg);
+}
+
+.layout-b-board-washi.is-right {
+  background: repeating-linear-gradient(-45deg, #b8ebd8 0 6px, #e4faf2 6px 12px);
+  transform: rotate(5deg);
+}
+
+[data-layout-demo='b'] .layout-b-board-title {
+  font-size: 1.28rem;
+  color: var(--ink, #5a4a42);
+  background: #fffcf5;
+  background-image: var(--b-paper-fiber);
+  border: 1.5px dashed rgba(208, 170, 144, 0.7);
+  border-radius: 10px;
+  padding: 0.3rem 1.25rem;
+  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16);
+}
+
+/* 12-column Bento Pinboard Grid */
+[data-layout-demo='b'] .layout-b-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.85rem 1.55rem;
+  align-items: start;
+}
+
+.layout-b-cell {
+  position: relative;
+  min-width: 0;
+}
+
+.layout-b-cell-ecosystem  { grid-column: span 8; }
+.layout-b-cell-side-notes { grid-column: span 4; display: flex; flex-direction: column; gap: 1.4rem; }
+.layout-b-cell-stats      { grid-column: span 7; }
+.layout-b-cell-developer  { grid-column: span 5; }
+
+/* Pendulum pin-swing micro-interaction when hovering any pinned bento cell! */
+.layout-b-cell:hover > .layout-b-pushpin.is-card-pin {
+  scale: 1.14;
+  translate: 0 -2px;
+}
+
+/* ---------------- 6. Cell 1 (8 cols): Unwrapped Vinyl Sleeves Directly on Board ---------------- */
+/* NO outer box nesting! Header sits directly on linen board; each small sleeve is pinned individually */
+[data-layout-demo='b'] .plugin-ecosystem-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0.25rem 0.2rem 0.5rem !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  rotate: 0deg !important;
+  translate: 0 0 !important;
+}
+
+[data-layout-demo='b'] .plugin-ecosystem-heading-row {
+  padding: 0 0.25rem;
+}
+
+[data-layout-demo='b'] .plugin-supported-count {
+  border-radius: 12px !important;
+  border: 1.5px dashed rgba(226, 120, 152, 0.65) !important;
+  background: #fff5f8 !important;
+  box-shadow: var(--b-pin-shadow) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition: translate var(--b-spring), rotate var(--b-spring), scale var(--b-spring) !important;
+}
+
+[data-layout-demo='b'] .plugin-supported-count:hover {
+  translate: 0 -3px;
+  rotate: 4deg;
+  scale: 1.07;
+}
+
+[data-layout-demo='b'] .plugin-app-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.35rem !important;
+  margin-top: 1.15rem !important;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1160px) {
+  [data-layout-demo='b'] .plugin-app-grid > :last-child:nth-child(odd) .plugin-app-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Each small Vinyl Album Sleeve pinned directly onto the linen board with its own tiny enamel thumbtack! */
+[data-layout-demo='b'] .plugin-app-card {
+  position: relative;
+  border-radius: 14px !important;
+  background-color: #f6fbff !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 220px 220px !important;
+  border: 1.5px solid rgba(176, 202, 228, 0.62) !important;
+  box-shadow: var(--b-pin-shadow) !important;
+  padding: 1.35rem 1.7rem 1.2rem 1.2rem !important;
+  overflow: visible !important;
+  transform-origin: 50% 10px;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
+}
+
+/* Cute individual pastel thumbtack dot at top-center of each small card */
+[data-layout-demo='b'] .plugin-app-card::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #a8d4ff 26% 100%);
+  border: 1.5px solid #6b9ed6;
+  box-shadow: 1px 2px 4px rgba(102, 74, 60, 0.25);
+  z-index: 6;
+  pointer-events: none;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(2) .plugin-app-card {
+  background-color: #effbf5 !important;
+  border-color: rgba(132, 206, 178, 0.6) !important;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(2) .plugin-app-card::before {
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #9ee6ca 26% 100%);
+  border-color: #5cb394;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(3) .plugin-app-card {
+  background-color: #fffbf0 !important;
+  border-color: rgba(232, 198, 120, 0.62) !important;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(3) .plugin-app-card::before {
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffe08a 26% 100%);
+  border-color: #d4a43e;
+}
+
+/* Peeking mini vinyl disc cleanly clipped behind the right sleeve edge, slides out on hover! */
+[data-layout-demo='b'] .plugin-app-card::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #fffdf8 0 3px, #ffd6e0 3.5px 8.5px, #5a4a42 9px 14px, #7b665c 14.5px 15.5px, #5a4a42 16px 100%);
+  box-shadow: 2px 2px 6px rgba(90, 74, 66, 0.2);
+  clip-path: inset(-6px -10px -6px 50%);
+  z-index: 2;
+  translate: 0 0;
+  rotate: 0deg;
+  transition:
+    translate var(--b-spring),
+    rotate 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    clip-path var(--b-smooth);
+  pointer-events: none;
+}
+
+/* Only THIS small album sleeve tilts playfully on hover! */
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(odd) .plugin-app-card:hover {
+  translate: 0 -5px;
+  rotate: -1.4deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+  z-index: 4;
+}
+
+[data-layout-demo='b'] .plugin-app-grid > :nth-child(even) .plugin-app-card:hover {
+  translate: 0 -5px;
+  rotate: 1.4deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+  z-index: 4;
+}
+
+/* Slide & spin the vinyl disc out from inside the sleeve on hover! */
+[data-layout-demo='b'] .plugin-app-card:hover::after {
+  translate: 10px 0;
+  rotate: 95deg;
+  clip-path: inset(-6px -10px -6px 18%);
+}
+
+/* Soften tiny badge stickers inside Pinboard (BBPlayer 待上线 / favorited / chill vibes) */
+[data-layout-demo='b'] .plugin-ecosystem-panel .sticker,
+[data-layout-demo='b'] .info-notes-favorited .sticker,
+[data-layout-demo='b'] .stats-chill-vibes-row .sticker {
+  border-radius: 6px !important;
+  border: 1px dashed rgba(192, 152, 134, 0.55) !important;
+  box-shadow: 0 2px 6px rgba(132, 96, 78, 0.14) !important;
+  background-image: var(--b-paper-fiber) !important;
+}
+
+[data-layout-demo='b'] .plugin-app-logo-wrap {
+  border-radius: 10px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--b-spring), scale var(--b-spring);
+}
+
+[data-layout-demo='b'] .plugin-app-card:hover .plugin-app-logo-wrap {
+  rotate: -6deg;
+  scale: 1.08;
+}
+
+[data-layout-demo='b'] .plugin-status-sticker {
+  border-radius: 6px !important;
+  border: 1px solid rgba(176, 148, 136, 0.28) !important;
+  box-shadow: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.72rem !important;
+}
+
+[data-layout-demo='b'] .plugin-app-primary-buttons .marker-button,
+[data-layout-demo='b'] .plugin-copy-button {
+  border-radius: 10px !important;
+  border: 1.5px solid rgba(196, 162, 146, 0.48) !important;
+  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16) !important;
+  font-size: 0.86rem !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--b-spring), scale var(--b-spring) !important;
+}
+
+[data-layout-demo='b'] .plugin-app-primary-buttons .marker-button:hover,
+[data-layout-demo='b'] .plugin-copy-button:hover {
+  translate: 0 -2px;
+  scale: 1.03;
+}
+
+[data-layout-demo='b'] .plugin-action-link {
+  background: linear-gradient(180deg, #f594b1 0%, #e56d92 100%) !important;
+  color: #ffffff !important;
+  border-color: #d45d82 !important;
+}
+
+/* ---------------- 7. Cell 2 (4 cols): Lace Coaster Stamp + 3 Scrapbook Clippings ---------------- */
+.layout-b-stamp-box {
+  position: relative;
+}
+
+[data-layout-demo='b'] .layout-b-stamp-box .running-days-stamp-wrap {
+  margin: 0 !important;
+}
+
+/* Lace-Edge Macaron Coaster Badge (completely different from Layout A's postage stamp!) */
+[data-layout-demo='b'] .running-days-stamp {
+  border-radius: 999px !important;
+  border: 2px dashed rgba(232, 130, 162, 0.65) !important;
+  outline: 6px solid #fff6f9;
+  background-color: #ffe8f0 !important;
+  background-image: var(--b-paper-fiber), radial-gradient(circle at 50% 30%, #ffffff 0%, #ffe3ec 100%) !important;
+  box-shadow: 0 8px 20px -6px rgba(212, 118, 148, 0.3) !important;
+  padding: 1rem 1.8rem !important;
+  transform-origin: 50% 8px;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition: translate var(--b-spring), rotate var(--b-spring), scale var(--b-spring), box-shadow var(--b-smooth);
+  cursor: default;
+}
+
+[data-layout-demo='b'] .layout-b-stamp-box:hover .running-days-stamp {
+  translate: 0 -3px;
+  rotate: 2.5deg;
+  scale: 1.04;
+  box-shadow: 0 14px 26px -6px rgba(212, 118, 148, 0.4) !important;
+}
+
+[data-layout-demo='b'] .info-notes-section {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+[data-layout-demo='b'] .info-notes-section .info-notes-grid {
+  grid-template-columns: 1fr !important;
+  gap: 1.25rem !important;
+}
+
+[data-layout-demo='b'] .info-notes-grid > * {
+  margin-top: 0 !important;
+}
+
+[data-layout-demo='b'] .info-notes-section .ruled-paper-text,
+[data-layout-demo='b'] .info-notes-section .ruled-paper-list {
+  background-image: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.72 !important;
+  color: #624e45 !important;
+}
+
+/* Clipping 1: Corner-Taped Lemon Graph Slip */
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper {
+  border-radius: 10px !important;
+  background-color: #fff9df !important;
+  background-image:
+    var(--b-paper-fiber),
+    linear-gradient(to right, rgba(226, 192, 108, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 192, 108, 0.2) 1px, transparent 1px) !important;
+  background-size: 96px 96px, 16px 16px, 16px 16px !important;
+  border: 1px solid rgba(224, 190, 108, 0.58) !important;
+  padding: 1.4rem 1.35rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Translucent diagonal mint corner tape strips */
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper::before,
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper::after {
+  content: '';
+  position: absolute;
+  width: 38px;
+  height: 13px;
+  background: rgba(162, 228, 206, 0.68);
+  border: 1px solid rgba(114, 190, 166, 0.28);
+  pointer-events: none;
+}
+
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper::before {
+  top: -5px;
+  left: -10px;
+  transform: rotate(-32deg);
+}
+
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper::after {
+  bottom: -5px;
+  right: -10px;
+  transform: rotate(-32deg);
+}
+
+[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+/* Clipping 2: Torn-Bottom Blush Memo Pad Sheet (serrated zigzag bottom edge!) */
+[data-layout-demo='b'] .info-notes-grid > :nth-child(2) .journal-paper {
+  border-radius: 12px 12px 2px 2px !important;
+  background-color: #fff0f4 !important;
+  background-image:
+    var(--b-paper-fiber),
+    linear-gradient(to bottom, transparent 27px, rgba(232, 152, 178, 0.2) 28px) !important;
+  background-size: 96px 96px, 100% 28px !important;
+  border: 1px solid rgba(232, 156, 182, 0.52) !important;
+  border-bottom: none !important;
+  padding: 1.35rem 1.35rem 1.75rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Real serrated torn-paper bottom edge */
+[data-layout-demo='b'] .info-notes-grid > :nth-child(2) .journal-paper::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -7px;
+  height: 8px;
+  background:
+    linear-gradient(135deg, #fff0f4 50%, transparent 50%) 0 0 / 14px 8px repeat-x,
+    linear-gradient(225deg, #fff0f4 50%, transparent 50%) 0 0 / 14px 8px repeat-x;
+  filter: drop-shadow(0 2px 2px rgba(132, 96, 78, 0.12));
+  pointer-events: none;
+}
+
+[data-layout-demo='b'] .info-notes-grid > :nth-child(2) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: 2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+/* Clipping 3: Japanese Mint Library Index Card with Top Accent Rule */
+[data-layout-demo='b'] .info-notes-grid > :nth-child(3) .journal-paper {
+  border-radius: 14px !important;
+  background-color: #eafaf3 !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 220px 220px !important;
+  border: 1.5px solid rgba(124, 202, 172, 0.56) !important;
+  border-top: 6px solid #8fdcb9 !important;
+  padding: 1.3rem 1.35rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='b'] .info-notes-grid > :nth-child(3) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -1.6deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .info-notes-favorited {
+  right: 0.4rem !important;
+  bottom: -0.8rem !important;
+}
+
+/* ---------------- 8. Cell 3 (7 cols): Unwrapped Small Stats Cards Directly on Board ---------------- */
+/* NO giant outer box! Each small stat card sits straight at rest and tilts ONLY on hover! */
+[data-layout-demo='b'] .stats-journal-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0.25rem 0.2rem 0.5rem !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  rotate: 0deg !important;
+  translate: 0 0 !important;
+}
+
+[data-layout-demo='b'] .stats-deco-headphones,
+[data-layout-demo='b'] .stats-deco-stamp {
+  display: none !important;
+}
+
+[data-layout-demo='b'] .stats-journal-header {
+  text-align: left !important;
+  margin-bottom: 1rem !important;
+  padding: 0 0.2rem;
+}
+
+[data-layout-demo='b'] .stats-journal-title {
+  height: auto !important;
+  line-height: 1.3 !important;
+  margin-top: 0.25rem !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.35rem !important;
+  margin-bottom: 1.35rem !important;
+}
+
+/* Polaroid-style small cards pinned directly on the linen board (straight at rest, tilt on hover!) */
+[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper,
+[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper {
+  position: relative;
+  border-radius: 12px !important;
+  border: 6px solid #ffffff !important;
+  border-bottom-width: 14px !important;
+  padding: 1.4rem 1.25rem 1.1rem !important;
+  box-shadow: var(--b-pin-shadow) !important;
+  transform-origin: 50% 8px;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Cute individual thumbtack pins on top of each small stat card */
+[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper::before,
+[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper::before,
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper::before,
+[data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  box-shadow: 1px 2px 4px rgba(102, 74, 60, 0.25);
+  z-index: 6;
+  pointer-events: none;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper {
+  background-color: #fff8de !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper::before {
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffe08a 26% 100%);
+  border: 1.5px solid #d4a43e;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper {
+  background-color: #fff1f6 !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper::before {
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffb4c9 26% 100%);
+  border: 1.5px solid #de7e9a;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper:hover {
+  translate: 0 -6px;
+  rotate: -2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper:hover {
+  translate: 0 -6px;
+  rotate: 2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper {
+  position: relative;
+  border-radius: 14px !important;
+  background-color: #ebfaf3 !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  border: 1.5px solid rgba(124, 202, 172, 0.52) !important;
+  padding: 1.4rem 1.35rem 1.3rem !important;
+  transform-origin: 50% 8px;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper::before {
+  top: -8px;
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #9ee6ca 26% 100%);
+  border: 1.5px solid #5cb394;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper:hover {
+  translate: 0 -5px;
+  rotate: -0.9deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid .font-num {
+  display: inline-block;
+  scale: 1;
+  transition: scale var(--b-spring), color 220ms ease;
+}
+
+[data-layout-demo='b'] .stats-main-grid .journal-paper:hover .font-num {
+  scale: 1.07;
+  color: #c25478;
+}
+
+/* Graph Equalizer Trend Strip pinned directly on board */
+[data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper {
+  position: relative;
+  border-radius: 14px !important;
+  background-color: #fffdf9 !important;
+  background-image:
+    var(--b-paper-fiber),
+    linear-gradient(to right, rgba(206, 174, 152, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(206, 174, 152, 0.16) 1px, transparent 1px) !important;
+  background-size: 96px 96px, 16px 16px, 16px 16px !important;
+  border: 1.5px solid rgba(212, 180, 158, 0.52) !important;
+  transform-origin: 50% 8px;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper::before {
+  top: -8px;
+  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #d1beff 26% 100%);
+  border: 1.5px solid #957ad4;
+}
+
+[data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper:hover {
+  translate: 0 -4px;
+  rotate: 0.9deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
+[data-layout-demo='b'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+  border-radius: 999px 999px 4px 4px !important;
+  scale: 1 1;
+  transform-origin: bottom center;
+  transition: scale var(--b-spring), filter 220ms ease;
+}
+
+[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
+[data-layout-demo='b'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+  scale: 1 1.18;
+  filter: saturate(1.28);
+}
+
+/* ---------------- 9. Cell 4 (5 cols): Unwrapped 4 Mini Spiral Dev Pads Directly on Board ---------------- */
+/* NO giant outer wrapper! Header sits directly on linen board; each of the 4 small pads has its own spiral top & hover tilt! */
+[data-layout-demo='b'] .developer-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0.2rem 0.5rem !important;
+  rotate: 0deg !important;
+  translate: 0 0 !important;
+}
+
+[data-layout-demo='b'] .developer-heading-row {
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 0.2rem;
+}
+
+[data-layout-demo='b'] .developer-value-note {
+  text-align: left;
+  white-space: normal;
+  font-size: 0.94rem;
+}
+
+[data-layout-demo='b'] .developer-method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.2rem !important;
+  margin-top: 1.2rem !important;
+}
+
+/* Each small developer tile is a cute individual Pocket Spiral Memo Pad! */
+[data-layout-demo='b'] .developer-method {
+  position: relative;
+  border-radius: 8px 8px 14px 14px !important;
+  background-image:
+    radial-gradient(circle at 14px 10px, #f3e6d6 3.2px, rgba(164, 128, 110, 0.45) 3.7px, transparent 4.5px),
+    linear-gradient(90deg, transparent 12px, #d9a496 12px 16px, transparent 16px),
+    var(--b-paper-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 28px 20px, 28px 10px, 96px 96px, 220px 220px !important;
+  background-repeat: repeat-x, repeat-x, repeat, repeat !important;
+  background-position: 6px 0, 6px 0, 0 0, 0 0 !important;
+  border: 1.5px solid rgba(204, 170, 152, 0.5) !important;
+  box-shadow: var(--b-pin-shadow) !important;
+  padding: 1.65rem 1.05rem 1.05rem !important;
+  transform-origin: 50% 8px;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
+}
+
+[data-layout-demo='b'] .developer-method:nth-child(odd):hover {
+  translate: 0 -6px;
+  rotate: -2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .developer-method:nth-child(even):hover {
+  translate: 0 -6px;
+  rotate: 2deg;
+  box-shadow: var(--b-pin-shadow-hover) !important;
+}
+
+[data-layout-demo='b'] .developer-method-mark {
+  border-radius: 8px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--b-spring), scale var(--b-spring);
+}
+
+[data-layout-demo='b'] .developer-method:hover .developer-method-mark {
+  rotate: 10deg;
+  scale: 1.15;
+}
+
+/* ---------------- 10. Footer Bookmark Pills ---------------- */
+[data-layout-demo='b'] .journal-footer {
+  margin-top: 3rem !important;
+}
+
+[data-layout-demo='b'] .journal-footer .sticker,
+[data-layout-demo='b'] .journal-footer button.sticker,
+[data-layout-demo='b'] .journal-footer a.sticker {
+  border-radius: 8px 8px 14px 14px !important;
+  border: 1.5px solid rgba(196, 162, 144, 0.48) !important;
+  background-image: var(--b-paper-fiber) !important;
+  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
+}
+
+[data-layout-demo='b'] .journal-footer .sticker:hover {
+  translate: 0 -3px;
+  rotate: 1.5deg;
+  box-shadow: 0 8px 16px -5px rgba(132, 96, 78, 0.24) !important;
+}
+
+/* ---------------- 11. Size-Adaptive Breakpoints for Layout B ---------------- */
+
+/* Tablet (769px ~ 1159px): Balanced 2-col Pinboard */
+@media (max-width: 1159px) and (min-width: 769px) {
+  [data-layout-demo='b'] .layout-b-cell-ecosystem { grid-column: span 12; }
+  [data-layout-demo='b'] .layout-b-cell-side-notes { grid-column: span 6; }
+  [data-layout-demo='b'] .layout-b-cell-developer { grid-column: span 6; }
+  [data-layout-demo='b'] .layout-b-cell-stats { grid-column: span 12; }
+  [data-layout-demo='b'] .developer-method-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Mobile (<= 768px): Single-Column Pinned Scrapbook */
+@media (max-width: 768px) {
+  [data-layout-demo='b'] .journal-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    overflow-x: clip;
+  }
+
+  [data-layout-demo='b'] .layout-b-root,
+  [data-layout-demo='b'] .layout-b-board,
+  [data-layout-demo='b'] .layout-b-cell {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  [data-layout-demo='b'] .layout-b-board {
+    padding: 1.6rem 0.9rem 1.75rem;
+    border-radius: 20px;
+  }
+
+  [data-layout-demo='b'] .layout-b-pushpin.is-corner-tl,
+  [data-layout-demo='b'] .layout-b-pushpin.is-corner-tr,
+  [data-layout-demo='b'] .layout-b-pushpin.is-corner-bl,
+  [data-layout-demo='b'] .layout-b-pushpin.is-corner-br,
+  [data-layout-demo='b'] .layout-b-board-washi {
+    display: none;
+  }
+
+  [data-layout-demo='b'] .layout-b-bento-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1.75rem;
+  }
+
+  [data-layout-demo='b'] .layout-b-cell-ecosystem,
+  [data-layout-demo='b'] .layout-b-cell-side-notes,
+  [data-layout-demo='b'] .layout-b-cell-stats,
+  [data-layout-demo='b'] .layout-b-cell-developer {
+    grid-column: span 1;
+  }
+
+  [data-layout-demo='b'] .search-note-section .sticky-note-card {
+    padding: 1.8rem 1rem 1.3rem !important;
+  }
+
+  [data-layout-demo='b'] .search-input-wrapper {
+    flex: 1 1 100% !important;
+  }
+
+  [data-layout-demo='b'] .search-input-row .marker-button {
+    width: 100%;
+  }
+
+  [data-layout-demo='b'] .plugin-app-grid,
+  [data-layout-demo='b'] .stats-main-grid,
+  [data-layout-demo='b'] .developer-method-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-layout-demo='b'] .plugin-app-card {
+    padding-right: 1.15rem !important;
+  }
+
+  [data-layout-demo='b'] .plugin-app-card::after {
+    display: none;
+  }
+
+  [data-layout-demo='b'] .plugin-ecosystem-heading-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+}

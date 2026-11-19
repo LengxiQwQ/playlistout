@@ -209,7 +209,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       >
         {/* Decorative yellow sparkle */}
         <div
-          className="user-playlists-sparkle"
+          className="user-playlists-sparkle result-star-reveal"
           style={{
             position: 'absolute',
             right: '-2rem',
@@ -218,6 +218,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             fontSize: '4rem',
             userSelect: 'none',
             zIndex: 15,
+            ['--rot' as any]: '12deg',
           }}
           aria-hidden="true"
         >
@@ -229,9 +230,11 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           <Tape
             color="pink"
             rotateDeg={-12}
+            className="result-tape-reveal"
             style={{
               width: '10.5rem',
               height: '2.5rem',
+              ['--rot' as any]: '-12deg',
             }}
           />
         </div>
@@ -673,6 +676,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                   return (
                     <div
                       key={playlist.id}
+                      className={idx < 10 ? 'batch-row-reveal' : undefined}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -684,6 +688,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                         borderRadius: '10px',
                         gap: '1rem',
                         transition: 'all 0.15s ease',
+                        ...(idx < 10 ? { ['--i' as any]: idx } : {}),
                       }}
                     >
                       {/* Left: Checkbox + Cover + Info */}

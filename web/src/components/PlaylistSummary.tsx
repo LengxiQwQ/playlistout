@@ -86,7 +86,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
             <img
               src={playlist.coverUrl}
               alt={playlist.name}
-              className="playlist-cover hand-drawn-border-subtle shadow-cutout-sm"
+              className="playlist-cover result-polaroid-reveal hand-drawn-border-subtle shadow-cutout-sm"
               loading="lazy"
               onError={() => setCoverFailed(true)}
               style={{
@@ -99,13 +99,13 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 border: '2px solid var(--ink-line)',
                 borderRadius: '8px',
                 boxShadow: '3px 4px 0 var(--shadow-ink)',
-                transform: 'rotate(-1.8deg)',
+                transform: 'rotate(-2deg)',
                 flexShrink: 0,
               }}
             />
           ) : (
             <div
-              className="cover-placeholder hand-drawn-border-subtle shadow-cutout-sm"
+              className="cover-placeholder result-polaroid-reveal hand-drawn-border-subtle shadow-cutout-sm"
               aria-label={t.result.noCoverAria}
               style={{
                 width: '92px',
@@ -119,7 +119,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 fontSize: '2.5rem',
                 borderRadius: '8px',
                 boxShadow: '3px 4px 0 var(--shadow-ink)',
-                transform: 'rotate(-1.8deg)',
+                transform: 'rotate(-2deg)',
                 userSelect: 'none',
                 flexShrink: 0,
               }}

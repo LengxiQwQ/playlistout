@@ -9,35 +9,29 @@ export interface Translations {
     github: string;
     desktopBtn: string;
     downloadBtn: string;
-    fontButtonText: string;
-    fontDrawerCaption: string;
-    fontPickerHint: string;
+    styleButtonText: string;
+    stylePickerHint: string;
     languageSwitch: string;
     mobileMenu: string;
     mobileDrawerTitle: string;
-    mobileDrawerFontTitle: string;
-    mobileDrawerFontDesc: string;
+    mobileDrawerStyleTitle: string;
+    mobileDrawerStyleDesc: string;
     mobileDrawerLangTitle: string;
     mobileDrawerLangDesc: string;
     mobileDrawerLinksTitle: string;
     mobileClose: string;
   };
-  fonts: {
-    zhnote: string;
-    zh_kuaile: string;
-    zh_zhimang: string;
-    zh_longcang: string;
-    zh_huangyou: string;
-    zh_orig: string;
-
-    original: string;
-    patrick: string;
-    kalam: string;
-    schoolbell: string;
-    covered: string;
-    comic: string;
-
-    sampleText: string;
+  styles: {
+    dName: string;
+    dDesc: string;
+    aName: string;
+    aDesc: string;
+    bName: string;
+    bDesc: string;
+    cName: string;
+    cDesc: string;
+    legacyName: string;
+    legacyDesc: string;
   };
   hero: {
     tagline: string;
@@ -269,6 +263,8 @@ export interface Translations {
     websiteLink: string;
     guideLink: string;
     nextTitle: string;
+    expandSummary: string;
+    collapseSummary: string;
   };
   desktop: {
     title: string;
@@ -333,6 +329,7 @@ export interface Translations {
     formatPreferencesTitle: string;
     recentDaysTitle: string;
     recentDaysFootnote: string;
+    waitingFirstVisitor: string;
   };
   privacy: {
     modalTitle: string;

@@ -7,7 +7,7 @@ import { LanguageProvider } from '../../i18n';
 describe('Header Component', () => {
   beforeEach(() => {
     localStorage.clear();
-    delete (document.body.dataset as any).fontPreset;
+    delete document.documentElement.dataset.layoutDemo;
   });
 
   it('renders brand title and tagline with font-handwriting in Chinese', () => {
@@ -61,14 +61,14 @@ describe('Header Component', () => {
     const githubLink = screen.getByRole('link', { name: /Star on GitHub/i });
     expect(githubLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout');
 
-    expect(screen.getByRole('button', { name: /Original Journal/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sticker Diary/i })).toBeInTheDocument();
 
     const drawerBtn = screen.getByRole('button', { name: /Journal Drawer/i });
     expect(drawerBtn).toBeInTheDocument();
     expect(drawerBtn).toHaveClass('mobile-only');
   });
 
-  it('opens mobile drawer when mobile drawer button is clicked and allows font switching', () => {
+  it('opens mobile drawer when mobile drawer button is clicked and allows style switching', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <Header />
@@ -79,14 +79,14 @@ describe('Header Component', () => {
     fireEvent.click(drawerBtn);
 
     expect(screen.getByTestId('mobile-settings-drawer')).toBeInTheDocument();
-    expect(screen.getByText('🎨 手账字体风格')).toBeInTheDocument();
+    expect(screen.getByText('🎨 手帐页面风格')).toBeInTheDocument();
 
-    // Choose another font from the drawer, separately from the desktop picker.
-    const brushCard = within(screen.getByTestId('mobile-settings-drawer')).getByRole('button', { name: /毛笔手账/i });
-    fireEvent.click(brushCard);
+    // Choose another layout style from the drawer
+    const pinboardCard = within(screen.getByTestId('mobile-settings-drawer')).getByRole('button', { name: /软木拼贴/i });
+    fireEvent.click(pinboardCard);
 
-    expect(document.body.dataset.fontPreset).toBe('zhnote');
-    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zhnote');
+    expect(document.documentElement.dataset.layoutDemo).toBe('b');
+    expect(localStorage.getItem('playlistout-journal-style')).toBe('b');
 
     // Close button
     const closeBtn = screen.getByRole('button', { name: /关闭对话框/i });

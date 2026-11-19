@@ -4,7 +4,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { LanguageProvider, useTranslation } from './LanguageContext';
 import { LanguageSwitcher } from '../components/settings/LanguageSwitcher';
-import { FontSwitcher } from '../components/settings/FontSwitcher';
+import { StyleSwitcher } from '../components/settings/StyleSwitcher';
+import { StyleProvider } from '../components/settings/StyleContext';
 
 const TestConsumer: React.FC = () => {
   const { t, language, format } = useTranslation();
@@ -68,92 +69,54 @@ describe('i18n and Language Switching (Phase 3)', () => {
   });
 });
 
-describe('FontSwitcher Component (Phase 3)', () => {
+describe('StyleSwitcher i18n Integration', () => {
   beforeEach(() => {
     localStorage.clear();
-    document.body.removeAttribute('data-font-preset');
+    delete document.documentElement.dataset.layoutDemo;
   });
 
   afterEach(() => {
     localStorage.clear();
   });
 
-  it('renders with Chinese curated presets and defaults to 快乐手绘 in zh-CN', () => {
+  it('defaults to 贴纸日记 (a) in zh-CN and renders all 5 Chinese style options', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
-        <FontSwitcher />
+        <StyleProvider>
+          <StyleSwitcher />
+        </StyleProvider>
       </LanguageProvider>,
     );
 
-    // In Chinese, default is 快乐手绘
-    const button = screen.getByRole('button', { name: /快乐手绘/ });
+    const button = screen.getByRole('button', { name: /贴纸日记/ });
     expect(button).toBeInTheDocument();
+    expect(document.documentElement.dataset.layoutDemo).toBe('a');
 
-    // Open dropdown
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
-
-    // Select 快乐手绘
-    const kuaileOpt = screen.getByRole('option', { name: /快乐手绘/ });
-    fireEvent.click(kuaileOpt);
-
-    // Verify preset applied to body and saved in localStorage
-    expect(document.body.dataset.fontPreset).toBe('zh_kuaile');
-    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('zh_kuaile');
+    expect(screen.getByRole('option', { name: /贴纸日记/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /晴空便签/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /软木拼贴/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /活页手帐/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /旧版手帐/ })).toBeInTheDocument();
   });
 
-  it('switches to built-in presets without network injection', () => {
-    render(
-      <LanguageProvider defaultLanguage="zh-CN">
-        <FontSwitcher />
-      </LanguageProvider>,
-    );
-
-    const button = screen.getByRole('button', { name: /快乐手绘/ });
-    fireEvent.click(button);
-
-    const origOpt = screen.getByRole('option', { name: /原稿经典/ });
-    fireEvent.click(origOpt);
-
-    expect(document.body.dataset.fontPreset).toBe('original');
-    expect(localStorage.getItem('playlistout-font-preset-zh')).toBe('original');
-  });
-
-  it('renders pure Chinese font preset names and sample preview in zh-CN', () => {
-    render(
-      <LanguageProvider defaultLanguage="zh-CN">
-        <FontSwitcher />
-      </LanguageProvider>,
-    );
-
-    // In Chinese, button and sample preview are pure Chinese
-    fireEvent.click(screen.getByRole('button', { name: /快乐手绘/ }));
-    expect(screen.getAllByText('音乐手账').length).toBeGreaterThan(0);
-    expect(screen.getByRole('option', { name: /毛笔手账/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /快乐手绘/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /洒脱行书/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /随性写意/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /萌趣黄油/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /原稿经典/ })).toBeInTheDocument();
-  });
-
-  it('renders pure English font preset names and defaults to Original Journal in en-US', () => {
+  it('renders pure English style names in en-US and persists switched style', () => {
     render(
       <LanguageProvider defaultLanguage="en-US">
-        <FontSwitcher />
+        <StyleProvider>
+          <StyleSwitcher />
+        </StyleProvider>
       </LanguageProvider>,
     );
 
-    // In English, the button displays Original Journal
-    expect(screen.getByRole('button', { name: /Original Journal/i })).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /Sticker Diary/i });
+    fireEvent.click(button);
 
-    // Open dropdown
-    fireEvent.click(screen.getByRole('button', { name: /Original Journal/i }));
+    const legacyOpt = screen.getByRole('option', { name: /Legacy Journal/i });
+    fireEvent.click(legacyOpt);
 
-    // In English, presets are purely English and sample preview is Music Journal
-    expect(screen.getByRole('option', { name: /Patrick Hand/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Kalam Notes/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Schoolbell/i })).toBeInTheDocument();
-    expect(screen.getAllByText('Music Journal').length).toBeGreaterThan(0);
+    expect(document.documentElement.dataset.layoutDemo).toBeUndefined();
+    expect(localStorage.getItem('playlistout-journal-style')).toBe('legacy');
   });
 });

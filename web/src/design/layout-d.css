@@ -1,0 +1,1432 @@
+/* ==========================================================================
+ * LAYOUT D · 分屏首页 + 横向货架 (Fresh Anime Cel-Shaded Sticky-Note Edition)
+ * Dreamy Kyoto-Animation / Soda-Pop Stationery Aesthetic:
+ * - Bright airy Sakura-Milk & Sky-Cloud canvas with fine pale-sky Campus dots
+ * - Real tactile sticky-note craft: colored anime cel-linework, translucent
+ *   pastel washi tape strips, bottom-right curled peel-corners, matte paper grain
+ * - ZERO box-inside-box nesting (only individual bite-sized sticky notes!)
+ * - Split Hero with interactive spinning Anime Walkman + Horizontal Cassette
+ *   Shelf with working scroll buttons + Fanned Sticky Notes + Fresh Stats & Dev
+ * - 100% silky bi-directional spring physics via translate / rotate / scale
+ * ========================================================================== */
+
+/* ---------------- 1. Anime Stationery Tokens & Fresh Sky Canvas ---------------- */
+[data-layout-demo='d'] {
+  --search-note-width: 100%;
+
+  /* Fine matte stationery fiber (60fps GPU-friendly, no SVG filter) */
+  --d-paper-fiber: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23907484' stroke-linecap='round'%3E%3Cpath d='M12 16l5 2M48 12l-4 3M78 22l5-1M20 52l5-2M62 48l4 3M84 72l-5 2M14 82l5 1M52 76l3-4' stroke-width='0.8' opacity='0.11'/%3E%3C/g%3E%3Cg fill='%23846c7a'%3E%3Ccircle cx='10' cy='34' r='0.75' opacity='0.11'/%3E%3Ccircle cx='36' cy='26' r='0.65' opacity='0.1'/%3E%3Ccircle cx='70' cy='16' r='0.75' opacity='0.11'/%3E%3Ccircle cx='86' cy='46' r='0.7' opacity='0.1'/%3E%3Ccircle cx='50' cy='62' r='0.75' opacity='0.11'/%3E%3C/g%3E%3C/svg%3E");
+
+  --d-spring: 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --d-smooth: 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-layout-demo='d'] .binder-holes,
+[data-layout-demo='d'] .journal-margin-line,
+[data-layout-demo='d'] .background-decorations {
+  display: none !important;
+}
+
+/* Bright, airy Anime Sky-Milk Campus Stationery Canvas */
+[data-layout-demo='d'] body {
+  background-color: #fefbf6 !important;
+  background-image:
+    var(--d-paper-fiber),
+    url('/paper-grain.png'),
+    radial-gradient(circle, rgba(138, 184, 226, 0.36) 1.05px, transparent 1.4px) !important;
+  background-size: 96px 96px, 256px 256px, 22px 22px !important;
+}
+
+/* Soft Shinkai / KyoAni Pastel Sky Clouds behind the page */
+[data-layout-demo='d'] body::before {
+  background:
+    radial-gradient(46rem 32rem at 6% 4%, rgba(182, 228, 255, 0.44), transparent 68%),
+    radial-gradient(42rem 30rem at 94% 8%, rgba(255, 202, 226, 0.48), transparent 68%),
+    radial-gradient(44rem 30rem at 88% 82%, rgba(186, 244, 224, 0.42), transparent 68%),
+    radial-gradient(40rem 28rem at 8% 80%, rgba(255, 238, 178, 0.44), transparent 68%) !important;
+}
+
+[data-layout-demo='d'] .journal-container {
+  max-width: 1320px !important;
+  padding-left: clamp(1rem, 2.8vw, 2.25rem) !important;
+  padding-right: clamp(1rem, 2.8vw, 2.25rem) !important;
+}
+
+/* Clear legacy wobbly black comic borders & default tapes */
+[data-layout-demo='d'] .hand-drawn-border,
+[data-layout-demo='d'] .hand-drawn-border-alt,
+[data-layout-demo='d'] .hand-drawn-border-subtle {
+  border-radius: 16px !important;
+  border: 1.5px solid rgba(154, 178, 206, 0.48) !important;
+}
+
+[data-layout-demo='d'] .paper-shadow,
+[data-layout-demo='d'] .paper-shadow-sm,
+[data-layout-demo='d'] .shadow-cutout,
+[data-layout-demo='d'] .shadow-cutout-sm {
+  box-shadow: 4px 5px 0 rgba(164, 184, 214, 0.25), 0 10px 22px -10px rgba(126, 114, 134, 0.16) !important;
+}
+
+[data-layout-demo='d'] .tape,
+[data-layout-demo='d'] .tape-top-left,
+[data-layout-demo='d'] .tape-bottom-right {
+  display: none !important;
+}
+
+/* Neutralize legacy :hover transform jumps so ONLY silky translate/rotate/scale run */
+[data-layout-demo='d'] .journal-paper.is-interactive,
+[data-layout-demo='d'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='d'] .sticky-note-card,
+[data-layout-demo='d'] .sticky-note-card.is-tracking,
+[data-layout-demo='d'] .plugin-app-card,
+[data-layout-demo='d'] .plugin-app-card:hover,
+[data-layout-demo='d'] .developer-method,
+[data-layout-demo='d'] .developer-method:hover,
+[data-layout-demo='d'] .header-desktop-btn,
+[data-layout-demo='d'] .header-desktop-btn:hover,
+[data-layout-demo='d'] .header-github-btn,
+[data-layout-demo='d'] .header-github-btn:hover,
+[data-layout-demo='d'] .search-platforms-row .sticker,
+[data-layout-demo='d'] .search-platforms-row .sticker:hover,
+[data-layout-demo='d'] .search-sample-row .sticker,
+[data-layout-demo='d'] .search-sample-row .sticker:hover,
+[data-layout-demo='d'] .journal-footer .sticker,
+[data-layout-demo='d'] .journal-footer .sticker:hover {
+  transform: rotate(var(--rot, 0deg)) !important;
+}
+
+[data-layout-demo='d'] .journal-paper.is-interactive,
+[data-layout-demo='d'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='d'] .sticky-note-card,
+[data-layout-demo='d'] .sticky-note-card.is-tracking {
+  transition:
+    translate var(--d-spring),
+    rotate var(--d-spring),
+    scale var(--d-spring),
+    box-shadow var(--d-smooth),
+    border-color var(--d-smooth) !important;
+}
+
+/* ---------------- 2. Anime Motion Keyframes & Lively Title Hover ---------------- */
+@keyframes layoutDFloatNote {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-5px) rotate(5deg); }
+}
+
+@keyframes layoutDSparklePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50%      { transform: scale(1.28) rotate(18deg); opacity: 1; }
+}
+
+@keyframes layoutDReelSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes layoutDEntrance {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.98); }
+  65%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+[data-layout-demo='d'] .journal-hero-title,
+[data-layout-demo='d'] .plugin-ecosystem-title,
+[data-layout-demo='d'] .stats-journal-title,
+[data-layout-demo='d'] .developer-title,
+[data-layout-demo='d'] .info-notes-section .font-marker,
+[data-layout-demo='d'] .header-brand-title {
+  display: inline-block;
+  cursor: default;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--d-spring),
+    rotate var(--d-spring),
+    scale var(--d-spring),
+    color 220ms ease;
+}
+
+[data-layout-demo='d'] .scribble-line::after {
+  background: linear-gradient(90deg, #ffbdd4 0%, #ffe699 48%, #a6ebd4 100%) !important;
+  transition: transform var(--d-spring), filter 260ms ease;
+}
+
+[data-layout-demo='d'] .journal-hero-title:hover {
+  translate: 4px -3px;
+  rotate: -0.7deg;
+}
+
+[data-layout-demo='d'] .journal-hero-title:hover .scribble-line::after {
+  transform: scaleX(1.06) scaleY(1.24);
+  filter: saturate(1.25);
+}
+
+[data-layout-demo='d'] .plugin-ecosystem-title:hover,
+[data-layout-demo='d'] .stats-journal-title:hover,
+[data-layout-demo='d'] .developer-title:hover,
+[data-layout-demo='d'] .info-notes-section .font-marker:hover {
+  translate: 4px -2px;
+  rotate: -0.6deg;
+  color: #e05c88 !important;
+}
+
+/* ---------------- 3. Sticky Breezy Anime Header ---------------- */
+[data-layout-demo='d'] .journal-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 120 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1.4rem !important;
+  padding: 0.7rem 0.85rem 0.75rem !important;
+  margin-left: -0.85rem;
+  margin-right: -0.85rem;
+  border-bottom: 1.5px dashed rgba(148, 190, 228, 0.55);
+  border-radius: 0 0 18px 18px;
+  background: rgba(254, 251, 246, 0.94);
+  backdrop-filter: blur(10px);
+  animation: none !important;
+}
+
+[data-layout-demo='d'] .header-logo-img {
+  border-radius: 14px;
+  border: 2px solid #ffffff;
+  box-shadow: 3px 3px 0 rgba(164, 204, 240, 0.55);
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--d-spring), scale var(--d-spring);
+}
+
+[data-layout-demo='d'] .header-brand-container:hover .header-logo-img {
+  rotate: -10deg;
+  scale: 1.1;
+}
+
+[data-layout-demo='d'] .header-brand-container:hover .header-brand-title {
+  translate: 3px 0;
+  color: #e05c88;
+}
+
+/* Anime Cel-Shaded Pastel Header Pills */
+[data-layout-demo='d'] .header-desktop-btn,
+[data-layout-demo='d'] .header-github-btn,
+[data-layout-demo='d'] .header-actions button:not(.style-option),
+[data-layout-demo='d'] .header-actions .sticker {
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(154, 184, 214, 0.62) !important;
+  box-shadow: 3px 3px 0 rgba(176, 206, 234, 0.45) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .header-desktop-btn {
+  background: #ffe6f0 !important;
+  border-color: #f0a4c0 !important;
+  color: #c24b75 !important;
+  box-shadow: 3px 3px 0 rgba(240, 164, 192, 0.45) !important;
+}
+
+[data-layout-demo='d'] .header-github-btn {
+  background: #e2f8f0 !important;
+  border-color: #88d8bc !important;
+  color: #2b7d60 !important;
+  box-shadow: 3px 3px 0 rgba(136, 216, 188, 0.45) !important;
+}
+
+[data-layout-demo='d'] .header-desktop-btn:hover,
+[data-layout-demo='d'] .header-github-btn:hover,
+[data-layout-demo='d'] .header-actions button:not(.style-option):hover {
+  translate: 0 -3px;
+  rotate: -1.5deg;
+  box-shadow: 4px 6px 0 rgba(176, 206, 234, 0.55) !important;
+}
+
+/* ---------------- 4. Split Hero Spread (Left Anime Charm + Right Sticky-Note Search) ---------------- */
+[data-layout-demo='d'] .layout-d-split-hero {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.88fr) minmax(0, 1.22fr);
+  gap: 2.6rem;
+  align-items: center;
+  margin-top: 1.35rem;
+  margin-bottom: 3.25rem;
+}
+
+[data-layout-demo='d'] .layout-d-split-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  animation: layoutDEntrance 520ms var(--ease-bouncy) 60ms both;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .journal-hero {
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Fresh Sky-Sakura Anime Tag above Hero Title */
+[data-layout-demo='d'] .layout-d-split-left .hero-doodle-right {
+  position: static !important;
+  display: flex !important;
+  width: fit-content;
+  margin: 0 0 0.7rem 0 !important;
+  padding: 0.24rem 0.9rem;
+  font-size: 0.96rem !important;
+  color: #4b7fb2 !important;
+  background: linear-gradient(90deg, #e8f5ff 0%, #fff2f8 100%);
+  border: 1.5px solid #a8d2f4;
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 rgba(168, 210, 244, 0.45);
+  animation: none !important;
+  translate: 0 0;
+  rotate: -1deg;
+  transition: translate var(--d-spring), rotate var(--d-spring);
+  cursor: default;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .hero-doodle-right:hover {
+  translate: 0 -3px;
+  rotate: 1.2deg;
+}
+
+[data-layout-demo='d'] .hero-doodle-mobile {
+  display: none !important;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .journal-hero-title {
+  font-size: clamp(2.4rem, 4.1vw, 3.55rem) !important;
+  line-height: 1.26 !important;
+}
+
+/* 3-Step Anime Sticky-Note Workflow Tags */
+[data-layout-demo='d'] .layout-d-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-layout-demo='d'] .layout-d-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.34rem 0.85rem;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  background-image: var(--d-paper-fiber);
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth);
+  cursor: default;
+}
+
+[data-layout-demo='d'] .layout-d-step b {
+  font-size: 0.74rem;
+  padding: 0.06rem 0.32rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+[data-layout-demo='d'] .layout-d-step.is-lemon {
+  background-color: #fff6cf;
+  border: 1.5px solid #ebd078;
+  box-shadow: 3px 3px 0 rgba(235, 208, 120, 0.45);
+}
+
+[data-layout-demo='d'] .layout-d-step.is-pink {
+  background-color: #ffe5ef;
+  border: 1.5px solid #f2a8c4;
+  box-shadow: 3px 3px 0 rgba(242, 168, 196, 0.45);
+}
+
+[data-layout-demo='d'] .layout-d-step.is-mint {
+  background-color: #dff8ef;
+  border: 1.5px solid #8adbc0;
+  box-shadow: 3px 3px 0 rgba(138, 219, 192, 0.45);
+}
+
+[data-layout-demo='d'] .layout-d-step:hover {
+  translate: 0 -3px;
+  rotate: -2deg;
+}
+
+[data-layout-demo='d'] .layout-d-step-arrow {
+  color: #f092b4;
+  font-size: 0.85rem;
+}
+
+/* Interactive Anime Walkman & Mini Note Charm */
+.layout-d-hero-charm {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 1rem 0.65rem 0.6rem;
+  background-color: rgba(255, 253, 249, 0.84);
+  background-image: var(--d-paper-fiber);
+  border: 1.5px dashed rgba(148, 190, 228, 0.65);
+  border-radius: 18px;
+  box-shadow: 4px 5px 0 rgba(182, 218, 246, 0.34);
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth);
+}
+
+.layout-d-hero-charm:hover {
+  translate: 0 -4px;
+  rotate: -1deg;
+  box-shadow: 6px 8px 0 rgba(182, 218, 246, 0.45);
+}
+
+.layout-d-walkman-svg {
+  flex-shrink: 0;
+}
+
+.layout-d-reel-l { transform-origin: 71px 50px; }
+.layout-d-reel-r { transform-origin: 97px 50px; }
+.layout-d-float-note { animation: layoutDFloatNote 3.4s ease-in-out infinite; transform-origin: 154px 42px; }
+.layout-d-sparkle-1  { animation: layoutDSparklePulse 2.6s ease-in-out infinite; transform-origin: 136px 20px; }
+.layout-d-sparkle-2  { animation: layoutDSparklePulse 3.1s ease-in-out 0.8s infinite; transform-origin: 158px 78px; }
+.layout-d-sparkle-3  { animation: layoutDSparklePulse 2.8s ease-in-out 1.4s infinite; transform-origin: 8px 27px; }
+
+.layout-d-hero-charm:hover .layout-d-reel-l,
+.layout-d-hero-charm:hover .layout-d-reel-r {
+  animation: layoutDReelSpin 2s linear infinite;
+}
+
+.layout-d-charm-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 1.08rem;
+  color: #6b5a62;
+  line-height: 1.4;
+}
+
+.layout-d-charm-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #5b8ec2;
+  background: #eaf5ff;
+  border-radius: 6px;
+  padding: 0.08rem 0.45rem;
+  width: fit-content;
+}
+
+/* Right Split Column: Authentic Anime Pastel Sticky-Note Search Card! */
+.layout-d-split-right {
+  animation: layoutDEntrance 580ms var(--ease-bouncy) 120ms both;
+}
+
+[data-layout-demo='d'] .layout-d-split-right .search-note-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+[data-layout-demo='d'] .search-note-section .sticky-note-card {
+  --rot: 0deg;
+  position: relative;
+  background-color: #fffbe6 !important;
+  background-image:
+    var(--d-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 245, 204, 0.4) 100%) !important;
+  background-size: 96px 96px, 240px 240px, 100% 100% !important;
+  border-radius: 16px 16px 28px 16px !important;
+  border: 1.8px solid #ecd080 !important;
+  box-shadow:
+    6px 7px 0 rgba(238, 210, 128, 0.42),
+    0 18px 34px -16px rgba(176, 146, 92, 0.22) !important;
+  padding: 2.1rem 2rem 1.85rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+/* Translucent Sakura Striped Washi Tape holding top-center of Search Sticky Note! */
+[data-layout-demo='d'] .search-note-section .sticky-note-card::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 118px;
+  height: 24px;
+  margin-left: -59px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 178, 208, 0.68) 0 8px,
+    rgba(255, 218, 232, 0.72) 8px 16px
+  );
+  border: 1px solid rgba(240, 152, 186, 0.35);
+  box-shadow: 0 2px 6px rgba(214, 126, 158, 0.16);
+  transform: rotate(-1.5deg);
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Realistic Curled Bottom-Right Peel Corner on Search Sticky Note! */
+[data-layout-demo='d'] .search-note-section .sticky-note-card::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(212, 178, 96, 0.35) 50%, #fff4c2 54%);
+  border-top-left-radius: 10px;
+  box-shadow: -3px -3px 6px rgba(176, 142, 74, 0.14);
+  pointer-events: none;
+}
+
+[data-layout-demo='d'] .search-note-section .sticky-note-card:hover {
+  translate: 0 -4px;
+  box-shadow:
+    8px 10px 0 rgba(238, 210, 128, 0.48),
+    0 24px 40px -16px rgba(176, 146, 92, 0.28) !important;
+}
+
+[data-layout-demo='d'] .search-note-section .brand-badge.sticker {
+  border-radius: 999px !important;
+  border: 1.5px solid #c6b6f0 !important;
+  box-shadow: 2px 2px 0 rgba(198, 182, 240, 0.45) !important;
+}
+
+[data-layout-demo='d'] .search-input-wrapper {
+  min-width: 0;
+}
+
+[data-layout-demo='d'] .search-input-wrapper .paper-input-container {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  border: 1.8px solid #ebd288 !important;
+  box-shadow: inset 0 2px 6px rgba(182, 146, 78, 0.08) !important;
+  padding: 0.22rem 0.85rem 0.22rem 1rem !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+[data-layout-demo='d'] .search-input-wrapper .paper-input-container:focus-within {
+  border-color: #f07fa4 !important;
+  box-shadow: 0 0 0 4px rgba(240, 127, 164, 0.2) !important;
+}
+
+[data-layout-demo='d'] .search-input-wrapper .paper-input-field {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Crisp Anime Cel-Shaded Sakura Parse Button */
+[data-layout-demo='d'] .search-input-row .marker-button {
+  border-radius: 14px !important;
+  padding: 0.78rem 1.8rem !important;
+  border: 1.8px solid #d45882 !important;
+  background: linear-gradient(180deg, #ff9ab8 0%, #ed6f96 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 3px 4px 0 #d45882 !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--d-spring), scale var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .search-input-row .marker-button:hover:not(:disabled) {
+  translate: -1px -3px;
+  scale: 1.03;
+  box-shadow: 5px 6px 0 #d45882 !important;
+}
+
+[data-layout-demo='d'] .search-input-row .marker-button:active:not(:disabled) {
+  translate: 2px 2px;
+  box-shadow: 1px 1px 0 #d45882 !important;
+}
+
+[data-layout-demo='d'] .search-input-row .marker-button:disabled {
+  background: linear-gradient(180deg, #fad0de 0%, #f2b7ca 100%) !important;
+  border-color: #e49cb4 !important;
+  box-shadow: 2px 3px 0 rgba(228, 156, 180, 0.45) !important;
+}
+
+/* Fresh Anime Sticker Platform Chips */
+[data-layout-demo='d'] .search-platforms-row .sticker,
+[data-layout-demo='d'] .search-sample-row .sticker {
+  border-radius: 10px !important;
+  border: 1.5px solid rgba(176, 156, 148, 0.4) !important;
+  box-shadow: 2px 3px 0 rgba(186, 166, 158, 0.28) !important;
+  padding: 0.24rem 0.78rem !important;
+  font-size: 0.88rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition: translate var(--d-spring), rotate var(--d-spring), scale var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .search-platforms-row .sticker:nth-child(odd):hover,
+[data-layout-demo='d'] .search-sample-row .sticker:nth-child(odd):hover {
+  translate: 0 -4px;
+  rotate: -2.2deg;
+  scale: 1.05;
+  box-shadow: 4px 5px 0 rgba(238, 160, 186, 0.42) !important;
+}
+
+[data-layout-demo='d'] .search-platforms-row .sticker:nth-child(even):hover,
+[data-layout-demo='d'] .search-sample-row .sticker:nth-child(even):hover {
+  translate: 0 -4px;
+  rotate: 2.2deg;
+  scale: 1.05;
+  box-shadow: 4px 5px 0 rgba(146, 206, 238, 0.42) !important;
+}
+
+[data-layout-demo='d'] .quick-samples-toggle {
+  border-radius: 10px !important;
+  border: 1.5px dashed #e89cb6 !important;
+  background: #fff7fa !important;
+  box-shadow: 2px 2px 0 rgba(238, 174, 196, 0.32) !important;
+  translate: 0 0;
+  transition: translate var(--d-spring) !important;
+}
+
+[data-layout-demo='d'] .quick-samples-toggle:hover {
+  translate: 0 -2px;
+}
+
+/* ---------------- 4.5 Result Page Anime Sticky-Note Sheet (Single & Batch) ---------------- */
+.layout-d-result-wrap {
+  margin: 0.5rem 0 3.25rem;
+}
+
+[data-layout-demo='d'] .result-paper-card,
+[data-layout-demo='d'] .user-playlists-paper {
+  position: relative;
+  border-radius: 18px 18px 28px 18px !important;
+  background-color: #fffefd !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 256px 256px !important;
+  border: 1.8px solid #a8d2f4 !important;
+  box-shadow: 6px 7px 0 rgba(168, 210, 244, 0.4), 0 18px 34px -16px rgba(102, 138, 176, 0.2) !important;
+}
+
+[data-layout-demo='d'] .result-paper-card .marker-button,
+[data-layout-demo='d'] .user-playlists-paper .marker-button {
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(162, 192, 222, 0.55) !important;
+  box-shadow: 2px 3px 0 rgba(162, 192, 222, 0.4) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .result-paper-card .marker-button:hover,
+[data-layout-demo='d'] .user-playlists-paper .marker-button:hover {
+  translate: 0 -2px;
+  rotate: -1deg;
+}
+
+/* ---------------- 5. Section Track Ribbons & Horizontal Shelf Controls ---------------- */
+.layout-d-section-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.15rem;
+}
+
+.layout-d-ribbon-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.24rem 0.85rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.layout-d-ribbon-pill.is-sky {
+  background: #e6f4ff;
+  color: #467cb0;
+  border: 1.5px solid #a2cef4;
+  box-shadow: 2px 2px 0 rgba(162, 206, 244, 0.45);
+}
+
+.layout-d-ribbon-pill.is-pink {
+  background: #ffe8f1;
+  color: #be4d76;
+  border: 1.5px solid #f2a8c4;
+  box-shadow: 2px 2px 0 rgba(242, 168, 196, 0.45);
+}
+
+.layout-d-ribbon-pill.is-mint {
+  background: #e0f8ef;
+  color: #2b7d60;
+  border: 1.5px solid #8adbc0;
+  box-shadow: 2px 2px 0 rgba(138, 219, 192, 0.45);
+}
+
+.layout-d-ribbon-pill.is-taro {
+  background: #eee7ff;
+  color: #6b4eb2;
+  border: 1.5px solid #c2b0f0;
+  box-shadow: 2px 2px 0 rgba(194, 176, 240, 0.45);
+}
+
+.layout-d-ribbon-line {
+  flex: 1;
+  height: 1.5px;
+  background: repeating-linear-gradient(90deg, rgba(168, 198, 226, 0.55) 0 6px, transparent 6px 12px);
+}
+
+.layout-d-shelf-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+[data-layout-demo='d'] .layout-d-shelf-hint {
+  font-size: 0.96rem;
+  color: #7c8da4;
+  margin: 0;
+  padding: 0;
+}
+
+.layout-d-shelf-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #a2cef4;
+  background: #ffffff;
+  color: #4b7fb2;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 rgba(162, 206, 244, 0.5);
+  cursor: pointer;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--d-spring), scale var(--d-spring), background-color 180ms ease;
+}
+
+.layout-d-shelf-btn:hover {
+  background: #e6f4ff;
+  translate: 0 -2px;
+  scale: 1.08;
+}
+
+/* ---------------- 6. TRACK 01: Horizontal Anime Sticky-Note Cassette Shelf (NO outer box!) ---------------- */
+.layout-d-shelf-wrap {
+  margin: 2rem 0 3.75rem;
+}
+
+[data-layout-demo='d'] .plugin-ecosystem-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='d'] .plugin-supported-count {
+  border-radius: 14px !important;
+  border: 1.5px dashed #f09cb8 !important;
+  background: #fff0f6 !important;
+  box-shadow: 3px 3px 0 rgba(240, 156, 184, 0.4) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring) !important;
+}
+
+[data-layout-demo='d'] .plugin-supported-count:hover {
+  translate: 0 -3px;
+  rotate: 3.5deg;
+}
+
+/* Horizontal Scrollable Sticky-Note Shelf */
+[data-layout-demo='d'] .plugin-app-grid {
+  display: flex !important;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding: 1.25rem 0.5rem 1.5rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #f2a8c4 transparent;
+}
+
+[data-layout-demo='d'] .plugin-app-grid > div {
+  flex: 1 0 340px;
+  min-width: 340px;
+  scroll-snap-align: start;
+}
+
+/* Each Player Card is an Individual Peel-Corner Anime Sticky Note with Top Washi Tape! */
+[data-layout-demo='d'] .plugin-app-card {
+  position: relative;
+  height: 100%;
+  border-radius: 14px 14px 24px 14px !important;
+  background-color: #eef7ff !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 240px 240px !important;
+  border: 1.8px solid #a2cef4 !important;
+  box-shadow: 5px 6px 0 rgba(162, 206, 244, 0.42), 0 12px 24px -12px rgba(102, 138, 176, 0.2) !important;
+  padding: 1.65rem 1.35rem 1.35rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+/* Translucent pastel tape on top-center of each sticky cassette note */
+[data-layout-demo='d'] .plugin-app-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 74px;
+  height: 18px;
+  margin-left: -37px;
+  border-radius: 2px;
+  background: rgba(255, 192, 214, 0.68);
+  border: 1px solid rgba(240, 152, 186, 0.32);
+  transform: rotate(-2deg);
+  pointer-events: none;
+}
+
+/* Subtle bottom-right curled peel corner */
+[data-layout-demo='d'] .plugin-app-card::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(124, 168, 212, 0.3) 50%, #d9edff 54%);
+  border-top-left-radius: 8px;
+  pointer-events: none;
+}
+
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(2) .plugin-app-card {
+  background-color: #eafaf3 !important;
+  border-color: #8adbc0 !important;
+  box-shadow: 5px 6px 0 rgba(138, 219, 192, 0.42), 0 12px 24px -12px rgba(82, 156, 130, 0.18) !important;
+}
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(2) .plugin-app-card::before {
+  background: rgba(255, 224, 134, 0.68);
+  border-color: rgba(232, 192, 84, 0.35);
+  transform: rotate(2deg);
+}
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(2) .plugin-app-card::after {
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(92, 174, 146, 0.3) 50%, #cef3e5 54%);
+}
+
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(3) .plugin-app-card {
+  background-color: #fff9e0 !important;
+  border-color: #ebd078 !important;
+  box-shadow: 5px 6px 0 rgba(235, 208, 120, 0.42), 0 12px 24px -12px rgba(176, 146, 72, 0.18) !important;
+}
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(3) .plugin-app-card::before {
+  background: rgba(162, 218, 255, 0.68);
+  border-color: rgba(124, 188, 238, 0.35);
+  transform: rotate(-1.5deg);
+}
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(3) .plugin-app-card::after {
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(204, 174, 84, 0.3) 50%, #ffefc0 54%);
+}
+
+/* Straight at rest -> playful individual hover lift & tilt! */
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(odd) .plugin-app-card:hover {
+  translate: 0 -7px;
+  rotate: -1.6deg;
+  box-shadow: 8px 11px 0 rgba(162, 206, 244, 0.52), 0 20px 34px -12px rgba(102, 138, 176, 0.28) !important;
+}
+
+[data-layout-demo='d'] .plugin-app-grid > :nth-child(even) .plugin-app-card:hover {
+  translate: 0 -7px;
+  rotate: 1.6deg;
+  box-shadow: 8px 11px 0 rgba(138, 219, 192, 0.52), 0 20px 34px -12px rgba(82, 156, 130, 0.28) !important;
+}
+
+[data-layout-demo='d'] .plugin-app-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+[data-layout-demo='d'] .plugin-app-logo-wrap {
+  border-radius: 12px !important;
+  border: 1.5px solid #ffffff !important;
+  box-shadow: 2px 3px 0 rgba(154, 178, 206, 0.35);
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--d-spring), scale var(--d-spring);
+}
+
+[data-layout-demo='d'] .plugin-app-card:hover .plugin-app-logo-wrap {
+  rotate: -8deg;
+  scale: 1.1;
+}
+
+[data-layout-demo='d'] .plugin-status-sticker,
+[data-layout-demo='d'] .plugin-ecosystem-panel .sticker {
+  border-radius: 8px !important;
+  border: 1px solid rgba(164, 184, 208, 0.45) !important;
+  box-shadow: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.74rem !important;
+}
+
+[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button,
+[data-layout-demo='d'] .plugin-copy-button {
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(168, 186, 210, 0.55) !important;
+  box-shadow: 2px 3px 0 rgba(168, 186, 210, 0.4) !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--d-spring), scale var(--d-spring) !important;
+}
+
+[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button:hover,
+[data-layout-demo='d'] .plugin-copy-button:hover {
+  translate: 0 -2px;
+  scale: 1.03;
+}
+
+[data-layout-demo='d'] .plugin-action-link {
+  background: linear-gradient(180deg, #ff9ab8 0%, #ed6f96 100%) !important;
+  color: #ffffff !important;
+  border-color: #d45882 !important;
+  box-shadow: 2px 3px 0 #d45882 !important;
+}
+
+/* ---------------- 7. TRACK 02: Fanned Trio of Fresh Anime Sticky Notes (InfoNotes) ---------------- */
+.layout-d-fan-wrap {
+  margin: 2rem 0 3.75rem;
+}
+
+[data-layout-demo='d'] .info-notes-section {
+  margin: 0 !important;
+  padding: 0 0 1rem !important;
+}
+
+[data-layout-demo='d'] .info-notes-section .info-notes-grid {
+  display: flex !important;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0 !important;
+  padding: 1.25rem 0 0.75rem;
+}
+
+[data-layout-demo='d'] .info-notes-grid > * {
+  flex: 1 1 0;
+  max-width: 410px;
+  margin-top: 0 !important;
+  position: relative;
+  z-index: 1;
+}
+
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) {
+  margin-left: -1.15rem;
+  z-index: 2;
+}
+
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) {
+  margin-left: -1.15rem;
+  z-index: 3;
+}
+
+[data-layout-demo='d'] .info-notes-grid > *:hover {
+  z-index: 25 !important;
+}
+
+[data-layout-demo='d'] .info-notes-section .ruled-paper-text,
+[data-layout-demo='d'] .info-notes-section .ruled-paper-list {
+  background-image: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.94rem !important;
+  line-height: 1.78 !important;
+  color: #5e4f58 !important;
+}
+
+/* Shared Anime Sticky-Note Geometry for the 3 Fanned Notes */
+[data-layout-demo='d'] .info-notes-grid .journal-paper {
+  position: relative;
+  height: 100%;
+  border-radius: 14px 14px 26px 14px !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 240px 240px !important;
+  padding: 2rem 1.75rem 1.75rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  scale: 1;
+}
+
+/* Translucent Pastel Washi Tape on top of each fanned sticky note */
+[data-layout-demo='d'] .info-notes-grid .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  width: 82px;
+  height: 20px;
+  margin-left: -41px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Curled Bottom-Right Sticky-Note Peel Corner */
+[data-layout-demo='d'] .info-notes-grid .journal-paper::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 24px;
+  height: 24px;
+  border-top-left-radius: 8px;
+  pointer-events: none;
+}
+
+/* Fan Note 1: Sunlit Lemon Sticky Note */
+[data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper {
+  background-color: #fff9db !important;
+  border: 1.8px solid #ecd078 !important;
+  box-shadow: 5px 6px 0 rgba(236, 208, 120, 0.42), 0 14px 26px -12px rgba(176, 146, 72, 0.2) !important;
+  rotate: -2deg;
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper::before {
+  background: repeating-linear-gradient(45deg, rgba(162, 224, 255, 0.72) 0 6px, rgba(214, 242, 255, 0.75) 6px 12px);
+  transform: rotate(-3deg);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper::after {
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(208, 178, 88, 0.32) 50%, #ffefc0 54%);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper:hover {
+  translate: 0 -10px;
+  rotate: 0deg;
+  scale: 1.03;
+}
+
+/* Fan Note 2: Sakura Milk Sticky Note */
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper {
+  background-color: #ffecf3 !important;
+  border: 1.8px solid #f2a8c4 !important;
+  box-shadow: 5px 6px 0 rgba(242, 168, 196, 0.42), 0 14px 26px -12px rgba(186, 108, 138, 0.2) !important;
+  rotate: 0.6deg;
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 1.5px, rgba(255, 176, 206, 0.72) 1.8px) 0 0 / 8px 8px;
+  transform: rotate(2deg);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper::after {
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(214, 126, 158, 0.32) 50%, #ffd4e4 54%);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper:hover {
+  translate: 0 -10px;
+  rotate: -0.8deg;
+  scale: 1.03;
+}
+
+/* Fan Note 3: Soda-Mint Sticky Note */
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper {
+  background-color: #e6faf2 !important;
+  border: 1.8px solid #8adbc0 !important;
+  box-shadow: 5px 6px 0 rgba(138, 219, 192, 0.42), 0 14px 26px -12px rgba(82, 156, 130, 0.2) !important;
+  rotate: 2deg;
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper::before {
+  background: repeating-linear-gradient(-45deg, rgba(255, 224, 134, 0.72) 0 6px, rgba(255, 242, 196, 0.75) 6px 12px);
+  transform: rotate(-2deg);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper::after {
+  background: linear-gradient(315deg, #fefbf6 47%, rgba(92, 174, 146, 0.32) 50%, #cef3e5 54%);
+}
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper:hover {
+  translate: 0 -10px;
+  rotate: 0deg;
+  scale: 1.03;
+}
+
+[data-layout-demo='d'] .info-notes-favorited .sticker,
+[data-layout-demo='d'] .stats-chill-vibes-row .sticker {
+  border-radius: 999px !important;
+  border: 1.5px solid #f2a8c4 !important;
+  box-shadow: 2px 2px 0 rgba(242, 168, 196, 0.4) !important;
+}
+
+/* ---------------- 8. TRACK 03: Unwrapped Fresh Anime Stats Sticky Notes ---------------- */
+.layout-d-stats-wrap {
+  margin: 2rem 0 3.75rem;
+}
+
+[data-layout-demo='d'] .stats-journal-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='d'] .stats-deco-headphones,
+[data-layout-demo='d'] .stats-deco-stamp {
+  display: none !important;
+}
+
+[data-layout-demo='d'] .stats-journal-header {
+  text-align: left !important;
+  margin-bottom: 1.15rem !important;
+}
+
+[data-layout-demo='d'] .stats-journal-title {
+  height: auto !important;
+  line-height: 1.3 !important;
+  margin-top: 0.25rem !important;
+}
+
+[data-layout-demo='d'] .stats-main-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.45rem !important;
+  margin-bottom: 1.45rem !important;
+}
+
+[data-layout-demo='d'] .stats-main-grid .journal-paper {
+  position: relative;
+  border-radius: 14px 14px 24px 14px !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 240px 240px !important;
+  padding: 1.65rem 1.45rem 1.45rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='d'] .stats-main-grid .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 68px;
+  height: 17px;
+  margin-left: -34px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+[data-layout-demo='d'] .stats-main-grid > :nth-child(1) .journal-paper {
+  background-color: #fff9dc !important;
+  border: 1.8px solid #ecd078 !important;
+  box-shadow: 5px 6px 0 rgba(236, 208, 120, 0.42) !important;
+}
+[data-layout-demo='d'] .stats-main-grid > :nth-child(1) .journal-paper::before {
+  background: rgba(255, 186, 212, 0.68);
+  transform: rotate(-2deg);
+}
+
+[data-layout-demo='d'] .stats-main-grid > :nth-child(2) .journal-paper {
+  background-color: #ffedf4 !important;
+  border: 1.8px solid #f2a8c4 !important;
+  box-shadow: 5px 6px 0 rgba(242, 168, 196, 0.42) !important;
+}
+[data-layout-demo='d'] .stats-main-grid > :nth-child(2) .journal-paper::before {
+  background: rgba(162, 224, 255, 0.68);
+  transform: rotate(2deg);
+}
+
+[data-layout-demo='d'] .stats-main-grid > :nth-child(3) .journal-paper {
+  background-color: #e7faf3 !important;
+  border: 1.8px solid #8adbc0 !important;
+  box-shadow: 5px 6px 0 rgba(138, 219, 192, 0.42) !important;
+}
+[data-layout-demo='d'] .stats-main-grid > :nth-child(3) .journal-paper::before {
+  background: rgba(206, 188, 252, 0.68);
+  transform: rotate(-1.5deg);
+}
+
+/* Straight at rest -> playful individual tilt on hover! */
+[data-layout-demo='d'] .stats-main-grid > :nth-child(odd) .journal-paper:hover {
+  translate: 0 -6px;
+  rotate: -1.6deg;
+}
+
+[data-layout-demo='d'] .stats-main-grid > :nth-child(even) .journal-paper:hover {
+  translate: 0 -6px;
+  rotate: 1.6deg;
+}
+
+[data-layout-demo='d'] .stats-main-grid .font-num {
+  display: inline-block;
+  scale: 1;
+  transition: scale var(--d-spring), color 220ms ease;
+}
+
+[data-layout-demo='d'] .stats-main-grid .journal-paper:hover .font-num {
+  scale: 1.07;
+  color: #e05c88;
+}
+
+/* 30-Day Candy Equalizer Sticky Note */
+[data-layout-demo='d'] .stats-journal-section > .reveal:last-of-type .journal-paper {
+  border-radius: 16px !important;
+  background-color: #f4faff !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  border: 1.8px solid #a2cef4 !important;
+  box-shadow: 5px 6px 0 rgba(162, 206, 244, 0.42) !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='d'] .stats-journal-section > .reveal:last-of-type .journal-paper:hover {
+  translate: 0 -4px;
+}
+
+[data-layout-demo='d'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
+[data-layout-demo='d'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+  border-radius: 999px 999px 6px 6px !important;
+  scale: 1 1;
+  transform-origin: bottom center;
+  transition: scale var(--d-spring), filter 220ms ease;
+}
+
+[data-layout-demo='d'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
+[data-layout-demo='d'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+  scale: 1 1.2;
+  filter: saturate(1.3);
+}
+
+/* ---------------- 9. TRACK 04: Unwrapped 4-Col Anime Developer Sticky Notes + Star Stamp ---------------- */
+.layout-d-dev-wrap {
+  margin: 2rem 0 2.5rem;
+}
+
+[data-layout-demo='d'] .developer-panel {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-layout-demo='d'] .developer-method-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin-top: 1.45rem !important;
+}
+
+/* Each Developer Method is an Individual Mini Pastel Sticky Note with Tape! */
+[data-layout-demo='d'] .developer-method {
+  position: relative;
+  border-radius: 14px 14px 22px 14px !important;
+  background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 220px 220px !important;
+  border-width: 1.8px !important;
+  padding: 1.45rem 1.2rem 1.2rem !important;
+  overflow: visible !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .developer-method::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 54px;
+  height: 14px;
+  margin-left: -27px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(186, 178, 198, 0.35);
+  pointer-events: none;
+}
+
+[data-layout-demo='d'] .developer-method:nth-child(1) {
+  background-color: #ffedf4 !important;
+  border-color: #f2a8c4 !important;
+  box-shadow: 4px 5px 0 rgba(242, 168, 196, 0.4) !important;
+}
+[data-layout-demo='d'] .developer-method:nth-child(2) {
+  background-color: #e7faf3 !important;
+  border-color: #8adbc0 !important;
+  box-shadow: 4px 5px 0 rgba(138, 219, 192, 0.4) !important;
+}
+[data-layout-demo='d'] .developer-method:nth-child(3) {
+  background-color: #fff9dc !important;
+  border-color: #ecd078 !important;
+  box-shadow: 4px 5px 0 rgba(236, 208, 120, 0.4) !important;
+}
+[data-layout-demo='d'] .developer-method:nth-child(4) {
+  background-color: #f1ebff !important;
+  border-color: #c2b0f0 !important;
+  box-shadow: 4px 5px 0 rgba(194, 176, 240, 0.4) !important;
+}
+
+[data-layout-demo='d'] .developer-method:nth-child(odd):hover {
+  translate: 0 -6px;
+  rotate: -1.8deg;
+}
+
+[data-layout-demo='d'] .developer-method:nth-child(even):hover {
+  translate: 0 -6px;
+  rotate: 1.8deg;
+}
+
+[data-layout-demo='d'] .developer-method-mark {
+  border-radius: 10px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--d-spring), scale var(--d-spring);
+}
+
+[data-layout-demo='d'] .developer-method:hover .developer-method-mark {
+  rotate: -10deg;
+  scale: 1.15;
+}
+
+/* Cute Anime Star-Ribbon Badge for RunningDaysStamp */
+[data-layout-demo='d'] .running-days-stamp {
+  border-radius: 999px !important;
+  border: 2px solid #f2a4c0 !important;
+  background: linear-gradient(90deg, #fff1f6 0%, #fff9de 50%, #e8faf3 100%) !important;
+  box-shadow: 4px 5px 0 rgba(242, 164, 192, 0.42) !important;
+  padding: 0.85rem 2.2rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition: translate var(--d-spring), rotate var(--d-spring), scale var(--d-spring);
+  cursor: default;
+}
+
+[data-layout-demo='d'] .running-days-stamp:hover {
+  translate: 0 -4px;
+  rotate: 2deg;
+  scale: 1.04;
+}
+
+/* ---------------- 10. Breezy Anime Pill Footer ---------------- */
+[data-layout-demo='d'] .journal-footer .sticker,
+[data-layout-demo='d'] .journal-footer button.sticker,
+[data-layout-demo='d'] .journal-footer a.sticker {
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(162, 192, 222, 0.55) !important;
+  box-shadow: 3px 3px 0 rgba(162, 192, 222, 0.42) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
+}
+
+[data-layout-demo='d'] .journal-footer .sticker:hover {
+  translate: 0 -3px;
+  rotate: -1.5deg;
+  box-shadow: 4px 6px 0 rgba(242, 168, 196, 0.5) !important;
+}
+
+/* ---------------- 11. Size-Adaptive Breakpoints for Layout D ---------------- */
+
+/* Tablet (769px ~ 1080px) */
+@media (max-width: 1080px) and (min-width: 769px) {
+  [data-layout-demo='d'] .layout-d-split-hero {
+    grid-template-columns: 1fr;
+    gap: 1.85rem;
+  }
+  [data-layout-demo='d'] .stats-main-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  [data-layout-demo='d'] .stats-main-grid > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  [data-layout-demo='d'] .developer-method-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile (<= 768px) */
+@media (max-width: 768px) {
+  [data-layout-demo='d'] .journal-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 0.8rem !important;
+    padding-right: 0.8rem !important;
+    overflow-x: clip;
+  }
+
+  [data-layout-demo='d'] .layout-d-split-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  [data-layout-demo='d'] .layout-d-hero-charm {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+  }
+
+  [data-layout-demo='d'] .layout-d-walkman-svg {
+    width: 112px;
+    height: 64px;
+  }
+
+  [data-layout-demo='d'] .search-note-section .sticky-note-card {
+    padding: 1.75rem 1.05rem 1.35rem !important;
+  }
+
+  [data-layout-demo='d'] .search-input-wrapper {
+    flex: 1 1 100% !important;
+  }
+
+  [data-layout-demo='d'] .search-input-row .marker-button {
+    width: 100%;
+  }
+
+  [data-layout-demo='d'] .layout-d-shelf-hint {
+    display: none;
+  }
+
+  [data-layout-demo='d'] .plugin-app-grid > div {
+    flex: 0 0 84vw;
+  }
+
+  [data-layout-demo='d'] .info-notes-section .info-notes-grid {
+    flex-direction: column;
+    gap: 1.45rem !important;
+  }
+
+  [data-layout-demo='d'] .info-notes-grid > :nth-child(2),
+  [data-layout-demo='d'] .info-notes-grid > :nth-child(3) {
+    margin-left: 0;
+  }
+
+  [data-layout-demo='d'] .info-notes-grid .journal-paper {
+    rotate: 0deg !important;
+  }
+
+  [data-layout-demo='d'] .stats-main-grid,
+  [data-layout-demo='d'] .developer-method-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-layout-demo='d'] .developer-heading-row,
+  [data-layout-demo='d'] .plugin-ecosystem-heading-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  [data-layout-demo='d'] .developer-value-note {
+    white-space: normal !important;
+    text-align: left !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-layout-demo='d'] .layout-d-float-note,
+  [data-layout-demo='d'] .layout-d-sparkle-1,
+  [data-layout-demo='d'] .layout-d-sparkle-2,
+  [data-layout-demo='d'] .layout-d-sparkle-3,
+  [data-layout-demo='d'] .layout-d-reel-l,
+  [data-layout-demo='d'] .layout-d-reel-r {
+    animation: none !important;
+  }
+}

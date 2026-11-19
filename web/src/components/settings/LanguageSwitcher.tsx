@@ -8,9 +8,10 @@ export const LanguageSwitcher: React.FC = () => {
   return (
     <Sticker
       type="button"
-      color="white"
+      color="blue"
       rotateDeg={-1}
       onClick={toggleLanguage}
+      className="header-lang-btn"
       aria-label="Toggle language / 切换语言"
       style={{
         padding: '0.42rem 0.85rem',

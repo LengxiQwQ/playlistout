@@ -3,10 +3,14 @@ import { fetchStats, type StatsResponse, type StatsIncrementDetail } from '../..
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
 import { Sticker } from '../ui/Sticker';
+import { Tape } from '../ui/Tape';
 import { PLATFORMS, getPlatformName } from '../../utils/platform';
 import { calculateRunningDays } from '../../utils/uptime';
 import { AnimatedCounter } from './AnimatedCounter';
 import { RunningDaysStamp, type RunningDaysStampProps } from './RunningDaysStamp';
+import { Reveal } from '../motion/Reveal';
+import { useReveal } from '../../hooks/useReveal';
+import { isRevealEnabled } from '../../motion/revealEnv';
 
 export { RunningDaysStamp, type RunningDaysStampProps };
 
@@ -14,9 +18,44 @@ export interface StatsJournalProps {
   today?: Date | string;
 }
 
+const RevealStampCard: React.FC<{
+  delay: number;
+  rot: number;
+  children: (counterStarted: boolean) => React.ReactNode;
+}> = ({ delay, rot, children }) => {
+  const { ref, revealed } = useReveal<HTMLDivElement>();
+  const [counterStarted, setCounterStarted] = useState(() => !isRevealEnabled());
+
+  useEffect(() => {
+    if (!revealed) return;
+    if (!isRevealEnabled()) {
+      setCounterStarted(true);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setCounterStarted(true);
+    }, delay + 400);
+    return () => window.clearTimeout(timer);
+  }, [revealed, delay]);
+
+  return (
+    <div
+      ref={ref}
+      className="reveal"
+      data-reveal="stamp"
+      data-revealed={revealed ? 'true' : 'false'}
+      style={{ '--reveal-delay': `${delay}ms`, '--rot': `${rot}deg`, display: 'flex' } as React.CSSProperties}
+    >
+      {children(counterStarted)}
+    </div>
+  );
+};
+
 export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   const { t, format: formatString, language } = useTranslation();
   const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [statsSettled, setStatsSettled] = useState(false);
+  const [activeTrendIdx, setActiveTrendIdx] = useState<number | null>(null);
 
   const refreshStats = useCallback(() => {
     fetchStats()
@@ -29,9 +68,11 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             }),
           );
         }
+        setStatsSettled(true);
       })
       .catch(() => {
         // Non-blocking best-effort: silently handle network/API failures
+        setStatsSettled(true);
       });
   }, []);
 
@@ -139,19 +180,18 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       const counts = recent.map((d) => d.parses + d.exports);
       const maxVal = Math.max(...counts, 1);
       const minVal = Math.min(...counts);
-      // Soft dynamic baseline: when data is concentrated in a high band (e.g. 300~750),
-      // scaling strictly from 0 makes all 30 bars look almost flat and identical (60%~100%).
-      // We set a soft baseline (minVal * 0.7) so peaks and troughs have vivid contrast,
-      // while keeping the peak day at 100% and preserving a visible base for the lowest day.
       const baseline = counts.length > 1 && maxVal > minVal ? Math.floor(minVal * 0.7) : 0;
       const range = maxVal - baseline || 1;
       return recent.slice(0, 30).reverse().map((d) => {
         const count = d.parses + d.exports;
         const normalized = Math.round(((count - baseline) / range) * 100);
         return {
+          fullDate: d.date,
           date: d.date.slice(5),
           height: Math.max(16, Math.min(100, normalized)),
           count,
+          parses: d.parses,
+          exports: d.exports,
         };
       });
     }
@@ -161,13 +201,21 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
   // Platform shares calculation
   const platformShares = useMemo(() => {
     const raw = stats?.byPlatform || {};
-    const entries = Object.values(PLATFORMS).map(config => ({
-      id: config.id, name: getPlatformName(config.id, language),
-      count: raw[config.id]?.totalSuccess || 0, color: config.badgeBorder,
+    const entries = Object.values(PLATFORMS).map((config) => ({
+      id: config.id,
+      name: getPlatformName(config.id, language),
+      count: raw[config.id]?.totalSuccess || 0,
+      color: config.badgeBorder,
     }));
     const total = entries.reduce((sum, item) => sum + item.count, 0);
-    return entries.map(item => ({...item, pct: total ? Math.round(item.count / total * 100) : 0}));
+    return entries.map((item) => ({ ...item, pct: total ? Math.round((item.count / total) * 100) : 0 }));
   }, [stats?.byPlatform, language]);
+
+  const hasPlatformData = useMemo(
+    () => platformShares.some((item) => item.count > 0),
+    [platformShares],
+  );
+  const showPlatformEmptyNote = statsSettled && !hasPlatformData;
 
   const handleDashboardNavigate = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -220,15 +268,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       }}
     >
       {/* Header */}
-      <div
-        className="stats-journal-header"
-        style={{ textAlign: 'center', marginBottom: '1rem' }}
-      >
+      <Reveal effect="fade-up" delay={0} className="stats-journal-header" style={{ textAlign: 'center', marginBottom: '1rem' }}>
         <div
           className="font-note stats-journal-subtitle"
           style={{
             fontSize: '1.65rem',
-            color: '#8a7569',
+            color: 'var(--ink-light, #8a7569)',
             height: 'var(--ruled-line-height, 38px)',
             lineHeight: 'var(--ruled-line-height, 38px)',
           }}
@@ -246,11 +291,11 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             marginTop: '1.15rem',
           }}
         >
-          {t.stats.title}
+          <span className="scribble-line stats-scribble-line">{t.stats.title}</span>
         </div>
-      </div>
+      </Reveal>
 
-      {/* Small journal decoration kept inside the stats content column. */}
+      {/* Act 4 Deco 1: chill vibes sticker */}
       <div
         className="stats-chill-vibes-row"
         aria-hidden="true"
@@ -264,20 +309,155 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           pointerEvents: 'none',
         }}
       >
-        <Sticker
-          as="div"
-          color="yellow"
-          rotateDeg={-12}
-          style={{
-            opacity: 0.8,
-            fontSize: '0.85rem',
-            padding: '0.2rem 0.5rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          chill vibes
-        </Sticker>
+        <Reveal effect="pop" delay={1500} rot={-12}>
+          <Sticker
+            as="div"
+            color="yellow"
+            rotateDeg={0}
+            style={{
+              opacity: 0.85,
+              fontSize: '0.85rem',
+              padding: '0.2rem 0.5rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            chill vibes
+          </Sticker>
+        </Reveal>
       </div>
+
+      {/* Act 4 Deco 2..8: Festive stickers migrated into StatsJournal */}
+      {/* Deco 2: Taro Headphones Sticker (left gutter) */}
+      <Reveal
+        effect="pop"
+        delay={1620}
+        rot={-8}
+        className="stats-deco-headphones"
+        aria-hidden="true"
+      >
+        <div className="stationery-sticker delay-3" style={{ ['--sticker-rot' as any]: '-8deg', opacity: 0.92 }}>
+          <svg width="62" height="58" viewBox="0 0 68 64" fill="none">
+            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="#fffdf9" strokeWidth="9" strokeLinecap="round" />
+            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="#6e5a50" strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M19 25C22 18 27.5 14 34 14C40.5 14 46 18 49 25" stroke="#e8ddff" strokeWidth="4" strokeLinecap="round" />
+            <rect x="7" y="31" width="13" height="22" rx="6.5" fill="#e8ddff" stroke="#6e5a50" strokeWidth="2.2" />
+            <rect x="48" y="31" width="13" height="22" rx="6.5" fill="#ffd8e6" stroke="#6e5a50" strokeWidth="2.2" />
+            <circle cx="13.5" cy="42" r="2.5" fill="#fffdf9" />
+            <circle cx="54.5" cy="42" r="2.5" fill="#fffdf9" />
+          </svg>
+        </div>
+      </Reveal>
+
+      {/* Deco 3: Star #1 (right edge) */}
+      <Reveal
+        effect="pop"
+        delay={1740}
+        rot={10}
+        className="stats-deco-star1"
+        aria-hidden="true"
+      >
+        <div
+          className="note-sparkle"
+          style={{ fontSize: '2.1rem', color: 'var(--accent-lemon, #e3b23c)', opacity: 0.88 }}
+        >
+          ★
+        </div>
+      </Reveal>
+
+      {/* Deco 4: Star #2 (top-left header) - hidden on mobile */}
+      <Reveal
+        effect="pop"
+        delay={1860}
+        rot={-14}
+        data-deco-mobile="hide"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '0.65rem',
+          left: '3.5rem',
+          pointerEvents: 'none',
+          zIndex: 15,
+        }}
+      >
+        <div
+          className="note-sparkle"
+          style={{ fontSize: '1.75rem', color: 'var(--accent-strawberry, #e8789a)', opacity: 0.85 }}
+        >
+          ✦
+        </div>
+      </Reveal>
+
+      {/* Deco 5: Music Note #1 (bottom-left) */}
+      <Reveal
+        effect="pop"
+        delay={1980}
+        rot={-10}
+        className="stats-deco-note1"
+        aria-hidden="true"
+      >
+        <div
+          className="stationery-sticker delay-1"
+          style={{ ['--sticker-rot' as any]: '-10deg', fontSize: '2.2rem', color: 'var(--accent-peach, #ee9a6c)', opacity: 0.82 }}
+        >
+          ♪
+        </div>
+      </Reveal>
+
+      {/* Deco 6: Music Note #2 (top-right header) - hidden on mobile */}
+      <Reveal
+        effect="pop"
+        delay={2100}
+        rot={12}
+        data-deco-mobile="hide"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '0.9rem',
+          right: '3.2rem',
+          pointerEvents: 'none',
+          zIndex: 15,
+        }}
+      >
+        <div
+          className="stationery-sticker delay-2"
+          style={{ ['--sticker-rot' as any]: '12deg', fontSize: '2rem', color: 'var(--accent-taro, #9a7fd8)', opacity: 0.82 }}
+        >
+          ♬
+        </div>
+      </Reveal>
+
+      {/* Deco 7: Green Washi Tape Corner Strip - hidden on mobile */}
+      <Reveal
+        effect="pop"
+        delay={2220}
+        rot={-38}
+        data-deco-mobile="hide"
+        className="stats-deco-tape"
+        aria-hidden="true"
+      >
+        <Tape color="green" rotateDeg={0} style={{ width: '3.4rem', height: '1.05rem', opacity: 0.8 }} />
+      </Reveal>
+
+      {/* Deco 8: 80¢ NOTE Postage Stamp SVG Sticker - hidden on mobile */}
+      <Reveal
+        effect="pop"
+        delay={2340}
+        rot={7}
+        data-deco-mobile="hide"
+        className="stats-deco-stamp"
+        aria-hidden="true"
+      >
+        <div className="stationery-sticker" style={{ ['--sticker-rot' as any]: '7deg', opacity: 0.92 }}>
+          <svg width="64" height="74" viewBox="0 0 64 74" fill="none">
+            <rect x="5" y="5" width="54" height="64" rx="4" fill="#fffdf9" stroke="#e8a0b4" strokeWidth="2.2" strokeDasharray="4 3" />
+            <rect x="11" y="11" width="42" height="44" rx="3" fill="#fff4c7" stroke="#6e5a50" strokeWidth="1.6" />
+            <path d="M27 41V23L41 20V38" stroke="#6e5a50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="24" cy="41" r="4" fill="#ec7f9f" stroke="#6e5a50" strokeWidth="1.6" />
+            <circle cx="38" cy="38" r="4" fill="#7fcfaa" stroke="#6e5a50" strokeWidth="1.6" />
+            <text x="32" y="64" textAnchor="middle" fill="#8a7569" fontSize="8.5" fontWeight="700" fontFamily="Space Mono, monospace">80¢ NOTE</text>
+          </svg>
+        </div>
+      </Reveal>
 
       {/* 3 Main Stationery Notes */}
       <div
@@ -290,477 +470,580 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           marginBottom: '2.5rem',
         }}
       >
-        {/* Card 1: Today's Note (Warm Butter Yellow Paper) */}
-        <Paper
-          color="yellow"
-          borderVariant="default"
-          rotateDeg={-1.5}
-          shadow="paper"
-          style={{
-            padding: '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-              <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
-                {t.stats.todayTitle}
-              </div>
-              <button
-                type="button"
-                onClick={refreshStats}
-                aria-label="Refresh stats"
-                title={language === 'zh-CN' ? '点击刷新实时手账统计' : 'Click to refresh live statistics'}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '1.15rem',
-                  padding: '0.2rem 0.4rem',
-                  color: '#8a7569',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  borderRadius: '4px',
-                  transition: 'transform 0.2s ease, color 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--ink, #5a4a42)';
-                  e.currentTarget.style.transform = 'rotate(30deg)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#8a7569';
-                  e.currentTarget.style.transform = 'none';
-                }}
-              >
-                <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>↻</span>
-                <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>☀️ ♫</span>
-              </button>
-            </div>
-            <div className="font-note" style={{ fontSize: '1.45rem', color: '#8a7569', marginBottom: '1.25rem' }}>
-              {todayDateFormatted}
-            </div>
-
-            {/* Today's Visitors Hero Number */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div
-                className="font-marker"
-                style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
-              >
-                <AnimatedCounter value={visitorsToday} />
-              </div>
-              <div className="font-handwriting" style={{ fontSize: '1.3rem', color: '#7a665b', marginTop: '0.2rem' }}>
-                {t.stats.todayVisitors}
-              </div>
-            </div>
-
-            {/* Sub Metrics: Parsed, Tracks, Exports */}
-            <div
+        {/* Card 1: Today's Note (Warm Butter Yellow Paper, rot -0.6deg) */}
+        <RevealStampCard delay={300} rot={-0.6}>
+          {(counterStarted) => (
+            <Paper
+              color="yellow"
+              borderVariant="default"
+              rotateDeg={0}
+              shadow="paper"
               style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1rem',
-                borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
-                paddingTop: '1rem',
-              }}
-            >
-              <div>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={parsedToday} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.todayParsed}
-                </div>
-              </div>
-              <div>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={tracksToday} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.todayTracks}
-                </div>
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={exportsToday} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.todayExports}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="font-note"
-            style={{
-              fontSize: '1.3rem',
-              color: '#c44b63',
-              marginTop: '1.5rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
-              paddingTop: '0.75rem',
-            }}
-          >
-            {t.stats.todayWarmNote}
-          </div>
-        </Paper>
-
-        {/* Card 2: All Time (Cream White Grid Paper) */}
-        <Paper
-          color="white"
-          borderVariant="default"
-          rotateDeg={1}
-          shadow="paper"
-          className="tiny-grid"
-          style={{
-            padding: '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-              <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
-                {t.stats.allTimeTitle}
-              </div>
-              <span style={{ fontSize: '1.25rem', userSelect: 'none', color: '#e0607a' }}>♡ ⋆</span>
-            </div>
-            <div className="font-note" style={{ fontSize: '1.45rem', color: '#8a7569', marginBottom: '1.25rem' }}>
-              {runningDays !== null
-                ? formatString(t.stats.runningDaysStamp, { days: runningDays })
-                : t.stats.runningDaysUnavailable}
-            </div>
-
-            {/* Total Visitors Hero Number */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div
-                className="font-marker"
-                style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
-              >
-                <AnimatedCounter value={cumulativeDailyVisitors} />
-              </div>
-              <div
-                className="font-handwriting"
-                style={{ fontSize: '1.25rem', color: '#7a665b', marginTop: '0.2rem', cursor: 'help' }}
-                title={t.stats.allTimeVisitorsTip}
-              >
-                {t.stats.allTimeVisitors} ⓘ
-              </div>
-            </div>
-
-            {/* Sub Metrics: Parsed, Tracks, Exports */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1rem',
-                borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
-                paddingTop: '1rem',
-              }}
-            >
-              <div>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={parsedTotal} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.allTimePlaylists}
-                </div>
-              </div>
-              <div>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={tracksTotal} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.allTimeTracks}
-                </div>
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div className="font-marker" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
-                  <AnimatedCounter value={totalExports} />
-                </div>
-                <div className="font-handwriting" style={{ fontSize: '1.15rem', color: '#8a7569' }}>
-                  {t.stats.allTimeExports}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="font-note"
-            style={{
-              fontSize: '1.35rem',
-              color: '#8a7569',
-              marginTop: '1.5rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
-              paddingTop: '0.75rem',
-            }}
-          >
-            {renderAllTimeSubtext(t.stats.allTimeSubtext)}
-          </div>
-        </Paper>
-
-        {/* Card 3: Platforms & Preferences (Soft Mint Paper) */}
-        <Paper
-          color="mint"
-          borderVariant="default"
-          rotateDeg={-1}
-          shadow="paper"
-          style={{
-            padding: '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
-                {t.stats.fromWhereTitle}
-              </div>
-              <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>♫ 🍃</span>
-            </div>
-
-            {/* Platform Progress */}
-            <div
-              className="font-handwriting"
-              style={{
-                fontSize: '1.2rem',
-                marginBottom: '1.5rem',
+                flex: 1,
+                padding: '2rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.75rem',
+                justifyContent: 'space-between',
               }}
             >
-              {platformShares.map((p) => (
-                <div key={p.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--ink, #5a4a42)' }}>{p.name}</span>
-                    <span style={{ fontWeight: 700 }}>{p.pct}%</span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                    {t.stats.todayTitle}
                   </div>
-                  <div
+                  <button
+                    type="button"
+                    onClick={refreshStats}
+                    aria-label="Refresh stats"
+                    title={language === 'zh-CN' ? '点击刷新实时手账统计' : 'Click to refresh live statistics'}
                     style={{
-                      height: '0.55rem',
-                      backgroundColor: 'rgba(90, 74, 66, 0.12)',
-                      borderRadius: '9999px',
-                      overflow: 'hidden',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.15rem',
+                      padding: '0.2rem 0.4rem',
+                      color: 'var(--ink-light, #8a7569)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      borderRadius: '4px',
+                      transition: 'transform 0.2s ease, color 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--ink, #5a4a42)';
+                      e.currentTarget.style.transform = 'rotate(30deg)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--ink-light, #8a7569)';
+                      e.currentTarget.style.transform = 'none';
                     }}
                   >
-                    <div
-                      className="platform-progress-fill"
-                      style={{
-                        height: '100%',
-                        backgroundColor: p.color,
-                        width: `${p.pct}%`,
-                        transition: 'width 0.6s ease',
-                      }}
-                    />
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>↻</span>
+                    <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>☀️ ♫</span>
+                  </button>
+                </div>
+                <div className="font-note" style={{ fontSize: '1.45rem', color: 'var(--ink-light, #8a7569)', marginBottom: '1.25rem' }}>
+                  {todayDateFormatted}
+                </div>
+
+                {/* Today's Visitors Hero Number */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div
+                    className="font-marker font-num"
+                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
+                  >
+                    <AnimatedCounter value={visitorsToday} start={counterStarted} />
+                  </div>
+                  <div className="font-handwriting" style={{ fontSize: '1.3rem', color: 'var(--ink-light, #8a7569)', marginTop: '0.2rem' }}>
+                    {t.stats.todayVisitors}
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Format Preferences */}
-            <div style={{ borderTop: '1px dashed rgba(90, 74, 66, 0.15)', paddingTop: '1.1rem' }}>
-              <div className="font-marker" style={{ fontSize: '1.15rem', color: 'var(--ink, #5a4a42)', marginBottom: '0.65rem' }}>
-                {t.stats.formatPreferencesTitle}
+                {/* Sub Metrics: Parsed, Tracks, Exports */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '1rem',
+                    borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                    paddingTop: '1rem',
+                  }}
+                >
+                  <div>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={parsedToday} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.todayParsed}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={tracksToday} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.todayTracks}
+                    </div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={exportsToday} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.todayExports}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Multi-segment Progress Bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  height: '0.65rem',
-                  borderRadius: '9999px',
-                  overflow: 'hidden',
-                  backgroundColor: 'rgba(90, 74, 66, 0.1)',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                <div style={{ width: `${formatStats.xlsx}%`, backgroundColor: '#4fae8a' }} title={`Excel: ${formatStats.xlsx}%`} />
-                <div style={{ width: `${formatStats.json}%`, backgroundColor: '#a98ae6' }} title={`JSON: ${formatStats.json}%`} />
-                <div style={{ width: `${formatStats.txt}%`, backgroundColor: '#6a82d4' }} title={`TXT: ${formatStats.txt}%`} />
-                <div style={{ width: `${formatStats.csv}%`, backgroundColor: '#ee9a6c' }} title={`CSV: ${formatStats.csv}%`} />
-                <div style={{ width: `${formatStats.markdown}%`, backgroundColor: '#64748b' }} title={`Markdown: ${formatStats.markdown}%`} />
-                <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: '#9a7fd8' }} title={`M3U8: ${formatStats.m3u8}%`} />
-              </div>
-
-              {/* Format Legend Pills */}
               <div
                 className="font-note"
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                  fontSize: '1.05rem',
-                  color: '#7a665b',
+                  fontSize: '1.3rem',
+                  color: 'var(--accent-strawberry-ink, #c25478)',
+                  marginTop: '1.5rem',
+                  borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                  paddingTop: '0.75rem',
                 }}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4fae8a' }} />
-                  Excel ({formatStats.xlsx}%)
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#a98ae6' }} />
-                  JSON ({formatStats.json}%)
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#6a82d4' }} />
-                  TXT ({formatStats.txt}%)
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ee9a6c' }} />
-                  CSV ({formatStats.csv}%)
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#9a7fd8' }} />
-                  M3U8 ({formatStats.m3u8}%)
-                </span>
-                <span>Markdown ({formatStats.markdown}%)</span>
+                {t.stats.todayWarmNote}
               </div>
-            </div>
-          </div>
-        </Paper>
+            </Paper>
+          )}
+        </RevealStampCard>
+
+        {/* Card 2: All Time (Cream White Grid Paper, rot 0.4deg) */}
+        <RevealStampCard delay={480} rot={0.4}>
+          {(counterStarted) => (
+            <Paper
+              color="white"
+              borderVariant="default"
+              rotateDeg={0}
+              shadow="paper"
+              className="tiny-grid"
+              style={{
+                flex: 1,
+                padding: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                    {t.stats.allTimeTitle}
+                  </div>
+                  <span style={{ fontSize: '1.25rem', userSelect: 'none', color: 'var(--accent-strawberry, #e8789a)' }}>♡ ⋆</span>
+                </div>
+                <div className="font-note font-num" style={{ fontSize: '1.45rem', fontWeight: 400, color: 'var(--ink-light, #8a7569)', marginBottom: '1.25rem' }}>
+                  {runningDays !== null
+                    ? formatString(t.stats.runningDaysStamp, { days: runningDays })
+                    : t.stats.runningDaysUnavailable}
+                </div>
+
+                {/* Total Visitors Hero Number */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div
+                    className="font-marker font-num"
+                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
+                  >
+                    <AnimatedCounter value={cumulativeDailyVisitors} start={counterStarted} />
+                  </div>
+                  <div
+                    className="font-handwriting"
+                    style={{ fontSize: '1.25rem', color: 'var(--ink-light, #8a7569)', marginTop: '0.2rem', cursor: 'help' }}
+                    title={t.stats.allTimeVisitorsTip}
+                  >
+                    {t.stats.allTimeVisitors} ⓘ
+                  </div>
+                </div>
+
+                {/* Sub Metrics: Parsed, Tracks, Exports */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '1rem',
+                    borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                    paddingTop: '1rem',
+                  }}
+                >
+                  <div>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={parsedTotal} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.allTimePlaylists}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={tracksTotal} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.allTimeTracks}
+                    </div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                      <AnimatedCounter value={totalExports} start={counterStarted} />
+                    </div>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                      {t.stats.allTimeExports}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="font-note"
+                style={{
+                  fontSize: '1.35rem',
+                  color: 'var(--ink-light, #8a7569)',
+                  marginTop: '1.5rem',
+                  borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                  paddingTop: '0.75rem',
+                }}
+              >
+                {renderAllTimeSubtext(t.stats.allTimeSubtext)}
+              </div>
+            </Paper>
+          )}
+        </RevealStampCard>
+
+        {/* Card 3: Platforms & Preferences (Soft Mint Paper, rot -0.3deg) */}
+        <RevealStampCard delay={660} rot={-0.3}>
+          {() => (
+            <Paper
+              color="mint"
+              borderVariant="default"
+              rotateDeg={0}
+              shadow="paper"
+              style={{
+                flex: 1,
+                padding: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                    {t.stats.fromWhereTitle}
+                  </div>
+                  <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>♫ 🍃</span>
+                </div>
+
+                {/* Platform Progress or Empty-State Taro Sticky Note */}
+                {!showPlatformEmptyNote ? (
+                  <div
+                    className="font-handwriting"
+                    style={{
+                      fontSize: '1.2rem',
+                      marginBottom: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    {platformShares.map((p, idx) => (
+                      <div key={p.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--ink, #5a4a42)' }}>{p.name}</span>
+                          <span className="font-num" style={{ fontWeight: 700 }}>{p.pct}%</span>
+                        </div>
+                        <div
+                          style={{
+                            height: '0.55rem',
+                            backgroundColor: 'rgba(90, 74, 66, 0.12)',
+                            borderRadius: '9999px',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            className="platform-progress-fill"
+                            style={{
+                              height: '100%',
+                              backgroundColor: p.color,
+                              width: `${p.pct}%`,
+                              transition: 'width 0.6s ease',
+                              ['--i' as any]: idx,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="font-handwriting"
+                    style={{
+                      backgroundColor: 'var(--mac-taro, #e3d9ff)',
+                      border: '1.5px dashed var(--accent-taro, #9a7fd8)',
+                      borderRadius: '10px',
+                      padding: '1.25rem 1rem',
+                      textAlign: 'center',
+                      color: 'var(--accent-taro, #9a7fd8)',
+                      fontSize: '1.25rem',
+                      fontWeight: 700,
+                      transform: 'rotate(-1deg)',
+                      boxShadow: '2px 3px 0 var(--shadow-ink)',
+                      marginBottom: '1.5rem',
+                    }}
+                  >
+                    {t.stats.waitingFirstVisitor}
+                  </div>
+                )}
+
+                {/* Format Preferences */}
+                <div style={{ borderTop: '1px dashed rgba(90, 74, 66, 0.15)', paddingTop: '1.1rem' }}>
+                  <div className="font-marker" style={{ fontSize: '1.15rem', color: 'var(--ink, #5a4a42)', marginBottom: '0.65rem' }}>
+                    {t.stats.formatPreferencesTitle}
+                  </div>
+
+                  {/* Multi-segment Progress Bar */}
+                  <div
+                    className="format-progress-bar"
+                    style={{
+                      display: 'flex',
+                      height: '0.65rem',
+                      borderRadius: '9999px',
+                      overflow: 'hidden',
+                      backgroundColor: 'rgba(90, 74, 66, 0.1)',
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    <div style={{ width: `${formatStats.xlsx}%`, backgroundColor: 'var(--accent-mint, #4fae8a)' }} title={`Excel: ${formatStats.xlsx}%`} />
+                    <div style={{ width: `${formatStats.json}%`, backgroundColor: 'var(--accent-taro, #9a7fd8)' }} title={`JSON: ${formatStats.json}%`} />
+                    <div style={{ width: `${formatStats.txt}%`, backgroundColor: 'var(--accent-sky, #6a82d4)' }} title={`TXT: ${formatStats.txt}%`} />
+                    <div style={{ width: `${formatStats.csv}%`, backgroundColor: 'var(--accent-peach, #ee9a6c)' }} title={`CSV: ${formatStats.csv}%`} />
+                    <div style={{ width: `${formatStats.markdown}%`, backgroundColor: 'var(--ink-light, #8a7569)' }} title={`Markdown: ${formatStats.markdown}%`} />
+                    <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: 'var(--accent-strawberry, #e8789a)' }} title={`M3U8: ${formatStats.m3u8}%`} />
+                  </div>
+
+                  {/* Format Legend Pills */}
+                  <div
+                    className="font-note"
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem',
+                      fontSize: '1.05rem',
+                      color: 'var(--ink-light, #8a7569)',
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-mint, #4fae8a)' }} />
+                      Excel ({formatStats.xlsx}%)
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-taro, #9a7fd8)' }} />
+                      JSON ({formatStats.json}%)
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-sky, #6a82d4)' }} />
+                      TXT ({formatStats.txt}%)
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-peach, #ee9a6c)' }} />
+                      CSV ({formatStats.csv}%)
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-strawberry, #e8789a)' }} />
+                      M3U8 ({formatStats.m3u8}%)
+                    </span>
+                    <span>Markdown ({formatStats.markdown}%)</span>
+                  </div>
+                </div>
+              </div>
+            </Paper>
+          )}
+        </RevealStampCard>
       </div>
 
       {/* Card 4: Recent 30-Day Activity Footprint Paper (近30天手账足迹) */}
-      <Paper
-        color="white"
-        borderVariant="subtle"
-        shadow="paper-sm"
-        rotateDeg={0.4}
-        tiltFactor={0.25}
-        className="stats-recent-paper"
-        style={{
-          padding: '1.75rem 2rem',
-          margin: '0 auto',
-        }}
-      >
-        <div
-          className="stats-recent-header"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}
-        >
-          <div className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--ink, #5a4a42)' }}>
-            {t.stats.recentDaysTitle}
-          </div>
-          <div className="font-note" style={{ fontSize: '1.2rem', color: '#8a7569' }}>
-            {t.stats.recentDaysFootnote}
-          </div>
-        </div>
-
-        {/* Mini Hand-drawn Style Bar Chart */}
-        <div
-          className="stats-trend-chart"
+      <Reveal effect="fade-up" delay={300} rot={0.3}>
+        <Paper
+          color="white"
+          borderVariant="subtle"
+          shadow="paper-sm"
+          rotateDeg={0}
+          tiltFactor={0.25}
+          className="stats-recent-paper"
           style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: '0.5rem',
-            height: '80px',
-            padding: '0.5rem 0.25rem 0',
-            borderBottom: '1px dashed rgba(90, 74, 66, 0.2)',
-            position: 'relative',
+            padding: '1.75rem 2rem',
+            margin: '0 auto',
           }}
         >
-          {trendBars.length > 0 ? (
-            trendBars.map((bar, idx) => {
-              const barColors = ['#f39bb5', '#f6b88f', '#f2d26b', '#7fcfaa', '#89b4f4', '#b99ef0'];
-              const barColor = barColors[idx % barColors.length];
-              return (
-                <div
-                  key={idx}
-                  className="stats-trend-bar"
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    height: '100%',
-                    justifyContent: 'flex-end',
-                  }}
-                  title={`${bar.date}: ${bar.count}`}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '56px',
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: '18px',
-                        height: `${bar.height}%`,
-                        backgroundColor: barColor,
-                        border: '1px solid rgba(110, 90, 80, 0.35)',
-                        borderBottom: 'none',
-                        borderRadius: '5px 5px 0 0',
-                        transition: 'height 0.4s ease',
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="font-note stats-trend-date"
-                    style={{
-                      fontSize: '0.85rem',
-                      color: '#a8968b',
-                      marginTop: '0.35rem',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {bar.date}
-                  </span>
-                </div>
-              );
-            })
-          ) : (
-            <>
-              {[38, 52, 44, 68, 58, 76, 62, 84, 70, 56, 78, 66, 88, 74].map((h, idx) => {
-                const barColors = ['#ffd8e6', '#ffe9dc', '#fff0b3', '#cdeee0', '#d4defc', '#e8ddff'];
+          <div
+            className="stats-recent-header"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1.85rem',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+            }}
+          >
+            <div className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--ink, #5a4a42)' }}>
+              {t.stats.recentDaysTitle}
+            </div>
+            <div
+              className="font-note"
+              style={{
+                fontSize: '1.15rem',
+                color: activeTrendIdx !== null && trendBars[activeTrendIdx] ? '#c25478' : 'var(--ink-light, #8a7569)',
+                transition: 'color 180ms ease',
+              }}
+            >
+              {activeTrendIdx !== null && trendBars[activeTrendIdx]
+                ? `✦ ${trendBars[activeTrendIdx].fullDate || trendBars[activeTrendIdx].date} · 共 ${trendBars[activeTrendIdx].count} 份流转 ♫`
+                : t.stats.recentDaysFootnote}
+            </div>
+          </div>
+
+          {/* Mini Hand-drawn Style Bar Chart (7 macaron colors cycling) */}
+          <Reveal
+            stagger
+            effect="grow-bar"
+            delay={200}
+            className="stats-trend-bars stats-trend-chart"
+            style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              height: '84px',
+              borderBottom: '1.5px dashed rgba(180, 144, 130, 0.45)',
+              position: 'relative',
+            }}
+          >
+            {trendBars.length > 0 ? (
+              trendBars.map((bar, idx) => {
+                const barColors = [
+                  'var(--accent-strawberry, #e8789a)',
+                  'var(--accent-peach, #ee9a6c)',
+                  'var(--accent-lemon, #e3b23c)',
+                  'var(--accent-mint, #4fae8a)',
+                  'var(--accent-sky, #6a82d4)',
+                  'var(--accent-taro, #9a7fd8)',
+                  'var(--mac-matcha, #e2f2c9)',
+                ];
+                const barColor = barColors[idx % barColors.length];
                 return (
                   <div
                     key={idx}
+                    data-reveal-item=""
+                    className={`stats-trend-bar ${activeTrendIdx === idx ? 'is-active' : ''}`.trim()}
                     style={{
                       flex: 1,
+                      minWidth: 0,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       height: '100%',
                       justifyContent: 'flex-end',
-                      opacity: 0.65,
+                      position: 'relative',
+                      cursor: 'pointer',
+                      ['--i' as any]: idx,
                     }}
-                    aria-hidden="true"
+                    tabIndex={0}
+                    role="graphics-symbol"
+                    aria-label={`${bar.fullDate || bar.date}: ${bar.count}`}
+                    onMouseEnter={() => setActiveTrendIdx(idx)}
+                    onMouseLeave={() => setActiveTrendIdx(null)}
+                    onFocus={() => setActiveTrendIdx(idx)}
+                    onBlur={() => setActiveTrendIdx(null)}
                   >
                     <div
+                      className="stats-trend-bar-track"
                       style={{
+                        position: 'relative',
                         width: '100%',
-                        maxWidth: '20px',
-                        height: `${Math.round(h * 0.62)}px`,
-                        backgroundColor: barColors[idx % barColors.length],
-                        border: '1px dashed rgba(110, 90, 80, 0.28)',
-                        borderBottom: 'none',
-                        borderRadius: '5px 5px 0 0',
+                        height: '58px',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'center',
                       }}
-                    />
+                    >
+                      <div
+                        className="stats-trend-bar-fill"
+                        style={{
+                          width: '100%',
+                          maxWidth: '14px',
+                          height: `${bar.height}%`,
+                          backgroundColor: barColor,
+                          border: '1px solid rgba(110, 90, 80, 0.35)',
+                          borderBottom: 'none',
+                          borderRadius: '5px 5px 0 0',
+                          transition: 'height 0.4s ease',
+                        }}
+                      />
+
+                      {/* Pop-on Hand-Journal Tooltip on Hover */}
+                      <div className="stats-trend-tooltip" role="tooltip">
+                        <div className="stats-trend-tooltip-date font-mono">
+                          {bar.fullDate || bar.date}
+                        </div>
+                        <div className="stats-trend-tooltip-total font-sans">
+                          <span className="stats-trend-tooltip-num">{bar.count}</span>
+                          <span className="stats-trend-tooltip-unit">份流转</span>
+                        </div>
+                        {(bar.parses > 0 || bar.exports > 0) && (
+                          <div className="stats-trend-tooltip-detail font-sans">
+                            <span>解析 {bar.parses}</span>
+                            <span className="stats-trend-tooltip-dot">·</span>
+                            <span>导出 {bar.exports}</span>
+                          </div>
+                        )}
+                        <div className="stats-trend-tooltip-arrow" aria-hidden="true" />
+                      </div>
+                    </div>
                   </div>
                 );
-              })}
-            </>
+              })
+            ) : (
+              <>
+                {[38, 52, 44, 68, 58, 76, 62, 84, 70, 56, 78, 66, 88, 74].map((h, idx) => {
+                  const barColors = [
+                    'var(--mac-strawberry, #ffd6e0)',
+                    'var(--mac-peach, #ffdcc7)',
+                    'var(--mac-lemon, #fff1b8)',
+                    'var(--mac-mint, #cdefe3)',
+                    'var(--mac-sky, #d4ecff)',
+                    'var(--mac-taro, #e3d9ff)',
+                    'var(--mac-matcha, #e2f2c9)',
+                  ];
+                  return (
+                    <div
+                      key={idx}
+                      data-reveal-item=""
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        height: '100%',
+                        justifyContent: 'flex-end',
+                        opacity: 0.72,
+                        ['--i' as any]: idx,
+                      }}
+                      aria-hidden="true"
+                    >
+                      <div
+                        className="stats-trend-bar-fill"
+                        style={{
+                          width: '100%',
+                          maxWidth: '20px',
+                          height: `${Math.round(h * 0.62)}px`,
+                          backgroundColor: barColors[idx % barColors.length],
+                          border: '1px dashed rgba(110, 90, 80, 0.28)',
+                          borderBottom: 'none',
+                          borderRadius: '5px 5px 0 0',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </Reveal>
+          {trendBars.length > 0 && (
+            <div className="stats-trend-axis font-note" aria-hidden="true">
+              <span className="stats-trend-axis-start font-mono">
+                {trendBars[0].fullDate || trendBars[0].date}
+              </span>
+              <span className="stats-trend-axis-badge font-note">
+                ✦ 连续 30 天手账足迹 ✦
+              </span>
+              <span className="stats-trend-axis-end font-mono">
+                {trendBars[trendBars.length - 1].fullDate || trendBars[trendBars.length - 1].date}
+              </span>
+            </div>
           )}
-        </div>
-        {trendBars.length > 0 && (
-          <div className="mobile-only stats-trend-mobile-axis font-note" aria-hidden="true">
-            <span>{trendBars[0].date}</span>
-            <span>{trendBars[trendBars.length - 1].date}</span>
-          </div>
-        )}
-      </Paper>
+        </Paper>
+      </Reveal>
     </section>
   );
 };
-
-

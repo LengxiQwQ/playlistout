@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PaperModal } from '../ui/PaperModal';
 import { useTranslation } from '../../i18n';
-import { useFontPreset } from './useFontPreset';
-import { ensureFontStylesheet, FontPreset } from './FontSwitcher';
+import { JOURNAL_STYLES, useJournalStyle } from './StyleContext';
 
 export interface MobileSettingsDrawerProps {
   isOpen: boolean;
@@ -29,17 +28,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
   onClose,
 }) => {
   const { t, language, setLanguage } = useTranslation();
-  const { currentPresets, selectedPresetId, selectPreset, getFontName } = useFontPreset();
-
-  useEffect(() => {
-    if (isOpen) {
-      currentPresets.forEach(ensureFontStylesheet);
-    }
-  }, [isOpen, currentPresets]);
-
-  const handleFontSelect = (preset: FontPreset) => {
-    selectPreset(preset);
-  };
+  const { styleId, setStyleId } = useJournalStyle();
 
   return (
     <PaperModal
@@ -68,7 +57,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Section 1: Handwriting Fonts */}
+        {/* Section 1: Journal Page Styles */}
         <div>
           <div
             style={{
@@ -85,7 +74,7 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
                 color: 'var(--ink, #5a4a42)',
               }}
             >
-              🎨 {t.header.mobileDrawerFontTitle}
+              🎨 {t.header.mobileDrawerStyleTitle}
             </span>
           </div>
 
@@ -98,27 +87,26 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
               lineHeight: 1.2,
             }}
           >
-            {t.header.mobileDrawerFontDesc}
+            {t.header.mobileDrawerStyleDesc}
           </div>
 
-          <div className="mobile-font-grid">
-            {currentPresets.map((preset) => {
-              const isSelected = preset.id === selectedPresetId;
-              const name = getFontName(preset);
+          <div className="mobile-font-grid mobile-style-grid">
+            {JOURNAL_STYLES.map((opt) => {
+              const isSelected = opt.id === styleId;
+              const name = t.styles[opt.nameKey];
+              const desc = t.styles[opt.descKey];
 
               return (
                 <button
-                  key={preset.id}
+                  key={opt.id}
                   type="button"
-                  onClick={() => handleFontSelect(preset)}
-                  className={`mobile-font-card sticker ${isSelected ? 'active' : ''}`}
+                  onClick={() => setStyleId(opt.id)}
+                  className={`mobile-font-card mobile-style-card sticker ${isSelected ? 'active' : ''}`}
                   aria-pressed={isSelected}
-                  style={{
-                    fontFamily: 'inherit',
-                  }}
+                  style={{ fontFamily: 'inherit' }}
                 >
                   <div className="mobile-font-card-header">
-                    <span className="mobile-font-index font-mono">{preset.index}</span>
+                    <span className="mobile-font-index font-mono">{opt.index}</span>
                     <span className="mobile-font-name">{name}</span>
                     {isSelected && (
                       <span className="mobile-font-check" aria-label="Selected">
@@ -126,13 +114,13 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
                       </span>
                     )}
                   </div>
-                  <div
-                    className="mobile-font-sample"
-                    style={{
-                      fontFamily: preset.sampleFontFamily,
-                    }}
-                  >
-                    {preset.sample}
+                  <div className="mobile-style-meta">
+                    <span className="mobile-style-desc">{desc}</span>
+                    <span className="style-option-swatches" aria-hidden="true">
+                      {opt.swatches.map((hex, idx) => (
+                        <span key={idx} className="style-swatch-dot" style={{ backgroundColor: hex }} />
+                      ))}
+                    </span>
                   </div>
                 </button>
               );

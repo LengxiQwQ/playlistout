@@ -1,0 +1,430 @@
+/* ============ Scroll Sticker Journal: reveal system ============ */
+/* Hidden state ONLY when JS enabled the system. No JS / tests / reduced motion => visible. */
+
+.has-reveal .reveal[data-revealed='false'],
+.has-reveal [data-reveal-stagger='true'][data-revealed='false'] > [data-reveal-item] {
+  opacity: 0;
+}
+
+/* Pause continuous/progress animations until their parent Reveal enters viewport */
+.has-reveal .reveal[data-revealed='false'] .platform-progress-fill,
+.has-reveal .reveal[data-revealed='false'] .format-progress-bar,
+.has-reveal .reveal[data-revealed='false'] .stationery-sticker,
+.has-reveal .reveal[data-revealed='false'] .note-sparkle,
+.has-reveal .reveal[data-revealed='false'] .stats-scribble-line::after,
+.has-reveal .reveal[data-revealed='false'] .stats-trend-bar-fill {
+  animation-play-state: paused;
+}
+
+.has-reveal .reveal[data-revealed='false'] .platform-progress-fill,
+.has-reveal .reveal[data-revealed='false'] .format-progress-bar,
+.has-reveal .reveal[data-revealed='false'] .stats-trend-bar-fill {
+  transform: scaleX(0);
+}
+
+.has-reveal .reveal[data-revealed='false'] .stats-trend-bar-fill {
+  transform: scaleY(0);
+}
+
+.has-reveal .reveal[data-revealed='true'] {
+  animation-duration: var(--reveal-duration);
+  animation-delay: var(--reveal-delay, 0ms);
+  animation-fill-mode: both;
+  animation-timing-function: var(--ease-journal);
+}
+
+/* Staggered children */
+.has-reveal [data-reveal-stagger='true'][data-revealed='true'] > [data-reveal-item] {
+  animation: revealStick var(--reveal-duration) var(--ease-bouncy) both;
+  animation-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * var(--reveal-stagger));
+}
+/* The container itself just fades in when staggering */
+.has-reveal [data-reveal-stagger='true'][data-revealed='true'] {
+  animation-name: revealFade;
+  animation-duration: 240ms;
+}
+
+/* ---- Effect mapping ---- */
+.has-reveal .reveal[data-revealed='true'][data-reveal='fade-up']     { animation-name: revealFadeUp; }
+.has-reveal .reveal[data-revealed='true'][data-reveal='stick']       { animation-name: revealStick; animation-timing-function: var(--ease-bouncy); }
+.has-reveal .reveal[data-revealed='true'][data-reveal='toss-left']   { animation-name: revealTossLeft; animation-timing-function: var(--ease-bouncy); }
+.has-reveal .reveal[data-revealed='true'][data-reveal='toss-right']  { animation-name: revealTossRight; animation-timing-function: var(--ease-bouncy); }
+.has-reveal .reveal[data-revealed='true'][data-reveal='slide-shelf'] { animation-name: revealSlideShelf; }
+.has-reveal .reveal[data-revealed='true'][data-reveal='stamp']       { animation-name: revealStamp; animation-duration: 480ms; }
+.has-reveal .reveal[data-revealed='true'][data-reveal='pop']         { animation-name: revealPop; animation-duration: var(--reveal-duration-fast); animation-timing-function: var(--ease-bouncy); }
+.has-reveal .reveal[data-revealed='true'][data-reveal='tape']        { animation-name: revealTape; animation-duration: 380ms; transform-origin: left center; }
+.has-reveal .reveal[data-revealed='true'][data-reveal='draw-line']   { animation-name: revealDrawLine; animation-duration: 800ms; transform-origin: left center; }
+.has-reveal .reveal[data-revealed='true'][data-reveal='grow-bar']    { animation-name: revealGrowBar; animation-duration: 700ms; transform-origin: bottom center; }
+
+/* ---- Keyframes ---- */
+@keyframes revealFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes revealFadeUp {
+  from { opacity: 0; transform: translateY(var(--reveal-distance)) rotate(var(--rot, 0deg)); }
+  to   { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)); }
+}
+
+@keyframes revealRowFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 贴上：从上方略大、带大投影 => 落到纸面，阴影收紧 */
+@keyframes revealStick {
+  0%   { opacity: 0; transform: translateY(calc(var(--reveal-distance) * -1)) rotate(calc(var(--rot, 0deg) - 5deg)) scale(1.05); filter: drop-shadow(10px 16px 0 rgba(150, 112, 92, 0.18)); }
+  60%  { opacity: 1; transform: translateY(3px) rotate(calc(var(--rot, 0deg) + 0.8deg)) scale(0.995); filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.2)); }
+  100% { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)) scale(1); filter: none; }
+}
+
+/* 扔上：从侧下方旋转飞入后落定 */
+@keyframes revealTossLeft {
+  0%   { opacity: 0; transform: translate(-70px, 50px) rotate(calc(var(--rot, 0deg) - 14deg)) scale(0.92); }
+  70%  { opacity: 1; transform: translate(4px, -4px) rotate(calc(var(--rot, 0deg) + 2deg)) scale(1.01); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(1); }
+}
+@keyframes revealTossRight {
+  0%   { opacity: 0; transform: translate(70px, 50px) rotate(calc(var(--rot, 0deg) + 14deg)) scale(0.92); }
+  70%  { opacity: 1; transform: translate(-4px, -4px) rotate(calc(var(--rot, 0deg) - 2deg)) scale(1.01); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(1); }
+}
+
+/* 卡带上架：从右侧滑入，末端轻微回弹 */
+@keyframes revealSlideShelf {
+  0%   { opacity: 0; transform: translateX(60px) rotate(var(--rot, 0deg)); }
+  80%  { opacity: 1; transform: translateX(-4px) rotate(var(--rot, 0deg)); }
+  100% { opacity: 1; transform: translateX(0) rotate(var(--rot, 0deg)); }
+}
+
+/* 盖章：从大到小砸下，略微压扁再回弹 */
+@keyframes revealStamp {
+  0%   { opacity: 0; transform: scale(1.7) rotate(calc(var(--rot, 0deg) - 10deg)); }
+  55%  { opacity: 1; transform: scale(0.94) rotate(var(--rot, 0deg)); }
+  75%  { transform: scale(1.03) rotate(var(--rot, 0deg)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--rot, 0deg)); }
+}
+
+/* 弹出贴纸 */
+@keyframes revealPop {
+  0%   { opacity: 0; transform: scale(0) rotate(calc(var(--rot, 0deg) - 30deg)); }
+  70%  { opacity: 1; transform: scale(1.18) rotate(calc(var(--rot, 0deg) + 6deg)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--rot, 0deg)); }
+}
+
+/* 拍立得封面弹出 (从 0.6 起，不从 0 起) */
+@keyframes revealPolaroidPop {
+  0%   { opacity: 0; transform: scale(0.6) rotate(calc(var(--rot, -2deg) - 8deg)); }
+  70%  { opacity: 1; transform: scale(1.06) rotate(calc(var(--rot, -2deg) + 2deg)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--rot, -2deg)); }
+}
+
+/* 胶带拉开 */
+@keyframes revealTape {
+  from { opacity: 0; transform: scaleX(0) rotate(var(--rot, 0deg)); }
+  to   { opacity: 1; transform: scaleX(1) rotate(var(--rot, 0deg)); }
+}
+
+/* 荧光笔划线 */
+@keyframes revealDrawLine {
+  from { opacity: 1; transform: scaleX(0); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+/* 柱子长高 */
+@keyframes revealGrowBar {
+  from { opacity: 0.4; transform: scaleY(0); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+/* 邮票落地草莓墨晕 */
+@keyframes stampInkHalo {
+  0%   { opacity: 0; transform: scale(0.86); }
+  45%  { opacity: 0.35; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(1.16); }
+}
+
+/* ============ Act 0: First-screen mount animations (total <= 900ms, never blocks clicks) ============ */
+.has-reveal .hero-title-reveal {
+  animation: revealFadeUp 500ms var(--ease-journal) 0ms both;
+}
+
+.has-reveal .hero-title-reveal .scribble-line::after {
+  transform-origin: left center;
+  animation: revealDrawLine 800ms var(--ease-journal) 250ms both;
+}
+
+.has-reveal .search-note-reveal {
+  animation: revealFadeUp 450ms var(--ease-journal) 100ms both;
+}
+
+.has-reveal .hero-deco-pop-1 {
+  animation: revealPop var(--reveal-duration-fast) var(--ease-bouncy) 300ms both;
+}
+
+.has-reveal .hero-deco-pop-2 {
+  animation: revealPop var(--reveal-duration-fast) var(--ease-bouncy) 450ms both;
+}
+
+/* ============ Act 1: Result Paper & Track Rows (mount-driven) ============ */
+.has-reveal .result-paper-card {
+  animation: revealStick 650ms var(--ease-journal) 0ms both;
+}
+
+.has-reveal .result-tape-reveal {
+  transform-origin: left center;
+  animation: revealTape 380ms var(--ease-journal) 350ms both;
+}
+
+.has-reveal .result-star-reveal {
+  animation: revealPop var(--reveal-duration-fast) var(--ease-bouncy) 650ms both;
+}
+
+.has-reveal .result-polaroid-reveal {
+  --rot: -2deg;
+  animation: revealPolaroidPop var(--reveal-duration-fast) var(--ease-bouncy) 250ms both;
+}
+
+.has-reveal .song-row-reveal {
+  animation: revealRowFadeUp 360ms var(--ease-journal) both;
+  animation-delay: calc(400ms + var(--i, 0) * 35ms);
+}
+
+.has-reveal .batch-row-reveal {
+  animation: revealRowFadeUp 360ms var(--ease-journal) both;
+  animation-delay: calc(300ms + var(--i, 0) * 50ms);
+}
+
+/* Prevent horizontal overflow at viewport level without clipping outer-gutter stickers */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* ============ Act 2: Plugin Ecosystem Cassette Shelf ============ */
+.plugin-ecosystem-section-wrap {
+  overflow: visible;
+}
+
+.has-reveal .plugin-app-grid[data-revealed='true'] > [data-reveal-item] {
+  animation-name: revealSlideShelf;
+  animation-duration: 580ms;
+  animation-timing-function: var(--ease-journal);
+  animation-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * 120ms);
+}
+
+/* ============ Act 3: InfoNotes Collage ============ */
+.info-notes-section {
+  max-width: var(--result-paper-width, 1180px);
+  margin: 0 auto;
+  position: relative;
+  padding-bottom: 2.5rem;
+  overflow: visible;
+}
+
+.info-notes-section .info-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.info-notes-grid > :nth-child(1) { margin-top: 0; }
+.info-notes-grid > :nth-child(2) { margin-top: 2.5rem; }
+.info-notes-grid > :nth-child(3) { margin-top: 5rem; }
+
+@media (max-width: 1023px) {
+  .info-notes-section .info-notes-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+  .info-notes-grid > * {
+    margin-top: 0 !important;
+  }
+}
+
+/* ============ Act 4: Stats Journal Carnival ============ */
+.stats-journal-section {
+  overflow: visible;
+}
+
+/* Gutter stickers on desktop, tucked cleanly into whitespace on narrower screens */
+.stats-deco-headphones {
+  position: absolute;
+  top: 34%;
+  left: -4.4rem;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.stats-deco-star1 {
+  position: absolute;
+  top: 56%;
+  right: -3.2rem;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.stats-deco-note1 {
+  position: absolute;
+  bottom: 4.5rem;
+  left: -3.4rem;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.stats-deco-tape {
+  position: absolute;
+  bottom: -0.6rem;
+  right: -1.4rem;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.stats-deco-stamp {
+  position: absolute;
+  top: 21%;
+  right: -4.6rem;
+  pointer-events: none;
+  z-index: 15;
+}
+
+@media (max-width: 1179px) {
+  .stats-deco-headphones {
+    top: 6.25rem;
+    right: 0.65rem;
+    left: auto;
+    transform: scale(0.68);
+  }
+  .stats-deco-star1 {
+    top: 0.15rem;
+    right: 0.45rem;
+  }
+  .stats-deco-note1 {
+    bottom: -1.5rem;
+    left: 0.5rem;
+  }
+  .stats-deco-tape {
+    right: 0.35rem;
+  }
+  .stats-deco-stamp {
+    right: -0.5rem;
+    top: 4.2rem;
+    transform: scale(0.8);
+  }
+}
+
+.has-reveal .stats-scribble-line::after {
+  transform-origin: left center;
+  animation: revealDrawLine 800ms var(--ease-journal) 200ms both;
+}
+
+.has-reveal .reveal[data-revealed='true'] .platform-progress-fill {
+  animation: revealDrawLine 750ms var(--ease-journal) both;
+  animation-delay: calc(240ms + var(--i, 0) * 80ms);
+  transform-origin: left center;
+}
+
+.has-reveal .reveal[data-revealed='true'] .format-progress-bar {
+  animation: revealDrawLine 800ms var(--ease-journal) 420ms both;
+  transform-origin: left center;
+}
+
+.has-reveal .stats-trend-bars[data-revealed='true'] .stats-trend-bar-fill {
+  animation: revealGrowBar 700ms var(--ease-bouncy) both;
+  animation-delay: calc(200ms + var(--i, 0) * 40ms);
+  transform-origin: bottom center;
+}
+
+.running-days-stamp {
+  position: relative;
+}
+
+.running-days-stamp::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 18px;
+  background: radial-gradient(circle, var(--mac-strawberry, #ffd6e0) 0%, transparent 72%);
+  pointer-events: none;
+  opacity: 0;
+  z-index: -1;
+}
+
+.has-reveal .reveal[data-revealed='true'] .running-days-stamp::after {
+  animation: stampInkHalo 600ms var(--ease-journal) 420ms 1 both;
+}
+
+/* ============ Act 5: Closing the Notebook ============ */
+.has-reveal .developer-method-grid[data-revealed='true'] > [data-reveal-item] {
+  animation-name: revealFadeUp;
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-journal);
+  animation-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * 100ms);
+}
+
+.has-reveal .footer-nav[data-revealed='true'] > [data-reveal-item] {
+  animation-name: revealFadeUp;
+  animation-duration: 460ms;
+  animation-timing-function: var(--ease-journal);
+  animation-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * 60ms);
+}
+
+/* ---- Mobile: smaller distances, no sideways toss (prevents horizontal overflow) ---- */
+@media (max-width: 768px) {
+  :root {
+    --reveal-distance: 16px;
+    --reveal-stagger: 70ms;
+    --reveal-duration: 520ms;
+  }
+
+  .has-reveal .reveal[data-revealed='true'][data-reveal='toss-left'],
+  .has-reveal .reveal[data-revealed='true'][data-reveal='toss-right'],
+  .has-reveal .reveal[data-revealed='true'][data-reveal='slide-shelf'],
+  .has-reveal .plugin-app-grid[data-revealed='true'] > [data-reveal-item] {
+    animation-name: revealStick;
+  }
+
+  /* Cap stagger delay at index 5 on mobile */
+  .has-reveal [data-reveal-stagger='true'][data-revealed='true'] > [data-reveal-item]:nth-child(n+7) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 5 * var(--reveal-stagger));
+  }
+
+  .has-reveal .plugin-app-grid[data-revealed='true'] > [data-reveal-item]:nth-child(n+7) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 5 * 120ms);
+  }
+
+  .has-reveal .stats-trend-bars[data-revealed='true'] > [data-reveal-item]:nth-child(n+7) .stats-trend-bar-fill {
+    animation-delay: calc(200ms + 5 * 40ms);
+  }
+
+  /* Half decorations on mobile */
+  [data-deco-mobile='hide'] {
+    display: none !important;
+  }
+}
+
+/* ---- Safety net ---- */
+@media (prefers-reduced-motion: reduce) {
+  .has-reveal .reveal,
+  .has-reveal [data-reveal-item],
+  .has-reveal .hero-title-reveal,
+  .has-reveal .hero-title-reveal .scribble-line::after,
+  .has-reveal .search-note-reveal,
+  .has-reveal .hero-deco-pop-1,
+  .has-reveal .hero-deco-pop-2,
+  .has-reveal .result-paper-card,
+  .has-reveal .result-tape-reveal,
+  .has-reveal .result-star-reveal,
+  .has-reveal .result-polaroid-reveal,
+  .has-reveal .song-row-reveal,
+  .has-reveal .batch-row-reveal,
+  .has-reveal .stats-trend-bar-fill,
+  .has-reveal .platform-progress-fill,
+  .has-reveal .format-progress-bar {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}

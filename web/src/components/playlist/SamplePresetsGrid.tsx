@@ -10,6 +10,14 @@ export interface SamplePresetsGridProps {
   ) => void;
 }
 
+const sampleStickerStyle: React.CSSProperties = {
+  padding: '0.35rem 0.9rem',
+  fontSize: '1.05rem',
+  fontWeight: 600,
+  fontFamily: 'var(--font-handwriting, cursive)',
+  cursor: 'pointer',
+};
+
 export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
   onSelectSample,
 }) => {
@@ -167,8 +175,26 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         >
           {t.search.sampleMigu}
         </Sticker>
-        <Sticker type="button" color="green" onClick={() => onSelectSample('https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF', 'spotify', 'playlist')}>Spotify</Sticker>
-        <Sticker type="button" color="red" onClick={() => onSelectSample('https://music.apple.com/us/playlist/pl.f4d106fed2bd41149aaacabb233eb5eb', 'applemusic', 'playlist')}>Apple Music</Sticker>
+        <Sticker
+          type="button"
+          color="green"
+          rotateDeg={-0.5}
+          onClick={() => onSelectSample('https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF', 'spotify', 'playlist')}
+          className="font-handwriting"
+          style={sampleStickerStyle}
+        >
+          Spotify
+        </Sticker>
+        <Sticker
+          type="button"
+          color="red"
+          rotateDeg={0.5}
+          onClick={() => onSelectSample('https://music.apple.com/us/playlist/pl.f4d106fed2bd41149aaacabb233eb5eb', 'applemusic', 'playlist')}
+          className="font-handwriting"
+          style={sampleStickerStyle}
+        >
+          Apple Music
+        </Sticker>
         <Sticker
           type="button"
           color="blue"

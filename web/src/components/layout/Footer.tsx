@@ -3,6 +3,7 @@ import { useTranslation } from '../../i18n';
 import { SponsorButton } from './SponsorButton';
 import { AuthorCard } from './AuthorCard';
 import { AUTHOR_AVATAR_URL } from '../../constants/author';
+import { Reveal } from '../motion/Reveal';
 
 export interface FooterProps {
   onOpenPrivacy: () => void;
@@ -70,7 +71,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           marginBottom: 'calc(var(--ruled-line-height, 38px) * 1)',
         }}
       >
-        <div
+        <Reveal
+          effect="draw-line"
+          delay={0}
           className="footer-red-line"
           style={{
             flex: 1,
@@ -80,7 +83,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             borderRadius: '2px',
           }}
         />
-        <span
+        <Reveal
+          as="span"
+          effect="fade-up"
+          delay={80}
           className="footer-end-badge font-note"
           style={{
             position: 'relative',
@@ -100,8 +106,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           }}
         >
           ✦ END OF PAGE ✦
-        </span>
-        <div
+        </Reveal>
+        <Reveal
+          effect="draw-line"
+          delay={0}
           className="footer-red-line"
           style={{
             flex: 1,
@@ -126,7 +134,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
         }}
       >
         {/* Brand PlaylistOut (Row height: 38px) */}
-        <div
+        <Reveal
+          effect="fade-up"
+          delay={150}
           style={{
             height: 'var(--ruled-line-height, 38px)',
             display: 'flex',
@@ -143,20 +153,35 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               gap: '0.65rem',
             }}
           >
-            <img
-              src="/logo-64.png"
-              srcSet="/logo-64.png 1x, /logo-128.png 2x"
-              alt="Playlist Out Logo"
-              width={30}
-              height={30}
+            <span
               style={{
-                width: '1.85rem',
-                height: '1.85rem',
-                objectFit: 'contain',
-                userSelect: 'none',
-                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '3px',
+                border: '1.5px dashed var(--margin-red, #f4a7b9)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--paper-white, #fffdf8)',
+                boxShadow: '1.5px 2px 0 var(--shadow-ink)',
+                transform: 'rotate(-2deg)',
               }}
-            />
+            >
+              <img
+                src="/logo-64.png"
+                srcSet="/logo-64.png 1x, /logo-128.png 2x"
+                alt="Playlist Out Logo"
+                width={30}
+                height={30}
+                style={{
+                  width: '1.7rem',
+                  height: '1.7rem',
+                  objectFit: 'contain',
+                  userSelect: 'none',
+                  flexShrink: 0,
+                  display: 'block',
+                }}
+              />
+            </span>
             <span
               className="font-marker footer-brand-title"
               style={{
@@ -168,10 +193,12 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               Playlist Out
             </span>
           </div>
-        </div>
+        </Reveal>
 
         {/* Tagline (Row height: 38px) */}
-        <div
+        <Reveal
+          effect="fade-up"
+          delay={200}
           className="footer-tagline-row"
           style={{
             minHeight: 'var(--ruled-line-height, 38px)',
@@ -193,10 +220,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           >
             {t.footer.drawnBy}
           </p>
-        </div>
+        </Reveal>
 
         {/* Action Link Pills (height: 76px = 2 rows) */}
-        <div
+        <Reveal
+          stagger
+          effect="fade-up"
+          delay={250}
           className="footer-nav"
           style={{
             minHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
@@ -213,19 +243,19 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             href="https://github.com/LengxiQwQ/playlistout"
             target="_blank"
             rel="noopener noreferrer"
-            className="sticker font-handwriting footer-pill-link"
+            data-reveal-item=""
+            className="sticker font-handwriting footer-pill-link footer-pill-mint"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              backgroundColor: '#ffffff',
               padding: '0.35rem 0.85rem',
               fontSize: '1.05rem',
               fontWeight: 600,
               textDecoration: 'none',
               color: 'var(--ink, #5a4a42)',
-              borderRadius: '6px',
               lineHeight: 1.2,
+              ['--i' as any]: 0,
             }}
           >
             <span>{t.footer.githubLink}</span>
@@ -234,8 +264,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
 
           <div
             ref={authorContainerRef}
+            data-reveal-item=""
             className="author-container"
-            style={{ position: 'relative', display: 'inline-block' }}
+            style={{ position: 'relative', display: 'inline-block', ['--i' as any]: 1 }}
           >
             <button
               type="button"
@@ -243,20 +274,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               aria-haspopup="dialog"
               aria-expanded={isAuthorOpen}
               aria-label={t.footer.authorLink}
-              className={`sticker font-handwriting footer-pill-link ${isAuthorOpen ? 'is-active' : ''}`}
+              className={`sticker font-handwriting footer-pill-link footer-pill-lemon ${isAuthorOpen ? 'is-active' : ''}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                backgroundColor: isAuthorOpen ? 'var(--highlight-yellow, #ffeaa7)' : '#ffffff',
                 padding: '0.35rem 0.85rem',
                 fontSize: '1.05rem',
                 fontWeight: 600,
                 color: 'var(--ink, #5a4a42)',
-                borderRadius: '6px',
                 cursor: 'pointer',
                 lineHeight: 1.2,
-                transition: 'all 0.15s ease',
               }}
             >
               <span>{t.footer.authorLink}</span>
@@ -285,24 +313,26 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             />
           </div>
 
-          <SponsorButton />
+          <div data-reveal-item="" style={{ display: 'inline-block', ['--i' as any]: 2 }}>
+            <SponsorButton />
+          </div>
 
           <button
             type="button"
+            data-reveal-item=""
             onClick={onOpenPrivacy}
-            className="sticker font-handwriting footer-pill-link"
+            className="sticker font-handwriting footer-pill-link footer-pill-sky"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              backgroundColor: '#ffffff',
               padding: '0.35rem 0.85rem',
               fontSize: '1.05rem',
               fontWeight: 600,
               color: 'var(--ink, #5a4a42)',
-              borderRadius: '6px',
               cursor: 'pointer',
               lineHeight: 1.2,
+              ['--i' as any]: 3,
             }}
           >
             {t.footer.privacyLink}
@@ -312,25 +342,25 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             href="https://github.com/LengxiQwQ/playlistout/issues"
             target="_blank"
             rel="noopener noreferrer"
-            className="sticker font-handwriting footer-pill-link"
+            data-reveal-item=""
+            className="sticker font-handwriting footer-pill-link footer-pill-taro"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              backgroundColor: '#ffffff',
               padding: '0.35rem 0.85rem',
               fontSize: '1.05rem',
               fontWeight: 600,
               textDecoration: 'none',
               color: 'var(--ink, #5a4a42)',
-              borderRadius: '6px',
               lineHeight: 1.2,
+              ['--i' as any]: 4,
             }}
           >
             <span>{t.footer.issuesLink}</span>
             <span style={{ fontSize: '0.85rem' }}>↗</span>
           </a>
-        </div>
+        </Reveal>
 
         {/* Copyright & Legal Information (Clean Sans-Serif, High Readability) */}
         <div

@@ -193,30 +193,29 @@
   gap: 5px;
   text-decoration: none;
   color: var(--ink, #5a4a42);
-  background: var(--note-pink, #ffe4ea);
-  border: 2px solid var(--ink-line);
-  border-radius: 225px 15px 255px 15px / 15px 255px 15px 225px;
+  background: var(--mac-strawberry, #ffd6e0);
+  border: 1.5px solid var(--ink-line);
+  border-radius: 10px;
   padding: 0.42rem 0.85rem;
   cursor: pointer;
   user-select: none;
-  box-shadow: 3px 3px 0 var(--shadow-ink);
+  box-shadow: 2px 3px 0 var(--shadow-ink);
   transform: rotate(0.4deg);
   font-family: var(--font-handwriting, cursive);
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.2;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: transform 180ms var(--ease-bouncy), box-shadow 180ms ease, background-color 180ms ease;
   white-space: nowrap;
 }
 
 .header-desktop-btn:hover {
-  transform: translateY(-2px) rotate(-0.3deg);
-  box-shadow: 4px 5px 0 var(--shadow-ink);
-  background: #ffd8e6;
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 3px 5px 0 var(--shadow-ink);
 }
 
 .header-desktop-btn:active {
-  transform: translate(1px, 1px) rotate(0.4deg);
+  transform: translateY(1px);
   box-shadow: 1px 1px 0 var(--shadow-ink);
 }
 

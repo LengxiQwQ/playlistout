@@ -22,6 +22,8 @@ import { useViewMode } from './hooks/useViewMode';
 import { useDisambiguation } from './hooks/useDisambiguation';
 import { useChannelCache } from './hooks/useChannelCache';
 import { usePlaylistParser } from './hooks/usePlaylistParser';
+import { StyleProvider, useJournalStyle } from './components/settings/StyleContext';
+import { LayoutDemoView } from './components/layout-demo/LayoutDemoViews';
 
 export const AppContent: React.FC = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -86,95 +88,119 @@ export const AppContent: React.FC = () => {
     returnToBatch(Boolean(userPlaylists));
   }, [setState, returnToBatch, userPlaylists]);
 
-  useBaselineGrid([state, playlist, userPlaylists]);
+  const { styleId, styleSwitchCount } = useJournalStyle();
+
+  useBaselineGrid([state, playlist, userPlaylists, styleId]);
+
+  const headerNode = <Header onBrandClick={handleReset} />;
+  const heroNode = <Hero />;
+  const searchNode = (
+    <SearchNote
+      inputUrl={inputUrl}
+      onInputChange={setInputUrl}
+      onClear={() => setInputUrl('')}
+      onParse={() => handleParse()}
+      isLoading={state === 'loading'}
+      error={state === 'error' ? error : null}
+      onRetry={() => handleParse()}
+      onFeedback={handleFeedback}
+      feedbackSubmitted={feedbackSubmitted}
+      onSelectSample={handleQuickSample}
+    />
+  );
+
+  const singleResultNode =
+    (state === 'success' || (state === 'loading' && Boolean(playlist))) && viewMode === 'single' && playlist ? (
+      <ResultPaper
+        playlist={playlist}
+        onReset={handleReset}
+        onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
+        onReload={handleReload}
+        onSwitchChannel={handleSwitchChannel}
+        isReloading={state === 'loading'}
+        onViewAllUserPlaylists={handleViewAllUserPlaylists}
+      />
+    ) : null;
+
+  const batchResultNode =
+    state === 'success' && viewMode === 'batch' && userPlaylists ? (
+      <UserPlaylistsPaper
+        userData={userPlaylists}
+        onReset={handleReset}
+        onSelectSinglePlaylist={handleDrilldownToSingle}
+        hasSinglePlaylistCollision={hasCollision}
+      />
+    ) : null;
+
+  const resultNode = singleResultNode || batchResultNode;
+  const ecosystemNode = <PluginEcosystem />;
+  const infoNotesNode = <InfoNotes />;
+  const statsNode = <StatsJournal />;
+  const developerNode = <DeveloperPanel />;
+  const stampNode = <RunningDaysStamp />;
+  const footerNode = <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />;
 
   return (
     <>
       {/* Loose-leaf Binder Spine on Left Margin (Desktop only, dynamically adapts to page length) */}
-      <BinderSpine dependencies={[state, playlist, userPlaylists]} />
+      <BinderSpine dependencies={[state, playlist, userPlaylists, styleId]} />
       <div className="journal-margin-line" aria-hidden="true" />
 
       <div className="journal-container" style={{ position: 'relative' }}>
         <BackgroundDecorations />
-        <Header onBrandClick={handleReset} />
-        <main>
-          <Hero />
 
-          {/* Search Note (PERSISTENT across idle, loading, error, and success) */}
-          <div className="baseline-grid-snap">
-            <SearchNote
-              inputUrl={inputUrl}
-              onInputChange={setInputUrl}
-              onClear={() => setInputUrl('')}
-              onParse={() => handleParse()}
-              isLoading={state === 'loading'}
-              error={state === 'error' ? error : null}
-              onRetry={() => handleParse()}
-              onFeedback={handleFeedback}
-              feedbackSubmitted={feedbackSubmitted}
-              onSelectSample={handleQuickSample}
-            />
-          </div>
+        {styleId === 'legacy' ? (
+          <>
+            {headerNode}
+            <main key={`legacy-${styleSwitchCount}`}>
+              {heroNode}
 
-          {/* Result Paper (Single Playlist) */}
-          {(state === 'success' || (state === 'loading' && Boolean(playlist))) && viewMode === 'single' && playlist && (
-            <div className="baseline-grid-snap">
-              <ResultPaper
-                playlist={playlist}
-                onReset={handleReset}
-                onReturnToBatch={userPlaylists ? handleReturnToBatch : undefined}
-                onReload={handleReload}
-                onSwitchChannel={handleSwitchChannel}
-                isReloading={state === 'loading'}
-                onViewAllUserPlaylists={handleViewAllUserPlaylists}
-              />
-            </div>
-          )}
+              {/* Search Note (PERSISTENT across idle, loading, error, and success) */}
+              <div className="baseline-grid-snap">{searchNode}</div>
 
-          {/* User Playlists Paper (Batch Collection) */}
-          {state === 'success' && viewMode === 'batch' && userPlaylists && (
-            <div className="baseline-grid-snap">
-              <UserPlaylistsPaper
-                userData={userPlaylists}
-                onReset={handleReset}
-                onSelectSinglePlaylist={handleDrilldownToSingle}
-                hasSinglePlaylistCollision={hasCollision}
-              />
-            </div>
-          )}
+              {/* Result Paper (Single Playlist) */}
+              {singleResultNode && <div className="baseline-grid-snap">{singleResultNode}</div>}
 
-          {/* Open-source player plugin ecosystem — after parsed playlist results */}
-          <div className="baseline-grid-snap">
-            <PluginEcosystem />
-          </div>
+              {/* User Playlists Paper (Batch Collection) */}
+              {batchResultNode && <div className="baseline-grid-snap">{batchResultNode}</div>}
 
-          {/* Standalone Desktop & CLI Workstation Section (Draft / Reserved) */}
-          {/*
-          <div className="baseline-grid-snap">
-            <DesktopCliSection />
-          </div>
-          */}
+              {/* Open-source player plugin ecosystem — after parsed playlist results */}
+              <div className="baseline-grid-snap">{ecosystemNode}</div>
 
-          {/* Educational Stationery Notes */}
-          <div className="baseline-grid-snap">
-            <InfoNotes />
-          </div>
+              {/* Educational Stationery Notes */}
+              <div className="baseline-grid-snap">{infoNotesNode}</div>
 
-          {/* Aggregate Public Stats Journal */}
-          <div className="baseline-grid-snap">
-            <StatsJournal />
-          </div>
+              {/* Aggregate Public Stats Journal */}
+              <div className="baseline-grid-snap">{statsNode}</div>
 
-          {/* Developer entry points — intentionally last for users who explore the project deeply */}
-          <div className="baseline-grid-snap">
-            <DeveloperPanel />
-            <RunningDaysStamp />
-          </div>
-        </main>
+              {/* Developer entry points — intentionally last for users who explore the project deeply */}
+              <div className="baseline-grid-snap">
+                {developerNode}
+                {stampNode}
+              </div>
+            </main>
 
-        <div className="baseline-grid-snap">
-          <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />
-        </div>
+            <div className="baseline-grid-snap">{footerNode}</div>
+          </>
+        ) : (
+          <LayoutDemoView
+            key={`${styleId}-${styleSwitchCount}`}
+            mode={styleId}
+            slots={{
+              header: headerNode,
+              hero: heroNode,
+              search: searchNode,
+              result: resultNode,
+              ecosystem: ecosystemNode,
+              infoNotes: infoNotesNode,
+              stats: statsNode,
+              developer: developerNode,
+              stamp: stampNode,
+              footer: footerNode,
+              onBrandClick: handleReset,
+            }}
+          />
+        )}
 
         <PrivacyModal
           isOpen={isPrivacyOpen}
@@ -197,7 +223,9 @@ export const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <LanguageProvider defaultLanguage="zh-CN">
-      <AppContent />
+      <StyleProvider>
+        <AppContent />
+      </StyleProvider>
     </LanguageProvider>
   );
 };

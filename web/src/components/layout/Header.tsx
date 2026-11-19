@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../i18n';
-import { FontSwitcher } from '../settings/FontSwitcher';
+import { StyleSwitcher } from '../settings/StyleSwitcher';
 import { LanguageSwitcher } from '../settings/LanguageSwitcher';
 import { MobileSettingsDrawer } from '../settings/MobileSettingsDrawer';
 
@@ -140,9 +140,9 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           <span>{t.header.github}</span>
         </a>
 
-        {/* Desktop-only: Font Switcher Dropdown */}
+        {/* Desktop-only: Journal Style Switcher Dropdown */}
         <div className="desktop-only">
-          <FontSwitcher />
+          <StyleSwitcher />
         </div>
 
         {/* Desktop-only: Language Switcher */}

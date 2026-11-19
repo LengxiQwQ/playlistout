@@ -146,24 +146,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
         position: 'relative',
       }}
     >
-      {/* Yellow Sparkle on top right */}
-      <div
-        className="note-sparkle"
-        style={{
-          position: 'absolute',
-          right: '-1.5rem',
-          top: '-2rem',
-          color: '#e3b23c',
-          fontSize: '2.5rem',
-          userSelect: 'none',
-          zIndex: 25,
-        }}
-        aria-hidden="true"
-      >
-        ✦
-      </div>
-
-      <StickyNote color="yellow" rotateDeg={0.35} showTapes={true} style={{ padding: '2.25rem 2.5rem' }}>
+      <StickyNote color="yellow" rotateDeg={0.35} showTapes={true} className="search-note-reveal" style={{ padding: '2.25rem 2.5rem' }}>
         <form onSubmit={handleSubmit}>
           <div
             style={{

@@ -65,25 +65,29 @@
 }
 
 .developer-method:nth-child(1) {
-  transform: rotate(-0.3deg);
+  --rot: -0.3deg;
+  transform: rotate(var(--rot));
   background: #fff7fa;
   border-color: rgba(236, 127, 159, 0.35);
 }
 
 .developer-method:nth-child(2) {
-  transform: rotate(0.35deg);
+  --rot: 0.35deg;
+  transform: rotate(var(--rot));
   background: #f4fbf8;
   border-color: rgba(79, 174, 138, 0.35);
 }
 
 .developer-method:nth-child(3) {
-  transform: rotate(-0.25deg);
+  --rot: -0.25deg;
+  transform: rotate(var(--rot));
   background: #fffdf2;
   border-color: rgba(227, 178, 60, 0.38);
 }
 
 .developer-method:nth-child(4) {
-  transform: rotate(0.3deg);
+  --rot: 0.3deg;
+  transform: rotate(var(--rot));
   background: #f8f5ff;
   border-color: rgba(139, 108, 196, 0.35);
 }
@@ -161,8 +165,8 @@
   margin: 0.4rem 0 0;
   color: #7a665b;
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: 0.92rem;
-  line-height: 1.58;
+  font-size: 0.95rem;
+  line-height: 1.75;
   flex: 1;
 }
 

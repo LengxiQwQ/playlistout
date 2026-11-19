@@ -1,0 +1,849 @@
+/* ==========================================================================
+ * Production Journal Style Switcher (Desktop Dropdown + Mobile Drawer Cards)
+ * & Base Layout Structure Rules for Styles A, B, C, D
+ * ========================================================================== */
+
+/* ---------------- Style Switcher Dropdown (Redesigned Clean Macaron Popover) ---------------- */
+.style-picker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.style-picker-dot {
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(110, 90, 80, 0.42);
+  flex-shrink: 0;
+}
+
+.style-picker-chevron {
+  display: block;
+  flex-shrink: 0;
+  opacity: 0.72;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 180ms ease;
+}
+
+.style-picker.open .style-picker-chevron {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* Sticky Header for Legacy Journal (unwrapped fallback without data-layout-demo) */
+html:not([data-layout-demo]) .journal-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 120 !important;
+  margin-top: 0 !important;
+  background: rgba(253, 246, 236, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 0.75rem !important;
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+  border-bottom: 1.5px dashed rgba(206, 172, 152, 0.38);
+  border-radius: 0 0 16px 16px;
+}
+
+/* Completely override legacy .font-picker-menu wobbly borders & crooked ::before tape */
+.style-picker-menu {
+  width: min(328px, calc(100vw - 2rem)) !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  border: 3px solid #ffffff !important;
+  background-color: #fffdfa !important;
+  background-image: url('/paper-grain.png') !important;
+  background-size: 220px 220px !important;
+  box-shadow:
+    0 0 0 1px rgba(196, 162, 148, 0.34),
+    0 20px 40px -12px rgba(136, 102, 88, 0.28),
+    0 4px 12px -4px rgba(136, 102, 88, 0.14) !important;
+  transform: none !important;
+  z-index: 950 !important;
+}
+
+/* Remove the legacy crooked & clipped top tape completely */
+.style-picker-menu::before {
+  display: none !important;
+  content: none !important;
+}
+
+.style-picker-header {
+  padding: 0.72rem 1rem 0.55rem;
+  border-bottom: 1px dashed rgba(196, 162, 148, 0.38);
+  background: linear-gradient(90deg, rgba(255, 228, 238, 0.45) 0%, rgba(255, 246, 214, 0.45) 50%, rgba(220, 246, 236, 0.45) 100%);
+}
+
+.style-picker-hint {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-light, #8a7569);
+  letter-spacing: 0.02em;
+}
+
+.style-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+.style-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid transparent;
+  background: transparent;
+  border-radius: 12px;
+  padding: 0.58rem 0.68rem;
+  cursor: pointer;
+  translate: 0 0;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    translate 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.style-option:hover {
+  background: #fff7ee;
+  border-color: rgba(222, 186, 166, 0.48);
+  translate: 3px 0;
+}
+
+.style-option.active {
+  background: #fff0f5;
+  border-color: rgba(236, 144, 174, 0.58);
+}
+
+.style-option-index {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #b49a8e;
+  width: 1.4rem;
+  flex-shrink: 0;
+}
+
+.style-option.active .style-option-index {
+  color: #d65f86;
+}
+
+.style-option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.style-option-name {
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  line-height: 1.25;
+}
+
+.style-option-desc {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--ink-light, #8a7569);
+  line-height: 1.3;
+}
+
+.style-option-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.style-option-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.style-swatch-dot {
+  width: 0.64rem;
+  height: 0.64rem;
+  border-radius: 50%;
+  border: 1px solid rgba(110, 90, 80, 0.32);
+}
+
+.style-option-check {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #e05c88;
+}
+
+/* Mobile Drawer Style Cards */
+.mobile-style-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.mobile-style-desc {
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  color: var(--ink-light, #8a7569);
+  line-height: 1.3;
+  text-align: left;
+}
+
+/* ==========================================================================
+ * LAYOUT A · 之字形日记 (Zigzag Diary Path)
+ * ========================================================================== */
+[data-layout-demo='a'] {
+  --search-note-width: 780px;
+}
+
+[data-layout-demo='a'] .journal-container {
+  max-width: 1280px;
+}
+
+[data-layout-demo='a'] .layout-a-hero-wrap .search-note-section {
+  max-width: 780px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+[data-layout-demo='a'] .layout-a-result-wrap {
+  margin-top: 2rem;
+}
+
+.layout-a-zigzag {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4.5rem;
+  margin-top: 4rem;
+  padding: 1rem 0 2rem;
+}
+
+.layout-a-path-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.layout-a-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.layout-a-row-right {
+  grid-template-columns: minmax(210px, 0.34fr) minmax(0, 0.66fr);
+}
+
+.layout-a-row-left {
+  grid-template-columns: minmax(0, 0.66fr) minmax(210px, 0.34fr);
+}
+
+.layout-a-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.15rem 1.25rem;
+  background: rgba(255, 253, 248, 0.78);
+  border: 1.5px dashed rgba(110, 90, 80, 0.35);
+  border-radius: 16px;
+}
+
+.layout-a-aside-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.layout-a-step-pill {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--mac-strawberry, #ffd6e0);
+  border: 1.5px solid var(--ink-line, #6e5a50);
+  font-size: 0.95rem;
+  color: var(--ink, #5a4a42);
+  box-shadow: 2px 2px 0 var(--shadow-ink);
+}
+
+.layout-a-step-pill.is-mint { background: var(--mac-mint, #cdefe3); }
+.layout-a-step-pill.is-taro { background: var(--mac-taro, #e3d9ff); }
+.layout-a-step-pill.is-lemon { background: var(--mac-lemon, #fff1b8); }
+
+.layout-a-aside-doodle {
+  filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.2));
+}
+
+.layout-a-aside-text {
+  font-size: 1.25rem;
+  line-height: 1.45;
+  color: var(--ink-light, #8a7569);
+  margin: 0;
+}
+
+.layout-a-arrow {
+  font-size: 1.2rem;
+  color: var(--accent-strawberry, #e8789a);
+}
+
+.layout-a-stamp-slot .running-days-stamp-wrap {
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+/* Compact inner sections in Layout A */
+[data-layout-demo='a'] .plugin-ecosystem-panel,
+[data-layout-demo='a'] .developer-panel,
+[data-layout-demo='a'] .stats-journal-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+[data-layout-demo='a'] .plugin-app-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+[data-layout-demo='a'] .plugin-app-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+}
+
+[data-layout-demo='a'] .info-notes-section {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+[data-layout-demo='a'] .info-notes-section .info-notes-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) { margin-top: 1.25rem; }
+[data-layout-demo='a'] .info-notes-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+[data-layout-demo='a'] .stats-main-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-layout-demo='a'] .developer-method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* ==========================================================================
+ * LAYOUT B · 软木板拼贴 (Corkboard Bento Collage)
+ * ========================================================================== */
+[data-layout-demo='b'] {
+  --search-note-width: 780px;
+}
+
+[data-layout-demo='b'] .journal-container {
+  max-width: 1320px;
+}
+
+[data-layout-demo='b'] .layout-b-hero-wrap .search-note-section {
+  max-width: 780px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.layout-b-board {
+  margin-top: 2.75rem;
+  padding: 1.6rem 1.75rem 2rem;
+  background: rgba(246, 232, 212, 0.52);
+  border: 2px dashed rgba(150, 112, 92, 0.45);
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 6px rgba(255, 250, 242, 0.65);
+}
+
+.layout-b-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.35rem;
+  padding: 0 0.25rem;
+}
+
+.layout-b-board-title {
+  font-size: 1.35rem;
+  color: var(--ink, #5a4a42);
+  background: var(--mac-lemon, #fff1b8);
+  border: 1.5px solid var(--ink-line, #6e5a50);
+  border-radius: 999px;
+  padding: 0.25rem 1.15rem;
+  box-shadow: 2px 3px 0 var(--shadow-ink);
+}
+
+.layout-b-pin {
+  font-size: 1.35rem;
+}
+
+.layout-b-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.layout-b-cell-ecosystem { grid-column: span 8; }
+.layout-b-cell-side-notes {
+  grid-column: span 4;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.layout-b-cell-stats { grid-column: span 7; }
+.layout-b-cell-developer { grid-column: span 5; }
+
+.layout-b-stamp-box .running-days-stamp-wrap {
+  margin: 0 !important;
+}
+
+[data-layout-demo='b'] .plugin-ecosystem-panel,
+[data-layout-demo='b'] .developer-panel,
+[data-layout-demo='b'] .stats-journal-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 1.35rem 1.45rem !important;
+}
+
+[data-layout-demo='b'] .plugin-app-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+[data-layout-demo='b'] .plugin-app-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+[data-layout-demo='b'] .info-notes-section {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+[data-layout-demo='b'] .info-notes-section .info-notes-grid {
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+
+[data-layout-demo='b'] .info-notes-grid > * {
+  margin-top: 0 !important;
+}
+
+[data-layout-demo='b'] .stats-journal-header {
+  text-align: left !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+[data-layout-demo='b'] .stats-main-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-layout-demo='b'] .developer-heading-row {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+[data-layout-demo='b'] .developer-method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+/* ==========================================================================
+ * LAYOUT C · 侧栏手帐 (Sticky Sidebar Journal)
+ * ========================================================================== */
+[data-layout-demo='c'] .binder-holes,
+[data-layout-demo='c'] .journal-margin-line,
+[data-layout-demo='c'] .background-decorations {
+  display: none !important;
+}
+
+[data-layout-demo='c'] .journal-container {
+  max-width: 1360px;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+.layout-c-shell {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 2.25rem;
+  align-items: start;
+  padding-top: 1.25rem;
+}
+
+.layout-c-sidebar {
+  position: sticky;
+  top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.15rem;
+  background: var(--paper-cream, #fffaf2);
+  border: 2px solid var(--ink-line, #6e5a50);
+  border-radius: 18px;
+  box-shadow: 5px 6px 0 var(--shadow-ink);
+}
+
+.layout-c-brand-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1.5px dashed rgba(110, 90, 80, 0.25);
+  cursor: pointer;
+}
+
+.layout-c-brand-name {
+  font-size: 1.35rem;
+  color: var(--ink, #5a4a42);
+  line-height: 1.15;
+}
+
+.layout-c-brand-sub {
+  font-size: 0.95rem;
+  color: var(--ink-light, #8a7569);
+}
+
+.layout-c-bookmarks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.layout-c-bookmark {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  font-family: var(--font-handwriting, cursive);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  border: 1.5px solid var(--ink-line, #6e5a50);
+  border-radius: 10px 16px 16px 10px;
+  box-shadow: 2px 3px 0 var(--shadow-ink);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-bouncy), box-shadow 160ms ease;
+}
+
+.layout-c-bookmark:hover {
+  transform: translateX(5px);
+  box-shadow: 3px 4px 0 var(--shadow-ink);
+}
+
+.layout-c-bookmark.is-lemon { background: var(--mac-lemon, #fff1b8); }
+.layout-c-bookmark.is-sky   { background: var(--mac-sky, #d4ecff); }
+.layout-c-bookmark.is-pink  { background: var(--mac-strawberry, #ffd6e0); }
+.layout-c-bookmark.is-mint  { background: var(--mac-mint, #cdefe3); }
+.layout-c-bookmark.is-taro  { background: var(--mac-taro, #e3d9ff); }
+
+.layout-c-sidebar-stamp .running-days-stamp-wrap {
+  margin: 0 !important;
+}
+
+.layout-c-sidebar-stamp .running-days-stamp {
+  padding: 0.65rem 0.85rem !important;
+  width: 100%;
+}
+
+.layout-c-sidebar-doodles {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: 0.35rem;
+  opacity: 0.92;
+}
+
+.layout-c-content {
+  min-width: 0;
+}
+
+[data-layout-demo='c'] .layout-c-content .header-brand-container {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-layout-demo='c'] .layout-c-content .journal-hero {
+  text-align: left !important;
+  margin-left: 0 !important;
+  padding-bottom: 1.25rem !important;
+}
+
+[data-layout-demo='c'] .layout-c-content .journal-hero-title {
+  font-size: clamp(2.1rem, 4.2vw, 3.2rem) !important;
+  line-height: 1.35 !important;
+}
+
+[data-layout-demo='c'] .layout-c-content .search-note-section,
+[data-layout-demo='c'] .layout-c-content .plugin-ecosystem-panel,
+[data-layout-demo='c'] .layout-c-content .developer-panel,
+[data-layout-demo='c'] .layout-c-content .stats-journal-section {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.layout-c-section {
+  scroll-margin-top: 1.5rem;
+  margin-bottom: 2.75rem;
+}
+
+/* ==========================================================================
+ * LAYOUT D · 分屏首页 + 横向货架 (Split Hero + Horizontal Shelves)
+ * ========================================================================== */
+[data-layout-demo='d'] .journal-container {
+  max-width: 1320px;
+}
+
+[data-layout-demo='d'] .background-decorations {
+  opacity: 0.35;
+}
+
+.layout-d-split-hero {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.24fr);
+  gap: 2.25rem;
+  align-items: center;
+  margin-top: 1.25rem;
+  margin-bottom: 3rem;
+}
+
+.layout-d-split-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.15rem;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .journal-hero {
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .journal-hero-title {
+  font-size: clamp(2.4rem, 4.4vw, 3.6rem) !important;
+  line-height: 1.28 !important;
+}
+
+[data-layout-demo='d'] .layout-d-split-left .hero-doodle-right {
+  position: static !important;
+  margin-bottom: 0.35rem;
+  text-align: left;
+}
+
+.layout-d-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.layout-d-step {
+  padding: 0.3rem 0.75rem;
+  border: 1.5px solid var(--ink-line, #6e5a50);
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  box-shadow: 2px 2px 0 var(--shadow-ink);
+}
+
+.layout-d-step.is-lemon { background: var(--mac-lemon, #fff1b8); }
+.layout-d-step.is-pink  { background: var(--mac-strawberry, #ffd6e0); }
+.layout-d-step.is-mint  { background: var(--mac-mint, #cdefe3); }
+.layout-d-step-arrow    { color: var(--ink-light, #8a7569); font-weight: 700; }
+
+.layout-d-hero-doodles {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 0.35rem;
+  filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.22));
+}
+
+[data-layout-demo='d'] .layout-d-split-right .search-note-section {
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.layout-d-shelf-wrap {
+  margin: 2.5rem 0 3.25rem;
+}
+
+.layout-d-shelf-hint {
+  text-align: right;
+  font-size: 1.05rem;
+  color: var(--accent-strawberry-ink, #c25478);
+  margin-bottom: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Horizontal Cassette Shelf for PluginEcosystem */
+[data-layout-demo='d'] .plugin-ecosystem-panel {
+  max-width: 100% !important;
+}
+
+[data-layout-demo='d'] .plugin-app-grid {
+  display: flex !important;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 1.25rem;
+  padding: 0.65rem 0.35rem 1.2rem;
+  scroll-snap-type: x mandatory;
+}
+
+[data-layout-demo='d'] .plugin-app-card {
+  flex: 0 0 340px;
+  scroll-snap-align: start;
+  transition: transform 200ms var(--ease-bouncy);
+}
+
+[data-layout-demo='d'] .plugin-app-card:nth-child(odd)  { transform: rotate(-0.8deg); }
+[data-layout-demo='d'] .plugin-app-card:nth-child(even) { transform: rotate(0.8deg); }
+[data-layout-demo='d'] .plugin-app-card:hover { transform: translateY(-6px) rotate(0deg); }
+
+[data-layout-demo='d'] .plugin-app-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+/* Fanned Sticky Notes in Layout D */
+.layout-d-fan-wrap {
+  margin: 2.5rem 0 3.5rem;
+}
+
+[data-layout-demo='d'] .info-notes-section .info-notes-grid {
+  display: flex !important;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0 !important;
+  padding: 1rem 0;
+}
+
+[data-layout-demo='d'] .info-notes-grid > * {
+  flex: 1 1 0;
+  max-width: 390px;
+  margin-top: 0 !important;
+  transition: transform 220ms var(--ease-bouncy), z-index 0ms;
+  position: relative;
+}
+
+[data-layout-demo='d'] .info-notes-grid > :nth-child(2) {
+  margin-left: -1.4rem;
+  z-index: 2;
+}
+
+[data-layout-demo='d'] .info-notes-grid > :nth-child(3) {
+  margin-left: -1.4rem;
+  z-index: 3;
+}
+
+[data-layout-demo='d'] .info-notes-grid > *:hover {
+  z-index: 20 !important;
+  transform: translateY(-10px) scale(1.03) !important;
+}
+
+/* ==========================================================================
+ * Responsive Fallback for Demo Layouts (<= 960px)
+ * ========================================================================== */
+@media (max-width: 960px) {
+  .layout-a-path-svg { display: none; }
+  .layout-a-row-right,
+  .layout-a-row-left {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .layout-a-aside-right {
+    align-items: flex-start;
+    text-align: left;
+  }
+  [data-layout-demo='a'] .plugin-app-grid,
+  [data-layout-demo='a'] .info-notes-section .info-notes-grid,
+  [data-layout-demo='a'] .stats-main-grid,
+  [data-layout-demo='a'] .developer-method-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .layout-b-bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .layout-b-cell-ecosystem,
+  .layout-b-cell-side-notes,
+  .layout-b-cell-stats,
+  .layout-b-cell-developer {
+    grid-column: span 1;
+  }
+  [data-layout-demo='b'] .plugin-app-grid,
+  [data-layout-demo='b'] .stats-main-grid,
+  [data-layout-demo='b'] .developer-method-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .layout-c-shell {
+    grid-template-columns: 1fr;
+  }
+  .layout-c-sidebar {
+    position: static;
+  }
+  .layout-c-bookmarks {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .layout-c-bookmark {
+    width: auto;
+    flex: 1 1 auto;
+  }
+  [data-layout-demo='c'] .layout-c-content .header-brand-container {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .layout-d-split-hero {
+    grid-template-columns: 1fr;
+  }
+  [data-layout-demo='d'] .info-notes-section .info-notes-grid {
+    flex-direction: column;
+    gap: 1.25rem !important;
+  }
+  [data-layout-demo='d'] .info-notes-grid > :nth-child(2),
+  [data-layout-demo='d'] .info-notes-grid > :nth-child(3) {
+    margin-left: 0;
+  }
+}

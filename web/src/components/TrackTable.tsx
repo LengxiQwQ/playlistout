@@ -166,12 +166,13 @@ export const TrackTable: React.FC<TrackTableProps> = ({ tracks }) => {
               return (
                 <tr
                   key={`${track.id || track.title}-${track.index}-${i}`}
-                  className={`song-row track-row ${isGreyedOut ? 'track-greyed-out' : ''}`}
+                  className={`song-row track-row ${i < 12 ? 'song-row-reveal' : ''} ${isGreyedOut ? 'track-greyed-out' : ''}`}
                   style={{
                     borderBottom: '1px solid rgba(90, 74, 66, 0.08)',
                     opacity: isGreyedOut ? 0.65 : 1,
                     backgroundColor: isGreyedOut ? 'rgba(243, 244, 246, 0.4)' : 'transparent',
                     transition: 'background-color 0.15s ease',
+                    ...(i < 12 ? { ['--i' as any]: i } : {}),
                   }}
                 >
                   <td className="col-index" style={{ textAlign: 'center', color: '#b8a79c', padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem', width: 'var(--index-width, 48px)', whiteSpace: 'nowrap' }}>

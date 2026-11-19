@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 
 import { initClarity } from './analytics/clarity';
+import { initRevealEnv } from './motion/revealEnv';
 
 // Canonical origin enforcement: redirect legacy/secondary origins to canonical domain
 // Preserves user path and safe query params, strictly excludes any credential tokens
@@ -23,6 +24,8 @@ if (typeof window !== 'undefined' && window.location) {
     initClarity();
   }
 }
+
+initRevealEnv();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -25,7 +25,7 @@ export const Hero: React.FC = () => {
       </div>
 
       <h2
-        className="font-marker journal-hero-title"
+        className="font-marker journal-hero-title hero-title-reveal"
         style={{
           fontSize: 'clamp(2.5rem, 6vw, 4.25rem)',
           lineHeight: 'calc(var(--ruled-line-height, 38px) * 3)',
