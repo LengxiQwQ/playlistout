@@ -304,6 +304,7 @@
   max-width: 820px;
   margin: 0 auto;
   padding-top: 0.5rem;
+  z-index: 3;
 }
 
 [data-layout-demo='a'] .journal-hero {
@@ -524,8 +525,10 @@
   border: 2px solid #ffffff !important;
   background-image: var(--a-washi-fiber) !important;
   box-shadow: 0 2px 6px -1px rgba(140, 104, 90, 0.16), 0 0 0 1px rgba(176, 142, 128, 0.16) !important;
-  padding: 0.25rem 0.8rem !important;
-  font-size: 0.9rem !important;
+  padding: 0.32rem 0.92rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #4a3832 !important;
   translate: 0 0;
   rotate: 0deg;
   scale: 1;
@@ -558,6 +561,10 @@
   background-color: #fff7fa !important;
   background-image: var(--a-washi-fiber) !important;
   box-shadow: 0 2px 6px rgba(226, 140, 168, 0.12) !important;
+  padding: 0.32rem 1.05rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #5a443b !important;
   translate: 0 0;
   scale: 1;
   transition: translate var(--a-spring), scale var(--a-spring), background-color 200ms ease !important;
@@ -602,6 +609,13 @@
   gap: 5rem;
   margin-top: 4.25rem;
   padding: 1.25rem 0 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+[data-layout-demo='a'] .layout-a-path-svg {
+  top: -6.5rem;
+  height: calc(100% + 6.5rem);
 }
 
 [data-layout-demo='a'] .layout-a-path-svg path {
@@ -1276,16 +1290,16 @@
   box-shadow: var(--a-sticker-shadow-hover) !important;
 }
 
-[data-layout-demo='a'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
-[data-layout-demo='a'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar-fill {
   border-radius: 999px 999px 6px 6px !important;
   scale: 1 1;
   transition: scale var(--a-spring), filter 220ms ease;
   transform-origin: bottom center;
 }
 
-[data-layout-demo='a'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
-[data-layout-demo='a'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+[data-layout-demo='a'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill,
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar.is-active .stats-trend-bar-fill {
   scale: 1 1.18;
   filter: saturate(1.3);
 }

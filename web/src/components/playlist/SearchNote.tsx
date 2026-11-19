@@ -31,11 +31,16 @@ export interface SearchNoteProps {
   ) => void;
 }
 
-const internationalStickerStyle: React.CSSProperties = {
-  padding: '0.25rem 0.75rem',
-  fontSize: '1rem',
+const platformStickerStyle: React.CSSProperties = {
+  padding: '0.28rem 0.85rem',
+  fontSize: '1.02rem',
   fontFamily: 'var(--font-handwriting, cursive)',
-  fontWeight: 700,
+  fontWeight: 600,
+  color: '#4a3832',
+};
+
+const internationalStickerStyle: React.CSSProperties = {
+  ...platformStickerStyle,
 };
 
 function shouldOpenKugouLoginFromUrl(): boolean {
@@ -244,12 +249,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             color="green"
             rotateDeg={-1.5}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-            }}
+            style={platformStickerStyle}
             title={t.search.platformQQDesc}
           >
             {t.search.platformQQ}
@@ -257,12 +257,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             color="red"
             rotateDeg={1.5}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-            }}
+            style={platformStickerStyle}
             title={t.search.platformNeteaseDesc}
           >
             {t.search.platformNetease}
@@ -270,12 +265,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             color="lime"
             rotateDeg={-1}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-            }}
+            style={platformStickerStyle}
             title={t.search.platformQishuiDesc}
           >
             {t.search.platformQishui}
@@ -283,12 +273,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             color="yellow"
             rotateDeg={-0.5}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-            }}
+            style={platformStickerStyle}
             title={t.search.platformKuwoDesc}
           >
             {t.search.platformKuwo}
@@ -296,12 +281,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           <Sticker
             color="pink"
             rotateDeg={0.5}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
-            }}
+            style={platformStickerStyle}
             title={t.search.platformMiguDesc}
           >
             {t.search.platformMigu}
@@ -315,10 +295,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             rotateDeg={1}
             onClick={() => setIsKugouModalOpen(true)}
             style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '1rem',
-              fontFamily: 'var(--font-handwriting, cursive)',
-              fontWeight: 700,
+              ...platformStickerStyle,
               cursor: 'pointer',
             }}
             title={hasKugou ? t.search.kugouLoggedInBadge : t.search.platformKugouDesc}

@@ -214,10 +214,14 @@ html:not([data-layout-demo]) .journal-header {
   max-width: 780px !important;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+  z-index: 3;
 }
 
 [data-layout-demo='a'] .layout-a-result-wrap {
   margin-top: 2rem;
+  position: relative;
+  z-index: 3;
 }
 
 .layout-a-zigzag {

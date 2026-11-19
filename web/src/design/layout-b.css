@@ -417,8 +417,10 @@
   border-left: 4px solid rgba(226, 128, 158, 0.65) !important;
   background-image: var(--b-paper-fiber) !important;
   box-shadow: 0 2px 5px rgba(132, 96, 78, 0.1) !important;
-  padding: 0.24rem 0.78rem !important;
-  font-size: 0.88rem !important;
+  padding: 0.28rem 0.88rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #4a3832 !important;
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
@@ -1103,16 +1105,16 @@
   box-shadow: var(--b-pin-shadow-hover) !important;
 }
 
-[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
-[data-layout-demo='b'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+[data-layout-demo='b'] .stats-trend-bars .stats-trend-bar-fill {
   border-radius: 999px 999px 4px 4px !important;
   scale: 1 1;
   transform-origin: bottom center;
   transition: scale var(--b-spring), filter 220ms ease;
 }
 
-[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
-[data-layout-demo='b'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
+[data-layout-demo='b'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill,
+[data-layout-demo='b'] .stats-trend-bars .stats-trend-bar.is-active .stats-trend-bar-fill {
   scale: 1 1.18;
   filter: saturate(1.28);
 }

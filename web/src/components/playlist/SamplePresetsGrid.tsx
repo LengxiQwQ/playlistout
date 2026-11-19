@@ -11,9 +11,10 @@ export interface SamplePresetsGridProps {
 }
 
 const sampleStickerStyle: React.CSSProperties = {
-  padding: '0.35rem 0.9rem',
-  fontSize: '1.05rem',
+  padding: '0.32rem 0.9rem',
+  fontSize: '1.02rem',
   fontWeight: 600,
+  color: '#4a3832',
   fontFamily: 'var(--font-handwriting, cursive)',
   cursor: 'pointer',
 };
@@ -45,10 +46,10 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           background: isSamplesExpanded ? '#ffeef3' : '#fffaf0',
           border: '1.75px dashed rgba(110, 90, 80, 0.45)',
           borderRadius: '20px',
-          padding: '0.28rem 0.9rem',
-          fontSize: '1rem',
-          fontWeight: 700,
-          color: '#7a5e52',
+          padding: '0.32rem 1rem',
+          fontSize: '1.02rem',
+          fontWeight: 600,
+          color: '#5a443b',
           boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.14)',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
@@ -89,13 +90,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           rotateDeg={-1}
           onClick={() => onSelectSample('3197635836', 'qqmusic', 'user')}
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleQQ}
         </Sticker>
@@ -105,13 +100,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           rotateDeg={1}
           onClick={() => onSelectSample('https://163cn.tv/bgx9GaCN', 'netease', 'user')}
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleNetease}
         </Sticker>
@@ -121,13 +110,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           rotateDeg={-0.5}
           onClick={() => onSelectSample('https://qishui.douyin.com/s/iXHhKHhY/', 'qishui', 'playlist')}
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleQishui}
         </Sticker>
@@ -143,13 +126,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
             )
           }
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleKuwo}
         </Sticker>
@@ -165,13 +142,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
             )
           }
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleMigu}
         </Sticker>
@@ -207,13 +178,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
             )
           }
           className="font-handwriting"
-          style={{
-            padding: '0.35rem 0.9rem',
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-handwriting, cursive)',
-            cursor: 'pointer',
-          }}
+          style={sampleStickerStyle}
         >
           {t.search.sampleKugou}
         </Sticker>

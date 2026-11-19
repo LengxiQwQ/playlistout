@@ -960,25 +960,25 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                           transition: 'height 0.4s ease',
                         }}
                       />
+                    </div>
 
-                      {/* Pop-on Hand-Journal Tooltip on Hover */}
-                      <div className="stats-trend-tooltip" role="tooltip">
-                        <div className="stats-trend-tooltip-date font-mono">
-                          {bar.fullDate || bar.date}
-                        </div>
-                        <div className="stats-trend-tooltip-total font-sans">
-                          <span className="stats-trend-tooltip-num">{bar.count}</span>
-                          <span className="stats-trend-tooltip-unit">份流转</span>
-                        </div>
-                        {(bar.parses > 0 || bar.exports > 0) && (
-                          <div className="stats-trend-tooltip-detail font-sans">
-                            <span>解析 {bar.parses}</span>
-                            <span className="stats-trend-tooltip-dot">·</span>
-                            <span>导出 {bar.exports}</span>
-                          </div>
-                        )}
-                        <div className="stats-trend-tooltip-arrow" aria-hidden="true" />
+                    {/* Pop-on Hand-Journal Tooltip on Hover */}
+                    <div className="stats-trend-tooltip" role="tooltip">
+                      <div className="stats-trend-tooltip-date font-mono">
+                        {bar.fullDate || bar.date}
                       </div>
+                      <div className="stats-trend-tooltip-total font-sans">
+                        <span className="stats-trend-tooltip-num">{bar.count}</span>
+                        <span className="stats-trend-tooltip-unit">份流转</span>
+                      </div>
+                      {(bar.parses > 0 || bar.exports > 0) && (
+                        <div className="stats-trend-tooltip-detail font-sans">
+                          <span>解析 {bar.parses}</span>
+                          <span className="stats-trend-tooltip-dot">·</span>
+                          <span>导出 {bar.exports}</span>
+                        </div>
+                      )}
+                      <div className="stats-trend-tooltip-arrow" aria-hidden="true" />
                     </div>
                   </div>
                 );

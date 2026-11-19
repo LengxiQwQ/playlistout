@@ -558,8 +558,10 @@
   border-radius: 10px !important;
   border: 1.5px solid rgba(176, 156, 148, 0.4) !important;
   box-shadow: 2px 3px 0 rgba(186, 166, 158, 0.28) !important;
-  padding: 0.24rem 0.78rem !important;
-  font-size: 0.88rem !important;
+  padding: 0.28rem 0.88rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #4a3832 !important;
   translate: 0 0;
   rotate: 0deg;
   scale: 1;
@@ -1182,16 +1184,16 @@
   translate: 0 -4px;
 }
 
-[data-layout-demo='d'] .stats-trend-bars > [data-reveal-item] > div:not(.stats-trend-tooltip),
-[data-layout-demo='d'] .stats-trend-bars > div:not(.stats-trend-tooltip) {
+[data-layout-demo='d'] .stats-trend-bars .stats-trend-bar-fill {
   border-radius: 999px 999px 6px 6px !important;
   scale: 1 1;
   transform-origin: bottom center;
   transition: scale var(--d-spring), filter 220ms ease;
 }
 
-[data-layout-demo='d'] .stats-trend-bars > [data-reveal-item]:hover > div:not(.stats-trend-tooltip),
-[data-layout-demo='d'] .stats-trend-bars > div:not(.stats-trend-tooltip):hover {
+[data-layout-demo='d'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
+[data-layout-demo='d'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill,
+[data-layout-demo='d'] .stats-trend-bars .stats-trend-bar.is-active .stats-trend-bar-fill {
   scale: 1 1.2;
   filter: saturate(1.3);
 }
