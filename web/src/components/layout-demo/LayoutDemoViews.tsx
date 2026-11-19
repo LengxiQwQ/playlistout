@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { JournalStyleId } from '../settings/StyleContext';
 import { Reveal } from '../motion/Reveal';
+import { HeroVariantStage } from './HeroVariants';
 
 export interface LayoutDemoSlots {
   header: React.ReactNode;
@@ -104,10 +105,16 @@ const LayoutADemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
     <div className="layout-a-root">
       {slots.header}
       <main>
-        <div className="layout-a-hero-wrap">
-          {slots.hero}
-          {slots.search}
-        </div>
+        <HeroVariantStage
+          hero={slots.hero}
+          search={slots.search}
+          fallback={
+            <div className="layout-a-hero-wrap">
+              {slots.hero}
+              {slots.search}
+            </div>
+          }
+        />
 
         {slots.result && <div className="layout-a-result-wrap">{slots.result}</div>}
 

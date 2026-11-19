@@ -1473,7 +1473,7 @@ button.sticker:disabled,
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
-  transform: translate(-50%, 4px);
+  transform: translate(-50%, 0);
   scale: 1 !important;
   transform-origin: bottom center;
   z-index: 100;
@@ -1496,7 +1496,12 @@ button.sticker:disabled,
     0 8px 22px -4px rgba(132, 96, 78, 0.22),
     0 2px 6px rgba(132, 96, 78, 0.1);
   white-space: nowrap;
-  transition: opacity 160ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), visibility 160ms ease;
+  transition: opacity 160ms ease, left 110ms cubic-bezier(0.2, 0, 0, 1), visibility 160ms ease;
+}
+
+.stats-trend-tooltip.is-active {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Downward triangular arrow */

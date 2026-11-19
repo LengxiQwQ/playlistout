@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { fetchStats, type StatsResponse, type StatsIncrementDetail } from '../../api/client';
 import { useTranslation } from '../../i18n';
 import { Paper } from '../ui/Paper';
@@ -255,6 +255,43 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
     },
     [handleDashboardNavigate, handleDashboardAuxClick, language],
   );
+
+  const lastActiveBarRef = useRef<{
+    fullDate: string;
+    date: string;
+    height: number;
+    count: number;
+    parses: number;
+    exports: number;
+  } | null>(null);
+
+  if (trendBars.length > 0 && !lastActiveBarRef.current) {
+    lastActiveBarRef.current = trendBars[trendBars.length - 1];
+  }
+
+  if (activeTrendIdx !== null && trendBars[activeTrendIdx]) {
+    lastActiveBarRef.current = trendBars[activeTrendIdx];
+  }
+
+  const currentTooltipBar = activeTrendIdx !== null && trendBars[activeTrendIdx]
+    ? trendBars[activeTrendIdx]
+    : lastActiveBarRef.current;
+
+  const tooltipLeftPercent = useMemo(() => {
+    if (trendBars.length === 0) return 50;
+    if (activeTrendIdx !== null) {
+      return ((activeTrendIdx + 0.5) / trendBars.length) * 100;
+    }
+    if (lastActiveBarRef.current) {
+      const idx = trendBars.findIndex(
+        (b) => (b.fullDate || b.date) === (lastActiveBarRef.current?.fullDate || lastActiveBarRef.current?.date)
+      );
+      if (idx !== -1) {
+        return ((idx + 0.5) / trendBars.length) * 100;
+      }
+    }
+    return 50;
+  }, [activeTrendIdx, trendBars]);
 
   return (
     <section
@@ -898,91 +935,105 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               borderBottom: '1.5px dashed rgba(180, 144, 130, 0.45)',
               position: 'relative',
             }}
+            onPointerLeave={() => setActiveTrendIdx(null)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setActiveTrendIdx(null);
+              }
+            }}
           >
             {trendBars.length > 0 ? (
-              trendBars.map((bar, idx) => {
-                const barColors = [
-                  'var(--accent-strawberry, #e8789a)',
-                  'var(--accent-peach, #ee9a6c)',
-                  'var(--accent-lemon, #e3b23c)',
-                  'var(--accent-mint, #4fae8a)',
-                  'var(--accent-sky, #6a82d4)',
-                  'var(--accent-taro, #9a7fd8)',
-                  'var(--mac-matcha, #e2f2c9)',
-                ];
-                const barColor = barColors[idx % barColors.length];
-                return (
-                  <div
-                    key={idx}
-                    data-reveal-item=""
-                    className={`stats-trend-bar ${activeTrendIdx === idx ? 'is-active' : ''}`.trim()}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      height: '100%',
-                      justifyContent: 'flex-end',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      ['--i' as any]: idx,
-                    }}
-                    tabIndex={0}
-                    role="graphics-symbol"
-                    aria-label={`${bar.fullDate || bar.date}: ${bar.count}`}
-                    onMouseEnter={() => setActiveTrendIdx(idx)}
-                    onMouseLeave={() => setActiveTrendIdx(null)}
-                    onFocus={() => setActiveTrendIdx(idx)}
-                    onBlur={() => setActiveTrendIdx(null)}
-                  >
+              <>
+                {trendBars.map((bar, idx) => {
+                  const barColors = [
+                    'var(--accent-strawberry, #e8789a)',
+                    'var(--accent-peach, #ee9a6c)',
+                    'var(--accent-lemon, #e3b23c)',
+                    'var(--accent-mint, #4fae8a)',
+                    'var(--accent-sky, #6a82d4)',
+                    'var(--accent-taro, #9a7fd8)',
+                    'var(--mac-matcha, #e2f2c9)',
+                  ];
+                  const barColor = barColors[idx % barColors.length];
+                  return (
                     <div
-                      className="stats-trend-bar-track"
+                      key={idx}
+                      data-reveal-item=""
+                      className={`stats-trend-bar ${activeTrendIdx === idx ? 'is-active' : ''}`.trim()}
                       style={{
-                        position: 'relative',
-                        width: '100%',
-                        height: '58px',
+                        flex: 1,
+                        minWidth: 0,
                         display: 'flex',
-                        alignItems: 'flex-end',
-                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        height: '100%',
+                        justifyContent: 'flex-end',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        ['--i' as any]: idx,
                       }}
+                      tabIndex={0}
+                      role="graphics-symbol"
+                      aria-label={`${bar.fullDate || bar.date}: ${bar.count}`}
+                      onMouseEnter={() => setActiveTrendIdx(idx)}
+                      onFocus={() => setActiveTrendIdx(idx)}
                     >
                       <div
-                        className="stats-trend-bar-fill"
+                        className="stats-trend-bar-track"
                         style={{
+                          position: 'relative',
                           width: '100%',
-                          maxWidth: '14px',
-                          height: `${bar.height}%`,
-                          backgroundColor: barColor,
-                          border: '1px solid rgba(110, 90, 80, 0.35)',
-                          borderBottom: 'none',
-                          borderRadius: '5px 5px 0 0',
-                          transition: 'height 0.4s ease',
+                          height: '58px',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          justifyContent: 'center',
                         }}
-                      />
+                      >
+                        <div
+                          className="stats-trend-bar-fill"
+                          style={{
+                            width: '100%',
+                            maxWidth: '14px',
+                            height: `${bar.height}%`,
+                            backgroundColor: barColor,
+                            border: '1px solid rgba(110, 90, 80, 0.35)',
+                            borderBottom: 'none',
+                            borderRadius: '5px 5px 0 0',
+                            transition: 'height 0.4s ease',
+                          }}
+                        />
+                      </div>
                     </div>
+                  );
+                })}
 
-                    {/* Pop-on Hand-Journal Tooltip on Hover */}
-                    <div className="stats-trend-tooltip" role="tooltip">
-                      <div className="stats-trend-tooltip-date font-mono">
-                        {bar.fullDate || bar.date}
-                      </div>
-                      <div className="stats-trend-tooltip-total font-sans">
-                        <span className="stats-trend-tooltip-num">{bar.count}</span>
-                        <span className="stats-trend-tooltip-unit">份流转</span>
-                      </div>
-                      {(bar.parses > 0 || bar.exports > 0) && (
-                        <div className="stats-trend-tooltip-detail font-sans">
-                          <span>解析 {bar.parses}</span>
-                          <span className="stats-trend-tooltip-dot">·</span>
-                          <span>导出 {bar.exports}</span>
-                        </div>
-                      )}
-                      <div className="stats-trend-tooltip-arrow" aria-hidden="true" />
+                {/* Pop-on Hand-Journal Tooltip — Single continuous gliding tooltip */}
+                {currentTooltipBar && (
+                  <div
+                    className={`stats-trend-tooltip ${activeTrendIdx !== null ? 'is-active' : ''}`.trim()}
+                    role="tooltip"
+                    style={{
+                      left: `${tooltipLeftPercent}%`,
+                    }}
+                  >
+                    <div className="stats-trend-tooltip-date font-mono">
+                      {currentTooltipBar.fullDate || currentTooltipBar.date}
                     </div>
+                    <div className="stats-trend-tooltip-total font-sans">
+                      <span className="stats-trend-tooltip-num">{currentTooltipBar.count}</span>
+                      <span className="stats-trend-tooltip-unit">份流转</span>
+                    </div>
+                    {(currentTooltipBar.parses > 0 || currentTooltipBar.exports > 0) && (
+                      <div className="stats-trend-tooltip-detail font-sans">
+                        <span>解析 {currentTooltipBar.parses}</span>
+                        <span className="stats-trend-tooltip-dot">·</span>
+                        <span>导出 {currentTooltipBar.exports}</span>
+                      </div>
+                    )}
+                    <div className="stats-trend-tooltip-arrow" aria-hidden="true" />
                   </div>
-                );
-              })
+                )}
+              </>
             ) : (
               <>
                 {[38, 52, 44, 68, 58, 76, 62, 84, 70, 56, 78, 66, 88, 74].map((h, idx) => {
