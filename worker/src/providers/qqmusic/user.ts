@@ -7,21 +7,28 @@ const FETCH_TIMEOUT_MS = 15000;
 const ALLOWED_UPSTREAM_HOSTS: ReadonlySet<string> = new Set(['c.y.qq.com', 'u.y.qq.com']);
 
 /**
- * Validates whether a string is a potentially valid QQ uin (4-15 digits).
+ * Validates whether a string is a potentially valid QQ uin (numeric 4-15 digits, or encrypted 10-36 alphanumeric chars).
  */
 export function isValidQQNumber(uin: string): boolean {
   if (!uin || typeof uin !== 'string') return false;
-  return /^\d{4,15}$/.test(uin.trim());
+  const trimmed = uin.trim();
+  // 1. Classic numeric QQ (4-15 digits)
+  if (/^\d{4,15}$/.test(trimmed)) return true;
+  // 2. Encrypted UIN from new web profile / ryqq_v2 (e.g. owEk7ins7K-soc, starts with ow)
+  if (/^ow[a-zA-Z0-9_-]{10,32}$/.test(trimmed)) return true;
+  return false;
 }
 
 /**
- * Extracts uin from raw input (can be pure numeric QQ or a profile URL).
+ * Extracts uin from raw input (can be pure numeric QQ, encrypted UIN, or a profile URL).
  * e.g.:
  * - "10001" -> "10001"
+ * - "owEk7ins7K-soc" -> "owEk7ins7K-soc"
  * - "https://y.qq.com/portal/profile.html?uin=10001" -> "10001"
  * - "https://y.qq.com/n/ryqq/profile/like/song?uin=10001" -> "10001"
+ * - "https://y.qq.com/n/ryqq_v2/profile/like/song?uin=owEk7ins7K-soc" -> "owEk7ins7K-soc"
  */
-import { resolveQQShortLinkIfNeeded } from './input';
+import { resolveQQShortLinkIfNeeded, extractUrlFromText } from './input';
 
 export function extractQQNumber(input: string): string | null {
   if (!input || typeof input !== 'string') return null;
@@ -31,9 +38,14 @@ export function extractQQNumber(input: string): string | null {
   }
 
   try {
-    const urlToParse = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const clean = extractUrlFromText(trimmed);
+    const urlToParse = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
     const parsed = new URL(urlToParse);
-    const uinParam = parsed.searchParams.get('uin') || parsed.searchParams.get('hostuin');
+    const uinParam =
+      parsed.searchParams.get('uin') ||
+      parsed.searchParams.get('hostuin') ||
+      parsed.searchParams.get('hostUin') ||
+      parsed.searchParams.get('encrypt_uin');
     if (uinParam && isValidQQNumber(uinParam)) {
       return uinParam.trim();
     }
@@ -87,7 +99,7 @@ interface RawUserCreatedDissResponse {
 export async function fetchQQUserPlaylists(uin: string): Promise<UserPlaylistsData> {
   const cleanUin = uin.trim();
   if (!isValidQQNumber(cleanUin)) {
-    throw new ProviderError('INVALID_INPUT', `Invalid QQ number: "${uin}". Expected 4-15 digits.`, 400);
+    throw new ProviderError('INVALID_INPUT', `Invalid QQ number: "${uin}". Expected 4-15 digits or valid encrypted UIN.`, 400);
   }
 
   const endpoint = 'https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss';
@@ -96,9 +108,11 @@ export async function fetchQQUserPlaylists(uin: string): Promise<UserPlaylistsDa
     throw new ProviderError('FORBIDDEN', `Outbound request to unauthorized host ${parsedEndpoint.hostname} is prohibited.`, 403);
   }
 
+  const isNumeric = /^\d+$/.test(cleanUin);
   const params = new URLSearchParams({
-    hostUin: '0',
+    hostUin: isNumeric ? cleanUin : '0',
     hostuin: cleanUin,
+    encrypt_uin: cleanUin,
     sin: '0',
     size: '200',
     g_tk: '5381',

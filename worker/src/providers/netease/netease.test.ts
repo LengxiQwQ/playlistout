@@ -203,7 +203,26 @@ describe('NetEase Song Status & Normalization', () => {
   });
 
   describe('NetEase Completeness Verification', () => {
-    it('throws INCOMPLETE_PLAYLIST when upstream song detail API drops songs', async () => {
+    it('throws FORBIDDEN with friendly message when playlist is set to private (code 401)', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        globalThis.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            code: 401,
+            message: '该歌单已被创建者设置为隐私',
+          }),
+        } as Response);
+
+        const { fetchNeteasePlaylist } = await import('./client');
+        await expect(fetchNeteasePlaylist('18476287173')).rejects.toThrowError(
+          /该歌单已被创建者设置为隐私/
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+    it('synthesizes placeholders and exports successfully when upstream drops songs (best-effort export)', async () => {
       const originalFetch = globalThis.fetch;
       try {
         globalThis.fetch = vi.fn()
@@ -237,12 +256,30 @@ describe('NetEase Song Status & Normalization', () => {
               songs: [],
               privileges: [],
             }),
+          } as Response)
+          // 4. Fallback 2 (v1 detail returns empty)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              songs: [],
+            }),
+          } as Response)
+          // 5. Fallback 3 (legacy playlist detail returns empty)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              code: 200,
+              result: { tracks: [] },
+            }),
           } as Response);
 
         const { fetchNeteasePlaylist } = await import('./client');
-        await expect(fetchNeteasePlaylist('12345')).rejects.toThrowError(
-          /Incomplete playlist: NetEase playlist reported 2 songs, but only 1 could be retrieved/
-        );
+        const playlist = await fetchNeteasePlaylist('12345');
+        expect(playlist.tracks).toHaveLength(2);
+        expect(playlist.tracks[0].title).toBe('Song 101');
+        expect(playlist.tracks[1].title).toBe('已下架或未知歌曲 (102)');
+        expect(playlist.tracks[1].isAvailable).toBe(false);
       } finally {
         globalThis.fetch = originalFetch;
       }

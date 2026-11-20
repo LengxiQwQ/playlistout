@@ -163,6 +163,8 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       const data = (await v6Response.json()) as RawNeteasePlaylistDetailResponse;
       if (data && data.code === 200 && data.playlist) {
         rawJson = data;
+      } else if (data && (data.code === 401 || (data as any).msg?.includes('隐私') || (data as any).message?.includes('隐私'))) {
+        throw new ProviderError('FORBIDDEN', '该歌单已被创建者设置为隐私。若是您的歌单，请在网易云 App 中将歌单设为公开后再试。', 403);
       } else if (data && data.code === 404) {
         rawJson = { code: 404 };
       } else if (data && ((data as any).code === -462 || data.code === 429 || data.code === 503)) {
@@ -172,6 +174,7 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
       lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${v6Response.status})`, 502);
     }
   } catch (err) {
+    if (err instanceof ProviderError && err.code === 'FORBIDDEN') throw err;
     lastUpstreamError = err;
     // Fall through to v3
   }
@@ -188,6 +191,8 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
         const data = (await v3Response.json()) as RawNeteasePlaylistDetailResponse;
         if (data && data.code === 200 && data.playlist) {
           rawJson = data;
+        } else if (data && (data.code === 401 || (data as any).msg?.includes('隐私') || (data as any).message?.includes('隐私'))) {
+          throw new ProviderError('FORBIDDEN', '该歌单已被创建者设置为隐私。若是您的歌单，请在网易云 App 中将歌单设为公开后再试。', 403);
         } else if (data && data.code === 404) {
           rawJson = { code: 404 };
         } else if (data && ((data as any).code === -462 || data.code === 429 || data.code === 503)) {
@@ -197,6 +202,7 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
         lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${v3Response.status})`, 502);
       }
     } catch (err) {
+      if (err instanceof ProviderError && err.code === 'FORBIDDEN') throw err;
       lastUpstreamError = err;
       // Fall through to legacy
     }
@@ -215,6 +221,8 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
             playlist: legacyJson.result as RawNeteasePlaylistDetailResponse['playlist'],
             privileges: legacyJson.privileges,
           };
+        } else if (legacyJson && (legacyJson.code === 401 || legacyJson.msg?.includes('隐私') || legacyJson.message?.includes('隐私'))) {
+          throw new ProviderError('FORBIDDEN', '该歌单已被创建者设置为隐私。若是您的歌单，请在网易云 App 中将歌单设为公开后再试。', 403);
         } else if (legacyJson && legacyJson.code === 404) {
           rawJson = { code: 404 };
         } else if (legacyJson && (legacyJson.code === -462 || legacyJson.code === 429 || legacyJson.code === 503)) {
@@ -224,6 +232,7 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
         lastUpstreamError = new ProviderError('UPSTREAM_ERROR', `NetEase upstream service error (HTTP ${legacyResponse.status})`, 502);
       }
     } catch (err) {
+      if (err instanceof ProviderError && err.code === 'FORBIDDEN') throw err;
       lastUpstreamError = err;
       // Fall through to v6 GET
     }
@@ -278,6 +287,10 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
     }
   }
 
+  // Level 1: Metadata ↔ IDs Completeness Check
+  // In NetEase, playlist.trackCount is a denormalized cached field that frequently lags behind deletions
+  // or regional purges (e.g., trackCount: 3120 while trackIds has 3113 valid songs).
+  // When trackIds is present, it serves as the authoritative source of existing tracks in the playlist.
   // Level 1: Metadata ↔ IDs Completeness Check
   // In NetEase, playlist.trackCount is a denormalized cached field that frequently lags behind deletions
   // or regional purges (e.g., trackCount: 3120 while trackIds has 3113 valid songs).
@@ -432,40 +445,24 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
     }
 
     if (stillMissingIds.length > 0) {
-      const missingCount = stillMissingIds.length;
-      const missingRatio = missingCount / trackIdList.length;
-      // If only a tiny fraction is missing (<= 5% or <= 20 songs on large lists), synthesize unplayable placeholders
-      // to preserve the rest of the 95%+ tracks for user export rather than failing the entire playlist.
-      if (trackIdList.length >= 50 && missingRatio <= 0.05 && missingCount <= 20) {
-        for (const missingId of stillMissingIds) {
-          const idStr = String(missingId);
-          songMap.set(idStr, {
-            id: Number(missingId),
-            name: `已下架或未知歌曲 (${idStr})`,
-            ar: [{ name: '未知艺人' }],
-            al: { name: '未知专辑' },
-            dt: 0,
-            fee: 0,
-          });
-          privMap.set(idStr, {
-            id: Number(missingId),
-            st: -1,
-            pl: 0,
-            cp: 0,
-            subp: 0,
-          });
-        }
-      } else {
-        throw new ProviderError(
-          'INCOMPLETE_PLAYLIST',
-          `Incomplete playlist: NetEase playlist reported ${trackIdList.length} songs, but only ${trackIdList.length - stillMissingIds.length} could be retrieved (${stillMissingIds.length} missing).`,
-          502,
-          {
-            expectedCount: trackIdList.length,
-            actualCount: trackIdList.length - stillMissingIds.length,
-            missingIds: stillMissingIds.slice(0, 10),
-          },
-        );
+      // 尽力导出原则：无论缺失多少首下架/无版权歌曲，都为其生成保留位置的占位歌曲，绝不熔断阻断导出！
+      for (const missingId of stillMissingIds) {
+        const idStr = String(missingId);
+        songMap.set(idStr, {
+          id: Number(missingId) || 0,
+          name: `已下架或未知歌曲 (${idStr})`,
+          ar: [{ name: '未知艺人' }],
+          al: { name: '未知专辑' },
+          dt: 0,
+          fee: 0,
+        });
+        privMap.set(idStr, {
+          id: Number(missingId) || 0,
+          st: -1,
+          pl: 0,
+          cp: 0,
+          subp: 0,
+        });
       }
     }
 
@@ -484,18 +481,7 @@ export async function fetchNeteasePlaylist(playlistId: string): Promise<Playlist
     });
   }
 
-  // Level 3: Output ↔ Expected Count Verification
-  const targetCount = trackIdList.length > 0 ? trackIdList.length : expectedTotal;
-  if (targetCount > 0 && tracks.length !== targetCount) {
-    throw new ProviderError(
-      'INCOMPLETE_PLAYLIST',
-      `Incomplete playlist: NetEase expected ${targetCount} tracks, but final output has ${tracks.length} tracks.`,
-      502,
-      { expectedCount: targetCount, actualCount: tracks.length },
-    );
-  }
-
-  // Synchronize playlist trackCount with the verified actual tracks count
+  // Level 3: Output count synchronization (always export all retrieved tracks without failing closed)
   playlistDetail.trackCount = tracks.length;
 
   return normalizeNeteasePlaylist(playlistDetail, tracks);

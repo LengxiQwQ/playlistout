@@ -26,6 +26,7 @@ import {
 } from '../models/playlist';
 import { parsePlaylistService } from './playlist-service';
 import { fetchUserPlaylistsService } from './user-service';
+import { submitFeedback } from './feedback-service';
 import { extractCleanUrlOrInput } from '../utils/clean-url';
 import { providerRegistry, type SupportedPlatform } from '../providers';
 import { recordResolveV2 } from '../analytics/v2-recorder';
@@ -244,6 +245,30 @@ function recordResolveFailure(
         endpoint: 'resolve',
       }),
     );
+
+    // Auto-record diagnosable format/parsing failures into feedback registry for developer debugging & repair
+    const diagnosableErrorCodes = new Set([
+      'INVALID_INPUT',
+      'UNSUPPORTED_URL',
+      'PARSE_ERROR',
+      'INCOMPLETE_PLAYLIST',
+    ]);
+    if (diagnosableErrorCodes.has(rawCode) && rawInput && rawInput.trim().length > 0) {
+      const trimmed = rawInput.trim();
+      const sanitized = trimmed
+        .slice(0, 1024)
+        .replace(/(?:password|token|secret|access_token|cookie)=([^&]+)/gi, '$1=[REDACTED]');
+
+      runAsync(
+        submitFeedback(
+          db,
+          sanitized,
+          rawCode as any,
+          platform !== 'unknown' ? platform : undefined,
+          request,
+        ).catch(() => {}),
+      );
+    }
   }
 }
 

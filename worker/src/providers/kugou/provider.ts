@@ -7,8 +7,12 @@ import { fetchKugouPlaylist, fetchKugouUserPlaylists, type KugouAuthCredentials 
 export function isKugouProfile(input: string): boolean {
   return (
     /kugou\.com/i.test(input) &&
-    !/(?:songlist|gcid_|special\/single)/i.test(input) &&
-    (/\/user/i.test(input) || /\/profile/i.test(input) || /\/home/i.test(input) || /[?&]uid=\d+/i.test(input))
+    !/(?:songlist|gcid_|special\/single|global_specialid)/i.test(input) &&
+    (/\/user/i.test(input) ||
+      /\/profile/i.test(input) ||
+      /\/home/i.test(input) ||
+      /[?&]uid=\d+/i.test(input) ||
+      /activity\.kugou\.com\/share\/v-/i.test(input))
   );
 }
 

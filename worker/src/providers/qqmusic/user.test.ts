@@ -3,19 +3,23 @@ import { isValidQQNumber, extractQQNumber, fetchQQUserPlaylists } from './user';
 import { ProviderError } from '../../models/playlist';
 
 describe('QQ Music User Playlists Input Extraction', () => {
-  it('identifies valid numeric QQ numbers', () => {
+  it('identifies valid numeric QQ numbers and encrypted UINs', () => {
     expect(isValidQQNumber('10001')).toBe(true);
     expect(isValidQQNumber('123456789')).toBe(true);
     expect(isValidQQNumber(' 987654321 ')).toBe(true);
+    expect(isValidQQNumber('owEk7ins7K-soc')).toBe(true);
     expect(isValidQQNumber('123')).toBe(false); // too short
     expect(isValidQQNumber('abc12345')).toBe(false);
+    expect(isValidQQNumber('not-a-valid-input')).toBe(false);
     expect(isValidQQNumber('')).toBe(false);
   });
 
-  it('extracts QQ number from profile URLs', () => {
+  it('extracts QQ number or encrypted UIN from profile URLs', () => {
     expect(extractQQNumber('10001')).toBe('10001');
+    expect(extractQQNumber('owEk7ins7K-soc')).toBe('owEk7ins7K-soc');
     expect(extractQQNumber('https://y.qq.com/portal/profile.html?uin=10001')).toBe('10001');
     expect(extractQQNumber('https://y.qq.com/n/ryqq/profile/like/song?uin=12345678&tab=create')).toBe('12345678');
+    expect(extractQQNumber('https://y.qq.com/n/ryqq_v2/profile/like/song?uin=owEk7ins7K-soc')).toBe('owEk7ins7K-soc');
     expect(extractQQNumber('https://y.qq.com/portal/profile.html?hostuin=888888')).toBe('888888');
     expect(extractQQNumber('not-a-valid-input')).toBeNull();
   });

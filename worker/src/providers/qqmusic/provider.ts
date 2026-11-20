@@ -68,7 +68,7 @@ export const qqMusicProvider: DualQQMusicProvider = {
   },
 
   extractUserId(input: string): string | null {
-    const match = input.match(/[?&](?:uin|hostuin)=(\d+)/);
+    const match = input.match(/[?&](?:uin|hostuin|encrypt_uin)=([a-zA-Z0-9_-]+)/i);
     return match ? match[1] : null;
   },
 
