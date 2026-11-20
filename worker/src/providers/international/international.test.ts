@@ -61,14 +61,19 @@ describe('International playlist boundaries', () => {
   });
   it('does not invent status, VIP, ISRC or drop duplicate entries', async () => {
     const track = normalizeSpotifyTrack({itemV2:{data:{__typename:'Track',uri:'spotify:track:example',name:'A',artists:{items:[{profile:{name:'B'}}]},trackDuration:{totalMilliseconds:1234},albumOfTrack:{name:'C'}}}},1);
-    const playlist = {platform:'spotify',id:'p',name:'P',trackCount:2,tracks:[track,{...track,index:2}]};
+    expect(track).not.toBeNull();
+    const playlist = {platform:'spotify',id:'p',name:'P',trackCount:2,tracks:[track!,{...track!,index:2}]};
     await defaultPlaylistPipeline.execute({playlist,platform:'spotify'});
     expect(playlist.tracks).toHaveLength(2);
-    expect(track.status).toBe('unknown');
-    expect(track.isAvailable).toBeUndefined();
-    expect(track.isVip).toBeUndefined();
-    expect(track.isrc).toBeUndefined();
-    expect(() => normalizeSpotifyTrack({itemV2:{data:{__typename:'Episode'}}},1)).toThrow();
+    expect(track!.status).toBe('unknown');
+    expect(track!.isAvailable).toBeUndefined();
+    expect(track!.isVip).toBeUndefined();
+    expect(track!.isrc).toBeUndefined();
+    const ep = normalizeSpotifyTrack({itemV2:{data:{__typename:'Episode',uri:'spotify:episode:ep1',name:'Ep1',podcastV2:{data:{name:'PodcastShow'}},coverArt:{sources:[{url:'https://cover'}]}}}}, 3);
+    expect(ep).toMatchObject({title:'Ep1',artist:'PodcastShow',coverUrl:'https://cover',sourceUrl:'https://open.spotify.com/episode/ep1'});
+    const local = normalizeSpotifyTrack({itemV2:{data:{__typename:'LocalTrack',uri:'spotify:local:Art:Alb:Trk:100',name:'LocalSong',artistName:'LocalArt',albumName:'LocalAlb'}}}, 4);
+    expect(local).toMatchObject({title:'LocalSong',artist:'LocalArt',album:'LocalAlb',statusText:'本地文件',coverUrl:undefined});
+    expect(normalizeSpotifyTrack({itemV2:{data:{__typename:'Track'}}}, 5)).toBeNull();
   });
   it('maps Apple metadata while leaving missing duration unknown', () => {
     const t = normalizeAppleTrack({type:'songs',id:'1',attributes:{name:'A',artistName:'B',isrc:'XX123',discNumber:2,releaseDate:'2020-01-01'}},1);

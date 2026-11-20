@@ -1,6 +1,6 @@
 // Protocol reference: AliAkhtari78/SpotifyScraper, MIT, 9cbf05aa4963bac3684bb941270dcb62fc851ab7.
 import { ProviderError, type Playlist, type Track } from '../../models/playlist';
-import { RequestBudget, json, requireTotal, complete, setRequestCost } from '../international/http';
+import { RequestBudget, json, requireTotal, setRequestCost } from '../international/http';
 import { spotifyId } from './input';
 import { normalizeSpotifyTrack } from './normalize';
 import { reversePlaylistTracks } from '../international/order';
@@ -38,6 +38,7 @@ export async function fetchSpotifyPlaylist(input: string): Promise<Playlist> {
     let result: Playlist | undefined;
     const tracks: Track[] = [];
     let offset = 0;
+    let total = 0;
     for (;;) {
       const url = new URL('https://api-partner.spotify.com/pathfinder/v1/query');
       url.searchParams.set('operationName', 'fetchPlaylist');
@@ -46,7 +47,7 @@ export async function fetchSpotifyPlaylist(input: string): Promise<Playlist> {
       const raw = json(await budget.authorized(url.toString(), { authorization: `Bearer ${session!.token}` }, () => token(true)));
       const p = raw?.data?.playlistV2;
       if (raw.errors?.length || !p?.content || !p.name) throw new ProviderError('UPSTREAM_ERROR', 'Spotify 无法返回此公开歌单。', 502);
-      const total = requireTotal(p.content.totalCount);
+      total = requireTotal(p.content.totalCount);
       if (result && result.trackCount !== total) throw new ProviderError('INCOMPLETE_PLAYLIST', '歌单在解析期间发生变化，请重试。', 502);
       result ||= {
         platform: 'spotify', id, name: p.name, description: p.description,
@@ -57,9 +58,18 @@ export async function fetchSpotifyPlaylist(input: string): Promise<Playlist> {
       };
       const items = p.content.items;
       if (!Array.isArray(items) || (items.length === 0 && offset < total)) throw new ProviderError('INCOMPLETE_PLAYLIST', 'Spotify 分页提前结束。', 502);
-      for (const item of items) tracks.push(normalizeSpotifyTrack(item, tracks.length + 1));
+      for (const item of items) {
+        const track = normalizeSpotifyTrack(item, tracks.length + 1);
+        if (track) tracks.push(track);
+      }
       offset += items.length;
-      if (offset >= total) { complete(tracks.length, total); break; }
+      if (offset >= total) break;
+    }
+    if (tracks.length === 0 && total > 0) {
+      throw new ProviderError('PARSE_ERROR', '歌单中没有可解析的有效曲目。', 422);
+    }
+    if (result) {
+      result.trackCount = tracks.length;
     }
     reversePlaylistTracks(tracks);
     setRequestCost(result, budget.count);

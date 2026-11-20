@@ -53,17 +53,70 @@ class SpotifyAdapter(BasePlatformAdapter):
                     raise ValueError('Spotify 分页提前结束')
                 for item in items:
                     t = (item.get('itemV2') or {}).get('data') or {}
-                    if t.get('__typename') != 'Track':
-                        raise ValueError('歌单含无法解析的条目，未导出部分结果')
-                    tid = (t.get('uri') or '').split(':')[-1]
-                    album = t.get('albumOfTrack') or {}
-                    artists = ', '.join(a.get('profile', {}).get('name', '') for a in t.get('artists', {}).get('items', []))
-                    tracks.append(_track(len(tracks)+1, t.get('name'), artists, id=tid, album=album.get('name', ''), duration_ms=(t.get('trackDuration') or t.get('duration') or {}).get('totalMilliseconds'), track_number=t.get('trackNumber'), source_url=f'https://open.spotify.com/track/{tid}', cover_url=(album.get('coverArt', {}).get('sources') or [{}])[0].get('url', '')))
+                    name = t.get('name')
+                    if not name:
+                        continue
+                    typename = t.get('__typename')
+                    uri = t.get('uri') or ''
+                    uri_parts = uri.split(':')
+                    raw_id = uri_parts[-1] if uri_parts else uri
+
+                    artists = ''
+                    album_name = ''
+                    cover_url = ''
+                    source_url = uri
+                    duration_ms = (t.get('trackDuration') or t.get('localTrackDuration') or t.get('duration') or {}).get('totalMilliseconds')
+
+                    if typename == 'Track':
+                        album = t.get('albumOfTrack') or {}
+                        album_name = album.get('name', '')
+                        cover_url = (album.get('coverArt', {}).get('sources') or [{}])[0].get('url', '')
+                        artists = ', '.join(a.get('profile', {}).get('name', '') for a in t.get('artists', {}).get('items', []) if a.get('profile', {}).get('name'))
+                        if raw_id:
+                            source_url = f'https://open.spotify.com/track/{raw_id}'
+                        tid = raw_id
+                    elif typename == 'LocalTrack':
+                        album_name = t.get('albumName') or ''
+                        artists = t.get('artistName') or ''
+                        tid = uri.replace('spotify:', '') if uri else raw_id
+                        source_url = uri
+                    elif typename == 'Episode':
+                        podcast = (t.get('podcastV2') or {}).get('data') or t.get('show') or {}
+                        album_name = podcast.get('name') or ''
+                        artists = podcast.get('name') or '播客节目'
+                        cover_url = (t.get('coverArt', {}).get('sources') or [{}])[0].get('url', '')
+                        if raw_id:
+                            source_url = f'https://open.spotify.com/episode/{raw_id}'
+                        tid = raw_id
+                    else:
+                        album = t.get('albumOfTrack') or {}
+                        album_name = t.get('albumName') or album.get('name', '')
+                        cover_url = (album.get('coverArt', {}).get('sources') or t.get('coverArt', {}).get('sources') or [{}])[0].get('url', '')
+                        artists = t.get('artistName') or ', '.join(a.get('profile', {}).get('name', '') for a in t.get('artists', {}).get('items', []) if a.get('profile', {}).get('name'))
+                        tid = raw_id
+
+                    if not artists:
+                        artists = '未知歌手'
+
+                    tracks.append(_track(
+                        len(tracks) + 1,
+                        name,
+                        artists,
+                        id=tid or uri,
+                        album=album_name,
+                        duration_ms=duration_ms,
+                        track_number=t.get('trackNumber'),
+                        source_url=source_url,
+                        cover_url=cover_url,
+                    ))
                 offset += len(items)
                 if offset >= total:
-                    if len(tracks) != total:
-                        raise ValueError('歌单数量不符')
-                    _reverse_tracks(tracks)
-                    return playlist
+                    break
+            if not tracks and total > 0:
+                raise ValueError('歌单未取得任何有效曲目')
+            if playlist:
+                playlist.track_count = len(tracks)
+            _reverse_tracks(tracks)
+            return playlist
         finally:
             net.session.close()

@@ -8,7 +8,7 @@ v3.1.0 新增 Spotify 与 Apple Music。两家均只解析公开歌单元数据�
 - Spotify：`https://open.spotify.com/playlist/<22位ID>`，允许分享查询参数、`intl-…` 路径；短链限 `spotify.link`、`spoti.fi`。
 - Apple Music：`https://music.apple.com/<地区>/playlist/<可选名称>/pl.…`，包括 `pl.u-…`；保留地区。支持白名单内 `geo.music.apple.com` 跳转。
 - 歌曲、专辑、私人集合链接不能作为公开歌单处理。重定向必须为 HTTPS、无用户信息/自定义端口、白名单主机，最多三跳。
-- 两家取得完整歌单后，将上游顺序整体反转并从 1 重新编号，统一用于预览、复制、导出和播放器导入；保留合法重复，不推断缺失的添加时间。歌单总数、分页或条目类型无法确认时返回明确错误，不能把部分结果标成完整。
+- 两家取得完整歌单后，将上游顺序整体反转并从 1 重新编号，统一用于预览、复制、导出和播放器导入；保留合法重复，不推断缺失的添加时间。Spotify 支持普通曲目（Track）、本地音频（LocalTrack）与播客单集（Episode）的元数据解析，遇损坏或空条目时安全跳过并按实际有效曲目导出，避免单条异常中断整单；歌单总数或分页异常时返回明确错误。
 
 歌曲状态新增 `unknown`。两家的匿名元数据不足以确认用户账号的 VIP、付费或可播放能力，故保留 `status: unknown`，不补 `isVip: false` 或 `isAvailable: true`。Spotify 当前不补查 ISRC、发行日期、碟号；缺失保持未知。Apple 可直接取得更多字段，但单条记录仍可能缺失时长等信息。
 

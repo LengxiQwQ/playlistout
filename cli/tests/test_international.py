@@ -100,3 +100,34 @@ def test_complete_vendor_playlist_is_reversed_once_before_export(tmp_path, monke
     assert [t['title'] for t in data['tracks']] == ['newer', 'middle', 'older']
     with next(tmp_path.glob('*.csv')).open(encoding='utf-8-sig', newline='') as stream:
         assert [row['title'] for row in csv.DictReader(stream)] == ['newer', 'middle', 'older']
+
+
+def test_spotify_parses_local_and_episode_tracks_and_skips_invalid(monkeypatch):
+    monkeypatch.setenv('PLAYLISTOUT_NO_TELEMETRY', '1')
+    adapter = SpotifyAdapter()
+    raw_items = [
+        {'itemV2': {'data': {'__typename': 'Track', 'uri': 'spotify:track:t1', 'name': 'Track1', 'artists': {'items': [{'profile': {'name': 'Artist1'}}]}, 'albumOfTrack': {'name': 'Alb1', 'coverArt': {'sources': [{'url': 'https://c1'}]}}}}},
+        {'itemV2': {'data': {'__typename': 'LocalTrack', 'uri': 'spotify:local:Art2:Alb2:Trk2:200', 'name': 'Local2', 'artistName': 'Artist2', 'albumName': 'Alb2'}}},
+        {'itemV2': {'data': {'__typename': 'Episode', 'uri': 'spotify:episode:ep3', 'name': 'Ep3', 'podcastV2': {'data': {'name': 'PodShow'}}, 'coverArt': {'sources': [{'url': 'https://c3'}]}}}},
+        {'itemV2': {'data': {'__typename': 'Corrupted'}}},  # Missing name, should be skipped
+    ]
+
+    def read(net, target, headers=None, allow404=False):
+        if '/embed/track/' in target:
+            session = {'isAnonymous': True, 'accessToken': 'fixture-only'}
+            return '<script id="__NEXT_DATA__" type="application/json">' + json.dumps({'props': {'pageProps': {'state': {'settings': {'session': session}}}}}) + '</script>'
+        if 'spotify.com/pathfinder/' in target:
+            return json.dumps({'data': {'playlistV2': {'name': 'Mixed', 'content': {'totalCount': 4, 'items': raw_items}}}})
+        raise ValueError('Unexpected URL: ' + target)
+
+    with patch.object(_Requests, 'get', autospec=True, side_effect=read):
+        playlist = adapter.fetch_playlist('https://open.spotify.com/playlist/1234567890123456789012')
+
+    assert playlist.track_count == 3
+    assert len(playlist.tracks) == 3
+    # Tracks are reversed: Ep3 (index 1), Local2 (index 2), Track1 (index 3)
+    ep, local, track = playlist.tracks
+    assert ep.title == 'Ep3' and ep.artist == 'PodShow' and ep.cover_url == 'https://c3' and ep.index == 1
+    assert local.title == 'Local2' and local.artist == 'Artist2' and local.cover_url == '' and local.index == 2
+    assert track.title == 'Track1' and track.artist == 'Artist1' and track.cover_url == 'https://c1' and track.index == 3
+
