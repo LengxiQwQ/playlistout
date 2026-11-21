@@ -279,12 +279,12 @@ Playlist Out 使用 [MIT License](LICENSE) 开源。
 <!-- INSIGHTS:START -->
 **📊 仓库流量**
 
-访问次数：**3,084** ｜ 不重复访客：**350**（近 14 天） ｜ 仓库克隆：**11,966** ｜ 不重复克隆：**148**（近 14 天）
+访问次数：**3,151** ｜ 不重复访客：**365**（近 14 天） ｜ 仓库克隆：**12,004** ｜ 不重复克隆：**136**（近 14 天）
 
 **热门来源（近 14 天）：** github.com · Google · Bing · Baidu · claude.ai · kaiyuanbang.cn  
-**热门内容（近 14 天）：** releases/tag/v3.0.0 · docs/JSON-SCHEMA.md · README.md · plugins/musicfree/README.md
+**热门内容（近 14 天）：** releases/tag/v3.0.0 · docs/JSON-SCHEMA.md · README.md · plugins/musicfree
 
-> 数据开始：2026-09-07 · 最后更新：2026-11-20
+> 数据开始：2026-09-07 · 最后更新：2026-11-21
 <!-- INSIGHTS:END -->
 
 ---
