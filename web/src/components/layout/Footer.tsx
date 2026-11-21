@@ -154,6 +154,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             }}
           >
             <span
+              className="footer-brand-logo-badge"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

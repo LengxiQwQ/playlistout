@@ -79,7 +79,7 @@ describe('StyleSwitcher i18n Integration', () => {
     localStorage.clear();
   });
 
-  it('defaults to 贴纸日记 (a) in zh-CN and renders all 5 Chinese style options', () => {
+  it('defaults to 软木拼贴 (b) in zh-CN and renders all 5 Chinese style options', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <StyleProvider>
@@ -88,15 +88,15 @@ describe('StyleSwitcher i18n Integration', () => {
       </LanguageProvider>,
     );
 
-    const button = screen.getByRole('button', { name: /贴纸日记/ });
+    const button = screen.getByRole('button', { name: /软木拼贴/ });
     expect(button).toBeInTheDocument();
-    expect(document.documentElement.dataset.layoutDemo).toBe('a');
+    expect(document.documentElement.dataset.layoutDemo).toBe('b');
 
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('option', { name: /软木拼贴/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /贴纸日记/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /晴空便签/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /软木拼贴/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /活页手帐/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /旧版手帐/ })).toBeInTheDocument();
   });
@@ -110,7 +110,7 @@ describe('StyleSwitcher i18n Integration', () => {
       </LanguageProvider>,
     );
 
-    const button = screen.getByRole('button', { name: /Sticker Diary/i });
+    const button = screen.getByRole('button', { name: /Pinboard Wall/i });
     fireEvent.click(button);
 
     const legacyOpt = screen.getByRole('option', { name: /Legacy Journal/i });

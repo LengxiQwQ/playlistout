@@ -173,13 +173,23 @@
     display: none !important;
   }
 
-  /* Compact header on mobile: single-row, no overflow */
+  /* Compact flush sticky header on mobile: single-row, zero top gap, zero jitter */
+  .journal-container {
+    padding-top: 0 !important;
+  }
+
   .journal-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 120 !important;
+    margin-top: 0 !important;
     min-height: calc(var(--ruled-line-height, 38px) * 1.5) !important;
     gap: 0.35rem;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    transform: translateZ(0);
   }
 
   .header-brand-container {
@@ -192,12 +202,16 @@
   .header-logo-img {
     width: 2.2rem !important;
     height: 2.2rem !important;
+    rotate: 0deg !important;
+    transform: none !important;
   }
 
   .header-brand-title {
     font-size: 1.35rem !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
+    rotate: 0deg !important;
+    transform: none !important;
   }
 
   .header-brand-tagline {
@@ -205,6 +219,8 @@
     margin-top: 0.05rem !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
+    rotate: 0deg !important;
+    transform: none !important;
   }
 
   .header-actions {
@@ -220,6 +236,8 @@
     padding: 0.26rem 0.5rem !important;
     font-size: 0.9rem !important;
     white-space: nowrap !important;
+    rotate: 0deg !important;
+    transform: none !important;
   }
 
   .header-desktop-btn svg {
@@ -227,17 +245,38 @@
     height: 14px;
   }
 
-  /* Steeper splash tilt animation for mobile */
+  /* Mobile touch stabilization: eliminate hover tilt / scale / jitter on touch */
+  .header-brand-container:hover .header-logo-img,
+  .header-brand-container:hover .header-brand-title,
+  .header-brand-container:hover .header-brand-tagline,
+  .header-actions button:hover,
+  .header-actions button:active,
+  .header-actions .sticker:hover,
+  .header-actions .sticker:active,
+  .header-desktop-btn:hover,
+  .header-desktop-btn:active,
+  .header-drawer-btn:hover,
+  .header-drawer-btn:active,
+  .header-brand-text:hover,
+  .header-brand-text:hover .font-marker,
+  .header-brand-text:hover .header-brand-tagline {
+    transform: none !important;
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    scale: 1 !important;
+  }
+
+  /* Level splash animation for mobile (strictly 0deg, no tilt) */
   @keyframes mcSplashMobile {
     0%, 100% {
-      transform: rotate(13deg) scale(1);
+      transform: rotate(0deg) scale(1);
     }
     50% {
-      transform: rotate(13deg) scale(1.08);
+      transform: rotate(0deg) scale(1.04);
     }
   }
 
-  /* Hero doodle for mobile: anchored to top-right of the last word with steeper tilt */
+  /* Hero doodle for mobile: level, clean handwriting */
   .hero-doodle-mobile {
     position: absolute !important;
     right: -1.6rem !important;
@@ -249,6 +288,8 @@
     color: #e8955a;
     user-select: none;
     white-space: nowrap;
+    rotate: 0deg !important;
+    transform: none !important;
     animation: mcSplashMobile 1.4s ease-in-out infinite !important;
   }
 
@@ -390,6 +431,7 @@
   *::before,
   *::after {
     --rot: 0deg !important;
+    --sticker-rot: 0deg !important;
   }
 
   .hand-drawn-border,
@@ -402,6 +444,15 @@
   div.sticker,
   .sticky-note-card,
   .journal-paper,
+  .plugin-app-card,
+  .info-note-card,
+  .info-notes-grid .journal-paper,
+  .stats-card,
+  .developer-method,
+  .layout-b-cell,
+  .layout-b-stamp-box,
+  .running-days-stamp,
+  .running-days-stamp-wrap,
   .marker-button,
   .marker-button:disabled,
   .marker-button:hover,
@@ -419,9 +470,103 @@
   .plugin-copy-button,
   .plugin-copy-button-secondary,
   .plugin-action-link,
-  .quick-samples-toggle {
+  .quick-samples-toggle,
+  .header-logo-img,
+  .header-brand-title,
+  .header-brand-tagline,
+  .hero-doodle-right,
+  .hero-doodle-mobile,
+  .stationery-sticker,
+  .footer-brand-logo-badge,
+  .layout-b-board-washi {
     --rot: 0deg !important;
+    --sticker-rot: 0deg !important;
+    rotate: 0deg !important;
+  }
+
+  .sticky-note-card,
+  .journal-paper,
+  .plugin-app-card,
+  .info-note-card,
+  .info-notes-grid .journal-paper,
+  .stats-card,
+  .developer-method,
+  .layout-b-cell,
+  .layout-b-stamp-box,
+  .running-days-stamp,
+  .running-days-stamp-wrap,
+  .stationery-sticker,
+  .hero-doodle-right,
+  .hero-doodle-mobile,
+  .playlist-cover,
+  .cover-placeholder,
+  .footer-brand-logo-badge,
+  .author-dropup-card,
+  .layout-b-board-washi {
     transform: none !important;
+    animation: none !important;
+  }
+
+  /* Reset any hover/touch tilt on mobile across all cards & panels */
+  .sticker:hover,
+  .sticker:active,
+  .sticky-note-card:hover,
+  .sticky-note-card:active,
+  .journal-paper:hover,
+  .journal-paper:active,
+  .plugin-app-card:hover,
+  .plugin-app-card:active,
+  .info-note-card:hover,
+  .info-note-card:active,
+  .developer-method:hover,
+  .developer-method:active,
+  .marker-button:hover,
+  .marker-button:active,
+  .layout-b-cell:hover,
+  .layout-b-stamp-box:hover {
+    rotate: 0deg !important;
+    transform: none !important;
+    translate: 0 0 !important;
+  }
+
+  /* Enforce straight, level orientation across all themes on mobile */
+  [data-layout-demo] .sticker,
+  [data-layout-demo] .sticky-note-card,
+  [data-layout-demo] .journal-paper,
+  [data-layout-demo] .plugin-app-card,
+  [data-layout-demo] .info-notes-grid .journal-paper,
+  [data-layout-demo] .developer-method,
+  [data-layout-demo] .layout-b-cell,
+  [data-layout-demo] .layout-b-stamp-box,
+  [data-layout-demo] .running-days-stamp,
+  [data-layout-demo] .running-days-stamp-wrap,
+  [data-layout-demo] .header-logo-img,
+  [data-layout-demo] .header-brand-title,
+  [data-layout-demo] .header-brand-tagline,
+  [data-layout-demo] .hero-doodle-right,
+  [data-layout-demo] .hero-doodle-mobile,
+  [data-layout-demo] .stationery-sticker,
+  [data-layout-demo] .layout-b-board-washi {
+    rotate: 0deg !important;
+    --rot: 0deg !important;
+    --sticker-rot: 0deg !important;
+  }
+
+  [data-layout-demo] .sticky-note-card,
+  [data-layout-demo] .journal-paper,
+  [data-layout-demo] .plugin-app-card,
+  [data-layout-demo] .info-notes-grid .journal-paper,
+  [data-layout-demo] .developer-method,
+  [data-layout-demo] .layout-b-cell,
+  [data-layout-demo] .layout-b-stamp-box {
+    transform: none !important;
+  }
+
+  [data-layout-demo] *:hover,
+  [data-layout-demo] *:active,
+  [data-layout-demo] *:focus {
+    rotate: 0deg !important;
+    --rot: 0deg !important;
   }
 
   /* All mobile buttons have consistent rounded corners (no asymmetric slope wedges) */
@@ -455,11 +600,16 @@
   }
 
   /* Mobile Sticky Note Tape Anchor:
-     Center a single washi tape pin cleanly at top-center, remove bottom-right protrusion */
+     Center a single washi tape pin cleanly at top-center, level (0deg), remove bottom-right protrusion */
+  .tape {
+    rotate: 0deg !important;
+    transform: rotate(0deg) !important;
+  }
+
   .sticky-note-card .tape-top-left {
     left: 50% !important;
     top: -0.85rem !important;
-    transform: translateX(-50%) rotate(-1deg) !important;
+    transform: translateX(-50%) rotate(0deg) !important;
     max-width: 5.5rem !important;
     height: 1.45rem !important;
     z-index: 25 !important;
@@ -1062,12 +1212,13 @@
 @media (max-width: 480px) {
   html,
   body {
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     max-width: 100vw !important;
   }
 
   .journal-container {
-    padding: 0.75rem 1.05rem 1.5rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 1.5rem !important;
     padding-left: max(1.05rem, env(safe-area-inset-left)) !important;
     padding-right: max(1.05rem, env(safe-area-inset-right)) !important;
   }
@@ -1116,6 +1267,8 @@
     right: -1.4rem !important;
     top: 0.55rem !important;
     font-size: 0.86rem !important;
+    rotate: 0deg !important;
+    transform: none !important;
   }
 
   :lang(en) .hero-doodle-mobile,
@@ -1129,12 +1282,14 @@
   .tape {
     max-width: 5.5rem !important;
     height: 1.5rem !important;
+    rotate: 0deg !important;
+    transform: rotate(0deg) !important;
   }
 
   .sticky-note-card .tape-top-left {
     left: 50% !important;
     top: -0.75rem !important;
-    transform: translateX(-50%) rotate(-1deg) !important;
+    transform: translateX(-50%) rotate(0deg) !important;
     max-width: 4.8rem !important;
     height: 1.35rem !important;
   }

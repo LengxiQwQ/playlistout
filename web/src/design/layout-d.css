@@ -1348,12 +1348,54 @@
 
 /* Mobile (<= 768px) */
 @media (max-width: 768px) {
+  [data-layout-demo='d'] html,
+  [data-layout-demo='d'] body {
+    overflow-x: clip !important;
+  }
+
   [data-layout-demo='d'] .journal-container {
     width: 100% !important;
     max-width: 100vw !important;
+    padding-top: 0 !important;
     padding-left: 0.8rem !important;
     padding-right: 0.8rem !important;
     overflow-x: clip;
+  }
+
+  [data-layout-demo='d'] .journal-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 120 !important;
+    margin-top: 0 !important;
+    margin-left: -0.8rem !important;
+    margin-right: -0.8rem !important;
+    padding: 0.5rem 0.8rem 0.6rem !important;
+    border-top: none !important;
+    border-radius: 0 0 18px 18px !important;
+    transform: translateZ(0) !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Straighten all panels, cards, fanned notes and interactive elements on mobile */
+  [data-layout-demo='d'] .header-logo-img,
+  [data-layout-demo='d'] .header-brand-title,
+  [data-layout-demo='d'] .hero-doodle-right,
+  [data-layout-demo='d'] .plugin-app-card,
+  [data-layout-demo='d'] .developer-method,
+  [data-layout-demo='d'] .stats-main-grid > *,
+  [data-layout-demo='d'] .search-note-section .sticky-note-card::before {
+    rotate: 0deg !important;
+    transform: none !important;
+  }
+
+  [data-layout-demo='d'] .header-brand-container:hover .header-logo-img,
+  [data-layout-demo='d'] .header-desktop-btn:hover,
+  [data-layout-demo='d'] .header-actions button:hover,
+  [data-layout-demo='d'] .plugin-app-card:hover,
+  [data-layout-demo='d'] .developer-method:hover {
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    transform: none !important;
   }
 
   [data-layout-demo='d'] .layout-d-split-hero {

@@ -1556,6 +1556,28 @@
     font-size: 1.25rem !important;
   }
 
+  /* Straighten all cards, panels, and stickers on mobile */
+  [data-layout-demo='a'] .header-logo-img,
+  [data-layout-demo='a'] .header-brand-title,
+  [data-layout-demo='a'] .hero-doodle-right,
+  [data-layout-demo='a'] .plugin-app-card,
+  [data-layout-demo='a'] .developer-method {
+    rotate: 0deg !important;
+    transform: none !important;
+  }
+
+  [data-layout-demo='a'] .header-brand-container:hover .header-logo-img,
+  [data-layout-demo='a'] .header-brand-container:hover .header-brand-title,
+  [data-layout-demo='a'] .header-desktop-btn:hover,
+  [data-layout-demo='a'] .header-github-btn:hover,
+  [data-layout-demo='a'] .header-actions button:hover,
+  [data-layout-demo='a'] .plugin-app-card:hover,
+  [data-layout-demo='a'] .developer-method:hover {
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    transform: none !important;
+  }
+
   [data-layout-demo='a'] .developer-heading-row,
   [data-layout-demo='a'] .plugin-ecosystem-heading-row {
     flex-direction: column;

@@ -61,7 +61,7 @@ describe('Header Component', () => {
     const githubLink = screen.getByRole('link', { name: /Star on GitHub/i });
     expect(githubLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout');
 
-    expect(screen.getByRole('button', { name: /Sticker Diary/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pinboard Wall/i })).toBeInTheDocument();
 
     const drawerBtn = screen.getByRole('button', { name: /Journal Drawer/i });
     expect(drawerBtn).toBeInTheDocument();

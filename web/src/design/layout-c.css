@@ -1094,13 +1094,15 @@
 
   [data-layout-demo='c'] .layout-c-sidebar {
     position: sticky;
-    top: 0.5rem;
+    top: 0 !important;
+    margin-top: 0 !important;
     z-index: 80;
     flex-direction: row;
     align-items: center;
     gap: 0.75rem;
     padding: 0.6rem 0.85rem;
-    border-radius: 18px;
+    border-radius: 0 0 18px 18px;
+    transform: translateZ(0);
   }
 
   [data-layout-demo='c'] .layout-c-sidebar::before {
@@ -1144,11 +1146,48 @@
 }
 
 @media (max-width: 768px) {
+  [data-layout-demo='c'] html,
+  [data-layout-demo='c'] body {
+    overflow-x: clip !important;
+  }
+
   [data-layout-demo='c'] .journal-container {
     width: 100% !important;
     max-width: 100vw !important;
-    padding: 0.75rem 0.75rem 2.5rem !important;
+    padding-top: 0 !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-bottom: 2.5rem !important;
     overflow-x: clip;
+  }
+
+  [data-layout-demo='c'] .layout-c-sidebar {
+    top: 0 !important;
+    margin-top: 0 !important;
+    border-radius: 0 0 18px 18px !important;
+    transform: translateZ(0) !important;
+  }
+
+  [data-layout-demo='c'] .layout-c-topbar .journal-header {
+    position: relative !important;
+    top: 0 !important;
+    border-top: none !important;
+    transform: none !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Straighten all cards & panels on mobile */
+  [data-layout-demo='c'] .plugin-app-card,
+  [data-layout-demo='c'] .developer-method {
+    rotate: 0deg !important;
+    transform: none !important;
+  }
+
+  [data-layout-demo='c'] .plugin-app-card:hover,
+  [data-layout-demo='c'] .developer-method:hover {
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    transform: none !important;
   }
 
   [data-layout-demo='c'] .info-notes-section .info-notes-grid,

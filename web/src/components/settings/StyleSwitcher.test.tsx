@@ -11,7 +11,7 @@ describe('StyleSwitcher Component', () => {
     delete document.documentElement.dataset.layoutDemo;
   });
 
-  it('defaults to Sticker Diary (a) and switches across all 5 styles with persistence', () => {
+  it('defaults to Corkboard Bento Collage (b) and switches across all 5 styles with persistence', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <StyleProvider>
@@ -20,9 +20,9 @@ describe('StyleSwitcher Component', () => {
       </LanguageProvider>,
     );
 
-    const btn = screen.getByRole('button', { name: /风格: 贴纸日记/ });
+    const btn = screen.getByRole('button', { name: /风格: 软木拼贴/ });
     expect(btn).toBeInTheDocument();
-    expect(document.documentElement.dataset.layoutDemo).toBe('a');
+    expect(document.documentElement.dataset.layoutDemo).toBe('b');
 
     fireEvent.click(btn);
     fireEvent.click(screen.getByRole('option', { name: /晴空便签/ }));
@@ -41,7 +41,7 @@ describe('StyleSwitcher Component', () => {
   });
 
   it('restores saved style from localStorage on mount', () => {
-    localStorage.setItem(STYLE_STORAGE_KEY, 'b');
+    localStorage.setItem(STYLE_STORAGE_KEY, 'a');
 
     render(
       <LanguageProvider defaultLanguage="zh-CN">
@@ -51,7 +51,7 @@ describe('StyleSwitcher Component', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByRole('button', { name: /风格: 软木拼贴/ })).toBeInTheDocument();
-    expect(document.documentElement.dataset.layoutDemo).toBe('b');
+    expect(screen.getByRole('button', { name: /风格: 贴纸日记/ })).toBeInTheDocument();
+    expect(document.documentElement.dataset.layoutDemo).toBe('a');
   });
 });

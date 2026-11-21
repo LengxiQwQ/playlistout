@@ -33,7 +33,7 @@
 /* Sticky Header for Legacy Journal (unwrapped fallback without data-layout-demo) */
 html:not([data-layout-demo]) .journal-header {
   position: sticky !important;
-  top: 0;
+  top: 0 !important;
   z-index: 120 !important;
   margin-top: 0 !important;
   background: rgba(253, 246, 236, 0.9);
@@ -41,8 +41,11 @@ html:not([data-layout-demo]) .journal-header {
   padding: 0.5rem 0.75rem !important;
   margin-left: -0.75rem;
   margin-right: -0.75rem;
+  border-top: none !important;
   border-bottom: 1.5px dashed rgba(206, 172, 152, 0.38);
   border-radius: 0 0 16px 16px;
+  transform: translateZ(0);
+  flex-wrap: nowrap !important;
 }
 
 /* Completely override legacy .font-picker-menu wobbly borders & crooked ::before tape */

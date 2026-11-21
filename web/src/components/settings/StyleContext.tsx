@@ -10,30 +10,30 @@ export interface JournalStyleOption {
   swatches: [string, string, string];
 }
 
-export const DEFAULT_JOURNAL_STYLE: JournalStyleId = 'a';
+export const DEFAULT_JOURNAL_STYLE: JournalStyleId = 'b';
 export const STYLE_STORAGE_KEY = 'playlistout-journal-style';
 
 export const JOURNAL_STYLES: JournalStyleOption[] = [
   {
-    id: 'a',
+    id: 'b',
     index: '01',
+    nameKey: 'bName',
+    descKey: 'bDesc',
+    swatches: ['#f3e6d6', '#fff9df', '#ffedf2'],
+  },
+  {
+    id: 'a',
+    index: '02',
     nameKey: 'aName',
     descKey: 'aDesc',
     swatches: ['#ffd6e0', '#fffdf8', '#cdefe3'],
   },
   {
     id: 'd',
-    index: '02',
+    index: '03',
     nameKey: 'dName',
     descKey: 'dDesc',
     swatches: ['#d8f1ff', '#ffd8e6', '#fff6cf'],
-  },
-  {
-    id: 'b',
-    index: '03',
-    nameKey: 'bName',
-    descKey: 'bDesc',
-    swatches: ['#f3e6d6', '#fff9df', '#ffedf2'],
   },
   {
     id: 'c',
