@@ -134,7 +134,7 @@ async function executeFetchPlaylist(
 export async function parsePlaylist(
   urlOrId: string,
   signal?: AbortSignal,
-  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
+  platform?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic',
   authOptions?: { token?: string; userid?: string },
   isSample?: boolean,
   channel?: 'qishui' | 'douyin',

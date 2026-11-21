@@ -1,5 +1,6 @@
 import { spotifyProvider } from './spotify';
 import { appleMusicProvider } from './applemusic';
+import { ytmusicProvider } from './ytmusic';
 import { providerRegistry } from './registry';
 import { qqMusicProvider } from './qqmusic';
 import { neteaseProvider } from './netease';
@@ -17,6 +18,7 @@ providerRegistry.register(kuwoProvider);
 providerRegistry.register(miguProvider);
 providerRegistry.register(spotifyProvider);
 providerRegistry.register(appleMusicProvider);
+providerRegistry.register(ytmusicProvider);
 
 export { providerRegistry };
 export * from './registry';

@@ -968,7 +968,7 @@ function resolveMusicPlatform(sourcePlatform) {
   if (sp === 'bilibili' || sp === 'bili' || sp.includes('哔哩') || sp.includes('b站')) {
     return 'bilibili';
   }
-  if (sp === 'spotify' || sp === 'applemusic') return sp;
+  if (sp === 'spotify' || sp === 'applemusic' || sp === 'ytmusic' || sp === 'youtube') return sp === 'youtube' ? 'ytmusic' : sp;
   if (sp === 'migu' || sp.includes('咪咕')) {
     return 'migu';
   }
@@ -1106,7 +1106,7 @@ function mapTrackToMusicItem(track, defaultIndex = 1, defaultPlatform = 'Playlis
   // 无法识别来源的曲目回退为本插件平台；原生插件缺失或取源失败时，跨插件严格匹配兜底链
   // 与内置兜底音源引擎（历史老歌单最后防线，同名同歌手同版本严格匹配）将依次接管。
   let finalPlatform = PLUGIN_PLATFORM;
-  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && naturalPlatform !== 'spotify' && naturalPlatform !== 'applemusic' && !isSelfPlatform(naturalPlatform)) {
+  if (naturalPlatform && naturalPlatform !== 'PlaylistOut' && naturalPlatform !== 'spotify' && naturalPlatform !== 'applemusic' && naturalPlatform !== 'ytmusic' && !isSelfPlatform(naturalPlatform)) {
     finalPlatform = naturalPlatform;
   }
 

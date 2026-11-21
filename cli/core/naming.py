@@ -28,6 +28,7 @@ PLATFORM_DISPLAY_NAMES = {
     "migu": "咪咕音乐",
     "spotify": "Spotify",
     "applemusic": "Apple Music",
+    "ytmusic": "YouTube Music",
 }
 
 DEFAULT_PLATFORM_NAME = "音乐平台"

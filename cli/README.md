@@ -1,9 +1,9 @@
 # Playlist Out CLI · 把你的歌单带走
 
-> v3.1.0 新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](../docs/INTERNATIONAL-PLATFORMS.md)。
+> v3.1.0 新增 Spotify（`spotify`）、Apple Music（`applemusic`）与 YouTube Music（`ytmusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](../docs/INTERNATIONAL-PLATFORMS.md)。
 
 
-Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地解析并导出网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐、咪咕音乐、Spotify 与 Apple Music 八个平台的公开歌单。
+Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地解析并导出网易云音乐、QQ 音乐、酷狗音乐、酷我音乐、汽水音乐、咪咕音乐、Spotify、Apple Music 与 YouTube Music 九个平台的公开歌单。
 
 提供两种使用方式：
 - **交互式模式**：双击即可使用，跟随屏幕提示粘贴链接并回车，无需记忆任何命令；
@@ -56,11 +56,11 @@ Playlist Out 本地命令行版本，支持在 Windows、macOS 与 Linux 本地�
 ============================================================
             Playlist Out CLI 歌单导出工具 v3.0.0
 ============================================================
-  支持平台：网易云音乐 · QQ音乐 · 酷狗音乐 · 酷我音乐 · 汽水音乐 · 咪咕音乐 · Spotify · Apple Music
+  支持平台：网易云音乐 · QQ音乐 · 酷狗音乐 · 酷我音乐 · 汽水音乐 · 咪咕音乐 · Spotify · Apple Music · YouTube Music
 ------------------------------------------------------------
   [1] 网易云音乐   [2] QQ 音乐     [3] 酷狗音乐
   [4] 酷我音乐     [5] 汽水音乐    [6] 咪咕音乐
-  [7] Spotify      [8] Apple Music
+  [7] Spotify      [8] Apple Music [9] YouTube Music
 ------------------------------------------------------------
 粘贴歌单链接、短链、分享文案或纯数字 ID（输入 0 或 q 退出）:
 ```
@@ -115,7 +115,7 @@ PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 通用选项:
   -h, --help            显示帮助信息并退出
   -v, --version         显示版本号并退出
-  -p, --platform        指定平台 (netease, qqmusic, kugou, kuwo, qishui, migu, spotify, applemusic 等)
+  -p, --platform        指定平台 (netease, qqmusic, kugou, kuwo, qishui, migu, spotify, applemusic, ytmusic 等)
   -i, --id              通过选项传入歌单链接、短链或 ID
   -f, --format          导出格式，多个用逗号隔开: xlsx, csv, json, txt, m3u8 或 all (默认: all)
   -o, --output-dir      导出目录 (默认: output)
@@ -157,6 +157,7 @@ PlaylistOut "https://qishui.douyin.com/s/xxx" --channel douyin
 | **咪咕音乐** | ✅ | — | 免登 (并发分页获取) | — |
 | **Spotify** | ✅ | — | 免登公开歌单，最多 3000 首 | — |
 | **Apple Music** | ✅ | — | 免登公开歌单，保留链接地区，最多 3000 首 | — |
+| **YouTube Music** | ✅ | — | 免登公开歌单，保留专属扩展字段，最多 3000 首 | — |
 
 > 💡 **酷狗音乐凭据获取技巧（免终端扫码）**：  
 > 若在无显示界面的远程服务器、容器或 CI 流水线中运行，或希望直接复用网页端已登录会话：  

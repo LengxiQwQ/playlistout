@@ -102,7 +102,7 @@ export async function parsePlaylistService(
     );
   }
 
-  if (request && ['spotify', 'applemusic'].includes(targetPlatform)) {
+  if (request && ['spotify', 'applemusic', 'ytmusic'].includes(targetPlatform)) {
     const limit = await checkDurableRateLimit(db, getClientIp(request), 6, 60, 'international_playlist');
     if (!db || !limit.allowed || limit.limiterFailed) throw new ProviderError('RATE_LIMITED', '解析过于频繁或限流服务不可用，请稍后重试。', 429);
   }

@@ -194,17 +194,29 @@ describe('Client-Side Input Validation', () => {
   it('rejects other platforms with friendly notification', () => {
     const res1 = validatePlaylistInput('https://tidal.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     expect(res1.valid).toBe(false);
-    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music');
+    expect(res1.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify、Apple Music 与 YouTube Music');
 
     const res2 = validatePlaylistInput('https://tidal.com/browse/album/example');
     expect(res2.valid).toBe(false);
-    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music');
+    expect(res2.error).toContain('支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify、Apple Music 与 YouTube Music');
   });
 
   it('rejects completely invalid arbitrary text or URLs', () => {
     const res = validatePlaylistInput('https://example.com/not-music');
     expect(res.valid).toBe(false);
-    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 或 Apple Music 歌单链接');
+    expect(res.error).toContain('有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify、Apple Music 或 YouTube Music 歌单链接');
+  });
+
+  it('accepts YouTube Music playlist URLs as valid', () => {
+    const res1 = validatePlaylistInput('https://music.youtube.com/playlist?list=PL123456789012345678');
+    expect(res1.valid).toBe(true);
+    expect(res1.kind).toBe('single_playlist_url');
+    expect(res1.platform).toBe('ytmusic');
+
+    const res2 = validatePlaylistInput('https://www.youtube.com/playlist?list=RDCLAK5uy_kmPRjFv6wzAssOnan7Deik0vxDdOxWNmQ');
+    expect(res2.valid).toBe(true);
+    expect(res2.kind).toBe('single_playlist_url');
+    expect(res2.platform).toBe('ytmusic');
   });
 });
 

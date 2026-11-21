@@ -27,7 +27,7 @@ export const CLARITY_EVENTS = [
 export type ClarityEvent = (typeof CLARITY_EVENTS)[number];
 
 export interface ClarityTagMap {
-  platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic';
+  platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic';
   export_format: 'txt' | 'csv' | 'xlsx' | 'json' | 'm3u8' | 'markdown';
   clipboard_mode:
     | 'title'
@@ -56,7 +56,7 @@ export const CLARITY_TAG_KEYS = Object.keys({
 export const CLARITY_TAG_VALUE_WHITELIST: {
   readonly [K in ClarityTagKey]: readonly ClarityTagMap[K][];
 } = {
-  platform: ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu', 'spotify', 'applemusic'],
+  platform: ['qqmusic', 'netease', 'kugou', 'qishui', 'kuwo', 'migu', 'spotify', 'applemusic', 'ytmusic'],
   export_format: ['txt', 'csv', 'xlsx', 'json', 'm3u8', 'markdown'],
   clipboard_mode: [
     'title',

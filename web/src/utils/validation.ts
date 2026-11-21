@@ -1,5 +1,5 @@
 export type InputKind = 'single_playlist_url' | 'user_profile_url' | 'numeric' | 'short_link' | 'unknown';
-export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'numeric' | 'unknown';
+export type PlatformType = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic' | 'numeric' | 'unknown';
 
 export interface ValidationResult {
   valid: boolean;
@@ -47,7 +47,7 @@ export function extractCleanUrlOrInput(input: string): string {
 
   // 2. Match known music domain without protocol (e.g. "y.qq.com/n/ryqq/playlist/...", "c6.y.qq.com/...", "i2.y.qq.com/...", "163cn.tv/...", "www.qishui.com/...")
   const domainMatch = trimmed.match(
-    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn|(?:c\.|music\.|m\.music\.|h5\.nf\.)?migu\.cn)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
+    /(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn|(?:c\.|music\.|m\.music\.|h5\.nf\.)?migu\.cn|(?:music\.|www\.)?youtube\.com|youtu\.be)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"'<>`()\[\]{}]+)/i,
   );
   if (domainMatch && domainMatch[1]) {
     let url = domainMatch[1];
@@ -138,6 +138,21 @@ export const VALIDATION_RULES: ValidationRule[] = [
   { platform: 'applemusic', kind: 'short_link', match: input => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'geo.music.apple.com'; } catch { return false; } } },
   { platform: 'spotify', kind: 'single_playlist_url', match: (input) => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'open.spotify.com' && /^\/(?:intl-[A-Za-z-]+\/)?playlist\/[A-Za-z0-9]{22}\/?$/i.test(u.pathname); } catch { return false; } } },
   { platform: 'applemusic', kind: 'single_playlist_url', match: (input) => { try { const u = new URL(input); return u.protocol === 'https:' && u.hostname === 'music.apple.com' && /^\/[a-z]{2}\/playlist\/(?:[^\/]+\/)?pl\.[A-Za-z0-9.-]+\/?$/i.test(u.pathname); } catch { return false; } } },
+  { platform: 'ytmusic', kind: 'single_playlist_url', match: (input) => {
+    try {
+      const u = new URL(input);
+      const host = u.hostname.toLowerCase();
+      if (['music.youtube.com', 'www.youtube.com', 'youtube.com', 'm.youtube.com'].includes(host)) {
+        return Boolean(u.searchParams.get('list'));
+      }
+      if (host === 'youtu.be') {
+        return Boolean(u.searchParams.get('list'));
+      }
+      return false;
+    } catch {
+      return /^(?:PL|RD|OLAK5uy_|VL)[A-Za-z0-9_-]{10,}$/i.test(input);
+    }
+  } },
   // 1. Check if it's a numeric ID (4-20 digits)
   {
     platform: 'numeric',
@@ -284,7 +299,7 @@ export function validatePlaylistInput(input: string): ValidationResult {
     return {
       valid: false,
       code: 'UNSUPPORTED_URL',
-      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 与 Apple Music 公开歌单。',
+      error: '当前版本支持 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify、Apple Music 与 YouTube Music 公开歌单。',
     };
   }
 
@@ -305,6 +320,6 @@ export function validatePlaylistInput(input: string): ValidationResult {
   return {
     valid: false,
     code: 'UNSUPPORTED_URL',
-    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify 或 Apple Music 歌单链接、用户主页链接或数字 ID。',
+    error: '请输入有效的 QQ 音乐、网易云音乐、酷狗音乐、汽水音乐、酷我音乐、咪咕音乐、Spotify、Apple Music 或 YouTube Music 歌单链接、用户主页链接或数字 ID。',
   };
 }

@@ -4,7 +4,16 @@
  * Designed for seamless extensibility across QQ Music, NetEase Cloud Music, KuGou, Kuwo, etc.
  */
 
-export type SupportedPlatform = 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | string;
+export type SupportedPlatform =
+  | 'qqmusic'
+  | 'netease'
+  | 'kugou'
+  | 'qishui'
+  | 'kuwo'
+  | 'migu'
+  | 'spotify'
+  | 'applemusic'
+  | 'ytmusic';
 
 export interface PlatformConfig {
   id: string;
@@ -191,6 +200,26 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
         : /^https?:\/\//i.test(id)
         ? id
         : `https://music.apple.com/us/playlist/${id}`,
+  },
+  ytmusic: {
+    id: 'ytmusic',
+    name: 'YouTube Music',
+    nameEn: 'YouTube Music',
+    color: 'red',
+    badgeBg: '#fef2f2',
+    badgeBorder: '#dc2626',
+    userIdLabelZh: '用户 ID',
+    userIdLabelEn: 'User ID',
+    playlistStickerZh: 'YouTube Music歌单',
+    playlistStickerEn: 'YouTube Music Playlist',
+    viewActionZh: '在YouTube Music中查看 ↗',
+    viewActionEn: 'View on YouTube Music ↗',
+    getPlaylistUrl: (id, sourceUrl) =>
+      sourceUrl && /^https?:\/\//i.test(sourceUrl)
+        ? sourceUrl
+        : /^https?:\/\//i.test(id)
+        ? id
+        : `https://music.youtube.com/playlist?list=${id}`,
   },
 };
 

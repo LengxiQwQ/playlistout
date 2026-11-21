@@ -17,6 +17,7 @@ from .qishui import QishuiAdapter
 from .migu import MiguAdapter
 from .spotify import SpotifyAdapter
 from .applemusic import AppleMusicAdapter
+from .ytmusic import YouTubeMusicAdapter
 
 from cli.core.http import reset_gai_family
 
@@ -33,4 +34,7 @@ __all__ = [
     "KuwoAdapter",
     "QishuiAdapter",
     "MiguAdapter",
+    "SpotifyAdapter",
+    "AppleMusicAdapter",
+    "YouTubeMusicAdapter",
 ]

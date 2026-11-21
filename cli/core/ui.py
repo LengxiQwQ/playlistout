@@ -192,6 +192,12 @@ def get_platform_brand_color(platform_id: str = None, text: str = "") -> str:
         return color_cyan(text)
     elif pid in ("migu", "mg"):
         return color_magenta(text)
+    elif pid in ("ytmusic", "ytm", "youtube", "yt"):
+        return color_red(text)
+    elif pid in ("spotify",):
+        return color_green(text)
+    elif pid in ("applemusic", "apple"):
+        return color_red(text)
     return text
 
 

@@ -89,7 +89,7 @@ export type Listen1ExportPayload = Record<string, Listen1PlaylistEntry>;
  * Can be restored via Listen 1: "设置" -> "备份与恢复" -> "从本地文件恢复".
  */
 export function generateListen1JSON(playlist: Playlist): string {
-  if (['spotify', 'applemusic'].includes(playlist.platform)) throw new Error('此播放器格式不支持该来源，请使用通用 JSON、CSV 或 XLSX。');
+  if (['spotify', 'applemusic', 'ytmusic'].includes(playlist.platform)) throw new Error('此播放器格式不支持该来源，请使用通用 JSON、CSV 或 XLSX。');
   const source = mapPlatformToListen1Source(playlist.platform);
   const prefix = getListen1TrackPrefix(playlist.platform);
   const rawId = cleanSingleLine(playlist.id) || String(Date.now());

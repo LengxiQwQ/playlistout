@@ -60,6 +60,7 @@ function emptyPublicStats(): PublicStatsResponse {
       migu: { totalSuccess: 0, todaySuccess: 0 },
       spotify: { totalSuccess: 0, todaySuccess: 0 },
       applemusic: { totalSuccess: 0, todaySuccess: 0 },
+      ytmusic: { totalSuccess: 0, todaySuccess: 0 },
     },
     recentDays: [],
     generatedAt: new Date().toISOString(),

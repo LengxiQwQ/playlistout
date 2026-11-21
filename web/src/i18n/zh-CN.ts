@@ -70,6 +70,7 @@ export const zhCN: Translations = {
     platformMiguDesc: '公开歌单免登录全量支持',
     platformSpotify: 'Spotify',
     platformAppleMusic: 'Apple Music',
+    platformYouTubeMusic: 'YouTube Music',
     internationalPlaylistDesc: '公开歌单免登录解析，部分扩展字段可能缺失',
     incompatiblePlayerFormat: '此播放器格式不支持该来源，请使用通用 JSON、CSV 或 XLSX。',
     statusUnknown: '未知',

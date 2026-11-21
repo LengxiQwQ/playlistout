@@ -213,6 +213,11 @@ def export_json(playlist: NormalizedPlaylist, output_file: str):
     if playlist.tags:
         payload["tags"] = playlist.tags
 
+    if "bilibili" in playlist.raw_extra and isinstance(playlist.raw_extra["bilibili"], dict):
+        payload["bilibili"] = playlist.raw_extra["bilibili"]
+    if "youtube" in playlist.raw_extra and isinstance(playlist.raw_extra["youtube"], dict):
+        payload["youtube"] = playlist.raw_extra["youtube"]
+
     payload["tracks"] = tracks_json
 
     with open(output_file, 'w', encoding='utf-8') as f:

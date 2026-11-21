@@ -5,7 +5,7 @@ import { Sticker } from '../ui/Sticker';
 export interface SamplePresetsGridProps {
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic',
     modeHint?: 'user' | 'playlist',
   ) => void;
 }
@@ -165,6 +165,16 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           style={sampleStickerStyle}
         >
           Apple Music
+        </Sticker>
+        <Sticker
+          type="button"
+          color="red"
+          rotateDeg={-0.5}
+          onClick={() => onSelectSample('https://music.youtube.com/playlist?list=RDCLAK5uy_kmPRjFv6wzAssOnan7Deik0vxDdOxWNmQ', 'ytmusic', 'playlist')}
+          className="font-handwriting"
+          style={sampleStickerStyle}
+        >
+          YouTube Music
         </Sticker>
         <Sticker
           type="button"

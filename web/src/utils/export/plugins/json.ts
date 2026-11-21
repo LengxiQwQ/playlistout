@@ -46,6 +46,7 @@ export function generateJSON(playlist: Playlist): string {
     playCount: playlist.playCount || undefined,
     tags: playlist.tags && playlist.tags.length > 0 ? playlist.tags : undefined,
     description: playlist.description ? playlist.description : undefined,
+    ...(playlist.youtube ? { youtube: playlist.youtube } : {}),
     tracks: playlist.tracks.map((t: Track) => ({
       index: t.index,
       title: t.title,
@@ -68,6 +69,7 @@ export function generateJSON(playlist: Playlist): string {
       maxQuality: t.maxQuality || undefined,
       mvId: t.mvId || undefined,
       mvUrl: t.mvUrl || undefined,
+      ...(t.youtube ? { youtube: t.youtube } : {}),
     })),
   };
 

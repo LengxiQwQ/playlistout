@@ -70,6 +70,7 @@ export interface Translations {
     platformMiguDesc: string;
     platformSpotify: string;
     platformAppleMusic: string;
+    platformYouTubeMusic: string;
     internationalPlaylistDesc: string;
     incompatiblePlayerFormat: string;
     statusUnknown: string;

@@ -1,6 +1,6 @@
 # Playlist Out Web 导出格式规范
 
-> v3.1.0 新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
+> v3.1.0 新增 Spotify（`spotify`）、Apple Music（`applemusic`）与 YouTube Music（`ytmusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
 
 
 本文档描述 **Playlist Out 网页版** 当前生成的导出文件结构，以及这些格式各自适合的使用场景。

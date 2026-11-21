@@ -26,7 +26,7 @@ export interface SearchNoteProps {
   feedbackSubmitted?: boolean;
   onSelectSample: (
     sampleId: string,
-    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
+    platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic',
     modeHint?: 'user' | 'playlist',
   ) => void;
 }
@@ -288,6 +288,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           </Sticker>
           <Sticker color="green" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
           <Sticker color="red" rotateDeg={0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
+          <Sticker color="red" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformYouTubeMusic}</Sticker>
           {/* Kugou: single unified sticker showing login state — placed last */}
           <Sticker
             type="button"

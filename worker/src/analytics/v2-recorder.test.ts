@@ -44,7 +44,7 @@ function findStatement(captured: CapturedStatement[], table: string): CapturedSt
 }
 
 describe('Analytics V2 recorder attribution', () => {
-  it.each(['spotify', 'applemusic'])('records %s once with bounded upstream cost, without content fields', async platform => {
+  it.each(['spotify', 'applemusic', 'ytmusic'])('records %s once with bounded upstream cost, without content fields', async platform => {
     const captured: CapturedStatement[] = [];
     await recordResolveV2(createDb(captured), {
       request: apiRequest({'Origin':'https://playlistout.lengxiqwq.com','User-Agent':'Mozilla/5.0'}),

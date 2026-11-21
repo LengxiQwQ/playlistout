@@ -21,6 +21,12 @@ class _Requests:
         self.deadline = time.monotonic() + 25
 
     def get(self, url, headers=None, allow404=False):
+        return self._request('GET', url, headers=headers, allow404=allow404)
+
+    def post(self, url, json_data=None, data=None, headers=None, allow404=False):
+        return self._request('POST', url, json_data=json_data, data=data, headers=headers, allow404=allow404)
+
+    def _request(self, method, url, json_data=None, data=None, headers=None, allow404=False):
         for hop in range(4):
             u = urlparse(url)
             if u.scheme != 'https' or u.hostname not in self.hosts or u.username or u.password or u.port:
@@ -29,7 +35,14 @@ class _Requests:
             remaining = self.deadline - time.monotonic()
             if self.count > 40 or remaining <= 0:
                 raise ValueError('歌单解析超过请求预算')
-            with self.session.get(url, headers=headers, timeout=max(.1, remaining), allow_redirects=False, stream=True) as r:
+            req_headers = dict(headers or {})
+            if json_data is not None:
+                req_headers.setdefault('Content-Type', 'application/json')
+                import json
+                body = json.dumps(json_data)
+            else:
+                body = data
+            with self.session.request(method, url, data=body, headers=req_headers, timeout=max(.1, remaining), allow_redirects=False, stream=True) as r:
                 if 300 <= r.status_code < 400:
                     if hop == 3 or not r.headers.get('location'):
                         raise ValueError('跳转次数过多')

@@ -24,6 +24,7 @@ class PlatformType(str, Enum):
     MIGU = "migu"
     SPOTIFY = "spotify"
     APPLEMUSIC = "applemusic"
+    YTMUSIC = "ytmusic"
     AMBIGUOUS_DIGITS = "ambiguous_digits"
     UNKNOWN = "unknown"
 
@@ -72,7 +73,7 @@ def extract_clean_url_or_input(input_text: str) -> str:
 
     # 2. 匹配无协议前缀的各大音乐平台域名
     m_bare = re.search(
-        r'(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn|(?:c\.|music\.|m\.music\.|h5\.nf\.)?migu\.cn)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
+        r'(?:^|[^\w.-])((?:(?:(?:[a-zA-Z0-9-]+\.)*y|music)\.qq\.com|(?:y\.)?music\.163\.com|163cn\.tv|(?:m\.|t\d?\.)?kugou\.com|(?:qishui\.|music\.)douyin\.com|(?:[a-zA-Z0-9-]+\.)*qishui\.com|(?:[a-zA-Z0-9-]+\.)*kuwo\.cn|(?:c\.|music\.|m\.music\.|h5\.nf\.)?migu\.cn|(?:music\.|www\.)?youtube\.com|youtu\.be)[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef"\'<>`()\[\]{}]+)',
         trimmed,
         re.I
     )
@@ -180,6 +181,10 @@ class SmartDetector:
         if re.fullmatch(r'gcid_[a-zA-Z0-9]+', text, re.I):
             return PlatformType.KUGOU, text
 
+        # 检查 YouTube 歌单裸 ID (以 PL, RD, OLAK, VL 开头)
+        if re.fullmatch(r'(?:PL|RD|OLAK5uy_|VL)[A-Za-z0-9_-]{10,}', text, re.I):
+            return PlatformType.YTMUSIC, text
+
         # 3. 提取有效 URL
         url_to_check = text if (text.startswith("http://") or text.startswith("https://")) else (extract_url_from_text(text) or text)
 
@@ -220,6 +225,8 @@ class SmartDetector:
             return PlatformType.SPOTIFY, url_to_check
         if hostname in {"music.apple.com", "geo.music.apple.com"}:
             return PlatformType.APPLEMUSIC, url_to_check
+        if hostname in {"music.youtube.com", "www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be"}:
+            return PlatformType.YTMUSIC, url_to_check
 
         # 咪咕音乐
         if "migu.cn" in hostname:
@@ -296,6 +303,8 @@ class SmartDetector:
                 explicit_platform = PlatformType.SPOTIFY
             elif norm_p in ("applemusic", "apple", "apple-music"):
                 explicit_platform = PlatformType.APPLEMUSIC
+            elif norm_p in ("ytmusic", "ytm", "youtube", "yt"):
+                explicit_platform = PlatformType.YTMUSIC
             elif norm_p in ("migu", "mg"):
                 explicit_platform = PlatformType.MIGU
 

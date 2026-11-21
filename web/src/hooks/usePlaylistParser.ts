@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import type { Playlist, UserPlaylistsData, ApiError } from '../api/types';
-import { parsePlaylist, fetchUserPlaylists, submitFeedback, clearParseCache } from '../api/client';
+import type { SupportedPlatform } from '../utils/platform';
 import { validatePlaylistInput } from '../utils/validation';
+import { parsePlaylist, fetchUserPlaylists, submitFeedback, clearParseCache } from '../api/client';
 import { clearKugouAuth, getKugouAuth } from '../utils/kugouAuth';
 import { trackClarityEvent, setClarityTag, classifyPlaylistSize } from '../analytics/clarity';
 import type { DisambiguationItem } from '../components/playlist/DisambiguationModal';
@@ -70,7 +71,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleParse = useCallback(
     async (
       urlToParse?: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
+      platformHint?: SupportedPlatform,
       modeHint?: 'user' | 'playlist',
       isSample?: boolean,
       channelHint?: 'qishui' | 'douyin',
@@ -161,24 +162,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
 
         // Fast path for explicit single playlist mode
         if (modeHint === 'playlist') {
-          const platform =
-            platformHint === 'netease'
-              ? 'netease'
-              : platformHint === 'kugou'
-              ? 'kugou'
-              : platformHint === 'qishui'
-              ? 'qishui'
-              : platformHint === 'kuwo'
-              ? 'kuwo'
-              : platformHint === 'spotify'
-              ? 'spotify'
-              : platformHint === 'applemusic'
-              ? 'applemusic'
-              : platformHint === 'migu'
-              ? 'migu'
-              : platformHint === 'qqmusic'
-              ? 'qqmusic'
-              : undefined;
+          const platform: SupportedPlatform | undefined = platformHint;
           const res = channelHint
             ? await parsePlaylist(targetUrl, controller.signal, platform, undefined, isSample, channelHint, undefined, forceRefresh)
             : forceRefresh
@@ -594,7 +578,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const handleQuickSample = useCallback(
     (
       sampleInput: string,
-      platformHint?: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic',
+      platformHint?: SupportedPlatform,
       modeHint?: 'user' | 'playlist',
     ) => {
       setInputUrl(sampleInput);

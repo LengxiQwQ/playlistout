@@ -1,6 +1,6 @@
 # PlaylistOut Public API Specification (v1)
 
-> v3.1.0 新增 Spotify（`spotify`）和 Apple Music（`applemusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
+> v3.1.0 新增 Spotify（`spotify`）、Apple Music（`applemusic`）与 YouTube Music（`ytmusic`）公开歌单支持；新增状态 `unknown`，未知 VIP/可用性保持缺失。输入、字段、格式兼容性和免费额度说明见 [国际平台接入说明](./INTERNATIONAL-PLATFORMS.md)。
 
 
 > Governed by `docs/PROJECT-CONSTITUTION.md` and `docs/ROADMAP.md`.
@@ -18,7 +18,7 @@ The Public API v1 powers both the official PlaylistOut web application and exter
 
 ## 2. Supported Music Platforms
 
-PlaylistOut supports 8 music platforms:
+PlaylistOut supports 9 music platforms:
 
 | Platform Code | Name (ZH) | Name (EN) | Single Playlist | User Playlists | Ephemeral Auth |
 | :--- | :--- | :--- | :---: | :---: | :---: |
@@ -30,6 +30,7 @@ PlaylistOut supports 8 music platforms:
 | `migu` | 咪咕音乐 | Migu Music | ✅ Yes (100% full) | ❌ N/A (Platform has no web user export) | ❌ Not needed |
 | `spotify` | Spotify | Spotify | ✅ Public playlists, up to 3000 tracks | ❌ Not supported | ❌ Not needed |
 | `applemusic` | Apple Music | Apple Music | ✅ Public playlists with storefront region, up to 3000 tracks | ❌ Not supported | ❌ Not needed |
+| `ytmusic` | YouTube Music | YouTube Music | ✅ Public playlists, up to 3000 tracks, preserves `youtube` metadata | ❌ Not supported | ❌ Not needed |
 
 
 ---
@@ -177,7 +178,7 @@ All errors adhere to a consistent error schema:
 | :--- | :---: | :--- |
 | `INVALID_INPUT` | `400` | Missing, empty, or malformed input; query parameter exceeds 2048 chars; or credentials passed via query string. |
 | `UNSUPPORTED_URL` | `400` | The input is not recognized as a supported music platform URL. |
-| `UNSUPPORTED_PLATFORM` | `400` | Specified platform is not in the supported provider allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`). |
+| `UNSUPPORTED_PLATFORM` | `400` | Specified platform is not in the supported provider allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`, `ytmusic`). |
 | `FORBIDDEN` | `403` | Prohibited arbitrary proxy attempt or unauthorized origin on sensitive endpoints. |
 | `PLAYLIST_NOT_FOUND` | `404` | Playlist does not exist, is empty, is private, or could not be found. |
 | `USER_NOT_FOUND` | `404` | User profile does not exist or has no public playlists. |
@@ -214,7 +215,7 @@ The flagship endpoint of PlaylistOut. It faithfully reproduces the server-side b
 | :--- | :--- | :---: | :---: | :--- |
 | `q` | `string` | — | **Yes** | User input string (up to 2048 characters). Can be a web URL, mobile share link, shortlink, mixed share text, user profile URL, QQ number, NetEase UID, or raw numeric ID. |
 | `type` | `string` | `auto` | No | Intent constraint: `auto`, `playlist` (single playlist), or `user` (user profile collections). |
-| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, or `applemusic`. |
+| `platform` | `string` | `auto` | No | Platform constraint: `auto`, `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`, or `ytmusic`. |
 
 #### Response: Single Playlist (`kind: "playlist"`)
 
@@ -330,7 +331,7 @@ Parses a single public playlist from a supported music provider and returns the 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
 | `url` / `id` | `string` | **Yes** | Public playlist URL, shortlink, or raw playlist ID. |
-| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
+| `platform` | `string` | No | Target platform: `qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`, `ytmusic`. Required when passing raw numeric IDs that belong to non-QQ platforms. |
 
 #### Response (`200 OK`)
 
@@ -601,7 +602,7 @@ In public Single Page Applications (SPAs) without mandatory user login or hardwa
 | **Client IP** | Cloudflare Edge (`CF-Connecting-IP`) | **Server-derived** | Determined by the edge network. `X-Forwarded-For` is strictly ignored for security identity. |
 | **User-Agent** | Request Header | **Server-observed** | Inspected by the server and parsed into coarse categories (desktop/mobile, browser family). Full UA strings are never persisted. |
 | **Geography** | Cloudflare (`request.cf`) | **Server-derived** | Country, region, and city derived by Cloudflare GeoIP at ingestion time. |
-| **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`). |
+| **Platform** | Client JSON payload | **Validated Client-Reported** | Strictly validated against allowlist (`qqmusic`, `netease`, `kugou`, `qishui`, `kuwo`, `migu`, `spotify`, `applemusic`, `ytmusic`). |
 | **Format / Mode** | Client JSON payload | **Validated Client-Reported** | Strictly validated against platform/format schemas. |
 | **Track Count** | Client JSON payload | **Bounded Client-Reported** | Bounded integer between `0` and `50,000`. Telemetry metric only, not server truth. |
 | **Referrer Source** | Browser Client Classifier | **Validated Client-Reported** | Coarse acquisition category classified client-side before transmission (`chatgpt`, `google`, `github`, `direct`, `other_web`, etc.). Raw `document.referrer` URLs, paths, search queries, fragments, and raw campaign values are NEVER transmitted in telemetry. Unknown or invalid categories are rejected with `400 INVALID_INPUT`. |
@@ -734,7 +735,7 @@ interface ResolveResponse<T = unknown> {
   success: boolean;
   data?: {
     kind: 'playlist' | 'user_playlists';
-    platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic';
+    platform: 'qqmusic' | 'netease' | 'kugou' | 'qishui' | 'kuwo' | 'migu' | 'spotify' | 'applemusic' | 'ytmusic';
     result: T;
   };
   error?: {
@@ -915,7 +916,7 @@ The filtered query endpoint supports:
   - `to=YYYY-MM-DD`
   - `channel=web|plugin|api|internal|legacy_mixed`
   - `client=official_web|musicfree|anonymous_api|internal|legacy_unknown|unknown_plugin`
-  - `platform=qqmusic|netease|kugou|qishui|kuwo|migu|spotify|applemusic|unknown|none`
+  - `platform=qqmusic|netease|kugou|qishui|kuwo|migu|spotify|applemusic|ytmusic|unknown|none`
   - `country=XX`
   - `region=<bounded value>`
 - **Maximum range**: 366 days.

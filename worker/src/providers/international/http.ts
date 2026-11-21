@@ -23,6 +23,14 @@ export class RequestBudget {
   constructor(private readonly hosts: ReadonlySet<string>) {}
 
   async get(url: string, headers: Record<string, string> = {}, allow404 = false, extract?: TextExtractor): Promise<string> {
+    return this.request('GET', url, undefined, headers, allow404, extract);
+  }
+
+  async post(url: string, body: string, headers: Record<string, string> = {}, allow404 = false): Promise<string> {
+    return this.request('POST', url, body, { 'content-type': 'application/json', ...headers }, allow404);
+  }
+
+  private async request(method: string, url: string, body?: string, headers: Record<string, string> = {}, allow404 = false, extract?: TextExtractor): Promise<string> {
     let target = new URL(url);
     let retry = 0;
     for (let redirect = 0; redirect <= 3; redirect++) {
@@ -37,7 +45,11 @@ export class RequestBudget {
       try {
         if (Date.now() >= this.deadline) throw new Error('deadline');
         response = await fetch(target.toString(), {
-          headers, redirect: 'manual', signal: AbortSignal.timeout(Math.max(1, this.deadline - Date.now())),
+          method,
+          body,
+          headers,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(Math.max(1, this.deadline - Date.now())),
         });
       } catch {
         release();

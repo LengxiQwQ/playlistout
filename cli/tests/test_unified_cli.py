@@ -15,8 +15,8 @@ from cli.core.ui import resolve_export_formats
 
 def test_registry_registration_and_aliases():
     adapters = PlatformRegistry.list_all()
-    assert len(adapters) == 8
-    assert set(PlatformRegistry.platform_id_list()) == {"netease", "qqmusic", "kugou", "kuwo", "qishui", "migu", "spotify", "applemusic"}
+    assert len(adapters) == 9
+    assert set(PlatformRegistry.platform_id_list()) == {"netease", "qqmusic", "kugou", "kuwo", "qishui", "migu", "spotify", "applemusic", "ytmusic"}
 
     # 验证各平台 ID 与别名正确映射
     assert PlatformRegistry.get("netease").platform_id == "netease"
@@ -34,6 +34,11 @@ def test_registry_registration_and_aliases():
 
     assert PlatformRegistry.get("qishui").platform_id == "qishui"
     assert PlatformRegistry.get("douyin").platform_id == "qishui"
+
+    assert PlatformRegistry.get("ytmusic").platform_id == "ytmusic"
+    assert PlatformRegistry.get("ytm").platform_id == "ytmusic"
+    assert PlatformRegistry.get("youtube").platform_id == "ytmusic"
+    assert PlatformRegistry.get("yt").platform_id == "ytmusic"
 
 
 def test_cli_ambiguous_digits_without_platform(capsys):

@@ -84,6 +84,11 @@ class NormalizedTrack:
         if self.mv_url and str(self.mv_url).strip():
             entry["mvUrl"] = str(self.mv_url).strip()
 
+        if "bilibili" in self.raw_extra and isinstance(self.raw_extra["bilibili"], dict):
+            entry["bilibili"] = self.raw_extra["bilibili"]
+        if "youtube" in self.raw_extra and isinstance(self.raw_extra["youtube"], dict):
+            entry["youtube"] = self.raw_extra["youtube"]
+
         return entry
 
 

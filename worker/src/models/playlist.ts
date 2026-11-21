@@ -7,6 +7,17 @@ import type { DeviceClass, ResolveFailureStage } from '../analytics/types';
 
 export type TrackAvailability = 'playable' | 'unplayable' | 'geo_blocked' | 'vip' | 'paid' | 'unknown';
 
+export interface YoutubeTrackMeta {
+  videoId: string;
+  videoUrl: string;
+  musicUrl: string;
+  videoType?: string;
+  isExplicit?: boolean;
+  channelId?: string;
+  channelUrl?: string;
+  setVideoId?: string;
+}
+
 export interface Track {
   index: number;
   title: string;
@@ -29,6 +40,7 @@ export interface Track {
   maxQuality?: string;
   mvId?: string;
   mvUrl?: string;
+  youtube?: YoutubeTrackMeta;
 }
 
 export type PlaylistRetrievalMode = 'full' | 'preview';
@@ -50,6 +62,13 @@ export interface PlaylistRetrievalInfo {
 
 export type PlaylistChannel = 'qishui' | 'douyin';
 
+export interface YoutubePlaylistMeta {
+  playlistId: string;
+  channelId?: string;
+  channelUrl?: string;
+  privacy?: 'PUBLIC' | 'UNLISTED';
+}
+
 export interface Playlist {
   platform: string;
   id: string;
@@ -68,6 +87,7 @@ export interface Playlist {
   retrieval?: PlaylistRetrievalInfo;
   channel?: PlaylistChannel;
   availableChannels?: PlaylistChannel[];
+  youtube?: YoutubePlaylistMeta;
 }
 
 export interface UserPlaylistSummary {

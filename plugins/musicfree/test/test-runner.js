@@ -71,7 +71,7 @@ async function runAllTests() {
   logSection('1. Plugin Contract & Specification');
 
   await test('Imports international metadata without inventing a native player source', async () => {
-    for (const platform of ['spotify', 'applemusic']) {
+    for (const platform of ['spotify', 'applemusic', 'ytmusic']) {
       const items = await plugin.importMusicSheet(JSON.stringify({ platform, name: 'Example', tracks: [{id:'original-id',title:'Example',artist:'Artist',durationMs:180000,status:'unknown'}] }));
       assert.strictEqual(items.length, 1);
       assert.strictEqual(items[0]._originPlatform, platform);

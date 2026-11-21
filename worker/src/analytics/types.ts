@@ -290,6 +290,7 @@ export const RESOLVE_REQUESTED_PLATFORMS = [
   'migu',
   'spotify',
   'applemusic',
+  'ytmusic',
   'unknown',
 ] as const;
 export type ResolveRequestedPlatform = typeof RESOLVE_REQUESTED_PLATFORMS[number];
@@ -304,6 +305,7 @@ export const ANALYTICS_PLATFORMS = [
   'migu',
   'spotify',
   'applemusic',
+  'ytmusic',
   'unknown',
 ] as const;
 export type AnalyticsPlatform = typeof ANALYTICS_PLATFORMS[number];

@@ -70,6 +70,7 @@ export const enUS: Translations = {
     platformMiguDesc: 'Public playlists supported without login',
     platformSpotify: 'Spotify',
     platformAppleMusic: 'Apple Music',
+    platformYouTubeMusic: 'YouTube Music',
     internationalPlaylistDesc: 'Public playlists without login; some optional metadata may be unavailable',
     incompatiblePlayerFormat: 'This player format does not support this source. Use JSON, CSV or XLSX.',
     statusUnknown: 'Unknown',

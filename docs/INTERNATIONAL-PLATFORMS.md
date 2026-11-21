@@ -1,16 +1,17 @@
-# Spotify 与 Apple Music 接入说明
+# Spotify、Apple Music 与 YouTube Music 接入说明
 
-v3.1.0 新增 Spotify 与 Apple Music。两家均只解析公开歌单元数据；不支持私人资料库、登录授权或用户主页歌单发现。
+v3.1.0 新增 Spotify、Apple Music 与 YouTube Music。三者均只解析公开歌单元数据；不支持私人资料库、登录授权或用户主页歌单发现。
 
 ## 输入和输出
 
-- 平台标识：`spotify`、`applemusic`。现有 `/api/playlist`、`/api/v1/playlist`、`/api/v1/resolve` 和 providers 接口保持路由不变。
+- 平台标识：`spotify`、`applemusic`、`ytmusic`。现有 `/api/playlist`、`/api/v1/playlist`、`/api/v1/resolve` 和 providers 接口保持路由不变。
 - Spotify：`https://open.spotify.com/playlist/<22位ID>`，允许分享查询参数、`intl-…` 路径；短链限 `spotify.link`、`spoti.fi`。
 - Apple Music：`https://music.apple.com/<地区>/playlist/<可选名称>/pl.…`，包括 `pl.u-…`；保留地区。支持白名单内 `geo.music.apple.com` 跳转。
+- YouTube Music：`https://music.youtube.com/playlist?list=<ID>` 或 `https://www.youtube.com/playlist?list=<ID>`，支持 `PL...`、`RD...`、`OLAK5uy_...` 等公开歌单 ID。
 - 歌曲、专辑、私人集合链接不能作为公开歌单处理。重定向必须为 HTTPS、无用户信息/自定义端口、白名单主机，最多三跳。
-- 两家取得完整歌单后，将上游顺序整体反转并从 1 重新编号，统一用于预览、复制、导出和播放器导入；保留合法重复，不推断缺失的添加时间。Spotify 支持普通曲目（Track）、本地音频（LocalTrack）与播客单集（Episode）的元数据解析，遇损坏或空条目时安全跳过并按实际有效曲目导出，避免单条异常中断整单；歌单总数或分页异常时返回明确错误。
+- 三家取得完整歌单后，将上游顺序统一用于预览、复制、导出和播放器导入（Spotify/Apple Music 会整体反转为原始加入顺序，YouTube Music 保持浏览序并从 1 重新编号）；保留合法重复，不推断缺失的添加时间。Spotify 支持普通曲目（Track）、本地音频（LocalTrack）与播客单集（Episode）的元数据解析，遇损坏或空条目时安全跳过并按实际有效曲目导出，避免单条异常中断整单；歌单总数或分页异常时返回明确错误。
 
-歌曲状态新增 `unknown`。两家的匿名元数据不足以确认用户账号的 VIP、付费或可播放能力，故保留 `status: unknown`，不补 `isVip: false` 或 `isAvailable: true`。Spotify 当前不补查 ISRC、发行日期、碟号；缺失保持未知。Apple 可直接取得更多字段，但单条记录仍可能缺失时长等信息。
+歌曲状态新增 `unknown`。三家的匿名元数据不足以确认用户账号的 VIP、付费或可播放能力，故保留 `status: unknown`，不补 `isVip: false` 或 `isAvailable: true`。Spotify 当前不补查 ISRC、发行日期、碟号；缺失保持未知。Apple 可直接取得更多字段，但单条记录仍可能缺失时长等信息。YouTube Music 保留原生 `youtube` 命名空间私有扩展字段（如 `videoId`、`videoType`、`watchUrl`、`channelId` 等），便于下游工具或播放器精细化使用。
 
 Web 和 CLI 提供 XLSX、CSV、JSON、TXT、M3U8、Markdown。Web 仍支持四种复制模式。CLI 的 Markdown 选项为 `md` / `markdown` / 菜单 6，输出 `.md`；统计归一为 `markdown`。
 
@@ -22,8 +23,9 @@ M3U8 沿用项目原有本地文件名列表语义，需用户自行持有对应
 
 - [SpotifyScraper](https://github.com/AliAkhtari78/SpotifyScraper/tree/9cbf05aa4963bac3684bb941270dcb62fc851ab7)：公开嵌入页面匿名令牌及网页 GraphQL 歌单分页。
 - [apple-music-scraper](https://github.com/omkarcloud/apple-music-scraper/tree/f7606f84e63b4d07249c8531eb2b68fe20ca23c3)：网页脚本令牌、地区目录与歌单分页。
+- [ytmusicapi](https://github.com/sigma67/ytmusicapi) / InnerTube API：公开客户端 `WEB_REMIX` 端点 (`https://music.youtube.com/youtubei/v1/browse`) 与 Continuation 翻页协议。
 
-两者均 MIT，完整声明见根目录 `THIRD-PARTY-NOTICES.md`。Worker 使用原生 TypeScript/fetch；CLI 独立使用现有 requests，不依赖上游托管 API、本机代理服务或新 Python 包。只复用必要协议，不加入上游的媒体、歌词、登录功能。
+三者均遵循开源规范，完整声明见根目录 `THIRD-PARTY-NOTICES.md`。Worker 使用原生 TypeScript/fetch；CLI 独立使用现有 requests，不依赖上游托管 API、本机代理服务或新 Python 包。只复用必要协议，不加入上游的媒体、歌词、登录功能。
 
 网页令牌只保存在进程内。Worker 到期重新获取，401 只刷新一次，5xx 最多重试一次，全部计入同一请求预算。403/429 不立即重试，并在当前 isolate 冷却；返回 Retry-After。冷却不保证跨地区全局同步。CLI 每次运行重新取得匿名令牌，上游报错即停止，不自动连续重试。
 

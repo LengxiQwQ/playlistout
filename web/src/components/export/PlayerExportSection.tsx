@@ -18,7 +18,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
   onExportError,
 }) => {
   const { t } = useTranslation();
-  const incompatible = !!playlist && ['spotify', 'applemusic'].includes(playlist.platform);
+  const incompatible = !!playlist && ['spotify', 'applemusic', 'ytmusic'].includes(playlist.platform);
   const isDisabled = !playlist || playlist.tracks.length === 0;
   const playerDisabled = isDisabled || incompatible;
 

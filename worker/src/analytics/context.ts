@@ -49,6 +49,7 @@ export const ANALYTICS_PLATFORMS_V2 = [
   'migu',
   'spotify',
   'applemusic',
+  'ytmusic',
   'unknown',
   'none',
 ] as const;
