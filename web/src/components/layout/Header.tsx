@@ -66,10 +66,21 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         }}
       >
         <a
-          href="https://playlistout.lengxiqwq.com"
+          href="https://playlistout.lengxiqwq.com/"
           className="header-logo-link"
           aria-label="Playlist Out (playlistout.lengxiqwq.com)"
-          title="playlistout.lengxiqwq.com"
+          title="https://playlistout.lengxiqwq.com/"
+          onClick={(e) => {
+            if (onBrandClick) {
+              onBrandClick();
+            }
+            if (typeof window !== 'undefined') {
+              if (window.location.href === 'https://playlistout.lengxiqwq.com/' || window.location.href === 'https://playlistout.lengxiqwq.com') {
+                e.preventDefault();
+                window.location.reload();
+              }
+            }
+          }}
         >
           <img
             src="/logo-128.png"
@@ -81,17 +92,32 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           />
         </a>
 
-        <div
-          onClick={onBrandClick}
-          className={onBrandClick ? 'header-brand-text' : ''}
+        <a
+          href="https://playlistout.lengxiqwq.com/"
+          className={`header-brand-text ${onBrandClick ? 'is-clickable' : ''}`}
+          onClick={(e) => {
+            if (onBrandClick) {
+              onBrandClick();
+            }
+            if (typeof window !== 'undefined') {
+              if (window.location.href === 'https://playlistout.lengxiqwq.com/' || window.location.href === 'https://playlistout.lengxiqwq.com') {
+                e.preventDefault();
+                window.location.reload();
+              }
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
             textAlign: 'left',
-            cursor: onBrandClick ? 'pointer' : 'default',
+            textDecoration: 'none',
+            color: 'inherit',
+            cursor: 'pointer',
             userSelect: 'none',
           }}
+          aria-label="Playlist Out"
+          title="https://playlistout.lengxiqwq.com/"
         >
           <h1 className="font-marker header-brand-title">
             Playlist Out
@@ -99,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           <div className="header-brand-tagline font-handwriting">
             {t.header.brandTagline}
           </div>
-        </div>
+        </a>
       </div>
 
       {/* Settings & Links */}
