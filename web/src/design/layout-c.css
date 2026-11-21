@@ -1093,16 +1093,24 @@
   }
 
   [data-layout-demo='c'] .layout-c-sidebar {
-    position: sticky;
+    position: -webkit-sticky !important;
+    position: sticky !important;
     top: 0 !important;
     margin-top: 0 !important;
-    z-index: 80;
+    z-index: 120 !important;
     flex-direction: row;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.6rem 0.85rem;
-    border-radius: 0 0 18px 18px;
-    transform: translateZ(0);
+    padding-top: max(0.6rem, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 0.65rem !important;
+    padding-left: max(0.85rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0px)) !important;
+    border-radius: 0 0 18px 18px !important;
+    background: #fffdf8 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+    will-change: transform;
   }
 
   [data-layout-demo='c'] .layout-c-sidebar::before {

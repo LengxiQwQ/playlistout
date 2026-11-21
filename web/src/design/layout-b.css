@@ -1247,16 +1247,24 @@
   }
 
   [data-layout-demo='b'] .journal-header {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 120 !important;
     margin-top: 0 !important;
     margin-left: -0.75rem !important;
     margin-right: -0.75rem !important;
-    padding: 0.5rem 0.75rem 0.65rem !important;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 0.65rem !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
     border-top: none !important;
     border-radius: 0 0 18px 18px !important;
-    transform: translateZ(0) !important;
+    background: #fbf4ea !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+    will-change: transform;
     flex-wrap: nowrap !important;
   }
 

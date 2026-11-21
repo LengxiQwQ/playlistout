@@ -32,6 +32,7 @@
 
 /* Sticky Header for Legacy Journal (unwrapped fallback without data-layout-demo) */
 html:not([data-layout-demo]) .journal-header {
+  position: -webkit-sticky !important;
   position: sticky !important;
   top: 0 !important;
   z-index: 120 !important;
@@ -44,8 +45,20 @@ html:not([data-layout-demo]) .journal-header {
   border-top: none !important;
   border-bottom: 1.5px dashed rgba(206, 172, 152, 0.38);
   border-radius: 0 0 16px 16px;
-  transform: translateZ(0);
+  transform: none !important;
+  will-change: transform;
   flex-wrap: nowrap !important;
+}
+
+@media (max-width: 768px) {
+  html:not([data-layout-demo]) .journal-header {
+    background: #fdf6ec !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+  }
 }
 
 /* Completely override legacy .font-picker-menu wobbly borders & crooked ::before tape */

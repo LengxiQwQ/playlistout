@@ -6,12 +6,12 @@
   --paper: #fdf6ec;
   --paper-cream: #fffaf2;
   --paper-white: #fffdf8;
-  --ink: #5a4a42;
-  --ink-light: #8a7569;
-  --ink-muted: #a8968b;
-  --ink-faint: rgba(90, 74, 66, 0.16);
+  --ink: #43352e;
+  --ink-light: #705b4f;
+  --ink-muted: #8c776b;
+  --ink-faint: rgba(67, 53, 46, 0.16);
   /* Outline colour for hand-drawn borders: a touch lighter than text ink */
-  --ink-line: #6e5a50;
+  --ink-line: #5c493f;
   /* Soft "lifted sticker" offset shadow (replaces hard charcoal shadows) */
   --shadow-ink: rgba(150, 112, 92, 0.3);
   --shadow-soft: 0 6px 18px -8px rgba(150, 112, 92, 0.35);

@@ -1,11 +1,39 @@
 /* PlaylistOut Music Journal - Default Typography (Lean & Consistent) */
 
 :root {
-  --font-marker: 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'PingFang SC', 'Noto Sans SC', cursive, sans-serif;
-  --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'Noto Sans SC', cursive, sans-serif;
-  --font-note: 'ZCOOL KuaiLe', 'Caveat', 'Yuanti SC', 'YouYuan', '幼圆', 'Noto Sans SC', cursive, sans-serif;
+  --font-marker: 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
+  --font-handwriting: 'Caveat', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
+  --font-note: 'Caveat', 'ZCOOL KuaiLe', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
   --font-mono: 'Space Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'Noto Sans SC', monospace;
-  --font-sans: 'LXGW WenKai', 'YouYuan', 'Yuanti SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+}
+
+/* Global Crisp Text Rendering & Subpixel Anti-Aliasing */
+html,
+body,
+button,
+input,
+textarea,
+select {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ensure rotated stickers and stationery cards keep sharp edges without GPU raster downsampling */
+.sticker,
+.sticky-note-card,
+.journal-paper,
+.plugin-app-card,
+.info-note-card,
+.stats-card,
+.developer-method,
+.layout-b-cell,
+.layout-b-stamp-box,
+.marker-button {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: flat;
 }
 
 /* Typography utility classes */

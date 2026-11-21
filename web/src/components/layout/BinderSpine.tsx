@@ -21,6 +21,9 @@ export const BinderSpine: React.FC<BinderSpineProps> = ({ dependencies = [] }) =
 
   useEffect(() => {
     const updateCount = () => {
+      if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+        return;
+      }
       const docHeight = Math.max(
         document.documentElement.scrollHeight,
         document.body.scrollHeight,

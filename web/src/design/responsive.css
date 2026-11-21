@@ -157,6 +157,11 @@
 
 /* Tablet & Mobile Overrides */
 @media (max-width: 768px) {
+  html,
+  body {
+    min-height: 100% !important;
+  }
+
   /* Keep notebook paper dot-grid consistent on small screens */
   body {
     background-image:
@@ -179,17 +184,26 @@
   }
 
   .journal-header {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 120 !important;
     margin-top: 0 !important;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
     min-height: calc(var(--ruled-line-height, 38px) * 1.5) !important;
     gap: 0.35rem;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     flex-wrap: nowrap !important;
-    transform: translateZ(0);
+    transform: none !important;
+    will-change: transform;
+    isolation: isolate;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--paper, #fdf6ec);
   }
 
   .header-brand-container {

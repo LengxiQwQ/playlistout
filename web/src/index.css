@@ -23,8 +23,8 @@ html {
   --font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   --bg-color: var(--paper, #fdf6ec);
   --card-bg: #ffffff;
-  --text-main: var(--ink, #5a4a42);
-  --text-muted: var(--ink-light, #8a7569);
+  --text-main: var(--ink, #43352e);
+  --text-muted: var(--ink-light, #705b4f);
   --primary: #6a82d4;
   --primary-hover: #5670c4;
   --border-color: #f0e6dc;

@@ -53,9 +53,6 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
         alignItems: 'center',
         justifyContent: 'space-between',
         minHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
-        paddingTop: 0,
-        paddingBottom: 0,
-        position: 'relative',
         zIndex: 60,
       }}
     >
