@@ -51,7 +51,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   const inFlightTargetRef = useRef<string | null>(null);
 
   const recordClarityParseSuccess = useCallback((platform?: string, trackCount?: number) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic') {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic' || platform === 'ytmusic') {
       setClarityTag('platform', platform);
     }
     const bucket = classifyPlaylistSize(trackCount);
@@ -62,7 +62,7 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
   }, []);
 
   const recordClarityParseFailure = useCallback((platform?: string) => {
-    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic') {
+    if (platform === 'qqmusic' || platform === 'netease' || platform === 'kugou' || platform === 'qishui' || platform === 'kuwo' || platform === 'migu' || platform === 'spotify' || platform === 'applemusic' || platform === 'ytmusic') {
       setClarityTag('platform', platform);
     }
     trackClarityEvent('playlist_parse_failure');
@@ -244,6 +244,8 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'spotify'
               : validation.platform === 'applemusic'
               ? 'applemusic'
+              : validation.platform === 'ytmusic'
+              ? 'ytmusic'
               : validation.platform === 'migu'
               ? 'migu'
               : validation.platform === 'qqmusic'
@@ -318,6 +320,8 @@ export function usePlaylistParser(options: UsePlaylistParserOptions) {
               ? 'spotify'
               : validation.platform === 'applemusic'
               ? 'applemusic'
+              : validation.platform === 'ytmusic'
+              ? 'ytmusic'
               : validation.platform === 'migu'
               ? 'migu'
               : 'qqmusic';

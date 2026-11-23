@@ -1,11 +1,11 @@
 /* PlaylistOut Music Journal - Default Typography (Lean & Consistent) */
 
 :root {
-  --font-marker: 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
-  --font-handwriting: 'Caveat', 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
-  --font-note: 'Caveat', 'ZCOOL KuaiLe', 'Yuanti SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', cursive, sans-serif;
+  --font-marker: 'ZCOOL KuaiLe', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'PingFang SC', 'Noto Sans SC', cursive, sans-serif;
+  --font-handwriting: 'ZCOOL KuaiLe', 'Caveat', 'Wawati SC', 'Yuanti SC', 'YouYuan', '幼圆', 'Noto Sans SC', cursive, sans-serif;
+  --font-note: 'ZCOOL KuaiLe', 'Caveat', 'Yuanti SC', 'YouYuan', '幼圆', 'Noto Sans SC', cursive, sans-serif;
   --font-mono: 'Space Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'Noto Sans SC', monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-sans: 'LXGW WenKai', 'YouYuan', 'Yuanti SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
 }
 
 /* Global Crisp Text Rendering & Subpixel Anti-Aliasing */
@@ -58,7 +58,7 @@ select {
 }
 
 .font-num {
-  font-family: var(--font-num, 'Caveat', 'ZCOOL KuaiLe', 'Noto Sans SC', cursive) !important;
+  font-family: var(--font-num, 'ZCOOL KuaiLe', 'Caveat', 'Noto Sans SC', cursive) !important;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }

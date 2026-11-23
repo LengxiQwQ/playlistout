@@ -6,6 +6,7 @@ export function normalizeYoutubeMusicPlaylist(
   allTrackItems: any[]
 ): Playlist {
   const header =
+    initialData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents?.[0]?.musicResponsiveHeaderRenderer ||
     initialData?.header?.musicDetailHeaderRenderer ||
     initialData?.header?.musicResponsiveHeaderRenderer ||
     initialData?.header?.musicEditablePlaylistDetailHeaderRenderer?.header?.musicDetailHeaderRenderer ||
@@ -14,16 +15,20 @@ export function normalizeYoutubeMusicPlaylist(
   const title =
     extractRunsText(header.title) ||
     header.title?.simpleText ||
+    initialData?.microformat?.microformatDataRenderer?.title ||
     'YouTube Music 歌单';
 
   const description =
     extractRunsText(header.description) ||
+    extractRunsText(header.description?.musicDescriptionShelfRenderer?.description) ||
     header.description?.simpleText ||
+    initialData?.microformat?.microformatDataRenderer?.description ||
     '';
 
   const thumbnails =
     header.thumbnail?.croppedSquareThumbnailRenderer?.thumbnails ||
     header.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails ||
+    initialData?.microformat?.microformatDataRenderer?.thumbnail?.thumbnails ||
     [];
   const coverUrl = pickBestThumbnail(thumbnails);
 
@@ -40,7 +45,17 @@ export function normalizeYoutubeMusicPlaylist(
     }
   }
   if (!creator && subtitleRuns.length > 0) {
-    creator = subtitleRuns[0]?.text || '';
+    const candidate = subtitleRuns[0]?.text || '';
+    if (candidate !== 'Playlist' && candidate !== '歌单') {
+      creator = candidate;
+    }
+  }
+  if (!creator) {
+    const mfDesc = initialData?.microformat?.microformatDataRenderer?.description || '';
+    const parts = mfDesc.split('•').map((s: string) => s.trim());
+    if (parts.length > 1 && parts[1]) {
+      creator = parts[1];
+    }
   }
 
   // 尝试从 secondSubtitle 提取总曲目数
@@ -141,6 +156,21 @@ export function normalizeYoutubeMusicTrack(item: any, index: number): Track | nu
         durationMs = parseDurationMs(text);
         break;
       }
+    }
+  }
+
+  // 若存在 fixedColumns (桌面端 WEB_REMIX 常将时长置于 fixedColumns[0])
+  if (durationMs === undefined && Array.isArray(renderer.fixedColumns)) {
+    for (const fixedCol of renderer.fixedColumns) {
+      const fixedRuns = fixedCol?.musicResponsiveListItemFixedColumnRenderer?.text?.runs || [];
+      for (const run of fixedRuns) {
+        const text = (run?.text || '').trim();
+        if (/^\d+:\d+(?::\d+)?$/.test(text)) {
+          durationMs = parseDurationMs(text);
+          break;
+        }
+      }
+      if (durationMs !== undefined) break;
     }
   }
 

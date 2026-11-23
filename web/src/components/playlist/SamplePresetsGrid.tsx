@@ -170,7 +170,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           type="button"
           color="red"
           rotateDeg={-0.5}
-          onClick={() => onSelectSample('https://music.youtube.com/playlist?list=RDCLAK5uy_kmPRjFv6wzAssOnan7Deik0vxDdOxWNmQ', 'ytmusic', 'playlist')}
+          onClick={() => onSelectSample('https://music.youtube.com/playlist?list=PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj', 'ytmusic', 'playlist')}
           className="font-handwriting"
           style={sampleStickerStyle}
         >
