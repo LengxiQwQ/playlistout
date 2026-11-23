@@ -1,4 +1,5 @@
 import type { Playlist, Track, YoutubePlaylistMeta, YoutubeTrackMeta } from '../../models/playlist';
+import { reversePlaylistTracks } from '../international/order';
 
 export function normalizeYoutubeMusicPlaylist(
   playlistId: string,
@@ -78,6 +79,8 @@ export function normalizeYoutubeMusicPlaylist(
       tracks.push(track);
     }
   }
+
+  reversePlaylistTracks(tracks);
 
   const youtubeMeta: YoutubePlaylistMeta = {
     playlistId,

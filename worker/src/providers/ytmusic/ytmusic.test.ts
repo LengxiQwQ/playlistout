@@ -318,10 +318,13 @@ describe('YouTube Music Provider - Mocked Client Flow', () => {
     const playlist = await fetchYoutubeMusicPlaylist('https://music.youtube.com/playlist?list=PL123456789012345678');
     expect(callCount).toBe(2);
     expect(playlist.tracks.length).toBe(2);
-    expect(playlist.tracks[0].title).toBe('Track 1');
-    expect(playlist.tracks[1].title).toBe('Track 2');
-    expect(playlist.tracks[0].artist).toBe('Artist 1');
-    expect(playlist.tracks[1].artist).toBe('Artist 2');
+    // 逆序校验 (和 Apple Music、Spotify 统一倒序并重新编号)
+    expect(playlist.tracks[0].title).toBe('Track 2');
+    expect(playlist.tracks[1].title).toBe('Track 1');
+    expect(playlist.tracks[0].artist).toBe('Artist 2');
+    expect(playlist.tracks[1].artist).toBe('Artist 1');
+    expect(playlist.tracks[0].index).toBe(1);
+    expect(playlist.tracks[1].index).toBe(2);
   });
 
   it('throws PLAYLIST_NOT_FOUND when alert error received', async () => {

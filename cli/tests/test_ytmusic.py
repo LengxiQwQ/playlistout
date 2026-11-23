@@ -214,8 +214,14 @@ def test_ytmusic_fetch_playlist_and_continuation(monkeypatch):
     assert playlist.creator == "Artist Channel"
     assert len(playlist.tracks) == 2
 
+    # 逆序校验 (和 Apple Music、Spotify 统一倒序并重新编号)
+    assert playlist.tracks[0].title == "Track 2"
+    assert playlist.tracks[0].index == 1
+    assert playlist.tracks[1].title == "Track 1"
+    assert playlist.tracks[1].index == 2
+
     # Track 1 校验
-    t1 = playlist.tracks[0]
+    t1 = playlist.tracks[1]
     assert t1.title == "Track 1"
     assert t1.artist == "Singer A"
     assert t1.album == "Album A"

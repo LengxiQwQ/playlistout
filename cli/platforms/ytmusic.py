@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 
 from .base import BasePlatformAdapter
 from .registry import register_platform
-from .international import _Requests, _total
+from .international import _Requests, _total, _reverse_tracks
 from ..core.models import NormalizedPlaylist, NormalizedTrack
 
 
@@ -360,6 +360,8 @@ class YouTubeMusicAdapter(BasePlatformAdapter):
                 raw_extra={"youtube": youtube_track_meta},
             )
             tracks.append(track)
+
+        _reverse_tracks(tracks)
 
         youtube_playlist_meta = {
             "playlistId": pid,
