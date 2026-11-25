@@ -89,19 +89,9 @@
 [data-layout-demo='b'] .sticky-note-card,
 [data-layout-demo='b'] .sticky-note-card.is-tracking,
 [data-layout-demo='b'] .plugin-app-card,
-[data-layout-demo='b'] .plugin-app-card:hover,
+[data-layout-demo='b'] [data-reveal-item]:hover > .plugin-app-card,
 [data-layout-demo='b'] .developer-method,
-[data-layout-demo='b'] .developer-method:hover,
-[data-layout-demo='b'] .header-desktop-btn,
-[data-layout-demo='b'] .header-desktop-btn:hover,
-[data-layout-demo='b'] .header-github-btn,
-[data-layout-demo='b'] .header-github-btn:hover,
-[data-layout-demo='b'] .search-platforms-row .sticker,
-[data-layout-demo='b'] .search-platforms-row .sticker:hover,
-[data-layout-demo='b'] .search-sample-row .sticker,
-[data-layout-demo='b'] .search-sample-row .sticker:hover,
-[data-layout-demo='b'] .journal-footer .sticker,
-[data-layout-demo='b'] .journal-footer .sticker:hover {
+[data-layout-demo='b'] .developer-method-slot:hover > .developer-method {
   transform: rotate(var(--rot, 0deg)) !important;
 }
 
@@ -147,29 +137,31 @@
   transition: transform var(--b-spring), filter 260ms ease;
 }
 
-[data-layout-demo='b'] .journal-hero-title:hover {
-  translate: 0 -4px;
-  rotate: 0.7deg;
-  scale: 1.02;
-}
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .journal-hero-title:hover {
+    translate: 0 -4px;
+    rotate: 0.7deg;
+    scale: 1.02;
+  }
 
-[data-layout-demo='b'] .journal-hero-title:hover .scribble-line::after {
-  transform: scaleX(1.06) scaleY(1.22);
-  filter: saturate(1.22);
-}
+  [data-layout-demo='b'] .journal-hero-title:hover .scribble-line::after {
+    transform: scaleX(1.06) scaleY(1.22);
+    filter: saturate(1.22);
+  }
 
-[data-layout-demo='b'] .plugin-ecosystem-title:hover,
-[data-layout-demo='b'] .stats-journal-title:hover,
-[data-layout-demo='b'] .developer-title:hover,
-[data-layout-demo='b'] .layout-b-board-title:hover {
-  translate: 0 -3px;
-  rotate: -0.9deg;
-  color: #c25478 !important;
-}
+  [data-layout-demo='b'] .plugin-ecosystem-title:hover,
+  [data-layout-demo='b'] .stats-journal-title:hover,
+  [data-layout-demo='b'] .developer-title:hover,
+  [data-layout-demo='b'] .layout-b-board-title:hover {
+    translate: 0 -3px;
+    rotate: -0.9deg;
+    color: #c25478 !important;
+  }
 
-[data-layout-demo='b'] .info-notes-section .font-marker:hover {
-  translate: 4px 0;
-  color: #c25478 !important;
+  [data-layout-demo='b'] .info-notes-section .font-marker:hover {
+    translate: 4px 0;
+    color: #c25478 !important;
+  }
 }
 
 /* ---------------- 3. Sticky Stationery Bookmark-Ribbon Header ---------------- */
@@ -197,25 +189,30 @@
   transition: rotate var(--b-spring), scale var(--b-spring);
 }
 
-[data-layout-demo='b'] .header-brand-container:hover .header-logo-img {
-  rotate: 8deg;
-  scale: 1.1;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .header-brand-container:hover .header-logo-img {
+    rotate: 8deg;
+    scale: 1.1;
+  }
+
+  [data-layout-demo='b'] .header-brand-container:hover .header-brand-title {
+    translate: 3px 0;
+    color: #c25478;
+  }
 }
 
-[data-layout-demo='b'] .header-brand-container:hover .header-brand-title {
-  translate: 3px 0;
-  color: #c25478;
-}
-
-/* Hanging Bookmark-Tab Buttons in Header */
-[data-layout-demo='b'] .header-desktop-btn,
-[data-layout-demo='b'] .header-github-btn,
-[data-layout-demo='b'] .header-actions button:not(.style-option),
-[data-layout-demo='b'] .header-actions .sticker {
-  border-radius: 6px 6px 14px 14px !important;
-  border: 1.5px solid rgba(196, 160, 140, 0.45) !important;
-  border-top: 3px solid rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 4px 10px -4px rgba(132, 96, 78, 0.18) !important;
+/* Tactile Matte Paper-Cardstock Rounded-Rectangle Buttons in Header */
+[data-layout-demo='b'] .header-desktop-btn > .header-desktop-btn-face,
+[data-layout-demo='b'] .header-github-btn > .header-github-btn-face,
+[data-layout-demo='b'] .header-actions .ui-hitbox > .ui-face,
+[data-layout-demo='b'] .header-actions .sticker-hitbox > .sticker-face {
+  border-radius: 10px !important;
+  border: 1.5px solid rgba(154, 118, 98, 0.45) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(164, 128, 108, 0.14),
+    0 2px 0 rgba(148, 112, 92, 0.24),
+    0 4px 10px -4px rgba(132, 96, 78, 0.14) !important;
   translate: 0 0;
   rotate: 0deg;
   transition:
@@ -224,22 +221,51 @@
     box-shadow var(--b-smooth) !important;
 }
 
-[data-layout-demo='b'] .header-desktop-btn {
-  background: linear-gradient(180deg, #ffe8ef 0%, #ffd8e5 100%) !important;
-  color: #ad4366 !important;
+[data-layout-demo='b'] .header-desktop-btn > .header-desktop-btn-face {
+  background-color: #ffe8ef !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(255, 248, 250, 0.75) 0%, rgba(255, 224, 234, 0.85) 100%) !important;
+  background-size: 96px 96px, 180px 180px, 100% 100% !important;
+  color: #a64062 !important;
+  border-color: rgba(206, 134, 158, 0.56) !important;
 }
 
-[data-layout-demo='b'] .header-github-btn {
-  background: linear-gradient(180deg, #e5f8f0 0%, #d2f1e5 100%) !important;
-  color: #2e755a !important;
+[data-layout-demo='b'] .header-github-btn > .header-github-btn-face {
+  background-color: #e4f6ee !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(244, 252, 248, 0.75) 0%, rgba(212, 241, 229, 0.88) 100%) !important;
+  background-size: 96px 96px, 180px 180px, 100% 100% !important;
+  color: #2b6e55 !important;
+  border-color: rgba(114, 176, 150, 0.56) !important;
 }
 
-[data-layout-demo='b'] .header-desktop-btn:hover,
-[data-layout-demo='b'] .header-github-btn:hover,
-[data-layout-demo='b'] .header-actions button:not(.style-option):hover {
-  translate: 0 3px;
-  rotate: -1deg;
-  box-shadow: 0 8px 16px -6px rgba(132, 96, 78, 0.28) !important;
+[data-layout-demo='b'] .header-lang-btn > .sticker-face {
+  background-color: #e8f3ff !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(246, 250, 255, 0.75) 0%, rgba(218, 236, 255, 0.88) 100%) !important;
+  background-size: 96px 96px, 180px 180px, 100% 100% !important;
+  color: var(--ink, #5a4a42) !important;
+  border-color: rgba(132, 168, 204, 0.56) !important;
+}
+
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .header-desktop-btn:hover > .header-desktop-btn-face,
+  [data-layout-demo='b'] .header-github-btn:hover > .header-github-btn-face,
+  [data-layout-demo='b'] .header-actions .ui-hitbox:hover > .ui-face,
+  [data-layout-demo='b'] .header-actions .sticker-hitbox:hover > .sticker-face {
+    translate: 0 -2px;
+    rotate: -1deg;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      0 3px 0 rgba(148, 112, 92, 0.28),
+      0 8px 16px -6px rgba(132, 96, 78, 0.22) !important;
+  }
 }
 
 /* ---------------- 4. Act 0: Washi Eyebrow + Binder-Clipped Graph Search Sheet ---------------- */
@@ -262,6 +288,10 @@
   position: static !important;
   display: flex !important;
   width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
   margin: 0 auto 0.75rem auto !important;
   padding: 0.25rem 1.25rem;
   font-size: 0.98rem !important;
@@ -282,9 +312,11 @@
   cursor: default;
 }
 
-[data-layout-demo='b'] .hero-doodle-right:hover {
-  rotate: 1.4deg;
-  scale: 1.05;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .hero-doodle-right:hover {
+    rotate: 1.4deg;
+    scale: 1.05;
+  }
 }
 
 [data-layout-demo='b'] .hero-doodle-mobile {
@@ -310,14 +342,18 @@
   transition: translate var(--b-spring), rotate var(--b-spring);
 }
 
-.layout-b-search-clipped:hover .layout-b-binder-clip {
-  translate: 0 -3px;
-  rotate: -2deg;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .layout-b-search-clipped:hover .layout-b-binder-clip {
+    translate: 0 -3px;
+    rotate: -2deg;
+  }
 }
 
 /* Graph-paper Butter-Milk Search Sheet (pivots gently from top binder clip on hover!) */
 [data-layout-demo='b'] .search-note-section {
   max-width: 780px !important;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 [data-layout-demo='b'] .search-note-section .sticky-note-card {
@@ -338,25 +374,20 @@
   rotate: 0deg;
 }
 
-/* Keep wide Search Sheet level on hover (no crooked big sheet — only subtle lift & binder clip bounce) */
-.layout-b-search-clipped:hover .sticky-note-card {
-  translate: 0 -2px;
-  rotate: 0deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  /* Keep wide Search Sheet level on hover (no crooked big sheet — only subtle lift & binder clip bounce) */
+  .layout-b-search-clipped:hover .sticky-note-card {
+    translate: 0 -2px;
+    rotate: 0deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 }
 
 [data-layout-demo='b'] .search-note-section .brand-badge.sticker {
   border-radius: 6px !important;
   border: 1px dashed rgba(154, 127, 216, 0.48) !important;
   box-shadow: none !important;
-  translate: 0 0;
-  rotate: 0deg;
-  transition: translate var(--b-spring), rotate var(--b-spring) !important;
-}
-
-[data-layout-demo='b'] .search-note-section .brand-badge.sticker:hover {
-  translate: 0 -2px;
-  rotate: 2deg;
+  cursor: default;
 }
 
 /* Crisp recessed white card-slot input */
@@ -384,41 +415,61 @@
   box-shadow: none !important;
 }
 
-/* Candy Bookmark-Tab Parse Button */
-[data-layout-demo='b'] .search-input-row .marker-button {
-  border-radius: 14px !important;
+/* Dyed Strawberry Cotton-Paper Parse Button */
+[data-layout-demo='b'] .search-input-row .marker-button > .marker-button-face {
+  border-radius: 11px !important;
   padding: 0.78rem 1.8rem !important;
-  border: 1.5px solid #d45d82 !important;
-  background: linear-gradient(180deg, #f592b0 0%, #e56b90 100%) !important;
+  border: 1.5px solid #c9587c !important;
+  background-color: #ec7a9c !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(188, 66, 104, 0.16) 100%) !important;
+  background-size: 96px 96px, 180px 180px, 100% 100% !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 14px -4px rgba(228, 108, 145, 0.44) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    inset 0 -1px 0 rgba(148, 52, 82, 0.16),
+    0 2.5px 0 rgba(168, 68, 98, 0.34),
+    0 6px 14px -5px rgba(196, 88, 122, 0.28) !important;
   translate: 0 0;
   scale: 1;
   transition: translate var(--b-spring), scale var(--b-spring), box-shadow var(--b-smooth) !important;
 }
 
-[data-layout-demo='b'] .search-input-row .marker-button:hover:not(:disabled) {
-  translate: 0 -3px;
-  scale: 1.03;
-  box-shadow: 0 10px 20px -6px rgba(228, 108, 145, 0.54) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .search-input-row .marker-button:hover:not(:disabled) > .marker-button-face {
+    translate: 0 -3px;
+    scale: 1.03;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.48),
+      0 4px 0 rgba(168, 68, 98, 0.36),
+      0 10px 20px -6px rgba(228, 108, 145, 0.42) !important;
+  }
 }
 
-[data-layout-demo='b'] .search-input-row .marker-button:disabled {
-  background: linear-gradient(180deg, #f8c6d5 0%, #efb0c4 100%) !important;
-  border-color: #e4a2b6 !important;
-  box-shadow: none !important;
+[data-layout-demo='b'] .search-input-row .marker-button:disabled > .marker-button-face {
+  background-color: #f4bccd !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 180px 180px !important;
+  border-color: #df9ab0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 0 rgba(196, 138, 156, 0.24) !important;
 }
 
-/* Mini Colored Index-Flag Platform Tabs (Distinct from Layout A's round pills!) */
+/* Tactile Cotton-Paper Rounded-Rectangle Platform & Sample Buttons */
 [data-layout-demo='b'] .search-platforms-row .sticker,
-[data-layout-demo='b'] .search-sample-row .sticker {
-  border-radius: 6px 12px 12px 6px !important;
-  border: 1px solid rgba(182, 148, 132, 0.34) !important;
-  border-left: 4px solid rgba(226, 128, 158, 0.65) !important;
-  background-image: var(--b-paper-fiber) !important;
-  box-shadow: 0 2px 5px rgba(132, 96, 78, 0.1) !important;
-  padding: 0.28rem 0.88rem !important;
-  font-size: 1.02rem !important;
+[data-layout-demo='b'] .search-sample-row .sticker-hitbox > .sticker-face {
+  border-radius: 10px !important;
+  border: 1.5px solid rgba(168, 134, 114, 0.44) !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 180px 180px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(164, 128, 108, 0.12),
+    0 2px 0 rgba(154, 118, 98, 0.22),
+    0 3px 8px -4px rgba(132, 96, 78, 0.14) !important;
+  padding: 0.3rem 0.88rem !important;
+  font-size: 1rem !important;
   font-weight: 600 !important;
   color: #4a3832 !important;
   translate: 0 0;
@@ -427,33 +478,44 @@
 }
 
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 1),
-[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 1) { border-left-color: #6cc5a3 !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 1) .sticker-face { border-color: rgba(108, 178, 150, 0.56) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 2),
-[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 2) { border-left-color: #eb85a3 !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 2) .sticker-face { border-color: rgba(212, 134, 158, 0.56) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 3),
-[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 3) { border-left-color: #e6ba4c !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 3) .sticker-face { border-color: rgba(212, 174, 96, 0.56) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 4),
-[data-layout-demo='b'] .search-sample-row .sticker:nth-child(4n + 4) { border-left-color: #9e84db !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 4) .sticker-face { border-color: rgba(156, 134, 206, 0.56) !important; }
 
-[data-layout-demo='b'] .search-platforms-row .sticker:hover,
-[data-layout-demo='b'] .search-sample-row .sticker:hover {
-  translate: 2px -3px;
-  rotate: -1.5deg;
-  box-shadow: 0 6px 12px -4px rgba(132, 96, 78, 0.2) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .search-platforms-row .sticker-hitbox:hover > .sticker-face,
+  [data-layout-demo='b'] .search-sample-row .sticker-hitbox:hover > .sticker-face {
+    translate: 0 -2px;
+    rotate: -1.5deg;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      0 3px 0 rgba(154, 118, 98, 0.25),
+      0 6px 12px -4px rgba(132, 96, 78, 0.2) !important;
+  }
 }
 
-[data-layout-demo='b'] .quick-samples-toggle {
+[data-layout-demo='b'] .quick-samples-toggle > .quick-samples-toggle-face {
   border-radius: 10px !important;
-  border: 1.5px dashed rgba(212, 158, 118, 0.6) !important;
-  background: #fff9ec !important;
-  box-shadow: none !important;
+  border: 1.5px dashed rgba(188, 140, 104, 0.58) !important;
+  background-color: #fff8ea !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 180px 180px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 2px 0 rgba(176, 138, 108, 0.2) !important;
   translate: 0 0;
   transition: translate var(--b-spring), background-color 200ms ease !important;
 }
 
-[data-layout-demo='b'] .quick-samples-toggle:hover {
-  translate: 0 -2px;
-  background: #fff2d6 !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .quick-samples-toggle:hover > .quick-samples-toggle-face {
+    translate: 0 -2px;
+    background-color: #fff2d6 !important;
+  }
 }
 
 /* ---------------- 5. Framed Pastel Linen-Cork Pinboard Mat ---------------- */
@@ -563,10 +625,12 @@
 .layout-b-cell-stats      { grid-column: span 7; }
 .layout-b-cell-developer  { grid-column: span 5; }
 
-/* Pendulum pin-swing micro-interaction when hovering any pinned bento cell! */
-.layout-b-cell:hover > .layout-b-pushpin.is-card-pin {
-  scale: 1.14;
-  translate: 0 -2px;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  /* Pendulum pin-swing micro-interaction when hovering any pinned bento cell! */
+  .layout-b-cell:hover > .layout-b-pushpin.is-card-pin {
+    scale: 1.14;
+    translate: 0 -2px;
+  }
 }
 
 /* ---------------- 6. Cell 1 (8 cols): Unwrapped Vinyl Sleeves Directly on Board ---------------- */
@@ -598,10 +662,12 @@
   transition: translate var(--b-spring), rotate var(--b-spring), scale var(--b-spring) !important;
 }
 
-[data-layout-demo='b'] .plugin-supported-count:hover {
-  translate: 0 -3px;
-  rotate: 4deg;
-  scale: 1.07;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .plugin-supported-count-reveal:hover > .plugin-supported-count {
+    translate: 0 -3px;
+    rotate: 4deg;
+    scale: 1.07;
+  }
 }
 
 [data-layout-demo='b'] .plugin-app-grid {
@@ -676,50 +742,59 @@
   border-color: #d4a43e;
 }
 
-/* Peeking mini vinyl disc cleanly clipped behind the right sleeve edge, slides out on hover! */
-[data-layout-demo='b'] .plugin-app-card::after {
-  content: '';
+/* Peeking mini vinyl disc cleanly clipped inside a stationary sleeve-aligned window! */
+[data-layout-demo='b'] .layout-b-vinyl-slot {
+  display: block;
   position: absolute;
   top: 50%;
-  right: -16px;
+  right: -18px;
+  width: 38px;
+  height: 46px;
+  margin-top: -23px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+[data-layout-demo='b'] .layout-b-vinyl-disc {
+  display: block;
+  position: absolute;
+  top: 6px;
+  right: 3px;
   width: 34px;
   height: 34px;
-  margin-top: -17px;
   border-radius: 50%;
   background:
     radial-gradient(circle, #fffdf8 0 3px, #ffd6e0 3.5px 8.5px, #5a4a42 9px 14px, #7b665c 14.5px 15.5px, #5a4a42 16px 100%);
   box-shadow: 2px 2px 6px rgba(90, 74, 66, 0.2);
-  clip-path: inset(-6px -10px -6px 50%);
-  z-index: 2;
-  translate: 0 0;
+  translate: -14px 0;
   rotate: 0deg;
   transition:
     translate var(--b-spring),
-    rotate 520ms cubic-bezier(0.22, 1, 0.36, 1),
-    clip-path var(--b-smooth);
-  pointer-events: none;
+    rotate 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Only THIS small album sleeve tilts playfully on hover! */
-[data-layout-demo='b'] .plugin-app-grid > :nth-child(odd) .plugin-app-card:hover {
-  translate: 0 -5px;
-  rotate: -1.4deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-  z-index: 4;
-}
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  /* Only THIS small album sleeve tilts playfully when hovering its stationary reveal slot! */
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:nth-child(odd):hover > .plugin-app-card {
+    translate: 0 -5px;
+    rotate: -1.4deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+    z-index: 4;
+  }
 
-[data-layout-demo='b'] .plugin-app-grid > :nth-child(even) .plugin-app-card:hover {
-  translate: 0 -5px;
-  rotate: 1.4deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-  z-index: 4;
-}
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:nth-child(even):hover > .plugin-app-card {
+    translate: 0 -5px;
+    rotate: 1.4deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+    z-index: 4;
+  }
 
-/* Slide & spin the vinyl disc out from inside the sleeve on hover! */
-[data-layout-demo='b'] .plugin-app-card:hover::after {
-  translate: 10px 0;
-  rotate: 95deg;
-  clip-path: inset(-6px -10px -6px 18%);
+  /* Slide & spin the vinyl disc out from inside the stationary clip slot on hover! */
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover .layout-b-vinyl-disc {
+    translate: 0 0;
+    rotate: 95deg;
+  }
 }
 
 /* Soften tiny badge stickers inside Pinboard (BBPlayer 待上线 / favorited / chill vibes) */
@@ -739,9 +814,11 @@
   transition: rotate var(--b-spring), scale var(--b-spring);
 }
 
-[data-layout-demo='b'] .plugin-app-card:hover .plugin-app-logo-wrap {
-  rotate: -6deg;
-  scale: 1.08;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-logo-wrap {
+    rotate: -6deg;
+    scale: 1.08;
+  }
 }
 
 [data-layout-demo='b'] .plugin-status-sticker {
@@ -752,27 +829,53 @@
   font-size: 0.72rem !important;
 }
 
-[data-layout-demo='b'] .plugin-app-primary-buttons .marker-button,
-[data-layout-demo='b'] .plugin-copy-button {
+[data-layout-demo='b'] .plugin-app-primary-buttons .marker-button > .marker-button-face,
+[data-layout-demo='b'] .plugin-copy-button > .marker-button-face,
+[data-layout-demo='b'] .result-paper-card .marker-button > .marker-button-face,
+[data-layout-demo='b'] .user-playlists-paper .marker-button > .marker-button-face {
   border-radius: 10px !important;
-  border: 1.5px solid rgba(196, 162, 146, 0.48) !important;
-  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16) !important;
-  font-size: 0.86rem !important;
+  border: 1.5px solid rgba(154, 118, 98, 0.46) !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 180px 180px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(164, 128, 108, 0.14),
+    0 2px 0 rgba(148, 112, 92, 0.24),
+    0 4px 10px -4px rgba(132, 96, 78, 0.14) !important;
+  font-size: 0.88rem !important;
   translate: 0 0;
   scale: 1;
-  transition: translate var(--b-spring), scale var(--b-spring) !important;
+  transition: translate var(--b-spring), scale var(--b-spring), box-shadow var(--b-smooth) !important;
 }
 
-[data-layout-demo='b'] .plugin-app-primary-buttons .marker-button:hover,
-[data-layout-demo='b'] .plugin-copy-button:hover {
-  translate: 0 -2px;
-  scale: 1.03;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .plugin-app-primary-buttons .marker-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .plugin-copy-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .result-paper-card .marker-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .user-playlists-paper .marker-button:hover > .marker-button-face {
+    translate: 0 -2px;
+    scale: 1.03;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.76),
+      0 3px 0 rgba(148, 112, 92, 0.28),
+      0 8px 16px -6px rgba(132, 96, 78, 0.22) !important;
+  }
 }
 
-[data-layout-demo='b'] .plugin-action-link {
-  background: linear-gradient(180deg, #f594b1 0%, #e56d92 100%) !important;
+[data-layout-demo='b'] .plugin-action-link > .marker-button-face {
+  background-color: #ec7a9c !important;
+  background-image:
+    var(--b-paper-fiber),
+    url('/paper-grain.png'),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(188, 66, 104, 0.14) 100%) !important;
+  background-size: 96px 96px, 180px 180px, 100% 100% !important;
   color: #ffffff !important;
-  border-color: #d45d82 !important;
+  border-color: #c9587c !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(148, 52, 82, 0.16),
+    0 2px 0 rgba(168, 68, 98, 0.34),
+    0 4px 10px -4px rgba(196, 88, 122, 0.24) !important;
 }
 
 /* ---------------- 7. Cell 2 (4 cols): Lace Coaster Stamp + 3 Scrapbook Clippings ---------------- */
@@ -801,11 +904,13 @@
   cursor: default;
 }
 
-[data-layout-demo='b'] .layout-b-stamp-box:hover .running-days-stamp {
-  translate: 0 -3px;
-  rotate: 2.5deg;
-  scale: 1.04;
-  box-shadow: 0 14px 26px -6px rgba(212, 118, 148, 0.4) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .layout-b-stamp-box:hover .running-days-stamp {
+    translate: 0 -3px;
+    rotate: 2.5deg;
+    scale: 1.04;
+    box-shadow: 0 14px 26px -6px rgba(212, 118, 148, 0.4) !important;
+  }
 }
 
 [data-layout-demo='b'] .info-notes-section {
@@ -871,10 +976,12 @@
   transform: rotate(-32deg);
 }
 
-[data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper:hover {
-  translate: 0 -5px;
-  rotate: -2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .info-notes-grid > .reveal:nth-child(1):hover > .journal-paper {
+    translate: 0 -5px;
+    rotate: -2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 }
 
 /* Clipping 2: Torn-Bottom Blush Memo Pad Sheet (serrated zigzag bottom edge!) */
@@ -907,10 +1014,12 @@
   pointer-events: none;
 }
 
-[data-layout-demo='b'] .info-notes-grid > :nth-child(2) .journal-paper:hover {
-  translate: 0 -5px;
-  rotate: 2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .info-notes-grid > .reveal:nth-child(2):hover > .journal-paper {
+    translate: 0 -5px;
+    rotate: 2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 }
 
 /* Clipping 3: Japanese Mint Library Index Card with Top Accent Rule */
@@ -926,10 +1035,12 @@
   rotate: 0deg;
 }
 
-[data-layout-demo='b'] .info-notes-grid > :nth-child(3) .journal-paper:hover {
-  translate: 0 -5px;
-  rotate: -1.6deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .info-notes-grid > .reveal:nth-child(3):hover > .journal-paper {
+    translate: 0 -5px;
+    rotate: -1.6deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 }
 
 [data-layout-demo='b'] .info-notes-favorited {
@@ -1026,16 +1137,18 @@
   border: 1.5px solid #de7e9a;
 }
 
-[data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper:hover {
-  translate: 0 -6px;
-  rotate: -2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-}
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .stats-main-grid > .reveal:nth-child(1):hover > .journal-paper {
+    translate: 0 -6px;
+    rotate: -2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 
-[data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper:hover {
-  translate: 0 -6px;
-  rotate: 2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
+  [data-layout-demo='b'] .stats-main-grid > .reveal:nth-child(2):hover > .journal-paper {
+    translate: 0 -6px;
+    rotate: 2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
 }
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(3) {
@@ -1060,21 +1173,23 @@
   border: 1.5px solid #5cb394;
 }
 
-[data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper:hover {
-  translate: 0 -5px;
-  rotate: -0.9deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-}
-
 [data-layout-demo='b'] .stats-main-grid .font-num {
   display: inline-block;
   scale: 1;
   transition: scale var(--b-spring), color 220ms ease;
 }
 
-[data-layout-demo='b'] .stats-main-grid .journal-paper:hover .font-num {
-  scale: 1.07;
-  color: #c25478;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .stats-main-grid > .reveal:nth-child(3):hover > .journal-paper {
+    translate: 0 -5px;
+    rotate: -0.9deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
+
+  [data-layout-demo='b'] .stats-main-grid > .reveal:hover .font-num {
+    scale: 1.07;
+    color: #c25478;
+  }
 }
 
 /* Graph Equalizer Trend Strip pinned directly on board */
@@ -1099,12 +1214,6 @@
   border: 1.5px solid #957ad4;
 }
 
-[data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper:hover {
-  translate: 0 -4px;
-  rotate: 0.9deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-}
-
 [data-layout-demo='b'] .stats-trend-bars .stats-trend-bar-fill {
   border-radius: 999px 999px 4px 4px !important;
   scale: 1 1;
@@ -1112,11 +1221,23 @@
   transition: scale var(--b-spring), filter 220ms ease;
 }
 
-[data-layout-demo='b'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
-[data-layout-demo='b'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill,
 [data-layout-demo='b'] .stats-trend-bars .stats-trend-bar.is-active .stats-trend-bar-fill {
   scale: 1 1.18;
   filter: saturate(1.28);
+}
+
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type:hover > .journal-paper {
+    translate: 0 -4px;
+    rotate: 0.9deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
+
+  [data-layout-demo='b'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
+  [data-layout-demo='b'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill {
+    scale: 1 1.18;
+    filter: saturate(1.28);
+  }
 }
 
 /* ---------------- 9. Cell 4 (5 cols): Unwrapped 4 Mini Spiral Dev Pads Directly on Board ---------------- */
@@ -1172,18 +1293,6 @@
   transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
 }
 
-[data-layout-demo='b'] .developer-method:nth-child(odd):hover {
-  translate: 0 -6px;
-  rotate: -2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-}
-
-[data-layout-demo='b'] .developer-method:nth-child(even):hover {
-  translate: 0 -6px;
-  rotate: 2deg;
-  box-shadow: var(--b-pin-shadow-hover) !important;
-}
-
 [data-layout-demo='b'] .developer-method-mark {
   border-radius: 8px !important;
   rotate: 0deg;
@@ -1191,32 +1300,51 @@
   transition: rotate var(--b-spring), scale var(--b-spring);
 }
 
-[data-layout-demo='b'] .developer-method:hover .developer-method-mark {
-  rotate: 10deg;
-  scale: 1.15;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .developer-method-slot:nth-child(odd):hover > .developer-method {
+    translate: 0 -6px;
+    rotate: -2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
+
+  [data-layout-demo='b'] .developer-method-slot:nth-child(even):hover > .developer-method {
+    translate: 0 -6px;
+    rotate: 2deg;
+    box-shadow: var(--b-pin-shadow-hover) !important;
+  }
+
+  [data-layout-demo='b'] .developer-method-slot:hover .developer-method-mark {
+    rotate: 10deg;
+    scale: 1.15;
+  }
 }
 
-/* ---------------- 10. Footer Bookmark Pills ---------------- */
+/* ---------------- 10. Footer Paper Pills ---------------- */
 [data-layout-demo='b'] .journal-footer {
   margin-top: 3rem !important;
 }
 
-[data-layout-demo='b'] .journal-footer .sticker,
-[data-layout-demo='b'] .journal-footer button.sticker,
-[data-layout-demo='b'] .journal-footer a.sticker {
-  border-radius: 8px 8px 14px 14px !important;
-  border: 1.5px solid rgba(196, 162, 144, 0.48) !important;
-  background-image: var(--b-paper-fiber) !important;
-  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16) !important;
+[data-layout-demo='b'] .journal-footer .sticker-hitbox > .footer-pill-face {
+  border-radius: 10px !important;
+  border: 1.5px solid rgba(154, 118, 98, 0.44) !important;
+  background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 180px 180px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(164, 128, 108, 0.12),
+    0 2px 0 rgba(148, 112, 92, 0.22),
+    0 3px 8px -4px rgba(132, 96, 78, 0.14) !important;
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
 }
 
-[data-layout-demo='b'] .journal-footer .sticker:hover {
-  translate: 0 -3px;
-  rotate: 1.5deg;
-  box-shadow: 0 8px 16px -5px rgba(132, 96, 78, 0.24) !important;
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  [data-layout-demo='b'] .journal-footer .sticker-hitbox:hover > .footer-pill-face {
+    translate: 0 -3px;
+    rotate: 1.5deg;
+    box-shadow: 0 8px 16px -5px rgba(132, 96, 78, 0.24) !important;
+  }
 }
 
 /* ---------------- 11. Size-Adaptive Breakpoints for Layout B ---------------- */
@@ -1230,20 +1358,39 @@
   [data-layout-demo='b'] .developer-method-grid { grid-template-columns: 1fr !important; }
 }
 
+/* Touchscreens (phones / tablets): disable sticky hover motion completely */
+@media (hover: none), (pointer: coarse) {
+  [data-layout-demo='b'] .layout-b-root :is(button, a, [role='button'], .ui-hitbox, .ui-face, .journal-paper, .sticky-note-card, .plugin-app-card, .developer-method):hover,
+  [data-layout-demo='b'] .layout-b-cell:hover > .layout-b-pushpin.is-card-pin,
+  [data-layout-demo='b'] .layout-b-search-clipped:hover .layout-b-binder-clip,
+  [data-layout-demo='b'] .layout-b-search-clipped:hover .sticky-note-card,
+  [data-layout-demo='b'] .layout-b-stamp-box:hover .running-days-stamp,
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover .layout-b-vinyl-disc,
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-logo-wrap,
+  [data-layout-demo='b'] .stats-main-grid > .reveal:hover .font-num,
+  [data-layout-demo='b'] .developer-method-slot:hover .developer-method-mark {
+    translate: 0 0 !important;
+    rotate: 0deg !important;
+    scale: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Mobile (<= 768px): Single-Column Pinned Scrapbook */
 @media (max-width: 768px) {
-  [data-layout-demo='b'] html,
-  [data-layout-demo='b'] body {
+  html[data-layout-demo='b'],
+  html[data-layout-demo='b'] body {
     overflow-x: clip !important;
+    overscroll-behavior-x: none;
   }
 
   [data-layout-demo='b'] .journal-container {
     width: 100% !important;
     max-width: 100vw !important;
     padding-top: 0 !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-    overflow-x: clip;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+    overflow-x: clip !important;
   }
 
   [data-layout-demo='b'] .journal-header {
@@ -1252,8 +1399,8 @@
     top: 0 !important;
     z-index: 120 !important;
     margin-top: 0 !important;
-    margin-left: -0.75rem !important;
-    margin-right: -0.75rem !important;
+    margin-left: calc(-1 * max(0.75rem, env(safe-area-inset-left, 0px))) !important;
+    margin-right: calc(-1 * max(0.75rem, env(safe-area-inset-right, 0px))) !important;
     padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
     padding-bottom: 0.65rem !important;
     padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
@@ -1264,7 +1411,6 @@
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     transform: none !important;
-    will-change: transform;
     flex-wrap: nowrap !important;
   }
 
@@ -1280,18 +1426,52 @@
     transform: none !important;
   }
 
+  /* Disable all hover/tap positional drift on mobile */
   [data-layout-demo='b'] .header-brand-container:hover .header-logo-img,
   [data-layout-demo='b'] .header-brand-container:hover .header-brand-title,
-  [data-layout-demo='b'] .header-desktop-btn:hover,
-  [data-layout-demo='b'] .header-github-btn:hover,
-  [data-layout-demo='b'] .header-actions button:hover,
-  [data-layout-demo='b'] .plugin-app-card:hover,
-  [data-layout-demo='b'] .developer-method:hover,
+  [data-layout-demo='b'] .header-desktop-btn:hover > .header-desktop-btn-face,
+  [data-layout-demo='b'] .header-desktop-btn:active > .header-desktop-btn-face,
+  [data-layout-demo='b'] .header-github-btn:hover > .header-github-btn-face,
+  [data-layout-demo='b'] .header-actions .ui-hitbox:hover > .ui-face,
+  [data-layout-demo='b'] .header-actions .ui-hitbox:active > .ui-face,
+  [data-layout-demo='b'] .header-actions .sticker-hitbox:hover > .sticker-face,
+  [data-layout-demo='b'] .header-actions .sticker-hitbox:active > .sticker-face,
+  [data-layout-demo='b'] .search-input-row .marker-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .search-input-row .marker-button:active > .marker-button-face,
+  [data-layout-demo='b'] .search-sample-row .sticker-hitbox:hover > .sticker-face,
+  [data-layout-demo='b'] .search-sample-row .sticker-hitbox:active > .sticker-face,
+  [data-layout-demo='b'] .quick-samples-toggle:hover > .quick-samples-toggle-face,
+  [data-layout-demo='b'] .quick-samples-toggle:active > .quick-samples-toggle-face,
+  [data-layout-demo='b'] .plugin-app-primary-buttons .marker-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .plugin-app-primary-buttons .marker-button:active > .marker-button-face,
+  [data-layout-demo='b'] .plugin-copy-button:hover > .marker-button-face,
+  [data-layout-demo='b'] .plugin-copy-button:active > .marker-button-face,
+  [data-layout-demo='b'] .plugin-supported-count-reveal:hover > .plugin-supported-count,
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card,
+  [data-layout-demo='b'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-logo-wrap,
+  [data-layout-demo='b'] .info-notes-grid > .reveal:hover > .journal-paper,
+  [data-layout-demo='b'] .stats-main-grid > .reveal:hover > .journal-paper,
+  [data-layout-demo='b'] .stats-main-grid > .reveal:hover .font-num,
+  [data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type:hover > .journal-paper,
+  [data-layout-demo='b'] .developer-method-slot:hover > .developer-method,
+  [data-layout-demo='b'] .developer-method-slot:hover .developer-method-mark,
   [data-layout-demo='b'] .layout-b-cell:hover,
-  [data-layout-demo='b'] .layout-b-stamp-box:hover {
+  [data-layout-demo='b'] .layout-b-cell:hover > .layout-b-pushpin.is-card-pin,
+  [data-layout-demo='b'] .layout-b-stamp-box:hover,
+  [data-layout-demo='b'] .layout-b-stamp-box:hover .running-days-stamp,
+  [data-layout-demo='b'] .layout-b-search-clipped:hover .layout-b-binder-clip,
+  [data-layout-demo='b'] .layout-b-search-clipped:hover .sticky-note-card,
+  [data-layout-demo='b'] .journal-footer .sticker-hitbox:hover > .footer-pill-face,
+  [data-layout-demo='b'] .journal-footer .sticker-hitbox:active > .footer-pill-face {
     rotate: 0deg !important;
     translate: 0 0 !important;
+    scale: 1 !important;
     transform: none !important;
+  }
+
+  /* Soft tap-only feedback on mobile clickable buttons without shifting pixels */
+  [data-layout-demo='b'] .ui-hitbox:not(:disabled):not([aria-disabled='true']):active > .ui-face {
+    opacity: 0.84;
   }
 
   [data-layout-demo='b'] .layout-b-root,
@@ -1301,6 +1481,7 @@
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
+    overflow-x: clip;
   }
 
   [data-layout-demo='b'] .layout-b-board {
@@ -1332,6 +1513,10 @@
     padding: 1.8rem 1rem 1.3rem !important;
   }
 
+  [data-layout-demo='b'] .search-note-section form > div:first-child {
+    gap: 0.45rem;
+  }
+
   [data-layout-demo='b'] .search-input-wrapper {
     flex: 1 1 100% !important;
   }
@@ -1350,7 +1535,7 @@
     padding-right: 1.15rem !important;
   }
 
-  [data-layout-demo='b'] .plugin-app-card::after {
+  [data-layout-demo='b'] .layout-b-vinyl-slot {
     display: none;
   }
 

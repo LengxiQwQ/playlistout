@@ -37,6 +37,11 @@ const shadowClassMap = {
   none: '',
 };
 
+function isLegacyJournalStyleActive(): boolean {
+  if (typeof document === 'undefined') return false;
+  return !document.documentElement.dataset.layoutDemo;
+}
+
 export const Paper: React.FC<PaperProps> = ({
   color = 'white',
   borderVariant = 'default',
@@ -71,7 +76,7 @@ export const Paper: React.FC<PaperProps> = ({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove?.(e);
-    if (!interactive || !paperRef.current) return;
+    if (!interactive || !paperRef.current || !isLegacyJournalStyleActive()) return;
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
@@ -114,7 +119,7 @@ export const Paper: React.FC<PaperProps> = ({
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseEnter?.(e);
-    if (!interactive || !paperRef.current) return;
+    if (!interactive || !paperRef.current || !isLegacyJournalStyleActive()) return;
     paperRef.current.classList.add('is-tracking');
   };
 
@@ -122,6 +127,7 @@ export const Paper: React.FC<PaperProps> = ({
     onMouseLeave?.(e);
     if (!interactive || !paperRef.current) return;
     const el = paperRef.current;
+    if (!el.classList.contains('is-tracking') && !isLegacyJournalStyleActive()) return;
     el.classList.remove('is-tracking');
     el.style.setProperty('--tilt-x', '0deg');
     el.style.setProperty('--tilt-y', '0deg');

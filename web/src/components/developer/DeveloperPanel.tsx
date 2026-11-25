@@ -114,44 +114,46 @@ export const DeveloperPanel: React.FC = () => {
 
         <Reveal stagger effect="fade-up" delay={200} className="developer-method-grid">
           {methods.map((method, idx) => (
-            <article
+            <div
               key={method.id}
               data-reveal-item=""
-              className={`developer-method developer-method-${method.id}`}
+              className="developer-method-slot"
               style={{ ['--i' as any]: idx }}
             >
-              <div className="developer-method-topline">
-                <span className="font-mono developer-method-mark" aria-hidden="true">
-                  {method.mark}
-                </span>
-                <span className="developer-method-meta">{method.meta}</span>
-              </div>
+              <article className={`developer-method developer-method-${method.id}`}>
+                <div className="developer-method-topline">
+                  <span className="font-mono developer-method-mark" aria-hidden="true">
+                    {method.mark}
+                  </span>
+                  <span className="developer-method-meta">{method.meta}</span>
+                </div>
 
-              <h3 className="developer-method-title">{method.title}</h3>
-              <p className="developer-method-description">{method.description}</p>
+                <h3 className="developer-method-title">{method.title}</h3>
+                <p className="developer-method-description">{method.description}</p>
 
-              <div className="developer-method-actions">
-                <a
-                  href={method.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="developer-method-link"
-                >
-                  {method.action}
-                </a>
-
-                {method.id === 'api' ? (
-                  <button
-                    type="button"
-                    onClick={handleCopyApi}
-                    className={`developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
-                    aria-label={copyLabel}
+                <div className="developer-method-actions">
+                  <a
+                    href={method.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="developer-method-link"
                   >
-                    {copyLabel}
-                  </button>
-                ) : null}
-              </div>
-            </article>
+                    {method.action}
+                  </a>
+
+                  {method.id === 'api' ? (
+                    <button
+                      type="button"
+                      onClick={handleCopyApi}
+                      className={`developer-copy-api${copyState === 'copied' ? ' is-copied' : ''}`}
+                      aria-label={copyLabel}
+                    >
+                      {copyLabel}
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            </div>
           ))}
         </Reveal>
 

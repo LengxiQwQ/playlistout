@@ -152,13 +152,17 @@ export const PluginEcosystem: React.FC = () => {
             effect="stamp"
             delay={450}
             rot={-4}
-            className="plugin-supported-count"
-            aria-label={format(t.ecosystem.supportedCount, { count: supportedCardCount })}
+            className="plugin-supported-count-reveal"
           >
-            <span className="font-marker font-num plugin-supported-number">{supportedCardCount}</span>
-            <span className="font-handwriting plugin-supported-label">
-              {t.ecosystem.supportedShort}
-            </span>
+            <div
+              className="plugin-supported-count"
+              aria-label={format(t.ecosystem.supportedCount, { count: supportedCardCount })}
+            >
+              <span className="font-marker font-num plugin-supported-number">{supportedCardCount}</span>
+              <span className="font-handwriting plugin-supported-label">
+                {t.ecosystem.supportedShort}
+              </span>
+            </div>
           </Reveal>
         </div>
 
@@ -180,6 +184,9 @@ export const PluginEcosystem: React.FC = () => {
                   interactive={false}
                   className="plugin-app-card"
                 >
+                  <span className="layout-b-vinyl-slot" aria-hidden="true">
+                    <span className="layout-b-vinyl-disc" />
+                  </span>
                   <div className="plugin-app-row">
                     <div className="plugin-app-card-header">
                       <div className="plugin-app-card-identity">
@@ -233,11 +240,13 @@ export const PluginEcosystem: React.FC = () => {
                         </p>
                         <button
                           type="button"
-                          className="plugin-summary-toggle"
+                          className="ui-hitbox plugin-summary-toggle"
                           aria-expanded={isExpanded}
                           onClick={() => toggleSummary(plugin.id)}
                         >
-                          {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                          <span className="ui-face plugin-summary-toggle-face">
+                            {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -267,10 +276,12 @@ export const PluginEcosystem: React.FC = () => {
                             href={plugin.homepageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                            className="ui-hitbox marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
                             style={{ ['--rot' as any]: '0.3deg' }}
                           >
-                            {t.ecosystem.officialDownload}
+                            <span className="ui-face marker-button-face font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink">
+                              {t.ecosystem.officialDownload}
+                            </span>
                           </a>
                         ) : null}
                       </div>
@@ -324,6 +335,9 @@ export const PluginEcosystem: React.FC = () => {
                   interactive={false}
                   className="plugin-app-card is-upcoming"
                 >
+                  <span className="layout-b-vinyl-slot" aria-hidden="true">
+                    <span className="layout-b-vinyl-disc" />
+                  </span>
                   <div className="plugin-app-row">
                     <div className="plugin-app-card-header">
                       <div className="plugin-app-card-identity">
@@ -388,11 +402,13 @@ export const PluginEcosystem: React.FC = () => {
                         </p>
                         <button
                           type="button"
-                          className="plugin-summary-toggle"
+                          className="ui-hitbox plugin-summary-toggle"
                           aria-expanded={isExpanded}
                           onClick={() => toggleSummary(integration.id)}
                         >
-                          {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                          <span className="ui-face plugin-summary-toggle-face">
+                            {isExpanded ? t.ecosystem.collapseSummary : t.ecosystem.expandSummary}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -404,10 +420,12 @@ export const PluginEcosystem: React.FC = () => {
                             href={integration.homepageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
+                            className="ui-hitbox marker-button font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink plugin-copy-button plugin-action-link"
                             style={{ ['--rot' as any]: '-0.3deg' }}
                           >
-                            {t.ecosystem.officialDownload}
+                            <span className="ui-face marker-button-face font-marker hand-drawn-border-alt shadow-cutout-sm marker-btn-ink">
+                              {t.ecosystem.officialDownload}
+                            </span>
                           </a>
                         ) : null}
                       </div>

@@ -5,6 +5,54 @@ export interface MarkerButtonProps extends React.ButtonHTMLAttributes<HTMLButton
   rotateDeg?: number;
 }
 
+const LAYOUT_STYLE_KEYS = new Set([
+  'position',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'zIndex',
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'alignSelf',
+  'justifySelf',
+  'gridColumn',
+  'gridRow',
+  'order',
+  'margin',
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'width',
+  'minWidth',
+  'maxWidth',
+  'height',
+  'minHeight',
+  'maxHeight',
+]);
+
+function splitHitboxStyles(style?: React.CSSProperties): {
+  hitboxStyle: React.CSSProperties;
+  faceStyle: React.CSSProperties;
+} {
+  const hitboxStyle: React.CSSProperties = {};
+  const faceStyle: React.CSSProperties = {};
+  if (!style) return { hitboxStyle, faceStyle };
+
+  for (const [key, value] of Object.entries(style)) {
+    if (key === 'transform' || key === 'transition') continue;
+    if (LAYOUT_STYLE_KEYS.has(key)) {
+      (hitboxStyle as Record<string, unknown>)[key] = value;
+    } else {
+      (faceStyle as Record<string, unknown>)[key] = value;
+    }
+  }
+  return { hitboxStyle, faceStyle };
+}
+
 export const MarkerButton: React.FC<MarkerButtonProps> = ({
   variant = 'ink',
   rotateDeg = -0.5,
@@ -14,7 +62,7 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
   children,
   ...props
 }) => {
-  const { transform: inlineTransform, ...restStyle } = (style || {}) as Record<string, any>;
+  const { transform: inlineTransform } = (style || {}) as Record<string, any>;
   let rot = `${rotateDeg}deg`;
   if (inlineTransform && typeof inlineTransform === 'string') {
     const match = inlineTransform.match(/rotate\(([^)]+)\)/);
@@ -24,17 +72,15 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
   }
 
   let baseClass = 'font-marker';
-  let variantStyle: React.CSSProperties = {
+  let variantFaceStyle: React.CSSProperties = {
     ['--rot' as any]: rot,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.45 : 1,
     userSelect: 'none',
   };
 
   if (variant === 'ink') {
     baseClass += ' hand-drawn-border-alt shadow-cutout-sm marker-btn-ink';
-    variantStyle = {
-      ...variantStyle,
+    variantFaceStyle = {
+      ...variantFaceStyle,
       backgroundColor: 'var(--btn-primary-bg, #ec7f9f)',
       color: 'var(--btn-primary-ink, #ffffff)',
       padding: '0.65rem 1.75rem',
@@ -42,8 +88,8 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
     };
   } else if (variant === 'sticker') {
     baseClass += ' sticker font-handwriting marker-btn-sticker';
-    variantStyle = {
-      ...variantStyle,
+    variantFaceStyle = {
+      ...variantFaceStyle,
       backgroundColor: '#ffffff',
       color: 'var(--ink, #5a4a42)',
       padding: '0.45rem 1rem',
@@ -51,22 +97,32 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
     };
   } else {
     baseClass += ' hand-drawn-border-subtle marker-btn-paper';
-    variantStyle = {
-      ...variantStyle,
+    variantFaceStyle = {
+      ...variantFaceStyle,
       backgroundColor: 'var(--paper, #fffcf6)',
       color: 'var(--ink, #5a4a42)',
       padding: '0.5rem 1.25rem',
     };
   }
 
+  const { hitboxStyle, faceStyle } = splitHitboxStyles(style);
+
   return (
     <button
-      className={`marker-button ${baseClass} ${className}`.trim()}
-      style={{ ...variantStyle, ...restStyle }}
+      className={`ui-hitbox marker-button ${baseClass} ${className}`.trim()}
+      style={{
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        ...hitboxStyle,
+      }}
       disabled={disabled}
       {...props}
     >
-      {children}
+      <span
+        className={`ui-face marker-button-face ${baseClass}`.trim()}
+        style={{ ...variantFaceStyle, ...faceStyle }}
+      >
+        {children}
+      </span>
     </button>
   );
 };

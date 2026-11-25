@@ -9,29 +9,13 @@ export interface Translations {
     github: string;
     desktopBtn: string;
     downloadBtn: string;
-    styleButtonText: string;
-    stylePickerHint: string;
     languageSwitch: string;
     mobileMenu: string;
     mobileDrawerTitle: string;
-    mobileDrawerStyleTitle: string;
-    mobileDrawerStyleDesc: string;
     mobileDrawerLangTitle: string;
     mobileDrawerLangDesc: string;
     mobileDrawerLinksTitle: string;
     mobileClose: string;
-  };
-  styles: {
-    dName: string;
-    dDesc: string;
-    aName: string;
-    aDesc: string;
-    bName: string;
-    bDesc: string;
-    cName: string;
-    cDesc: string;
-    legacyName: string;
-    legacyDesc: string;
   };
   hero: {
     tagline: string;

@@ -55,11 +55,16 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     // Fallback using textarea execCommand
     const textArea = document.createElement('textarea');
     textArea.value = text;
+    textArea.setAttribute('readonly', '');
     textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
+    textArea.style.left = '0';
+    textArea.style.top = '0';
+    textArea.style.width = '1px';
+    textArea.style.height = '1px';
+    textArea.style.opacity = '0';
+    textArea.style.fontSize = '16px';
     document.body.appendChild(textArea);
-    textArea.focus();
+    textArea.focus({ preventScroll: true });
     textArea.select();
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);

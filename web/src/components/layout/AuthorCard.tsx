@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../i18n';
+import { useViewportLayout } from '../../hooks/useViewportLayout';
 import {
   AUTHOR_NAME,
   AUTHOR_GITHUB_HANDLE,
@@ -51,6 +53,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
   const [emailCopied, setEmailCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [qqCopied, setQqCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [avatarLoaded, setAvatarLoaded] = useState(true);
+  const isMobileModal = useViewportLayout() === 'b';
 
   const emailTimeoutRef = useRef<number | null>(null);
   const qqTimeoutRef = useRef<number | null>(null);
@@ -90,11 +93,16 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         // Fallback for environments where Clipboard API is unavailable
         const textarea = document.createElement('textarea');
         textarea.value = text;
+        textarea.setAttribute('readonly', '');
         textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        textarea.style.top = '-9999px';
+        textarea.style.left = '0';
+        textarea.style.top = '0';
+        textarea.style.width = '1px';
+        textarea.style.height = '1px';
+        textarea.style.opacity = '0';
+        textarea.style.fontSize = '16px';
         document.body.appendChild(textarea);
-        textarea.focus();
+        textarea.focus({ preventScroll: true });
         textarea.select();
         success = document.execCommand('copy');
         document.body.removeChild(textarea);
@@ -118,15 +126,25 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen || !isMobileModal || typeof document === 'undefined') return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, isMobileModal]);
+
   if (!isOpen) return null;
 
-  return (
+  const cardNode = (
     <div
       ref={cardRef}
       role="dialog"
+      aria-modal={isMobileModal || undefined}
       aria-label={t.footer.authorCardTitle}
-      className="author-dropup-card shadow-cutout"
-      style={{ position: 'absolute' }}
+      className={`author-dropup-card shadow-cutout${isMobileModal ? ' is-mobile-modal' : ''}`}
+      onClick={(e) => e.stopPropagation()}
     >
       {/* Decorative Washi Tape */}
       <Tape
@@ -242,22 +260,33 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           aria-label={t.footer.closeCard}
-          className="font-mono"
+          className="ui-hitbox btn-modal-close author-close-btn font-mono"
           style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--ink-light, #8a7569)',
             cursor: 'pointer',
-            padding: '0.15rem 0.35rem',
-            fontSize: '1rem',
-            lineHeight: 1,
-            borderRadius: '4px',
             alignSelf: 'flex-start',
           }}
         >
-          ✕
+          <span
+            className="ui-face btn-modal-close-face"
+            style={{
+              width: '2rem',
+              height: '2rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              fontSize: '1.05rem',
+              fontWeight: 700,
+              color: 'var(--ink-light, #8a7569)',
+            }}
+          >
+            ✕
+          </span>
         </button>
       </div>
 
@@ -295,10 +324,10 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             rel="noopener noreferrer"
             title={`${AUTHOR_NAME} GitHub`}
             aria-label={`${t.footer.openText} ${AUTHOR_NAME} GitHub`}
-            className="author-copy-btn font-handwriting"
+            className="ui-hitbox author-copy-btn font-handwriting"
             style={{ textDecoration: 'none' }}
           >
-            {t.footer.openText}
+            <span className="ui-face author-copy-face">{t.footer.openText}</span>
           </a>
         </div>
 
@@ -336,10 +365,10 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             rel="noopener noreferrer"
             title={AUTHOR_BLOG_NAME}
             aria-label={`${t.footer.openText} ${AUTHOR_BLOG_NAME}`}
-            className="author-copy-btn font-handwriting"
+            className="ui-hitbox author-copy-btn font-handwriting"
             style={{ textDecoration: 'none' }}
           >
-            {t.footer.openText}
+            <span className="ui-face author-copy-face">{t.footer.openText}</span>
           </a>
         </div>
 
@@ -380,15 +409,17 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
                 ? t.footer.copyFailed
                 : t.footer.copyText
             }`}
-            className={`author-copy-btn font-handwriting ${
+            className={`ui-hitbox author-copy-btn font-handwriting ${
               emailCopied === 'copied' ? 'is-copied' : emailCopied === 'failed' ? 'is-failed' : ''
             }`}
           >
-            {emailCopied === 'copied'
-              ? t.footer.copiedText
-              : emailCopied === 'failed'
-              ? t.footer.copyFailed
-              : t.footer.copyText}
+            <span className="ui-face author-copy-face">
+              {emailCopied === 'copied'
+                ? t.footer.copiedText
+                : emailCopied === 'failed'
+                ? t.footer.copyFailed
+                : t.footer.copyText}
+            </span>
           </button>
         </div>
 
@@ -427,18 +458,38 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
                 ? t.footer.copyFailed
                 : t.footer.copyText
             }`}
-            className={`author-copy-btn font-handwriting ${
+            className={`ui-hitbox author-copy-btn font-handwriting ${
               qqCopied === 'copied' ? 'is-copied' : qqCopied === 'failed' ? 'is-failed' : ''
             }`}
           >
-            {qqCopied === 'copied'
-              ? t.footer.copiedText
-              : qqCopied === 'failed'
-              ? t.footer.copyFailed
-              : t.footer.copyText}
+            <span className="ui-face author-copy-face">
+              {qqCopied === 'copied'
+                ? t.footer.copiedText
+                : qqCopied === 'failed'
+                ? t.footer.copyFailed
+                : t.footer.copyText}
+            </span>
           </button>
         </div>
       </div>
     </div>
   );
+
+  if (isMobileModal && typeof document !== 'undefined') {
+    return createPortal(
+      <div
+        className="author-backdrop"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }}
+      >
+        {cardNode}
+      </div>,
+      document.body,
+    );
+  }
+
+  return cardNode;
 };

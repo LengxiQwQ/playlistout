@@ -58,10 +58,12 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
-.desktop-step-card:hover {
-  transform: translateY(-2px) rotate(0.2deg);
-  box-shadow: 4px 4px 0 rgba(90, 74, 66, 0.18);
-  background: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .desktop-step-card:hover {
+    transform: translateY(-2px) rotate(0.2deg);
+    box-shadow: 4px 4px 0 rgba(90, 74, 66, 0.18);
+    background: #ffffff;
+  }
 }
 
 .desktop-step-card:nth-child(1) {
@@ -128,8 +130,10 @@
   transition: all 0.15s ease;
 }
 
-.desktop-step-code-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
+@media (hover: hover) and (pointer: fine) {
+  .desktop-step-code-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
 }
 
 .desktop-step-code-btn.is-copied {
@@ -167,11 +171,13 @@
   cursor: pointer;
 }
 
-.desktop-single-download-btn:hover {
-  transform: translateY(-2px) rotate(0.3deg);
-  box-shadow: 6px 7px 0 rgba(150, 112, 92, 0.35);
-  background: var(--btn-primary-bg-hover, #e66d92);
-  color: #ffffff !important;
+@media (hover: hover) and (pointer: fine) {
+  .desktop-single-download-btn:hover {
+    transform: translateY(-2px) rotate(0.3deg);
+    box-shadow: 6px 7px 0 rgba(150, 112, 92, 0.35);
+    background: var(--btn-primary-bg-hover, #e66d92);
+    color: #ffffff !important;
+  }
 }
 
 .desktop-single-download-btn:active {
@@ -188,34 +194,41 @@
 
 /* Header single desktop button */
 .header-desktop-btn {
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+}
+
+.header-desktop-btn > .header-desktop-btn-face {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  text-decoration: none;
   color: var(--ink, #5a4a42);
   background: var(--mac-strawberry, #ffd6e0);
   border: 1.5px solid var(--ink-line);
   border-radius: 10px;
   padding: 0.42rem 0.85rem;
-  cursor: pointer;
-  user-select: none;
   box-shadow: 2px 3px 0 var(--shadow-ink);
-  transform: rotate(0.4deg);
+  translate: 0 0;
+  rotate: 0.4deg;
   font-family: var(--font-handwriting, cursive);
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.2;
-  transition: transform 180ms var(--ease-bouncy), box-shadow 180ms ease, background-color 180ms ease;
+  transition: translate 180ms var(--ease-bouncy), rotate 180ms var(--ease-bouncy), box-shadow 180ms ease, background-color 180ms ease;
   white-space: nowrap;
 }
 
-.header-desktop-btn:hover {
-  transform: translateY(-2px) rotate(-1deg);
-  box-shadow: 3px 5px 0 var(--shadow-ink);
+@media (hover: hover) and (pointer: fine) {
+  .header-desktop-btn:hover > .header-desktop-btn-face {
+    translate: 0 -2px;
+    rotate: -1deg;
+    box-shadow: 3px 5px 0 var(--shadow-ink);
+  }
 }
 
-.header-desktop-btn:active {
-  transform: translateY(1px);
+.header-desktop-btn:active > .header-desktop-btn-face {
+  translate: 0 1px;
   box-shadow: 1px 1px 0 var(--shadow-ink);
 }
 

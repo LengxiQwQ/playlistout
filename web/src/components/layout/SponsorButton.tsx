@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../i18n';
+import { useViewportLayout } from '../../hooks/useViewportLayout';
 
 const GitHubIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -36,15 +38,22 @@ export const SponsorButton: React.FC = () => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isMobileModal = useViewportLayout() === 'b';
 
-  // Close on outside click, touch, and Escape
+  // Close on outside click (desktop dropup), touch (desktop), and Escape
   useEffect(() => {
     if (!isOpen) return;
 
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      // On mobile modals, let the full-screen backdrop onClick close after the tap completes
+      // so mousedown/touchstart does not unmount the backdrop before click and hit elements behind it.
+      if (isMobileModal) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (containerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setIsOpen(false);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,7 +70,16 @@ export const SponsorButton: React.FC = () => {
       document.removeEventListener('touchstart', handleOutsideClick);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, isMobileModal]);
+
+  useEffect(() => {
+    if (!isOpen || !isMobileModal || typeof document === 'undefined') return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, isMobileModal]);
 
   return (
     <div
@@ -75,65 +93,79 @@ export const SponsorButton: React.FC = () => {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={t.footer.sponsorAriaLabel}
-        className={`sticker font-handwriting footer-pill-link footer-pill-strawberry ${isOpen ? 'is-active' : ''}`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          padding: '0.35rem 0.85rem',
-          fontSize: '1.05rem',
-          fontWeight: 600,
-          color: 'var(--ink, #5a4a42)',
-          cursor: 'pointer',
-          lineHeight: 1.2,
-        }}
+        className={`ui-hitbox sticker-hitbox font-handwriting footer-pill-link footer-pill-strawberry ${isOpen ? 'is-active' : ''}`}
+        style={{ cursor: 'pointer' }}
       >
-        <HeartIcon size={14} color="#e8678a" />
-        <span>{t.footer.sponsorLink}</span>
         <span
+          className="ui-face sticker sticker-face footer-pill-face"
           style={{
-            fontSize: '0.65rem',
-            marginLeft: '0.1rem',
-            transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.85rem',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            color: 'var(--ink, #5a4a42)',
+            lineHeight: 1.2,
           }}
         >
-          ▲
+          <HeartIcon size={14} color="#e8678a" />
+          <span>{t.footer.sponsorLink}</span>
+          <span
+            style={{
+              fontSize: '0.65rem',
+              marginLeft: '0.1rem',
+              transform: isOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.15s ease',
+            }}
+          >
+            ▲
+          </span>
         </span>
       </button>
 
-      {isOpen && (
-        <>
+      {isOpen && (() => {
+        const dialogNode = (
           <div
-            className="sponsor-backdrop mobile-only"
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-          <div
+            ref={menuRef}
             role="dialog"
+            aria-modal={isMobileModal || undefined}
             aria-label={t.footer.sponsorMenuTitle}
-            className="sponsor-dropup-menu shadow-cutout"
+            className={`sponsor-dropup-menu shadow-cutout${isMobileModal ? ' is-mobile-modal' : ''}`}
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
-              className="btn-modal-close sponsor-modal-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+              className="ui-hitbox btn-modal-close sponsor-modal-close"
               aria-label="Close"
               style={{
                 position: 'absolute',
                 top: '0.65rem',
                 right: '0.65rem',
-                background: 'none',
-                border: 'none',
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
                 cursor: 'pointer',
-                lineHeight: 1,
-                padding: '0.2rem 0.4rem',
               }}
             >
-              ×
+              <span
+                className="ui-face btn-modal-close-face"
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: 'var(--ink, #5a4a42)',
+                  lineHeight: 1,
+                  width: '2rem',
+                  height: '2rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                }}
+              >
+                ×
+              </span>
             </button>
             <div
               className="font-marker"
@@ -142,7 +174,7 @@ export const SponsorButton: React.FC = () => {
                 color: 'var(--ink, #5a4a42)',
                 marginBottom: '0.2rem',
                 lineHeight: 1.2,
-                paddingRight: '1.5rem',
+                paddingRight: '1.8rem',
               }}
             >
               {t.footer.sponsorMenuTitle}
@@ -166,29 +198,33 @@ export const SponsorButton: React.FC = () => {
               href="https://github.com/sponsors/LengxiQwQ"
               target="_blank"
               rel="noopener noreferrer"
-              className="sponsor-action-btn font-sans"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.45rem 0.85rem',
-                backgroundColor: '#24292f',
-                color: '#ffffff',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                lineHeight: 1.2,
-                boxShadow: '2px 2px 0 var(--shadow-ink)',
-                border: '1.5px solid var(--ink-line)',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
+              className="ui-hitbox sponsor-action-btn font-sans"
+              style={{ textDecoration: 'none', width: '100%' }}
             >
-              <GitHubIcon size={16} />
-              <span>GitHub Sponsors</span>
-              <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              <span
+                className="ui-face sponsor-action-face"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  width: '100%',
+                  padding: '0.45rem 0.85rem',
+                  backgroundColor: '#24292f',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  boxShadow: '2px 2px 0 var(--shadow-ink)',
+                  border: '1.5px solid var(--ink-line)',
+                }}
+              >
+                <GitHubIcon size={16} />
+                <span>GitHub Sponsors</span>
+                <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              </span>
             </a>
 
             {/* 爱发电 (Afdian) */}
@@ -196,29 +232,33 @@ export const SponsorButton: React.FC = () => {
               href="https://afdian.com/a/lengxiqwq"
               target="_blank"
               rel="noopener noreferrer"
-              className="sponsor-action-btn font-sans"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.45rem 0.85rem',
-                backgroundColor: '#9a7fd8',
-                color: '#ffffff',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                lineHeight: 1.2,
-                boxShadow: '2px 2px 0 var(--shadow-ink)',
-                border: '1.5px solid #9a7fd8',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
+              className="ui-hitbox sponsor-action-btn font-sans"
+              style={{ textDecoration: 'none', width: '100%' }}
             >
-              <AfdianIcon size={16} />
-              <span>爱发电 (Afdian)</span>
-              <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              <span
+                className="ui-face sponsor-action-face"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  width: '100%',
+                  padding: '0.45rem 0.85rem',
+                  backgroundColor: '#9a7fd8',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  boxShadow: '2px 2px 0 var(--shadow-ink)',
+                  border: '1.5px solid #9a7fd8',
+                }}
+              >
+                <AfdianIcon size={16} />
+                <span>爱发电 (Afdian)</span>
+                <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              </span>
             </a>
           </div>
 
@@ -309,32 +349,53 @@ export const SponsorButton: React.FC = () => {
               href="https://lengxiqwq.com/sponsor/"
               target="_blank"
               rel="noopener noreferrer"
-              className="sponsor-action-btn font-handwriting"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.4rem 0.85rem',
-                backgroundColor: '#ffffff',
-                color: 'var(--ink, #5a4a42)',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                lineHeight: 1.2,
-                border: '1.5px dashed var(--ink-line)',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
+              className="ui-hitbox sponsor-action-btn font-handwriting"
+              style={{ textDecoration: 'none' }}
             >
-              <BookIcon size={14} />
-              <span>{t.footer.sponsorWallLink}</span>
-              <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              <span
+                className="ui-face sponsor-action-face"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.4rem 0.85rem',
+                  backgroundColor: '#ffffff',
+                  color: 'var(--ink, #5a4a42)',
+                  borderRadius: '8px',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  border: '1.5px dashed var(--ink-line)',
+                }}
+              >
+                <BookIcon size={14} />
+                <span>{t.footer.sponsorWallLink}</span>
+                <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>↗</span>
+              </span>
             </a>
           </div>
         </div>
-        </>
-      )}
+        );
+
+        if (isMobileModal && typeof document !== 'undefined') {
+          return createPortal(
+            <div
+              className="sponsor-backdrop"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+            >
+              {dialogNode}
+            </div>,
+            document.body,
+          );
+        }
+
+        return dialogNode;
+      })()}
     </div>
   );
 };

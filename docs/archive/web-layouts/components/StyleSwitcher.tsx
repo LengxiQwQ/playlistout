@@ -43,7 +43,7 @@ export const StyleSwitcher: React.FC = () => {
   return (
     <div className={`font-picker style-picker ${isOpen ? 'open' : ''}`} id="stylePicker">
       <button
-        className="font-picker-button style-picker-button"
+        className="ui-hitbox font-picker-button style-picker-button"
         id="stylePickerButton"
         type="button"
         aria-haspopup="listbox"
@@ -52,28 +52,30 @@ export const StyleSwitcher: React.FC = () => {
         title={`${t.header.styleButtonText}: ${currentStyle.index} · ${currentStyleName}`}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <span
-          className="style-picker-dot"
-          style={{ backgroundColor: currentStyle.swatches[0] }}
-          aria-hidden="true"
-        />
-        <span id="stylePickerLabel">{t.header.styleButtonText}</span>
-        <svg
-          className="style-picker-chevron"
-          width="13"
-          height="13"
-          viewBox="0 0 16 16"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M3.5 6L8 10.5L12.5 6"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <span className="ui-face style-picker-button-face">
+          <span
+            className="style-picker-dot"
+            style={{ backgroundColor: currentStyle.swatches[0] }}
+            aria-hidden="true"
           />
-        </svg>
+          <span id="stylePickerLabel">{t.header.styleButtonText}</span>
+          <svg
+            className="style-picker-chevron"
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M3.5 6L8 10.5L12.5 6"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </button>
 
       <div
@@ -94,28 +96,30 @@ export const StyleSwitcher: React.FC = () => {
               <button
                 key={opt.id}
                 type="button"
-                className={`style-option ${isActive ? 'active' : ''}`}
+                className={`ui-hitbox style-option ${isActive ? 'active' : ''}`}
                 role="option"
                 aria-selected={isActive}
                 data-value={opt.id}
                 onClick={() => handleSelect(opt.id)}
               >
-                <span className="style-option-index font-mono">{opt.index}</span>
-                <span className="style-option-copy">
-                  <span className="style-option-name">{name}</span>
-                  <span className="style-option-desc">{desc}</span>
-                </span>
-                <span className="style-option-right">
-                  <span className="style-option-swatches" aria-hidden="true">
-                    {opt.swatches.map((hex, idx) => (
-                      <span key={idx} className="style-swatch-dot" style={{ backgroundColor: hex }} />
-                    ))}
+                <span className="ui-face style-option-face">
+                  <span className="style-option-index font-mono">{opt.index}</span>
+                  <span className="style-option-copy">
+                    <span className="style-option-name">{name}</span>
+                    <span className="style-option-desc">{desc}</span>
                   </span>
-                  {isActive && (
-                    <span className="style-option-check" aria-hidden="true">
-                      ✓
+                  <span className="style-option-right">
+                    <span className="style-option-swatches" aria-hidden="true">
+                      {opt.swatches.map((hex, idx) => (
+                        <span key={idx} className="style-swatch-dot" style={{ backgroundColor: hex }} />
+                      ))}
                     </span>
-                  )}
+                    {isActive && (
+                      <span className="style-option-check" aria-hidden="true">
+                        ✓
+                      </span>
+                    )}
+                  </span>
                 </span>
               </button>
             );

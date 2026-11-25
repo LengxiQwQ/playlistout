@@ -247,6 +247,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           }}
         >
           <Sticker
+            as="span"
             color="green"
             rotateDeg={-1.5}
             style={platformStickerStyle}
@@ -255,6 +256,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             {t.search.platformQQ}
           </Sticker>
           <Sticker
+            as="span"
             color="red"
             rotateDeg={1.5}
             style={platformStickerStyle}
@@ -263,6 +265,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             {t.search.platformNetease}
           </Sticker>
           <Sticker
+            as="span"
             color="lime"
             rotateDeg={-1}
             style={platformStickerStyle}
@@ -271,6 +274,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             {t.search.platformQishui}
           </Sticker>
           <Sticker
+            as="span"
             color="yellow"
             rotateDeg={-0.5}
             style={platformStickerStyle}
@@ -279,6 +283,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             {t.search.platformKuwo}
           </Sticker>
           <Sticker
+            as="span"
             color="pink"
             rotateDeg={0.5}
             style={platformStickerStyle}
@@ -286,9 +291,9 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
           >
             {t.search.platformMigu}
           </Sticker>
-          <Sticker color="green" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
-          <Sticker color="red" rotateDeg={0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
-          <Sticker color="red" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformYouTubeMusic}</Sticker>
+          <Sticker as="span" color="green" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformSpotify}</Sticker>
+          <Sticker as="span" color="red" rotateDeg={0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformAppleMusic}</Sticker>
+          <Sticker as="span" color="red" rotateDeg={-0.5} style={internationalStickerStyle} title={t.search.internationalPlaylistDesc}>{t.search.platformYouTubeMusic}</Sticker>
           {/* Kugou: single unified sticker showing login state — placed last */}
           <Sticker
             type="button"

@@ -120,7 +120,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             backgroundColor: 'rgba(106, 130, 212, 0.08)',
             borderRadius: '6px',
             border: '1.5px dashed #9db3ee',
-            transition: 'all 0.15s ease',
+            transition: 'background-color 0.15s ease, border-color 0.15s ease',
           }}
         >
           {t.export.viewEcosystemGuide} ↘

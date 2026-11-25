@@ -41,17 +41,21 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="sticker font-handwriting"
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '0.45rem 1.25rem',
-              fontSize: '1.1rem',
-              cursor: 'pointer',
-              border: '2px solid var(--ink-line)',
-              borderRadius: '8px',
-            }}
+            className="ui-hitbox sticker-hitbox font-handwriting"
+            style={{ cursor: 'pointer' }}
           >
-            {t.header.mobileClose}
+            <span
+              className="ui-face sticker sticker-face"
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '0.45rem 1.25rem',
+                fontSize: '1.1rem',
+                border: '2px solid var(--ink-line)',
+                borderRadius: '8px',
+              }}
+            >
+              {t.header.mobileClose}
+            </span>
           </button>
         </div>
       }
@@ -101,27 +105,29 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => setStyleId(opt.id)}
-                  className={`mobile-font-card mobile-style-card sticker ${isSelected ? 'active' : ''}`}
+                  className={`ui-hitbox sticker-hitbox mobile-font-card mobile-style-card ${isSelected ? 'active' : ''}`}
                   aria-pressed={isSelected}
-                  style={{ fontFamily: 'inherit' }}
+                  style={{ fontFamily: 'inherit', width: '100%' }}
                 >
-                  <div className="mobile-font-card-header">
-                    <span className="mobile-font-index font-mono">{opt.index}</span>
-                    <span className="mobile-font-name">{name}</span>
-                    {isSelected && (
-                      <span className="mobile-font-check" aria-label="Selected">
-                        ✓
+                  <span className="ui-face sticker sticker-face mobile-card-face">
+                    <div className="mobile-font-card-header">
+                      <span className="mobile-font-index font-mono">{opt.index}</span>
+                      <span className="mobile-font-name">{name}</span>
+                      {isSelected && (
+                        <span className="mobile-font-check" aria-label="Selected">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    <div className="mobile-style-meta">
+                      <span className="mobile-style-desc">{desc}</span>
+                      <span className="style-option-swatches" aria-hidden="true">
+                        {opt.swatches.map((hex, idx) => (
+                          <span key={idx} className="style-swatch-dot" style={{ backgroundColor: hex }} />
+                        ))}
                       </span>
-                    )}
-                  </div>
-                  <div className="mobile-style-meta">
-                    <span className="mobile-style-desc">{desc}</span>
-                    <span className="style-option-swatches" aria-hidden="true">
-                      {opt.swatches.map((hex, idx) => (
-                        <span key={idx} className="style-swatch-dot" style={{ backgroundColor: hex }} />
-                      ))}
-                    </span>
-                  </div>
+                    </div>
+                  </span>
                 </button>
               );
             })}
@@ -165,45 +171,49 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
             <button
               type="button"
               onClick={() => setLanguage('zh-CN')}
-              className={`mobile-lang-card sticker ${language === 'zh-CN' ? 'active' : ''}`}
+              className={`ui-hitbox sticker-hitbox mobile-lang-card ${language === 'zh-CN' ? 'active' : ''}`}
               aria-pressed={language === 'zh-CN'}
             >
-              <div className="mobile-lang-card-header">
-                <span className="mobile-lang-code font-mono">ZH</span>
-                {language === 'zh-CN' && (
-                  <span className="mobile-lang-check" aria-label="Selected">
-                    ✓
-                  </span>
-                )}
-              </div>
-              <div className="mobile-lang-name font-handwriting">
-                简体中文
-              </div>
-              <div className="mobile-lang-sub font-note">
-                Chinese
-              </div>
+              <span className="ui-face sticker sticker-face mobile-card-face">
+                <div className="mobile-lang-card-header">
+                  <span className="mobile-lang-code font-mono">ZH</span>
+                  {language === 'zh-CN' && (
+                    <span className="mobile-lang-check" aria-label="Selected">
+                      ✓
+                    </span>
+                  )}
+                </div>
+                <div className="mobile-lang-name font-handwriting">
+                  简体中文
+                </div>
+                <div className="mobile-lang-sub font-note">
+                  Chinese
+                </div>
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setLanguage('en-US')}
-              className={`mobile-lang-card sticker ${language === 'en-US' ? 'active' : ''}`}
+              className={`ui-hitbox sticker-hitbox mobile-lang-card ${language === 'en-US' ? 'active' : ''}`}
               aria-pressed={language === 'en-US'}
             >
-              <div className="mobile-lang-card-header">
-                <span className="mobile-lang-code font-mono">EN</span>
-                {language === 'en-US' && (
-                  <span className="mobile-lang-check" aria-label="Selected">
-                    ✓
-                  </span>
-                )}
-              </div>
-              <div className="mobile-lang-name font-handwriting">
-                English
-              </div>
-              <div className="mobile-lang-sub font-note">
-                英文
-              </div>
+              <span className="ui-face sticker sticker-face mobile-card-face">
+                <div className="mobile-lang-card-header">
+                  <span className="mobile-lang-code font-mono">EN</span>
+                  {language === 'en-US' && (
+                    <span className="mobile-lang-check" aria-label="Selected">
+                      ✓
+                    </span>
+                  )}
+                </div>
+                <div className="mobile-lang-name font-handwriting">
+                  English
+                </div>
+                <div className="mobile-lang-sub font-note">
+                  英文
+                </div>
+              </span>
             </button>
           </div>
         </div>
@@ -226,26 +236,31 @@ export const MobileSettingsDrawer: React.FC<MobileSettingsDrawerProps> = ({
               href="https://github.com/LengxiQwQ/playlistout"
               target="_blank"
               rel="noopener noreferrer"
-              className="mobile-drawer-link-card sticker font-handwriting"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--note-yellow, #fff4c7)',
-                textDecoration: 'none',
-                color: 'var(--ink, #5a4a42)',
-                borderRadius: '8px',
-                border: '2px solid var(--ink-line)',
-                fontSize: '1.15rem',
-                fontWeight: 700,
-              }}
+              className="ui-hitbox sticker-hitbox mobile-drawer-link-card font-handwriting"
+              style={{ width: '100%', textDecoration: 'none' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <GitHubIcon size={22} />
-                <span>{t.header.github}</span>
-              </div>
-              <span style={{ fontSize: '1rem' }}>↗</span>
+              <span
+                className="ui-face sticker sticker-face"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: 'var(--note-yellow, #fff4c7)',
+                  color: 'var(--ink, #5a4a42)',
+                  borderRadius: '8px',
+                  border: '2px solid var(--ink-line)',
+                  fontSize: '1.15rem',
+                  fontWeight: 700,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <GitHubIcon size={22} />
+                  <span>{t.header.github}</span>
+                </div>
+                <span style={{ fontSize: '1rem' }}>↗</span>
+              </span>
             </a>
           </div>
         </div>

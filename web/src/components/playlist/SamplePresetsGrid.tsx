@@ -38,36 +38,39 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
         type="button"
         onClick={() => setIsSamplesExpanded((prev) => !prev)}
         aria-expanded={isSamplesExpanded}
-        className="quick-samples-toggle font-handwriting"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          background: isSamplesExpanded ? '#ffeef3' : '#fffaf0',
-          border: '1.75px dashed rgba(110, 90, 80, 0.45)',
-          borderRadius: '20px',
-          padding: '0.32rem 1rem',
-          fontSize: '1.02rem',
-          fontWeight: 600,
-          color: '#5a443b',
-          boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.14)',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          fontFamily: 'var(--font-handwriting, cursive)',
-        }}
+        className={`ui-hitbox quick-samples-toggle font-handwriting${isSamplesExpanded ? ' is-expanded' : ''}`}
+        style={{ cursor: 'pointer' }}
       >
-        <span style={{ fontSize: '1rem' }}>✨</span>
-        <span>{t.search.quickSamplesLabel.replace(/[:：]$/, '')}</span>
         <span
+          className="ui-face quick-samples-toggle-face"
           style={{
-            display: 'inline-block',
-            transform: isSamplesExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
-            fontSize: '0.75rem',
-            marginLeft: '0.15rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: isSamplesExpanded ? '#ffeef3' : '#fffaf0',
+            border: '1.75px dashed rgba(110, 90, 80, 0.45)',
+            borderRadius: '20px',
+            padding: '0.32rem 1rem',
+            fontSize: '1.02rem',
+            fontWeight: 600,
+            color: '#5a443b',
+            boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.14)',
+            fontFamily: 'var(--font-handwriting, cursive)',
           }}
         >
-          ▼
+          <span style={{ fontSize: '1rem' }}>✨</span>
+          <span>{t.search.quickSamplesLabel.replace(/[:：]$/, '')}</span>
+          <span
+            style={{
+              display: 'inline-block',
+              transform: isSamplesExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+              fontSize: '0.75rem',
+              marginLeft: '0.15rem',
+            }}
+          >
+            ▼
+          </span>
         </span>
       </button>
 

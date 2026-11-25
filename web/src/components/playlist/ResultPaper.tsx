@@ -50,26 +50,30 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
           <button
             type="button"
             onClick={onReturnToBatch}
-            style={{
-              backgroundColor: '#ffeef3',
-              border: '1.75px solid var(--ink-line)',
-              borderRadius: '999px',
-              boxShadow: '2px 2px 0 var(--shadow-ink)',
-              padding: '0.2rem 0.9rem',
-              color: '#5a4a42',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              fontFamily: 'inherit',
-              fontSize: '1.25rem',
-              lineHeight: 1.3,
-              fontWeight: 700,
-              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-            }}
+            className="ui-hitbox result-return-btn"
+            style={{ cursor: 'pointer' }}
           >
-            <span aria-hidden="true">←</span>
-            <span>{t.userPlaylists.returnToCollection}</span>
+            <span
+              className="ui-face result-return-btn-face"
+              style={{
+                backgroundColor: '#ffeef3',
+                border: '1.75px solid var(--ink-line)',
+                borderRadius: '999px',
+                boxShadow: '2px 2px 0 var(--shadow-ink)',
+                padding: '0.2rem 0.9rem',
+                color: '#5a4a42',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                fontFamily: 'inherit',
+                fontSize: '1.25rem',
+                lineHeight: 1.3,
+                fontWeight: 700,
+              }}
+            >
+              <span aria-hidden="true">←</span>
+              <span>{t.userPlaylists.returnToCollection}</span>
+            </span>
           </button>
         ) : (
           <span>{t.result.doneParsingHint}</span>

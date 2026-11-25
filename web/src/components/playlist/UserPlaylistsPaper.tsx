@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { UserPlaylistsData, UserPlaylistSummary } from '../../api/types';
 import { recordBatchExportPlaylists } from '../../api/client';
 import { useTranslation } from '../../i18n';
@@ -263,6 +264,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             <div data-clarity-mask="true">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <Sticker
+                  as="span"
                   color={getPlatformConfig(userData.platform).color}
                   rotateDeg={-1}
                   style={{ padding: '0.2rem 0.6rem', fontSize: '0.85rem' }}
@@ -823,28 +825,35 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       </section>
 
       {/* Floating Toast */}
-      {toastMessage && (
-        <div
-          className="user-playlists-toast"
-          style={{
-            position: 'fixed',
-            bottom: '2rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: '#4a3b34',
-            color: '#fffaf3',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '999px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-            zIndex: 100,
-            fontSize: '0.95rem',
-            fontWeight: 500,
-            animation: 'fadeIn 0.2s ease',
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
+      {toastMessage && (() => {
+        const toastNode = (
+          <div
+            className="user-playlists-toast"
+            role="status"
+            aria-live="polite"
+            style={{
+              position: 'fixed',
+              bottom: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#4a3b34',
+              color: '#fffaf3',
+              padding: '0.75rem 1.35rem',
+              borderRadius: '999px',
+              maxWidth: 'calc(100vw - 2rem)',
+              textAlign: 'center',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              zIndex: 1300,
+              fontSize: '0.95rem',
+              fontWeight: 500,
+              animation: 'fadeIn 0.2s ease',
+            }}
+          >
+            {toastMessage}
+          </div>
+        );
+        return typeof document !== 'undefined' ? createPortal(toastNode, document.body) : toastNode;
+      })()}
     </div>
   );
 };

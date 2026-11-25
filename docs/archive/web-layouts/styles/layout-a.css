@@ -1,0 +1,1644 @@
+/* ==========================================================================
+ * LAYOUT A · 之字形日记 (Die-Cut Matte Washi Sticker & Silky Motion Edition)
+ * - Authentic Japanese Die-Cut Washi Sticker aesthetic: crisp 4px white
+ *   die-cut outer rims, wafer-thin airy contact shadows (ZERO thick wooden
+ *   menu-board bottom slabs), and matte cotton/washi paper fiber grain.
+ * - Silky-smooth bi-directional hover transitions everywhere: uses individual
+ *   CSS transform properties (translate / scale / rotate) so hover motion
+ *   NEVER fights Reveal keyframes or snaps on mouseenter / mouseleave.
+ * ========================================================================== */
+
+/* ---------------- 1. Washi Sticker Texture & Shadow Tokens ---------------- */
+[data-layout-demo='a'] {
+  --search-note-width: 780px;
+
+  /* Handmade washi/cotton fiber SVG tile (zero-filter, 60fps GPU-friendly) */
+  --a-washi-fiber: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%239b7662' stroke-linecap='round'%3E%3Cpath d='M12 18l5 2M44 10l-4 3M78 24l6-1M24 52l5-3M62 48l4 4M84 68l-5 2M16 82l6 1M50 78l3-5' stroke-width='0.85' opacity='0.15'/%3E%3C/g%3E%3Cg fill='%238c6854'%3E%3Ccircle cx='8' cy='34' r='0.85' opacity='0.16'/%3E%3Ccircle cx='34' cy='26' r='0.7' opacity='0.14'/%3E%3Ccircle cx='70' cy='14' r='0.8' opacity='0.15'/%3E%3Ccircle cx='88' cy='44' r='0.75' opacity='0.14'/%3E%3Ccircle cx='54' cy='62' r='0.85' opacity='0.15'/%3E%3Ccircle cx='28' cy='72' r='0.7' opacity='0.16'/%3E%3Ccircle cx='74' cy='86' r='0.8' opacity='0.14'/%3E%3Ccircle cx='42' cy='40' r='0.6' opacity='0.13'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Subtle organic pulp flecks */
+  --a-pulp-specks:
+    radial-gradient(circle at 14% 22%, rgba(162, 122, 98, 0.2) 0.85px, transparent 1.3px),
+    radial-gradient(circle at 68% 36%, rgba(180, 134, 112, 0.16) 0.9px, transparent 1.4px),
+    radial-gradient(circle at 38% 76%, rgba(154, 118, 96, 0.18) 0.75px, transparent 1.2px),
+    radial-gradient(circle at 86% 82%, rgba(176, 130, 108, 0.15) 1px, transparent 1.4px);
+
+  /* Wafer-thin die-cut sticker elevation (NO heavy wooden bottom lip!) */
+  --a-sticker-rim: #ffffff;
+  --a-sticker-shadow:
+    0 0 0 1px rgba(176, 144, 132, 0.2),
+    0 3px 10px -2px rgba(136, 102, 88, 0.13),
+    0 1px 2px rgba(136, 102, 88, 0.09);
+  --a-sticker-shadow-hover:
+    0 0 0 1px rgba(224, 148, 174, 0.32),
+    0 14px 28px -8px rgba(136, 102, 88, 0.21),
+    0 4px 10px -4px rgba(136, 102, 88, 0.12);
+
+  /* Soft pill sticker shadow */
+  --a-pill-shadow:
+    0 0 0 2px #ffffff,
+    0 3px 8px -2px rgba(136, 102, 88, 0.16);
+  --a-pill-shadow-hover:
+    0 0 0 2px #ffffff,
+    0 8px 16px -4px rgba(136, 102, 88, 0.24);
+
+  /* Universal silky spring transition for individual transform properties */
+  --a-spring: 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --a-smooth: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Remove old schoolbook binder spine & margin line in Layout A */
+[data-layout-demo='a'] .binder-holes,
+[data-layout-demo='a'] .journal-margin-line,
+[data-layout-demo='a'] .background-decorations {
+  display: none !important;
+}
+
+/* Warm cream Hobonichi-style textured dot-grid notebook page */
+[data-layout-demo='a'] body {
+  background-color: #faf3ea !important;
+  background-image:
+    var(--a-washi-fiber),
+    url('/paper-grain.png'),
+    radial-gradient(circle, rgba(188, 152, 134, 0.32) 1px, transparent 1.4px) !important;
+  background-size: 96px 96px, 256px 256px, 22px 22px !important;
+  background-position: 0 0, 0 0, 0 0 !important;
+}
+
+[data-layout-demo='a'] body::before {
+  background:
+    radial-gradient(42rem 30rem at 8% 5%, rgba(255, 206, 222, 0.44), transparent 68%),
+    radial-gradient(38rem 28rem at 94% 12%, rgba(196, 238, 222, 0.42), transparent 68%),
+    radial-gradient(44rem 32rem at 90% 82%, rgba(255, 234, 182, 0.4), transparent 68%),
+    radial-gradient(38rem 30rem at 6% 78%, rgba(224, 210, 255, 0.4), transparent 68%) !important;
+}
+
+[data-layout-demo='a'] .journal-container {
+  max-width: 1260px !important;
+  padding-left: clamp(1rem, 3vw, 2.25rem) !important;
+  padding-right: clamp(1rem, 3vw, 2.25rem) !important;
+}
+
+/* Replace old wobbly comic outlines with crisp die-cut sticker white rims */
+[data-layout-demo='a'] .hand-drawn-border,
+[data-layout-demo='a'] .hand-drawn-border-alt,
+[data-layout-demo='a'] .hand-drawn-border-subtle {
+  border-radius: 22px !important;
+  border: 4px solid var(--a-sticker-rim) !important;
+}
+
+[data-layout-demo='a'] .paper-shadow,
+[data-layout-demo='a'] .paper-shadow-sm,
+[data-layout-demo='a'] .shadow-cutout,
+[data-layout-demo='a'] .shadow-cutout-sm {
+  box-shadow: var(--a-sticker-shadow) !important;
+}
+
+/* Neutralize legacy :hover transform jumps from ecosystem.css / developer.css / paper.css
+   so ONLY our silky individual translate/scale/rotate springs run on hover */
+[data-layout-demo='a'] .plugin-app-card,
+[data-layout-demo='a'] [data-reveal-item]:hover > .plugin-app-card,
+[data-layout-demo='a'] .developer-method,
+[data-layout-demo='a'] .developer-method-slot:hover > .developer-method {
+  transform: rotate(var(--rot, 0deg)) !important;
+}
+
+/* Neutralize Paper.tsx's jerky 0.08s 3D mouse-tracking transform so hover stays silky smooth */
+[data-layout-demo='a'] .journal-paper.is-interactive,
+[data-layout-demo='a'] .journal-paper.is-interactive.is-tracking,
+[data-layout-demo='a'] .sticky-note-card,
+[data-layout-demo='a'] .sticky-note-card.is-tracking {
+  transform: rotate(var(--rot, 0deg)) !important;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth),
+    border-color var(--a-smooth) !important;
+}
+
+/* Hide legacy sticky tapes so die-cut white rims stay clean & light */
+[data-layout-demo='a'] .tape,
+[data-layout-demo='a'] .tape-top-left,
+[data-layout-demo='a'] .tape-bottom-right {
+  display: none !important;
+}
+
+/* ---------------- 2. Smooth Keyframes ---------------- */
+@keyframes layoutAPathMarch {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -72; }
+}
+
+@keyframes layoutAIdleFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-4px) rotate(1.1deg); }
+}
+
+@keyframes layoutAReelSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes layoutAShimmerRibbon {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes layoutAEntrancePop {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.975); }
+  65%  { opacity: 1; transform: translateY(-2px) scale(1.006); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------------- 3. Silky Title Hover Micro-Interactions ---------------- */
+/* Uses individual translate / scale / rotate -> never snaps! */
+[data-layout-demo='a'] .journal-hero-title,
+[data-layout-demo='a'] .plugin-ecosystem-title,
+[data-layout-demo='a'] .stats-journal-title,
+[data-layout-demo='a'] .developer-title,
+[data-layout-demo='a'] .info-notes-section .font-marker,
+[data-layout-demo='a'] .header-brand-title {
+  display: inline-block;
+  cursor: default;
+  translate: 0 0;
+  scale: 1;
+  rotate: 0deg;
+  transition:
+    translate var(--a-spring),
+    scale var(--a-spring),
+    rotate var(--a-spring),
+    color 240ms ease,
+    text-shadow 260ms ease;
+}
+
+[data-layout-demo='a'] .scribble-line::after {
+  transition: transform var(--a-spring), filter 260ms ease;
+}
+
+[data-layout-demo='a'] .journal-hero-title:hover {
+  translate: 0 -4px;
+  scale: 1.02;
+  rotate: -0.6deg;
+  text-shadow: 0 6px 16px rgba(232, 120, 154, 0.2);
+}
+
+[data-layout-demo='a'] .journal-hero-title:hover .scribble-line::after {
+  transform: scaleX(1.06) scaleY(1.22);
+  filter: saturate(1.22);
+}
+
+[data-layout-demo='a'] .plugin-ecosystem-title:hover,
+[data-layout-demo='a'] .stats-journal-title:hover,
+[data-layout-demo='a'] .developer-title:hover {
+  translate: 0 -3px;
+  scale: 1.02;
+  rotate: -0.8deg;
+  color: #c25478 !important;
+}
+
+[data-layout-demo='a'] .info-notes-section .font-marker:hover {
+  translate: 4px 0;
+  rotate: -0.8deg;
+  color: #c25478 !important;
+}
+
+/* ---------------- 4. Flush Sticky Die-Cut Capsule Header (Zero top gap / zero jump!) ---------------- */
+[data-layout-demo='a'] .journal-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 120 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1.85rem !important;
+  padding: 0.65rem 1.35rem !important;
+  background-color: rgba(255, 253, 250, 0.95);
+  background-image: var(--a-washi-fiber), url('/paper-grain.png');
+  background-size: 96px 96px, 240px 240px;
+  backdrop-filter: blur(12px);
+  border: 3px solid #ffffff;
+  border-top: none;
+  border-radius: 0 0 26px 26px;
+  box-shadow: var(--a-sticker-shadow);
+  animation: none !important;
+}
+
+[data-layout-demo='a'] .header-logo-img {
+  border-radius: 14px;
+  box-shadow: 0 3px 8px -2px rgba(136, 102, 88, 0.2);
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--a-spring), scale var(--a-spring), box-shadow var(--a-smooth);
+}
+
+[data-layout-demo='a'] .header-logo-link:hover .header-logo-img,
+[data-layout-demo='a'] .header-brand-container:hover .header-logo-img {
+  rotate: -10deg;
+  scale: 1.09;
+  box-shadow: 0 8px 16px -4px rgba(232, 120, 154, 0.36);
+}
+
+[data-layout-demo='a'] .header-brand-container:hover .header-brand-title {
+  translate: 0 -2px;
+  scale: 1.03;
+  color: #c25478;
+}
+
+[data-layout-demo='a'] .header-desktop-btn > .header-desktop-btn-face,
+[data-layout-demo='a'] .header-github-btn > .header-github-btn-face,
+[data-layout-demo='a'] .header-actions .ui-hitbox:not(.style-option) > .ui-face,
+[data-layout-demo='a'] .header-actions .sticker-hitbox > .sticker-face {
+  border-radius: 999px !important;
+  border: 1px solid rgba(186, 152, 138, 0.28) !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth),
+    background-color 200ms ease !important;
+}
+
+[data-layout-demo='a'] .header-desktop-btn > .header-desktop-btn-face {
+  background: #ffe6ee !important;
+  color: #b44b6d !important;
+  border-color: rgba(232, 148, 174, 0.42) !important;
+}
+
+[data-layout-demo='a'] .header-github-btn > .header-github-btn-face {
+  background: #dff6ec !important;
+  color: #2f775c !important;
+  border-color: rgba(126, 200, 170, 0.42) !important;
+}
+
+[data-layout-demo='a'] .header-desktop-btn:hover > .header-desktop-btn-face,
+[data-layout-demo='a'] .header-github-btn:hover > .header-github-btn-face,
+[data-layout-demo='a'] .header-actions .ui-hitbox:not(.style-option):hover > .ui-face,
+[data-layout-demo='a'] .header-actions .sticker-hitbox:hover > .sticker-face {
+  translate: 0 -3px;
+  rotate: -1.5deg;
+  box-shadow: var(--a-pill-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .header-desktop-btn:active > .header-desktop-btn-face,
+[data-layout-demo='a'] .header-github-btn:active > .header-github-btn-face,
+[data-layout-demo='a'] .header-actions .ui-hitbox:not(.style-option):active > .ui-face,
+[data-layout-demo='a'] .header-actions .sticker-hitbox:active > .sticker-face {
+  translate: 0 1px;
+  scale: 0.96;
+}
+
+/* ---------------- 5. Act 0: Airy Hero + Die-Cut Sticker Search Sheet ---------------- */
+.layout-a-hero-wrap {
+  position: relative;
+  max-width: 820px;
+  margin: 0 auto;
+  padding-top: 0.5rem;
+  z-index: 3;
+}
+
+[data-layout-demo='a'] .journal-hero {
+  padding-bottom: 1.65rem !important;
+  animation: layoutAEntrancePop 560ms var(--ease-bouncy) 60ms both;
+}
+
+[data-layout-demo='a'] .journal-hero-title {
+  line-height: 1.35 !important;
+  letter-spacing: 0.02em;
+}
+
+/* Smooth decorative float */
+[data-layout-demo='a'] .hero-doodle-right {
+  position: static !important;
+  display: flex !important;
+  width: fit-content;
+  margin: 0 auto 0.85rem auto !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.28rem 1rem;
+  font-size: 1rem !important;
+  background-color: #fff6f8;
+  background-image:
+    var(--a-washi-fiber),
+    linear-gradient(90deg, #ffeef3 0%, #fff6dc 52%, #e6f9f1 100%);
+  color: #b45d78 !important;
+  border: 2.5px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: var(--a-sticker-shadow);
+  animation: layoutAIdleFloat 4.2s ease-in-out infinite;
+  pointer-events: none;
+  cursor: default;
+}
+
+[data-layout-demo='a'] .hero-doodle-mobile {
+  display: none !important;
+}
+
+/* Airy Die-Cut Washi Sticker Search Sheet (white cut margin + wafer-thin lifted shadow) */
+[data-layout-demo='a'] .search-note-section {
+  max-width: 780px !important;
+  animation: layoutAEntrancePop 620ms var(--ease-bouncy) 140ms both;
+}
+
+[data-layout-demo='a'] .search-note-section .sticky-note-card {
+  --rot: 0deg;
+  background-color: #fffcf7 !important;
+  background-image:
+    var(--a-pulp-specks),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 256px 256px !important;
+  border-radius: 26px !important;
+  border: 5px solid #ffffff !important;
+  box-shadow:
+    0 0 0 1px rgba(208, 174, 160, 0.3),
+    0 8px 24px -6px rgba(144, 106, 92, 0.16),
+    0 2px 4px rgba(144, 106, 92, 0.08) !important;
+  padding: 2.1rem 2.15rem 1.85rem !important;
+  overflow: hidden;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='a'] .search-note-section:hover .sticky-note-card {
+  translate: 0 -5px;
+  box-shadow:
+    0 0 0 1px rgba(232, 152, 178, 0.42),
+    0 20px 38px -10px rgba(144, 106, 92, 0.22),
+    0 4px 10px -2px rgba(144, 106, 92, 0.1) !important;
+}
+
+/* Soft pastel washi-tape top strip inside the Search Sticker */
+[data-layout-demo='a'] .search-note-section .sticky-note-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(90deg, #ffbfd2, #ffe0b0, #b2ebd6, #d4c2ff, #ffbfd2);
+  background-size: 220% 100%;
+  animation: layoutAShimmerRibbon 9s ease-in-out infinite;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+/* Delicate stitched inner frame */
+[data-layout-demo='a'] .search-note-section .sticky-note-card::after {
+  content: '';
+  position: absolute;
+  inset: 13px 10px 10px 10px;
+  border-radius: 18px;
+  border: 1.5px dashed rgba(214, 178, 162, 0.36);
+  pointer-events: none;
+}
+
+[data-layout-demo='a'] .search-note-section form > div:first-child > .font-handwriting {
+  display: inline-block;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--a-spring), rotate var(--a-spring), color 220ms ease;
+}
+
+[data-layout-demo='a'] .search-note-section form > div:first-child > .font-handwriting:hover {
+  translate: 5px 0;
+  rotate: -1deg;
+  color: #c25478 !important;
+}
+
+[data-layout-demo='a'] .search-note-section .brand-badge.sticker {
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 6px rgba(142, 114, 198, 0.2) !important;
+  padding: 0.25rem 0.78rem !important;
+  font-weight: 600;
+  transition: box-shadow var(--a-smooth) !important;
+  cursor: default;
+}
+
+/* Soft paper input pill */
+[data-layout-demo='a'] .search-input-wrapper {
+  min-width: 0;
+}
+
+[data-layout-demo='a'] .search-input-wrapper .paper-input-container {
+  border-radius: 999px !important;
+  background-color: #f7f0e8 !important;
+  background-image: var(--a-washi-fiber) !important;
+  border: 1.5px solid rgba(208, 176, 160, 0.5) !important;
+  box-shadow: inset 0 2px 5px rgba(142, 102, 84, 0.08) !important;
+  padding: 0.22rem 0.85rem 0.22rem 1.15rem !important;
+  translate: 0 0;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    translate var(--a-spring) !important;
+}
+
+[data-layout-demo='a'] .search-input-wrapper .paper-input-container:hover {
+  border-color: rgba(230, 146, 174, 0.65) !important;
+}
+
+[data-layout-demo='a'] .search-input-wrapper .paper-input-container:focus-within {
+  background-color: #ffffff !important;
+  border-color: #ec7f9f !important;
+  box-shadow: 0 0 0 4px rgba(236, 127, 159, 0.18) !important;
+  translate: 0 -1px;
+}
+
+[data-layout-demo='a'] .search-input-wrapper .paper-input-field {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0.62rem 0.4rem !important;
+}
+
+/* Soft Candy Strawberry Parse Pill */
+[data-layout-demo='a'] .search-input-row .marker-button > .marker-button-face {
+  border-radius: 999px !important;
+  padding: 0.78rem 1.85rem !important;
+  border: 2.5px solid #ffffff !important;
+  background: linear-gradient(180deg, #f594b2 0%, #e66e93 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px -4px rgba(228, 108, 145, 0.48), 0 1px 2px rgba(228, 108, 145, 0.25) !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--a-spring), scale var(--a-spring), box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .search-input-row .marker-button:hover:not(:disabled) > .marker-button-face {
+  translate: 0 -3px;
+  scale: 1.04;
+  box-shadow: 0 12px 22px -6px rgba(228, 108, 145, 0.56), 0 2px 4px rgba(228, 108, 145, 0.28) !important;
+}
+
+[data-layout-demo='a'] .search-input-row .marker-button:active:not(:disabled) > .marker-button-face {
+  translate: 0 1px;
+  scale: 0.97;
+}
+
+[data-layout-demo='a'] .search-input-row .marker-button:disabled > .marker-button-face {
+  background: linear-gradient(180deg, #f7c7d6 0%, #efb0c4 100%) !important;
+  box-shadow: 0 3px 8px -2px rgba(220, 140, 166, 0.3) !important;
+  opacity: 0.92;
+}
+
+/* Cute Die-Cut Mini Sticker Platform Pills */
+[data-layout-demo='a'] .search-platforms-row .sticker,
+[data-layout-demo='a'] .search-sample-row .sticker-hitbox > .sticker-face {
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: 0 2px 6px -1px rgba(140, 104, 90, 0.16), 0 0 0 1px rgba(176, 142, 128, 0.16) !important;
+  padding: 0.32rem 0.92rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #4a3832 !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .search-platforms-row .sticker-hitbox:nth-child(odd):hover > .sticker-face,
+[data-layout-demo='a'] .search-sample-row .sticker-hitbox:nth-child(odd):hover > .sticker-face {
+  translate: 0 -4px;
+  rotate: -2.5deg;
+  scale: 1.06;
+  box-shadow: 0 8px 14px -4px rgba(140, 104, 90, 0.24), 0 0 0 1px rgba(226, 148, 174, 0.3) !important;
+}
+
+[data-layout-demo='a'] .search-platforms-row .sticker-hitbox:nth-child(even):hover > .sticker-face,
+[data-layout-demo='a'] .search-sample-row .sticker-hitbox:nth-child(even):hover > .sticker-face {
+  translate: 0 -4px;
+  rotate: 2.5deg;
+  scale: 1.06;
+  box-shadow: 0 8px 14px -4px rgba(140, 104, 90, 0.24), 0 0 0 1px rgba(226, 148, 174, 0.3) !important;
+}
+
+[data-layout-demo='a'] .quick-samples-toggle > .quick-samples-toggle-face {
+  border-radius: 999px !important;
+  border: 1.5px dashed rgba(226, 134, 162, 0.58) !important;
+  background-color: #fff7fa !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: 0 2px 6px rgba(226, 140, 168, 0.12) !important;
+  padding: 0.32rem 1.05rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: #5a443b !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--a-spring), scale var(--a-spring), background-color 200ms ease !important;
+}
+
+[data-layout-demo='a'] .quick-samples-toggle:hover > .quick-samples-toggle-face {
+  translate: 0 -2px;
+  scale: 1.03;
+  background-color: #ffeaf1 !important;
+}
+
+/* ---------------- 6. Act 1: Result Sticker Sheet ---------------- */
+[data-layout-demo='a'] .result-paper-card,
+[data-layout-demo='a'] .user-playlists-paper {
+  border-radius: 26px !important;
+  background-color: #fffcf7 !important;
+  background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 140px 140px, 96px 96px, 256px 256px !important;
+  border: 5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+}
+
+[data-layout-demo='a'] .result-paper-card .marker-button > .marker-button-face,
+[data-layout-demo='a'] .user-playlists-paper .marker-button > .marker-button-face {
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition: translate var(--a-spring), rotate var(--a-spring), box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .result-paper-card .marker-button:hover > .marker-button-face,
+[data-layout-demo='a'] .user-playlists-paper .marker-button:hover > .marker-button-face {
+  translate: 0 -3px;
+  rotate: -1deg;
+  box-shadow: var(--a-pill-shadow-hover) !important;
+}
+
+/* ---------------- 7. Signature Zigzag Diary Path ---------------- */
+[data-layout-demo='a'] .layout-a-zigzag {
+  gap: 5rem;
+  margin-top: 4.25rem;
+  padding: 1.25rem 0 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+[data-layout-demo='a'] .layout-a-path-svg {
+  top: -6.5rem;
+  height: calc(100% + 6.5rem);
+}
+
+[data-layout-demo='a'] .layout-a-path-svg path {
+  animation: layoutAPathMarch 4.5s linear infinite;
+}
+
+[data-layout-demo='a'] .layout-a-row-right {
+  grid-template-columns: minmax(225px, 0.32fr) minmax(0, 0.68fr);
+  gap: 2.75rem;
+}
+
+[data-layout-demo='a'] .layout-a-row-left {
+  grid-template-columns: minmax(0, 0.68fr) minmax(225px, 0.32fr);
+  gap: 2.75rem;
+}
+
+/* Story Margin Cards — Wafer-Thin Die-Cut Washi Stickers (silky hover via translate/rotate!) */
+[data-layout-demo='a'] .layout-a-aside {
+  position: relative;
+  padding: 1.45rem 1.4rem;
+  background-color: #fffcf8;
+  background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png');
+  background-size: 130px 130px, 96px 96px, 240px 240px;
+  border: 4px solid #ffffff;
+  border-radius: 22px;
+  box-shadow: var(--a-sticker-shadow);
+  gap: 0.85rem;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth);
+}
+
+/* Subtle tint per chapter story sticker */
+[data-layout-demo='a'] .layout-a-row:nth-of-type(1) .layout-a-aside { background-color: #fff6f9; }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(2) .layout-a-aside { background-color: #f3fbf8; }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(3) .layout-a-aside { background-color: #f7f4ff; }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(4) .layout-a-aside { background-color: #fffbf0; }
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover > .layout-a-aside {
+  translate: 0 -7px;
+  rotate: -1.4deg;
+  scale: 1.015;
+  box-shadow: var(--a-sticker-shadow-hover);
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover > .layout-a-aside-right {
+  translate: 0 -7px;
+  rotate: 1.4deg;
+  scale: 1.015;
+}
+
+[data-layout-demo='a'] .layout-a-aside::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 15px;
+  border: 1.5px dashed rgba(210, 174, 158, 0.38);
+  pointer-events: none;
+  transition: border-color 260ms ease;
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-aside::after {
+  border-color: rgba(232, 134, 164, 0.56);
+}
+
+[data-layout-demo='a'] .layout-a-step-pill {
+  padding: 0.28rem 0.88rem;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, #ffd4e1 0%, #ffe8ef 100%);
+  color: #a84264;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(226, 128, 158, 0.22);
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--a-spring), scale var(--a-spring);
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-step-pill {
+  translate: 0 -2px;
+  scale: 1.05;
+}
+
+[data-layout-demo='a'] .layout-a-step-pill.is-mint {
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, #c6f2e2 0%, #e6faf3 100%);
+  color: #2c785b;
+  box-shadow: 0 2px 6px rgba(94, 178, 146, 0.22);
+}
+
+[data-layout-demo='a'] .layout-a-step-pill.is-taro {
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, #dfd4ff 0%, #f3eeff 100%);
+  color: #6244a5;
+  box-shadow: 0 2px 6px rgba(146, 120, 210, 0.22);
+}
+
+[data-layout-demo='a'] .layout-a-step-pill.is-lemon {
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, #ffedb0 0%, #fff8dc 100%);
+  color: #8c6514;
+  box-shadow: 0 2px 6px rgba(212, 166, 58, 0.22);
+}
+
+/* Lively SVG Doodles inside Story Margin Stickers */
+[data-layout-demo='a'] .layout-a-aside-doodle {
+  animation: layoutAIdleFloat 4.6s ease-in-out infinite;
+  scale: 1;
+  rotate: 0deg;
+  transition: scale var(--a-spring), rotate var(--a-spring);
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-aside-doodle {
+  scale: 1.1;
+  rotate: -4deg;
+}
+
+[data-layout-demo='a'] .cassette-reel-l { transform-origin: 33px 28px; }
+[data-layout-demo='a'] .cassette-reel-r { transform-origin: 63px 28px; }
+[data-layout-demo='a'] .vinyl-disc     { transform-origin: 38px 38px; }
+[data-layout-demo='a'] .envelope-seal  { transform-origin: 42px 35px; transition: transform var(--a-spring); }
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .cassette-reel-l,
+[data-layout-demo='a'] .layout-a-aside-hit:hover .cassette-reel-r {
+  animation: layoutAReelSpin 2.2s linear infinite;
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .vinyl-disc {
+  animation: layoutAReelSpin 3.2s linear infinite;
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .envelope-seal {
+  transform: scale(1.22) rotate(-12deg);
+}
+
+[data-layout-demo='a'] .layout-a-aside-text {
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
+  line-height: 1.68;
+  color: #745e53;
+}
+
+[data-layout-demo='a'] .layout-a-arrow {
+  translate: 0 0;
+  transition: translate var(--a-spring);
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-arrow {
+  translate: 6px 0;
+}
+
+[data-layout-demo='a'] .layout-a-aside-hit:hover > .layout-a-aside-right .layout-a-arrow {
+  translate: -6px 0;
+}
+
+/* ---------------- 8. Chapter 01: Die-Cut Cassette Sticker Sheet (PluginEcosystem) ---------------- */
+[data-layout-demo='a'] .plugin-ecosystem-panel {
+  border-radius: 26px !important;
+  background-color: #f6faff !important;
+  background-image:
+    var(--a-pulp-specks),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 140px 140px, 96px 96px, 256px 256px !important;
+  border: 5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.85rem 1.85rem 1.95rem !important;
+  translate: 0 0;
+  transition: translate var(--a-spring), box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .plugin-ecosystem-panel:hover {
+  translate: 0 -4px;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .plugin-supported-count {
+  border-radius: 18px !important;
+  border: 2px dashed rgba(226, 118, 150, 0.58) !important;
+  background-color: #ffebf1 !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: 0 0 0 3px #ffffff, 0 4px 12px -3px rgba(226, 118, 150, 0.28) !important;
+  padding: 0.55rem 1rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth) !important;
+  cursor: default;
+}
+
+[data-layout-demo='a'] .plugin-supported-count-reveal:hover > .plugin-supported-count {
+  translate: 0 -4px;
+  rotate: 4deg;
+  scale: 1.07;
+  box-shadow: 0 0 0 3px #ffffff, 0 10px 20px -4px rgba(226, 118, 150, 0.38) !important;
+}
+
+[data-layout-demo='a'] .plugin-app-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+}
+
+[data-layout-demo='a'] .plugin-app-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1120px) {
+  [data-layout-demo='a'] .plugin-app-grid > :last-child:nth-child(odd) .plugin-app-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Individual Peelable Cassette Sticker */
+[data-layout-demo='a'] .plugin-app-card {
+  position: relative;
+  border-radius: 20px !important;
+  background-color: #fffefb !important;
+  background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 240px 240px !important;
+  border: 3.5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.35rem 1.2rem 1.15rem !important;
+  overflow: hidden;
+  translate: 0 0;
+  rotate: 0deg;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .plugin-app-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(90deg, #b6dcff, #daf0ff);
+  transition: filter 240ms ease;
+}
+
+[data-layout-demo='a'] .plugin-app-grid > :nth-child(2) .plugin-app-card::before {
+  background: linear-gradient(90deg, #9ce3c9, #d6f7eb);
+}
+
+[data-layout-demo='a'] .plugin-app-grid > :nth-child(3) .plugin-app-card::before {
+  background: linear-gradient(90deg, #ffe088, #fff3c4);
+}
+
+[data-layout-demo='a'] .plugin-app-grid > :nth-child(4) .plugin-app-card::before {
+  background: linear-gradient(90deg, #cbb6ff, #e7dfff);
+}
+
+[data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card {
+  translate: 0 -6px;
+  rotate: -0.7deg;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card::before {
+  filter: saturate(1.24);
+}
+
+[data-layout-demo='a'] .plugin-app-logo-wrap {
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(206, 178, 164, 0.35) !important;
+  background: #fffaf5 !important;
+  box-shadow: 0 2px 6px rgba(140, 104, 90, 0.12);
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--a-spring), scale var(--a-spring);
+}
+
+[data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-logo-wrap {
+  rotate: -8deg;
+  scale: 1.1;
+}
+
+[data-layout-demo='a'] .plugin-app-name {
+  transition: color 220ms ease;
+}
+
+[data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-name {
+  color: #c25478;
+}
+
+[data-layout-demo='a'] .plugin-status-sticker {
+  border-radius: 999px !important;
+  border: 1.5px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(140, 104, 90, 0.12) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.74rem !important;
+  padding: 0.14rem 0.58rem !important;
+}
+
+[data-layout-demo='a'] .plugin-app-primary-buttons .marker-button > .marker-button-face,
+[data-layout-demo='a'] .plugin-copy-button > .marker-button-face {
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  font-size: 0.88rem !important;
+  translate: 0 0;
+  scale: 1;
+  transition: translate var(--a-spring), scale var(--a-spring), box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .plugin-app-primary-buttons .marker-button:hover > .marker-button-face,
+[data-layout-demo='a'] .plugin-copy-button:hover > .marker-button-face {
+  translate: 0 -2px;
+  scale: 1.03;
+  box-shadow: var(--a-pill-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .plugin-action-link > .marker-button-face {
+  background: linear-gradient(180deg, #f594b1 0%, #e56d92 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 5px 14px -4px rgba(228, 108, 145, 0.48) !important;
+}
+
+[data-layout-demo='a'] .plugin-upcoming-item,
+[data-layout-demo='a'] .plugin-upcoming-badge,
+[data-layout-demo='a'] .plugin-ecosystem-panel .sticker {
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 6px rgba(140, 104, 90, 0.14) !important;
+}
+
+/* ---------------- 9. Chapter 02: 3 Wafer-Thin Die-Cut Paper Stickers (InfoNotes) ---------------- */
+[data-layout-demo='a'] .info-notes-section .info-notes-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.4rem !important;
+  align-items: stretch !important;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(1),
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2),
+[data-layout-demo='a'] .info-notes-grid > :nth-child(3) {
+  margin-top: 0 !important;
+}
+
+/* Sticker 1: Airmail Washi Postcard Sticker */
+[data-layout-demo='a'] .info-notes-grid > :nth-child(1) .journal-paper {
+  border-radius: 20px !important;
+  background-color: #fff9e6 !important;
+  background-image:
+    var(--a-pulp-specks),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 240px 240px !important;
+  border: 4.5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 2.15rem 1.6rem 1.6rem !important;
+  overflow: hidden;
+  height: 100%;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='a'] .info-notes-grid > .reveal:nth-child(1):hover > .journal-paper {
+  translate: 0 -7px;
+  rotate: -1.6deg;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(1) .journal-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 9px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffabc2 0 10px,
+    #fff9e6 10px 16px,
+    #96dfc5 16px 26px,
+    #fff9e6 26px 32px
+  );
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(1) .journal-paper::after {
+  content: 'POSTCARD';
+  position: absolute;
+  top: 1.15rem;
+  right: 1.05rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: #c87b92;
+  border: 1.5px dashed rgba(216, 134, 160, 0.65);
+  border-radius: 8px;
+  padding: 0.16rem 0.4rem;
+  rotate: 6deg;
+  scale: 1;
+  transition: rotate var(--a-spring), scale var(--a-spring);
+}
+
+[data-layout-demo='a'] .info-notes-grid > .reveal:nth-child(1):hover > .journal-paper::after {
+  rotate: 14deg;
+  scale: 1.1;
+}
+
+/* Sticker 2: Blush Perforated Ticket Stub Sticker */
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper {
+  border-radius: 20px !important;
+  background-color: #ffedf2 !important;
+  background-image:
+    var(--a-pulp-specks),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 240px 240px !important;
+  border: 4.5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.7rem 1.75rem !important;
+  height: 100%;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='a'] .info-notes-grid > .reveal:nth-child(2):hover > .journal-paper {
+  translate: 0 -7px;
+  rotate: 1.6deg;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::before,
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: #faf3ea;
+  box-shadow: inset 0 1px 3px rgba(136, 102, 88, 0.18), 0 0 0 2.5px #ffffff;
+  z-index: 4;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::before { left: -12px; }
+[data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::after  { right: -12px; }
+
+/* Sticker 3: Mint Woven Washi Tag Sticker */
+[data-layout-demo='a'] .info-notes-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-layout-demo='a'] .info-notes-grid > :nth-child(3) .journal-paper {
+  border-radius: 24px !important;
+  background-color: #e4f7ef !important;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(94, 168, 140, 0.04) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, rgba(94, 168, 140, 0.04) 0 1px, transparent 1px 6px),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 6px 6px, 6px 6px, 96px 96px, 240px 240px !important;
+  border: 4.5px solid #ffffff !important;
+  outline: 1.5px dashed rgba(84, 172, 140, 0.45);
+  outline-offset: -11px;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.65rem 1.95rem !important;
+  translate: 0 0;
+  scale: 1;
+}
+
+[data-layout-demo='a'] .info-notes-grid > .reveal:nth-child(3):hover > .journal-paper {
+  translate: 0 -6px;
+  scale: 1.01;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .info-notes-section .ruled-paper-text,
+[data-layout-demo='a'] .info-notes-section .ruled-paper-list {
+  background-image: none !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.8 !important;
+  color: #624e45 !important;
+}
+
+[data-layout-demo='a'] .info-notes-favorited {
+  right: 1rem !important;
+  bottom: -1.1rem !important;
+  pointer-events: none !important;
+}
+
+[data-layout-demo='a'] .info-notes-favorited .sticker {
+  border-radius: 999px !important;
+  border: 2.5px solid #ffffff !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  cursor: default;
+}
+
+/* ---------------- 10. Chapter 03: Postage Stamp + Airy Washi Stats Stickers ---------------- */
+[data-layout-demo='a'] .layout-a-stamp-slot {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+[data-layout-demo='a'] .running-days-stamp {
+  border-radius: 14px !important;
+  border: 3px solid #ffffff !important;
+  background:
+    radial-gradient(circle at 0 50%, #f7f4ff 4.5px, transparent 5px) left center / 9px 16px repeat-y,
+    radial-gradient(circle at 100% 50%, #f7f4ff 4.5px, transparent 5px) right center / 9px 16px repeat-y,
+    var(--a-washi-fiber),
+    linear-gradient(135deg, #fff5f8 0%, #ffd6e3 100%) !important;
+  box-shadow: 0 4px 14px -4px rgba(220, 112, 144, 0.34), 0 1px 2px rgba(140, 102, 88, 0.1) !important;
+  padding: 0.9rem 1.2rem !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth);
+  cursor: default;
+}
+
+[data-layout-demo='a'] .running-days-stamp:hover {
+  translate: 0 -5px;
+  rotate: 3.5deg;
+  scale: 1.05;
+  box-shadow: 0 12px 24px -6px rgba(220, 112, 144, 0.42) !important;
+}
+
+[data-layout-demo='a'] .layout-a-stamp-slot .running-days-stamp div {
+  white-space: normal !important;
+  text-align: center;
+}
+
+[data-layout-demo='a'] .stats-deco-headphones {
+  display: none !important;
+}
+
+[data-layout-demo='a'] .stats-chill-vibes-row {
+  pointer-events: none !important;
+}
+
+[data-layout-demo='a'] .stats-chill-vibes-row .sticker {
+  border-radius: 999px !important;
+  border: 2.5px solid #ffffff !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  padding: 0.2rem 0.72rem !important;
+  cursor: default;
+}
+
+[data-layout-demo='a'] .stats-journal-header {
+  text-align: left !important;
+  margin-bottom: 1.25rem !important;
+}
+
+[data-layout-demo='a'] .stats-journal-title {
+  height: auto !important;
+  line-height: 1.3 !important;
+  margin-top: 0.35rem !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.2rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid .journal-paper {
+  border-radius: 22px !important;
+  border: 4.5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.5rem 1.55rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+}
+
+[data-layout-demo='a'] .stats-main-grid > .reveal:hover > .journal-paper {
+  translate: 0 -6px;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid .journal-paper .font-num {
+  display: inline-block;
+  scale: 1;
+  transition: scale var(--a-spring), color 220ms ease;
+}
+
+[data-layout-demo='a'] .stats-main-grid > .reveal:hover .font-num {
+  scale: 1.07;
+  color: #c25478;
+}
+
+[data-layout-demo='a'] .stats-main-grid > :nth-child(1) .journal-paper {
+  background-color: #fff6d6 !important;
+  background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 240px 240px !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid > :nth-child(2) .journal-paper {
+  background-color: #fff0f5 !important;
+  background-image:
+    radial-gradient(circle, rgba(226, 152, 178, 0.18) 0.9px, transparent 1.2px),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 18px 18px, 96px 96px, 240px 240px !important;
+}
+
+[data-layout-demo='a'] .stats-main-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-layout-demo='a'] .stats-main-grid > :nth-child(3) .journal-paper {
+  background-color: #e4f7ef !important;
+  background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 240px 240px !important;
+}
+
+/* 30-day trend sticker card */
+[data-layout-demo='a'] .stats-journal-section > .reveal:last-of-type .journal-paper,
+[data-layout-demo='a'] .stats-trend-card {
+  border-radius: 22px !important;
+  background-color: #fffdf9 !important;
+  background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 240px 240px !important;
+  border: 4.5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  translate: 0 0;
+}
+
+[data-layout-demo='a'] .stats-journal-section > .reveal:last-of-type:hover > .journal-paper {
+  translate: 0 -5px;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar-fill {
+  border-radius: 999px 999px 6px 6px !important;
+  scale: 1 1;
+  transition: scale var(--a-spring), filter 220ms ease;
+  transform-origin: bottom center;
+}
+
+[data-layout-demo='a'] .stats-trend-bars > [data-reveal-item]:hover .stats-trend-bar-fill,
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar:hover .stats-trend-bar-fill,
+[data-layout-demo='a'] .stats-trend-bars .stats-trend-bar.is-active .stats-trend-bar-fill {
+  scale: 1 1.18;
+  filter: saturate(1.3);
+}
+
+/* ---------------- 11. Chapter 04: Airy Almond-Milk Sticker Folder (DeveloperPanel) ---------------- */
+[data-layout-demo='a'] .developer-panel {
+  border-radius: 24px !important;
+  background-color: #fffaf2 !important;
+  background-image:
+    var(--a-pulp-specks),
+    var(--a-washi-fiber),
+    url('/paper-grain.png') !important;
+  background-size: 130px 130px, 96px 96px, 256px 256px !important;
+  border: 5px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.85rem 1.75rem 1.6rem !important;
+  position: relative;
+  translate: 0 0;
+  transition: translate var(--a-spring), box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .developer-panel:hover {
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+/* Cute Pastel Sticker Tab on top-left */
+[data-layout-demo='a'] .developer-panel::before {
+  content: 'OPEN PROTOCOL';
+  position: absolute;
+  top: -1.65rem;
+  left: 1.5rem;
+  padding: 0.22rem 0.95rem 0.14rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8f6b58;
+  background-color: #fff7e0;
+  background-image: var(--a-washi-fiber);
+  border: 3px solid #ffffff;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -2px 8px rgba(140, 104, 90, 0.1);
+}
+
+[data-layout-demo='a'] .developer-method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.05rem !important;
+}
+
+[data-layout-demo='a'] .developer-method {
+  border-radius: 18px !important;
+  background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
+  background-size: 96px 96px, 220px 220px !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: var(--a-sticker-shadow) !important;
+  padding: 1.15rem 1.2rem !important;
+  translate: 0 0;
+  rotate: 0deg;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .developer-method-slot:hover > .developer-method {
+  translate: 0 -5px;
+  rotate: -0.9deg;
+  box-shadow: var(--a-sticker-shadow-hover) !important;
+}
+
+[data-layout-demo='a'] .developer-method-mark {
+  border-radius: 10px !important;
+  rotate: 0deg;
+  scale: 1;
+  transition: rotate var(--a-spring), scale var(--a-spring);
+}
+
+[data-layout-demo='a'] .developer-method-slot:hover .developer-method-mark {
+  rotate: -10deg;
+  scale: 1.16;
+}
+
+/* ---------------- 12. Cozy Die-Cut Pill Footer + Delayed Pop-On Mini Stickers ---------------- */
+[data-layout-demo='a'] .layout-a-aside-slot,
+[data-layout-demo='a'] .layout-a-main,
+[data-layout-demo='a'] .layout-a-footer-wrap {
+  position: relative;
+}
+
+/* Delayed Pop-On Die-Cut Mini Stickers (purely decorative, non-colliding) */
+[data-layout-demo='a'] .layout-a-pop-sticker {
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+  cursor: default;
+}
+
+[data-layout-demo='a'] .layout-a-pop-sticker svg {
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(136, 102, 88, 0.18));
+}
+
+[data-layout-demo='a'] .layout-a-mini-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.24rem 0.72rem;
+  border-radius: 999px;
+  border: 2.5px solid #ffffff;
+  font-family: var(--font-handwriting, cursive);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink, #5a4a42);
+  background-image: var(--a-washi-fiber);
+  box-shadow: var(--a-pill-shadow);
+  white-space: nowrap;
+}
+
+[data-layout-demo='a'] .layout-a-mini-tag.is-pink  { background-color: #ffe0ec; color: #b44b6d; }
+[data-layout-demo='a'] .layout-a-mini-tag.is-lemon { background-color: #fff3bf; color: #8c6514; }
+[data-layout-demo='a'] .layout-a-mini-tag.is-mint  { background-color: #d6f5e8; color: #2c785b; }
+[data-layout-demo='a'] .layout-a-mini-tag.is-taro  { background-color: #e8dfff; color: #6244a5; }
+[data-layout-demo='a'] .layout-a-mini-tag.is-sky   { background-color: #daf0ff; color: #4478ab; }
+
+/* Curated sticker coordinates across Chapters 01 ~ 04 and Footer */
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch1-left       { left: 0.6rem; bottom: -2.1rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch1-right      { right: -0.6rem; top: -1.15rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch2-top        { right: 0.8rem; top: -1.65rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch2-bottom     { left: 0.5rem; bottom: -2.1rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-headphones { left: -0.6rem; top: -2.5rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-tag        { right: 0.6rem; bottom: -2.2rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-coffee     { right: -0.95rem; top: -1.15rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-stars      { right: 0.8rem; bottom: -1.85rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-code       { right: 1.4rem; top: -1.2rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-plane      { left: -1.2rem; bottom: -1.5rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-mail       { left: 0.8rem; bottom: -2.15rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-left    { left: 1rem; top: 0.5rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-right   { right: 1rem; top: 0.5rem; }
+
+@media (max-width: 1180px) {
+  [data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-coffee,
+  [data-layout-demo='a'] .layout-a-pop-sticker.is-footer-left,
+  [data-layout-demo='a'] .layout-a-pop-sticker.is-footer-right {
+    display: none;
+  }
+}
+
+[data-layout-demo='a'] .journal-footer {
+  margin-top: 3rem !important;
+}
+
+[data-layout-demo='a'] .journal-footer .sticker-hitbox > .footer-pill-face {
+  border-radius: 999px !important;
+  border: 2.5px solid #ffffff !important;
+  background-image: var(--a-washi-fiber) !important;
+  box-shadow: var(--a-pill-shadow) !important;
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transition:
+    translate var(--a-spring),
+    rotate var(--a-spring),
+    scale var(--a-spring),
+    box-shadow var(--a-smooth) !important;
+}
+
+[data-layout-demo='a'] .journal-footer .sticker-hitbox:hover > .footer-pill-face {
+  translate: 0 -4px;
+  rotate: -1.8deg;
+  scale: 1.05;
+  box-shadow: var(--a-pill-shadow-hover) !important;
+}
+
+/* ---------------- 13. Size-Adaptive Breakpoints for Layout A ---------------- */
+@media (max-width: 1119px) and (min-width: 769px) {
+  [data-layout-demo='a'] .layout-a-row-right {
+    grid-template-columns: minmax(185px, 0.28fr) minmax(0, 0.72fr);
+    gap: 1.65rem;
+  }
+  [data-layout-demo='a'] .layout-a-row-left {
+    grid-template-columns: minmax(0, 0.72fr) minmax(185px, 0.28fr);
+    gap: 1.65rem;
+  }
+  [data-layout-demo='a'] .plugin-app-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-layout-demo='a'] html,
+  [data-layout-demo='a'] body {
+    overflow-x: clip !important;
+  }
+
+  [data-layout-demo='a'] .journal-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-top: 0 !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    overflow-x: clip;
+  }
+
+  [data-layout-demo='a'] .layout-a-root,
+  [data-layout-demo='a'] .layout-a-hero-wrap,
+  [data-layout-demo='a'] .layout-a-main,
+  [data-layout-demo='a'] .layout-a-aside,
+  [data-layout-demo='a'] .layout-a-aside-slot,
+  [data-layout-demo='a'] .layout-a-row,
+  [data-layout-demo='a'] .layout-a-zigzag {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  [data-layout-demo='a'] .journal-header {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 120 !important;
+    border-top: none !important;
+    border-radius: 0 0 20px 20px !important;
+    padding-top: max(0.45rem, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 0.55rem !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+    margin-top: 0 !important;
+    gap: 0.45rem;
+    flex-wrap: nowrap !important;
+    background: #fffdfa !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+    will-change: transform;
+  }
+
+  [data-layout-demo='a'] .header-brand-container {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    gap: 0.45rem !important;
+  }
+
+  [data-layout-demo='a'] .header-actions {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+  }
+
+  [data-layout-demo='a'] .header-logo-img {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  [data-layout-demo='a'] .header-brand-title {
+    font-size: 1.25rem !important;
+  }
+
+  /* Straighten all cards, panels, and stickers on mobile */
+  [data-layout-demo='a'] .header-logo-img,
+  [data-layout-demo='a'] .header-brand-title,
+  [data-layout-demo='a'] .hero-doodle-right,
+  [data-layout-demo='a'] .plugin-app-card,
+  [data-layout-demo='a'] .developer-method {
+    rotate: 0deg !important;
+    transform: none !important;
+  }
+
+  [data-layout-demo='a'] .header-brand-container:hover .header-logo-img,
+  [data-layout-demo='a'] .header-brand-container:hover .header-brand-title,
+  [data-layout-demo='a'] .header-desktop-btn:hover > .header-desktop-btn-face,
+  [data-layout-demo='a'] .header-github-btn:hover > .header-github-btn-face,
+  [data-layout-demo='a'] .header-actions .ui-hitbox:hover > .ui-face,
+  [data-layout-demo='a'] .header-actions .sticker-hitbox:hover > .sticker-face,
+  [data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card,
+  [data-layout-demo='a'] .developer-method-slot:hover > .developer-method {
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    transform: none !important;
+  }
+
+  [data-layout-demo='a'] .developer-heading-row,
+  [data-layout-demo='a'] .plugin-ecosystem-heading-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  [data-layout-demo='a'] .developer-value-note {
+    white-space: normal !important;
+    text-align: left !important;
+  }
+
+  [data-layout-demo='a'] .stats-deco-stamp,
+  [data-layout-demo='a'] .stats-deco-note-top,
+  [data-layout-demo='a'] .stats-deco-star-right {
+    display: none !important;
+  }
+
+  [data-layout-demo='a'] .search-note-section .sticky-note-card {
+    border-radius: 22px !important;
+    padding: 1.45rem 1rem 1.25rem !important;
+  }
+
+  [data-layout-demo='a'] .search-input-wrapper {
+    flex: 1 1 100% !important;
+  }
+
+  [data-layout-demo='a'] .search-input-row .marker-button {
+    width: 100%;
+  }
+
+  [data-layout-demo='a'] .layout-a-zigzag {
+    gap: 2.25rem;
+    margin-top: 2.25rem;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-left: none !important;
+  }
+
+  [data-layout-demo='a'] .layout-a-path-svg {
+    display: none;
+  }
+
+  [data-layout-demo='a'] .layout-a-row-right,
+  [data-layout-demo='a'] .layout-a-row-left {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.9rem;
+  }
+
+  [data-layout-demo='a'] .layout-a-row-left .layout-a-aside,
+  [data-layout-demo='a'] .layout-a-row-left .layout-a-aside-slot {
+    order: -1;
+  }
+
+  [data-layout-demo='a'] .layout-a-aside {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-radius: 18px;
+  }
+
+  [data-layout-demo='a'] .layout-a-aside-right {
+    align-items: center;
+    text-align: left;
+  }
+
+  [data-layout-demo='a'] .layout-a-aside-doodle,
+  [data-layout-demo='a'] .layout-a-arrow {
+    display: none;
+  }
+
+  [data-layout-demo='a'] .plugin-ecosystem-panel,
+  [data-layout-demo='a'] .developer-panel {
+    padding: 1.35rem 1rem 1.4rem !important;
+  }
+
+  [data-layout-demo='a'] .plugin-app-primary-buttons {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  [data-layout-demo='a'] .plugin-app-primary-buttons > * {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  [data-layout-demo='a'] .plugin-app-grid,
+  [data-layout-demo='a'] .info-notes-section .info-notes-grid,
+  [data-layout-demo='a'] .stats-main-grid,
+  [data-layout-demo='a'] .developer-method-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::before,
+  [data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper::after {
+    display: none;
+  }
+
+  [data-layout-demo='a'] .developer-panel::before {
+    left: 1rem;
+    font-size: 0.64rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-layout-demo='a'] .layout-a-path-svg path,
+  [data-layout-demo='a'] .layout-a-aside-doodle,
+  [data-layout-demo='a'] .hero-doodle-right,
+  [data-layout-demo='a'] .search-note-section .sticky-note-card::before,
+  [data-layout-demo='a'] .cassette-reel-l,
+  [data-layout-demo='a'] .cassette-reel-r,
+  [data-layout-demo='a'] .vinyl-disc {
+    animation: none !important;
+  }
+}

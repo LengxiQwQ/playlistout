@@ -7,12 +7,9 @@
 @import './design/desktop.css';
 @import './design/developer.css';
 @import './design/responsive.css';
-@import './design/layout-demos.css';
 @import './design/layout-a.css';
-@import './design/hero-variants.css';
+@import './design/desktop-hero.css';
 @import './design/layout-b.css';
-@import './design/layout-c.css';
-@import './design/layout-d.css';
 
 html {
   scrollbar-gutter: stable;
@@ -127,8 +124,10 @@ h1 {
   border-radius: 4px;
 }
 
-.btn-clear:hover {
-  color: var(--text-main);
+@media (hover: hover) and (pointer: fine) {
+  .btn-clear:hover {
+    color: var(--text-main);
+  }
 }
 
 .btn-primary {
@@ -144,8 +143,10 @@ h1 {
   white-space: nowrap;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+  }
 }
 
 .btn-primary:disabled {
@@ -175,9 +176,11 @@ h1 {
   transition: background-color 0.15s;
 }
 
-.btn-sample:hover {
-  background: #f0e6dc;
-  color: var(--text-main);
+@media (hover: hover) and (pointer: fine) {
+  .btn-sample:hover {
+    background: #f0e6dc;
+    color: var(--text-main);
+  }
 }
 
 /* Status Alert */
@@ -231,8 +234,10 @@ h1 {
   white-space: nowrap;
 }
 
-.btn-retry:hover {
-  background: #ffe4ea;
+@media (hover: hover) and (pointer: fine) {
+  .btn-retry:hover {
+    background: #ffe4ea;
+  }
 }
 
 /* Loading */
@@ -395,9 +400,11 @@ h1 {
   transition: all 0.15s;
 }
 
-.btn-outline-small:hover {
-  background: #f2f5ff;
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .btn-outline-small:hover {
+    background: #f2f5ff;
+    border-color: var(--primary);
+  }
 }
 
 .btn-text-small {
@@ -409,9 +416,11 @@ h1 {
   padding: 0.3rem 0.5rem;
 }
 
-.btn-text-small:hover {
-  color: var(--text-main);
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .btn-text-small:hover {
+    color: var(--text-main);
+    text-decoration: underline;
+  }
 }
 
 /* Track Table */
@@ -470,8 +479,10 @@ h1 {
   max-width: 260px;
 }
 
-.track-row:hover td {
-  background-color: #fffaf3;
+@media (hover: hover) and (pointer: fine) {
+  .track-row:hover td {
+    background-color: #fffaf3;
+  }
 }
 
 .col-index {
@@ -561,10 +572,12 @@ h1 {
   transition: all 0.15s;
 }
 
-.btn-export:hover:not(:disabled),
-.btn-copy:hover:not(:disabled) {
-  background: #faf3ea;
-  border-color: #e6d8cc;
+@media (hover: hover) and (pointer: fine) {
+  .btn-export:hover:not(:disabled),
+  .btn-copy:hover:not(:disabled) {
+    background: #faf3ea;
+    border-color: #e6d8cc;
+  }
 }
 
 .btn-export:disabled,
@@ -580,9 +593,11 @@ h1 {
   font-weight: 600;
 }
 
-.btn-export-highlight:hover:not(:disabled) {
-  background: #e5ebff;
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .btn-export-highlight:hover:not(:disabled) {
+    background: #e5ebff;
+    border-color: var(--primary);
+  }
 }
 
 .toolbar-divider {
@@ -651,10 +666,12 @@ footer a,
   transition: color 0.15s;
 }
 
-footer a:hover,
-.footer-link-btn:hover {
-  text-decoration: underline;
-  color: var(--primary-hover);
+@media (hover: hover) and (pointer: fine) {
+  footer a:hover,
+  .footer-link-btn:hover {
+    text-decoration: underline;
+    color: var(--primary-hover);
+  }
 }
 
 .feature-link-btn {
@@ -669,8 +686,10 @@ footer a:hover,
   text-decoration: underline;
 }
 
-.feature-link-btn:hover {
-  color: var(--primary-hover);
+@media (hover: hover) and (pointer: fine) {
+  .feature-link-btn:hover {
+    color: var(--primary-hover);
+  }
 }
 
 /* Accessible Focus States */
@@ -757,9 +776,11 @@ a:focus-visible {
   transition: all 0.15s;
 }
 
-.btn-modal-close:hover {
-  background: #f0e6dc;
-  color: var(--text-main);
+@media (hover: hover) and (pointer: fine) {
+  .btn-modal-close:hover {
+    background: #f0e6dc;
+    color: var(--text-main);
+  }
 }
 
 .modal-content {

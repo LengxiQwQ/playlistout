@@ -160,6 +160,8 @@
   html,
   body {
     min-height: 100% !important;
+    overflow-x: clip !important;
+    overscroll-behavior-x: none;
   }
 
   /* Keep notebook paper dot-grid consistent on small screens */
@@ -240,21 +242,24 @@
   .header-actions {
     display: flex !important;
     align-items: center !important;
-    gap: 0.35rem !important;
+    gap: 0.32rem !important;
     flex-shrink: 0 !important;
   }
 
   .header-actions .sticker,
-  .header-desktop-btn,
-  .header-drawer-btn {
-    padding: 0.26rem 0.5rem !important;
-    font-size: 0.9rem !important;
+  .header-desktop-btn > .header-desktop-btn-face,
+  .header-github-btn > .header-github-btn-face,
+  .header-lang-btn > .sticker-face {
+    padding: 0.26rem 0.48rem !important;
+    font-size: 0.86rem !important;
+    border-radius: 9px !important;
     white-space: nowrap !important;
     rotate: 0deg !important;
     transform: none !important;
   }
 
-  .header-desktop-btn svg {
+  .header-desktop-btn svg,
+  .header-github-btn svg {
     width: 14px;
     height: 14px;
   }
@@ -263,15 +268,20 @@
   .header-brand-container:hover .header-logo-img,
   .header-brand-container:hover .header-brand-title,
   .header-brand-container:hover .header-brand-tagline,
+  .header-logo-link:hover > .header-logo-face,
   .header-actions button:hover,
+  .header-actions button:hover > .ui-face,
   .header-actions button:active,
   .header-actions .sticker:hover,
   .header-actions .sticker:active,
   .header-desktop-btn:hover,
-  .header-desktop-btn:active,
-  .header-drawer-btn:hover,
-  .header-drawer-btn:active,
+  .header-desktop-btn:hover > .header-desktop-btn-face,
+  .header-desktop-btn:active > .header-desktop-btn-face,
+  .header-github-btn:hover,
+  .header-github-btn:hover > .header-github-btn-face,
+  .header-github-btn:active > .header-github-btn-face,
   .header-brand-text:hover,
+  .header-brand-text:hover > .header-brand-text-face,
   .header-brand-text:hover .font-marker,
   .header-brand-text:hover .header-brand-tagline {
     transform: none !important;
@@ -350,6 +360,7 @@
     font-size: 1rem !important;
     line-height: 1.3;
     text-align: left;
+    min-height: 2.6em;
   }
 
   .stats-trend-chart {
@@ -524,27 +535,36 @@
   /* Reset any hover/touch tilt on mobile across all cards & panels */
   .sticker:hover,
   .sticker:active,
+  .ui-hitbox:hover > .ui-face,
   .sticky-note-card:hover,
   .sticky-note-card:active,
   .journal-paper:hover,
   .journal-paper:active,
   .plugin-app-card:hover,
   .plugin-app-card:active,
+  [data-reveal-item]:hover > .plugin-app-card,
   .info-note-card:hover,
   .info-note-card:active,
+  .info-notes-grid > .reveal:hover > .journal-paper,
+  .stats-main-grid > .reveal:hover > .journal-paper,
+  .stats-journal-section > .reveal:last-of-type:hover > .journal-paper,
   .developer-method:hover,
   .developer-method:active,
+  .developer-method-slot:hover > .developer-method,
   .marker-button:hover,
+  .marker-button:hover > .marker-button-face,
   .marker-button:active,
   .layout-b-cell:hover,
   .layout-b-stamp-box:hover {
     rotate: 0deg !important;
     transform: none !important;
     translate: 0 0 !important;
+    scale: 1 !important;
   }
 
   /* Enforce straight, level orientation across all themes on mobile */
   [data-layout-demo] .sticker,
+  [data-layout-demo] .ui-face,
   [data-layout-demo] .sticky-note-card,
   [data-layout-demo] .journal-paper,
   [data-layout-demo] .plugin-app-card,
@@ -576,20 +596,34 @@
     transform: none !important;
   }
 
-  [data-layout-demo] *:hover,
-  [data-layout-demo] *:active,
-  [data-layout-demo] *:focus {
-    rotate: 0deg !important;
+  html,
+  body,
+  html:hover,
+  body:hover,
+  html:active,
+  body:active,
+  html:focus,
+  body:focus {
+    transform: none !important;
+    rotate: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+
+  [data-layout-demo] *:not(html):not(body):hover,
+  [data-layout-demo] *:not(html):not(body):active,
+  [data-layout-demo] *:not(html):not(body):focus {
+    rotate: none !important;
     --rot: 0deg !important;
   }
 
   /* All mobile buttons have consistent rounded corners (no asymmetric slope wedges) */
-  .marker-button,
-  .marker-button.hand-drawn-border-alt,
-  .marker-button.hand-drawn-border-subtle,
-  .plugin-copy-button,
-  .plugin-copy-button-secondary,
-  .plugin-action-link {
+  .marker-button > .marker-button-face,
+  .marker-button.hand-drawn-border-alt > .marker-button-face,
+  .marker-button.hand-drawn-border-subtle > .marker-button-face,
+  .plugin-copy-button > .marker-button-face,
+  .plugin-copy-button-secondary > .marker-button-face,
+  .plugin-action-link > .marker-button-face {
     border-radius: 10px !important;
   }
 
@@ -633,54 +667,85 @@
     display: none !important;
   }
 
-  /* Viewport-centered modals for Author Card and Sponsor Menu on mobile (buttons remain in place) */
+  /* Viewport-centered portal modals for Author Card and Sponsor Menu on mobile */
   .author-backdrop,
   .sponsor-backdrop {
     position: fixed !important;
     inset: 0 !important;
-    background-color: rgba(0, 0, 0, 0.45) !important;
-    z-index: 998 !important;
-    backdrop-filter: blur(2px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+    background-color: rgba(68, 52, 44, 0.48) !important;
+    z-index: 1200 !important;
+    backdrop-filter: blur(3px) !important;
+    -webkit-backdrop-filter: blur(3px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
   }
 
-  .author-dropup-card {
-    position: fixed !important;
-    left: 50% !important;
-    top: 50% !important;
+  .author-dropup-card,
+  .author-dropup-card.is-mobile-modal {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
     bottom: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(380px, calc(100vw - 32px)) !important;
-    max-width: calc(100vw - 32px) !important;
-    max-height: 85vh !important;
+    transform: none !important;
+    margin: auto !important;
+    width: min(380px, 100%) !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 2rem) !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
-    z-index: 1000 !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 4px 6px 0 var(--shadow-ink) !important;
-    animation: authorModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 1201 !important;
+    box-shadow: 0 12px 32px rgba(74, 59, 52, 0.28), 3px 4px 0 var(--shadow-ink) !important;
+    animation: mobileModalCardIn 0.18s ease-out !important;
   }
 
-  .author-dropup-card::after {
+  .author-dropup-card::after,
+  .author-dropup-card > .tape {
     display: none !important;
   }
 
-  .sponsor-dropup-menu {
-    position: fixed !important;
-    left: 50% !important;
-    top: 50% !important;
+  .sponsor-dropup-menu,
+  .sponsor-dropup-menu.is-mobile-modal {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
     bottom: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(300px, calc(100vw - 32px)) !important;
-    max-width: calc(100vw - 32px) !important;
-    max-height: 85vh !important;
+    transform: none !important;
+    margin: auto !important;
+    width: min(330px, 100%) !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 2rem) !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
-    z-index: 1000 !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 4px 6px 0 var(--shadow-ink) !important;
-    animation: sponsorModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 1201 !important;
+    box-shadow: 0 12px 32px rgba(74, 59, 52, 0.28), 3px 4px 0 var(--shadow-ink) !important;
+    animation: mobileModalCardIn 0.18s ease-out !important;
   }
 
   .sponsor-dropup-menu::after {
     display: none !important;
+  }
+
+  .export-toast,
+  .user-playlists-toast {
+    white-space: normal !important;
+    max-width: calc(100vw - 2rem) !important;
+    border-radius: 14px !important;
+    font-size: 1rem !important;
+    padding: 0.6rem 1.05rem !important;
+    text-align: center !important;
+    overflow-wrap: anywhere;
+  }
+
+  .migration-help-tooltip {
+    max-width: min(20rem, calc(100vw - 4.5rem)) !important;
+    right: 0 !important;
+    left: auto !important;
   }
 
   .export-action-btn-wrap {
@@ -714,9 +779,9 @@
   }
 
   .journal-container {
-    padding: 0.75rem 1.35rem 2rem !important;
-    padding-left: max(1.35rem, env(safe-area-inset-left)) !important;
-    padding-right: max(1.35rem, env(safe-area-inset-right)) !important;
+    padding: 0 0.75rem 2rem !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
   }
 
   /* Search input row mobile layout */
@@ -735,12 +800,16 @@
   .search-input-row button[type="submit"] {
     width: 100% !important;
     justify-content: center;
-    border-radius: 10px !important;
-    padding: 0.75rem 1.5rem !important;
-    box-shadow: 2.5px 2.5px 0 var(--shadow-ink) !important;
   }
 
-  /* Mobile platform indicators row: clean, balanced wrap with consistent chip sizing */
+  .search-input-row .marker-button > .marker-button-face {
+    width: 100% !important;
+    justify-content: center;
+    border-radius: 11px !important;
+    padding: 0.75rem 1.5rem !important;
+  }
+
+  /* Mobile platform indicators row: clean, balanced wrap with consistent rounded-rect sizing */
   .search-platforms-row {
     gap: 0.45rem 0.55rem !important;
     margin-top: 1rem !important;
@@ -748,17 +817,25 @@
   }
 
   .search-platforms-row .sticker {
-    padding: 0.28rem 0.65rem !important;
-    font-size: 0.92rem !important;
-    border-radius: 6px !important;
-    box-shadow: 2px 2px 0 var(--shadow-ink) !important;
+    padding: 0.28rem 0.68rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 10px !important;
   }
 
-  /* Tactile touch physics for mobile (satisfying pressed down feedback) */
-  .marker-button:not(:disabled):active,
-  button.sticker:not(:disabled):active {
-    transform: translate(1.5px, 1.5px) !important;
-    box-shadow: 1px 1px 0 var(--shadow-ink) !important;
+  /* Tactile touch feedback for mobile without positional jump under the finger */
+  .marker-button:not(:disabled):active > .marker-button-face,
+  .sticker-hitbox:not(:disabled):active > .sticker-face,
+  button.sticker:not(:disabled):active,
+  .ui-hitbox:not(:disabled):not([aria-disabled="true"]):active > .ui-face {
+    translate: 0 0 !important;
+    rotate: 0deg !important;
+    scale: 1 !important;
+    transform: none !important;
+    opacity: 0.84;
+  }
+
+  .modal-container {
+    transform: none !important;
   }
 
   /* Playlist Summary Mobile Adaptation */
@@ -1119,6 +1196,12 @@
     min-width: 0 !important;
     max-width: 100% !important;
     height: 2.65rem !important;
+  }
+
+  .plugin-app-primary-buttons .plugin-copy-button > .marker-button-face,
+  .plugin-app-primary-buttons .plugin-action-link > .marker-button-face {
+    width: 100% !important;
+    height: 2.65rem !important;
     font-size: 0.95rem !important;
     border-radius: 10px !important;
     justify-content: center !important;
@@ -1233,8 +1316,8 @@
   .journal-container {
     padding-top: 0 !important;
     padding-bottom: 1.5rem !important;
-    padding-left: max(1.05rem, env(safe-area-inset-left)) !important;
-    padding-right: max(1.05rem, env(safe-area-inset-right)) !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
   }
 
   .stats-journal-title {
@@ -1242,22 +1325,24 @@
   }
 
   .header-brand-title {
-    font-size: 1.25rem !important;
+    font-size: 1.15rem !important;
   }
 
   .header-brand-tagline {
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
   }
 
   .header-actions {
-    gap: 0.3rem !important;
+    gap: 0.26rem !important;
     flex-shrink: 0 !important;
   }
 
-  .header-drawer-btn,
-  .header-desktop-btn {
-    padding: 0.25rem 0.45rem !important;
-    font-size: 0.86rem !important;
+  .header-desktop-btn > .header-desktop-btn-face,
+  .header-github-btn > .header-github-btn-face,
+  .header-lang-btn > .sticker-face {
+    padding: 0.22rem 0.42rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 8px !important;
     white-space: nowrap !important;
   }
 

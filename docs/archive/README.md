@@ -30,3 +30,9 @@ The cross-client DAU telemetry plan completed on `main` between commits `db145da
 ## Archive rule
 
 Completed major roadmaps should remain immutable in their corresponding Git tag/release. The `main` branch should keep only a concise archive index and the current roadmap, rather than duplicating large historical planning documents.
+
+## Web Layouts & Style Switcher (Archived 2026-11-25)
+
+Multi-layout theme exploration (`layout-a`, `layout-c`, `layout-d`, `legacy`, `HeroVariants` 0–5, and `StyleSwitcher`) was extracted from the active frontend when defaulting exclusively to the Pinboard layout (`PinboardLayout`) on desktop and mobile.
+
+- [Web Layouts & Style Switcher Archive](web-layouts/README.md)

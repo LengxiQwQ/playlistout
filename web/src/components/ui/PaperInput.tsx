@@ -54,10 +54,10 @@ export const PaperInput: React.FC<PaperInputProps> = ({
         <button
           type="button"
           onClick={onClear}
-          className="btn-paper-clear font-mono"
+          className="ui-hitbox btn-paper-clear font-mono"
           aria-label="Clear input"
         >
-          ✕
+          <span className="ui-face btn-paper-clear-face">✕</span>
         </button>
       )}
     </div>

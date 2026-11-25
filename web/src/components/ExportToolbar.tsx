@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Playlist } from '../api/types';
 import { exportPlaylist } from '../utils/export';
 import { formatTracksForClipboard, copyToClipboard, type ClipboardMode } from '../utils/clipboard';
@@ -223,7 +224,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                           ? 'var(--cutout-shadow, 3px 3px 0 0 var(--shadow-ink))'
                           : '0 1px 3px rgba(0, 0, 0, 0.06)',
                         opacity: isDisabled ? 0.6 : isSelected ? 1 : 0.75,
-                        transition: 'all 0.15s ease',
                       }}
                       aria-label={item.label}
                     >
@@ -244,7 +244,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
                             : 'rgba(255, 255, 255, 0.45)',
                           boxShadow: isSelected ? '1px 1px 0 rgba(90, 74, 66, 0.25)' : 'none',
                           flexShrink: 0,
-                          transition: 'all 0.12s ease',
                         }}
                       >
                         {isSelected ? <HandDrawnCheck size={14} color="#3d8f70" /> : null}
@@ -463,36 +462,43 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({ playlist }) => {
       </div>
 
       {/* Journal Paper Toast Feedback */}
-      {toastMessage && (
-        <div
-          className="export-toast sticker font-handwriting"
-          role="status"
-          aria-live="polite"
-          data-testid="export-toast"
-          style={{
-            position: 'fixed',
-            bottom: '2rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: '#ffffff',
-            color: 'var(--ink, #5a4a42)',
-            padding: '0.65rem 1.5rem',
-            borderRadius: '9999px',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            animation: 'toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: 'var(--cutout-shadow, 6px 6px 0 0 var(--shadow-ink))',
-            border: '2.5px solid var(--ink-line)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span style={{ color: '#4fae8a' }}>✓</span> {toastMessage}
-        </div>
-      )}
+      {toastMessage && (() => {
+        const toastNode = (
+          <div
+            className="export-toast sticker font-handwriting"
+            role="status"
+            aria-live="polite"
+            data-testid="export-toast"
+            style={{
+              position: 'fixed',
+              bottom: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#ffffff',
+              color: 'var(--ink, #5a4a42)',
+              padding: '0.65rem 1.35rem',
+              borderRadius: '9999px',
+              maxWidth: 'calc(100vw - 2rem)',
+              fontSize: '1.15rem',
+              fontWeight: 700,
+              zIndex: 1300,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              textAlign: 'center',
+              animation: 'toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: 'var(--cutout-shadow, 6px 6px 0 0 var(--shadow-ink))',
+              border: '2.5px solid var(--ink-line)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ color: '#4fae8a', flexShrink: 0 }}>✓</span>
+            <span>{toastMessage}</span>
+          </div>
+        );
+        return typeof document !== 'undefined' ? createPortal(toastNode, document.body) : toastNode;
+      })()}
     </div>
   );
 };

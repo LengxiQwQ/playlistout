@@ -52,8 +52,14 @@
   margin-top: 1.45rem;
 }
 
+.developer-method-slot {
+  min-width: 0;
+  display: flex;
+}
+
 .developer-method {
   min-width: 0;
+  flex: 1;
   background: rgba(255, 255, 255, 0.85);
   border: 1.5px solid rgba(90, 74, 66, 0.25);
   border-radius: 10px;
@@ -61,33 +67,31 @@
   box-shadow: 2px 2px 0 rgba(90, 74, 66, 0.08);
   display: flex;
   flex-direction: column;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  translate: 0 0;
+  rotate: var(--rot, 0deg);
+  transition: translate 0.18s ease, rotate 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
-.developer-method:nth-child(1) {
+.developer-method-slot:nth-child(1) .developer-method {
   --rot: -0.3deg;
-  transform: rotate(var(--rot));
   background: #fff7fa;
   border-color: rgba(236, 127, 159, 0.35);
 }
 
-.developer-method:nth-child(2) {
+.developer-method-slot:nth-child(2) .developer-method {
   --rot: 0.35deg;
-  transform: rotate(var(--rot));
   background: #f4fbf8;
   border-color: rgba(79, 174, 138, 0.35);
 }
 
-.developer-method:nth-child(3) {
+.developer-method-slot:nth-child(3) .developer-method {
   --rot: -0.25deg;
-  transform: rotate(var(--rot));
   background: #fffdf2;
   border-color: rgba(227, 178, 60, 0.38);
 }
 
-.developer-method:nth-child(4) {
+.developer-method-slot:nth-child(4) .developer-method {
   --rot: 0.3deg;
-  transform: rotate(var(--rot));
   background: #f8f5ff;
   border-color: rgba(139, 108, 196, 0.35);
 }
@@ -116,10 +120,13 @@
   border-color: #c5aff5;
 }
 
-.developer-method:hover {
-  transform: translateY(-2px);
-  box-shadow: 3px 3px 0 rgba(90, 74, 66, 0.16);
-  background: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .developer-method-slot:hover > .developer-method {
+    translate: 0 -2px;
+    rotate: 0deg;
+    box-shadow: 3px 3px 0 rgba(90, 74, 66, 0.16);
+    background: #ffffff;
+  }
 }
 
 .developer-method-topline {
@@ -196,10 +203,12 @@
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.developer-method-link:hover,
-.developer-copy-api:hover {
-  color: #6a82d4;
-  border-bottom-color: #6a82d4;
+@media (hover: hover) and (pointer: fine) {
+  .developer-method-link:hover,
+  .developer-copy-api:hover {
+    color: #6a82d4;
+    border-bottom-color: #6a82d4;
+  }
 }
 
 .developer-copy-api.is-copied {

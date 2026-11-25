@@ -21,7 +21,9 @@ select {
 }
 
 /* Ensure rotated stickers and stationery cards keep sharp edges without GPU raster downsampling */
+.ui-face,
 .sticker,
+.sticker-face,
 .sticky-note-card,
 .journal-paper,
 .plugin-app-card,
@@ -30,7 +32,8 @@ select {
 .developer-method,
 .layout-b-cell,
 .layout-b-stamp-box,
-.marker-button {
+.marker-button,
+.marker-button-face {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform-style: flat;

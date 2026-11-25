@@ -76,4 +76,38 @@ describe('Footer Component', () => {
     fireEvent.mouseDown(screen.getByTestId('outside'));
     expect(screen.queryByRole('dialog', { name: /冷汐OωO/i })).not.toBeInTheDocument();
   });
+
+  it('portals Author card cleanly to document.body on mobile viewports and stays closable', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      const { container } = render(<Footer onOpenPrivacy={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: /作者信息|author/i }));
+
+      const dialog = screen.getByRole('dialog', { name: /冷汐OωO/i });
+      expect(dialog).toHaveClass('is-mobile-modal');
+      expect(container.contains(dialog)).toBe(false);
+      expect(document.body.contains(dialog)).toBe(true);
+
+      // Clicking inside dialog preserves open state
+      fireEvent.mouseDown(dialog);
+      expect(screen.getByRole('dialog', { name: /冷汐OωO/i })).toBeInTheDocument();
+
+      // Clicking close button dismisses modal
+      const closeBtn = screen.getByRole('button', { name: /关闭便签|close note/i });
+      fireEvent.click(closeBtn);
+      expect(screen.queryByRole('dialog', { name: /冷汐OωO/i })).not.toBeInTheDocument();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
 });

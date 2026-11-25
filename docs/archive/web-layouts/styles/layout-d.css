@@ -79,19 +79,9 @@
 [data-layout-demo='d'] .sticky-note-card,
 [data-layout-demo='d'] .sticky-note-card.is-tracking,
 [data-layout-demo='d'] .plugin-app-card,
-[data-layout-demo='d'] .plugin-app-card:hover,
+[data-layout-demo='d'] [data-reveal-item]:hover > .plugin-app-card,
 [data-layout-demo='d'] .developer-method,
-[data-layout-demo='d'] .developer-method:hover,
-[data-layout-demo='d'] .header-desktop-btn,
-[data-layout-demo='d'] .header-desktop-btn:hover,
-[data-layout-demo='d'] .header-github-btn,
-[data-layout-demo='d'] .header-github-btn:hover,
-[data-layout-demo='d'] .search-platforms-row .sticker,
-[data-layout-demo='d'] .search-platforms-row .sticker:hover,
-[data-layout-demo='d'] .search-sample-row .sticker,
-[data-layout-demo='d'] .search-sample-row .sticker:hover,
-[data-layout-demo='d'] .journal-footer .sticker,
-[data-layout-demo='d'] .journal-footer .sticker:hover {
+[data-layout-demo='d'] .developer-method-slot:hover > .developer-method {
   transform: rotate(var(--rot, 0deg)) !important;
 }
 
@@ -208,10 +198,10 @@
 }
 
 /* Anime Cel-Shaded Pastel Header Pills */
-[data-layout-demo='d'] .header-desktop-btn,
-[data-layout-demo='d'] .header-github-btn,
-[data-layout-demo='d'] .header-actions button:not(.style-option),
-[data-layout-demo='d'] .header-actions .sticker {
+[data-layout-demo='d'] .header-desktop-btn > .header-desktop-btn-face,
+[data-layout-demo='d'] .header-github-btn > .header-github-btn-face,
+[data-layout-demo='d'] .header-actions .ui-hitbox:not(.style-option) > .ui-face,
+[data-layout-demo='d'] .header-actions .sticker-hitbox > .sticker-face {
   border-radius: 12px !important;
   border: 1.5px solid rgba(154, 184, 214, 0.62) !important;
   box-shadow: 3px 3px 0 rgba(176, 206, 234, 0.45) !important;
@@ -220,23 +210,24 @@
   transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
 }
 
-[data-layout-demo='d'] .header-desktop-btn {
+[data-layout-demo='d'] .header-desktop-btn > .header-desktop-btn-face {
   background: #ffe6f0 !important;
   border-color: #f0a4c0 !important;
   color: #c24b75 !important;
   box-shadow: 3px 3px 0 rgba(240, 164, 192, 0.45) !important;
 }
 
-[data-layout-demo='d'] .header-github-btn {
+[data-layout-demo='d'] .header-github-btn > .header-github-btn-face {
   background: #e2f8f0 !important;
   border-color: #88d8bc !important;
   color: #2b7d60 !important;
   box-shadow: 3px 3px 0 rgba(136, 216, 188, 0.45) !important;
 }
 
-[data-layout-demo='d'] .header-desktop-btn:hover,
-[data-layout-demo='d'] .header-github-btn:hover,
-[data-layout-demo='d'] .header-actions button:not(.style-option):hover {
+[data-layout-demo='d'] .header-desktop-btn:hover > .header-desktop-btn-face,
+[data-layout-demo='d'] .header-github-btn:hover > .header-github-btn-face,
+[data-layout-demo='d'] .header-actions .ui-hitbox:not(.style-option):hover > .ui-face,
+[data-layout-demo='d'] .header-actions .sticker-hitbox:hover > .sticker-face {
   translate: 0 -3px;
   rotate: -1.5deg;
   box-shadow: 4px 6px 0 rgba(176, 206, 234, 0.55) !important;
@@ -351,11 +342,6 @@
   box-shadow: 3px 3px 0 rgba(138, 219, 192, 0.45);
 }
 
-[data-layout-demo='d'] .layout-d-step:hover {
-  translate: 0 -3px;
-  rotate: -2deg;
-}
-
 [data-layout-demo='d'] .layout-d-step-arrow {
   color: #f092b4;
   font-size: 0.85rem;
@@ -438,13 +424,22 @@
     url('/paper-grain.png'),
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 245, 204, 0.4) 100%) !important;
   background-size: 96px 96px, 240px 240px, 100% 100% !important;
-  border-radius: 16px 16px 28px 16px !important;
+  border-radius: 16px 16px 0 16px !important;
   border: 1.8px solid #ecd080 !important;
   box-shadow:
     6px 7px 0 rgba(238, 210, 128, 0.42),
     0 18px 34px -16px rgba(176, 146, 92, 0.22) !important;
   padding: 2.1rem 2rem 1.85rem !important;
   overflow: visible !important;
+  clip-path: polygon(
+    -24px -24px,
+    calc(100% + 24px) -24px,
+    calc(100% + 24px) calc(100% - 28px),
+    100% calc(100% - 28px),
+    calc(100% - 28px) 100%,
+    calc(100% - 28px) calc(100% + 24px),
+    -24px calc(100% + 24px)
+  );
   translate: 0 0;
   rotate: 0deg;
 }
@@ -471,21 +466,21 @@
   z-index: 6;
 }
 
-/* Realistic Curled Bottom-Right Peel Corner on Search Sticky Note! */
+/* Realistic Curled Bottom-Right Peel Corner on Search Sticky Note (transparent exterior)! */
 [data-layout-demo='d'] .search-note-section .sticky-note-card::after {
   content: '';
   position: absolute;
-  right: -1px;
-  bottom: -1px;
+  right: 0;
+  bottom: 0;
   width: 28px;
   height: 28px;
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(212, 178, 96, 0.35) 50%, #fff4c2 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(212, 178, 96, 0.35) 50%, #fff4c2 54%);
   border-top-left-radius: 10px;
   box-shadow: -3px -3px 6px rgba(176, 142, 74, 0.14);
   pointer-events: none;
 }
 
-[data-layout-demo='d'] .search-note-section .sticky-note-card:hover {
+[data-layout-demo='d'] .layout-d-split-right:hover .sticky-note-card {
   translate: 0 -4px;
   box-shadow:
     8px 10px 0 rgba(238, 210, 128, 0.48),
@@ -523,7 +518,7 @@
 }
 
 /* Crisp Anime Cel-Shaded Sakura Parse Button */
-[data-layout-demo='d'] .search-input-row .marker-button {
+[data-layout-demo='d'] .search-input-row .marker-button > .marker-button-face {
   border-radius: 14px !important;
   padding: 0.78rem 1.8rem !important;
   border: 1.8px solid #d45882 !important;
@@ -535,18 +530,18 @@
   transition: translate var(--d-spring), scale var(--d-spring), box-shadow var(--d-smooth) !important;
 }
 
-[data-layout-demo='d'] .search-input-row .marker-button:hover:not(:disabled) {
+[data-layout-demo='d'] .search-input-row .marker-button:hover:not(:disabled) > .marker-button-face {
   translate: -1px -3px;
   scale: 1.03;
   box-shadow: 5px 6px 0 #d45882 !important;
 }
 
-[data-layout-demo='d'] .search-input-row .marker-button:active:not(:disabled) {
+[data-layout-demo='d'] .search-input-row .marker-button:active:not(:disabled) > .marker-button-face {
   translate: 2px 2px;
   box-shadow: 1px 1px 0 #d45882 !important;
 }
 
-[data-layout-demo='d'] .search-input-row .marker-button:disabled {
+[data-layout-demo='d'] .search-input-row .marker-button:disabled > .marker-button-face {
   background: linear-gradient(180deg, #fad0de 0%, #f2b7ca 100%) !important;
   border-color: #e49cb4 !important;
   box-shadow: 2px 3px 0 rgba(228, 156, 180, 0.45) !important;
@@ -554,7 +549,7 @@
 
 /* Fresh Anime Sticker Platform Chips */
 [data-layout-demo='d'] .search-platforms-row .sticker,
-[data-layout-demo='d'] .search-sample-row .sticker {
+[data-layout-demo='d'] .search-sample-row .sticker-hitbox > .sticker-face {
   border-radius: 10px !important;
   border: 1.5px solid rgba(176, 156, 148, 0.4) !important;
   box-shadow: 2px 3px 0 rgba(186, 166, 158, 0.28) !important;
@@ -568,23 +563,23 @@
   transition: translate var(--d-spring), rotate var(--d-spring), scale var(--d-spring), box-shadow var(--d-smooth) !important;
 }
 
-[data-layout-demo='d'] .search-platforms-row .sticker:nth-child(odd):hover,
-[data-layout-demo='d'] .search-sample-row .sticker:nth-child(odd):hover {
+[data-layout-demo='d'] .search-platforms-row .sticker-hitbox:nth-child(odd):hover > .sticker-face,
+[data-layout-demo='d'] .search-sample-row .sticker-hitbox:nth-child(odd):hover > .sticker-face {
   translate: 0 -4px;
   rotate: -2.2deg;
   scale: 1.05;
   box-shadow: 4px 5px 0 rgba(238, 160, 186, 0.42) !important;
 }
 
-[data-layout-demo='d'] .search-platforms-row .sticker:nth-child(even):hover,
-[data-layout-demo='d'] .search-sample-row .sticker:nth-child(even):hover {
+[data-layout-demo='d'] .search-platforms-row .sticker-hitbox:nth-child(even):hover > .sticker-face,
+[data-layout-demo='d'] .search-sample-row .sticker-hitbox:nth-child(even):hover > .sticker-face {
   translate: 0 -4px;
   rotate: 2.2deg;
   scale: 1.05;
   box-shadow: 4px 5px 0 rgba(146, 206, 238, 0.42) !important;
 }
 
-[data-layout-demo='d'] .quick-samples-toggle {
+[data-layout-demo='d'] .quick-samples-toggle > .quick-samples-toggle-face {
   border-radius: 10px !important;
   border: 1.5px dashed #e89cb6 !important;
   background: #fff7fa !important;
@@ -593,7 +588,7 @@
   transition: translate var(--d-spring) !important;
 }
 
-[data-layout-demo='d'] .quick-samples-toggle:hover {
+[data-layout-demo='d'] .quick-samples-toggle:hover > .quick-samples-toggle-face {
   translate: 0 -2px;
 }
 
@@ -613,8 +608,8 @@
   box-shadow: 6px 7px 0 rgba(168, 210, 244, 0.4), 0 18px 34px -16px rgba(102, 138, 176, 0.2) !important;
 }
 
-[data-layout-demo='d'] .result-paper-card .marker-button,
-[data-layout-demo='d'] .user-playlists-paper .marker-button {
+[data-layout-demo='d'] .result-paper-card .marker-button > .marker-button-face,
+[data-layout-demo='d'] .user-playlists-paper .marker-button > .marker-button-face {
   border-radius: 12px !important;
   border: 1.5px solid rgba(162, 192, 222, 0.55) !important;
   box-shadow: 2px 3px 0 rgba(162, 192, 222, 0.4) !important;
@@ -623,8 +618,8 @@
   transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
 }
 
-[data-layout-demo='d'] .result-paper-card .marker-button:hover,
-[data-layout-demo='d'] .user-playlists-paper .marker-button:hover {
+[data-layout-demo='d'] .result-paper-card .marker-button:hover > .marker-button-face,
+[data-layout-demo='d'] .user-playlists-paper .marker-button:hover > .marker-button-face {
   translate: 0 -2px;
   rotate: -1deg;
 }
@@ -694,6 +689,11 @@
 }
 
 .layout-d-shelf-btn {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.layout-d-shelf-btn > .layout-d-shelf-btn-face {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -706,13 +706,12 @@
   align-items: center;
   justify-content: center;
   box-shadow: 2px 2px 0 rgba(162, 206, 244, 0.5);
-  cursor: pointer;
   translate: 0 0;
   scale: 1;
   transition: translate var(--d-spring), scale var(--d-spring), background-color 180ms ease;
 }
 
-.layout-d-shelf-btn:hover {
+.layout-d-shelf-btn:hover > .layout-d-shelf-btn-face {
   background: #e6f4ff;
   translate: 0 -2px;
   scale: 1.08;
@@ -742,7 +741,7 @@
   transition: translate var(--d-spring), rotate var(--d-spring) !important;
 }
 
-[data-layout-demo='d'] .plugin-supported-count:hover {
+[data-layout-demo='d'] .plugin-supported-count-reveal:hover > .plugin-supported-count {
   translate: 0 -3px;
   rotate: 3.5deg;
 }
@@ -759,7 +758,7 @@
   scrollbar-color: #f2a8c4 transparent;
 }
 
-[data-layout-demo='d'] .plugin-app-grid > div {
+[data-layout-demo='d'] .plugin-app-grid > [data-reveal-item] {
   flex: 1 0 340px;
   min-width: 340px;
   scroll-snap-align: start;
@@ -769,7 +768,7 @@
 [data-layout-demo='d'] .plugin-app-card {
   position: relative;
   height: 100%;
-  border-radius: 14px 14px 24px 14px !important;
+  border-radius: 14px 14px 0 14px !important;
   background-color: #eef7ff !important;
   background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 240px 240px !important;
@@ -777,6 +776,15 @@
   box-shadow: 5px 6px 0 rgba(162, 206, 244, 0.42), 0 12px 24px -12px rgba(102, 138, 176, 0.2) !important;
   padding: 1.65rem 1.35rem 1.35rem !important;
   overflow: visible !important;
+  clip-path: polygon(
+    -20px -20px,
+    calc(100% + 20px) -20px,
+    calc(100% + 20px) calc(100% - 22px),
+    100% calc(100% - 22px),
+    calc(100% - 22px) 100%,
+    calc(100% - 22px) calc(100% + 20px),
+    -20px calc(100% + 20px)
+  );
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
@@ -798,15 +806,15 @@
   pointer-events: none;
 }
 
-/* Subtle bottom-right curled peel corner */
+/* Subtle bottom-right curled peel corner (transparent exterior) */
 [data-layout-demo='d'] .plugin-app-card::after {
   content: '';
   position: absolute;
-  right: -1px;
-  bottom: -1px;
+  right: 0;
+  bottom: 0;
   width: 22px;
   height: 22px;
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(124, 168, 212, 0.3) 50%, #d9edff 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(124, 168, 212, 0.3) 50%, #d9edff 54%);
   border-top-left-radius: 8px;
   pointer-events: none;
 }
@@ -822,7 +830,7 @@
   transform: rotate(2deg);
 }
 [data-layout-demo='d'] .plugin-app-grid > :nth-child(2) .plugin-app-card::after {
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(92, 174, 146, 0.3) 50%, #cef3e5 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(92, 174, 146, 0.3) 50%, #cef3e5 54%);
 }
 
 [data-layout-demo='d'] .plugin-app-grid > :nth-child(3) .plugin-app-card {
@@ -836,17 +844,17 @@
   transform: rotate(-1.5deg);
 }
 [data-layout-demo='d'] .plugin-app-grid > :nth-child(3) .plugin-app-card::after {
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(204, 174, 84, 0.3) 50%, #ffefc0 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(204, 174, 84, 0.3) 50%, #ffefc0 54%);
 }
 
 /* Straight at rest -> playful individual hover lift & tilt! */
-[data-layout-demo='d'] .plugin-app-grid > :nth-child(odd) .plugin-app-card:hover {
+[data-layout-demo='d'] .plugin-app-grid > [data-reveal-item]:nth-child(odd):hover > .plugin-app-card {
   translate: 0 -7px;
   rotate: -1.6deg;
   box-shadow: 8px 11px 0 rgba(162, 206, 244, 0.52), 0 20px 34px -12px rgba(102, 138, 176, 0.28) !important;
 }
 
-[data-layout-demo='d'] .plugin-app-grid > :nth-child(even) .plugin-app-card:hover {
+[data-layout-demo='d'] .plugin-app-grid > [data-reveal-item]:nth-child(even):hover > .plugin-app-card {
   translate: 0 -7px;
   rotate: 1.6deg;
   box-shadow: 8px 11px 0 rgba(138, 219, 192, 0.52), 0 20px 34px -12px rgba(82, 156, 130, 0.28) !important;
@@ -867,7 +875,7 @@
   transition: rotate var(--d-spring), scale var(--d-spring);
 }
 
-[data-layout-demo='d'] .plugin-app-card:hover .plugin-app-logo-wrap {
+[data-layout-demo='d'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-logo-wrap {
   rotate: -8deg;
   scale: 1.1;
 }
@@ -881,8 +889,8 @@
   font-size: 0.74rem !important;
 }
 
-[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button,
-[data-layout-demo='d'] .plugin-copy-button {
+[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button > .marker-button-face,
+[data-layout-demo='d'] .plugin-copy-button > .marker-button-face {
   border-radius: 12px !important;
   border: 1.5px solid rgba(168, 186, 210, 0.55) !important;
   box-shadow: 2px 3px 0 rgba(168, 186, 210, 0.4) !important;
@@ -891,13 +899,13 @@
   transition: translate var(--d-spring), scale var(--d-spring) !important;
 }
 
-[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button:hover,
-[data-layout-demo='d'] .plugin-copy-button:hover {
+[data-layout-demo='d'] .plugin-app-primary-buttons .marker-button:hover > .marker-button-face,
+[data-layout-demo='d'] .plugin-copy-button:hover > .marker-button-face {
   translate: 0 -2px;
   scale: 1.03;
 }
 
-[data-layout-demo='d'] .plugin-action-link {
+[data-layout-demo='d'] .plugin-action-link > .marker-button-face {
   background: linear-gradient(180deg, #ff9ab8 0%, #ed6f96 100%) !important;
   color: #ffffff !important;
   border-color: #d45882 !important;
@@ -957,11 +965,20 @@
 [data-layout-demo='d'] .info-notes-grid .journal-paper {
   position: relative;
   height: 100%;
-  border-radius: 14px 14px 26px 14px !important;
+  border-radius: 14px 14px 0 14px !important;
   background-image: var(--d-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 240px 240px !important;
   padding: 2rem 1.75rem 1.75rem !important;
   overflow: visible !important;
+  clip-path: polygon(
+    -20px -20px,
+    calc(100% + 20px) -20px,
+    calc(100% + 20px) calc(100% - 24px),
+    100% calc(100% - 24px),
+    calc(100% - 24px) 100%,
+    calc(100% - 24px) calc(100% + 20px),
+    -20px calc(100% + 20px)
+  );
   translate: 0 0;
   scale: 1;
 }
@@ -979,12 +996,12 @@
   pointer-events: none;
 }
 
-/* Curled Bottom-Right Sticky-Note Peel Corner */
+/* Curled Bottom-Right Sticky-Note Peel Corner (transparent exterior) */
 [data-layout-demo='d'] .info-notes-grid .journal-paper::after {
   content: '';
   position: absolute;
-  right: -1px;
-  bottom: -1px;
+  right: 0;
+  bottom: 0;
   width: 24px;
   height: 24px;
   border-top-left-radius: 8px;
@@ -1003,9 +1020,9 @@
   transform: rotate(-3deg);
 }
 [data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper::after {
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(208, 178, 88, 0.32) 50%, #ffefc0 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(208, 178, 88, 0.32) 50%, #ffefc0 54%);
 }
-[data-layout-demo='d'] .info-notes-grid > :nth-child(1) .journal-paper:hover {
+[data-layout-demo='d'] .info-notes-grid > .reveal:nth-child(1):hover > .journal-paper {
   translate: 0 -10px;
   rotate: 0deg;
   scale: 1.03;
@@ -1023,9 +1040,9 @@
   transform: rotate(2deg);
 }
 [data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper::after {
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(214, 126, 158, 0.32) 50%, #ffd4e4 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(214, 126, 158, 0.32) 50%, #ffd4e4 54%);
 }
-[data-layout-demo='d'] .info-notes-grid > :nth-child(2) .journal-paper:hover {
+[data-layout-demo='d'] .info-notes-grid > .reveal:nth-child(2):hover > .journal-paper {
   translate: 0 -10px;
   rotate: -0.8deg;
   scale: 1.03;
@@ -1043,9 +1060,9 @@
   transform: rotate(-2deg);
 }
 [data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper::after {
-  background: linear-gradient(315deg, #fefbf6 47%, rgba(92, 174, 146, 0.32) 50%, #cef3e5 54%);
+  background: linear-gradient(315deg, transparent 48%, rgba(92, 174, 146, 0.32) 50%, #cef3e5 54%);
 }
-[data-layout-demo='d'] .info-notes-grid > :nth-child(3) .journal-paper:hover {
+[data-layout-demo='d'] .info-notes-grid > .reveal:nth-child(3):hover > .journal-paper {
   translate: 0 -10px;
   rotate: 0deg;
   scale: 1.03;
@@ -1148,12 +1165,12 @@
 }
 
 /* Straight at rest -> playful individual tilt on hover! */
-[data-layout-demo='d'] .stats-main-grid > :nth-child(odd) .journal-paper:hover {
+[data-layout-demo='d'] .stats-main-grid > .reveal:nth-child(odd):hover > .journal-paper {
   translate: 0 -6px;
   rotate: -1.6deg;
 }
 
-[data-layout-demo='d'] .stats-main-grid > :nth-child(even) .journal-paper:hover {
+[data-layout-demo='d'] .stats-main-grid > .reveal:nth-child(even):hover > .journal-paper {
   translate: 0 -6px;
   rotate: 1.6deg;
 }
@@ -1164,7 +1181,7 @@
   transition: scale var(--d-spring), color 220ms ease;
 }
 
-[data-layout-demo='d'] .stats-main-grid .journal-paper:hover .font-num {
+[data-layout-demo='d'] .stats-main-grid > .reveal:hover .font-num {
   scale: 1.07;
   color: #e05c88;
 }
@@ -1180,7 +1197,7 @@
   rotate: 0deg;
 }
 
-[data-layout-demo='d'] .stats-journal-section > .reveal:last-of-type .journal-paper:hover {
+[data-layout-demo='d'] .stats-journal-section > .reveal:last-of-type:hover > .journal-paper {
   translate: 0 -4px;
 }
 
@@ -1246,33 +1263,33 @@
   pointer-events: none;
 }
 
-[data-layout-demo='d'] .developer-method:nth-child(1) {
+[data-layout-demo='d'] .developer-method-slot:nth-child(1) > .developer-method {
   background-color: #ffedf4 !important;
   border-color: #f2a8c4 !important;
   box-shadow: 4px 5px 0 rgba(242, 168, 196, 0.4) !important;
 }
-[data-layout-demo='d'] .developer-method:nth-child(2) {
+[data-layout-demo='d'] .developer-method-slot:nth-child(2) > .developer-method {
   background-color: #e7faf3 !important;
   border-color: #8adbc0 !important;
   box-shadow: 4px 5px 0 rgba(138, 219, 192, 0.4) !important;
 }
-[data-layout-demo='d'] .developer-method:nth-child(3) {
+[data-layout-demo='d'] .developer-method-slot:nth-child(3) > .developer-method {
   background-color: #fff9dc !important;
   border-color: #ecd078 !important;
   box-shadow: 4px 5px 0 rgba(236, 208, 120, 0.4) !important;
 }
-[data-layout-demo='d'] .developer-method:nth-child(4) {
+[data-layout-demo='d'] .developer-method-slot:nth-child(4) > .developer-method {
   background-color: #f1ebff !important;
   border-color: #c2b0f0 !important;
   box-shadow: 4px 5px 0 rgba(194, 176, 240, 0.4) !important;
 }
 
-[data-layout-demo='d'] .developer-method:nth-child(odd):hover {
+[data-layout-demo='d'] .developer-method-slot:nth-child(odd):hover > .developer-method {
   translate: 0 -6px;
   rotate: -1.8deg;
 }
 
-[data-layout-demo='d'] .developer-method:nth-child(even):hover {
+[data-layout-demo='d'] .developer-method-slot:nth-child(even):hover > .developer-method {
   translate: 0 -6px;
   rotate: 1.8deg;
 }
@@ -1284,7 +1301,7 @@
   transition: rotate var(--d-spring), scale var(--d-spring);
 }
 
-[data-layout-demo='d'] .developer-method:hover .developer-method-mark {
+[data-layout-demo='d'] .developer-method-slot:hover .developer-method-mark {
   rotate: -10deg;
   scale: 1.15;
 }
@@ -1296,23 +1313,11 @@
   background: linear-gradient(90deg, #fff1f6 0%, #fff9de 50%, #e8faf3 100%) !important;
   box-shadow: 4px 5px 0 rgba(242, 164, 192, 0.42) !important;
   padding: 0.85rem 2.2rem !important;
-  translate: 0 0;
-  rotate: 0deg;
-  scale: 1;
-  transition: translate var(--d-spring), rotate var(--d-spring), scale var(--d-spring);
   cursor: default;
 }
 
-[data-layout-demo='d'] .running-days-stamp:hover {
-  translate: 0 -4px;
-  rotate: 2deg;
-  scale: 1.04;
-}
-
 /* ---------------- 10. Breezy Anime Pill Footer ---------------- */
-[data-layout-demo='d'] .journal-footer .sticker,
-[data-layout-demo='d'] .journal-footer button.sticker,
-[data-layout-demo='d'] .journal-footer a.sticker {
+[data-layout-demo='d'] .journal-footer .sticker-hitbox > .footer-pill-face {
   border-radius: 12px !important;
   border: 1.5px solid rgba(162, 192, 222, 0.55) !important;
   box-shadow: 3px 3px 0 rgba(162, 192, 222, 0.42) !important;
@@ -1321,7 +1326,7 @@
   transition: translate var(--d-spring), rotate var(--d-spring), box-shadow var(--d-smooth) !important;
 }
 
-[data-layout-demo='d'] .journal-footer .sticker:hover {
+[data-layout-demo='d'] .journal-footer .sticker-hitbox:hover > .footer-pill-face {
   translate: 0 -3px;
   rotate: -1.5deg;
   box-shadow: 4px 6px 0 rgba(242, 168, 196, 0.5) !important;
@@ -1397,10 +1402,11 @@
   }
 
   [data-layout-demo='d'] .header-brand-container:hover .header-logo-img,
-  [data-layout-demo='d'] .header-desktop-btn:hover,
-  [data-layout-demo='d'] .header-actions button:hover,
-  [data-layout-demo='d'] .plugin-app-card:hover,
-  [data-layout-demo='d'] .developer-method:hover {
+  [data-layout-demo='d'] .header-desktop-btn:hover > .header-desktop-btn-face,
+  [data-layout-demo='d'] .header-actions .ui-hitbox:hover > .ui-face,
+  [data-layout-demo='d'] .header-actions .sticker-hitbox:hover > .sticker-face,
+  [data-layout-demo='d'] .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card,
+  [data-layout-demo='d'] .developer-method-slot:hover > .developer-method {
     rotate: 0deg !important;
     translate: 0 0 !important;
     transform: none !important;
@@ -1437,7 +1443,7 @@
     display: none;
   }
 
-  [data-layout-demo='d'] .plugin-app-grid > div {
+  [data-layout-demo='d'] .plugin-app-grid > [data-reveal-item] {
     flex: 0 0 84vw;
   }
 

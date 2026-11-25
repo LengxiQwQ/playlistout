@@ -24,7 +24,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      closeButtonRef.current?.focus();
+      closeButtonRef.current?.focus({ preventScroll: true });
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
@@ -113,21 +113,29 @@ export const PaperModal: React.FC<PaperModalProps> = ({
           <button
             type="button"
             ref={closeButtonRef}
-            className="btn-modal-close font-mono sticker"
+            className="ui-hitbox btn-modal-close font-mono sticker-hitbox"
             onClick={onClose}
             aria-label="关闭对话框"
             style={{
               width: '2rem',
               height: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               cursor: 'pointer',
-              borderRadius: '50%',
-              backgroundColor: '#ffffff',
             }}
           >
-            ✕
+            <span
+              className="ui-face sticker sticker-face btn-modal-close-face"
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                backgroundColor: '#ffffff',
+              }}
+            >
+              ✕
+            </span>
           </button>
         </div>
 

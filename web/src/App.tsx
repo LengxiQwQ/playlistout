@@ -15,15 +15,13 @@ import { StatsJournal, RunningDaysStamp } from './components/stats/StatsJournal'
 import { Footer } from './components/layout/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
 import { DisambiguationModal } from './components/playlist/DisambiguationModal';
-import { BinderSpine } from './components/layout/BinderSpine';
-import { BackgroundDecorations } from './components/layout/BackgroundDecorations';
-import { useBaselineGrid } from './hooks/useBaselineGrid';
+import { PinboardLayout } from './components/layout/PinboardLayout';
+import { TimelineLayout } from './components/layout/TimelineLayout';
+import { useViewportLayout } from './hooks/useViewportLayout';
 import { useViewMode } from './hooks/useViewMode';
 import { useDisambiguation } from './hooks/useDisambiguation';
 import { useChannelCache } from './hooks/useChannelCache';
 import { usePlaylistParser } from './hooks/usePlaylistParser';
-import { StyleProvider, useJournalStyle } from './components/settings/StyleContext';
-import { LayoutDemoView } from './components/layout-demo/LayoutDemoViews';
 
 export const AppContent: React.FC = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -79,6 +77,8 @@ export const AppContent: React.FC = () => {
     }
   }, []);
 
+  const layoutMode = useViewportLayout();
+
   useEffect(() => {
     setClarityTag('language', language);
   }, [language]);
@@ -87,10 +87,6 @@ export const AppContent: React.FC = () => {
     setState('success');
     returnToBatch(Boolean(userPlaylists));
   }, [setState, returnToBatch, userPlaylists]);
-
-  const { styleId, styleSwitchCount } = useJournalStyle();
-
-  useBaselineGrid([state, playlist, userPlaylists, styleId]);
 
   const headerNode = <Header onBrandClick={handleReset} />;
   const heroNode = <Hero />;
@@ -140,92 +136,48 @@ export const AppContent: React.FC = () => {
   const stampNode = <RunningDaysStamp />;
   const footerNode = <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />;
 
+  const layoutSlots = {
+    header: headerNode,
+    hero: heroNode,
+    search: searchNode,
+    result: resultNode,
+    ecosystem: ecosystemNode,
+    infoNotes: infoNotesNode,
+    stats: statsNode,
+    developer: developerNode,
+    stamp: stampNode,
+    footer: footerNode,
+  };
+
   return (
-    <>
-      {/* Loose-leaf Binder Spine on Left Margin (Desktop only, dynamically adapts to page length) */}
-      <BinderSpine dependencies={[state, playlist, userPlaylists, styleId]} />
-      <div className="journal-margin-line" aria-hidden="true" />
+    <div className="journal-container" style={{ position: 'relative' }}>
+      {layoutMode === 'b' ? (
+        <PinboardLayout slots={layoutSlots} />
+      ) : (
+        <TimelineLayout slots={layoutSlots} />
+      )}
 
-      <div className="journal-container" style={{ position: 'relative' }}>
-        <BackgroundDecorations />
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+      />
 
-        {styleId === 'legacy' ? (
-          <>
-            {headerNode}
-            <main key={`legacy-${styleSwitchCount}`}>
-              {heroNode}
-
-              {/* Search Note (PERSISTENT across idle, loading, error, and success) */}
-              <div className="baseline-grid-snap">{searchNode}</div>
-
-              {/* Result Paper (Single Playlist) */}
-              {singleResultNode && <div className="baseline-grid-snap">{singleResultNode}</div>}
-
-              {/* User Playlists Paper (Batch Collection) */}
-              {batchResultNode && <div className="baseline-grid-snap">{batchResultNode}</div>}
-
-              {/* Open-source player plugin ecosystem — after parsed playlist results */}
-              <div className="baseline-grid-snap">{ecosystemNode}</div>
-
-              {/* Educational Stationery Notes */}
-              <div className="baseline-grid-snap">{infoNotesNode}</div>
-
-              {/* Aggregate Public Stats Journal */}
-              <div className="baseline-grid-snap">{statsNode}</div>
-
-              {/* Developer entry points — intentionally last for users who explore the project deeply */}
-              <div className="baseline-grid-snap">
-                {developerNode}
-                {stampNode}
-              </div>
-            </main>
-
-            <div className="baseline-grid-snap">{footerNode}</div>
-          </>
-        ) : (
-          <LayoutDemoView
-            key={`${styleId}-${styleSwitchCount}`}
-            mode={styleId}
-            slots={{
-              header: headerNode,
-              hero: heroNode,
-              search: searchNode,
-              result: resultNode,
-              ecosystem: ecosystemNode,
-              infoNotes: infoNotesNode,
-              stats: statsNode,
-              developer: developerNode,
-              stamp: stampNode,
-              footer: footerNode,
-              onBrandClick: handleReset,
-            }}
-          />
-        )}
-
-        <PrivacyModal
-          isOpen={isPrivacyOpen}
-          onClose={() => setIsPrivacyOpen(false)}
-        />
-
-        <DisambiguationModal
-          isOpen={isDisambiguationOpen}
-          onClose={closeDisambiguation}
-          queryId={disambiguationQueryId}
-          candidates={disambiguationCandidates}
-          onSelectPlaylist={handleSelectDisambiguationPlaylist}
-          onSelectUserPlaylists={handleSelectDisambiguationUser}
-        />
-      </div>
-    </>
+      <DisambiguationModal
+        isOpen={isDisambiguationOpen}
+        onClose={closeDisambiguation}
+        queryId={disambiguationQueryId}
+        candidates={disambiguationCandidates}
+        onSelectPlaylist={handleSelectDisambiguationPlaylist}
+        onSelectUserPlaylists={handleSelectDisambiguationUser}
+      />
+    </div>
   );
 };
 
 export const App: React.FC = () => {
   return (
     <LanguageProvider defaultLanguage="zh-CN">
-      <StyleProvider>
-        <AppContent />
-      </StyleProvider>
+      <AppContent />
     </LanguageProvider>
   );
 };

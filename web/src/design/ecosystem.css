@@ -183,32 +183,40 @@
 
 .plugin-summary-toggle {
   margin-top: 0.25rem;
-  padding: 0;
-  border: none;
-  background: transparent;
+  cursor: pointer;
+}
+
+.plugin-summary-toggle > .plugin-summary-toggle-face {
   color: var(--accent-taro, #9a7fd8);
   font-family: var(--font-handwriting, cursive);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.3;
-  cursor: pointer;
-  transition: color 150ms ease, transform 150ms ease;
+  transition: color 150ms ease, translate 150ms ease;
 }
 
-.plugin-summary-toggle:hover {
-  color: var(--ink, #5a4a42);
-  transform: translateY(-1px);
-}
-
-/* Cassette-shelf tactile styling for player cards */
+/* Cassette-shelf tactile styling for player cards (triggered on stationary [data-reveal-item] wrapper) */
 .plugin-app-card {
   position: relative;
-  transition: transform 200ms var(--ease-bouncy), box-shadow 200ms ease;
+  translate: 0 0;
+  rotate: var(--rot, 0deg);
+  transition: translate 200ms var(--ease-bouncy), rotate 200ms var(--ease-bouncy), box-shadow 200ms ease;
 }
 
-.plugin-app-card:hover {
-  transform: translateX(-4px) rotate(var(--rot, 0deg)) !important;
-  box-shadow: 6px 7px 0 var(--shadow-ink);
+@media (hover: hover) and (pointer: fine) {
+  .plugin-summary-toggle:hover > .plugin-summary-toggle-face {
+    color: var(--ink, #5a4a42);
+    translate: 0 -1px;
+  }
+
+  .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card {
+    translate: -4px 0;
+    box-shadow: 6px 7px 0 var(--shadow-ink);
+  }
+}
+
+.layout-b-vinyl-slot {
+  display: none;
 }
 
 .plugin-app-actions {
@@ -235,42 +243,58 @@
   min-height: 2.65rem;
   box-sizing: border-box;
   display: inline-flex !important;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+}
+
+.plugin-copy-button > .marker-button-face {
+  width: 100%;
+  height: 100%;
   font-size: 0.92rem !important;
   line-height: 1 !important;
   padding: 0 !important;
   white-space: nowrap;
 }
 
-.plugin-copy-button-secondary {
+.plugin-copy-button-secondary > .marker-button-face {
   background-color: #ffffff !important;
   color: var(--ink, #5a4a42) !important;
   border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
 }
 
-.plugin-copy-button-secondary:not(:disabled):hover {
-  background-color: var(--note-yellow, #fff4c7) !important;
-  color: var(--ink, #5a4a42) !important;
-}
-
-.plugin-copy-button-secondary.is-copied,
-.plugin-copy-button-secondary.is-copied:not(:disabled):hover {
+.plugin-copy-button-secondary.is-copied > .marker-button-face {
   background-color: #d8f3e8 !important;
   color: var(--ink, #5a4a42) !important;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .plugin-copy-button-secondary:not(:disabled):hover > .marker-button-face {
+    background-color: var(--note-yellow, #fff4c7) !important;
+    color: var(--ink, #5a4a42) !important;
+  }
+
+  .plugin-copy-button-secondary.is-copied:not(:disabled):hover > .marker-button-face {
+    background-color: #d8f3e8 !important;
+    color: var(--ink, #5a4a42) !important;
+  }
+}
+
 .plugin-action-link {
-  background-color: var(--btn-primary-bg, #ec7f9f);
-  color: #ffffff !important;
   text-decoration: none;
   cursor: pointer;
   user-select: none;
 }
 
-.plugin-action-link:hover {
-  background-color: var(--btn-primary-bg-hover, #e66d92) !important;
+.plugin-action-link > .marker-button-face {
+  background-color: var(--btn-primary-bg, #ec7f9f);
   color: #ffffff !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .plugin-action-link:hover > .marker-button-face {
+    background-color: var(--btn-primary-bg-hover, #e66d92) !important;
+    color: #ffffff !important;
+  }
 }
 
 .plugin-app-links {
@@ -291,9 +315,11 @@
   border-bottom: 1px dashed rgba(122, 102, 91, 0.55);
 }
 
-.plugin-app-link:hover {
-  color: var(--ink, #5a4a42);
-  border-bottom-color: currentColor;
+@media (hover: hover) and (pointer: fine) {
+  .plugin-app-link:hover {
+    color: var(--ink, #5a4a42);
+    border-bottom-color: currentColor;
+  }
 }
 
 .plugin-upcoming-strip {
@@ -330,9 +356,11 @@
   background: rgba(255, 255, 255, 0.66);
 }
 
-.plugin-upcoming-chip:hover {
-  background: #ffffff;
-  border-color: rgba(90, 74, 66, 0.45);
+@media (hover: hover) and (pointer: fine) {
+  .plugin-upcoming-chip:hover {
+    background: #ffffff;
+    border-color: rgba(90, 74, 66, 0.45);
+  }
 }
 
 .plugin-upcoming-chip.is-planned {

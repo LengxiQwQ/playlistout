@@ -58,7 +58,7 @@
   transition: translate var(--a-spring), rotate var(--a-spring), box-shadow var(--a-smooth);
   animation: hvRise 620ms var(--ease-bouncy, cubic-bezier(.34,1.56,.64,1)) 260ms both;
 }
-.hv-card:hover { translate: 0 -5px; rotate: 0deg !important; box-shadow: var(--a-sticker-shadow-hover); }
+.hv-v1-side:hover .hv-card { translate: 0 -5px; rotate: 0deg !important; box-shadow: var(--a-sticker-shadow-hover); }
 .hv-card-lemon { background-color: #fff8de; }
 .hv-card-mint { background-color: #eefaf4; }
 .hv-tilt-l { rotate: -2.2deg; }
@@ -166,10 +166,10 @@
   border-radius: 10px 14px 10px 10px;
   background: #fff;
   box-shadow: 0 0 0 1.5px rgba(186, 152, 138, 0.25);
-  transition: translate var(--a-spring);
+  transition: box-shadow 200ms ease, background-color 200ms ease;
 }
 .hv-v1-stat-chip:hover {
-  translate: 0 -3px;
+  box-shadow: 0 0 0 1.5px rgba(226, 134, 162, 0.45), 0 4px 10px -4px rgba(140, 104, 90, 0.16);
 }
 .hv-v1-stat-chip b {
   font-size: clamp(0.88rem, 1.1vw, 1.05rem);
@@ -219,9 +219,11 @@
   display: flex; flex-direction: column; align-items: center;
   padding: 0.4rem 0.2rem 0.3rem; border-radius: 10px 14px 10px 10px;
   background: #fff; box-shadow: 0 0 0 1.5px rgba(186,152,138,0.25);
-  transition: translate var(--a-spring);
+  transition: box-shadow 200ms ease;
 }
-.hv-file-chip:hover { translate: 0 -3px; }
+.hv-file-chip:hover {
+  box-shadow: 0 0 0 1.5px rgba(226, 134, 162, 0.45), 0 4px 10px -4px rgba(140, 104, 90, 0.16);
+}
 .hv-file-chip b { font-size: 0.82rem; }
 .hv-file-chip small { font-size: 0.68rem; color: #9a8478; }
 .hv-file-chip.is-mint b { color: #2f8a68; }
@@ -350,7 +352,7 @@
   background-size: 96px 96px, 256px 256px;
   transition: rotate var(--a-spring), translate var(--a-spring);
 }
-.hv-v3-ticket:hover { rotate: 0deg; translate: 0 -4px; }
+.hv-v3-side:hover .hv-v3-ticket { rotate: 0deg; translate: 0 -4px; }
 .hv-v3-ticket-head { display: flex; gap: 0.6rem; align-items: center; padding-bottom: 0.6rem; border-bottom: 1.5px dashed rgba(186,152,138,0.4); }
 .hv-v3-ticket-head b { display: block; font-size: 0.92rem; color: #5a4a42; }
 .hv-v3-ticket-head small { font-size: 0.68rem; color: #9a8478; }
@@ -442,14 +444,12 @@
 .hv-v5 .hv-center { width: min(780px, 100%); }
 .hv-v5-orbit { position: absolute; inset: 0 0 0 0; pointer-events: none; z-index: 1; }
 .hv-v5-sticker {
-  position: absolute; pointer-events: auto;
+  position: absolute; pointer-events: none;
   padding: 0.35rem 0.95rem; border-radius: 14px; font-size: 0.95rem; font-weight: 700; color: #5a4a42;
   box-shadow: 0 0 0 3px #fff, 0 6px 14px -6px rgba(136,102,88,0.3);
   rotate: var(--rot); animation: hvBob 4.4s ease-in-out infinite; animation-delay: var(--d);
-  transition: scale var(--a-spring), rotate var(--a-spring);
   cursor: default;
 }
-.hv-v5-sticker:hover { scale: 1.12; rotate: 0deg; }
 .hv-v5-sticker.is-mint { background: #d4f3e6; }
 .hv-v5-sticker.is-pink { background: #ffe1ea; }
 .hv-v5-sticker.is-sky { background: #dcefff; }
@@ -469,9 +469,9 @@
 .hv-v5-cell {
   display: flex; flex-direction: column; align-items: center; padding: 0.7rem 0.4rem 0.6rem;
   border-radius: 18px; border: 3px solid #fff; box-shadow: var(--a-sticker-shadow);
-  transition: translate var(--a-spring);
+  transition: box-shadow 200ms ease;
 }
-.hv-v5-cell:hover { translate: 0 -4px; }
+.hv-v5-cell:hover { box-shadow: var(--a-sticker-shadow-hover); }
 .hv-v5-cell b { font-size: 1.55rem; line-height: 1.2; color: #5a4a42; }
 .hv-v5-cell small { font-size: 0.76rem; color: #8c7468; }
 .hv-v5-cell.is-pink { background: #fff0f4; } .hv-v5-cell.is-pink b { color: #c25478; }

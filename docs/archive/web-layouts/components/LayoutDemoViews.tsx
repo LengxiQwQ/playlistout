@@ -140,16 +140,18 @@ const LayoutADemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
           {/* Row 1: Left Story Card + Right Macaron Cassette Rack + 2 delayed mini stickers */}
           <div className="layout-a-row layout-a-row-right">
             <div className="layout-a-aside-slot">
-              <Reveal effect="toss-left" rot={-1.5} className="layout-a-aside">
-                <span className="layout-a-step-pill font-marker">01 · 卡带上架</span>
-                <div className="layout-a-aside-doodle">
-                  <MiniCassetteSvg />
-                </div>
-                <p className="layout-a-aside-text">
-                  导出后的歌单不只是一份文件，还能直接装进开源播放器里继续听 ♪
-                </p>
-                <span className="layout-a-arrow font-note" aria-hidden="true">右侧卡带架 ↷</span>
-              </Reveal>
+              <div className="layout-a-aside-hit">
+                <Reveal effect="toss-left" rot={-1.5} className="layout-a-aside">
+                  <span className="layout-a-step-pill font-marker">01 · 卡带上架</span>
+                  <div className="layout-a-aside-doodle">
+                    <MiniCassetteSvg />
+                  </div>
+                  <p className="layout-a-aside-text">
+                    导出后的歌单不只是一份文件，还能直接装进开源播放器里继续听 ♪
+                  </p>
+                  <span className="layout-a-arrow font-note" aria-hidden="true">右侧卡带架 ↷</span>
+                </Reveal>
+              </div>
               <Reveal effect="pop" delay={680} rot={-8} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch1-left" aria-hidden="true">
                 <span className="layout-a-mini-tag is-lemon">✦ replay</span>
               </Reveal>
@@ -169,16 +171,18 @@ const LayoutADemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
               <Reveal effect="pop" delay={580} rot={-6} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch2-top" aria-hidden="true">
                 <span className="layout-a-mini-tag is-pink">♡ keep safe</span>
               </Reveal>
-              <Reveal effect="toss-right" rot={1.5} className="layout-a-aside layout-a-aside-right">
-                <span className="layout-a-step-pill is-mint font-marker">02 · 剪贴小记</span>
-                <div className="layout-a-aside-doodle">
-                  <MiniVinylSvg />
-                </div>
-                <p className="layout-a-aside-text">
-                  航空明信片、草莓票根和薄荷软垫，记录这本音乐手帐的初心 ✿
-                </p>
-                <span className="layout-a-arrow font-note" aria-hidden="true">↶ 左侧剪贴</span>
-              </Reveal>
+              <div className="layout-a-aside-hit">
+                <Reveal effect="toss-right" rot={1.5} className="layout-a-aside layout-a-aside-right">
+                  <span className="layout-a-step-pill is-mint font-marker">02 · 剪贴小记</span>
+                  <div className="layout-a-aside-doodle">
+                    <MiniVinylSvg />
+                  </div>
+                  <p className="layout-a-aside-text">
+                    航空明信片、草莓票根和薄荷软垫，记录这本音乐手帐的初心 ✿
+                  </p>
+                  <span className="layout-a-arrow font-note" aria-hidden="true">↶ 左侧剪贴</span>
+                </Reveal>
+              </div>
               <Reveal effect="pop" delay={760} rot={9} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch2-bottom" aria-hidden="true">
                 <span className="layout-a-mini-tag is-mint">✿ pure local</span>
               </Reveal>
@@ -191,13 +195,15 @@ const LayoutADemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
               <Reveal effect="pop" delay={520} rot={-10} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch3-headphones" aria-hidden="true">
                 <DieCutHeadphonesSvg />
               </Reveal>
-              <Reveal effect="pop" rot={-2} className="layout-a-aside">
-                <span className="layout-a-step-pill is-taro font-marker">03 · 温暖足迹</span>
-                <div className="layout-a-stamp-slot">{slots.stamp}</div>
-                <p className="layout-a-aside-text">
-                  每一张被带走的歌单，都会在这里留下一枚温柔的小印章 ♥
-                </p>
-              </Reveal>
+              <div className="layout-a-aside-hit">
+                <Reveal effect="pop" rot={-2} className="layout-a-aside">
+                  <span className="layout-a-step-pill is-taro font-marker">03 · 温暖足迹</span>
+                  <div className="layout-a-stamp-slot">{slots.stamp}</div>
+                  <p className="layout-a-aside-text">
+                    每一张被带走的歌单，都会在这里留下一枚温柔的小印章 ♥
+                  </p>
+                </Reveal>
+              </div>
               <Reveal effect="pop" delay={760} rot={6} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch3-tag" aria-hidden="true">
                 <span className="layout-a-mini-tag is-taro">♫ good vibes</span>
               </Reveal>
@@ -225,15 +231,17 @@ const LayoutADemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
               </Reveal>
             </div>
             <div className="layout-a-aside-slot">
-              <Reveal effect="toss-right" rot={1.5} className="layout-a-aside layout-a-aside-right">
-                <span className="layout-a-step-pill is-lemon font-marker">04 · 封底附录</span>
-                <div className="layout-a-aside-doodle">
-                  <MiniEnvelopeSvg />
-                </div>
-                <p className="layout-a-aside-text">
-                  开放 API、本地 Python CLI 与标准 JSON 协议，随时接进你的音乐工具
-                </p>
-              </Reveal>
+              <div className="layout-a-aside-hit">
+                <Reveal effect="toss-right" rot={1.5} className="layout-a-aside layout-a-aside-right">
+                  <span className="layout-a-step-pill is-lemon font-marker">04 · 封底附录</span>
+                  <div className="layout-a-aside-doodle">
+                    <MiniEnvelopeSvg />
+                  </div>
+                  <p className="layout-a-aside-text">
+                    开放 API、本地 Python CLI 与标准 JSON 协议，随时接进你的音乐工具
+                  </p>
+                </Reveal>
+              </div>
               <Reveal effect="pop" delay={840} rot={-6} data-deco-mobile="hide" className="layout-a-pop-sticker is-ch4-mail" aria-hidden="true">
                 <span className="layout-a-mini-tag is-pink">✉ hello dev!</span>
               </Reveal>
@@ -403,12 +411,14 @@ const LayoutCDemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
           ))}
         </div>
 
-        <div className="layout-c-brand-card" onClick={slots.onBrandClick} role="button" tabIndex={0}>
-          <img src="/logo-128.png" alt="Playlist Out Logo" width={46} height={46} />
-          <div>
-            <div className="font-marker layout-c-brand-name">Playlist Out</div>
-            <div className="font-handwriting layout-c-brand-sub">粘贴 · 解析 · 导出</div>
-          </div>
+        <div className="ui-hitbox layout-c-brand-card" onClick={slots.onBrandClick} role="button" tabIndex={0}>
+          <span className="ui-face layout-c-brand-card-face">
+            <img src="/logo-128.png" alt="Playlist Out Logo" width={46} height={46} />
+            <div>
+              <div className="font-marker layout-c-brand-name">Playlist Out</div>
+              <div className="font-handwriting layout-c-brand-sub">粘贴 · 解析 · 导出</div>
+            </div>
+          </span>
         </div>
 
         <div className="layout-c-index-heading font-mono">INDEX · 目录书签</div>
@@ -420,13 +430,15 @@ const LayoutCDemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
               <button
                 key={tab.id}
                 type="button"
-                className={`layout-c-bookmark ${tab.tone}${isActive ? ' is-active' : ''}`}
+                className={`ui-hitbox layout-c-bookmark ${tab.tone}${isActive ? ' is-active' : ''}`}
                 aria-current={isActive ? 'true' : undefined}
                 onClick={() => scrollTo(tab.id)}
               >
-                <span className="layout-c-tab-num font-mono">{tab.num}</span>
-                <span className="layout-c-tab-label">{tab.label}</span>
-                <span className="layout-c-tab-dot" aria-hidden="true" />
+                <span className="ui-face layout-c-bookmark-face">
+                  <span className="layout-c-tab-num font-mono">{tab.num}</span>
+                  <span className="layout-c-tab-label">{tab.label}</span>
+                  <span className="layout-c-tab-dot" aria-hidden="true" />
+                </span>
               </button>
             );
           })}
@@ -604,19 +616,19 @@ const LayoutDDemo: React.FC<{ slots: LayoutDemoSlots }> = ({ slots }) => {
               <span className="layout-d-shelf-hint font-handwriting">左右滑动翻看</span>
               <button
                 type="button"
-                className="layout-d-shelf-btn"
+                className="ui-hitbox layout-d-shelf-btn"
                 onClick={() => scrollShelf(-360)}
                 aria-label="向左滚动卡带架"
               >
-                ‹
+                <span className="ui-face layout-d-shelf-btn-face">‹</span>
               </button>
               <button
                 type="button"
-                className="layout-d-shelf-btn"
+                className="ui-hitbox layout-d-shelf-btn"
                 onClick={() => scrollShelf(360)}
                 aria-label="向右滚动卡带架"
               >
-                ›
+                <span className="ui-face layout-d-shelf-btn-face">›</span>
               </button>
             </div>
           </div>

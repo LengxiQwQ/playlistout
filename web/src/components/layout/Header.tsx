@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from '../../i18n';
-import { StyleSwitcher } from '../settings/StyleSwitcher';
 import { LanguageSwitcher } from '../settings/LanguageSwitcher';
-import { MobileSettingsDrawer } from '../settings/MobileSettingsDrawer';
 
 export interface HeaderProps {
   onBrandClick?: () => void;
@@ -43,7 +41,6 @@ const DownloadIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
 
 export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
   const { t } = useTranslation();
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   return (
     <header
@@ -67,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
       >
         <a
           href="https://playlistout.lengxiqwq.com/"
-          className="header-logo-link"
+          className="ui-hitbox header-logo-link"
           aria-label="Playlist Out (playlistout.lengxiqwq.com)"
           title="https://playlistout.lengxiqwq.com/"
           onClick={(e) => {
@@ -82,19 +79,21 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             }
           }}
         >
-          <img
-            src="/logo-128.png"
-            srcSet="/logo-128.png 1x, /logo-256.png 2x"
-            alt="Playlist Out Logo"
-            className="header-logo-img"
-            width={52}
-            height={52}
-          />
+          <span className="ui-face header-logo-face">
+            <img
+              src="/logo-128.png"
+              srcSet="/logo-128.png 1x, /logo-256.png 2x"
+              alt="Playlist Out Logo"
+              className="header-logo-img"
+              width={52}
+              height={52}
+            />
+          </span>
         </a>
 
         <a
           href="https://playlistout.lengxiqwq.com/"
-          className={`header-brand-text ${onBrandClick ? 'is-clickable' : ''}`}
+          className={`ui-hitbox header-brand-text ${onBrandClick ? 'is-clickable' : ''}`}
           onClick={(e) => {
             if (onBrandClick) {
               onBrandClick();
@@ -107,10 +106,6 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             }
           }}
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            textAlign: 'left',
             textDecoration: 'none',
             color: 'inherit',
             cursor: 'pointer',
@@ -119,12 +114,22 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           aria-label="Playlist Out"
           title="https://playlistout.lengxiqwq.com/"
         >
-          <h1 className="font-marker header-brand-title">
-            Playlist Out
-          </h1>
-          <div className="header-brand-tagline font-handwriting">
-            {t.header.brandTagline}
-          </div>
+          <span
+            className="ui-face header-brand-text-face"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              textAlign: 'left',
+            }}
+          >
+            <h1 className="font-marker header-brand-title">
+              Playlist Out
+            </h1>
+            <div className="header-brand-tagline font-handwriting">
+              {t.header.brandTagline}
+            </div>
+          </span>
         </a>
       </div>
 
@@ -142,67 +147,49 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
           href="https://github.com/LengxiQwQ/playlistout/releases/latest"
           target="_blank"
           rel="noopener noreferrer"
-          className="header-desktop-btn desktop-only"
+          className="ui-hitbox header-desktop-btn desktop-only"
           aria-label={t.header.desktopBtn}
           title={t.header.desktopBtn}
         >
-          <DownloadIcon size={18} />
-          <span>{t.header.desktopBtn}</span>
+          <span className="ui-face header-desktop-btn-face">
+            <DownloadIcon size={18} />
+            <span>{t.header.desktopBtn}</span>
+          </span>
         </a>
 
-        {/* Desktop-only: Star on GitHub */}
-        <a
-          href="https://github.com/LengxiQwQ/playlistout"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="header-github-btn desktop-only"
-          aria-label="Star on GitHub"
-          title="Star on GitHub"
-        >
-          <GitHubIcon size={20} />
-          <span>{t.header.github}</span>
-        </a>
-
-        {/* Desktop-only: Journal Style Switcher Dropdown */}
-        <div className="desktop-only">
-          <StyleSwitcher />
-        </div>
-
-        {/* Desktop-only: Language Switcher */}
-        <div className="desktop-only">
-          <LanguageSwitcher />
-        </div>
-
-        {/* Mobile-only: Compact Download Button (replaces LanguageSwitcher on mobile) */}
+        {/* Mobile-only: Compact Download Button */}
         <a
           href="https://github.com/LengxiQwQ/playlistout/releases/latest"
           target="_blank"
           rel="noopener noreferrer"
-          className="header-desktop-btn mobile-only"
+          className="ui-hitbox header-desktop-btn mobile-only"
           aria-label={t.header.downloadBtn}
           title={t.header.downloadBtn}
         >
-          <DownloadIcon size={16} />
-          <span>{t.header.downloadBtn}</span>
+          <span className="ui-face header-desktop-btn-face">
+            <DownloadIcon size={15} />
+            <span>{t.header.downloadBtn}</span>
+          </span>
         </a>
 
-        {/* Mobile-only: Hand-drawn Settings Drawer Button */}
-        <button
-          type="button"
-          className="sticker font-handwriting header-drawer-btn mobile-only"
-          onClick={() => setIsMobileDrawerOpen(true)}
-          aria-label={t.header.mobileDrawerTitle}
-          title={t.header.mobileDrawerTitle}
+        {/* Star on GitHub (full label on desktop, compact Star on mobile) */}
+        <a
+          href="https://github.com/LengxiQwQ/playlistout"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ui-hitbox header-github-btn"
+          aria-label="Star on GitHub"
+          title="Star on GitHub"
         >
-          <span className="drawer-btn-icon" aria-hidden="true">✎</span>
-          <span>{t.header.mobileMenu}</span>
-        </button>
+          <span className="ui-face header-github-btn-face">
+            <GitHubIcon size={18} />
+            <span className="desktop-only">{t.header.github}</span>
+            <span className="mobile-only">Star</span>
+          </span>
+        </a>
 
-        {/* Mobile Drawer Modal */}
-        <MobileSettingsDrawer
-          isOpen={isMobileDrawerOpen}
-          onClose={() => setIsMobileDrawerOpen(false)}
-        />
+        {/* Language Switcher (shown directly on both desktop and mobile) */}
+        <LanguageSwitcher />
       </div>
     </header>
   );

@@ -16,7 +16,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
 
   useEffect(() => {
     if (isOpen) {
-      closeButtonRef.current?.focus();
+      closeButtonRef.current?.focus({ preventScroll: true });
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {

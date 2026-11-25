@@ -4,6 +4,7 @@ import { SponsorButton } from './SponsorButton';
 import { AuthorCard } from './AuthorCard';
 import { AUTHOR_AVATAR_URL } from '../../constants/author';
 import { Reveal } from '../motion/Reveal';
+import { useViewportLayout } from '../../hooks/useViewportLayout';
 
 export interface FooterProps {
   onOpenPrivacy: () => void;
@@ -13,6 +14,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
   const { t } = useTranslation();
   const [isAuthorOpen, setIsAuthorOpen] = useState(false);
   const authorContainerRef = useRef<HTMLDivElement>(null);
+  const isMobileModal = useViewportLayout() === 'b';
 
   // Preload author avatar immediately so clicking Author pill never flashes white
   useEffect(() => {
@@ -22,14 +24,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
     }
   }, []);
 
-  // Close on outside click for the Author pill container
+  // Close on outside click for the Author pill container (desktop dropup only; mobile uses backdrop onClick)
   useEffect(() => {
-    if (!isAuthorOpen) return;
+    if (!isAuthorOpen || isMobileModal) return;
 
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (authorContainerRef.current && !authorContainerRef.current.contains(e.target as Node)) {
-        setIsAuthorOpen(false);
-      }
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (authorContainerRef.current?.contains(target)) return;
+      if (target.closest('.author-dropup-card')) return;
+      setIsAuthorOpen(false);
     };
 
     document.addEventListener('mousedown', handleOutsideClick);
@@ -38,7 +42,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
     };
-  }, [isAuthorOpen]);
+  }, [isAuthorOpen, isMobileModal]);
 
   return (
     <footer
@@ -245,22 +249,28 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             target="_blank"
             rel="noopener noreferrer"
             data-reveal-item=""
-            className="sticker font-handwriting footer-pill-link footer-pill-mint"
+            className="ui-hitbox sticker-hitbox font-handwriting footer-pill-link footer-pill-mint"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
               textDecoration: 'none',
-              color: 'var(--ink, #5a4a42)',
-              lineHeight: 1.2,
               ['--i' as any]: 0,
             }}
           >
-            <span>{t.footer.githubLink}</span>
-            <span style={{ fontSize: '0.85rem' }}>↗</span>
+            <span
+              className="ui-face sticker sticker-face footer-pill-face"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: 'var(--ink, #5a4a42)',
+                lineHeight: 1.2,
+              }}
+            >
+              <span>{t.footer.githubLink}</span>
+              <span style={{ fontSize: '0.85rem' }}>↗</span>
+            </span>
           </a>
 
           <div
@@ -275,39 +285,36 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               aria-haspopup="dialog"
               aria-expanded={isAuthorOpen}
               aria-label={t.footer.authorLink}
-              className={`sticker font-handwriting footer-pill-link footer-pill-lemon ${isAuthorOpen ? 'is-active' : ''}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.85rem',
-                fontSize: '1.05rem',
-                fontWeight: 600,
-                color: 'var(--ink, #5a4a42)',
-                cursor: 'pointer',
-                lineHeight: 1.2,
-              }}
+              className={`ui-hitbox sticker-hitbox font-handwriting footer-pill-link footer-pill-lemon ${isAuthorOpen ? 'is-active' : ''}`}
+              style={{ cursor: 'pointer' }}
             >
-              <span>{t.footer.authorLink}</span>
               <span
+                className="ui-face sticker sticker-face footer-pill-face"
                 style={{
-                  fontSize: '0.65rem',
-                  marginLeft: '0.1rem',
-                  transform: isAuthorOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.85rem',
+                  fontSize: '1.05rem',
+                  fontWeight: 600,
+                  color: 'var(--ink, #5a4a42)',
+                  lineHeight: 1.2,
                 }}
               >
-                ▲
+                <span>{t.footer.authorLink}</span>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    marginLeft: '0.1rem',
+                    transform: isAuthorOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.15s ease',
+                  }}
+                >
+                  ▲
+                </span>
               </span>
             </button>
 
-            {isAuthorOpen && (
-              <div
-                className="author-backdrop mobile-only"
-                onClick={() => setIsAuthorOpen(false)}
-                aria-hidden="true"
-              />
-            )}
             <AuthorCard
               isOpen={isAuthorOpen}
               onClose={() => setIsAuthorOpen(false)}
@@ -322,21 +329,27 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             type="button"
             data-reveal-item=""
             onClick={onOpenPrivacy}
-            className="sticker font-handwriting footer-pill-link footer-pill-sky"
+            className="ui-hitbox sticker-hitbox font-handwriting footer-pill-link footer-pill-sky"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              color: 'var(--ink, #5a4a42)',
               cursor: 'pointer',
-              lineHeight: 1.2,
               ['--i' as any]: 3,
             }}
           >
-            {t.footer.privacyLink}
+            <span
+              className="ui-face sticker sticker-face footer-pill-face"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: 'var(--ink, #5a4a42)',
+                lineHeight: 1.2,
+              }}
+            >
+              {t.footer.privacyLink}
+            </span>
           </button>
 
           <a
@@ -344,22 +357,28 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             target="_blank"
             rel="noopener noreferrer"
             data-reveal-item=""
-            className="sticker font-handwriting footer-pill-link footer-pill-taro"
+            className="ui-hitbox sticker-hitbox font-handwriting footer-pill-link footer-pill-taro"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.35rem 0.85rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
               textDecoration: 'none',
-              color: 'var(--ink, #5a4a42)',
-              lineHeight: 1.2,
               ['--i' as any]: 4,
             }}
           >
-            <span>{t.footer.issuesLink}</span>
-            <span style={{ fontSize: '0.85rem' }}>↗</span>
+            <span
+              className="ui-face sticker sticker-face footer-pill-face"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.85rem',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: 'var(--ink, #5a4a42)',
+                lineHeight: 1.2,
+              }}
+            >
+              <span>{t.footer.issuesLink}</span>
+              <span style={{ fontSize: '0.85rem' }}>↗</span>
+            </span>
           </a>
         </Reveal>
 

@@ -96,6 +96,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ label, text }) => {
         <div
           id={tooltipId}
           role="tooltip"
+          className="migration-help-tooltip"
           style={{
             position: 'absolute',
             right: 0,

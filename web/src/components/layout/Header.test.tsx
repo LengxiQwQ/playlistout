@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Header } from './Header';
 import { LanguageProvider } from '../../i18n';
 
@@ -60,42 +60,14 @@ describe('Header Component', () => {
 
     const githubLink = screen.getByRole('link', { name: /Star on GitHub/i });
     expect(githubLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout');
+    expect(githubLink).not.toHaveClass('desktop-only');
 
-    expect(screen.getByRole('button', { name: /Pinboard Wall/i })).toBeInTheDocument();
-
-    const drawerBtn = screen.getByRole('button', { name: /Journal Drawer/i });
-    expect(drawerBtn).toBeInTheDocument();
-    expect(drawerBtn).toHaveClass('mobile-only');
+    expect(screen.queryByRole('button', { name: /Pinboard Wall/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Journal Drawer|手账百宝箱/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Toggle language/i })).toBeInTheDocument();
   });
 
-  it('opens mobile drawer when mobile drawer button is clicked and allows style switching', () => {
-    render(
-      <LanguageProvider defaultLanguage="zh-CN">
-        <Header />
-      </LanguageProvider>
-    );
-
-    const drawerBtn = screen.getByRole('button', { name: /手账百宝箱/i });
-    fireEvent.click(drawerBtn);
-
-    expect(screen.getByTestId('mobile-settings-drawer')).toBeInTheDocument();
-    expect(screen.getByText('🎨 手帐页面风格')).toBeInTheDocument();
-
-    // Choose another layout style from the drawer
-    const pinboardCard = within(screen.getByTestId('mobile-settings-drawer')).getByRole('button', { name: /软木拼贴/i });
-    fireEvent.click(pinboardCard);
-
-    expect(document.documentElement.dataset.layoutDemo).toBe('b');
-    expect(localStorage.getItem('playlistout-journal-style')).toBe('b');
-
-    // Close button
-    const closeBtn = screen.getByRole('button', { name: /关闭对话框/i });
-    fireEvent.click(closeBtn);
-
-    expect(screen.queryByTestId('mobile-settings-drawer')).not.toBeInTheDocument();
-  });
-
-  it('renders separate desktop and mobile download links and moves language switcher into mobile drawer', () => {
+  it('renders separate desktop/mobile download links and exposes language switcher & Star directly without a drawer', () => {
     render(
       <LanguageProvider defaultLanguage="zh-CN">
         <Header />
@@ -120,31 +92,17 @@ describe('Header Component', () => {
     expect(mobileLink).toHaveAttribute('href', 'https://github.com/LengxiQwQ/playlistout/releases/latest');
     expect(mobileLink).toHaveAttribute('target', '_blank');
 
-    // Open mobile drawer
-    const drawerBtn = screen.getByRole('button', { name: /手账百宝箱/i });
-    fireEvent.click(drawerBtn);
+    // GitHub Star link and Language switcher are directly accessible (no drawer)
+    expect(screen.getByRole('link', { name: /Star on GitHub/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-settings-drawer')).not.toBeInTheDocument();
 
-    const drawer = screen.getByTestId('mobile-settings-drawer');
-
-    // Verify download link is NOT in mobile drawer
-    const drawerLinks = drawer.querySelectorAll('a.mobile-drawer-link-card');
-    const desktopDrawerLink = Array.from(drawerLinks).find((el) => el.textContent?.includes('下载'));
-    expect(desktopDrawerLink).toBeUndefined();
-
-    // Verify language switcher is present in mobile drawer
-    expect(screen.getByText('🌐 界面语言')).toBeInTheDocument();
-    const enButton = screen.getByRole('button', { name: /English/i });
-    expect(enButton).toBeInTheDocument();
-
-    // Switch to English in mobile drawer
-    fireEvent.click(enButton);
+    const langBtn = screen.getByRole('button', { name: /Toggle language/i });
+    fireEvent.click(langBtn);
     expect(document.documentElement.lang).toBe('en-US');
     expect(desktopLink).toHaveTextContent('Download Desktop');
     expect(mobileLink).toHaveTextContent('Download');
 
-    // Switch back to Chinese in mobile drawer
-    const zhButton = screen.getByRole('button', { name: /简体中文/i });
-    fireEvent.click(zhButton);
+    fireEvent.click(langBtn);
     expect(document.documentElement.lang).toBe('zh-CN');
     expect(desktopLink).toHaveTextContent('下载桌面版');
     expect(mobileLink).toHaveTextContent('下载');
