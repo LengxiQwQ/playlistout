@@ -59,9 +59,9 @@ export const FEATURED_UPCOMING_INTEGRATIONS: readonly UpcomingIntegration[] = [
     repositoryUrl: 'https://github.com/lyswhut/lx-music-desktop',
     logoUrl: 'https://raw.githubusercontent.com/lyswhut/lx-music-desktop/master/resources/icons/512x512.png',
     summary: {
-      'zh-CN': '超人气开源桌面音乐播放器。前往官网下载桌面端或移动端，在「我的列表」右键点击列表名或空白处选择「导入列表」，即可直接选择 PlaylistOut 导出的【洛雪音乐】JSON 文件秒级还原歌单并自由换源播放！',
-      'en-US': 'Popular open-source desktop music player. Download from the official website, right-click "My Lists" and select "Import List" to restore playlists exported from PlaylistOut in one click!',
-      default: '超人气开源桌面音乐播放器。前往官网下载桌面端或移动端，在「我的列表」右键点击列表名或空白处选择「导入列表」，即可直接选择 PlaylistOut 导出的【洛雪音乐】JSON 文件秒级还原歌单并自由换源播放！',
+      'zh-CN': '在洛雪音乐桌面版的「我的列表」中右键点击一个列表，选择「导入」，再打开 PlaylistOut 导出的【洛雪音乐】JSON 文件。',
+      'en-US': 'In LX Music Desktop, right-click a list under "My Lists", select "Import", and open the LX Music JSON exported by PlaylistOut.',
+      default: '在洛雪音乐桌面版的「我的列表」中右键点击一个列表，选择「导入」，再打开 PlaylistOut 导出的【洛雪音乐】JSON 文件。',
     },
   },
   {

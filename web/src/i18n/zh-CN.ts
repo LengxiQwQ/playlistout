@@ -186,7 +186,7 @@ export const zhCN: Translations = {
     playerExportTitle: '导出到开源播放器',
     playerExportSubtitle: '直接导出各大开源播放器现成支持的私有备份与歌单格式，在客户端内即可一键恢复/导入：',
     lxMusicButton: '洛雪音乐歌单 ↓',
-    lxMusicDesc: '导入指引：洛雪客户端 ➜「我的列表」➜ 右键列表或空白处 ➜「导入列表」',
+    lxMusicDesc: '导入指引：洛雪音乐桌面版 ➜「我的列表」➜ 右键点击一个列表 ➜「导入」',
     listen1Button: 'Listen 1 备份文件 ↓',
     listen1Desc: '导入指引：Listen 1 ➜「设置」➜「备份与恢复」➜「从本地文件恢复」',
     musicFreeButton: 'MusicFree (标准 JSON) ↓',

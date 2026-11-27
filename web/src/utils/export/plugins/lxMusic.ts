@@ -53,7 +53,8 @@ export interface LxMusicItem {
   interval: string;
   albumName: string;
   img?: string;
-  types?: unknown[];
+  types: unknown[];
+  _types: Record<string, unknown>;
 }
 
 export interface LxPlayListObject {
@@ -63,13 +64,13 @@ export interface LxPlayListObject {
 }
 
 export interface LxExportPayload {
-  type: 'playList';
+  type: 'playListPart';
   version: 1;
-  data: LxPlayListObject[];
+  data: LxPlayListObject;
 }
 
 /**
- * Converts a PlaylistOut Playlist into LX Music native list export format.
+ * Converts a PlaylistOut Playlist into LX Music's single-list import format.
  */
 export function generateLxMusicJSON(playlist: Playlist): string {
   if (['spotify', 'applemusic', 'ytmusic'].includes(playlist.platform)) throw new Error('此播放器格式不支持该来源，请使用通用 JSON、CSV 或 XLSX。');
@@ -94,19 +95,19 @@ export function generateLxMusicJSON(playlist: Playlist): string {
       albumName,
       img,
       types: [],
+      // LX Music reads the quality lookup even when no qualities are known.
+      _types: {},
     };
   });
 
   const payload: LxExportPayload = {
-    type: 'playList',
+    type: 'playListPart',
     version: 1,
-    data: [
-      {
-        id: listId,
-        name: listName,
-        list: items,
-      },
-    ],
+    data: {
+      id: listId,
+      name: listName,
+      list: items,
+    },
   };
 
   return JSON.stringify(payload, null, 2);
@@ -117,7 +118,7 @@ export const lxMusicExportPlugin: ExportPlugin = {
   name: '洛雪音乐 (LX Music)',
   fileExtension: 'json',
   mimeType: 'application/json;charset=utf-8',
-  description: '洛雪音乐专用歌单格式，在「我的列表」右键「导入列表」即可直接还原',
+  description: '洛雪音乐桌面版歌单格式，在「我的列表」右键点击一个列表并选择「导入」',
   export(ctx: ExportContext): ExportResult {
     const stem = buildPlaylistStem(ctx.playlist.name, ctx.playlist.creator);
     const filename = sanitizeFilename(`【洛雪音乐】${stem}.json`);

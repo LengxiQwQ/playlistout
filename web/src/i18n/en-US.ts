@@ -186,7 +186,7 @@ export const enUS: Translations = {
     playerExportTitle: 'Export to Open-Source Players',
     playerExportSubtitle: 'Export directly to native playlist and backup formats supported by open-source players:',
     lxMusicButton: 'LX Music Playlist (.json) ↓',
-    lxMusicDesc: 'Import guide: In LX Music ➜ "My Lists" ➜ right-click ➜ "Import List"',
+    lxMusicDesc: 'Import guide: In LX Music Desktop ➜ "My Lists" ➜ right-click a list ➜ "Import"',
     listen1Button: 'Listen 1 Backup (.json) ↓',
     listen1Desc: 'Import guide: In Listen 1 ➜ "Settings" ➜ "Backup & Restore" ➜ "Restore from local file"',
     musicFreeButton: 'MusicFree (Standard JSON) ↓',
