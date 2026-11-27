@@ -315,7 +315,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(90, 74, 66, 0.55)',
+        backgroundColor: 'var(--bg-backdrop)',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
         display: 'flex',
@@ -335,7 +335,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
         aria-modal="true"
         aria-labelledby="kugou-auth-title"
         style={{
-          backgroundColor: 'var(--paper, #fffcf6)',
+          backgroundColor: 'var(--bg-page)',
           maxWidth: '460px',
           width: '100%',
           position: 'relative',
@@ -375,7 +375,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             border: 'none',
             fontSize: '1.25rem',
             lineHeight: 1,
-            color: '#8a7569',
+            color: 'var(--text-faint)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -384,11 +384,11 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             zIndex: 30,
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.color = '#4a3b34';
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
+            e.currentTarget.style.color = 'var(--text)';
+            e.currentTarget.style.backgroundColor = 'var(--code-bg)';
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.color = '#8a7569';
+            e.currentTarget.style.color = 'var(--text-faint)';
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
@@ -407,7 +407,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
           className="font-sans"
           style={{
             fontSize: '0.92rem',
-            color: '#8a7569',
+            color: 'var(--text-faint)',
             marginBottom: '1.25rem',
             lineHeight: 1.4,
           }}
@@ -421,14 +421,14 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             data-testid="kugou-auth-checking"
             style={{
               padding: '2rem 1rem',
-              backgroundColor: '#fffaf3',
+              backgroundColor: 'var(--bg-sunken)',
               borderRadius: '8px',
-              border: '2px dashed #b8a79c',
+              border: '2px dashed var(--line-strong)',
               marginBottom: '1.5rem',
             }}
           >
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div>
-            <div className="font-sans" style={{ fontWeight: 600, color: '#6b574c', fontSize: '1rem' }}>
+            <div className="font-sans" style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '1rem' }}>
               正在验证登录状态...
             </div>
           </div>
@@ -440,20 +440,20 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             data-testid="kugou-auth-unknown"
             style={{
               padding: '1.5rem',
-              backgroundColor: '#fffbeb',
+              backgroundColor: 'var(--tint-lemon-bg-soft)',
               borderRadius: '8px',
-              border: '2px dashed #f2b25c',
+              border: '2px dashed var(--status-pay-border)',
               marginBottom: '1.5rem',
             }}
           >
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem', color: '#e8955a' }}>⚠️</div>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--accent-peach)' }}>⚠️</div>
             <div
               className="font-sans"
-              style={{ fontWeight: 700, fontSize: '1.05rem', color: '#b8692f', marginBottom: '0.5rem' }}
+              style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--status-pay-text)', marginBottom: '0.5rem' }}
             >
               暂时无法验证酷狗登录状态
             </div>
-            <p className="font-sans" style={{ fontSize: '0.85rem', color: '#7a4a2a', marginBottom: '1rem' }}>
+            <p className="font-sans" style={{ fontSize: '0.85rem', color: 'var(--status-pay-text)', marginBottom: '1rem' }}>
               网络连接可能存在波动或酷狗接口暂时不可达。本地保存的凭据已保留。
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -486,15 +486,15 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             data-testid="kugou-auth-valid"
             style={{
               padding: '1.5rem',
-              backgroundColor: '#f2f5ff',
+              backgroundColor: 'var(--tint-sky-bg-soft)',
               borderRadius: '8px',
-              border: '2px dashed #b7c8f5',
+              border: '2px dashed var(--tint-sky-line)',
               marginBottom: '1.5rem',
             }}
           >
             <KugouProfileCard profile={profile} profileLoading={profileLoading} />
 
-            <p className="font-sans" style={{ fontSize: '0.85rem', color: '#7a665b', marginBottom: '1.25rem' }}>
+            <p className="font-sans" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
               已安全保存本地登录凭证，可直接读取当前账号的完整云歌单。
             </p>
             <div
@@ -514,7 +514,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                   padding: '0.65rem 1rem',
                   fontSize: '1.05rem',
                   justifyContent: 'center',
-                  color: '#e0607a',
+                  color: 'var(--tint-strawberry-fg)',
                 }}
                 onClick={() => {
                   pendingSuccessRef.current = false;
@@ -541,10 +541,10 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               <div
                 style={{
                   padding: '0.5rem 0.75rem',
-                  backgroundColor: '#fff3f4',
-                  border: '1px solid #f08aa0',
+                  backgroundColor: 'var(--status-error-bg)',
+                  border: '1px solid var(--status-error-border)',
                   borderRadius: '6px',
-                  color: '#c44b63',
+                  color: 'var(--status-error-text)',
                   fontSize: '0.85rem',
                   marginBottom: '1rem',
                 }}
@@ -556,13 +556,13 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
             <div
               style={{
                 textAlign: 'left',
-                backgroundColor: '#fffaf3',
+                backgroundColor: 'var(--bg-sunken)',
                 padding: '0.75rem 1rem',
                 borderRadius: '6px',
-                border: '1px solid #f0e6dc',
+                border: '1px solid var(--line)',
                 marginBottom: '1.25rem',
                 fontSize: '0.85rem',
-                color: '#7a665b',
+                color: 'var(--text-muted)',
               }}
             >
               <div style={{ marginBottom: '0.25rem' }}>1. {t.kugouAuth.step1}</div>
@@ -584,7 +584,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
               className="font-handwriting"
               style={{
                 fontSize: '1rem',
-                color: status === 'scanned' ? '#6a82d4' : status === 'success' ? '#4fae8a' : '#8a7569',
+                color: status === 'scanned' ? 'var(--accent-sky)' : status === 'success' ? 'var(--accent-mint)' : 'var(--text-faint)',
                 minHeight: '1.5rem',
                 marginBottom: '0.75rem',
                 fontWeight: 600,
@@ -610,21 +610,21 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                     width: '100%',
                     maxWidth: '300px',
                     padding: '0.6rem 1rem',
-                    backgroundColor: '#6a82d4',
-                    color: '#ffffff',
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--text-on-accent)',
                     borderRadius: '6px',
                     fontSize: '0.95rem',
                     fontWeight: 600,
                     textDecoration: 'none',
-                    boxShadow: '0 2px 4px rgba(106, 130, 212, 0.25)',
+                    boxShadow: '0 2px 4px color-mix(in srgb, var(--hue-sky) 25%, transparent)',
                     transition: 'all 0.15s ease',
                     margin: '0 auto',
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#5670c4';
+                    e.currentTarget.style.backgroundColor = 'var(--tint-sky-fg)';
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#6a82d4';
+                    e.currentTarget.style.backgroundColor = 'var(--primary)';
                   }}
                 >
                   {t.kugouAuth.jumpToAppBtn}
@@ -632,7 +632,7 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
                 <div
                   style={{
                     fontSize: '0.76rem',
-                    color: '#8a7569',
+                    color: 'var(--text-faint)',
                     marginTop: '0.45rem',
                     lineHeight: 1.4,
                     padding: '0 0.5rem',
@@ -649,9 +649,9 @@ export const KugouAuthModal: React.FC<KugouAuthModalProps> = ({
         <div
           style={{
             fontSize: '0.78rem',
-            color: '#b8a79c',
+            color: 'var(--text-faint)',
             lineHeight: 1.35,
-            borderTop: '1px dashed #e6d8cc',
+            borderTop: '1px dashed var(--line)',
             paddingTop: '0.75rem',
             marginBottom: '1.25rem',
           }}

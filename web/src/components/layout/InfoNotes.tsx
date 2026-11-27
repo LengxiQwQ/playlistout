@@ -38,20 +38,20 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
                 style={{ width: '5.5rem', height: '1.45rem' }}
               />
             </Reveal>
-            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--text)' }}>
               {t.infoNotes.whyTitle}
             </div>
             <p
               className={isWhyLong ? undefined : 'ruled-paper-text font-handwriting'}
               style={
                 isWhyLong
-                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--ink, #5a4a42)', margin: 0 }
+                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text)', margin: 0 }
                   : { fontSize: '1.3rem' }
               }
             >
               {t.infoNotes.whyContent}
             </p>
-            <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: 'var(--ink-light, #8a7569)' }}>
+            <div className="font-note" style={{ marginTop: '1.25rem', fontSize: '1.25rem', color: 'var(--text-muted)' }}>
               {t.infoNotes.whySubtext}
             </div>
           </Paper>
@@ -78,7 +78,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
                 style={{ width: '6rem', height: '1.5rem' }}
               />
             </Reveal>
-            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--text)' }}>
               {t.infoNotes.whatTitle}
             </div>
             <div className="ruled-paper-list font-handwriting" style={{ fontSize: '1.25rem' }}>
@@ -118,20 +118,20 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
                 style={{ width: '5.8rem', height: '1.45rem' }}
               />
             </Reveal>
-            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--ink, #5a4a42)' }}>
+            <div className="font-marker" style={{ fontSize: '1.35rem', marginBottom: '1rem', color: 'var(--text)' }}>
               {t.infoNotes.noteTitle}
             </div>
             <p
               className={isNoteLong ? undefined : 'ruled-paper-text font-handwriting'}
               style={
                 isNoteLong
-                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--ink, #5a4a42)', margin: 0 }
+                  ? { fontFamily: 'var(--font-sans)', fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text)', margin: 0 }
                   : { fontSize: '1.3rem' }
               }
             >
               {t.infoNotes.noteContent}
             </p>
-            <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: 'var(--ink-light, #8a7569)' }}>
+            <div className="font-note" style={{ marginTop: '1.25rem', textAlign: 'right', fontSize: '1.35rem', color: 'var(--text-muted)' }}>
               {t.infoNotes.noteSubtext}
             </div>
           </Paper>
@@ -158,7 +158,7 @@ export const InfoNotes: React.FC<InfoNotesProps> = () => {
           style={{
             ['--sticker-rot' as any]: '-8deg',
             fontSize: '2.1rem',
-            color: 'var(--accent-strawberry, #e8789a)',
+            color: 'var(--accent-strawberry)',
             opacity: 0.85,
           }}
         >

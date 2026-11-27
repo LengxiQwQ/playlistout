@@ -1,7 +1,7 @@
 /* PlaylistOut Developer & Open Protocol Notes - Stationery Journal Styling */
 
 .developer-panel {
-  max-width: var(--result-paper-width, 1050px);
+  max-width: var(--result-paper-width);
   margin: 0 auto;
   padding: 1.85rem 2rem 1.65rem;
   position: relative;
@@ -22,14 +22,14 @@
 
 .developer-title {
   margin: 0;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   font-size: clamp(1.65rem, 2.8vw, 2.15rem);
   line-height: 1.25;
 }
 
 .developer-subtitle {
   margin: 0.45rem 0 0;
-  color: var(--ink-light, #8a7569);
+  color: var(--text-muted);
   font-size: 1.15rem;
   line-height: 1.5;
 }
@@ -37,7 +37,7 @@
 .developer-value-note {
   flex: 0 0 auto;
   margin-top: 0.2rem;
-  color: #8a6a24;
+  color: var(--accent-lemon);
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
@@ -60,11 +60,11 @@
 .developer-method {
   min-width: 0;
   flex: 1;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid rgba(90, 74, 66, 0.25);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
   border-radius: 10px;
   padding: 1.15rem 1.15rem;
-  box-shadow: 2px 2px 0 rgba(90, 74, 66, 0.08);
+  box-shadow: 2px 2px 0 var(--shadow-color);
   display: flex;
   flex-direction: column;
   translate: 0 0;
@@ -74,58 +74,58 @@
 
 .developer-method-slot:nth-child(1) .developer-method {
   --rot: -0.3deg;
-  background: #fff7fa;
-  border-color: rgba(236, 127, 159, 0.35);
+  background: var(--tint-strawberry-bg-soft);
+  border-color: var(--tint-strawberry-line);
 }
 
 .developer-method-slot:nth-child(2) .developer-method {
   --rot: 0.35deg;
-  background: #f4fbf8;
-  border-color: rgba(79, 174, 138, 0.35);
+  background: var(--tint-mint-bg-soft);
+  border-color: var(--tint-mint-line);
 }
 
 .developer-method-slot:nth-child(3) .developer-method {
   --rot: -0.25deg;
-  background: #fffdf2;
-  border-color: rgba(227, 178, 60, 0.38);
+  background: var(--tint-lemon-bg-soft);
+  border-color: var(--tint-lemon-line);
 }
 
 .developer-method-slot:nth-child(4) .developer-method {
   --rot: 0.3deg;
-  background: #f8f5ff;
-  border-color: rgba(139, 108, 196, 0.35);
+  background: var(--tint-taro-bg-soft);
+  border-color: var(--tint-taro-line);
 }
 
 .developer-method-api .developer-method-mark {
-  background: #ffd8e6;
-  color: #a63e55;
-  border-color: #f3a6c0;
+  background: var(--tint-strawberry-bg);
+  color: var(--status-error-text);
+  border-color: var(--status-error-border);
 }
 
 .developer-method-cli .developer-method-mark {
-  background: #cdeee0;
-  color: #2f755b;
-  border-color: #8fd4b7;
+  background: var(--tint-mint-bg);
+  color: var(--status-normal-text);
+  border-color: var(--status-normal-border);
 }
 
 .developer-method-json .developer-method-mark {
-  background: #fff0b3;
-  color: #8a5a24;
-  border-color: #f0d065;
+  background: var(--tint-lemon-bg);
+  color: var(--status-pay-text);
+  border-color: var(--status-pay-border);
 }
 
 .developer-method-integration .developer-method-mark {
-  background: #e8ddff;
-  color: #6b4ba6;
-  border-color: #c5aff5;
+  background: var(--tint-taro-bg);
+  color: var(--status-vip-text);
+  border-color: var(--status-vip-border);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .developer-method-slot:hover > .developer-method {
     translate: 0 -2px;
     rotate: 0deg;
-    box-shadow: 3px 3px 0 rgba(90, 74, 66, 0.16);
-    background: #ffffff;
+    box-shadow: 3px 3px 0 var(--shadow-color);
+    background: var(--bg-surface);
   }
 }
 
@@ -137,20 +137,20 @@
 }
 
 .developer-method-mark {
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   font-family: var(--font-mono, "SFMono-Regular", Consolas, Menlo, monospace);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1;
-  background: rgba(90, 74, 66, 0.06);
+  background: var(--code-bg);
   padding: 0.22rem 0.45rem;
   border-radius: 6px;
-  border: 1px solid rgba(90, 74, 66, 0.12);
+  border: 1px solid var(--border-color);
 }
 
 .developer-method-meta {
   min-width: 0;
-  color: #8a7569;
+  color: var(--text-muted);
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   font-size: 0.8rem;
   font-weight: 500;
@@ -161,7 +161,7 @@
 
 .developer-method-title {
   margin: 0.65rem 0 0;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 1.15rem;
   font-weight: 700;
@@ -170,7 +170,7 @@
 
 .developer-method-description {
   margin: 0.4rem 0 0;
-  color: #7a665b;
+  color: var(--text-muted);
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 0.95rem;
   line-height: 1.75;
@@ -184,19 +184,19 @@
   flex-wrap: wrap;
   margin-top: 0.95rem;
   padding-top: 0.65rem;
-  border-top: 1px dashed rgba(90, 74, 66, 0.16);
+  border-top: 1px dashed var(--border-color);
 }
 
 .developer-method-link,
 .developer-copy-api {
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.35;
   text-decoration: none;
   border: 0;
-  border-bottom: 1.5px dashed rgba(90, 74, 66, 0.45);
+  border-bottom: 1.5px dashed var(--text-faint);
   background: transparent;
   padding: 0 0 1px 0;
   cursor: pointer;
@@ -206,20 +206,20 @@
 @media (hover: hover) and (pointer: fine) {
   .developer-method-link:hover,
   .developer-copy-api:hover {
-    color: #6a82d4;
-    border-bottom-color: #6a82d4;
+    color: var(--accent-sky);
+    border-bottom-color: var(--accent-sky);
   }
 }
 
 .developer-copy-api.is-copied {
-  color: #3d8f70;
-  border-bottom-color: #3d8f70;
+  color: var(--accent-mint);
+  border-bottom-color: var(--accent-mint);
   font-weight: 700;
 }
 
 .developer-footer-note {
   margin-top: 1.25rem;
-  color: #8a7569;
+  color: var(--text-muted);
   font-size: 1.05rem;
   line-height: 1.45;
   text-align: center;

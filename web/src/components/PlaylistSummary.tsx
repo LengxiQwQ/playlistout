@@ -76,7 +76,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
         flexDirection: 'column',
         gap: '1.25rem',
         paddingBottom: '1.5rem',
-        borderBottom: '2px dashed var(--line, #efe4da)',
+        borderBottom: '2px dashed var(--line)',
       }}
     >
       <div className="playlist-summary-main">
@@ -95,10 +95,10 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 minWidth: '92px',
                 objectFit: 'cover',
                 padding: '5px 5px 14px 5px',
-                backgroundColor: '#fffdf9',
-                border: '2px solid var(--ink-line)',
+                backgroundColor: 'var(--bg-surface)',
+                border: '2px solid var(--line-ink)',
                 borderRadius: '8px',
-                boxShadow: '3px 4px 0 var(--shadow-ink)',
+                boxShadow: '3px 4px 0 var(--shadow-color)',
                 transform: 'rotate(-2deg)',
                 flexShrink: 0,
               }}
@@ -112,13 +112,13 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 height: '92px',
                 minWidth: '92px',
                 padding: '5px 5px 14px 5px',
-                backgroundColor: 'var(--highlight-yellow, #ffeaa7)',
-                border: '2px solid var(--ink-line)',
+                backgroundColor: 'var(--tint-lemon-bg)',
+                border: '2px solid var(--line-ink)',
                 display: 'grid',
                 placeItems: 'center',
                 fontSize: '2.5rem',
                 borderRadius: '8px',
-                boxShadow: '3px 4px 0 var(--shadow-ink)',
+                boxShadow: '3px 4px 0 var(--shadow-color)',
                 transform: 'rotate(-2deg)',
                 userSelect: 'none',
                 flexShrink: 0,
@@ -160,7 +160,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 fontWeight: 800,
                 fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
                 lineHeight: 1.25,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 margin: '0.25rem 0',
                 wordBreak: 'break-word',
                 overflowWrap: 'break-word',
@@ -175,7 +175,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 fontFamily: 'var(--font-sans, sans-serif)',
                 fontSize: '0.95rem',
                 lineHeight: 1.5,
-                color: '#8a7569',
+                color: 'var(--text-faint)',
                 display: 'flex',
                 alignItems: 'center',
                 flexWrap: 'wrap',
@@ -231,7 +231,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                     }}
                   >
                     <span>{t.result.creatorPrefix}</span>
-                    <strong style={{ color: 'var(--ink, #5a4a42)', fontWeight: 600 }}>
+                    <strong style={{ color: 'var(--text)', fontWeight: 600 }}>
                       {playlist.creator}
                     </strong>
                   </span>
@@ -300,9 +300,9 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                       fontSize: '0.78rem',
                       padding: '0.15rem 0.5rem',
                       borderRadius: '4px',
-                      backgroundColor: 'rgba(90, 74, 66, 0.06)',
-                      border: '1px solid rgba(90, 74, 66, 0.15)',
-                      color: '#7a665b',
+                      backgroundColor: 'var(--bg-sunken)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     #{tag}
@@ -317,11 +317,11 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 style={{
                   marginTop: '0.5rem',
                   fontSize: '1rem',
-                  color: '#7a665b',
+                  color: 'var(--text-muted)',
                   lineHeight: 1.4,
                   padding: '0.35rem 0.65rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                  borderLeft: '2.5px solid var(--ink-line)',
+                  backgroundColor: 'var(--bg-raised)',
+                  borderLeft: '2.5px solid var(--line-ink)',
                   borderRadius: '0 4px 4px 0',
                   maxWidth: '650px',
                   wordBreak: 'break-word',
@@ -339,9 +339,9 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                   marginTop: '0.5rem',
                   fontSize: '0.88rem',
                   fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                  color: '#9a5a2c',
-                  backgroundColor: 'rgba(254, 243, 199, 0.9)',
-                  border: '1px solid #ffd77a',
+                  color: 'var(--status-pay-text)',
+                  backgroundColor: 'var(--status-pay-bg)',
+                  border: '1px solid var(--status-pay-border)',
                   borderRadius: '4px',
                   padding: '0.4rem 0.75rem',
                   maxWidth: '650px',
@@ -377,7 +377,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                 fontFamily: 'var(--font-handwriting, cursive)',
                 fontWeight: 700,
                 cursor: 'pointer',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 lineHeight: 1.2,
@@ -400,7 +400,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                   fontWeight: 700,
                   cursor: 'pointer',
                   lineHeight: 1.2,
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                 }}
               >
                 ← {t.userPlaylists.returnToCollection}
@@ -421,7 +421,7 @@ export const PlaylistSummary: React.FC<PlaylistSummaryProps> = ({
                   fontWeight: 700,
                   cursor: 'pointer',
                   lineHeight: 1.2,
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                 }}
               >
                 📂 {t.result.kugouViewAllPlaylistsBtn}

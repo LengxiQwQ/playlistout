@@ -12,14 +12,14 @@ export interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const colorMap = {
-  white: 'var(--paper-white, #fffdf9)',
-  yellow: 'var(--note-yellow, #fff4c7)',
-  mint: 'var(--note-mint, #d8f3e8)',
-  blue: 'var(--note-blue, #e6f3ff)',
-  pink: 'var(--note-pink, #ffe4ea)',
-  peach: 'var(--mac-peach, #ffe9dc)',
-  taro: 'var(--mac-taro, #efe8ff)',
-  error: 'var(--note-error, #ffebee)',
+  white: 'var(--bg-surface)',
+  yellow: 'var(--tint-lemon-bg)',
+  mint: 'var(--tint-mint-bg)',
+  blue: 'var(--tint-sky-bg)',
+  pink: 'var(--tint-strawberry-bg)',
+  peach: 'var(--tint-peach-bg)',
+  taro: 'var(--tint-taro-bg)',
+  error: 'var(--tint-error-bg)',
 };
 
 const borderClassMap = {

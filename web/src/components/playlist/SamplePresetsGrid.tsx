@@ -14,7 +14,7 @@ const sampleStickerStyle: React.CSSProperties = {
   padding: '0.32rem 0.9rem',
   fontSize: '1.02rem',
   fontWeight: 600,
-  color: '#4a3832',
+  color: 'var(--text)',
   fontFamily: 'var(--font-handwriting, cursive)',
   cursor: 'pointer',
 };
@@ -31,7 +31,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
       style={{
         marginTop: '1.25rem',
         paddingTop: '0.85rem',
-        borderTop: '2px dashed rgba(90, 74, 66, 0.2)',
+        borderTop: '2px dashed var(--line)',
       }}
     >
       <button
@@ -47,14 +47,14 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.45rem',
-            background: isSamplesExpanded ? '#ffeef3' : '#fffaf0',
-            border: '1.75px dashed rgba(110, 90, 80, 0.45)',
+            background: isSamplesExpanded ? 'var(--tint-strawberry-bg-soft)' : 'var(--bg-sunken)',
+            border: '1.75px dashed var(--line-strong)',
             borderRadius: '20px',
             padding: '0.32rem 1rem',
             fontSize: '1.02rem',
             fontWeight: 600,
-            color: '#5a443b',
-            boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.14)',
+            color: 'var(--text)',
+            boxShadow: '2px 2px 0 color-mix(in srgb, var(--shadow-color) 45%, transparent)',
             fontFamily: 'var(--font-handwriting, cursive)',
           }}
         >
@@ -83,7 +83,7 @@ export const SamplePresetsGrid: React.FC<SamplePresetsGridProps> = ({
           gap: '1rem',
           marginTop: '0.85rem',
           fontSize: '1.1rem',
-          color: '#8a7569',
+          color: 'var(--text-faint)',
           fontFamily: 'var(--font-handwriting, cursive)',
         }}
       >

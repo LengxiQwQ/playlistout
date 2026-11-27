@@ -169,7 +169,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
           gap: '0.8rem',
           marginBottom: '0.75rem',
           paddingBottom: '0.65rem',
-          borderBottom: '1.5px dashed rgba(90, 74, 66, 0.2)',
+          borderBottom: '1.5px dashed var(--line)',
         }}
       >
         {/* Circular Avatar */}
@@ -180,9 +180,9 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             height: '46px',
             borderRadius: '50%',
             flexShrink: 0,
-            border: '2px solid var(--ink-line)',
+            border: '2px solid var(--line-ink)',
             overflow: 'hidden',
-            backgroundColor: '#fdf6ec',
+            backgroundColor: 'var(--bg-surface)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -210,7 +210,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontSize: '1.2rem',
                 fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 userSelect: 'none',
               }}
             >
@@ -237,7 +237,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
                 '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif',
               fontSize: '1.18rem',
               fontWeight: 700,
-              color: 'var(--ink, #5a4a42)',
+              color: 'var(--text)',
               lineHeight: 1.2,
             }}
           >
@@ -248,7 +248,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
             className="font-handwriting"
             style={{
               fontSize: '0.9rem',
-              color: 'var(--ink-light, #8a7569)',
+              color: 'var(--text-muted)',
               margin: 0,
               lineHeight: 1.25,
             }}
@@ -282,7 +282,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               borderRadius: '50%',
               fontSize: '1.05rem',
               fontWeight: 700,
-              color: 'var(--ink-light, #8a7569)',
+              color: 'var(--text-muted)',
             }}
           >
             ✕
@@ -308,7 +308,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.95rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontWeight: 600,
                 letterSpacing: '0.01em',
                 userSelect: 'text',
@@ -347,7 +347,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               style={{
                 fontFamily: 'var(--font-sans, sans-serif)',
                 fontSize: '0.95rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontWeight: 600,
                 userSelect: 'text',
                 overflow: 'hidden',
@@ -388,7 +388,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.88rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 userSelect: 'text',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -439,7 +439,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({ isOpen, onClose }) => {
               className="font-mono"
               style={{
                 fontSize: '0.92rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 userSelect: 'text',
                 fontWeight: 600,
               }}

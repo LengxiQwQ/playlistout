@@ -32,9 +32,9 @@ export const LoadingNote: React.FC = () => {
         style={{
           width: '2.5rem',
           height: '2.5rem',
-          border: '3px solid rgba(90, 74, 66, 0.2)',
-          borderTopColor: 'var(--ink, #5a4a42)',
-          borderRightColor: 'var(--ink, #5a4a42)',
+          border: '3px solid var(--line)',
+          borderTopColor: 'var(--text)',
+          borderRightColor: 'var(--text)',
           borderRadius: '50%',
         }}
         aria-hidden="true"
@@ -44,7 +44,7 @@ export const LoadingNote: React.FC = () => {
         style={{
           fontSize: '1.4rem',
           fontWeight: 700,
-          color: 'var(--ink, #5a4a42)',
+          color: 'var(--text)',
           transition: 'opacity 0.2s ease',
         }}
       >

@@ -36,9 +36,9 @@ export const KugouApiCredentials: React.FC = () => {
       style={{
         marginTop: '1.25rem',
         padding: '0.85rem 1rem',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'var(--bg-surface)',
         borderRadius: '6px',
-        border: '1px solid #d4defc',
+        border: '1px solid var(--tint-sky-line)',
         textAlign: 'left',
       }}
     >
@@ -46,7 +46,7 @@ export const KugouApiCredentials: React.FC = () => {
         style={{
           fontSize: '0.85rem',
           fontWeight: 700,
-          color: '#4a5c9e',
+          color: 'var(--tint-sky-fg)',
           marginBottom: '0.6rem',
         }}
       >
@@ -61,15 +61,15 @@ export const KugouApiCredentials: React.FC = () => {
           justifyContent: 'space-between',
           fontSize: '0.8rem',
           marginBottom: '0.45rem',
-          backgroundColor: '#fffaf3',
+          backgroundColor: 'var(--bg-sunken)',
           padding: '0.35rem 0.5rem',
           borderRadius: '4px',
-          border: '1px solid #f0e6dc',
+          border: '1px solid var(--line)',
         }}
       >
         <span
           style={{
-            color: '#7a665b',
+            color: 'var(--text-muted)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -77,7 +77,7 @@ export const KugouApiCredentials: React.FC = () => {
           }}
           title={currentAuth.token}
         >
-          Token: <span style={{ fontFamily: 'monospace', color: '#4a3b34' }}>{currentAuth.token.slice(0, 10)}...</span>
+          Token: <span style={{ fontFamily: 'monospace', color: 'var(--text)' }}>{currentAuth.token.slice(0, 10)}...</span>
         </span>
         <button
           type="button"
@@ -87,9 +87,9 @@ export const KugouApiCredentials: React.FC = () => {
             fontSize: '0.75rem',
             padding: '0.2rem 0.55rem',
             borderRadius: '4px',
-            border: '1px solid #e6d8cc',
-            backgroundColor: copiedKey === 'token' ? '#dcf5ea' : '#ffffff',
-            color: copiedKey === 'token' ? '#34775e' : '#4a3b34',
+            border: '1px solid var(--line)',
+            backgroundColor: copiedKey === 'token' ? 'var(--tint-mint-bg)' : 'var(--bg-surface)',
+            color: copiedKey === 'token' ? 'var(--tint-mint-fg)' : 'var(--text)',
             cursor: 'pointer',
             fontWeight: 500,
           }}
@@ -106,14 +106,14 @@ export const KugouApiCredentials: React.FC = () => {
           justifyContent: 'space-between',
           fontSize: '0.8rem',
           marginBottom: 0,
-          backgroundColor: '#fffaf3',
+          backgroundColor: 'var(--bg-sunken)',
           padding: '0.35rem 0.5rem',
           borderRadius: '4px',
-          border: '1px solid #f0e6dc',
+          border: '1px solid var(--line)',
         }}
       >
-        <span style={{ color: '#7a665b' }}>
-          User ID: <strong style={{ color: '#4a3b34' }}>{currentAuth.userid}</strong>
+        <span style={{ color: 'var(--text-muted)' }}>
+          User ID: <strong style={{ color: 'var(--text)' }}>{currentAuth.userid}</strong>
         </span>
         <button
           type="button"
@@ -123,9 +123,9 @@ export const KugouApiCredentials: React.FC = () => {
             fontSize: '0.75rem',
             padding: '0.2rem 0.55rem',
             borderRadius: '4px',
-            border: '1px solid #e6d8cc',
-            backgroundColor: copiedKey === 'userid' ? '#dcf5ea' : '#ffffff',
-            color: copiedKey === 'userid' ? '#34775e' : '#4a3b34',
+            border: '1px solid var(--line)',
+            backgroundColor: copiedKey === 'userid' ? 'var(--tint-mint-bg)' : 'var(--bg-surface)',
+            color: copiedKey === 'userid' ? 'var(--tint-mint-fg)' : 'var(--text)',
             cursor: 'pointer',
             fontWeight: 500,
           }}

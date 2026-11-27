@@ -34,14 +34,14 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
       <div
         className="font-note result-transition-hint"
         style={{
-          maxWidth: 'var(--search-note-width, 820px)',
+          maxWidth: 'var(--search-note-width)',
           margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: onReturnToBatch ? 'flex-start' : 'center',
           gap: '0.65rem',
           fontSize: '1.65rem',
-          color: '#a8968b',
+          color: 'var(--text-faint)',
           height: 'var(--ruled-line-height, 38px)',
           lineHeight: 'var(--ruled-line-height, 38px)',
         }}
@@ -56,12 +56,12 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
             <span
               className="ui-face result-return-btn-face"
               style={{
-                backgroundColor: '#ffeef3',
-                border: '1.75px solid var(--ink-line)',
+                backgroundColor: 'var(--tint-strawberry-bg-soft)',
+                border: '1.75px solid var(--line-ink)',
                 borderRadius: '999px',
-                boxShadow: '2px 2px 0 var(--shadow-ink)',
+                boxShadow: '2px 2px 0 var(--shadow-color)',
                 padding: '0.2rem 0.9rem',
-                color: '#5a4a42',
+                color: 'var(--text)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.45rem',
@@ -84,7 +84,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
         id="result"
         className="result-paper-section"
         style={{
-          maxWidth: 'var(--result-paper-width, 1050px)',
+          maxWidth: 'var(--result-paper-width)',
           margin: '0 auto',
           position: 'relative',
         }}
@@ -96,7 +96,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
             position: 'absolute',
             right: '1rem',
             top: '-2rem',
-            color: '#e3b23c',
+            color: 'var(--paper-lemon)',
             fontSize: '2.5rem',
             userSelect: 'none',
             zIndex: 15,
@@ -144,7 +144,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.72)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-surface) 82%, transparent)',
                 backdropFilter: 'blur(2px)',
                 WebkitBackdropFilter: 'blur(2px)',
                 borderRadius: 'inherit',
@@ -165,10 +165,10 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   alignItems: 'center',
                   gap: '0.85rem',
                   padding: '1rem 1.75rem',
-                  backgroundColor: '#fffdf9',
-                  border: '2px dashed #ec7f9f',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '2px dashed var(--accent-strawberry)',
                   borderRadius: '14px',
-                  boxShadow: '3px 4px 0 rgba(150, 112, 92, 0.2)',
+                  boxShadow: 'var(--shadow-sticker)',
                 }}
               >
                 <div
@@ -176,8 +176,8 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   style={{
                     width: '1.5rem',
                     height: '1.5rem',
-                    border: '2.5px solid #ffd8e6',
-                    borderTopColor: '#ec7f9f',
+                    border: '2.5px solid var(--accent-strawberry)',
+                    borderTopColor: 'var(--accent-strawberry)',
                     borderRadius: '50%',
                   }}
                 />
@@ -185,7 +185,7 @@ export const ResultPaper: React.FC<ResultPaperProps> = ({
                   className="font-note"
                   style={{
                     fontSize: '1.35rem',
-                    color: '#a63e55',
+                    color: 'var(--tint-strawberry-fg)',
                     fontWeight: 700,
                   }}
                 >

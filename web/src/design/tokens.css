@@ -1,98 +1,258 @@
 /* PlaylistOut Music Journal - Design Tokens
- * Macaron Journal palette: warm cream paper, cocoa ink, soft pastel stationery.
+ * Two-layer semantic token architecture:
+ *   Layer 1: Raw hues (--hue-*) + neutral surfaces/ink/lines
+ *   Layer 2: Semantic tokens derived via color-mix()
+ * Supports Light Mode (default) and Dark Mode (Midnight Journal).
  */
+
+/* ① Light Mode (Default): Raw hues + neutral semantic tokens + theme intensity + non-color tokens */
 :root {
-  /* Paper & Ink */
-  --paper: #fdf6ec;
-  --paper-cream: #fffaf2;
-  --paper-white: #fffdf8;
-  --ink: #43352e;
-  --ink-light: #705b4f;
-  --ink-muted: #8c776b;
-  --ink-faint: rgba(67, 53, 46, 0.16);
-  /* Outline colour for hand-drawn borders: a touch lighter than text ink */
-  --ink-line: #5c493f;
-  /* Soft "lifted sticker" offset shadow (replaces hard charcoal shadows) */
-  --shadow-ink: rgba(150, 112, 92, 0.3);
-  --shadow-soft: 0 6px 18px -8px rgba(150, 112, 92, 0.35);
+  color-scheme: light;
 
-  /* Notebook ruling / dot grid */
-  --line: #efe3d3;
-  --dot: rgba(196, 160, 136, 0.42);
+  /* Surfaces */
+  --bg-page: #fdf6ec;
+  --bg-surface: #fffdf8;
+  --bg-raised: #ffffff;
+  --bg-sunken: #faf3ea;
+  --bg-backdrop: rgb(74 59 52 / 0.6);
+
+  /* Text */
+  --text: #43352e;
+  --text-muted: #705b4f;
+  --text-faint: #8c776b;
+  --text-on-accent: #ffffff;
+
+  /* Lines & Borders */
+  --line: rgb(67 53 46 / 0.16);
+  --line-strong: #e6d8cc;
+  --line-ink: #5c493f;
+
+  /* Shadow & Gloss */
+  --shadow-color: rgb(150 112 92 / 0.3);
+  --gloss: rgb(255 255 255 / 0.55);
+
+  /* Notebook Ruling */
+  --rule-line: #efe3d3;
+  --rule-dot: rgb(196 160 136 / 0.42);
+  --rule-margin: #f4a7b9;
+
+  /* Focus & Code */
+  --focus-ring: rgb(106 130 212 / 0.25);
+  --code-bg: rgb(0 0 0 / 0.06);
+
+  /* Primary Button & Toast */
+  --btn-primary-bg: #e1668b;
+  --btn-primary-hover: #d8557d;
+  --toast-bg: #4a3b34;
+  --toast-text: #ffffff;
+
+  /* Raw Hues (Macaron palette) */
+  --hue-strawberry: #e8789a;
+  --hue-peach: #ee9a6c;
+  --hue-lemon: #e3b23c;
+  --hue-mint: #4fae8a;
+  --hue-sky: #6a82d4;
+  --hue-taro: #9a7fd8;
+  --hue-matcha: #8fb85a;
+  --hue-error: #c44b63;
+
+  /* Theme Intensity Parameters */
+  --tint-soft-mix: 12%;
+  --tint-mix: 30%;
+  --tint-line-mix: 50%;
+  --tint-fg-mix: 72%;
+  --tape-alpha: 62%;
+  --grain-opacity: 1;
+
+  /* Allowed Fixed Color Exceptions */
+  --qr-bg: #ffffff;
+  --brand-wechat: #07c160;
+  --brand-github-bg: #24292f;
+  --brand-github-text: #ffffff;
+  --theme-meta-light: #fdf6ec;
+  --theme-meta-dark: #1b1917;
+
+  /* Non-color Tokens (layout, typography, motion) */
   --ruled-line-height: 38px;
-  --margin-red: #f4a7b9;
-
-  /* Macaron palette (fills) */
-  --mac-strawberry: #ffd6e0;
-  --mac-peach: #ffdcc7;
-  --mac-lemon: #fff1b8;
-  --mac-mint: #cdefe3;
-  --mac-sky: #d4ecff;
-  --mac-taro: #e3d9ff;
-  --mac-matcha: #e2f2c9;
-  --mac-milk: #fffaf2;
-
-  /* Macaron palette (deeper accents for text, icons, active states) */
-  --accent-strawberry: #e8789a;
-  --accent-strawberry-ink: #c25478;
-  --accent-peach: #ee9a6c;
-  --accent-lemon: #e3b23c;
-  --accent-mint: #4fae8a;
-  --accent-sky: #6a82d4;
-  --accent-taro: #9a7fd8;
-
-  /* Stationery Palette (legacy names, mapped onto macarons) */
-  --note-yellow: #fff4c7;
-  --note-yellow-dark: #ffeeb0;
-  --highlight-yellow: #ffe39b;
-  --highlight-pink: rgba(255, 182, 203, 0.7);
-  --note-mint: #d8f3e8;
-  --note-blue: #e6f3ff;
-  --note-pink: #ffe4ea;
-  --note-peach: #ffe9dc;
-  --note-taro: #efe8ff;
-  --note-error: #fff0f2;
-  --note-error-border: #ffcbd6;
-  --error-ink: #c44b63;
-
-  /* Tape Palette */
-  --tape-pink: rgba(245, 155, 189, 0.62);
-  --tape-cyan: rgba(150, 222, 208, 0.66);
-  --tape-green: rgba(170, 222, 160, 0.6);
-  --tape-yellow: rgba(255, 220, 120, 0.66);
-  --tape-taro: rgba(190, 170, 240, 0.6);
-  --tape-peach: rgba(255, 190, 150, 0.66);
-
-  /* Shadows */
-  --paper-shadow: 6px 8px 0 rgba(150, 112, 92, 0.16);
-  --paper-shadow-hover: 8px 10px 0 rgba(150, 112, 92, 0.2);
-  --cutout-shadow: 5px 5px 0 0 var(--shadow-ink);
-  --cutout-shadow-sm: 3px 3px 0 0 var(--shadow-ink);
-  --sticker-shadow: 3px 3px 0 var(--shadow-ink);
-  --sticker-shadow-hover: 4px 5px 0 var(--shadow-ink);
-
-  /* Primary action (replaces solid black buttons) */
-  --btn-primary-bg: #ec7f9f;
-  --btn-primary-bg-hover: #e66d92;
-  --btn-primary-ink: #ffffff;
-  --btn-primary-shadow: #c9a08f;
-
-  /* Layout widths */
   --max-content-width: 1280px;
   --search-note-width: 980px;
   --result-paper-width: 1180px;
 
-  /* Transitions */
   --ease-journal: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
 
-  /* Scroll-reveal motion tokens */
   --reveal-duration: 650ms;
   --reveal-duration-fast: 420ms;
   --reveal-stagger: 90ms;
   --reveal-distance: 28px;
-  --reveal-lift-shadow: 10px 16px 0 rgba(150, 112, 92, 0.18);
   --font-num: 'ZCOOL KuaiLe', 'Caveat', 'Noto Sans SC', cursive;
+}
+
+/* ② Dark Mode (Midnight Journal): Only overrides theme-dependent input values */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-page: #1b1917;
+  --bg-surface: #24211e;
+  --bg-raised: #2c2825;
+  --bg-sunken: #1f1c1a;
+  --bg-backdrop: rgb(0 0 0 / 0.66);
+
+  /* Text */
+  --text: #ede4d8;
+  --text-muted: #b8aa9c;
+  --text-faint: #8f8276;
+  --text-on-accent: #ffffff;
+
+  /* Lines & Borders */
+  --line: rgb(237 228 216 / 0.12);
+  --line-strong: #4a413a;
+  --line-ink: #6e6056;
+
+  /* Shadow & Gloss */
+  --shadow-color: rgb(0 0 0 / 0.5);
+  --gloss: rgb(255 255 255 / 0.06);
+
+  /* Notebook Ruling */
+  --rule-line: #2e2925;
+  --rule-dot: rgb(180 150 130 / 0.18);
+  --rule-margin: #8f4a5b;
+
+  /* Focus & Code */
+  --focus-ring: rgb(151 174 240 / 0.35);
+  --code-bg: rgb(255 255 255 / 0.08);
+
+  /* Primary Button & Toast */
+  --btn-primary-bg: #d9668b;
+  --btn-primary-hover: #e4789b;
+  --toast-bg: #3a3430;
+  --toast-text: #ede4d8;
+
+  /* Raw Hues (same hue, lifted lightness for dark backgrounds) */
+  --hue-strawberry: #f29bb6;
+  --hue-peach: #f5b08a;
+  --hue-lemon: #ecc966;
+  --hue-mint: #74c9a6;
+  --hue-sky: #97aef0;
+  --hue-taro: #b9a2ef;
+  --hue-matcha: #a9cf78;
+  --hue-error: #ff8598;
+
+  /* Theme Intensity Parameters */
+  --tint-soft-mix: 10%;
+  --tint-mix: 20%;
+  --tint-line-mix: 42%;
+  --tint-fg-mix: 78%;
+  --tape-alpha: 42%;
+  --grain-opacity: 0.35;
+}
+
+/* ③ Derived Layer: Computed once for both light and dark themes */
+:root {
+  /* Strawberry */
+  --accent-strawberry: var(--hue-strawberry);
+  --tint-strawberry-bg-soft: color-mix(in oklch, var(--hue-strawberry) var(--tint-soft-mix), var(--bg-surface));
+  --tint-strawberry-bg: color-mix(in oklch, var(--hue-strawberry) var(--tint-mix), var(--bg-surface));
+  --tint-strawberry-line: color-mix(in oklch, var(--hue-strawberry) var(--tint-line-mix), var(--bg-surface));
+  --tint-strawberry-fg: color-mix(in oklch, var(--hue-strawberry) var(--tint-fg-mix), var(--text));
+  --tape-strawberry: color-mix(in oklch, var(--hue-strawberry) var(--tape-alpha), transparent);
+
+  /* Peach */
+  --accent-peach: var(--hue-peach);
+  --tint-peach-bg-soft: color-mix(in oklch, var(--hue-peach) var(--tint-soft-mix), var(--bg-surface));
+  --tint-peach-bg: color-mix(in oklch, var(--hue-peach) var(--tint-mix), var(--bg-surface));
+  --tint-peach-line: color-mix(in oklch, var(--hue-peach) var(--tint-line-mix), var(--bg-surface));
+  --tint-peach-fg: color-mix(in oklch, var(--hue-peach) var(--tint-fg-mix), var(--text));
+  --tape-peach: color-mix(in oklch, var(--hue-peach) var(--tape-alpha), transparent);
+
+  /* Lemon */
+  --accent-lemon: var(--hue-lemon);
+  --tint-lemon-bg-soft: color-mix(in oklch, var(--hue-lemon) var(--tint-soft-mix), var(--bg-surface));
+  --tint-lemon-bg: color-mix(in oklch, var(--hue-lemon) var(--tint-mix), var(--bg-surface));
+  --tint-lemon-line: color-mix(in oklch, var(--hue-lemon) var(--tint-line-mix), var(--bg-surface));
+  --tint-lemon-fg: color-mix(in oklch, var(--hue-lemon) var(--tint-fg-mix), var(--text));
+  --tape-lemon: color-mix(in oklch, var(--hue-lemon) var(--tape-alpha), transparent);
+
+  /* Mint */
+  --accent-mint: var(--hue-mint);
+  --tint-mint-bg-soft: color-mix(in oklch, var(--hue-mint) var(--tint-soft-mix), var(--bg-surface));
+  --tint-mint-bg: color-mix(in oklch, var(--hue-mint) var(--tint-mix), var(--bg-surface));
+  --tint-mint-line: color-mix(in oklch, var(--hue-mint) var(--tint-line-mix), var(--bg-surface));
+  --tint-mint-fg: color-mix(in oklch, var(--hue-mint) var(--tint-fg-mix), var(--text));
+  --tape-mint: color-mix(in oklch, var(--hue-mint) var(--tape-alpha), transparent);
+
+  /* Sky */
+  --accent-sky: var(--hue-sky);
+  --tint-sky-bg-soft: color-mix(in oklch, var(--hue-sky) var(--tint-soft-mix), var(--bg-surface));
+  --tint-sky-bg: color-mix(in oklch, var(--hue-sky) var(--tint-mix), var(--bg-surface));
+  --tint-sky-line: color-mix(in oklch, var(--hue-sky) var(--tint-line-mix), var(--bg-surface));
+  --tint-sky-fg: color-mix(in oklch, var(--hue-sky) var(--tint-fg-mix), var(--text));
+  --tape-sky: color-mix(in oklch, var(--hue-sky) var(--tape-alpha), transparent);
+
+  /* Taro */
+  --accent-taro: var(--hue-taro);
+  --tint-taro-bg-soft: color-mix(in oklch, var(--hue-taro) var(--tint-soft-mix), var(--bg-surface));
+  --tint-taro-bg: color-mix(in oklch, var(--hue-taro) var(--tint-mix), var(--bg-surface));
+  --tint-taro-line: color-mix(in oklch, var(--hue-taro) var(--tint-line-mix), var(--bg-surface));
+  --tint-taro-fg: color-mix(in oklch, var(--hue-taro) var(--tint-fg-mix), var(--text));
+  --tape-taro: color-mix(in oklch, var(--hue-taro) var(--tape-alpha), transparent);
+
+  /* Matcha */
+  --accent-matcha: var(--hue-matcha);
+  --tint-matcha-bg-soft: color-mix(in oklch, var(--hue-matcha) var(--tint-soft-mix), var(--bg-surface));
+  --tint-matcha-bg: color-mix(in oklch, var(--hue-matcha) var(--tint-mix), var(--bg-surface));
+  --tint-matcha-line: color-mix(in oklch, var(--hue-matcha) var(--tint-line-mix), var(--bg-surface));
+  --tint-matcha-fg: color-mix(in oklch, var(--hue-matcha) var(--tint-fg-mix), var(--text));
+  --tape-matcha: color-mix(in oklch, var(--hue-matcha) var(--tape-alpha), transparent);
+
+  /* Error */
+  --accent-error: var(--hue-error);
+  --tint-error-bg-soft: color-mix(in oklch, var(--hue-error) var(--tint-soft-mix), var(--bg-surface));
+  --tint-error-bg: color-mix(in oklch, var(--hue-error) var(--tint-mix), var(--bg-surface));
+  --tint-error-line: color-mix(in oklch, var(--hue-error) var(--tint-line-mix), var(--bg-surface));
+  --tint-error-fg: color-mix(in oklch, var(--hue-error) var(--tint-fg-mix), var(--text));
+  --tape-error: color-mix(in oklch, var(--hue-error) var(--tape-alpha), transparent);
+
+  /* Status Badges */
+  --status-normal-bg: var(--tint-mint-bg-soft);
+  --status-normal-text: var(--tint-mint-fg);
+  --status-normal-border: var(--tint-mint-line);
+
+  --status-error-bg: var(--tint-error-bg-soft);
+  --status-error-text: var(--tint-error-fg);
+  --status-error-border: var(--tint-error-line);
+
+  --status-vip-bg: var(--tint-taro-bg-soft);
+  --status-vip-text: var(--tint-taro-fg);
+  --status-vip-border: var(--tint-taro-line);
+
+  --status-pay-bg: var(--tint-lemon-bg-soft);
+  --status-pay-text: var(--tint-lemon-fg);
+  --status-pay-border: var(--tint-lemon-line);
+
+  --status-unknown-bg: var(--bg-sunken);
+  --status-unknown-text: var(--text-muted);
+  --status-unknown-border: var(--line-strong);
+
+  /* Shadows */
+  --shadow-sticker: 3px 3px 0 var(--shadow-color);
+  --shadow-sticker-hover: 4px 5px 0 var(--shadow-color);
+  --shadow-cutout: 5px 5px 0 0 var(--shadow-color);
+  --shadow-cutout-sm: 3px 3px 0 0 var(--shadow-color);
+  --shadow-paper: 6px 8px 0 color-mix(in srgb, var(--shadow-color) 55%, transparent);
+  --shadow-paper-hover: 8px 10px 0 color-mix(in srgb, var(--shadow-color) 65%, transparent);
+  --shadow-soft: 0 6px 18px -8px var(--shadow-color);
+  --shadow-card: 0 1px 3px color-mix(in srgb, var(--shadow-color) 18%, transparent);
+  --shadow-elevated: 0 4px 12px color-mix(in srgb, var(--shadow-color) 45%, transparent);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.18), 0 8px 10px -6px rgb(0 0 0 / 0.12);
+  --reveal-lift-shadow: 10px 16px 0 color-mix(in srgb, var(--shadow-color) 60%, transparent);
+
+  /* Derived UI helpers */
+  --btn-primary-shadow: color-mix(in srgb, var(--shadow-color) 75%, transparent);
+  --scrollbar-thumb: linear-gradient(180deg, var(--tint-strawberry-bg), var(--tint-mint-bg));
+  --scrollbar-thumb-hover: linear-gradient(180deg, var(--tint-strawberry-line), var(--tint-mint-line));
+  --toast-accent: var(--hue-mint);
 }

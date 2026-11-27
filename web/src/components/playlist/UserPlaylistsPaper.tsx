@@ -184,13 +184,13 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
       <div
         className="font-note result-transition-hint"
         style={{
-          maxWidth: 'var(--search-note-width, 820px)',
+          maxWidth: 'var(--search-note-width)',
           margin: '0 auto calc(var(--ruled-line-height, 38px) * 1.5)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
           fontSize: '1.65rem',
-          color: '#a8968b',
+          color: 'var(--text-faint)',
           height: 'var(--ruled-line-height, 38px)',
           lineHeight: 'var(--ruled-line-height, 38px)',
         }}
@@ -203,7 +203,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
         data-testid="user-playlists"
         className="result-paper-section"
         style={{
-          maxWidth: 'var(--result-paper-width, 1050px)',
+          maxWidth: 'var(--result-paper-width)',
           margin: '0 auto',
           position: 'relative',
         }}
@@ -215,7 +215,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             position: 'absolute',
             right: '-2rem',
             top: '-2.5rem',
-            color: '#e3b23c',
+            color: 'var(--paper-lemon)',
             fontSize: '4rem',
             userSelect: 'none',
             zIndex: 15,
@@ -257,7 +257,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               alignItems: 'flex-start',
               gap: '1rem',
               marginBottom: '1.5rem',
-              borderBottom: '2px dashed var(--line, #efe4da)',
+              borderBottom: '2px dashed var(--line)',
               paddingBottom: '1.5rem',
             }}
           >
@@ -271,7 +271,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 >
                   {getPlatformName(userData.platform, language)} · {t.userPlaylists.collectionSticker}
                 </Sticker>
-                <span className="font-mono" style={{ fontSize: '0.9rem', color: '#8a7569' }}>
+                <span className="font-mono" style={{ fontSize: '0.9rem', color: 'var(--text-faint)' }}>
                   {getPlatformUserIdLabel(userData.platform, language)}: {userData.userId}
                 </span>
               </div>
@@ -281,7 +281,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 style={{
                   fontSize: '2.25rem',
                   fontWeight: 700,
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                   margin: '0.25rem 0',
                 }}
               >
@@ -292,7 +292,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 className="font-note"
                 style={{
                   fontSize: '1.25rem',
-                  color: '#8a7569',
+                  color: 'var(--text-faint)',
                   display: 'flex',
                   gap: '1rem',
                   flexWrap: 'wrap',
@@ -314,8 +314,8 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           {hasSinglePlaylistCollision && (
             <div
               style={{
-                backgroundColor: '#fef9c3',
-                border: '1.5px dashed #c9952f',
+                backgroundColor: 'var(--tint-lemon-bg-soft)',
+                border: '1.5px dashed var(--status-pay-border)',
                 padding: '0.75rem 1.25rem',
                 borderRadius: '6px',
                 marginBottom: '1.5rem',
@@ -326,7 +326,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 gap: '0.5rem',
               }}
             >
-              <span style={{ fontSize: '0.95rem', color: '#8a5a2a' }}>
+              <span style={{ fontSize: '0.95rem', color: 'var(--status-pay-text)' }}>
                 💡 {t.userPlaylists.switchSingleHint}
               </span>
               <button
@@ -340,7 +340,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#5670c4',
+                  color: 'var(--accent-sky)',
                   textDecoration: 'underline',
                   cursor: 'pointer',
                   fontWeight: 600,
@@ -355,9 +355,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
           {/* Batch Export Control Panel (Sticky Note Style) */}
           <div
             style={{
-              backgroundColor: '#fffaf3',
-              border: '2px solid var(--ink-line)',
-              boxShadow: '3px 3px 0 var(--shadow-ink)',
+              backgroundColor: 'var(--bg-sunken)',
+              border: '2px solid var(--line-ink)',
+              boxShadow: '3px 3px 0 var(--shadow-color)',
               borderRadius: '8px',
               padding: '1.5rem',
               marginBottom: '2rem',
@@ -375,7 +375,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             >
               <span
                 className="font-handwriting"
-                style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ink, #5a4a42)' }}
+                style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text)' }}
               >
                 {t.userPlaylists.batchExportTitle}
               </span>
@@ -391,12 +391,12 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               }}
             >
               {[
-                { id: 'multi_sheet_xlsx', label: t.userPlaylists.formatMultiSheet, bg: '#cdeee0', rotate: -1 },
-                { id: 'json', label: t.userPlaylists.formatZipJson, bg: '#d4defc', rotate: 1 },
-                { id: 'xlsx', label: t.userPlaylists.formatZipXlsx, bg: '#fff0b3', rotate: -0.8 },
-                { id: 'txt', label: t.userPlaylists.formatZipTxt, bg: '#ffe9dc', rotate: 0.8 },
-                { id: 'csv', label: t.userPlaylists.formatZipCsv, bg: '#ffd8e6', rotate: -1 },
-                { id: 'm3u8', label: t.userPlaylists.formatZipM3u8, bg: '#e8ddff', rotate: 1.2 },
+                { id: 'multi_sheet_xlsx', label: t.userPlaylists.formatMultiSheet, bg: 'var(--tint-mint-bg)', rotate: -1 },
+                { id: 'json', label: t.userPlaylists.formatZipJson, bg: 'var(--tint-sky-bg)', rotate: 1 },
+                { id: 'xlsx', label: t.userPlaylists.formatZipXlsx, bg: 'var(--tint-lemon-bg)', rotate: -0.8 },
+                { id: 'txt', label: t.userPlaylists.formatZipTxt, bg: 'var(--bg-surface)', rotate: 0.8 },
+                { id: 'csv', label: t.userPlaylists.formatZipCsv, bg: 'var(--tint-strawberry-bg)', rotate: -1 },
+                { id: 'm3u8', label: t.userPlaylists.formatZipM3u8, bg: 'var(--tint-taro-bg)', rotate: 1.2 },
               ].map((fmt) => {
                 const isSelected = batchFormat === fmt.id;
                 return (
@@ -406,14 +406,14 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     onClick={() => setBatchFormat(fmt.id as BatchExportFormat)}
                     disabled={isExporting}
                     style={{
-                      border: isSelected ? '2px solid var(--ink-line)' : '1.75px solid rgba(110, 90, 80, 0.55)',
+                      border: isSelected ? '2px solid var(--line-ink)' : '1.75px solid var(--line-strong)',
                       backgroundColor: fmt.bg,
-                      boxShadow: isSelected ? '3px 3px 0 var(--shadow-ink)' : '1.5px 2px 0 rgba(150, 112, 92, 0.16)',
+                      boxShadow: isSelected ? '3px 3px 0 var(--shadow-color)' : '1.5px 2px 0 color-mix(in srgb, var(--shadow-color) 50%, transparent)',
                       borderRadius: '12px 225px 12px 255px / 255px 12px 225px 12px',
                       padding: '0.45rem 0.9rem',
                       cursor: isExporting ? 'not-allowed' : 'pointer',
                       fontSize: '0.9rem',
-                      color: 'var(--ink, #5a4a42)',
+                      color: 'var(--text)',
                       fontWeight: isSelected ? 800 : 600,
                       opacity: isSelected ? 1 : 0.82,
                       transform: isSelected ? `translateY(-2px) rotate(${fmt.rotate}deg)` : `rotate(${fmt.rotate * 0.5}deg)`,
@@ -432,8 +432,8 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               <div
                 className="font-sans"
                 style={{
-                  backgroundColor: '#ffffff',
-                  border: '1.5px dashed var(--ink-line)',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1.5px dashed var(--line-ink)',
                   padding: '1rem',
                   borderRadius: '6px',
                   display: 'flex',
@@ -448,7 +448,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     style={{
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      color: '#4fae8a',
+                      color: 'var(--status-free-text)',
                       fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                     }}
                   >
@@ -465,7 +465,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#e0607a',
+                      color: 'var(--status-down-text)',
                       cursor: 'pointer',
                       fontSize: '0.9rem',
                       textDecoration: 'underline',
@@ -480,7 +480,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                   style={{
                     width: '100%',
                     height: '10px',
-                    backgroundColor: '#f0e6dc',
+                    backgroundColor: 'var(--border-color)',
                     borderRadius: '999px',
                     overflow: 'hidden',
                   }}
@@ -489,7 +489,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     style={{
                       width: `${Math.round((progress.current / progress.total) * 100)}%`,
                       height: '100%',
-                      backgroundColor: '#5fbf9a',
+                      backgroundColor: 'var(--status-free-border)',
                       transition: 'width 0.2s ease',
                     }}
                   />
@@ -508,7 +508,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     : formatString(t.userPlaylists.batchExportBtn, { count: selectedIds.length })}
                 </MarkerButton>
                 {isCooldownActive && (
-                  <span style={{ fontSize: '0.85rem', color: '#b8692f', fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--status-pay-text)', fontWeight: 500 }}>
                     ✦ 1分钟内最多支持2次批量操作，稍候即可自动恢复
                   </span>
                 )}
@@ -521,9 +521,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             <div
               className="font-sans"
               style={{
-                backgroundColor: batchResultBanner.success > 0 ? '#effaf5' : '#fff3f4',
-                border: `2px solid ${batchResultBanner.success > 0 ? '#4fae8a' : '#e0607a'}`,
-                boxShadow: `3px 3px 0 ${batchResultBanner.success > 0 ? '#4fae8a' : '#e0607a'}`,
+                backgroundColor: batchResultBanner.success > 0 ? 'var(--status-free-bg)' : 'var(--status-down-bg)',
+                border: `2px solid ${batchResultBanner.success > 0 ? 'var(--status-free-border)' : 'var(--status-down-border)'}`,
+                boxShadow: `3px 3px 0 ${batchResultBanner.success > 0 ? 'var(--status-free-border)' : 'var(--status-down-border)'}`,
                 borderRadius: '8px',
                 padding: '1.25rem 1.5rem',
                 marginBottom: '2rem',
@@ -541,7 +541,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       margin: 0,
                       fontSize: '1.05rem',
                       fontWeight: 600,
-                      color: 'var(--ink, #5a4a42)',
+                      color: 'var(--text)',
                       fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                     }}
                   >
@@ -558,7 +558,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#8a7569',
+                    color: 'var(--text-faint)',
                     fontSize: '1.1rem',
                     padding: '0.2rem 0.5rem',
                     fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
@@ -574,7 +574,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                   className="font-sans"
                   style={{
                     marginTop: '0.85rem',
-                    borderTop: '1px dashed #e6d8cc',
+                    borderTop: '1px dashed var(--line)',
                     paddingTop: '0.75rem',
                     fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                   }}
@@ -584,7 +584,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                     style={{
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      color: '#a63e55',
+                      color: 'var(--status-down-text)',
                       marginBottom: '0.4rem',
                       fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                     }}
@@ -597,15 +597,15 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       margin: 0,
                       paddingLeft: '1.25rem',
                       fontSize: '0.9rem',
-                      color: '#6b574c',
+                      color: 'var(--text)',
                       fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                     }}
                   >
                     {batchFailures.map((f, idx) => (
                       <li key={idx} style={{ marginBottom: '0.35rem', lineHeight: 1.4 }}>
                         <span style={{ fontWeight: 600 }}>{f.name}</span>
-                        <span className="font-mono" style={{ color: '#8a7569', marginLeft: '0.35rem' }}>[ID: {f.id}]</span>
-                        <span style={{ color: '#c44b63', marginLeft: '0.4rem' }}>
+                        <span className="font-mono" style={{ color: 'var(--text-faint)', marginLeft: '0.35rem' }}>[ID: {f.id}]</span>
+                        <span style={{ color: 'var(--status-down-text)', marginLeft: '0.4rem' }}>
                           — {f.code ? `[${f.code}] ` : ''}{f.message}
                         </span>
                       </li>
@@ -617,7 +617,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                       style={{
                         marginTop: '0.65rem',
                         fontSize: '0.85rem',
-                        color: '#7a665b',
+                        color: 'var(--text-muted)',
                         lineHeight: 1.4,
                         fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
                       }}
@@ -637,7 +637,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 className="font-handwriting"
                 style={{
                   fontSize: '1.5rem',
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                   margin: 0,
                 }}
               >
@@ -649,13 +649,13 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                 onClick={handleToggleSelectAll}
                 className="font-handwriting"
                 style={{
-                  backgroundColor: '#ffeef3',
-                  border: '1.75px solid var(--ink-line)',
+                  backgroundColor: 'var(--tint-strawberry-bg-soft)',
+                  border: '1.75px solid var(--line-ink)',
                   borderRadius: '999px',
-                  boxShadow: '2px 2px 0 var(--shadow-ink)',
+                  boxShadow: '2px 2px 0 var(--shadow-color)',
                   padding: '0.28rem 0.85rem',
                   cursor: 'pointer',
-                  color: '#c24d72',
+                  color: 'var(--status-down-text)',
                   fontWeight: 700,
                   fontSize: '1rem',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease',
@@ -668,12 +668,18 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
             </div>
 
             {userData.playlists.length === 0 ? (
-              <p style={{ color: '#8a7569', fontStyle: 'italic' }}>{t.userPlaylists.noPlaylists}</p>
+              <p style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>{t.userPlaylists.noPlaylists}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {userData.playlists.map((playlist: UserPlaylistSummary, idx: number) => {
                   const isChecked = selectedIds.includes(playlist.id);
-                  const rowTints = ['#fffdf9', '#fff7fa', '#f5fbf8', '#fffdf2', '#f9f6ff'];
+                  const rowTints = [
+                    'var(--bg-surface)',
+                    'var(--tint-strawberry-bg-soft)',
+                    'var(--tint-mint-bg-soft)',
+                    'var(--tint-lemon-bg-soft)',
+                    'var(--tint-taro-bg-soft)',
+                  ];
                   const activeTint = rowTints[idx % rowTints.length];
                   return (
                     <div
@@ -684,9 +690,9 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '0.85rem 1.25rem',
-                        border: '1.75px solid var(--ink-line)',
-                        boxShadow: isChecked ? '3px 3px 0 var(--shadow-ink)' : '1px 1px 0 rgba(150, 112, 92, 0.12)',
-                        backgroundColor: isChecked ? activeTint : '#faf4ec',
+                        border: '1.75px solid var(--line-ink)',
+                        boxShadow: isChecked ? '3px 3px 0 var(--shadow-color)' : '1px 1px 0 color-mix(in srgb, var(--shadow-color) 40%, transparent)',
+                        backgroundColor: isChecked ? activeTint : 'var(--bg-sunken)',
                         borderRadius: '10px',
                         gap: '1rem',
                         transition: 'all 0.15s ease',
@@ -704,7 +710,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                             width: '18px',
                             height: '18px',
                             cursor: 'pointer',
-                            accentColor: '#ec7f9f',
+                            accentColor: 'var(--accent-pink)',
                           }}
                         />
 
@@ -716,11 +722,11 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                               width: '48px',
                               height: '48px',
                               padding: '3px 3px 7px 3px',
-                              backgroundColor: '#fffdf9',
+                              backgroundColor: 'var(--bg-surface)',
                               borderRadius: '6px',
                               objectFit: 'cover',
-                              border: '1.5px solid var(--ink-line)',
-                              boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.2)',
+                              border: '1.5px solid var(--line-ink)',
+                              boxShadow: '2px 2px 0 color-mix(in srgb, var(--shadow-color) 65%, transparent)',
                               transform: idx % 2 === 0 ? 'rotate(-1.5deg)' : 'rotate(1.5deg)',
                               flexShrink: 0,
                             }}
@@ -732,14 +738,14 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                               height: '48px',
                               padding: '3px 3px 7px 3px',
                               borderRadius: '6px',
-                              backgroundColor: '#fff0b3',
+                              backgroundColor: 'var(--tint-lemon-bg)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontSize: '1.25rem',
                               flexShrink: 0,
-                              border: '1.5px solid var(--ink-line)',
-                              boxShadow: '2px 2px 0 rgba(150, 112, 92, 0.2)',
+                              border: '1.5px solid var(--line-ink)',
+                              boxShadow: '2px 2px 0 color-mix(in srgb, var(--shadow-color) 65%, transparent)',
                               transform: idx % 2 === 0 ? 'rotate(-1.5deg)' : 'rotate(1.5deg)',
                             }}
                           >
@@ -752,7 +758,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                             style={{
                               fontWeight: 700,
                               fontSize: '1.05rem',
-                              color: 'var(--ink, #5a4a42)',
+                              color: 'var(--text)',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -764,7 +770,7 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                             className="font-note"
                             style={{
                               fontSize: '1.05rem',
-                              color: '#8a7569',
+                              color: 'var(--text-faint)',
                               display: 'flex',
                               gap: '0.75rem',
                               marginTop: '0.15rem',
@@ -804,10 +810,10 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
                             padding: '0.35rem 0.85rem',
                             fontSize: '0.98rem',
                             borderRadius: '12px 225px 12px 255px / 255px 12px 225px 12px',
-                            border: '1.5px solid var(--ink-line)',
-                            backgroundColor: '#fff4c7',
-                            boxShadow: '2px 2px 0 var(--shadow-ink)',
-                            color: 'var(--ink, #5a4a42)',
+                            border: '1.5px solid var(--line-ink)',
+                            backgroundColor: 'var(--tint-lemon-bg)',
+                            boxShadow: '2px 2px 0 var(--shadow-color)',
+                            color: 'var(--text)',
                             cursor: 'pointer',
                             fontWeight: 700,
                           }}
@@ -836,13 +842,13 @@ export const UserPlaylistsPaper: React.FC<UserPlaylistsPaperProps> = ({
               bottom: '2rem',
               left: '50%',
               transform: 'translateX(-50%)',
-              backgroundColor: '#4a3b34',
-              color: '#fffaf3',
+              backgroundColor: 'var(--toast-bg)',
+              color: 'var(--toast-text)',
               padding: '0.75rem 1.35rem',
               borderRadius: '999px',
               maxWidth: 'calc(100vw - 2rem)',
               textAlign: 'center',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              boxShadow: 'var(--shadow-modal)',
               zIndex: 1300,
               fontSize: '0.95rem',
               fontWeight: 500,

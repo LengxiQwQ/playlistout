@@ -10,15 +10,15 @@ export interface StickerProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
 }
 
 const stickerColorMap = {
-  white: '#ffffff',
-  yellow: '#fff0b3',
-  pink: '#ffd8e6',
-  cyan: '#c3efe6',
-  green: '#cdeee0',
-  blue: '#d4defc',
-  purple: '#e8ddff',
-  red: '#ffd3dc',
-  lime: '#e6f5c6',
+  white: 'var(--bg-surface)',
+  yellow: 'var(--tint-lemon-bg)',
+  pink: 'var(--tint-strawberry-bg)',
+  cyan: 'var(--tint-mint-bg)',
+  green: 'var(--tint-mint-bg)',
+  blue: 'var(--tint-sky-bg)',
+  purple: 'var(--tint-taro-bg)',
+  red: 'var(--tint-strawberry-bg)',
+  lime: 'var(--tint-matcha-bg)',
 };
 
 const LAYOUT_STYLE_KEYS = new Set([

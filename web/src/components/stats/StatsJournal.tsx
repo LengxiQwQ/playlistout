@@ -298,7 +298,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       id="stats"
       className="stats-journal-section"
       style={{
-        maxWidth: 'var(--result-paper-width, 1050px)',
+        maxWidth: 'var(--result-paper-width)',
         margin: '0 auto',
         position: 'relative',
         paddingBottom: 0,
@@ -310,7 +310,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           className="font-note stats-journal-subtitle"
           style={{
             fontSize: '1.65rem',
-            color: 'var(--ink-light, #8a7569)',
+            color: 'var(--text-muted)',
             height: 'var(--ruled-line-height, 38px)',
             lineHeight: 'var(--ruled-line-height, 38px)',
           }}
@@ -321,7 +321,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
           className="font-marker stats-journal-title"
           style={{
             fontSize: 'clamp(2rem, 4vw, 2.75rem)',
-            color: 'var(--ink, #5a4a42)',
+            color: 'var(--text)',
             height: 'calc(var(--ruled-line-height, 38px) * 2)',
             lineHeight: 'calc(var(--ruled-line-height, 38px) * 2)',
             margin: 0,
@@ -374,13 +374,13 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div className="stationery-sticker delay-3" style={{ ['--sticker-rot' as any]: '-8deg', opacity: 0.92 }}>
           <svg width="62" height="58" viewBox="0 0 68 64" fill="none">
-            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="#fffdf9" strokeWidth="9" strokeLinecap="round" />
-            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="#6e5a50" strokeWidth="3.2" strokeLinecap="round" />
-            <path d="M19 25C22 18 27.5 14 34 14C40.5 14 46 18 49 25" stroke="#e8ddff" strokeWidth="4" strokeLinecap="round" />
-            <rect x="7" y="31" width="13" height="22" rx="6.5" fill="#e8ddff" stroke="#6e5a50" strokeWidth="2.2" />
-            <rect x="48" y="31" width="13" height="22" rx="6.5" fill="#ffd8e6" stroke="#6e5a50" strokeWidth="2.2" />
-            <circle cx="13.5" cy="42" r="2.5" fill="#fffdf9" />
-            <circle cx="54.5" cy="42" r="2.5" fill="#fffdf9" />
+            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="var(--bg-surface)" strokeWidth="9" strokeLinecap="round" />
+            <path d="M14 36V30C14 18.9543 22.9543 10 34 10C45.0457 10 54 18.9543 54 30V36" stroke="var(--line-ink)" strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M19 25C22 18 27.5 14 34 14C40.5 14 46 18 49 25" stroke="var(--tint-taro-bg)" strokeWidth="4" strokeLinecap="round" />
+            <rect x="7" y="31" width="13" height="22" rx="6.5" fill="var(--tint-taro-bg)" stroke="var(--line-ink)" strokeWidth="2.2" />
+            <rect x="48" y="31" width="13" height="22" rx="6.5" fill="var(--tint-strawberry-bg)" stroke="var(--line-ink)" strokeWidth="2.2" />
+            <circle cx="13.5" cy="42" r="2.5" fill="var(--bg-surface)" />
+            <circle cx="54.5" cy="42" r="2.5" fill="var(--bg-surface)" />
           </svg>
         </div>
       </Reveal>
@@ -395,7 +395,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div
           className="note-sparkle"
-          style={{ fontSize: '2.1rem', color: 'var(--accent-lemon, #e3b23c)', opacity: 0.88 }}
+          style={{ fontSize: '2.1rem', color: 'var(--accent-lemon)', opacity: 0.88 }}
         >
           ★
         </div>
@@ -418,7 +418,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div
           className="note-sparkle"
-          style={{ fontSize: '1.75rem', color: 'var(--accent-strawberry, #e8789a)', opacity: 0.85 }}
+          style={{ fontSize: '1.75rem', color: 'var(--accent-strawberry)', opacity: 0.85 }}
         >
           ✦
         </div>
@@ -434,7 +434,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div
           className="stationery-sticker delay-1"
-          style={{ ['--sticker-rot' as any]: '-10deg', fontSize: '2.2rem', color: 'var(--accent-peach, #ee9a6c)', opacity: 0.82 }}
+          style={{ ['--sticker-rot' as any]: '-10deg', fontSize: '2.2rem', color: 'var(--accent-peach)', opacity: 0.82 }}
         >
           ♪
         </div>
@@ -457,7 +457,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div
           className="stationery-sticker delay-2"
-          style={{ ['--sticker-rot' as any]: '12deg', fontSize: '2rem', color: 'var(--accent-taro, #9a7fd8)', opacity: 0.82 }}
+          style={{ ['--sticker-rot' as any]: '12deg', fontSize: '2rem', color: 'var(--accent-taro)', opacity: 0.82 }}
         >
           ♬
         </div>
@@ -486,12 +486,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
       >
         <div className="stationery-sticker" style={{ ['--sticker-rot' as any]: '7deg', opacity: 0.92 }}>
           <svg width="64" height="74" viewBox="0 0 64 74" fill="none">
-            <rect x="5" y="5" width="54" height="64" rx="4" fill="#fffdf9" stroke="#e8a0b4" strokeWidth="2.2" strokeDasharray="4 3" />
-            <rect x="11" y="11" width="42" height="44" rx="3" fill="#fff4c7" stroke="#6e5a50" strokeWidth="1.6" />
-            <path d="M27 41V23L41 20V38" stroke="#6e5a50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="24" cy="41" r="4" fill="#ec7f9f" stroke="#6e5a50" strokeWidth="1.6" />
-            <circle cx="38" cy="38" r="4" fill="#7fcfaa" stroke="#6e5a50" strokeWidth="1.6" />
-            <text x="32" y="64" textAnchor="middle" fill="#8a7569" fontSize="8.5" fontWeight="700" fontFamily="Space Mono, monospace">80¢ NOTE</text>
+            <rect x="5" y="5" width="54" height="64" rx="4" fill="var(--bg-surface)" stroke="var(--accent-strawberry)" strokeWidth="2.2" strokeDasharray="4 3" />
+            <rect x="11" y="11" width="42" height="44" rx="3" fill="var(--tint-lemon-bg)" stroke="var(--line-ink)" strokeWidth="1.6" />
+            <path d="M27 41V23L41 20V38" stroke="var(--line-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="24" cy="41" r="4" fill="var(--accent-strawberry)" stroke="var(--line-ink)" strokeWidth="1.6" />
+            <circle cx="38" cy="38" r="4" fill="var(--accent-mint)" stroke="var(--line-ink)" strokeWidth="1.6" />
+            <text x="32" y="64" textAnchor="middle" fill="var(--text-muted)" fontSize="8.5" fontWeight="700" fontFamily="Space Mono, monospace">80¢ NOTE</text>
           </svg>
         </div>
       </Reveal>
@@ -525,7 +525,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--text)' }}>
                     {t.stats.todayTitle}
                   </div>
                   <button
@@ -539,7 +539,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                       cursor: 'pointer',
                       fontSize: '1.15rem',
                       padding: '0.2rem 0.4rem',
-                      color: 'var(--ink-light, #8a7569)',
+                      color: 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem',
@@ -547,11 +547,11 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                       transition: 'transform 0.2s ease, color 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--ink, #5a4a42)';
+                      e.currentTarget.style.color = 'var(--text)';
                       e.currentTarget.style.transform = 'rotate(30deg)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--ink-light, #8a7569)';
+                      e.currentTarget.style.color = 'var(--text-muted)';
                       e.currentTarget.style.transform = 'none';
                     }}
                   >
@@ -559,7 +559,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                     <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>☀️ ♫</span>
                   </button>
                 </div>
-                <div className="font-note" style={{ fontSize: '1.45rem', color: 'var(--ink-light, #8a7569)', marginBottom: '1.25rem' }}>
+                <div className="font-note" style={{ fontSize: '1.45rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
                   {todayDateFormatted}
                 </div>
 
@@ -567,11 +567,11 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div
                     className="font-marker font-num"
-                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
+                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--text)' }}
                   >
                     <AnimatedCounter value={visitorsToday} start={counterStarted} />
                   </div>
-                  <div className="font-handwriting" style={{ fontSize: '1.3rem', color: 'var(--ink-light, #8a7569)', marginTop: '0.2rem' }}>
+                  <div className="font-handwriting" style={{ fontSize: '1.3rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                     {t.stats.todayVisitors}
                   </div>
                 </div>
@@ -582,31 +582,31 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: '1rem',
-                    borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                    borderTop: '1px dashed var(--line)',
                     paddingTop: '1rem',
                   }}
                 >
                   <div>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={parsedToday} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.todayParsed}
                     </div>
                   </div>
                   <div>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={tracksToday} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.todayTracks}
                     </div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={exportsToday} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.todayExports}
                     </div>
                   </div>
@@ -617,9 +617,9 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 className="font-note"
                 style={{
                   fontSize: '1.3rem',
-                  color: 'var(--accent-strawberry-ink, #c25478)',
+                  color: 'var(--tint-strawberry-fg)',
                   marginTop: '1.5rem',
-                  borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                  borderTop: '1px dashed var(--line)',
                   paddingTop: '0.75rem',
                 }}
               >
@@ -648,12 +648,12 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--text)' }}>
                     {t.stats.allTimeTitle}
                   </div>
-                  <span style={{ fontSize: '1.25rem', userSelect: 'none', color: 'var(--accent-strawberry, #e8789a)' }}>♡ ⋆</span>
+                  <span style={{ fontSize: '1.25rem', userSelect: 'none', color: 'var(--accent-strawberry)' }}>♡ ⋆</span>
                 </div>
-                <div className="font-note font-num" style={{ fontSize: '1.45rem', fontWeight: 400, color: 'var(--ink-light, #8a7569)', marginBottom: '1.25rem' }}>
+                <div className="font-note font-num" style={{ fontSize: '1.45rem', fontWeight: 400, color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
                   {runningDays !== null
                     ? formatString(t.stats.runningDaysStamp, { days: runningDays })
                     : t.stats.runningDaysUnavailable}
@@ -663,13 +663,13 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div
                     className="font-marker font-num"
-                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--ink, #5a4a42)' }}
+                    style={{ fontSize: 'clamp(2.5rem, 5vw, 3.25rem)', lineHeight: 1, color: 'var(--text)' }}
                   >
                     <AnimatedCounter value={cumulativeDailyVisitors} start={counterStarted} />
                   </div>
                   <div
                     className="font-handwriting"
-                    style={{ fontSize: '1.25rem', color: 'var(--ink-light, #8a7569)', marginTop: '0.2rem', cursor: 'help' }}
+                    style={{ fontSize: '1.25rem', color: 'var(--text-muted)', marginTop: '0.2rem', cursor: 'help' }}
                     title={t.stats.allTimeVisitorsTip}
                   >
                     {t.stats.allTimeVisitors} ⓘ
@@ -682,31 +682,31 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: '1rem',
-                    borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                    borderTop: '1px dashed var(--line)',
                     paddingTop: '1rem',
                   }}
                 >
                   <div>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={parsedTotal} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.allTimePlaylists}
                     </div>
                   </div>
                   <div>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={tracksTotal} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.allTimeTracks}
                     </div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--ink, #5a4a42)', lineHeight: 1.1 }}>
+                    <div className="font-marker font-num" style={{ fontSize: '1.75rem', color: 'var(--text)', lineHeight: 1.1 }}>
                       <AnimatedCounter value={totalExports} start={counterStarted} />
                     </div>
-                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--ink-light, #8a7569)' }}>
+                    <div className="font-handwriting" style={{ fontSize: '1.15rem', color: 'var(--text-muted)' }}>
                       {t.stats.allTimeExports}
                     </div>
                   </div>
@@ -717,9 +717,9 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 className="font-note"
                 style={{
                   fontSize: '1.35rem',
-                  color: 'var(--ink-light, #8a7569)',
+                  color: 'var(--text-muted)',
                   marginTop: '1.5rem',
-                  borderTop: '1px dashed rgba(90, 74, 66, 0.15)',
+                  borderTop: '1px dashed var(--line)',
                   paddingTop: '0.75rem',
                 }}
               >
@@ -747,7 +747,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--ink, #5a4a42)' }}>
+                  <div className="font-marker" style={{ fontSize: '1.35rem', color: 'var(--text)' }}>
                     {t.stats.fromWhereTitle}
                   </div>
                   <span style={{ fontSize: '1.25rem', userSelect: 'none' }}>♫ 🍃</span>
@@ -768,13 +768,13 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                     {platformShares.map((p, idx) => (
                       <div key={p.id}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 700, color: 'var(--ink, #5a4a42)' }}>{p.name}</span>
+                          <span style={{ fontWeight: 700, color: 'var(--text)' }}>{p.name}</span>
                           <span className="font-num" style={{ fontWeight: 700 }}>{p.pct}%</span>
                         </div>
                         <div
                           style={{
                             height: '0.55rem',
-                            backgroundColor: 'rgba(90, 74, 66, 0.12)',
+                            backgroundColor: 'var(--line)',
                             borderRadius: '9999px',
                             overflow: 'hidden',
                           }}
@@ -797,16 +797,16 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                   <div
                     className="font-handwriting"
                     style={{
-                      backgroundColor: 'var(--mac-taro, #e3d9ff)',
-                      border: '1.5px dashed var(--accent-taro, #9a7fd8)',
+                      backgroundColor: 'var(--tint-taro-bg)',
+                      border: '1.5px dashed var(--accent-taro)',
                       borderRadius: '10px',
                       padding: '1.25rem 1rem',
                       textAlign: 'center',
-                      color: 'var(--accent-taro, #9a7fd8)',
+                      color: 'var(--accent-taro)',
                       fontSize: '1.25rem',
                       fontWeight: 700,
                       transform: 'rotate(-1deg)',
-                      boxShadow: '2px 3px 0 var(--shadow-ink)',
+                      boxShadow: '2px 3px 0 var(--shadow-color)',
                       marginBottom: '1.5rem',
                     }}
                   >
@@ -815,8 +815,8 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                 )}
 
                 {/* Format Preferences */}
-                <div style={{ borderTop: '1px dashed rgba(90, 74, 66, 0.15)', paddingTop: '1.1rem' }}>
-                  <div className="font-marker" style={{ fontSize: '1.15rem', color: 'var(--ink, #5a4a42)', marginBottom: '0.65rem' }}>
+                <div style={{ borderTop: '1px dashed var(--line)', paddingTop: '1.1rem' }}>
+                  <div className="font-marker" style={{ fontSize: '1.15rem', color: 'var(--text)', marginBottom: '0.65rem' }}>
                     {t.stats.formatPreferencesTitle}
                   </div>
 
@@ -828,16 +828,16 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                       height: '0.65rem',
                       borderRadius: '9999px',
                       overflow: 'hidden',
-                      backgroundColor: 'rgba(90, 74, 66, 0.1)',
+                      backgroundColor: 'var(--line)',
                       marginBottom: '0.75rem',
                     }}
                   >
-                    <div style={{ width: `${formatStats.xlsx}%`, backgroundColor: 'var(--accent-mint, #4fae8a)' }} title={`Excel: ${formatStats.xlsx}%`} />
-                    <div style={{ width: `${formatStats.json}%`, backgroundColor: 'var(--accent-taro, #9a7fd8)' }} title={`JSON: ${formatStats.json}%`} />
-                    <div style={{ width: `${formatStats.txt}%`, backgroundColor: 'var(--accent-sky, #6a82d4)' }} title={`TXT: ${formatStats.txt}%`} />
-                    <div style={{ width: `${formatStats.csv}%`, backgroundColor: 'var(--accent-peach, #ee9a6c)' }} title={`CSV: ${formatStats.csv}%`} />
-                    <div style={{ width: `${formatStats.markdown}%`, backgroundColor: 'var(--ink-light, #8a7569)' }} title={`Markdown: ${formatStats.markdown}%`} />
-                    <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: 'var(--accent-strawberry, #e8789a)' }} title={`M3U8: ${formatStats.m3u8}%`} />
+                    <div style={{ width: `${formatStats.xlsx}%`, backgroundColor: 'var(--accent-mint)' }} title={`Excel: ${formatStats.xlsx}%`} />
+                    <div style={{ width: `${formatStats.json}%`, backgroundColor: 'var(--accent-taro)' }} title={`JSON: ${formatStats.json}%`} />
+                    <div style={{ width: `${formatStats.txt}%`, backgroundColor: 'var(--accent-sky)' }} title={`TXT: ${formatStats.txt}%`} />
+                    <div style={{ width: `${formatStats.csv}%`, backgroundColor: 'var(--accent-peach)' }} title={`CSV: ${formatStats.csv}%`} />
+                    <div style={{ width: `${formatStats.markdown}%`, backgroundColor: 'var(--text-muted)' }} title={`Markdown: ${formatStats.markdown}%`} />
+                    <div style={{ width: `${formatStats.m3u8}%`, backgroundColor: 'var(--accent-strawberry)' }} title={`M3U8: ${formatStats.m3u8}%`} />
                   </div>
 
                   {/* Format Legend Pills */}
@@ -848,27 +848,27 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                       flexWrap: 'wrap',
                       gap: '0.5rem',
                       fontSize: '1.05rem',
-                      color: 'var(--ink-light, #8a7569)',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-mint, #4fae8a)' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-mint)' }} />
                       Excel ({formatStats.xlsx}%)
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-taro, #9a7fd8)' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-taro)' }} />
                       JSON ({formatStats.json}%)
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-sky, #6a82d4)' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-sky)' }} />
                       TXT ({formatStats.txt}%)
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-peach, #ee9a6c)' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-peach)' }} />
                       CSV ({formatStats.csv}%)
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-strawberry, #e8789a)' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-strawberry)' }} />
                       M3U8 ({formatStats.m3u8}%)
                     </span>
                     <span>Markdown ({formatStats.markdown}%)</span>
@@ -905,14 +905,14 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               gap: '0.5rem',
             }}
           >
-            <div className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--ink, #5a4a42)' }}>
+            <div className="font-marker" style={{ fontSize: '1.25rem', color: 'var(--text)' }}>
               {t.stats.recentDaysTitle}
             </div>
             <div
               className="font-note"
               style={{
                 fontSize: '1.15rem',
-                color: activeTrendIdx !== null && trendBars[activeTrendIdx] ? '#c25478' : 'var(--ink-light, #8a7569)',
+                color: activeTrendIdx !== null && trendBars[activeTrendIdx] ? 'var(--tint-strawberry-fg)' : 'var(--text-muted)',
                 transition: 'color 180ms ease',
               }}
             >
@@ -932,7 +932,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               display: 'flex',
               alignItems: 'flex-end',
               height: '84px',
-              borderBottom: '1.5px dashed rgba(180, 144, 130, 0.45)',
+              borderBottom: '1.5px dashed var(--line-strong)',
               position: 'relative',
             }}
             onPointerLeave={() => setActiveTrendIdx(null)}
@@ -946,13 +946,13 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               <>
                 {trendBars.map((bar, idx) => {
                   const barColors = [
-                    'var(--accent-strawberry, #e8789a)',
-                    'var(--accent-peach, #ee9a6c)',
-                    'var(--accent-lemon, #e3b23c)',
-                    'var(--accent-mint, #4fae8a)',
-                    'var(--accent-sky, #6a82d4)',
-                    'var(--accent-taro, #9a7fd8)',
-                    'var(--mac-matcha, #e2f2c9)',
+                    'var(--accent-strawberry)',
+                    'var(--accent-peach)',
+                    'var(--accent-lemon)',
+                    'var(--accent-mint)',
+                    'var(--accent-sky)',
+                    'var(--accent-taro)',
+                    'var(--tint-matcha-bg)',
                   ];
                   const barColor = barColors[idx % barColors.length];
                   return (
@@ -996,7 +996,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                             maxWidth: '14px',
                             height: `${bar.height}%`,
                             backgroundColor: barColor,
-                            border: '1px solid rgba(110, 90, 80, 0.35)',
+                            border: '1px solid var(--line-strong)',
                             borderBottom: 'none',
                             borderRadius: '5px 5px 0 0',
                             transition: 'height 0.4s ease',
@@ -1038,13 +1038,13 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
               <>
                 {[38, 52, 44, 68, 58, 76, 62, 84, 70, 56, 78, 66, 88, 74].map((h, idx) => {
                   const barColors = [
-                    'var(--mac-strawberry, #ffd6e0)',
-                    'var(--mac-peach, #ffdcc7)',
-                    'var(--mac-lemon, #fff1b8)',
-                    'var(--mac-mint, #cdefe3)',
-                    'var(--mac-sky, #d4ecff)',
-                    'var(--mac-taro, #e3d9ff)',
-                    'var(--mac-matcha, #e2f2c9)',
+                    'var(--tint-strawberry-bg)',
+                    'var(--tint-peach-bg)',
+                    'var(--tint-lemon-bg)',
+                    'var(--tint-mint-bg)',
+                    'var(--tint-sky-bg)',
+                    'var(--tint-taro-bg)',
+                    'var(--tint-matcha-bg)',
                   ];
                   return (
                     <div
@@ -1069,7 +1069,7 @@ export const StatsJournal: React.FC<StatsJournalProps> = ({ today }) => {
                           maxWidth: '20px',
                           height: `${Math.round(h * 0.62)}px`,
                           backgroundColor: barColors[idx % barColors.length],
-                          border: '1px dashed rgba(110, 90, 80, 0.28)',
+                          border: '1px dashed var(--line)',
                           borderBottom: 'none',
                           borderRadius: '5px 5px 0 0',
                         }}

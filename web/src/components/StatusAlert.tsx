@@ -45,7 +45,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
       role="alert"
       data-testid={`status-alert-${type}`}
       style={{
-        backgroundColor: isError ? 'var(--note-error, #ffebee)' : 'var(--note-blue, #e6f3ff)',
+        backgroundColor: isError ? 'var(--tint-error-bg)' : 'var(--tint-sky-bg)',
         padding: '1rem 1.25rem',
         marginTop: '1.25rem',
         ['--rot' as any]: '-0.5deg',
@@ -62,7 +62,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
             className="alert-message font-handwriting"
             style={{
               fontSize: '1.15rem',
-              color: 'var(--ink, #5a4a42)',
+              color: 'var(--text)',
               lineHeight: 1.4,
               margin: 0,
             }}
@@ -76,7 +76,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
               style={{
                 marginTop: '0.5rem',
                 fontSize: '0.95rem',
-                color: 'var(--ink-light, #8a7569)',
+                color: 'var(--text-muted)',
                 lineHeight: 1.4,
               }}
             >
@@ -87,7 +87,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 rel="noopener noreferrer"
                 className="alert-cli-link"
                 style={{
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                   fontWeight: 700,
                   textDecoration: 'underline',
                 }}
@@ -106,7 +106,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
           style={{
             paddingTop: '0.75rem',
             marginTop: '0.75rem',
-            borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
+            borderTop: '1px dashed var(--line)',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
@@ -120,7 +120,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 flex: '1 1 0',
                 minWidth: 0,
                 fontSize: '0.82rem',
-                color: 'var(--ink-light, #8a7569)',
+                color: 'var(--text-muted)',
                 lineHeight: 1.5,
               }}
             >
@@ -134,8 +134,8 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 onClick={onAction}
                 className="btn-action sticker font-handwriting"
                 style={{
-                  backgroundColor: '#6a82d4',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--accent-sky)',
+                  color: 'var(--text-on-accent)',
                   padding: '0.35rem 1rem',
                   fontSize: '1.05rem',
                   fontWeight: 700,
@@ -153,7 +153,7 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 onClick={onRetry}
                 className="btn-retry sticker font-handwriting"
                 style={{
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'var(--bg-surface)',
                   padding: '0.35rem 1rem',
                   fontSize: '1.05rem',
                   fontWeight: 700,
@@ -171,15 +171,15 @@ export const StatusAlert: React.FC<StatusAlertProps> = ({
                 disabled={feedbackSubmitted}
                 className="btn-feedback sticker font-handwriting"
                 style={{
-                  backgroundColor: feedbackSubmitted ? '#d4edda' : '#e8f5e9',
+                  backgroundColor: feedbackSubmitted ? 'var(--status-free-border)' : 'var(--status-free-bg)',
                   padding: '0.35rem 1rem',
                   fontSize: '1rem',
                   fontWeight: 700,
                   cursor: feedbackSubmitted ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
                   opacity: feedbackSubmitted ? 0.85 : 1,
-                  border: '1px solid #8fd0b0',
-                  color: '#3d8f70',
+                  border: '1px solid var(--status-free-border)',
+                  color: 'var(--status-free-text)',
                 }}
               >
                 {feedbackSubmitted ? feedbackSubmittedLabel : feedbackLabel}

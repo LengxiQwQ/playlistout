@@ -25,14 +25,14 @@ export const TrackArtwork: React.FC<TrackArtworkProps> = ({
           height: `${size}px`,
           minWidth: `${size}px`,
           borderRadius: '4px',
-          border: '1.5px solid var(--ink-line)',
-          backgroundColor: '#faf3ea',
+          border: '1.5px solid var(--line-ink)',
+          backgroundColor: 'var(--bg-sunken)',
           display: 'grid',
           placeItems: 'center',
           fontSize: `${Math.round(size * 0.45)}px`,
-          color: 'var(--ink-light, #8a7569)',
+          color: 'var(--text-muted)',
           userSelect: 'none',
-          boxShadow: '1.5px 1.5px 0 var(--shadow-ink)',
+          boxShadow: '1.5px 1.5px 0 var(--shadow-color)',
         }}
       >
         <span aria-hidden="true">💿</span>
@@ -52,9 +52,9 @@ export const TrackArtwork: React.FC<TrackArtworkProps> = ({
         height: `${size}px`,
         minWidth: `${size}px`,
         borderRadius: '4px',
-        border: '1.5px solid var(--ink-line)',
+        border: '1.5px solid var(--line-ink)',
         objectFit: 'cover',
-        boxShadow: '1.5px 1.5px 0 var(--shadow-ink)',
+        boxShadow: '1.5px 1.5px 0 var(--shadow-color)',
         display: 'block',
       }}
     />

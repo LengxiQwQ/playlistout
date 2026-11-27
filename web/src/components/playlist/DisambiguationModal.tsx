@@ -40,8 +40,8 @@ const CandidateArtwork: React.FC<{
         borderRadius: isPlaylist ? '6px' : '50%',
         overflow: 'hidden',
         flexShrink: 0,
-        border: '1.5px solid var(--ink-line)',
-        backgroundColor: '#ffffff',
+        border: '1.5px solid var(--line-ink)',
+        backgroundColor: 'var(--bg-surface)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -82,8 +82,8 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
   const renderCandidateCard = (item: DisambiguationItem, idx: number) => {
     const isPlaylist = item.type === 'playlist';
     const isQQ = item.platform === 'qqmusic';
-    const accentColor = isQQ ? '#4fae8a' : '#e8678a';
-    const accentBg = isQQ ? '#effaf5' : '#fff1f2';
+    const accentColor = isQQ ? 'var(--status-free-text)' : 'var(--accent-strawberry)';
+    const accentBg = isQQ ? 'var(--status-free-bg)' : 'var(--status-down-bg)';
 
     return (
       <div
@@ -141,9 +141,9 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
                 fontWeight: 'bold',
                 padding: '0.1rem 0.4rem',
                 borderRadius: '4px',
-                backgroundColor: isQQ ? '#cdeee0' : '#ffd3dc',
-                color: 'var(--ink, #5a4a42)',
-                border: '1px solid var(--ink-line)',
+                backgroundColor: isQQ ? 'var(--tint-mint-bg)' : 'var(--tint-strawberry-bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--line-ink)',
               }}
             >
               {isPlaylist ? `📑 ${t.disambiguation.typePlaylist}` : `👤 ${t.disambiguation.typeUser}`}
@@ -152,7 +152,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
               style={{
                 fontWeight: 'bold',
                 fontSize: '1.02rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -166,7 +166,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
           <div
             style={{
               fontSize: '0.85rem',
-              color: 'var(--ink-secondary, #8a7569)',
+              color: 'var(--ink-secondary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -193,9 +193,9 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
             fontSize: '0.85rem',
             fontWeight: 'bold',
             borderRadius: '6px',
-            border: '1.5px solid var(--ink-line)',
-            backgroundColor: '#ffffff',
-            color: 'var(--ink, #5a4a42)',
+            border: '1.5px solid var(--line-ink)',
+            backgroundColor: 'var(--bg-surface)',
+            color: 'var(--text)',
             cursor: 'pointer',
             pointerEvents: 'none',
           }}
@@ -215,10 +215,10 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
         style={{
           padding: '0.45rem 1.25rem',
           fontSize: '0.95rem',
-          border: '1.5px solid var(--ink-line)',
+          border: '1.5px solid var(--line-ink)',
           borderRadius: '6px',
-          backgroundColor: '#ffffff',
-          color: 'var(--ink, #5a4a42)',
+          backgroundColor: 'var(--bg-surface)',
+          color: 'var(--text)',
           cursor: 'pointer',
         }}
         className="font-marker shadow-cutout-sm hover:bg-neutral-100"
@@ -247,7 +247,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
             margin: '0 0 1.25rem 0',
             fontSize: '0.95rem',
             lineHeight: 1.5,
-            color: 'var(--ink, #5a4a42)',
+            color: 'var(--text)',
           }}
         >
           {t.disambiguation.description.replace('{id}', queryId)}
@@ -276,7 +276,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
                 style={{
                   flex: 1,
                   height: '1px',
-                  borderBottom: '1px dashed var(--ink-secondary, #cdbfb4)',
+                  borderBottom: '1px dashed var(--ink-secondary)',
                 }}
               />
             </div>
@@ -307,7 +307,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
                 style={{
                   flex: 1,
                   height: '1px',
-                  borderBottom: '1px dashed var(--ink-secondary, #cdbfb4)',
+                  borderBottom: '1px dashed var(--ink-secondary)',
                 }}
               />
             </div>

@@ -18,11 +18,11 @@
 
   /* Soft wafer-thin pinned-paper shadow (light paper pinned to linen board) */
   --b-pin-shadow:
-    0 1px 2px rgba(132, 96, 78, 0.12),
-    0 6px 18px -6px rgba(132, 96, 78, 0.16);
+    0 1px 2px color-mix(in srgb, var(--shadow-color) 12%, transparent),
+    0 6px 18px -6px color-mix(in srgb, var(--shadow-color) 16%, transparent);
   --b-pin-shadow-hover:
-    0 2px 4px rgba(132, 96, 78, 0.14),
-    0 16px 32px -10px rgba(132, 96, 78, 0.24);
+    0 2px 4px color-mix(in srgb, var(--shadow-color) 14%, transparent),
+    0 16px 32px -10px color-mix(in srgb, var(--shadow-color) 24%, transparent);
 
   --b-spring: 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --b-smooth: 280ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -37,22 +37,22 @@
 
 /* Japanese Fine Graph-Grid Stationery Desk (distinct from Layout A's dot-grid!) */
 [data-layout-demo='b'] body {
-  background-color: #fbf4ea !important;
+  background-color: var(--bg-page) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(to right, rgba(206, 174, 152, 0.22) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(206, 174, 152, 0.22) 1px, transparent 1px) !important;
+    linear-gradient(to right, var(--rule-dot) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule-dot) 1px, transparent 1px) !important;
   background-size: 96px 96px, 256px 256px, 26px 26px, 26px 26px !important;
   background-position: 0 0, 0 0, 0 0, 0 0 !important;
 }
 
 [data-layout-demo='b'] body::before {
   background:
-    radial-gradient(40rem 28rem at 12% 6%, rgba(255, 224, 192, 0.45), transparent 68%),
-    radial-gradient(38rem 26rem at 90% 10%, rgba(255, 206, 224, 0.42), transparent 68%),
-    radial-gradient(42rem 30rem at 86% 86%, rgba(196, 238, 222, 0.42), transparent 68%),
-    radial-gradient(36rem 28rem at 10% 82%, rgba(226, 214, 255, 0.38), transparent 68%) !important;
+    radial-gradient(40rem 28rem at 12% 6%, var(--ambient-glow-1), transparent 68%),
+    radial-gradient(38rem 26rem at 90% 10%, var(--ambient-glow-2), transparent 68%),
+    radial-gradient(42rem 30rem at 86% 86%, var(--ambient-glow-3), transparent 68%),
+    radial-gradient(36rem 28rem at 10% 82%, var(--ambient-glow-4), transparent 68%) !important;
 }
 
 [data-layout-demo='b'] .journal-container {
@@ -66,7 +66,7 @@
 [data-layout-demo='b'] .hand-drawn-border-alt,
 [data-layout-demo='b'] .hand-drawn-border-subtle {
   border-radius: 16px !important;
-  border: 1.5px solid rgba(204, 172, 152, 0.48) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 48%, transparent) !important;
 }
 
 [data-layout-demo='b'] .paper-shadow,
@@ -155,12 +155,12 @@
   [data-layout-demo='b'] .layout-b-board-title:hover {
     translate: 0 -3px;
     rotate: -0.9deg;
-    color: #c25478 !important;
+    color: var(--tint-strawberry-fg) !important;
   }
 
   [data-layout-demo='b'] .info-notes-section .font-marker:hover {
     translate: 4px 0;
-    color: #c25478 !important;
+    color: var(--tint-strawberry-fg) !important;
   }
 }
 
@@ -174,9 +174,9 @@
   padding: 0.7rem 0.75rem 0.85rem !important;
   margin-left: -0.75rem;
   margin-right: -0.75rem;
-  border-bottom: 2px dashed rgba(206, 170, 148, 0.55);
+  border-bottom: 2px dashed color-mix(in srgb, var(--shadow-color) 55%, transparent);
   border-radius: 0 0 18px 18px;
-  background: rgba(251, 244, 234, 0.94);
+  background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
   backdrop-filter: blur(10px);
   animation: none !important;
 }
@@ -185,7 +185,7 @@
   border-radius: 12px;
   rotate: -3deg;
   scale: 1;
-  box-shadow: 0 3px 10px -3px rgba(132, 96, 78, 0.24);
+  box-shadow: 0 3px 10px -3px color-mix(in srgb, var(--shadow-color) 24%, transparent);
   transition: rotate var(--b-spring), scale var(--b-spring);
 }
 
@@ -197,7 +197,7 @@
 
   [data-layout-demo='b'] .header-brand-container:hover .header-brand-title {
     translate: 3px 0;
-    color: #c25478;
+    color: var(--tint-strawberry-fg);
   }
 }
 
@@ -207,12 +207,12 @@
 [data-layout-demo='b'] .header-actions .ui-hitbox > .ui-face,
 [data-layout-demo='b'] .header-actions .sticker-hitbox > .sticker-face {
   border-radius: 10px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.45) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 45%, transparent) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -1px 0 rgba(164, 128, 108, 0.14),
-    0 2px 0 rgba(148, 112, 92, 0.24),
-    0 4px 10px -4px rgba(132, 96, 78, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--shadow-color) 14%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 24%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   translate: 0 0;
   rotate: 0deg;
   transition:
@@ -222,36 +222,36 @@
 }
 
 [data-layout-demo='b'] .header-desktop-btn > .header-desktop-btn-face {
-  background-color: #ffe8ef !important;
+  background-color: var(--tint-strawberry-bg) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(255, 248, 250, 0.75) 0%, rgba(255, 224, 234, 0.85) 100%) !important;
+    linear-gradient(180deg, var(--tint-strawberry-bg-soft) 0%, var(--tint-strawberry-bg) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #a64062 !important;
-  border-color: rgba(206, 134, 158, 0.56) !important;
+  color: var(--tint-strawberry-fg) !important;
+  border-color: color-mix(in srgb, var(--hue-strawberry) 56%, transparent) !important;
 }
 
 [data-layout-demo='b'] .header-github-btn > .header-github-btn-face {
-  background-color: #e4f6ee !important;
+  background-color: var(--tint-mint-bg) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(244, 252, 248, 0.75) 0%, rgba(212, 241, 229, 0.88) 100%) !important;
+    linear-gradient(180deg, var(--tint-mint-bg-soft) 0%, var(--tint-mint-bg) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #2b6e55 !important;
-  border-color: rgba(114, 176, 150, 0.56) !important;
+  color: var(--tint-mint-fg) !important;
+  border-color: color-mix(in srgb, var(--hue-mint) 56%, transparent) !important;
 }
 
 [data-layout-demo='b'] .header-lang-btn > .sticker-face {
-  background-color: #e8f3ff !important;
+  background-color: var(--tint-sky-bg) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(246, 250, 255, 0.75) 0%, rgba(218, 236, 255, 0.88) 100%) !important;
+    linear-gradient(180deg, var(--tint-sky-bg-soft) 0%, var(--tint-sky-bg) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: var(--ink, #5a4a42) !important;
-  border-color: rgba(132, 168, 204, 0.56) !important;
+  color: var(--text) !important;
+  border-color: color-mix(in srgb, var(--hue-sky) 56%, transparent) !important;
 }
 
 @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
@@ -262,9 +262,9 @@
     translate: 0 -2px;
     rotate: -1deg;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.78),
-      0 3px 0 rgba(148, 112, 92, 0.28),
-      0 8px 16px -6px rgba(132, 96, 78, 0.22) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 78%, transparent),
+      0 3px 0 color-mix(in srgb, var(--shadow-color) 28%, transparent),
+      0 8px 16px -6px color-mix(in srgb, var(--shadow-color) 22%, transparent) !important;
   }
 }
 
@@ -295,16 +295,16 @@
   margin: 0 auto 0.75rem auto !important;
   padding: 0.25rem 1.25rem;
   font-size: 0.98rem !important;
-  color: #8f6046 !important;
+  color: var(--text-faint) !important;
   background:
     repeating-linear-gradient(
       -45deg,
-      rgba(255, 224, 150, 0.55) 0 8px,
-      rgba(255, 240, 198, 0.72) 8px 16px
+      color-mix(in srgb, var(--shadow-color) 55%, transparent) 0 8px,
+      color-mix(in srgb, var(--shadow-color) 72%, transparent) 8px 16px
     );
-  border: 1px dashed rgba(214, 168, 92, 0.52);
+  border: 1px dashed color-mix(in srgb, var(--hue-lemon) 52%, transparent);
   border-radius: 4px;
-  box-shadow: 0 3px 10px -4px rgba(168, 128, 76, 0.22);
+  box-shadow: 0 3px 10px -4px color-mix(in srgb, var(--shadow-color) 22%, transparent);
   animation: none !important;
   rotate: -1.4deg;
   scale: 1;
@@ -358,15 +358,15 @@
 
 [data-layout-demo='b'] .search-note-section .sticky-note-card {
   --rot: 0deg;
-  background-color: #fffdf6 !important;
+  background-color: var(--bg-surface) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(to right, rgba(226, 196, 160, 0.18) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(226, 196, 160, 0.18) 1px, transparent 1px) !important;
+    linear-gradient(to right, color-mix(in srgb, var(--shadow-color) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--shadow-color) 18%, transparent) 1px, transparent 1px) !important;
   background-size: 96px 96px, 240px 240px, 20px 20px, 20px 20px !important;
   border-radius: 18px !important;
-  border: 1.5px solid rgba(218, 186, 152, 0.62) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 62%, transparent) !important;
   box-shadow: var(--b-pin-shadow) !important;
   padding: 2.25rem 2.1rem 1.85rem !important;
   transform-origin: 50% 0%;
@@ -385,7 +385,7 @@
 
 [data-layout-demo='b'] .search-note-section .brand-badge.sticker {
   border-radius: 6px !important;
-  border: 1px dashed rgba(154, 127, 216, 0.48) !important;
+  border: 1px dashed color-mix(in srgb, var(--hue-sky) 48%, transparent) !important;
   box-shadow: none !important;
   cursor: default;
 }
@@ -397,16 +397,16 @@
 
 [data-layout-demo='b'] .search-input-wrapper .paper-input-container {
   border-radius: 14px !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid rgba(212, 178, 154, 0.58) !important;
-  box-shadow: inset 0 2px 6px rgba(142, 102, 84, 0.07) !important;
+  background-color: var(--bg-surface) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 58%, transparent) !important;
+  box-shadow: inset 0 2px 6px color-mix(in srgb, var(--shadow-color) 7%, transparent) !important;
   padding: 0.22rem 0.75rem 0.22rem 1rem !important;
   transition: border-color 200ms ease, box-shadow 200ms ease !important;
 }
 
 [data-layout-demo='b'] .search-input-wrapper .paper-input-container:focus-within {
-  border-color: #ec7f9f !important;
-  box-shadow: 0 0 0 4px rgba(236, 127, 159, 0.16) !important;
+  border-color: var(--btn-primary-bg) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hue-taro) 16%, transparent) !important;
 }
 
 [data-layout-demo='b'] .search-input-wrapper .paper-input-field {
@@ -419,19 +419,19 @@
 [data-layout-demo='b'] .search-input-row .marker-button > .marker-button-face {
   border-radius: 11px !important;
   padding: 0.78rem 1.8rem !important;
-  border: 1.5px solid #c9587c !important;
-  background-color: #ec7a9c !important;
+  border: 1.5px solid var(--line-ink) !important;
+  background-color: var(--btn-primary-bg) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(188, 66, 104, 0.16) 100%) !important;
+    linear-gradient(180deg, color-mix(in srgb, var(--gloss) 20%, transparent) 0%, color-mix(in srgb, var(--hue-taro) 16%, transparent) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #ffffff !important;
+  color: var(--text-on-accent) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    inset 0 -1px 0 rgba(148, 52, 82, 0.16),
-    0 2.5px 0 rgba(168, 68, 98, 0.34),
-    0 6px 14px -5px rgba(196, 88, 122, 0.28) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 44%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--hue-taro) 16%, transparent),
+    0 2.5px 0 color-mix(in srgb, var(--hue-taro) 34%, transparent),
+    0 6px 14px -5px color-mix(in srgb, var(--hue-taro) 28%, transparent) !important;
   translate: 0 0;
   scale: 1;
   transition: translate var(--b-spring), scale var(--b-spring), box-shadow var(--b-smooth) !important;
@@ -442,49 +442,49 @@
     translate: 0 -3px;
     scale: 1.03;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.48),
-      0 4px 0 rgba(168, 68, 98, 0.36),
-      0 10px 20px -6px rgba(228, 108, 145, 0.42) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 48%, transparent),
+      0 4px 0 color-mix(in srgb, var(--hue-taro) 36%, transparent),
+      0 10px 20px -6px color-mix(in srgb, var(--hue-taro) 42%, transparent) !important;
   }
 }
 
 [data-layout-demo='b'] .search-input-row .marker-button:disabled > .marker-button-face {
-  background-color: #f4bccd !important;
+  background-color: var(--tint-strawberry-bg) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  border-color: #df9ab0 !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 0 rgba(196, 138, 156, 0.24) !important;
+  border-color: var(--tint-strawberry-line) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gloss) 35%, transparent), 0 2px 0 color-mix(in srgb, var(--hue-strawberry) 24%, transparent) !important;
 }
 
 /* Tactile Cotton-Paper Rounded-Rectangle Platform & Sample Buttons */
 [data-layout-demo='b'] .search-platforms-row .sticker,
 [data-layout-demo='b'] .search-sample-row .sticker-hitbox > .sticker-face {
   border-radius: 10px !important;
-  border: 1.5px solid rgba(168, 134, 114, 0.44) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 44%, transparent) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -1px 0 rgba(164, 128, 108, 0.12),
-    0 2px 0 rgba(154, 118, 98, 0.22),
-    0 3px 8px -4px rgba(132, 96, 78, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--shadow-color) 12%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 22%, transparent),
+    0 3px 8px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   padding: 0.3rem 0.88rem !important;
   font-size: 1rem !important;
   font-weight: 600 !important;
-  color: #4a3832 !important;
+  color: var(--text) !important;
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
 }
 
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 1),
-[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 1) .sticker-face { border-color: rgba(108, 178, 150, 0.56) !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 1) .sticker-face { border-color: color-mix(in srgb, var(--hue-mint) 56%, transparent) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 2),
-[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 2) .sticker-face { border-color: rgba(212, 134, 158, 0.56) !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 2) .sticker-face { border-color: color-mix(in srgb, var(--hue-strawberry) 56%, transparent) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 3),
-[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 3) .sticker-face { border-color: rgba(212, 174, 96, 0.56) !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 3) .sticker-face { border-color: color-mix(in srgb, var(--hue-lemon) 56%, transparent) !important; }
 [data-layout-demo='b'] .search-platforms-row .sticker:nth-child(4n + 4),
-[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 4) .sticker-face { border-color: rgba(156, 134, 206, 0.56) !important; }
+[data-layout-demo='b'] .search-sample-row > :nth-child(4n + 4) .sticker-face { border-color: color-mix(in srgb, var(--hue-sky) 56%, transparent) !important; }
 
 @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
   [data-layout-demo='b'] .search-platforms-row .sticker-hitbox:hover > .sticker-face,
@@ -492,21 +492,21 @@
     translate: 0 -2px;
     rotate: -1.5deg;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.78),
-      0 3px 0 rgba(154, 118, 98, 0.25),
-      0 6px 12px -4px rgba(132, 96, 78, 0.2) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 78%, transparent),
+      0 3px 0 color-mix(in srgb, var(--shadow-color) 25%, transparent),
+      0 6px 12px -4px color-mix(in srgb, var(--shadow-color) 20%, transparent) !important;
   }
 }
 
 [data-layout-demo='b'] .quick-samples-toggle > .quick-samples-toggle-face {
   border-radius: 10px !important;
-  border: 1.5px dashed rgba(188, 140, 104, 0.58) !important;
-  background-color: #fff8ea !important;
+  border: 1.5px dashed color-mix(in srgb, var(--shadow-color) 58%, transparent) !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 2px 0 rgba(176, 138, 108, 0.2) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 20%, transparent) !important;
   translate: 0 0;
   transition: translate var(--b-spring), background-color 200ms ease !important;
 }
@@ -514,7 +514,7 @@
 @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
   [data-layout-demo='b'] .quick-samples-toggle:hover > .quick-samples-toggle-face {
     translate: 0 -2px;
-    background-color: #fff2d6 !important;
+    background-color: var(--tint-lemon-bg) !important;
   }
 }
 
@@ -528,19 +528,19 @@
   margin-top: 2.75rem;
   padding: 2.1rem 1.85rem 2.25rem;
   /* Warm woven linen-cork texture */
-  background-color: #f3e6d6;
+  background-color: var(--bg-sunken);
   background-image:
-    repeating-linear-gradient(0deg, rgba(164, 124, 96, 0.045) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(90deg, rgba(164, 124, 96, 0.045) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--shadow-color) 5%, transparent) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--shadow-color) 5%, transparent) 0 1px, transparent 1px 5px),
     var(--b-paper-fiber),
     url('/paper-grain.png');
   background-size: 5px 5px, 5px 5px, 96px 96px, 256px 256px;
-  border: 2px solid rgba(208, 174, 146, 0.68);
+  border: 2px solid color-mix(in srgb, var(--shadow-color) 68%, transparent);
   border-radius: 26px;
   box-shadow:
-    inset 0 0 0 8px rgba(255, 250, 242, 0.6),
-    inset 0 0 0 9.5px rgba(208, 174, 146, 0.35),
-    0 18px 42px -18px rgba(132, 96, 78, 0.22);
+    inset 0 0 0 8px color-mix(in srgb, var(--shadow-color) 60%, transparent),
+    inset 0 0 0 9.5px color-mix(in srgb, var(--shadow-color) 35%, transparent),
+    0 18px 42px -18px color-mix(in srgb, var(--shadow-color) 22%, transparent);
 }
 
 /* Glossy 3D Enamel Pushpins */
@@ -587,24 +587,24 @@
 }
 
 .layout-b-board-washi.is-left {
-  background: repeating-linear-gradient(45deg, #ffc4d6 0 6px, #ffe6ee 6px 12px);
+  background: repeating-linear-gradient(45deg, var(--tape-strawberry) 0 6px, var(--tint-strawberry-bg-soft) 6px 12px);
   transform: rotate(-5deg);
 }
 
 .layout-b-board-washi.is-right {
-  background: repeating-linear-gradient(-45deg, #b8ebd8 0 6px, #e4faf2 6px 12px);
+  background: repeating-linear-gradient(-45deg, var(--tape-mint) 0 6px, var(--tint-mint-bg-soft) 6px 12px);
   transform: rotate(5deg);
 }
 
 [data-layout-demo='b'] .layout-b-board-title {
   font-size: 1.28rem;
-  color: var(--ink, #5a4a42);
-  background: #fffcf5;
+  color: var(--text);
+  background: var(--bg-surface);
   background-image: var(--b-paper-fiber);
-  border: 1.5px dashed rgba(208, 170, 144, 0.7);
+  border: 1.5px dashed color-mix(in srgb, var(--shadow-color) 70%, transparent);
   border-radius: 10px;
   padding: 0.3rem 1.25rem;
-  box-shadow: 0 3px 8px -3px rgba(132, 96, 78, 0.16);
+  box-shadow: 0 3px 8px -3px color-mix(in srgb, var(--shadow-color) 16%, transparent);
 }
 
 /* 12-column Bento Pinboard Grid */
@@ -653,8 +653,8 @@
 
 [data-layout-demo='b'] .plugin-supported-count {
   border-radius: 12px !important;
-  border: 1.5px dashed rgba(226, 120, 152, 0.65) !important;
-  background: #fff5f8 !important;
+  border: 1.5px dashed color-mix(in srgb, var(--hue-taro) 65%, transparent) !important;
+  background: var(--tint-strawberry-bg-soft) !important;
   box-shadow: var(--b-pin-shadow) !important;
   translate: 0 0;
   rotate: 0deg;
@@ -692,10 +692,10 @@
 [data-layout-demo='b'] .plugin-app-card {
   position: relative;
   border-radius: 14px !important;
-  background-color: #f6fbff !important;
+  background-color: var(--tint-sky-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 220px 220px !important;
-  border: 1.5px solid rgba(176, 202, 228, 0.62) !important;
+  border: 1.5px solid color-mix(in srgb, var(--hue-sky) 62%, transparent) !important;
   box-shadow: var(--b-pin-shadow) !important;
   padding: 1.35rem 1.7rem 1.2rem 1.2rem !important;
   overflow: visible !important;
@@ -715,31 +715,31 @@
   height: 14px;
   margin-left: -7px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #a8d4ff 26% 100%);
-  border: 1.5px solid #6b9ed6;
-  box-shadow: 1px 2px 4px rgba(102, 74, 60, 0.25);
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-sky) 26% 100%);
+  border: 1.5px solid var(--tint-sky-line);
+  box-shadow: 1px 2px 4px color-mix(in srgb, var(--shadow-color) 25%, transparent);
   z-index: 6;
   pointer-events: none;
 }
 
 [data-layout-demo='b'] .plugin-app-grid > :nth-child(2) .plugin-app-card {
-  background-color: #effbf5 !important;
-  border-color: rgba(132, 206, 178, 0.6) !important;
+  background-color: var(--tint-mint-bg-soft) !important;
+  border-color: color-mix(in srgb, var(--hue-mint) 60%, transparent) !important;
 }
 
 [data-layout-demo='b'] .plugin-app-grid > :nth-child(2) .plugin-app-card::before {
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #9ee6ca 26% 100%);
-  border-color: #5cb394;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-mint) 26% 100%);
+  border-color: var(--tint-mint-line);
 }
 
 [data-layout-demo='b'] .plugin-app-grid > :nth-child(3) .plugin-app-card {
-  background-color: #fffbf0 !important;
-  border-color: rgba(232, 198, 120, 0.62) !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
+  border-color: color-mix(in srgb, var(--hue-lemon) 62%, transparent) !important;
 }
 
 [data-layout-demo='b'] .plugin-app-grid > :nth-child(3) .plugin-app-card::before {
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffe08a 26% 100%);
-  border-color: #d4a43e;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-lemon) 26% 100%);
+  border-color: var(--tint-lemon-line);
 }
 
 /* Peeking mini vinyl disc cleanly clipped inside a stationary sleeve-aligned window! */
@@ -765,8 +765,8 @@
   height: 34px;
   border-radius: 50%;
   background:
-    radial-gradient(circle, #fffdf8 0 3px, #ffd6e0 3.5px 8.5px, #5a4a42 9px 14px, #7b665c 14.5px 15.5px, #5a4a42 16px 100%);
-  box-shadow: 2px 2px 6px rgba(90, 74, 66, 0.2);
+    radial-gradient(circle, var(--bg-surface) 0 3px, var(--tint-strawberry-bg) 3.5px 8.5px, var(--text) 9px 14px, var(--text-muted) 14.5px 15.5px, var(--text) 16px 100%);
+  box-shadow: 2px 2px 6px color-mix(in srgb, var(--shadow-color) 20%, transparent);
   translate: -14px 0;
   rotate: 0deg;
   transition:
@@ -802,8 +802,8 @@
 [data-layout-demo='b'] .info-notes-favorited .sticker,
 [data-layout-demo='b'] .stats-chill-vibes-row .sticker {
   border-radius: 6px !important;
-  border: 1px dashed rgba(192, 152, 134, 0.55) !important;
-  box-shadow: 0 2px 6px rgba(132, 96, 78, 0.14) !important;
+  border: 1px dashed color-mix(in srgb, var(--shadow-color) 55%, transparent) !important;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   background-image: var(--b-paper-fiber) !important;
 }
 
@@ -823,7 +823,7 @@
 
 [data-layout-demo='b'] .plugin-status-sticker {
   border-radius: 6px !important;
-  border: 1px solid rgba(176, 148, 136, 0.28) !important;
+  border: 1px solid color-mix(in srgb, var(--shadow-color) 28%, transparent) !important;
   box-shadow: none !important;
   font-family: var(--font-sans) !important;
   font-size: 0.72rem !important;
@@ -834,14 +834,14 @@
 [data-layout-demo='b'] .result-paper-card .marker-button > .marker-button-face,
 [data-layout-demo='b'] .user-playlists-paper .marker-button > .marker-button-face {
   border-radius: 10px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.46) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 46%, transparent) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(164, 128, 108, 0.14),
-    0 2px 0 rgba(148, 112, 92, 0.24),
-    0 4px 10px -4px rgba(132, 96, 78, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 70%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--shadow-color) 14%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 24%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   font-size: 0.88rem !important;
   translate: 0 0;
   scale: 1;
@@ -856,26 +856,26 @@
     translate: 0 -2px;
     scale: 1.03;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.76),
-      0 3px 0 rgba(148, 112, 92, 0.28),
-      0 8px 16px -6px rgba(132, 96, 78, 0.22) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 76%, transparent),
+      0 3px 0 color-mix(in srgb, var(--shadow-color) 28%, transparent),
+      0 8px 16px -6px color-mix(in srgb, var(--shadow-color) 22%, transparent) !important;
   }
 }
 
 [data-layout-demo='b'] .plugin-action-link > .marker-button-face {
-  background-color: #ec7a9c !important;
+  background-color: var(--btn-primary-bg) !important;
   background-image:
     var(--b-paper-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(188, 66, 104, 0.14) 100%) !important;
+    linear-gradient(180deg, color-mix(in srgb, var(--gloss) 18%, transparent) 0%, color-mix(in srgb, var(--hue-taro) 14%, transparent) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #ffffff !important;
-  border-color: #c9587c !important;
+  color: var(--text-on-accent) !important;
+  border-color: var(--line-ink) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(148, 52, 82, 0.16),
-    0 2px 0 rgba(168, 68, 98, 0.34),
-    0 4px 10px -4px rgba(196, 88, 122, 0.24) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 40%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--hue-taro) 16%, transparent),
+    0 2px 0 color-mix(in srgb, var(--hue-taro) 34%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--hue-taro) 24%, transparent) !important;
 }
 
 /* ---------------- 7. Cell 2 (4 cols): Lace Coaster Stamp + 3 Scrapbook Clippings ---------------- */
@@ -890,11 +890,11 @@
 /* Lace-Edge Macaron Coaster Badge (completely different from Layout A's postage stamp!) */
 [data-layout-demo='b'] .running-days-stamp {
   border-radius: 999px !important;
-  border: 2px dashed rgba(232, 130, 162, 0.65) !important;
-  outline: 6px solid #fff6f9;
-  background-color: #ffe8f0 !important;
-  background-image: var(--b-paper-fiber), radial-gradient(circle at 50% 30%, #ffffff 0%, #ffe3ec 100%) !important;
-  box-shadow: 0 8px 20px -6px rgba(212, 118, 148, 0.3) !important;
+  border: 2px dashed color-mix(in srgb, var(--hue-taro) 65%, transparent) !important;
+  outline: 6px solid var(--tint-strawberry-bg-soft);
+  background-color: var(--tint-strawberry-bg) !important;
+  background-image: var(--b-paper-fiber), radial-gradient(circle at 50% 30%, var(--bg-surface) 0%, var(--tint-strawberry-bg) 100%) !important;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--hue-taro) 30%, transparent) !important;
   padding: 1rem 1.8rem !important;
   transform-origin: 50% 8px;
   translate: 0 0;
@@ -909,7 +909,7 @@
     translate: 0 -3px;
     rotate: 2.5deg;
     scale: 1.04;
-    box-shadow: 0 14px 26px -6px rgba(212, 118, 148, 0.4) !important;
+    box-shadow: 0 14px 26px -6px color-mix(in srgb, var(--hue-taro) 40%, transparent) !important;
   }
 }
 
@@ -933,19 +933,19 @@
   font-family: var(--font-sans) !important;
   font-size: 0.9rem !important;
   line-height: 1.72 !important;
-  color: #624e45 !important;
+  color: var(--text-muted) !important;
 }
 
 /* Clipping 1: Corner-Taped Lemon Graph Slip */
 [data-layout-demo='b'] .info-notes-grid > :nth-child(1) .journal-paper {
   border-radius: 10px !important;
-  background-color: #fff9df !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
   background-image:
     var(--b-paper-fiber),
-    linear-gradient(to right, rgba(226, 192, 108, 0.2) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(226, 192, 108, 0.2) 1px, transparent 1px) !important;
+    linear-gradient(to right, color-mix(in srgb, var(--hue-lemon) 20%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--hue-lemon) 20%, transparent) 1px, transparent 1px) !important;
   background-size: 96px 96px, 16px 16px, 16px 16px !important;
-  border: 1px solid rgba(224, 190, 108, 0.58) !important;
+  border: 1px solid color-mix(in srgb, var(--hue-lemon) 58%, transparent) !important;
   padding: 1.4rem 1.35rem !important;
   overflow: visible !important;
   translate: 0 0;
@@ -959,8 +959,8 @@
   position: absolute;
   width: 38px;
   height: 13px;
-  background: rgba(162, 228, 206, 0.68);
-  border: 1px solid rgba(114, 190, 166, 0.28);
+  background: color-mix(in srgb, var(--hue-mint) 68%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hue-mint) 28%, transparent);
   pointer-events: none;
 }
 
@@ -987,12 +987,12 @@
 /* Clipping 2: Torn-Bottom Blush Memo Pad Sheet (serrated zigzag bottom edge!) */
 [data-layout-demo='b'] .info-notes-grid > :nth-child(2) .journal-paper {
   border-radius: 12px 12px 2px 2px !important;
-  background-color: #fff0f4 !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image:
     var(--b-paper-fiber),
-    linear-gradient(to bottom, transparent 27px, rgba(232, 152, 178, 0.2) 28px) !important;
+    linear-gradient(to bottom, transparent 27px, color-mix(in srgb, var(--hue-taro) 20%, transparent) 28px) !important;
   background-size: 96px 96px, 100% 28px !important;
-  border: 1px solid rgba(232, 156, 182, 0.52) !important;
+  border: 1px solid color-mix(in srgb, var(--hue-taro) 52%, transparent) !important;
   border-bottom: none !important;
   padding: 1.35rem 1.35rem 1.75rem !important;
   translate: 0 0;
@@ -1008,9 +1008,9 @@
   bottom: -7px;
   height: 8px;
   background:
-    linear-gradient(135deg, #fff0f4 50%, transparent 50%) 0 0 / 14px 8px repeat-x,
-    linear-gradient(225deg, #fff0f4 50%, transparent 50%) 0 0 / 14px 8px repeat-x;
-  filter: drop-shadow(0 2px 2px rgba(132, 96, 78, 0.12));
+    linear-gradient(135deg, var(--tint-strawberry-bg-soft) 50%, transparent 50%) 0 0 / 14px 8px repeat-x,
+    linear-gradient(225deg, var(--tint-strawberry-bg-soft) 50%, transparent 50%) 0 0 / 14px 8px repeat-x;
+  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-color) 12%, transparent));
   pointer-events: none;
 }
 
@@ -1025,11 +1025,11 @@
 /* Clipping 3: Japanese Mint Library Index Card with Top Accent Rule */
 [data-layout-demo='b'] .info-notes-grid > :nth-child(3) .journal-paper {
   border-radius: 14px !important;
-  background-color: #eafaf3 !important;
+  background-color: var(--tint-mint-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 220px 220px !important;
-  border: 1.5px solid rgba(124, 202, 172, 0.56) !important;
-  border-top: 6px solid #8fdcb9 !important;
+  border: 1.5px solid color-mix(in srgb, var(--hue-mint) 56%, transparent) !important;
+  border-top: 6px solid var(--tint-mint-line) !important;
   padding: 1.3rem 1.35rem !important;
   translate: 0 0;
   rotate: 0deg;
@@ -1090,7 +1090,7 @@
 [data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper {
   position: relative;
   border-radius: 12px !important;
-  border: 6px solid #ffffff !important;
+  border: 6px solid var(--bg-surface) !important;
   border-bottom-width: 14px !important;
   padding: 1.4rem 1.25rem 1.1rem !important;
   box-shadow: var(--b-pin-shadow) !important;
@@ -1112,29 +1112,29 @@
   height: 14px;
   margin-left: -7px;
   border-radius: 50%;
-  box-shadow: 1px 2px 4px rgba(102, 74, 60, 0.25);
+  box-shadow: 1px 2px 4px color-mix(in srgb, var(--shadow-color) 25%, transparent);
   z-index: 6;
   pointer-events: none;
 }
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper {
-  background-color: #fff8de !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
 }
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(1) .journal-paper::before {
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffe08a 26% 100%);
-  border: 1.5px solid #d4a43e;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-lemon) 26% 100%);
+  border: 1.5px solid var(--tint-lemon-line);
 }
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper {
-  background-color: #fff1f6 !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
 }
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(2) .journal-paper::before {
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #ffb4c9 26% 100%);
-  border: 1.5px solid #de7e9a;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-strawberry) 26% 100%);
+  border: 1.5px solid var(--tint-strawberry-line);
 }
 
 @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
@@ -1158,9 +1158,9 @@
 [data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper {
   position: relative;
   border-radius: 14px !important;
-  background-color: #ebfaf3 !important;
+  background-color: var(--tint-mint-bg-soft) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
-  border: 1.5px solid rgba(124, 202, 172, 0.52) !important;
+  border: 1.5px solid color-mix(in srgb, var(--hue-mint) 52%, transparent) !important;
   padding: 1.4rem 1.35rem 1.3rem !important;
   transform-origin: 50% 8px;
   translate: 0 0;
@@ -1169,8 +1169,8 @@
 
 [data-layout-demo='b'] .stats-main-grid > :nth-child(3) .journal-paper::before {
   top: -8px;
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #9ee6ca 26% 100%);
-  border: 1.5px solid #5cb394;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-mint) 26% 100%);
+  border: 1.5px solid var(--tint-mint-line);
 }
 
 [data-layout-demo='b'] .stats-main-grid .font-num {
@@ -1188,7 +1188,7 @@
 
   [data-layout-demo='b'] .stats-main-grid > .reveal:hover .font-num {
     scale: 1.07;
-    color: #c25478;
+    color: var(--tint-strawberry-fg);
   }
 }
 
@@ -1196,13 +1196,13 @@
 [data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper {
   position: relative;
   border-radius: 14px !important;
-  background-color: #fffdf9 !important;
+  background-color: var(--bg-surface) !important;
   background-image:
     var(--b-paper-fiber),
-    linear-gradient(to right, rgba(206, 174, 152, 0.16) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(206, 174, 152, 0.16) 1px, transparent 1px) !important;
+    linear-gradient(to right, color-mix(in srgb, var(--shadow-color) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--shadow-color) 16%, transparent) 1px, transparent 1px) !important;
   background-size: 96px 96px, 16px 16px, 16px 16px !important;
-  border: 1.5px solid rgba(212, 180, 158, 0.52) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 52%, transparent) !important;
   transform-origin: 50% 8px;
   translate: 0 0;
   rotate: 0deg;
@@ -1210,8 +1210,8 @@
 
 [data-layout-demo='b'] .stats-journal-section > .reveal:last-of-type .journal-paper::before {
   top: -8px;
-  background: radial-gradient(circle at 35% 32%, #ffffff 0 22%, #d1beff 26% 100%);
-  border: 1.5px solid #957ad4;
+  background: radial-gradient(circle at 35% 32%, var(--text-on-accent) 0 22%, var(--hue-taro) 26% 100%);
+  border: 1.5px solid var(--tint-taro-line);
 }
 
 [data-layout-demo='b'] .stats-trend-bars .stats-trend-bar-fill {
@@ -1277,14 +1277,14 @@
   position: relative;
   border-radius: 8px 8px 14px 14px !important;
   background-image:
-    radial-gradient(circle at 14px 10px, #f3e6d6 3.2px, rgba(164, 128, 110, 0.45) 3.7px, transparent 4.5px),
-    linear-gradient(90deg, transparent 12px, #d9a496 12px 16px, transparent 16px),
+    radial-gradient(circle at 14px 10px, var(--bg-page) 3.2px, var(--line-strong) 3.7px, transparent 4.5px),
+    linear-gradient(90deg, transparent 12px, var(--tint-peach-line) 12px 16px, transparent 16px),
     var(--b-paper-fiber),
     url('/paper-grain.png') !important;
   background-size: 28px 20px, 28px 10px, 96px 96px, 220px 220px !important;
   background-repeat: repeat-x, repeat-x, repeat, repeat !important;
   background-position: 6px 0, 6px 0, 0 0, 0 0 !important;
-  border: 1.5px solid rgba(204, 170, 152, 0.5) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 50%, transparent) !important;
   box-shadow: var(--b-pin-shadow) !important;
   padding: 1.65rem 1.05rem 1.05rem !important;
   transform-origin: 50% 8px;
@@ -1326,14 +1326,14 @@
 
 [data-layout-demo='b'] .journal-footer .sticker-hitbox > .footer-pill-face {
   border-radius: 10px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.44) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 44%, transparent) !important;
   background-image: var(--b-paper-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -1px 0 rgba(164, 128, 108, 0.12),
-    0 2px 0 rgba(148, 112, 92, 0.22),
-    0 3px 8px -4px rgba(132, 96, 78, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--shadow-color) 12%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 22%, transparent),
+    0 3px 8px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--b-spring), rotate var(--b-spring), box-shadow var(--b-smooth) !important;
@@ -1343,7 +1343,7 @@
   [data-layout-demo='b'] .journal-footer .sticker-hitbox:hover > .footer-pill-face {
     translate: 0 -3px;
     rotate: 1.5deg;
-    box-shadow: 0 8px 16px -5px rgba(132, 96, 78, 0.24) !important;
+    box-shadow: 0 8px 16px -5px color-mix(in srgb, var(--shadow-color) 24%, transparent) !important;
   }
 }
 
@@ -1407,7 +1407,7 @@
     padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
     border-top: none !important;
     border-radius: 0 0 18px 18px !important;
-    background: #fbf4ea !important;
+    background: var(--bg-page) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     transform: none !important;

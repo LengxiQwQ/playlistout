@@ -16,12 +16,12 @@ const AfdianIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
 );
 
 const WeChatIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#07c160" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--brand-wechat)" aria-hidden="true">
     <path d="M8.5 3C4.36 3 1 5.91 1 9.5c0 2.04 1.09 3.87 2.79 5.09L3 18l3.69-1.47C7.38 16.8 8.18 17 9 17c.21 0 .42-.01.62-.03-.27-.61-.42-1.28-.42-1.97 0-3.31 3.13-6 7-6 .48 0 .94.04 1.39.13C17.07 5.75 13.16 3 8.5 3zM6 7.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm5 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm5.2 3.5c-3.42 0-6.2 2.24-6.2 5s2.78 5 6.2 5c.65 0 1.28-.09 1.86-.25L21 22l-.7-2.11C21.46 18.96 22 17.56 22 16c0-2.76-2.78-5-6.2-5zm-2.2 3.5a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6zm4 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6z" />
   </svg>
 );
 
-const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = '#e8678a' }) => (
+const HeartIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'var(--hue-strawberry)' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1" aria-hidden="true">
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
   </svg>
@@ -105,11 +105,11 @@ export const SponsorButton: React.FC = () => {
             padding: '0.35rem 0.85rem',
             fontSize: '1.05rem',
             fontWeight: 600,
-            color: 'var(--ink, #5a4a42)',
+            color: 'var(--text)',
             lineHeight: 1.2,
           }}
         >
-          <HeartIcon size={14} color="#e8678a" />
+          <HeartIcon size={14} color="var(--hue-strawberry)" />
           <span>{t.footer.sponsorLink}</span>
           <span
             style={{
@@ -154,7 +154,7 @@ export const SponsorButton: React.FC = () => {
                 style={{
                   fontSize: '1.25rem',
                   fontWeight: 700,
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                   lineHeight: 1,
                   width: '2rem',
                   height: '2rem',
@@ -171,7 +171,7 @@ export const SponsorButton: React.FC = () => {
               className="font-marker"
               style={{
                 fontSize: '1.25rem',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 marginBottom: '0.2rem',
                 lineHeight: 1.2,
                 paddingRight: '1.8rem',
@@ -184,7 +184,7 @@ export const SponsorButton: React.FC = () => {
             className="font-handwriting"
             style={{
               fontSize: '0.85rem',
-              color: '#8a7569',
+              color: 'var(--text-faint)',
               margin: '0 0 0.85rem 0',
               lineHeight: 1.3,
             }}
@@ -210,15 +210,15 @@ export const SponsorButton: React.FC = () => {
                   gap: '0.5rem',
                   width: '100%',
                   padding: '0.45rem 0.85rem',
-                  backgroundColor: '#24292f',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--brand-github-bg)',
+                  color: 'var(--brand-github-text)',
                   borderRadius: '8px',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '0.95rem',
                   fontWeight: 600,
                   lineHeight: 1.2,
-                  boxShadow: '2px 2px 0 var(--shadow-ink)',
-                  border: '1.5px solid var(--ink-line)',
+                  boxShadow: '2px 2px 0 var(--shadow-color)',
+                  border: '1.5px solid var(--line-ink)',
                 }}
               >
                 <GitHubIcon size={16} />
@@ -244,15 +244,15 @@ export const SponsorButton: React.FC = () => {
                   gap: '0.5rem',
                   width: '100%',
                   padding: '0.45rem 0.85rem',
-                  backgroundColor: '#9a7fd8',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--hue-taro)',
+                  color: 'var(--text-on-accent)',
                   borderRadius: '8px',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '0.95rem',
                   fontWeight: 600,
                   lineHeight: 1.2,
-                  boxShadow: '2px 2px 0 var(--shadow-ink)',
-                  border: '1.5px solid #9a7fd8',
+                  boxShadow: '2px 2px 0 var(--shadow-color)',
+                  border: '1.5px solid var(--tint-taro-line)',
                 }}
               >
                 <AfdianIcon size={16} />
@@ -266,7 +266,7 @@ export const SponsorButton: React.FC = () => {
           <div
             style={{
               paddingTop: '0.75rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
+              borderTop: '1px dashed var(--line)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -276,7 +276,7 @@ export const SponsorButton: React.FC = () => {
               style={{
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontFamily: 'var(--font-sans, sans-serif)',
                 display: 'flex',
                 alignItems: 'center',
@@ -292,10 +292,10 @@ export const SponsorButton: React.FC = () => {
               style={{
                 display: 'inline-block',
                 padding: '4px',
-                backgroundColor: '#ffffff',
-                border: '2px solid var(--ink-line)',
+                backgroundColor: 'var(--qr-bg)',
+                border: '2px solid var(--line-ink)',
                 borderRadius: '8px',
-                boxShadow: '3px 3px 0 rgba(90, 74, 66, 0.15)',
+                boxShadow: 'var(--shadow-sticker)',
               }}
             >
               <img
@@ -313,7 +313,7 @@ export const SponsorButton: React.FC = () => {
             <div
               style={{
                 fontSize: '0.75rem',
-                color: '#a8968b',
+                color: 'var(--text-faint)',
                 marginTop: '0.35rem',
                 fontFamily: 'var(--font-sans, sans-serif)',
               }}
@@ -326,7 +326,7 @@ export const SponsorButton: React.FC = () => {
           <div
             style={{
               paddingTop: '0.75rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.2)',
+              borderTop: '1px dashed var(--line)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -337,7 +337,7 @@ export const SponsorButton: React.FC = () => {
               className="font-handwriting"
               style={{
                 fontSize: '0.9rem',
-                color: '#8a7569',
+                color: 'var(--text-faint)',
                 margin: 0,
                 lineHeight: 1.35,
                 textAlign: 'center',
@@ -360,13 +360,13 @@ export const SponsorButton: React.FC = () => {
                   justifyContent: 'center',
                   gap: '0.5rem',
                   padding: '0.4rem 0.85rem',
-                  backgroundColor: '#ffffff',
-                  color: 'var(--ink, #5a4a42)',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--text)',
                   borderRadius: '8px',
                   fontSize: '0.95rem',
                   fontWeight: 600,
                   lineHeight: 1.2,
-                  border: '1.5px dashed var(--ink-line)',
+                  border: '1.5px dashed var(--line-ink)',
                 }}
               >
                 <BookIcon size={14} />

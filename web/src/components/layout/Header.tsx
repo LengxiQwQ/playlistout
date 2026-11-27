@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../i18n';
 import { LanguageSwitcher } from '../settings/LanguageSwitcher';
+import { ThemeSwitcher } from '../settings/ThemeSwitcher';
 
 export interface HeaderProps {
   onBrandClick?: () => void;
@@ -187,6 +188,9 @@ export const Header: React.FC<HeaderProps> = ({ onBrandClick }) => {
             <span className="mobile-only">Star</span>
           </span>
         </a>
+
+        {/* Theme Switcher */}
+        <ThemeSwitcher />
 
         {/* Language Switcher (shown directly on both desktop and mobile) */}
         <LanguageSwitcher />

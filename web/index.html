@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <script>try{document.documentElement.dataset.layoutDemo=window.matchMedia('(max-width: 768px)').matches?'b':'a';}catch{}</script>
+    <script>try{const s=localStorage.getItem('playlistout-theme');const d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);const r=document.documentElement;r.dataset.theme=d?'dark':'light';r.style.colorScheme=d?'dark':'light';if(s)r.dataset.themeMode=s;}catch{}</script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/logo-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/logo-16.png" />

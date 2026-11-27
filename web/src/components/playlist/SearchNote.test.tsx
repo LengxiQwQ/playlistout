@@ -129,7 +129,7 @@ describe('SearchNote Component (Phase 4)', () => {
 
     const kugouBadge = screen.getByText('酷狗音乐（已登录）');
     expect(kugouBadge).toBeInTheDocument();
-    expect(kugouBadge).toHaveStyle({ backgroundColor: '#d4defc' });
+    expect(kugouBadge).toHaveStyle({ backgroundColor: 'var(--tint-sky-bg)' });
     localStorage.clear();
   });
 

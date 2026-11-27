@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           style={{
             flex: 1,
             height: '2px',
-            backgroundColor: 'var(--margin-red, #f4a7b9)',
+            backgroundColor: 'var(--rule-margin)',
             opacity: 0.9,
             borderRadius: '2px',
           }}
@@ -99,7 +99,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             border: 'none',
             boxShadow: 'none',
             padding: '0 0.5rem',
-            color: 'var(--margin-red, #f4a7b9)',
+            color: 'var(--rule-margin)',
             fontSize: '1.25rem',
             fontWeight: 700,
             letterSpacing: '0.12em',
@@ -118,7 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           style={{
             flex: 1,
             height: '2px',
-            backgroundColor: 'var(--margin-red, #f4a7b9)',
+            backgroundColor: 'var(--rule-margin)',
             opacity: 0.9,
             borderRadius: '2px',
           }}
@@ -132,7 +132,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          maxWidth: 'var(--search-note-width, 980px)',
+          maxWidth: 'var(--search-note-width)',
           margin: '0 auto',
           padding: 0,
         }}
@@ -157,42 +157,28 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               gap: '0.65rem',
             }}
           >
-            <span
-              className="footer-brand-logo-badge"
+            <img
+              src="/logo-128.png"
+              srcSet="/logo-128.png 1x, /logo-256.png 2x"
+              alt="Playlist Out Logo"
+              width={38}
+              height={38}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '3px',
-                border: '1.5px dashed var(--margin-red, #f4a7b9)',
+                width: '2.35rem',
+                height: '2.35rem',
+                objectFit: 'contain',
                 borderRadius: '8px',
-                backgroundColor: 'var(--paper-white, #fffdf8)',
-                boxShadow: '1.5px 2px 0 var(--shadow-ink)',
-                transform: 'rotate(-2deg)',
+                userSelect: 'none',
+                flexShrink: 0,
+                display: 'block',
               }}
-            >
-              <img
-                src="/logo-64.png"
-                srcSet="/logo-64.png 1x, /logo-128.png 2x"
-                alt="Playlist Out Logo"
-                width={30}
-                height={30}
-                style={{
-                  width: '1.7rem',
-                  height: '1.7rem',
-                  objectFit: 'contain',
-                  userSelect: 'none',
-                  flexShrink: 0,
-                  display: 'block',
-                }}
-              />
-            </span>
+            />
             <span
               className="font-marker footer-brand-title"
               style={{
                 fontSize: '1.65rem',
                 lineHeight: 'var(--ruled-line-height, 38px)',
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
               }}
             >
               Playlist Out
@@ -218,7 +204,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
             className="font-handwriting footer-tagline-text"
             style={{
               fontSize: '1.3rem',
-              color: 'var(--ink-light, #8a7569)',
+              color: 'var(--text-muted)',
               lineHeight: 1.45,
               margin: 0,
             }}
@@ -264,7 +250,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 padding: '0.35rem 0.85rem',
                 fontSize: '1.05rem',
                 fontWeight: 600,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 lineHeight: 1.2,
               }}
             >
@@ -297,7 +283,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                   padding: '0.35rem 0.85rem',
                   fontSize: '1.05rem',
                   fontWeight: 600,
-                  color: 'var(--ink, #5a4a42)',
+                  color: 'var(--text)',
                   lineHeight: 1.2,
                 }}
               >
@@ -344,7 +330,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 padding: '0.35rem 0.85rem',
                 fontSize: '1.05rem',
                 fontWeight: 600,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 lineHeight: 1.2,
               }}
             >
@@ -372,7 +358,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
                 padding: '0.35rem 0.85rem',
                 fontSize: '1.05rem',
                 fontWeight: 600,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 lineHeight: 1.2,
               }}
             >
@@ -400,7 +386,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               minHeight: 'var(--ruled-line-height, 38px)',
               lineHeight: 1.5,
               fontSize: '0.85rem',
-              color: '#a8968b',
+              color: 'var(--text-faint)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -435,7 +421,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy }) => {
               minHeight: 'var(--ruled-line-height, 38px)',
               lineHeight: 1.5,
               fontSize: '0.8rem',
-              color: '#b8a79c',
+              color: 'var(--text-faint)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

@@ -119,7 +119,7 @@
 .stationery-sticker {
   --sticker-rot: 0deg;
   display: inline-block;
-  filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.22));
+  filter: drop-shadow(3px 4px 0 var(--shadow-color));
   animation: stickerFloat 5.5s ease-in-out infinite;
 }
 

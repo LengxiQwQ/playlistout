@@ -52,7 +52,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(90, 74, 66, 0.45)',
+        backgroundColor: 'var(--bg-backdrop)',
         backdropFilter: 'blur(3px)',
         WebkitBackdropFilter: 'blur(3px)',
         display: 'flex',
@@ -74,7 +74,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'var(--bg-raised)',
           maxWidth: '640px',
           width: '100%',
           maxHeight: '85vh',
@@ -101,7 +101,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
           className="modal-header"
           style={{
             padding: '1.25rem 1.75rem',
-            borderBottom: '2px dashed var(--line, #efe4da)',
+            borderBottom: '2px dashed var(--line)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -131,7 +131,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '50%',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'var(--bg-surface)',
               }}
             >
               ✕
@@ -145,7 +145,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
             padding: '1.5rem 1.75rem',
             overflowY: 'auto',
             lineHeight: 1.65,
-            color: 'var(--ink, #5a4a42)',
+            color: 'var(--text)',
           }}
         >
           {children}
@@ -156,10 +156,10 @@ export const PaperModal: React.FC<PaperModalProps> = ({
             className="modal-footer"
             style={{
               padding: '1rem 1.75rem',
-              borderTop: '2px dashed var(--line, #efe4da)',
+              borderTop: '2px dashed var(--line)',
               display: 'flex',
               justifyContent: 'flex-end',
-              backgroundColor: 'var(--paper, #fffcf6)',
+              backgroundColor: 'var(--bg-sunken)',
             }}
           >
             {footer}

@@ -25,6 +25,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { checkDesignTokens } from './check-design-tokens.js';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..');
 const POLICY_ONLY = process.argv.includes('--policy-only');
@@ -249,7 +250,9 @@ function validateRepositoryRiskBoundaries() {
     }
   }
 
-  logPass('SheetJS remains write-only and no public D1 SQL backups are tracked');
+  checkDesignTokens({ report: false });
+
+  logPass('SheetJS remains write-only, no public D1 SQL backups are tracked, and web colors stay on design tokens');
 }
 
 // ── 3. Python Compilation & Pytest ─────────────────────────────────────

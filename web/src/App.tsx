@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { recordVisit } from './api/client';
 import { LanguageProvider, useTranslation } from './i18n';
+import { ThemeProvider } from './theme';
 import { setClarityTag } from './analytics/clarity';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/layout/Hero';
@@ -176,9 +177,11 @@ export const AppContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <LanguageProvider defaultLanguage="zh-CN">
-      <AppContent />
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider defaultLanguage="zh-CN">
+        <AppContent />
+      </LanguageProvider>
+    </ThemeProvider>
   );
 };
 

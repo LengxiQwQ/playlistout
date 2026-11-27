@@ -40,116 +40,116 @@ function useDesktopHeroStats(): StatsResponse | null {
 
 const MiniCassetteSvg: React.FC = () => (
   <svg className="layout-a-svg-cassette" width="90" height="60" viewBox="0 0 96 64" fill="none" aria-hidden="true">
-    <rect x="4" y="6" width="88" height="52" rx="12" fill="#ffd9e4" stroke="#c87b92" strokeWidth="2" />
-    <rect x="14" y="14" width="68" height="24" rx="6" fill="#fffdf9" stroke="#ddb0bd" strokeWidth="1.6" />
-    <rect x="14" y="14" width="68" height="6" rx="3" fill="#ffe9c2" />
+    <rect x="4" y="6" width="88" height="52" rx="12" fill="var(--tint-strawberry-bg)" stroke="var(--accent-strawberry)" strokeWidth="2" />
+    <rect x="14" y="14" width="68" height="24" rx="6" fill="var(--bg-surface)" stroke="var(--accent-strawberry)" strokeWidth="1.6" />
+    <rect x="14" y="14" width="68" height="6" rx="3" fill="var(--tint-lemon-bg)" />
     <g className="cassette-reel-l">
-      <circle cx="33" cy="28" r="6.5" fill="#fff2c2" stroke="#c09154" strokeWidth="1.6" />
-      <line x1="33" y1="22.5" x2="33" y2="33.5" stroke="#c09154" strokeWidth="1.2" />
-      <line x1="27.5" y1="28" x2="38.5" y2="28" stroke="#c09154" strokeWidth="1.2" />
-      <circle cx="33" cy="28" r="2.2" fill="#fffdf9" />
+      <circle cx="33" cy="28" r="6.5" fill="var(--tint-lemon-bg)" stroke="var(--accent-lemon)" strokeWidth="1.6" />
+      <line x1="33" y1="22.5" x2="33" y2="33.5" stroke="var(--accent-lemon)" strokeWidth="1.2" />
+      <line x1="27.5" y1="28" x2="38.5" y2="28" stroke="var(--accent-lemon)" strokeWidth="1.2" />
+      <circle cx="33" cy="28" r="2.2" fill="var(--bg-surface)" />
     </g>
     <g className="cassette-reel-r">
-      <circle cx="63" cy="28" r="6.5" fill="#cdefe3" stroke="#5aa98c" strokeWidth="1.6" />
-      <line x1="63" y1="22.5" x2="63" y2="33.5" stroke="#5aa98c" strokeWidth="1.2" />
-      <line x1="57.5" y1="28" x2="68.5" y2="28" stroke="#5aa98c" strokeWidth="1.2" />
-      <circle cx="63" cy="28" r="2.2" fill="#fffdf9" />
+      <circle cx="63" cy="28" r="6.5" fill="var(--tint-mint-bg)" stroke="var(--status-free-border)" strokeWidth="1.6" />
+      <line x1="63" y1="22.5" x2="63" y2="33.5" stroke="var(--status-free-border)" strokeWidth="1.2" />
+      <line x1="57.5" y1="28" x2="68.5" y2="28" stroke="var(--status-free-border)" strokeWidth="1.2" />
+      <circle cx="63" cy="28" r="2.2" fill="var(--bg-surface)" />
     </g>
-    <line x1="40" y1="28" x2="56" y2="28" stroke="#c89a8e" strokeWidth="1.6" strokeDasharray="3 2.5" />
-    <path d="M24 58L29 45H67L72 58" fill="#ffeef3" stroke="#c87b92" strokeWidth="1.6" />
+    <line x1="40" y1="28" x2="56" y2="28" stroke="var(--text-muted)" strokeWidth="1.6" strokeDasharray="3 2.5" />
+    <path d="M24 58L29 45H67L72 58" fill="var(--tint-strawberry-bg-soft)" stroke="var(--accent-strawberry)" strokeWidth="1.6" />
   </svg>
 );
 
 const MiniVinylSvg: React.FC = () => (
   <svg className="layout-a-svg-vinyl" width="74" height="74" viewBox="0 0 76 76" fill="none" aria-hidden="true">
     <g className="vinyl-disc">
-      <circle cx="38" cy="38" r="32" fill="#6b564e" stroke="#a8887c" strokeWidth="2" />
-      <circle cx="38" cy="38" r="24" stroke="#967a6f" strokeWidth="1.3" strokeDasharray="6 4" />
-      <circle cx="38" cy="38" r="18" stroke="#856b60" strokeWidth="1" strokeDasharray="3 5" opacity="0.75" />
-      <circle cx="38" cy="38" r="12.5" fill="#cdefe3" stroke="#5aa98c" strokeWidth="1.6" />
-      <circle cx="38" cy="38" r="3.6" fill="#fffdf9" />
-      <path d="M18 22C22 17 28 14 34 13" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" opacity="0.34" />
-      <path d="M56 54C52 59 46 62 40 63" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" opacity="0.22" />
+      <circle cx="38" cy="38" r="32" fill="var(--text)" stroke="var(--line-ink)" strokeWidth="2" />
+      <circle cx="38" cy="38" r="24" stroke="var(--text-muted)" strokeWidth="1.3" strokeDasharray="6 4" />
+      <circle cx="38" cy="38" r="18" stroke="var(--text-faint)" strokeWidth="1" strokeDasharray="3 5" opacity="0.75" />
+      <circle cx="38" cy="38" r="12.5" fill="var(--tint-mint-bg)" stroke="var(--status-free-border)" strokeWidth="1.6" />
+      <circle cx="38" cy="38" r="3.6" fill="var(--bg-surface)" />
+      <path d="M18 22C22 17 28 14 34 13" stroke="var(--bg-surface)" strokeWidth="2.2" strokeLinecap="round" opacity="0.34" />
+      <path d="M56 54C52 59 46 62 40 63" stroke="var(--bg-surface)" strokeWidth="1.8" strokeLinecap="round" opacity="0.22" />
     </g>
   </svg>
 );
 
 const MiniEnvelopeSvg: React.FC = () => (
   <svg className="layout-a-svg-envelope" width="80" height="58" viewBox="0 0 84 62" fill="none" aria-hidden="true">
-    <rect x="4" y="8" width="76" height="48" rx="11" fill="#fff4cf" stroke="#cda450" strokeWidth="2" />
-    <path d="M6 14L42 36L78 14" stroke="#cda450" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="4" y="8" width="76" height="48" rx="11" fill="var(--tint-lemon-bg)" stroke="var(--accent-lemon)" strokeWidth="2" />
+    <path d="M6 14L42 36L78 14" stroke="var(--accent-lemon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     <g className="envelope-seal">
-      <circle cx="42" cy="35" r="9.5" fill="#ffd6e0" stroke="#dc7494" strokeWidth="1.7" />
-      <text x="42" y="38.5" textAnchor="middle" fill="#a84062" fontSize="9.5" fontWeight="700" fontFamily="Space Mono, monospace">&lt;/&gt;</text>
+      <circle cx="42" cy="35" r="9.5" fill="var(--tint-strawberry-bg)" stroke="var(--accent-strawberry)" strokeWidth="1.7" />
+      <text x="42" y="38.5" textAnchor="middle" fill="var(--tint-strawberry-fg)" fontSize="9.5" fontWeight="700" fontFamily="Space Mono, monospace">&lt;/&gt;</text>
     </g>
   </svg>
 );
 
 const DieCutHeadphonesSvg: React.FC = () => (
   <svg width="58" height="54" viewBox="0 0 64 60" fill="none" aria-hidden="true">
-    <path d="M12 34C12 19 20 10 32 10C44 10 52 19 52 34" stroke="#ffffff" strokeWidth="11" strokeLinecap="round" />
-    <path d="M12 34C12 19 20 10 32 10C44 10 52 19 52 34" stroke="#b99ce8" strokeWidth="5.5" strokeLinecap="round" />
-    <rect x="6" y="29" width="13" height="22" rx="6.5" fill="#ffd6e0" stroke="#ffffff" strokeWidth="3.5" />
-    <rect x="45" y="29" width="13" height="22" rx="6.5" fill="#cdefe3" stroke="#ffffff" strokeWidth="3.5" />
-    <rect x="8" y="31" width="9" height="18" rx="4.5" fill="#ffd6e0" stroke="#d97d99" strokeWidth="1.6" />
-    <rect x="47" y="31" width="9" height="18" rx="4.5" fill="#cdefe3" stroke="#5aa98c" strokeWidth="1.6" />
+    <path d="M12 34C12 19 20 10 32 10C44 10 52 19 52 34" stroke="var(--bg-surface)" strokeWidth="11" strokeLinecap="round" />
+    <path d="M12 34C12 19 20 10 32 10C44 10 52 19 52 34" stroke="var(--tint-taro-bg)" strokeWidth="5.5" strokeLinecap="round" />
+    <rect x="6" y="29" width="13" height="22" rx="6.5" fill="var(--tint-strawberry-bg)" stroke="var(--bg-surface)" strokeWidth="3.5" />
+    <rect x="45" y="29" width="13" height="22" rx="6.5" fill="var(--tint-mint-bg)" stroke="var(--bg-surface)" strokeWidth="3.5" />
+    <rect x="8" y="31" width="9" height="18" rx="4.5" fill="var(--tint-strawberry-bg)" stroke="var(--accent-strawberry)" strokeWidth="1.6" />
+    <rect x="47" y="31" width="9" height="18" rx="4.5" fill="var(--tint-mint-bg)" stroke="var(--status-free-border)" strokeWidth="1.6" />
   </svg>
 );
 
 const DieCutPaperPlaneSvg: React.FC = () => (
   <svg width="62" height="46" viewBox="0 0 68 50" fill="none" aria-hidden="true">
-    <path d="M8 24L58 8L42 42L29 30L8 24Z" fill="#ffffff" stroke="#ffffff" strokeWidth="7" strokeLinejoin="round" />
-    <path d="M8 24L58 8L42 42L29 30L8 24Z" fill="#dff3ff" stroke="#7aaad8" strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M58 8L29 30V41L36 34" fill="#c2e4ff" stroke="#7aaad8" strokeWidth="1.6" strokeLinejoin="round" />
+    <path d="M8 24L58 8L42 42L29 30L8 24Z" fill="var(--bg-surface)" stroke="var(--bg-surface)" strokeWidth="7" strokeLinejoin="round" />
+    <path d="M8 24L58 8L42 42L29 30L8 24Z" fill="var(--tint-sky-bg)" stroke="var(--accent-sky)" strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M58 8L29 30V41L36 34" fill="var(--tint-sky-bg)" stroke="var(--accent-sky)" strokeWidth="1.6" strokeLinejoin="round" />
   </svg>
 );
 
 const DieCutCoffeeSvg: React.FC = () => (
   <svg width="54" height="52" viewBox="0 0 58 56" fill="none" aria-hidden="true">
-    <path d="M22 13C22 9 25 9 25 5M31 13C31 9 34 9 34 5" stroke="#e496ad" strokeWidth="2.2" strokeLinecap="round" />
-    <rect x="10" y="18" width="32" height="28" rx="9" fill="#ffffff" stroke="#ffffff" strokeWidth="6" />
-    <path d="M42 23H46C49.5 23 51.5 25.5 51.5 28.5C51.5 31.5 49.5 34 46 34H42" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" />
-    <rect x="10" y="18" width="32" height="28" rx="9" fill="#fff4cf" stroke="#d4a448" strokeWidth="1.8" />
-    <path d="M42 23H46C49 23 51 25.2 51 28.5C51 31.8 49 34 46 34H42" stroke="#d4a448" strokeWidth="2" strokeLinecap="round" />
-    <path d="M26 27.5C24.5 25.5 21 26.8 22 29.8C22.8 32.2 26 34.5 26 34.5C26 34.5 29.2 32.2 30 29.8C31 26.8 27.5 25.5 26 27.5Z" fill="#f289a8" />
+    <path d="M22 13C22 9 25 9 25 5M31 13C31 9 34 9 34 5" stroke="var(--accent-strawberry)" strokeWidth="2.2" strokeLinecap="round" />
+    <rect x="10" y="18" width="32" height="28" rx="9" fill="var(--bg-surface)" stroke="var(--bg-surface)" strokeWidth="6" />
+    <path d="M42 23H46C49.5 23 51.5 25.5 51.5 28.5C51.5 31.5 49.5 34 46 34H42" stroke="var(--bg-surface)" strokeWidth="6" strokeLinecap="round" />
+    <rect x="10" y="18" width="32" height="28" rx="9" fill="var(--tint-lemon-bg)" stroke="var(--accent-lemon)" strokeWidth="1.8" />
+    <path d="M42 23H46C49 23 51 25.2 51 28.5C51 31.8 49 34 46 34H42" stroke="var(--accent-lemon)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M26 27.5C24.5 25.5 21 26.8 22 29.8C22.8 32.2 26 34.5 26 34.5C26 34.5 29.2 32.2 30 29.8C31 26.8 27.5 25.5 26 27.5Z" fill="var(--accent-strawberry)" />
   </svg>
 );
 
 const HeroVinylDoodle: React.FC<{ size?: number; labelColor?: string; className?: string }> = ({
   size = 58,
-  labelColor = '#cdefe3',
+  labelColor = 'var(--tint-mint-bg)',
   className = '',
 }) => (
   <svg className={`hv-vinyl ${className}`.trim()} width={size} height={size} viewBox="0 0 76 76" fill="none" aria-hidden="true">
     <g className="hv-spin">
-      <circle cx="38" cy="38" r="34" fill="#5f4b44" stroke="#a8887c" strokeWidth="2" />
-      <circle cx="38" cy="38" r="26" stroke="#8a6f64" strokeWidth="1.2" strokeDasharray="6 4" />
-      <circle cx="38" cy="38" r="19" stroke="#7b6258" strokeWidth="1" strokeDasharray="3 5" opacity="0.8" />
-      <circle cx="38" cy="38" r="13" fill={labelColor} stroke="#fffdf8" strokeWidth="1.6" />
-      <circle cx="38" cy="38" r="3" fill="#fffdf8" />
-      <path d="M16 22C21 16 27 13 34 12" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" opacity="0.32" />
+      <circle cx="38" cy="38" r="34" fill="var(--text)" stroke="var(--line-ink)" strokeWidth="2" />
+      <circle cx="38" cy="38" r="26" stroke="var(--text-muted)" strokeWidth="1.2" strokeDasharray="6 4" />
+      <circle cx="38" cy="38" r="19" stroke="var(--text-faint)" strokeWidth="1" strokeDasharray="3 5" opacity="0.8" />
+      <circle cx="38" cy="38" r="13" fill={labelColor} stroke="var(--bg-surface)" strokeWidth="1.6" />
+      <circle cx="38" cy="38" r="3" fill="var(--bg-surface)" />
+      <path d="M16 22C21 16 27 13 34 12" stroke="var(--bg-surface)" strokeWidth="2.2" strokeLinecap="round" opacity="0.32" />
     </g>
   </svg>
 );
 
 const HeroCassetteDoodle: React.FC<{ className?: string }> = ({ className = '' }) => (
   <svg className={className} width="92" height="62" viewBox="0 0 96 64" fill="none" aria-hidden="true">
-    <rect x="4" y="6" width="88" height="52" rx="12" fill="#ffd9e4" stroke="#c87b92" strokeWidth="2" />
-    <rect x="14" y="14" width="68" height="24" rx="6" fill="#fffdf9" stroke="#ddb0bd" strokeWidth="1.6" />
+    <rect x="4" y="6" width="88" height="52" rx="12" fill="var(--tint-strawberry-bg)" stroke="var(--accent-strawberry)" strokeWidth="2" />
+    <rect x="14" y="14" width="68" height="24" rx="6" fill="var(--bg-surface)" stroke="var(--accent-strawberry)" strokeWidth="1.6" />
     <g className="hv-spin">
-      <circle cx="33" cy="26" r="6.5" fill="#fff2c2" stroke="#c09154" strokeWidth="1.6" />
+      <circle cx="33" cy="26" r="6.5" fill="var(--tint-lemon-bg)" stroke="var(--accent-lemon)" strokeWidth="1.6" />
     </g>
     <g className="hv-spin">
-      <circle cx="63" cy="26" r="6.5" fill="#cdefe3" stroke="#5aa98c" strokeWidth="1.6" />
+      <circle cx="63" cy="26" r="6.5" fill="var(--tint-mint-bg)" stroke="var(--status-free-border)" strokeWidth="1.6" />
     </g>
-    <line x1="40" y1="26" x2="56" y2="26" stroke="#c89a8e" strokeWidth="1.6" strokeDasharray="3 2.5" />
-    <path d="M24 58L29 45H67L72 58" fill="#ffeef3" stroke="#c87b92" strokeWidth="1.6" />
+    <line x1="40" y1="26" x2="56" y2="26" stroke="var(--text-muted)" strokeWidth="1.6" strokeDasharray="3 2.5" />
+    <path d="M24 58L29 45H67L72 58" fill="var(--tint-strawberry-bg-soft)" stroke="var(--accent-strawberry)" strokeWidth="1.6" />
   </svg>
 );
 
 const SparkleDoodle: React.FC<{ className?: string; color?: string; size?: number }> = ({
   className = '',
-  color = '#ffd466',
+  color = 'var(--accent-lemon)',
   size = 22,
 }) => (
   <svg className={`hv-sparkle ${className}`.trim()} width={size} height={size} viewBox="0 0 20 20" aria-hidden="true">
@@ -244,8 +244,8 @@ const DesktopHeroStage: React.FC<{ hero: React.ReactNode; search: React.ReactNod
           <span className="hv-mini-tag is-sky hv-v1-tag-b font-note">✦ 文件在本地生成</span>
         </aside>
 
-        <SparkleDoodle className="hv-v1-spark-1" color="#ffb4c9" />
-        <SparkleDoodle className="hv-v1-spark-2" color="#9fdcc4" size={16} />
+        <SparkleDoodle className="hv-v1-spark-1" color="var(--accent-strawberry)" />
+        <SparkleDoodle className="hv-v1-spark-2" color="var(--accent-mint)" size={16} />
       </div>
     </div>
   );
@@ -273,7 +273,7 @@ export const TimelineLayout: React.FC<{ slots: PinboardLayoutSlots }> = ({ slots
             <path
               d="M 500 0 C 830 130, 840 270, 670 400 S 160 580, 270 760 S 820 960, 690 1160 S 240 1380, 500 1600"
               fill="none"
-              stroke="var(--accent-strawberry, #e8789a)"
+              stroke="var(--accent-strawberry)"
               strokeWidth="2.5"
               strokeDasharray="8 10"
               strokeLinecap="round"

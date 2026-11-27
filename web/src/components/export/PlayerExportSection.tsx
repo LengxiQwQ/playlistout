@@ -44,9 +44,9 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
       style={{
         padding: '1.35rem',
         borderRadius: '12px',
-        background: 'linear-gradient(135deg, rgba(255, 248, 250, 0.85) 0%, rgba(245, 252, 248, 0.85) 100%)',
-        border: '1.75px dashed rgba(110, 90, 80, 0.32)',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.9), 2px 3px 0 rgba(150, 112, 92, 0.12)',
+        background: 'linear-gradient(135deg, var(--tint-strawberry-bg-soft) 0%, var(--tint-mint-bg-soft) 100%)',
+        border: '1.75px dashed var(--line-strong)',
+        boxShadow: 'inset 0 1px 0 var(--gloss), var(--shadow-sticker)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.95rem',
@@ -67,7 +67,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             style={{
               fontSize: '1.45rem',
               fontWeight: 700,
-              color: 'var(--ink, #5a4a42)',
+              color: 'var(--text)',
               marginBottom: '0.25rem',
               display: 'flex',
               alignItems: 'center',
@@ -82,7 +82,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
                 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
               fontSize: '0.85rem',
               lineHeight: 1.45,
-              color: '#8a7569',
+              color: 'var(--text-faint)',
             }}
           >
             {incompatible ? t.search.incompatiblePlayerFormat : t.export.playerExportSubtitle}
@@ -110,16 +110,16 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
           className="font-handwriting"
           style={{
             fontSize: '1.05rem',
-            color: '#6a82d4',
+            color: 'var(--accent-sky)',
             textDecoration: 'none',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.25rem',
             fontWeight: 700,
             padding: '0.25rem 0.65rem',
-            backgroundColor: 'rgba(106, 130, 212, 0.08)',
+            backgroundColor: 'var(--tint-sky-bg-soft)',
             borderRadius: '6px',
-            border: '1.5px dashed #9db3ee',
+            border: '1.5px dashed var(--accent-sky)',
             transition: 'background-color 0.15s ease, border-color 0.15s ease',
           }}
         >
@@ -141,11 +141,11 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '1.05rem 1.15rem',
-            backgroundColor: '#faf7ff',
+            backgroundColor: 'var(--tint-taro-bg-soft)',
             borderRadius: '10px',
-            border: '1.5px solid rgba(139, 108, 196, 0.28)',
-            borderTop: '4px solid #c6aef7',
-            boxShadow: '2px 3px 0 rgba(150, 112, 92, 0.12)',
+            border: '1.5px solid var(--tint-taro-line)',
+            borderTop: '4px solid var(--accent-taro)',
+            boxShadow: 'var(--shadow-sticker)',
           }}
         >
           <div
@@ -160,7 +160,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             <span
               style={{
                 fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontSize: '1rem',
                 whiteSpace: 'nowrap',
               }}
@@ -190,10 +190,10 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
           <div
             style={{
               fontSize: '0.82rem',
-              color: '#8a7569',
+              color: 'var(--text-faint)',
               lineHeight: 1.5,
               paddingTop: '0.6rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.12)',
+              borderTop: '1px dashed var(--line)',
               fontFamily:
                 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
             }}
@@ -209,11 +209,11 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '1.05rem 1.15rem',
-            backgroundColor: '#f4fbf7',
+            backgroundColor: 'var(--tint-mint-bg-soft)',
             borderRadius: '10px',
-            border: '1.5px solid rgba(79, 174, 138, 0.28)',
-            borderTop: '4px solid #8bd9b8',
-            boxShadow: '2px 3px 0 rgba(150, 112, 92, 0.12)',
+            border: '1.5px solid var(--tint-mint-line)',
+            borderTop: '4px solid var(--accent-mint)',
+            boxShadow: 'var(--shadow-sticker)',
           }}
         >
           <div
@@ -228,7 +228,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             <span
               style={{
                 fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontSize: '1rem',
                 whiteSpace: 'nowrap',
               }}
@@ -258,10 +258,10 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
           <div
             style={{
               fontSize: '0.82rem',
-              color: '#8a7569',
+              color: 'var(--text-faint)',
               lineHeight: 1.5,
               paddingTop: '0.6rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.12)',
+              borderTop: '1px dashed var(--line)',
               fontFamily:
                 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
             }}
@@ -277,11 +277,11 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '1.05rem 1.15rem',
-            backgroundColor: '#fffdf2',
+            backgroundColor: 'var(--tint-lemon-bg-soft)',
             borderRadius: '10px',
-            border: '1.5px solid rgba(227, 178, 60, 0.32)',
-            borderTop: '4px solid #f7d774',
-            boxShadow: '2px 3px 0 rgba(150, 112, 92, 0.12)',
+            border: '1.5px solid var(--tint-lemon-line)',
+            borderTop: '4px solid var(--accent-lemon)',
+            boxShadow: 'var(--shadow-sticker)',
           }}
         >
           <div
@@ -296,7 +296,7 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
             <span
               style={{
                 fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
                 fontSize: '1rem',
                 whiteSpace: 'nowrap',
               }}
@@ -326,10 +326,10 @@ export const PlayerExportSection: React.FC<PlayerExportSectionProps> = ({
           <div
             style={{
               fontSize: '0.82rem',
-              color: '#8a7569',
+              color: 'var(--text-faint)',
               lineHeight: 1.5,
               paddingTop: '0.6rem',
-              borderTop: '1px dashed rgba(90, 74, 66, 0.12)',
+              borderTop: '1px dashed var(--line)',
               fontFamily:
                 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
             }}

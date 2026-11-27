@@ -46,21 +46,21 @@ export const RunningDaysStamp: React.FC<RunningDaysStampProps> = ({ today }) => 
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px dashed var(--accent-strawberry, #e8789a)',
+            border: '2px dashed var(--hue-strawberry)',
             borderRadius: '14px',
             padding: '0.85rem 2rem 0.75rem',
-            background: 'linear-gradient(135deg, var(--paper-white, #fffdf8) 0%, var(--mac-strawberry, #ffd6e0) 100%)',
-            boxShadow: '3px 4px 0 var(--shadow-ink)',
+            background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--tint-strawberry-bg) 100%)',
+            boxShadow: '3px 4px 0 var(--shadow-color)',
             position: 'relative',
           }}
         >
-          <span style={{ position: 'absolute', top: '-9px', right: '-8px', fontSize: '1.05rem', color: 'var(--btn-primary-bg, #ec7f9f)' }}>✦</span>
-          <span style={{ position: 'absolute', bottom: '-9px', left: '-8px', fontSize: '1.05rem', color: 'var(--accent-lemon, #e3b23c)' }}>⋆</span>
+          <span style={{ position: 'absolute', top: '-9px', right: '-8px', fontSize: '1.05rem', color: 'var(--btn-primary-bg)' }}>✦</span>
+          <span style={{ position: 'absolute', bottom: '-9px', left: '-8px', fontSize: '1.05rem', color: 'var(--hue-lemon)' }}>⋆</span>
           <div
             className="font-marker font-num"
             style={{
               fontSize: '1.25rem',
-              color: 'var(--ink, #5a4a42)',
+              color: 'var(--text)',
               letterSpacing: '0.03em',
               lineHeight: 1.2,
             }}
@@ -73,7 +73,7 @@ export const RunningDaysStamp: React.FC<RunningDaysStampProps> = ({ today }) => 
             className="font-handwriting"
             style={{
               fontSize: 'clamp(0.9rem, 3.5vw, 1.05rem)',
-              color: 'var(--ink-muted, #a8968b)',
+              color: 'var(--text-faint)',
               marginTop: '0.35rem',
               display: 'flex',
               alignItems: 'center',

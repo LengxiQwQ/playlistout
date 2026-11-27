@@ -81,8 +81,8 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
     baseClass += ' hand-drawn-border-alt shadow-cutout-sm marker-btn-ink';
     variantFaceStyle = {
       ...variantFaceStyle,
-      backgroundColor: 'var(--btn-primary-bg, #ec7f9f)',
-      color: 'var(--btn-primary-ink, #ffffff)',
+      backgroundColor: 'var(--btn-primary-bg)',
+      color: 'var(--text-on-accent)',
       padding: '0.65rem 1.75rem',
       fontSize: '1.15rem',
     };
@@ -90,8 +90,8 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
     baseClass += ' sticker font-handwriting marker-btn-sticker';
     variantFaceStyle = {
       ...variantFaceStyle,
-      backgroundColor: '#ffffff',
-      color: 'var(--ink, #5a4a42)',
+      backgroundColor: 'var(--bg-surface)',
+      color: 'var(--text)',
       padding: '0.45rem 1rem',
       fontSize: '1.05rem',
     };
@@ -99,8 +99,8 @@ export const MarkerButton: React.FC<MarkerButtonProps> = ({
     baseClass += ' hand-drawn-border-subtle marker-btn-paper';
     variantFaceStyle = {
       ...variantFaceStyle,
-      backgroundColor: 'var(--paper, #fffcf6)',
-      color: 'var(--ink, #5a4a42)',
+      backgroundColor: 'var(--bg-page)',
+      color: 'var(--text)',
       padding: '0.5rem 1.25rem',
     };
   }

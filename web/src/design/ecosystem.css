@@ -1,7 +1,7 @@
 /* PlaylistOut Open-Source Plugin Ecosystem */
 
 .plugin-ecosystem-panel {
-  max-width: var(--result-paper-width, 1050px);
+  max-width: var(--result-paper-width);
   margin: 0 auto;
   padding: 1.8rem 2rem 1.9rem;
   overflow: visible;
@@ -21,14 +21,14 @@
 
 .plugin-ecosystem-title {
   margin: 0;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   font-size: clamp(1.85rem, 3vw, 2.45rem);
   line-height: 1.2;
 }
 
 .plugin-ecosystem-subtitle {
   margin: 0.45rem 0 0;
-  color: #7a665b;
+  color: var(--text-muted);
   font-size: 1.18rem;
   line-height: 1.45;
   max-width: none;
@@ -40,23 +40,23 @@
   gap: 0.45rem;
   flex: 0 0 auto;
   padding: 0.7rem 1rem;
-  border: 2px dashed var(--accent-strawberry, #e8789a);
+  border: 2px dashed var(--accent-strawberry);
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--paper-white, #fffdf8) 0%, var(--mac-strawberry, #ffd6e0) 100%);
-  box-shadow: 3px 3px 0 var(--shadow-ink);
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--tint-strawberry-bg) 100%);
+  box-shadow: 3px 3px 0 var(--shadow-color);
 }
 
 .plugin-supported-number {
   font-size: 2.2rem;
   line-height: 1;
-  color: var(--btn-primary-bg, #ec7f9f);
+  color: var(--btn-primary-bg);
 }
 
 .plugin-supported-label {
   font-size: 1.05rem;
   font-weight: 700;
   white-space: nowrap;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
 }
 
 .plugin-app-grid {
@@ -104,10 +104,10 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #ffffff;
-  border: 1.5px solid rgba(90, 74, 66, 0.3);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 2px 2px 0 rgba(90, 74, 66, 0.18);
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
 .plugin-app-logo {
@@ -119,7 +119,7 @@
 
 .plugin-app-logo-fallback {
   font-size: 1.05rem;
-  color: #6a82d4;
+  color: var(--accent-sky);
 }
 
 .plugin-app-card-title {
@@ -147,7 +147,7 @@
   font-size: 1.32rem;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   white-space: nowrap;
 }
 
@@ -161,14 +161,14 @@
 .plugin-app-meta {
   margin-top: 0.22rem;
   font-size: 0.9rem;
-  color: #8a7569;
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
 .plugin-app-summary {
   margin: 0;
   width: 100%;
-  color: var(--ink-light, #8a7569);
+  color: var(--text-muted);
   font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 0.95rem;
   line-height: 1.75;
@@ -187,7 +187,7 @@
 }
 
 .plugin-summary-toggle > .plugin-summary-toggle-face {
-  color: var(--accent-taro, #9a7fd8);
+  color: var(--accent-taro);
   font-family: var(--font-handwriting, cursive);
   font-size: 0.95rem;
   font-weight: 700;
@@ -205,13 +205,13 @@
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-summary-toggle:hover > .plugin-summary-toggle-face {
-    color: var(--ink, #5a4a42);
+    color: var(--text);
     translate: 0 -1px;
   }
 
   .plugin-app-grid > [data-reveal-item]:hover > .plugin-app-card {
     translate: -4px 0;
-    box-shadow: 6px 7px 0 var(--shadow-ink);
+    box-shadow: 6px 7px 0 var(--shadow-color);
   }
 }
 
@@ -257,25 +257,25 @@
 }
 
 .plugin-copy-button-secondary > .marker-button-face {
-  background-color: #ffffff !important;
-  color: var(--ink, #5a4a42) !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text) !important;
   border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
 }
 
 .plugin-copy-button-secondary.is-copied > .marker-button-face {
-  background-color: #d8f3e8 !important;
-  color: var(--ink, #5a4a42) !important;
+  background-color: var(--tint-mint-bg) !important;
+  color: var(--text) !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-copy-button-secondary:not(:disabled):hover > .marker-button-face {
-    background-color: var(--note-yellow, #fff4c7) !important;
-    color: var(--ink, #5a4a42) !important;
+    background-color: var(--tint-lemon-bg) !important;
+    color: var(--text) !important;
   }
 
   .plugin-copy-button-secondary.is-copied:not(:disabled):hover > .marker-button-face {
-    background-color: #d8f3e8 !important;
-    color: var(--ink, #5a4a42) !important;
+    background-color: var(--tint-mint-bg) !important;
+    color: var(--text) !important;
   }
 }
 
@@ -286,14 +286,14 @@
 }
 
 .plugin-action-link > .marker-button-face {
-  background-color: var(--btn-primary-bg, #ec7f9f);
-  color: #ffffff !important;
+  background-color: var(--btn-primary-bg);
+  color: var(--text-on-accent) !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-action-link:hover > .marker-button-face {
-    background-color: var(--btn-primary-bg-hover, #e66d92) !important;
-    color: #ffffff !important;
+    background-color: var(--btn-primary-hover) !important;
+    color: var(--text-on-accent) !important;
   }
 }
 
@@ -306,18 +306,18 @@
 }
 
 .plugin-app-link {
-  color: #7a665b;
+  color: var(--text-muted);
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
-  border-bottom: 1px dashed rgba(122, 102, 91, 0.55);
+  border-bottom: 1px dashed var(--text-faint);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-app-link:hover {
-    color: var(--ink, #5a4a42);
+    color: var(--text);
     border-bottom-color: currentColor;
   }
 }
@@ -328,13 +328,13 @@
   gap: 0.85rem;
   margin-top: 1.2rem;
   padding-top: 1rem;
-  border-top: 1px dashed rgba(90, 74, 66, 0.2);
+  border-top: 1px dashed var(--border-color);
 }
 
 .plugin-upcoming-label {
   flex: 0 0 auto;
   font-size: 1.05rem;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
 }
 
 .plugin-upcoming-list {
@@ -350,21 +350,21 @@
   gap: 0.45rem;
   min-width: 0;
   padding: 0.38rem 0.5rem;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   text-decoration: none;
-  border: 1px dashed rgba(90, 74, 66, 0.25);
-  background: rgba(255, 255, 255, 0.66);
+  border: 1px dashed var(--border-color);
+  background: var(--bg-surface);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-upcoming-chip:hover {
-    background: #ffffff;
-    border-color: rgba(90, 74, 66, 0.45);
+    background: var(--bg-surface);
+    border-color: var(--line-strong);
   }
 }
 
 .plugin-upcoming-chip.is-planned {
-  background: rgba(232, 248, 255, 0.5);
+  background: var(--bg-sunken);
 }
 
 .plugin-upcoming-name {

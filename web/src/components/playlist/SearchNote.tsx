@@ -36,7 +36,7 @@ const platformStickerStyle: React.CSSProperties = {
   fontSize: '1.02rem',
   fontFamily: 'var(--font-handwriting, cursive)',
   fontWeight: 600,
-  color: '#4a3832',
+  color: 'var(--text)',
 };
 
 const internationalStickerStyle: React.CSSProperties = {
@@ -146,7 +146,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
       id="search-box"
       className="search-note-section"
       style={{
-        maxWidth: 'var(--search-note-width, 820px)',
+        maxWidth: 'var(--search-note-width)',
         margin: '0 auto',
         position: 'relative',
       }}
@@ -167,7 +167,7 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
               style={{
                 fontSize: '1.5rem',
                 fontWeight: 700,
-                color: 'var(--ink, #5a4a42)',
+                color: 'var(--text)',
               }}
             >
               {t.search.inputLabel}
@@ -175,10 +175,10 @@ export const SearchNote: React.FC<SearchNoteProps> = ({
             <span
               className="brand-badge sticker font-mono"
               style={{
-                backgroundColor: '#efe8ff',
+                backgroundColor: 'var(--tint-taro-bg-soft)',
                 fontSize: '0.75rem',
                 padding: '0.22rem 0.65rem',
-                color: '#7a55b8',
+                color: 'var(--accent-taro)',
               }}
             >
               {t.search.badge}

@@ -16,27 +16,27 @@
 
   /* Subtle organic pulp flecks */
   --a-pulp-specks:
-    radial-gradient(circle at 14% 22%, rgba(162, 122, 98, 0.2) 0.85px, transparent 1.3px),
-    radial-gradient(circle at 68% 36%, rgba(180, 134, 112, 0.16) 0.9px, transparent 1.4px),
-    radial-gradient(circle at 38% 76%, rgba(154, 118, 96, 0.18) 0.75px, transparent 1.2px),
-    radial-gradient(circle at 86% 82%, rgba(176, 130, 108, 0.15) 1px, transparent 1.4px);
+    radial-gradient(circle at 14% 22%, color-mix(in srgb, var(--shadow-color) 20%, transparent) 0.85px, transparent 1.3px),
+    radial-gradient(circle at 68% 36%, color-mix(in srgb, var(--shadow-color) 16%, transparent) 0.9px, transparent 1.4px),
+    radial-gradient(circle at 38% 76%, color-mix(in srgb, var(--shadow-color) 18%, transparent) 0.75px, transparent 1.2px),
+    radial-gradient(circle at 86% 82%, color-mix(in srgb, var(--shadow-color) 15%, transparent) 1px, transparent 1.4px);
 
-  --a-sticker-rim: #ffffff;
+  --a-sticker-rim: var(--bg-surface);
   --a-sticker-shadow:
-    0 0 0 1px rgba(176, 144, 132, 0.2),
-    0 3px 10px -2px rgba(136, 102, 88, 0.13),
-    0 1px 2px rgba(136, 102, 88, 0.09);
+    0 0 0 1px color-mix(in srgb, var(--shadow-color) 20%, transparent),
+    0 3px 10px -2px color-mix(in srgb, var(--shadow-color) 13%, transparent),
+    0 1px 2px color-mix(in srgb, var(--shadow-color) 9%, transparent);
   --a-sticker-shadow-hover:
-    0 0 0 1px rgba(224, 148, 174, 0.32),
-    0 14px 28px -8px rgba(136, 102, 88, 0.21),
-    0 4px 10px -4px rgba(136, 102, 88, 0.12);
+    0 0 0 1px color-mix(in srgb, var(--hue-taro) 32%, transparent),
+    0 14px 28px -8px color-mix(in srgb, var(--shadow-color) 21%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 12%, transparent);
 
   --a-pill-shadow:
-    0 0 0 2px #ffffff,
-    0 3px 8px -2px rgba(136, 102, 88, 0.16);
+    0 0 0 2px var(--bg-surface),
+    0 3px 8px -2px color-mix(in srgb, var(--shadow-color) 16%, transparent);
   --a-pill-shadow-hover:
-    0 0 0 2px #ffffff,
-    0 8px 16px -4px rgba(136, 102, 88, 0.24);
+    0 0 0 2px var(--bg-surface),
+    0 8px 16px -4px color-mix(in srgb, var(--shadow-color) 24%, transparent);
 
   --a-spring: 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --a-smooth: 280ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -79,7 +79,7 @@
   inset: 0;
   top: -6.5rem;
   width: 100%;
-  height: calc(100% + 6.5rem);
+  height: calc(100% + 1rem);
   pointer-events: none;
   z-index: 0;
 }
@@ -106,10 +106,10 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 1.45rem 1.4rem;
-  background-color: #fffcf8;
+  background-color: var(--bg-surface);
   background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png');
   background-size: 130px 130px, 96px 96px, 240px 240px;
-  border: 4px solid #ffffff;
+  border: 4px solid var(--bg-surface);
   border-radius: 22px;
   box-shadow: var(--a-sticker-shadow);
   gap: 0.85rem;
@@ -132,31 +132,31 @@
   display: inline-block;
   padding: 0.28rem 0.88rem;
   border-radius: 999px;
-  border: 2px solid #ffffff;
-  background-image: var(--a-washi-fiber), linear-gradient(135deg, #ffd4e1 0%, #ffe8ef 100%);
-  color: #a84264;
+  border: 2px solid var(--bg-surface);
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, var(--tint-strawberry-bg) 0%, var(--tint-strawberry-bg) 100%);
+  color: var(--tint-strawberry-fg);
   font-size: 0.9rem;
-  box-shadow: 0 2px 6px rgba(226, 128, 158, 0.22);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-taro) 22%, transparent);
   translate: 0 0;
   scale: 1;
   transition: translate var(--a-spring), scale var(--a-spring);
 }
 
 .layout-a-aside-doodle {
-  filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.2));
+  filter: drop-shadow(3px 4px 0 color-mix(in srgb, var(--shadow-color) 20%, transparent));
 }
 
 .layout-a-aside-text {
   font-family: var(--font-sans);
   font-size: 0.94rem;
   line-height: 1.68;
-  color: #745e53;
+  color: var(--text-muted);
   margin: 0;
 }
 
 .layout-a-arrow {
   font-size: 1.2rem;
-  color: var(--accent-strawberry, #e8789a);
+  color: var(--accent-strawberry);
   translate: 0 0;
   transition: translate var(--a-spring);
 }
@@ -199,21 +199,21 @@
 
 /* Warm cream Hobonichi-style textured dot-grid notebook page */
 [data-layout-demo='a'] body {
-  background-color: #faf3ea !important;
+  background-color: var(--bg-page) !important;
   background-image:
     var(--a-washi-fiber),
     url('/paper-grain.png'),
-    radial-gradient(circle, rgba(188, 152, 134, 0.32) 1px, transparent 1.4px) !important;
+    radial-gradient(circle, var(--rule-dot) 1px, transparent 1.4px) !important;
   background-size: 96px 96px, 256px 256px, 22px 22px !important;
   background-position: 0 0, 0 0, 0 0 !important;
 }
 
 [data-layout-demo='a'] body::before {
   background:
-    radial-gradient(42rem 30rem at 8% 5%, rgba(255, 206, 222, 0.44), transparent 68%),
-    radial-gradient(38rem 28rem at 94% 12%, rgba(196, 238, 222, 0.42), transparent 68%),
-    radial-gradient(44rem 32rem at 90% 82%, rgba(255, 234, 182, 0.4), transparent 68%),
-    radial-gradient(38rem 30rem at 6% 78%, rgba(224, 210, 255, 0.4), transparent 68%) !important;
+    radial-gradient(42rem 30rem at 8% 5%, var(--ambient-glow-1), transparent 68%),
+    radial-gradient(38rem 28rem at 94% 12%, var(--ambient-glow-2), transparent 68%),
+    radial-gradient(44rem 32rem at 90% 82%, var(--ambient-glow-3), transparent 68%),
+    radial-gradient(38rem 30rem at 6% 78%, var(--ambient-glow-4), transparent 68%) !important;
 }
 
 [data-layout-demo='a'] .journal-container {
@@ -320,7 +320,7 @@
     translate: 0 -4px;
     scale: 1.02;
     rotate: -0.6deg;
-    text-shadow: 0 6px 16px rgba(232, 120, 154, 0.2);
+    text-shadow: 0 6px 16px color-mix(in srgb, var(--hue-taro) 20%, transparent);
   }
 
   [data-layout-demo='a'] .journal-hero-title:hover .scribble-line::after {
@@ -334,13 +334,13 @@
     translate: 0 -3px;
     scale: 1.02;
     rotate: -0.8deg;
-    color: #c25478 !important;
+    color: var(--tint-strawberry-fg) !important;
   }
 
   [data-layout-demo='a'] .info-notes-section .font-marker:hover {
     translate: 4px 0;
     rotate: -0.8deg;
-    color: #c25478 !important;
+    color: var(--tint-strawberry-fg) !important;
   }
 }
 
@@ -352,11 +352,11 @@
   margin-top: 0 !important;
   margin-bottom: 1.85rem !important;
   padding: 0.65rem 1.35rem !important;
-  background-color: rgba(255, 253, 250, 0.95);
+  background-color: var(--bg-surface);
   background-image: var(--a-washi-fiber), url('/paper-grain.png');
   background-size: 96px 96px, 240px 240px;
   backdrop-filter: blur(12px);
-  border: 3px solid #ffffff;
+  border: 3px solid var(--bg-surface);
   border-top: none;
   border-radius: 0 0 26px 26px;
   box-shadow: var(--a-sticker-shadow);
@@ -365,7 +365,7 @@
 
 [data-layout-demo='a'] .header-logo-img {
   border-radius: 14px;
-  box-shadow: 0 3px 8px -2px rgba(136, 102, 88, 0.2);
+  box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--shadow-color) 20%, transparent);
   rotate: 0deg;
   scale: 1;
   transition: rotate var(--a-spring), scale var(--a-spring), box-shadow var(--a-smooth);
@@ -376,13 +376,13 @@
   [data-layout-demo='a'] .header-brand-container:hover .header-logo-img {
     rotate: -10deg;
     scale: 1.09;
-    box-shadow: 0 8px 16px -4px rgba(232, 120, 154, 0.36);
+    box-shadow: 0 8px 16px -4px color-mix(in srgb, var(--shadow-color) 36%, transparent);
   }
 
   [data-layout-demo='a'] .header-brand-container:hover .header-brand-title {
     translate: 0 -2px;
     scale: 1.03;
-    color: #c25478;
+    color: var(--tint-strawberry-fg);
   }
 }
 
@@ -391,11 +391,11 @@
 [data-layout-demo='a'] .header-actions .ui-hitbox > .ui-face,
 [data-layout-demo='a'] .header-actions .sticker-hitbox > .sticker-face {
   border-radius: 12px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.36) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 36%, transparent) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 2px 0 rgba(154, 118, 98, 0.2),
-    0 4px 10px -4px rgba(136, 102, 88, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 20%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   translate: 0 0;
   rotate: 0deg;
   scale: 1;
@@ -408,26 +408,26 @@
 }
 
 [data-layout-demo='a'] .header-desktop-btn > .header-desktop-btn-face {
-  background-color: #ffe6ee !important;
+  background-color: var(--tint-strawberry-bg) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  color: #b44b6d !important;
-  border-color: rgba(214, 134, 158, 0.5) !important;
+  color: var(--tint-strawberry-fg) !important;
+  border-color: color-mix(in srgb, var(--hue-strawberry) 50%, transparent) !important;
 }
 
 [data-layout-demo='a'] .header-github-btn > .header-github-btn-face {
-  background-color: #dff6ec !important;
+  background-color: var(--tint-mint-bg) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  color: #2f775c !important;
-  border-color: rgba(114, 178, 152, 0.5) !important;
+  color: var(--tint-mint-fg) !important;
+  border-color: color-mix(in srgb, var(--hue-mint) 50%, transparent) !important;
 }
 
 [data-layout-demo='a'] .header-lang-btn > .sticker-face {
-  background-color: #e2f1ff !important;
+  background-color: var(--tint-sky-bg) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  border-color: rgba(132, 168, 204, 0.5) !important;
+  border-color: color-mix(in srgb, var(--hue-sky) 50%, transparent) !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -470,12 +470,12 @@
   gap: 0.35rem;
   padding: 0.28rem 1rem;
   font-size: 1rem !important;
-  background-color: #fff6f8;
+  background-color: var(--tint-strawberry-bg-soft);
   background-image:
     var(--a-washi-fiber),
-    linear-gradient(90deg, #ffeef3 0%, #fff6dc 52%, #e6f9f1 100%);
-  color: #b45d78 !important;
-  border: 2.5px solid #ffffff;
+    linear-gradient(90deg, var(--tint-strawberry-bg) 0%, var(--tint-lemon-bg) 52%, var(--tint-mint-bg) 100%);
+  color: var(--tint-strawberry-fg) !important;
+  border: 2.5px solid var(--bg-surface);
   border-radius: 999px;
   box-shadow: var(--a-sticker-shadow);
   animation: layoutAIdleFloat 4.2s ease-in-out infinite;
@@ -494,18 +494,18 @@
 
 [data-layout-demo='a'] .search-note-section .sticky-note-card {
   --rot: 0deg;
-  background-color: #fffcf7 !important;
+  background-color: var(--bg-surface) !important;
   background-image:
     var(--a-pulp-specks),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 256px 256px !important;
   border-radius: 26px !important;
-  border: 5px solid #ffffff !important;
+  border: 5px solid var(--bg-surface) !important;
   box-shadow:
-    0 0 0 1px rgba(208, 174, 160, 0.3),
-    0 8px 24px -6px rgba(144, 106, 92, 0.16),
-    0 2px 4px rgba(144, 106, 92, 0.08) !important;
+    0 0 0 1px color-mix(in srgb, var(--shadow-color) 30%, transparent),
+    0 8px 24px -6px color-mix(in srgb, var(--hue-strawberry) 16%, transparent),
+    0 2px 4px color-mix(in srgb, var(--hue-strawberry) 8%, transparent) !important;
   padding: 2.1rem 2.15rem 1.85rem !important;
   overflow: hidden;
   translate: 0 0;
@@ -516,9 +516,9 @@
   [data-layout-demo='a'] .search-note-section:hover .sticky-note-card {
     translate: 0 -5px;
     box-shadow:
-      0 0 0 1px rgba(232, 152, 178, 0.42),
-      0 20px 38px -10px rgba(144, 106, 92, 0.22),
-      0 4px 10px -2px rgba(144, 106, 92, 0.1) !important;
+      0 0 0 1px color-mix(in srgb, var(--hue-taro) 42%, transparent),
+      0 20px 38px -10px color-mix(in srgb, var(--hue-strawberry) 22%, transparent),
+      0 4px 10px -2px color-mix(in srgb, var(--hue-strawberry) 10%, transparent) !important;
   }
 }
 
@@ -529,7 +529,7 @@
   left: 0;
   right: 0;
   height: 7px;
-  background: linear-gradient(90deg, #ffbfd2, #ffe0b0, #b2ebd6, #d4c2ff, #ffbfd2);
+  background: linear-gradient(90deg, var(--tint-strawberry-bg), var(--tint-peach-bg), var(--tint-mint-bg), var(--tint-taro-bg), var(--tint-strawberry-bg));
   background-size: 220% 100%;
   animation: layoutAShimmerRibbon 9s ease-in-out infinite;
   opacity: 0.92;
@@ -541,7 +541,7 @@
   position: absolute;
   inset: 13px 10px 10px 10px;
   border-radius: 18px;
-  border: 1.5px dashed rgba(214, 178, 162, 0.36);
+  border: 1.5px dashed color-mix(in srgb, var(--shadow-color) 36%, transparent);
   pointer-events: none;
 }
 
@@ -556,14 +556,14 @@
   [data-layout-demo='a'] .search-note-section form > div:first-child > .font-handwriting:hover {
     translate: 5px 0;
     rotate: -1deg;
-    color: #c25478 !important;
+    color: var(--tint-strawberry-fg) !important;
   }
 }
 
 [data-layout-demo='a'] .search-note-section .brand-badge.sticker {
   border-radius: 999px !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 2px 6px rgba(142, 114, 198, 0.2) !important;
+  border: 2px solid var(--bg-surface) !important;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-sky) 20%, transparent) !important;
   padding: 0.25rem 0.78rem !important;
   font-weight: 600;
   transition: box-shadow var(--a-smooth) !important;
@@ -576,10 +576,10 @@
 
 [data-layout-demo='a'] .search-input-wrapper .paper-input-container {
   border-radius: 999px !important;
-  background-color: #f7f0e8 !important;
+  background-color: var(--bg-sunken) !important;
   background-image: var(--a-washi-fiber) !important;
-  border: 1.5px solid rgba(208, 176, 160, 0.5) !important;
-  box-shadow: inset 0 2px 5px rgba(142, 102, 84, 0.08) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 50%, transparent) !important;
+  box-shadow: inset 0 2px 5px color-mix(in srgb, var(--shadow-color) 8%, transparent) !important;
   padding: 0.22rem 0.85rem 0.22rem 1.15rem !important;
   translate: 0 0;
   transition:
@@ -591,14 +591,14 @@
 
 @media (hover: hover) and (pointer: fine) {
   [data-layout-demo='a'] .search-input-wrapper .paper-input-container:hover {
-    border-color: rgba(230, 146, 174, 0.65) !important;
+    border-color: color-mix(in srgb, var(--hue-taro) 65%, transparent) !important;
   }
 }
 
 [data-layout-demo='a'] .search-input-wrapper .paper-input-container:focus-within {
-  background-color: #ffffff !important;
-  border-color: #ec7f9f !important;
-  box-shadow: 0 0 0 4px rgba(236, 127, 159, 0.18) !important;
+  background-color: var(--bg-surface) !important;
+  border-color: var(--btn-primary-bg) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hue-taro) 18%, transparent) !important;
   translate: 0 -1px;
 }
 
@@ -614,18 +614,18 @@
 [data-layout-demo='a'] .search-input-row .marker-button > .marker-button-face {
   border-radius: 14px !important;
   padding: 0.78rem 1.85rem !important;
-  border: 1.5px solid #c9587c !important;
-  background-color: #ec7a9c !important;
+  border: 1.5px solid var(--tint-strawberry-fg) !important;
+  background-color: var(--btn-primary-bg) !important;
   background-image:
     var(--a-washi-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(188, 66, 104, 0.16) 100%) !important;
+    linear-gradient(180deg, color-mix(in srgb, var(--gloss) 20%, transparent) 0%, color-mix(in srgb, var(--hue-taro) 16%, transparent) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #ffffff !important;
+  color: var(--text-on-accent) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    0 2.5px 0 rgba(168, 68, 98, 0.34),
-    0 6px 16px -4px rgba(228, 108, 145, 0.38) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 44%, transparent),
+    0 2.5px 0 color-mix(in srgb, var(--hue-taro) 34%, transparent),
+    0 6px 16px -4px color-mix(in srgb, var(--shadow-color) 38%, transparent) !important;
   translate: 0 0;
   scale: 1;
   transition: translate var(--a-spring), scale var(--a-spring), box-shadow var(--a-smooth) !important;
@@ -636,9 +636,9 @@
     translate: 0 -3px;
     scale: 1.04;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.48),
-      0 3.5px 0 rgba(168, 68, 98, 0.36),
-      0 12px 22px -6px rgba(228, 108, 145, 0.46) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 48%, transparent),
+      0 3.5px 0 color-mix(in srgb, var(--hue-taro) 36%, transparent),
+      0 12px 22px -6px color-mix(in srgb, var(--shadow-color) 46%, transparent) !important;
   }
 
   [data-layout-demo='a'] .search-input-row .marker-button:active:not(:disabled) > .marker-button-face {
@@ -648,11 +648,11 @@
 }
 
 [data-layout-demo='a'] .search-input-row .marker-button:disabled > .marker-button-face {
-  background-color: #f4bccd !important;
+  background-color: var(--tint-strawberry-bg) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  border-color: #df9ab0 !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 0 rgba(196, 138, 156, 0.24) !important;
+  border-color: var(--accent-strawberry) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gloss) 35%, transparent), 0 2px 0 color-mix(in srgb, var(--hue-strawberry) 24%, transparent) !important;
   opacity: 0.92;
 }
 
@@ -660,17 +660,17 @@
 [data-layout-demo='a'] .search-platforms-row .sticker,
 [data-layout-demo='a'] .search-sample-row .sticker-hitbox > .sticker-face {
   border-radius: 12px !important;
-  border: 1.5px solid rgba(168, 134, 114, 0.38) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 38%, transparent) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 2px 0 rgba(154, 118, 98, 0.18),
-    0 3px 8px -3px rgba(140, 104, 90, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 18%, transparent),
+    0 3px 8px -3px color-mix(in srgb, var(--hue-strawberry) 14%, transparent) !important;
   padding: 0.32rem 0.92rem !important;
   font-size: 1.02rem !important;
   font-weight: 600 !important;
-  color: #4a3832 !important;
+  color: var(--text) !important;
   translate: 0 0;
   rotate: 0deg;
   scale: 1;
@@ -687,7 +687,7 @@
     translate: 0 -4px;
     rotate: -2.5deg;
     scale: 1.06;
-    box-shadow: 0 8px 14px -4px rgba(140, 104, 90, 0.24), 0 0 0 1px rgba(226, 148, 174, 0.3) !important;
+    box-shadow: 0 8px 14px -4px color-mix(in srgb, var(--hue-strawberry) 24%, transparent), 0 0 0 1px color-mix(in srgb, var(--hue-taro) 30%, transparent) !important;
   }
 
   [data-layout-demo='a'] .search-platforms-row .sticker-hitbox:nth-child(even):hover > .sticker-face,
@@ -695,21 +695,21 @@
     translate: 0 -4px;
     rotate: 2.5deg;
     scale: 1.06;
-    box-shadow: 0 8px 14px -4px rgba(140, 104, 90, 0.24), 0 0 0 1px rgba(226, 148, 174, 0.3) !important;
+    box-shadow: 0 8px 14px -4px color-mix(in srgb, var(--hue-strawberry) 24%, transparent), 0 0 0 1px color-mix(in srgb, var(--hue-taro) 30%, transparent) !important;
   }
 }
 
 [data-layout-demo='a'] .quick-samples-toggle > .quick-samples-toggle-face {
   border-radius: 12px !important;
-  border: 1.5px dashed rgba(212, 134, 158, 0.58) !important;
-  background-color: #fff7fa !important;
+  border: 1.5px dashed color-mix(in srgb, var(--hue-strawberry) 58%, transparent) !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 6px rgba(226, 140, 168, 0.14) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gloss) 70%, transparent), 0 2px 6px color-mix(in srgb, var(--hue-taro) 14%, transparent) !important;
   padding: 0.32rem 1.05rem !important;
   font-size: 1.02rem !important;
   font-weight: 600 !important;
-  color: #5a443b !important;
+  color: var(--text) !important;
   translate: 0 0;
   scale: 1;
   transition: translate var(--a-spring), scale var(--a-spring), background-color 200ms ease !important;
@@ -719,7 +719,7 @@
   [data-layout-demo='a'] .quick-samples-toggle:hover > .quick-samples-toggle-face {
     translate: 0 -2px;
     scale: 1.03;
-    background-color: #ffeaf1 !important;
+    background-color: var(--tint-strawberry-bg) !important;
   }
 }
 
@@ -727,23 +727,23 @@
 [data-layout-demo='a'] .result-paper-card,
 [data-layout-demo='a'] .user-playlists-paper {
   border-radius: 26px !important;
-  background-color: #fffcf7 !important;
+  background-color: var(--bg-surface) !important;
   background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 140px 140px, 96px 96px, 256px 256px !important;
-  border: 5px solid #ffffff !important;
+  border: 5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
 }
 
 [data-layout-demo='a'] .result-paper-card .marker-button > .marker-button-face,
 [data-layout-demo='a'] .user-playlists-paper .marker-button > .marker-button-face {
   border-radius: 12px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.42) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 42%, transparent) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 2px 0 rgba(154, 118, 98, 0.2),
-    0 4px 10px -4px rgba(136, 102, 88, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 20%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   translate: 0 0;
   rotate: 0deg;
   transition: translate var(--a-spring), rotate var(--a-spring), box-shadow var(--a-smooth) !important;
@@ -763,37 +763,37 @@
   animation: layoutAPathMarch 4.5s linear infinite;
 }
 
-[data-layout-demo='a'] .layout-a-row:nth-of-type(1) .layout-a-aside { background-color: #fff6f9; }
-[data-layout-demo='a'] .layout-a-row:nth-of-type(2) .layout-a-aside { background-color: #f3fbf8; }
-[data-layout-demo='a'] .layout-a-row:nth-of-type(3) .layout-a-aside { background-color: #f7f4ff; }
-[data-layout-demo='a'] .layout-a-row:nth-of-type(4) .layout-a-aside { background-color: #fffbf0; }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(1) .layout-a-aside { background-color: var(--tint-strawberry-bg-soft); }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(2) .layout-a-aside { background-color: var(--tint-mint-bg-soft); }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(3) .layout-a-aside { background-color: var(--tint-taro-bg-soft); }
+[data-layout-demo='a'] .layout-a-row:nth-of-type(4) .layout-a-aside { background-color: var(--tint-lemon-bg-soft); }
 
 [data-layout-demo='a'] .layout-a-aside::after {
   content: '';
   position: absolute;
   inset: 7px;
   border-radius: 15px;
-  border: 1.5px dashed rgba(210, 174, 158, 0.38);
+  border: 1.5px dashed color-mix(in srgb, var(--shadow-color) 38%, transparent);
   pointer-events: none;
   transition: border-color 260ms ease;
 }
 
 [data-layout-demo='a'] .layout-a-step-pill.is-mint {
-  background-image: var(--a-washi-fiber), linear-gradient(135deg, #c6f2e2 0%, #e6faf3 100%);
-  color: #2c785b;
-  box-shadow: 0 2px 6px rgba(94, 178, 146, 0.22);
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, var(--tint-mint-bg) 0%, var(--tint-mint-bg-soft) 100%);
+  color: var(--tint-mint-fg);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-mint) 22%, transparent);
 }
 
 [data-layout-demo='a'] .layout-a-step-pill.is-taro {
-  background-image: var(--a-washi-fiber), linear-gradient(135deg, #dfd4ff 0%, #f3eeff 100%);
-  color: #6244a5;
-  box-shadow: 0 2px 6px rgba(146, 120, 210, 0.22);
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, var(--tint-taro-bg) 0%, var(--tint-taro-bg-soft) 100%);
+  color: var(--tint-taro-fg);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-sky) 22%, transparent);
 }
 
 [data-layout-demo='a'] .layout-a-step-pill.is-lemon {
-  background-image: var(--a-washi-fiber), linear-gradient(135deg, #ffedb0 0%, #fff8dc 100%);
-  color: #8c6514;
-  box-shadow: 0 2px 6px rgba(212, 166, 58, 0.22);
+  background-image: var(--a-washi-fiber), linear-gradient(135deg, var(--tint-lemon-bg) 0%, var(--tint-lemon-bg-soft) 100%);
+  color: var(--tint-lemon-fg);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-lemon) 22%, transparent);
 }
 
 [data-layout-demo='a'] .layout-a-aside-doodle {
@@ -823,7 +823,7 @@
   }
 
   [data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-aside::after {
-    border-color: rgba(232, 134, 164, 0.56);
+    border-color: color-mix(in srgb, var(--hue-taro) 56%, transparent);
   }
 
   [data-layout-demo='a'] .layout-a-aside-hit:hover .layout-a-step-pill {
@@ -861,13 +861,13 @@
 /* ---------------- 8. Chapter 01: Die-Cut Cassette Sticker Sheet (PluginEcosystem) ---------------- */
 [data-layout-demo='a'] .plugin-ecosystem-panel {
   border-radius: 26px !important;
-  background-color: #f6faff !important;
+  background-color: var(--tint-sky-bg-soft) !important;
   background-image:
     var(--a-pulp-specks),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 140px 140px, 96px 96px, 256px 256px !important;
-  border: 5px solid #ffffff !important;
+  border: 5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.85rem 1.85rem 1.95rem !important;
   translate: 0 0;
@@ -883,10 +883,10 @@
 
 [data-layout-demo='a'] .plugin-supported-count {
   border-radius: 18px !important;
-  border: 2px dashed rgba(226, 118, 150, 0.58) !important;
-  background-color: #ffebf1 !important;
+  border: 2px dashed color-mix(in srgb, var(--hue-taro) 58%, transparent) !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image: var(--a-washi-fiber) !important;
-  box-shadow: 0 0 0 3px #ffffff, 0 4px 12px -3px rgba(226, 118, 150, 0.28) !important;
+  box-shadow: 0 0 0 3px var(--bg-surface), 0 4px 12px -3px color-mix(in srgb, var(--hue-taro) 28%, transparent) !important;
   padding: 0.55rem 1rem !important;
   translate: 0 0;
   rotate: 0deg;
@@ -904,7 +904,7 @@
     translate: 0 -4px;
     rotate: 4deg;
     scale: 1.07;
-    box-shadow: 0 0 0 3px #ffffff, 0 10px 20px -4px rgba(226, 118, 150, 0.38) !important;
+    box-shadow: 0 0 0 3px var(--bg-surface), 0 10px 20px -4px color-mix(in srgb, var(--hue-taro) 38%, transparent) !important;
   }
 }
 
@@ -928,10 +928,10 @@
 [data-layout-demo='a'] .plugin-app-card {
   position: relative;
   border-radius: 20px !important;
-  background-color: #fffefb !important;
+  background-color: var(--bg-surface) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 240px 240px !important;
-  border: 3.5px solid #ffffff !important;
+  border: 3.5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.35rem 1.2rem 1.15rem !important;
   overflow: hidden;
@@ -950,27 +950,27 @@
   left: 0;
   right: 0;
   height: 7px;
-  background: linear-gradient(90deg, #b6dcff, #daf0ff);
+  background: linear-gradient(90deg, var(--tint-sky-line), var(--tint-sky-bg));
   transition: filter 240ms ease;
 }
 
 [data-layout-demo='a'] .plugin-app-grid > :nth-child(2) .plugin-app-card::before {
-  background: linear-gradient(90deg, #9ce3c9, #d6f7eb);
+  background: linear-gradient(90deg, var(--tint-mint-line), var(--tint-mint-bg));
 }
 
 [data-layout-demo='a'] .plugin-app-grid > :nth-child(3) .plugin-app-card::before {
-  background: linear-gradient(90deg, #ffe088, #fff3c4);
+  background: linear-gradient(90deg, var(--tint-lemon-line), var(--tint-lemon-bg));
 }
 
 [data-layout-demo='a'] .plugin-app-grid > :nth-child(4) .plugin-app-card::before {
-  background: linear-gradient(90deg, #cbb6ff, #e7dfff);
+  background: linear-gradient(90deg, var(--tint-taro-line), var(--tint-taro-bg));
 }
 
 [data-layout-demo='a'] .plugin-app-logo-wrap {
   border-radius: 14px !important;
-  border: 1.5px solid rgba(206, 178, 164, 0.35) !important;
-  background: #fffaf5 !important;
-  box-shadow: 0 2px 6px rgba(140, 104, 90, 0.12);
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 35%, transparent) !important;
+  background: var(--bg-surface) !important;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-strawberry) 12%, transparent);
   rotate: 0deg;
   scale: 1;
   transition: rotate var(--a-spring), scale var(--a-spring);
@@ -997,14 +997,14 @@
   }
 
   [data-layout-demo='a'] .plugin-app-grid > [data-reveal-item]:hover .plugin-app-name {
-    color: #c25478;
+    color: var(--tint-strawberry-fg);
   }
 }
 
 [data-layout-demo='a'] .plugin-status-sticker {
   border-radius: 999px !important;
-  border: 1.5px solid #ffffff !important;
-  box-shadow: 0 1px 4px rgba(140, 104, 90, 0.12) !important;
+  border: 1.5px solid var(--bg-surface) !important;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--hue-strawberry) 12%, transparent) !important;
   font-family: var(--font-sans) !important;
   font-size: 0.74rem !important;
   padding: 0.14rem 0.58rem !important;
@@ -1013,13 +1013,13 @@
 [data-layout-demo='a'] .plugin-app-primary-buttons .marker-button > .marker-button-face,
 [data-layout-demo='a'] .plugin-copy-button > .marker-button-face {
   border-radius: 12px !important;
-  border: 1.5px solid rgba(154, 118, 98, 0.42) !important;
+  border: 1.5px solid color-mix(in srgb, var(--shadow-color) 42%, transparent) !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 180px 180px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 2px 0 rgba(154, 118, 98, 0.2),
-    0 4px 10px -4px rgba(136, 102, 88, 0.14) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 72%, transparent),
+    0 2px 0 color-mix(in srgb, var(--shadow-color) 20%, transparent),
+    0 4px 10px -4px color-mix(in srgb, var(--shadow-color) 14%, transparent) !important;
   font-size: 0.88rem !important;
   translate: 0 0;
   scale: 1;
@@ -1032,33 +1032,33 @@
     translate: 0 -2px;
     scale: 1.03;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.76),
-      0 3px 0 rgba(154, 118, 98, 0.24),
-      0 8px 16px -6px rgba(136, 102, 88, 0.22) !important;
+      inset 0 1px 0 color-mix(in srgb, var(--gloss) 76%, transparent),
+      0 3px 0 color-mix(in srgb, var(--shadow-color) 24%, transparent),
+      0 8px 16px -6px color-mix(in srgb, var(--shadow-color) 22%, transparent) !important;
   }
 }
 
 [data-layout-demo='a'] .plugin-action-link > .marker-button-face {
-  background-color: #ec7a9c !important;
+  background-color: var(--btn-primary-bg) !important;
   background-image:
     var(--a-washi-fiber),
     url('/paper-grain.png'),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(188, 66, 104, 0.14) 100%) !important;
+    linear-gradient(180deg, color-mix(in srgb, var(--gloss) 18%, transparent) 0%, color-mix(in srgb, var(--hue-taro) 14%, transparent) 100%) !important;
   background-size: 96px 96px, 180px 180px, 100% 100% !important;
-  color: #ffffff !important;
-  border: 1.5px solid #c9587c !important;
+  color: var(--text-on-accent) !important;
+  border: 1.5px solid var(--line-ink) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 2px 0 rgba(168, 68, 98, 0.34),
-    0 5px 14px -4px rgba(228, 108, 145, 0.36) !important;
+    inset 0 1px 0 color-mix(in srgb, var(--gloss) 42%, transparent),
+    0 2px 0 color-mix(in srgb, var(--hue-taro) 34%, transparent),
+    0 5px 14px -4px color-mix(in srgb, var(--hue-taro) 36%, transparent) !important;
 }
 
 [data-layout-demo='a'] .plugin-upcoming-item,
 [data-layout-demo='a'] .plugin-upcoming-badge,
 [data-layout-demo='a'] .plugin-ecosystem-panel .sticker {
   border-radius: 999px !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 2px 6px rgba(140, 104, 90, 0.14) !important;
+  border: 2px solid var(--bg-surface) !important;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--hue-strawberry) 14%, transparent) !important;
 }
 
 /* ---------------- 9. Chapter 02: 3 Wafer-Thin Die-Cut Paper Stickers (InfoNotes) ---------------- */
@@ -1076,13 +1076,13 @@
 
 [data-layout-demo='a'] .info-notes-grid > :nth-child(1) .journal-paper {
   border-radius: 20px !important;
-  background-color: #fff9e6 !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
   background-image:
     var(--a-pulp-specks),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 240px 240px !important;
-  border: 4.5px solid #ffffff !important;
+  border: 4.5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 2.15rem 1.6rem 1.6rem !important;
   overflow: hidden;
@@ -1100,10 +1100,7 @@
   height: 9px;
   background: repeating-linear-gradient(
     -45deg,
-    #ffabc2 0 10px,
-    #fff9e6 10px 16px,
-    #96dfc5 16px 26px,
-    #fff9e6 26px 32px
+    var(--tint-strawberry-bg) 0 10px, var(--bg-surface) 10px 16px, var(--tint-mint-bg) 16px 26px, var(--bg-surface) 26px 32px
   );
 }
 
@@ -1115,8 +1112,8 @@
   font-family: 'Space Mono', monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
-  color: #c87b92;
-  border: 1.5px dashed rgba(216, 134, 160, 0.65);
+  color: var(--tint-strawberry-fg);
+  border: 1.5px dashed color-mix(in srgb, var(--hue-taro) 65%, transparent);
   border-radius: 8px;
   padding: 0.16rem 0.4rem;
   rotate: 6deg;
@@ -1126,13 +1123,13 @@
 
 [data-layout-demo='a'] .info-notes-grid > :nth-child(2) .journal-paper {
   border-radius: 20px !important;
-  background-color: #ffedf2 !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image:
     var(--a-pulp-specks),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 240px 240px !important;
-  border: 4.5px solid #ffffff !important;
+  border: 4.5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.7rem 1.75rem !important;
   height: 100%;
@@ -1149,8 +1146,8 @@
   height: 20px;
   margin-top: -10px;
   border-radius: 50%;
-  background: #faf3ea;
-  box-shadow: inset 0 1px 3px rgba(136, 102, 88, 0.18), 0 0 0 2.5px #ffffff;
+  background: var(--bg-page);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--shadow-color) 18%, transparent), 0 0 0 2.5px var(--bg-surface);
   z-index: 4;
 }
 
@@ -1163,15 +1160,15 @@
 
 [data-layout-demo='a'] .info-notes-grid > :nth-child(3) .journal-paper {
   border-radius: 24px !important;
-  background-color: #e4f7ef !important;
+  background-color: var(--tint-mint-bg-soft) !important;
   background-image:
-    repeating-linear-gradient(0deg, rgba(94, 168, 140, 0.04) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(90deg, rgba(94, 168, 140, 0.04) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--hue-mint) 4%, transparent) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--hue-mint) 4%, transparent) 0 1px, transparent 1px 6px),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 6px 6px, 6px 6px, 96px 96px, 240px 240px !important;
-  border: 4.5px solid #ffffff !important;
-  outline: 1.5px dashed rgba(84, 172, 140, 0.45);
+  border: 4.5px solid var(--bg-surface) !important;
+  outline: 1.5px dashed color-mix(in srgb, var(--hue-mint) 45%, transparent);
   outline-offset: -11px;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.65rem 1.95rem !important;
@@ -1210,7 +1207,7 @@
   font-family: var(--font-sans) !important;
   font-size: 0.95rem !important;
   line-height: 1.8 !important;
-  color: #624e45 !important;
+  color: var(--text-muted) !important;
 }
 
 [data-layout-demo='a'] .info-notes-favorited {
@@ -1221,7 +1218,7 @@
 
 [data-layout-demo='a'] .info-notes-favorited .sticker {
   border-radius: 999px !important;
-  border: 2.5px solid #ffffff !important;
+  border: 2.5px solid var(--bg-surface) !important;
   background-image: var(--a-washi-fiber) !important;
   box-shadow: var(--a-pill-shadow) !important;
   cursor: default;
@@ -1230,13 +1227,13 @@
 /* ---------------- 10. Chapter 03: Postage Stamp + Airy Washi Stats Stickers ---------------- */
 [data-layout-demo='a'] .running-days-stamp {
   border-radius: 14px !important;
-  border: 3px solid #ffffff !important;
+  border: 3px solid var(--bg-surface) !important;
   background:
-    radial-gradient(circle at 0 50%, #f7f4ff 4.5px, transparent 5px) left center / 9px 16px repeat-y,
-    radial-gradient(circle at 100% 50%, #f7f4ff 4.5px, transparent 5px) right center / 9px 16px repeat-y,
+    radial-gradient(circle at 0 50%, var(--bg-page) 4.5px, transparent 5px) left center / 9px 16px repeat-y,
+    radial-gradient(circle at 100% 50%, var(--bg-page) 4.5px, transparent 5px) right center / 9px 16px repeat-y,
     var(--a-washi-fiber),
-    linear-gradient(135deg, #fff5f8 0%, #ffd6e3 100%) !important;
-  box-shadow: 0 4px 14px -4px rgba(220, 112, 144, 0.34), 0 1px 2px rgba(140, 102, 88, 0.1) !important;
+    linear-gradient(135deg, var(--tint-strawberry-bg) 0%, var(--tint-strawberry-bg-soft) 100%) !important;
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--hue-taro) 34%, transparent), 0 1px 2px color-mix(in srgb, var(--hue-strawberry) 10%, transparent) !important;
   padding: 0.9rem 1.2rem !important;
   max-width: 100%;
   box-sizing: border-box;
@@ -1256,7 +1253,7 @@
     translate: 0 -5px;
     rotate: 3.5deg;
     scale: 1.05;
-    box-shadow: 0 12px 24px -6px rgba(220, 112, 144, 0.42) !important;
+    box-shadow: 0 12px 24px -6px color-mix(in srgb, var(--hue-taro) 42%, transparent) !important;
   }
 }
 
@@ -1275,7 +1272,7 @@
 
 [data-layout-demo='a'] .stats-chill-vibes-row .sticker {
   border-radius: 999px !important;
-  border: 2.5px solid #ffffff !important;
+  border: 2.5px solid var(--bg-surface) !important;
   background-image: var(--a-washi-fiber) !important;
   box-shadow: var(--a-pill-shadow) !important;
   padding: 0.2rem 0.72rem !important;
@@ -1301,7 +1298,7 @@
 
 [data-layout-demo='a'] .stats-main-grid .journal-paper {
   border-radius: 22px !important;
-  border: 4.5px solid #ffffff !important;
+  border: 4.5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.5rem 1.55rem !important;
   translate: 0 0;
@@ -1322,20 +1319,20 @@
 
   [data-layout-demo='a'] .stats-main-grid > .reveal:hover .font-num {
     scale: 1.07;
-    color: #c25478;
+    color: var(--tint-strawberry-fg);
   }
 }
 
 [data-layout-demo='a'] .stats-main-grid > :nth-child(1) .journal-paper {
-  background-color: #fff6d6 !important;
+  background-color: var(--tint-lemon-bg-soft) !important;
   background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 240px 240px !important;
 }
 
 [data-layout-demo='a'] .stats-main-grid > :nth-child(2) .journal-paper {
-  background-color: #fff0f5 !important;
+  background-color: var(--tint-strawberry-bg-soft) !important;
   background-image:
-    radial-gradient(circle, rgba(226, 152, 178, 0.18) 0.9px, transparent 1.2px),
+    radial-gradient(circle, color-mix(in srgb, var(--hue-taro) 18%, transparent) 0.9px, transparent 1.2px),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 18px 18px, 96px 96px, 240px 240px !important;
@@ -1346,7 +1343,7 @@
 }
 
 [data-layout-demo='a'] .stats-main-grid > :nth-child(3) .journal-paper {
-  background-color: #e4f7ef !important;
+  background-color: var(--tint-mint-bg-soft) !important;
   background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 240px 240px !important;
 }
@@ -1354,10 +1351,10 @@
 [data-layout-demo='a'] .stats-journal-section > .reveal:last-of-type .journal-paper,
 [data-layout-demo='a'] .stats-trend-card {
   border-radius: 22px !important;
-  background-color: #fffdf9 !important;
+  background-color: var(--bg-surface) !important;
   background-image: var(--a-pulp-specks), var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 240px 240px !important;
-  border: 4.5px solid #ffffff !important;
+  border: 4.5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   translate: 0 0;
 }
@@ -1390,13 +1387,13 @@
 /* ---------------- 11. Chapter 04: Airy Almond-Milk Sticker Folder (DeveloperPanel) ---------------- */
 [data-layout-demo='a'] .developer-panel {
   border-radius: 24px !important;
-  background-color: #fffaf2 !important;
+  background-color: var(--bg-surface) !important;
   background-image:
     var(--a-pulp-specks),
     var(--a-washi-fiber),
     url('/paper-grain.png') !important;
   background-size: 130px 130px, 96px 96px, 256px 256px !important;
-  border: 5px solid #ffffff !important;
+  border: 5px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.85rem 1.75rem 1.6rem !important;
   position: relative;
@@ -1420,13 +1417,13 @@
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #8f6b58;
-  background-color: #fff7e0;
+  color: var(--text-muted);
+  background-color: var(--tint-lemon-bg-soft);
   background-image: var(--a-washi-fiber);
-  border: 3px solid #ffffff;
+  border: 3px solid var(--bg-surface);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
-  box-shadow: 0 -2px 8px rgba(140, 104, 90, 0.1);
+  box-shadow: 0 -2px 8px color-mix(in srgb, var(--hue-strawberry) 10%, transparent);
 }
 
 [data-layout-demo='a'] .developer-method-grid {
@@ -1438,7 +1435,7 @@
   border-radius: 18px !important;
   background-image: var(--a-washi-fiber), url('/paper-grain.png') !important;
   background-size: 96px 96px, 220px 220px !important;
-  border: 3px solid #ffffff !important;
+  border: 3px solid var(--bg-surface) !important;
   box-shadow: var(--a-sticker-shadow) !important;
   padding: 1.15rem 1.2rem !important;
   translate: 0 0;
@@ -1485,7 +1482,7 @@
 
 [data-layout-demo='a'] .layout-a-pop-sticker svg {
   display: block;
-  filter: drop-shadow(0 4px 10px rgba(136, 102, 88, 0.18));
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--shadow-color) 18%, transparent));
 }
 
 [data-layout-demo='a'] .layout-a-mini-tag {
@@ -1494,21 +1491,21 @@
   gap: 0.25rem;
   padding: 0.24rem 0.72rem;
   border-radius: 999px;
-  border: 2.5px solid #ffffff;
+  border: 2.5px solid var(--bg-surface);
   font-family: var(--font-handwriting, cursive);
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--ink, #5a4a42);
+  color: var(--text);
   background-image: var(--a-washi-fiber);
   box-shadow: var(--a-pill-shadow);
   white-space: nowrap;
 }
 
-[data-layout-demo='a'] .layout-a-mini-tag.is-pink  { background-color: #ffe0ec; color: #b44b6d; }
-[data-layout-demo='a'] .layout-a-mini-tag.is-lemon { background-color: #fff3bf; color: #8c6514; }
-[data-layout-demo='a'] .layout-a-mini-tag.is-mint  { background-color: #d6f5e8; color: #2c785b; }
-[data-layout-demo='a'] .layout-a-mini-tag.is-taro  { background-color: #e8dfff; color: #6244a5; }
-[data-layout-demo='a'] .layout-a-mini-tag.is-sky   { background-color: #daf0ff; color: #4478ab; }
+[data-layout-demo='a'] .layout-a-mini-tag.is-pink  { background-color: var(--tint-strawberry-bg); color: var(--tint-strawberry-fg); }
+[data-layout-demo='a'] .layout-a-mini-tag.is-lemon { background-color: var(--tint-lemon-bg); color: var(--accent-lemon); }
+[data-layout-demo='a'] .layout-a-mini-tag.is-mint  { background-color: var(--tint-mint-bg); color: var(--accent-mint); }
+[data-layout-demo='a'] .layout-a-mini-tag.is-taro  { background-color: var(--tint-taro-bg); color: var(--accent-taro); }
+[data-layout-demo='a'] .layout-a-mini-tag.is-sky   { background-color: var(--tint-sky-bg); color: var(--accent-sky); }
 
 [data-layout-demo='a'] .layout-a-pop-sticker.is-ch1-left       { left: 0.6rem; bottom: -2.1rem; }
 [data-layout-demo='a'] .layout-a-pop-sticker.is-ch1-right      { right: -0.6rem; top: -1.15rem; }
@@ -1521,8 +1518,8 @@
 [data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-code       { right: 1.4rem; top: -1.2rem; }
 [data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-plane      { left: -1.2rem; bottom: -1.5rem; }
 [data-layout-demo='a'] .layout-a-pop-sticker.is-ch4-mail       { left: 0.8rem; bottom: -2.15rem; }
-[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-left    { left: 1rem; top: 0.5rem; }
-[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-right   { right: 1rem; top: 0.5rem; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-left    { left: 2.5rem; top: 4.5rem; z-index: 25; }
+[data-layout-demo='a'] .layout-a-pop-sticker.is-footer-right   { right: 2.5rem; top: 4.5rem; z-index: 25; }
 
 @media (max-width: 1180px) {
   [data-layout-demo='a'] .layout-a-pop-sticker.is-ch3-coffee,
@@ -1538,7 +1535,7 @@
 
 [data-layout-demo='a'] .journal-footer .sticker-hitbox > .footer-pill-face {
   border-radius: 999px !important;
-  border: 2.5px solid #ffffff !important;
+  border: 2.5px solid var(--bg-surface) !important;
   background-image: var(--a-washi-fiber) !important;
   box-shadow: var(--a-pill-shadow) !important;
   translate: 0 0;

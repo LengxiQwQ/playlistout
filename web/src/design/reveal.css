@@ -74,8 +74,8 @@
 
 /* 贴上：从上方略大、带大投影 => 落到纸面，阴影收紧 */
 @keyframes revealStick {
-  0%   { opacity: 0; transform: translateY(calc(var(--reveal-distance) * -1)) rotate(calc(var(--rot, 0deg) - 5deg)) scale(1.05); filter: drop-shadow(10px 16px 0 rgba(150, 112, 92, 0.18)); }
-  60%  { opacity: 1; transform: translateY(3px) rotate(calc(var(--rot, 0deg) + 0.8deg)) scale(0.995); filter: drop-shadow(3px 4px 0 rgba(150, 112, 92, 0.2)); }
+  0%   { opacity: 0; transform: translateY(calc(var(--reveal-distance) * -1)) rotate(calc(var(--rot, 0deg) - 5deg)) scale(1.05); filter: drop-shadow(10px 16px 0 color-mix(in srgb, var(--shadow-color) 60%, transparent)); }
+  60%  { opacity: 1; transform: translateY(3px) rotate(calc(var(--rot, 0deg) + 0.8deg)) scale(0.995); filter: drop-shadow(3px 4px 0 color-mix(in srgb, var(--shadow-color) 65%, transparent)); }
   100% { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)) scale(1); filter: none; }
 }
 
@@ -346,7 +346,7 @@ body {
   position: absolute;
   inset: -8px;
   border-radius: 18px;
-  background: radial-gradient(circle, var(--mac-strawberry, #ffd6e0) 0%, transparent 72%);
+  background: radial-gradient(circle, var(--tint-strawberry-bg) 0%, transparent 72%);
   pointer-events: none;
   opacity: 0;
   z-index: -1;

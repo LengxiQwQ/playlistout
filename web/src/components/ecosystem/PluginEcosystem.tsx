@@ -522,12 +522,12 @@ export const PluginEcosystem: React.FC = () => {
             style={{
               ['--sticker-rot' as any]: '10deg',
               fontSize: '2rem',
-              color: 'var(--accent-taro, #9a7fd8)',
-              background: 'var(--paper-white, #fffdf8)',
-              border: '1.5px solid var(--ink-line)',
+              color: 'var(--accent-taro)',
+              background: 'var(--bg-surface)',
+              border: '1.5px solid var(--line-ink)',
               borderRadius: '12px',
               padding: '0.2rem 0.55rem',
-              boxShadow: '2px 3px 0 var(--shadow-ink)',
+              boxShadow: '2px 3px 0 var(--shadow-color)',
               lineHeight: 1.1,
             }}
           >

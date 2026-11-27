@@ -31,7 +31,7 @@ export const QishuiChannelBanner: React.FC<QishuiChannelBannerProps> = ({
       <div className="qishui-channel-banner-text">
         <span style={{ fontSize: '1.25rem', lineHeight: 1, userSelect: 'none' }} aria-hidden="true">💡</span>
         <div>
-          <strong style={{ color: 'var(--ink, #5a4a42)', marginRight: '0.35rem' }}>
+          <strong style={{ color: 'var(--text)', marginRight: '0.35rem' }}>
             {t.result.channelBannerTitle}:
           </strong>
           <span>{t.result.channelBannerTip}</span>
@@ -52,7 +52,7 @@ export const QishuiChannelBanner: React.FC<QishuiChannelBannerProps> = ({
           <span>🎵</span>
           <span>{t.result.channelOfficialTracks}</span>
           {playlist.channel !== 'douyin' && (
-            <span style={{ color: '#4fae8a', fontSize: '0.75em' }}>●</span>
+            <span style={{ color: 'var(--status-free-text)', fontSize: '0.75em' }}>●</span>
           )}
         </button>
 
@@ -69,7 +69,7 @@ export const QishuiChannelBanner: React.FC<QishuiChannelBannerProps> = ({
           <span>🎬</span>
           <span>{t.result.channelVideoSoundtracks}</span>
           {playlist.channel === 'douyin' && (
-            <span style={{ color: '#e0709a', fontSize: '0.75em' }}>●</span>
+            <span style={{ color: 'var(--accent-strawberry)', fontSize: '0.75em' }}>●</span>
           )}
         </button>
       </div>
