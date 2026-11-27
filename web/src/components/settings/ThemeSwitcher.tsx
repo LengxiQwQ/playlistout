@@ -49,7 +49,7 @@ export const ThemeSwitcher: React.FC = () => {
       <span style={{ fontSize: '0.9rem' }} aria-hidden="true">
         {icons[theme]}
       </span>
-      <span style={{ color: 'var(--text)' }}>
+      <span className="header-theme-label" style={{ color: 'var(--text)' }}>
         {labels[theme]}
       </span>
     </Sticker>

@@ -242,20 +242,28 @@
   .header-actions {
     display: flex !important;
     align-items: center !important;
-    gap: 0.32rem !important;
+    gap: 0.28rem !important;
     flex-shrink: 0 !important;
   }
 
   .header-actions .sticker,
   .header-desktop-btn > .header-desktop-btn-face,
   .header-github-btn > .header-github-btn-face,
-  .header-lang-btn > .sticker-face {
-    padding: 0.26rem 0.48rem !important;
+  .header-lang-btn > .sticker-face,
+  .header-theme-btn > .sticker-face {
+    padding: 0.28rem 0.45rem !important;
     font-size: 0.86rem !important;
     border-radius: 9px !important;
     white-space: nowrap !important;
     rotate: 0deg !important;
     transform: none !important;
+  }
+
+  /* Compact icon-only pills for secondary header actions on mobile so brand + logo never get squeezed */
+  .header-desktop-btn.mobile-only .header-desktop-btn-face > span,
+  .header-github-btn .header-github-btn-face > .mobile-only,
+  .header-theme-btn .header-theme-label {
+    display: none !important;
   }
 
   .header-desktop-btn svg,
