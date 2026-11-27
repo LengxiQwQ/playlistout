@@ -52,16 +52,14 @@ describe('lxMusic export plugin', () => {
     expect(formatLxInterval(0)).toBe('');
   });
 
-  it('generates valid LX Music JSON with correct schema', () => {
+  it('generates JSON for the LX Music single-list import menu', () => {
     const raw = generateLxMusicJSON(mockPlaylist);
     const parsed = JSON.parse(raw);
 
-    expect(parsed.type).toBe('playList');
+    expect(parsed.type).toBe('playListPart');
     expect(parsed.version).toBe(1);
-    expect(Array.isArray(parsed.data)).toBe(true);
-    expect(parsed.data.length).toBe(1);
 
-    const playlistObj = parsed.data[0];
+    const playlistObj = parsed.data;
     expect(playlistObj.id).toBe('playlist_123456');
     expect(playlistObj.name).toBe('周杰伦经典');
     expect(playlistObj.list.length).toBe(2);
@@ -78,6 +76,11 @@ describe('lxMusic export plugin', () => {
     const song2 = playlistObj.list[1];
     expect(song2.singer).toBe('周杰伦, 方文山');
     expect(song2.img).toBe('https://example.com/cover.jpg'); // Fallback to playlist cover
+
+    for (const song of playlistObj.list) {
+      expect(song.types).toEqual([]);
+      expect(song._types).toEqual({});
+    }
   });
 
   it('exports with appropriate filename', () => {
