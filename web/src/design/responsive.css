@@ -251,7 +251,13 @@
   .header-github-btn > .header-github-btn-face,
   .header-lang-btn > .sticker-face,
   .header-theme-btn > .sticker-face {
-    padding: 0.28rem 0.45rem !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    padding: 0 0.45rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
     font-size: 0.86rem !important;
     border-radius: 9px !important;
     white-space: nowrap !important;
@@ -259,17 +265,17 @@
     transform: none !important;
   }
 
+  .header-actions svg {
+    width: 15px !important;
+    height: 15px !important;
+    flex-shrink: 0;
+  }
+
   /* Compact icon-only pills for secondary header actions on mobile so brand + logo never get squeezed */
   .header-desktop-btn.mobile-only .header-desktop-btn-face > span,
   .header-github-btn .header-github-btn-face > .mobile-only,
   .header-theme-btn .header-theme-label {
     display: none !important;
-  }
-
-  .header-desktop-btn svg,
-  .header-github-btn svg {
-    width: 14px;
-    height: 14px;
   }
 
   /* Mobile touch stabilization: eliminate hover tilt / scale / jitter on touch */
