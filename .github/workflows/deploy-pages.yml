@@ -51,7 +51,6 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         if: steps.check-creds.outputs.has_creds == 'true'
-        continue-on-error: true
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
